@@ -1,0 +1,92 @@
+--------------------------------------------
++: added code
+-: removed code
+*: fixed code
+#: changed (to better) code
+!: note
+--------------------------------------------
+
+Version : beta 1
+//11/2/2006
+*minnor fixes on read/write register functions
++added basic handling for : cpg
++added basic handling for : dmac
++added basic handling for : bsc
++added basic handling for : ubc
++added basic handling for : rtc
++added basic handling for : scif
++added basic handling for : sci
+
+//4-7/2/2006
+//drkIIRaziel
++*Varius fixes all around
++Basic internal registers handling
++Basic handling of area0 
++Basic structure for gdrom plugin
+
+//2/2/2006
+//drkIIRaziel
++*Added plugins\plugin_types.cpp/h , splited plugins\plugin_manager.cpp/h code needed to move around
+#plugins\plugin_types.h now contains headers for classes , plugins\plugin_types.cpp the implementations
++plugins\plugin_types.cpp/h  -> moved types needed by plugins and emu  , added a few operators for VersionNumber struct
++Created nullPvr project as a sample plugin , added it onto the solution file
++Extended pvr interface (well more like added the most basic neded functions to it :P)
+#*Massive fixes/changed/rewrites of pvr_if, pvr plugin code and register interface .. after all this time
+		it is finaly up.Let's hope we'l get some action soon :)
++Moved pvr_mmr* code to plugin
++Updated pvr plugin spec to build 2(added vram and regs params)
+
+//1/2/2006
+//drkIIRaziel
++Added plugins\plugin_manager.cpp/h
++Added base class for plugin loading (nullDC_plugin) and
+	created start code for PowerVR plguins.Also created all needed types on plugins\plugin_manager.h
++Added plugin enumeration function
++Created new project ..\Plugins\pvrIcZeZuGL\* , this will keep a port of ZeZu's old OpenGL plugin
+#Played a bit mroe w/ pvr interface ideas , still no clear idea on what to do w/ it
+
+//31/1/2006
+//drkIIRaziel
+-Removed  -bench parameter to benchmark thread performance
+*Varius bugfixed on stdclass.c
++Added class DllHanlder to handle loading and unloading of dll's
++Added FindAllFiles functions to enumerate all files on a directory
+!Varius changes/playing w/ pvr interface
+!Multyhtreading problems won't alow for syncronisation of arm thread at a reasonable speed
+		as a result , Sh4 and arm7 will have to be interleaved on the same thread.
+		Atm , the interleaving value is every 35000 sh4 cycles (~8 samples on 48khrz)
+		Interleaving values are totaly up to aica/arm7 plugin , they will be archived by using the
+		normal UpdateAica(u32 cycles) interface.
+
+//29/1/2006
+//drkIIRaziel
++Added -bench parameter to benchmark thread performance
++Added cThread and cResetEvent on stdclass.c/h
+#Now Sh4 uses these classes instead of winapi, for portability
+#Added GetArmResetEvent , Step n sh4 interface and implemented em on sh4 interpreter
+!Arm cpu will run on a diferent thread waiting for an event.When the event is signaled
+		 it will start to execute opcodes [a predefined number].When it executes em
+		 it will wait for the event to be signaled to continue (to keep in sync w/ sh4 and rest hardware)
+!Gota check if the arm thread can be on a lower priority and if we can / need to dynamicaly change the priority
+		to keep in sync w/ sh4
+
+//28/1/2006
+//drkIIRaziel
++Changed sh4 to use new delayslot system
++Created sh4 interface and implemented it for interpreter , still missing for rec
++Basic initialisation of submodules , maily null code for now
++Added dc\dc.cpp/h for init/reset/term
+!Memory will use diff rooting on Sysmem and Pvr mem. all mmr read/write as well as bios will have generic
+	    verions w/ size as parameter
++Basic pvr interface , still needs to write a plugin spect and implement vram writes/reads/locks
++Basic Memory rooting code for Area0, Area7 , P4 , PowerVr and Ta 
+
+//Up to 27/1/2006
+//drkIIRaziel
++Imported old sh4 code to source tree
++Added new mem rooting code
++Added new init/deinit code
++First write of stdcalss.cpp/h [Code that is commonly reused within the project]
++Added gui\base.cpp/h [null , still need to edit nullDC.cpp to call it]
++Temporary code on nullDC:main() to load bootrom and a descrabled bit to debug
++Trace/Debug/EMUWANR/ERROR macros , many build options to select from now !
