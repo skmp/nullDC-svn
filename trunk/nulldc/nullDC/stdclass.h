@@ -518,7 +518,7 @@ struct Fifo_List
 		else
 		{
 			if (Item.Size<=WriteIndex)
-				Item.Resize(WriteIndex*3/2);
+				Item.Resize(WriteIndex*3/2,false);
 
 			WriteIndex=ReadIndex=0;
 			Item[WriteIndex++]=item;
