@@ -70,6 +70,20 @@ public:
 	~nullDC_GDRom_plugin();
 };
 
+//AICA
+class nullDC_AICA_plugin: public nullDC_plugin
+{
+public :
+	aica_plugin_if aica_info;
+private:
+	dcGetAICAInfoFP* dcGetAICAInfo;
+
+	PluginLoadError PluginExLoad();
+public:
+	nullDC_AICA_plugin();
+	~nullDC_AICA_plugin();
+};
+
 //Struct to hold plugin info
 struct PluginLoadInfo
 {

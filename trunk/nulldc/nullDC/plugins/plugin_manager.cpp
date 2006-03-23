@@ -1,7 +1,7 @@
 #include "..\types.h"
 #include "plugin_manager.h"
 #include "..\dc\pvr\pvr_if.h"
-#include "..\dc\gdrom\gdrom_if.h"
+#include "..\dc\gdrom\gdromv3.h"
 #include "..\gui\base.h"
 
 #include <string.h>
@@ -156,6 +156,34 @@ nullDC_GDRom_plugin::~nullDC_GDRom_plugin()
 
 //End nullDC_GDRom_plugin
 
+//Class nullDC_AICA_plugin
+PluginLoadError nullDC_AICA_plugin::PluginExLoad()
+{
+	dcGetAICAInfo=(dcGetAICAInfoFP*)lib.GetProcAddress("dcGetAICAInfo");
+
+	if (!dcGetAICAInfo)
+		return PluginLoadError::PluginInterfaceExMissing;
+
+	dcGetAICAInfo(&aica_info);
+
+	if (aica_info.InterfaceVersion.full!=AICA_PLUGIN_I_F_VERSION)
+		return PluginLoadError::PluginInterfaceExVersionError;
+	
+	//All ok !
+	Loaded=true;
+	return PluginLoadError::NoError;
+}
+
+
+nullDC_AICA_plugin::nullDC_AICA_plugin():nullDC_plugin()
+{
+	dcGetAICAInfo=0;
+}
+nullDC_AICA_plugin::~nullDC_AICA_plugin()
+{
+}
+//End nullDC_AICA_plugin
+
 //Plguin loading shit
 //temp struct
 struct temp_123__2_23{GrowingList<PluginLoadInfo>* l;u32 typemask;};
@@ -284,7 +312,7 @@ void plugins_Init()
 	}
 
 	gdr_init_params gdr_info;
-	gdr_info.DriveNotifyEvent=NotifyEvent_gdrom;
+	gdr_info.DriveNotifyEvent=GDNotifyEvent;
 	if (libGDR)
 	{
 		libGDR->info.Init(&gdr_info,PluginType::GDRom);

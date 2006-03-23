@@ -57,6 +57,10 @@ typedef void dcThreadInitFP(PluginType type);
 //called when exiting from sh4 thread , from the new thread context (for any thread speciacific de init) :P
 typedef void dcThreadTermFP(PluginType type);
 
+//
+typedef u32 ReadMemFP(u32 addr,u32 size);
+typedef void WriteMemFP(u32 addr,u32 data,u32 size);
+
 struct plugin_info
 {
 	VersionNumber	InterfaceVersion;	//interface version , current 0.0.1
@@ -135,52 +139,6 @@ typedef void dcGetPvrInfoFP(pvr_plugin_if* info);
 #ifdef GDROM_CODE
 //this MUST be big endian before sending it :)
 
-
-typedef struct t_GDROM_TOC
-{
-  u32 entry[99];
-  u32 first, last;
-  u32 lba_leadout;
-} _GDROM_TOC;
-//these are converted to Big endian by gd handling code :)
-struct TocEntryInfo
-{
-	union
-	{
-		struct
-		{
-			u32 ControlInfo:4;
-			u32 Addr:4;
-			u32 FAD:24;
-		};
-		u32 full;
-	};
-};
-
-struct TocStartEndTrackInfo
-{
-	union
-	{
-		struct
-		{
-			u32 ControlInfo:4;
-			u32 Addr: 4;
-			u32 number: 8;
-			u32 res: 16;
-		};
-		u32 full;
-	};
-};
-
-
-
-struct TocInfo
-{
-  TocEntryInfo entry[99];
-  TocStartEndTrackInfo first, last;
-  TocEntryInfo lba_leadout;
-};
-
 enum DiskType
 {
 	CdDA=0x0,
@@ -242,6 +200,24 @@ typedef void dcGetGDRInfoFP(gdr_plugin_if* info);
 
 //For Aica
 //TODO : Design and implement this
+
+#define AICA_PLUGIN_I_F_VERSION NDC_MakeVersion(0,1,0)
+
+struct aica_plugin_if
+{
+	VersionNumber	InterfaceVersion;	//interface version , curr 0.0.1
+};
+
+//passed on AICA init call
+struct aica_init_params
+{
+	ReadMemFP* ReadMem_aica;
+	WriteMemFP* aica_regs;
+};
+
+//Give to the emu pointers for the aica interface
+typedef void dcGetAICAInfoFP(aica_plugin_if* info);
+
 
 //For MapleDeviceMain
 //TODO : Design and implement this
