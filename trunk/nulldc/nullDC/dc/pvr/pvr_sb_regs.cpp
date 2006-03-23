@@ -1,6 +1,6 @@
-#include "../../types.h"
-#include "../mem/sb.h"
-#include "../sh4/dmac.h"
+#include "types.h"
+#include "dc/mem/sb.h"
+#include "dc/sh4/dmac.h"
 #include "pvr_sb_regs.h"
 
 u32 pvr_sb_readreg_Pvr(u32 addr,u32 sz);

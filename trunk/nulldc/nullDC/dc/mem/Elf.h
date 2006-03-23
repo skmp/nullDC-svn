@@ -5,7 +5,7 @@
 */
 
 #pragma once	// msc 
-
+#include "types.h"
 
 typedef u8	Elf32_Byte;
 typedef u16	Elf32_Half;

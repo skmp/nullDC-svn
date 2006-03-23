@@ -1,5 +1,5 @@
 #pragma once
-#include "..\..\types.h"
+#include "types.h"
 
 #define RAM_SIZE (16*1024*1024)
 #define RAM_MASK (RAM_SIZE-1)

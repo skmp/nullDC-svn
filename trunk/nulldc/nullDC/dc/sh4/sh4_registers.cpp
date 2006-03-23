@@ -1,4 +1,4 @@
-#include "..\..\Types.h"
+#include "Types.h"
 #include "sh4_registers.h"
 
 u32 r[16];

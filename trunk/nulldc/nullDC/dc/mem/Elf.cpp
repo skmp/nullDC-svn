@@ -1,7 +1,7 @@
 /*
 **	Elf.cpp
 */
-#include "..\..\types.h"
+#include "types.h"
 
 #include <memory.h>
 #include <string.h>

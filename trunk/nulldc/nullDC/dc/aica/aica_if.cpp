@@ -1,7 +1,7 @@
 #include "types.h"
 #include "aica_if.h"
-#include "dc\mem\sh4_mem.h"
-#include "plugins\plugin_manager.h"
+#include "dc/mem/sh4_mem.h"
+#include "plugins/plugin_manager.h"
 
 //*FIXME* Actualy use aica plugin
 

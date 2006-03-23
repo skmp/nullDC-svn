@@ -1,5 +1,5 @@
 
-#include "..\types.h"
+#include "types.h"
 #include <windows.h>
 #include <assert.h>
 #include <iostream>

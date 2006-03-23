@@ -1,5 +1,5 @@
 
-#include "..\..\plugins\plugin_manager.h"
+#include "plugins/plugin_manager.h"
 #include "pvrLock.h"
  
  

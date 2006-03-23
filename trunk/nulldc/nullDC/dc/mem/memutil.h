@@ -1,5 +1,5 @@
 #pragma once
-#include "../../types.h"
+#include "types.h"
 
 u32 LoadFileToSh4Mem(u32 offset,char*file);
 bool LoadFileToSh4Bootrom(char *szFile);

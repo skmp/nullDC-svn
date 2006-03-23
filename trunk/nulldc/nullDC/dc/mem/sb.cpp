@@ -1,11 +1,11 @@
 //System bus registers
 
-#include "..\..\types.h"
+#include "types.h"
 #include "sb.h"
-#include "..\asic\asic.h"
-#include "..\pvr\pvr_sb_regs.h"
-#include "..\gdrom\gdrom_if.h"
-#include "..\maple\maple_if.h"
+#include "dc/asic/asic.h"
+#include "dc/pvr/pvr_sb_regs.h"
+#include "dc/gdrom/gdrom_if.h"
+#include "dc/maple/maple_if.h"
 
 Array<RegisterStruct> sb_regs(0x540);	
 

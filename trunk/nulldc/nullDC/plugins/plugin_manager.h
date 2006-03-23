@@ -1,7 +1,7 @@
 #pragma once
-#include "..\types.h"
+#include "types.h"
 #include "plugin_types.h"
-#include "..\dc\sh4\sh4_if.h"
+#include "dc/sh4/sh4_if.h"
 
 
 //Plugin loading functions

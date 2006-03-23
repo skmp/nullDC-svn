@@ -1,5 +1,5 @@
-#include "..\..\types.h"
-#include "..\mem\sh4_internal_reg.h"
+#include "types.h"
+#include "dc/mem/sh4_internal_reg.h"
 #include "ubc.h"
 
 //UBC BARA 0xFF200000 0x1F200000 32 Undefined Held Held Held Iclk

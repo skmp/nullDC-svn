@@ -1,6 +1,6 @@
-#include "../../types.h"
+#include "types.h"
 #include "maple_if.h"
-#include "..\mem\sh4_mem.h"
+#include "dc/mem/sh4_mem.h"
 
 u16 kcode=0xFFFF;
 s8 joyx=0,joyy=0;

@@ -1,5 +1,5 @@
 #pragma once
-#include "../../types.h"
+#include "types.h"
 
 //regs
 u32 pvr_sb_readreg_Pvr(u32 addr,u32 sz);

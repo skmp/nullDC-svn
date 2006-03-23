@@ -1,8 +1,8 @@
-#include "..\..\types.h"
+#include "types.h"
 #include "asic.h"
 
-#include "..\sh4\intc.h"
-#include "..\mem\sb.h"
+#include "dc\sh4\intc.h"
+#include "dc\mem\sb.h"
 
 /*
 	asic Interrupt controler

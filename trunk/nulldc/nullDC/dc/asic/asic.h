@@ -1,6 +1,6 @@
 #pragma once
-#include "..\..\types.h"
-#include "..\sh4\intc.h"
+#include "types.h"
+#include "dc\sh4\intc.h"
 
 //returns true if any RL6 Interrupts are pending
 bool asic_RL6Pending();

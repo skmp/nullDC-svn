@@ -17,9 +17,9 @@
 //tooo many warnings :P gota fix em
 
 
-#include "..\types.h"
-#include "..\dc\sh4\sh4_registers.h"
-#include "..\dc\mem\sh4_mem.h"
+#include "types.h"
+#include "dc/sh4/sh4_registers.h"
+#include "dc/mem/sh4_mem.h"
 
 #include <string.h>
 #include <winsock.h>

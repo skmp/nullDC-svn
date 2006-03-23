@@ -1,9 +1,9 @@
-#include "../../types.h"
+#include "types.h"
 #include "maple_if.h"
 
-#include "..\sh4\intc.h"
-#include "..\mem\sb.h"
-#include "..\mem\sh4_mem.h"
+#include "dc/sh4/intc.h"
+#include "dc/mem/sb.h"
+#include "dc/mem/sh4_mem.h"
 
 //typedef bool mInitFP ();
 //typedef void mTermFP ();

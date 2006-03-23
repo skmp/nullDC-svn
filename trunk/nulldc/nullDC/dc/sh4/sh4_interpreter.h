@@ -1,5 +1,5 @@
 #pragma once
-#include "..\..\types.h"
+#include "types.h"
 #include "sh4_if.h"
 #include "intc.h"
 

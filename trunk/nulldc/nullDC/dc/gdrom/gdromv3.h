@@ -1,7 +1,7 @@
 #pragma once
 
-#include "..\..\types.h"
-#include "..\..\plugins\plugin_types.h"
+#include "types.h"
+#include "plugins/plugin_types.h"
 
 void gdrom_reg_Init();
 void gdrom_reg_Term();

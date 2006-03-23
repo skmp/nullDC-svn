@@ -1,6 +1,6 @@
 #pragma once
-#include "../../types.h"
-#include "../../plugins/plugin_manager.h"
+#include "types.h"
+#include "plugins/plugin_manager.h"
 
 
 //pvr plugins

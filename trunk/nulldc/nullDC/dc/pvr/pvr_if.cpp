@@ -1,12 +1,12 @@
-#include "../../types.h"
+#include "types.h"
 #include "pvr_if.h"
 #include "pvrLock.h"
-#include "..\..\gui\base.h"
-#include "..\sh4\intc.h"
+#include "gui/base.h"
+#include "dc/sh4/intc.h"
 
 //TODO : move code later to a plugin
 //TODO : Fix registers arrays , they must be smaller now doe to the way SB registers are handled
-#include "..\..\plugins\plugin_manager.h"
+#include "plugins/plugin_manager.h"
 
 Array<u8> vram;
  

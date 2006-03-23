@@ -1,9 +1,9 @@
-#include "..\..\types.h"
+#include "types.h"
 #include "sh4_mem.h"
 #include "sb.h"
-#include "..\pvr\pvr_if.h"
-#include "..\gdrom\gdrom_if.h"
-#include "..\aica\aica_if.h"
+#include "dc/pvr/pvr_if.h"
+#include "dc/gdrom/gdrom_if.h"
+#include "dc/aica/aica_if.h"
 
 //Area 0 mem map
 //0x00000000- 0x001FFFFF	:MPX	System/Boot ROM

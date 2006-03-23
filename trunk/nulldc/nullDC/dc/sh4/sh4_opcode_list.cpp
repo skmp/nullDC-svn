@@ -1,8 +1,8 @@
-#include "..\..\types.h"
+#include "types.h"
 #include "sh4_cpu.h"
 #include "sh4_fpu.h"
 #include "sh4_opcode_list.h"
-#include "..\..\plugins\plugin_manager.h"
+#include "plugins/plugin_manager.h"
 
 
 

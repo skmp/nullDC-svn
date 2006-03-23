@@ -1,6 +1,6 @@
 #pragma once
 
-#include "..\..\types.h"
+#include "types.h"
 
 bool tmu_CNT0Pending();
 u32 tmu_CNT0Priority();

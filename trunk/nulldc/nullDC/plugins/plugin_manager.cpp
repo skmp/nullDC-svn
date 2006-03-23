@@ -1,8 +1,8 @@
-#include "..\types.h"
+#include "types.h"
 #include "plugin_manager.h"
-#include "..\dc\pvr\pvr_if.h"
-#include "..\dc\gdrom\gdrom_if.h"
-#include "..\gui\base.h"
+#include "dc/pvr/pvr_if.h"
+#include "dc/gdrom/gdrom_if.h"
+#include "gui/base.h"
 
 #include <string.h>
 

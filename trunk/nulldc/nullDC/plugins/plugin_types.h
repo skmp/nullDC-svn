@@ -1,8 +1,8 @@
 #pragma once
-#include "..\types.h"
+#include "types.h"
 
-#include "..\dc\sh4\sh4_if.h"
-#include "..\dc\pvr\pvrLock.h"
+#include "dc/sh4/sh4_if.h"
+#include "dc/pvr/pvrLock.h"
 
 struct VersionNumber
 {

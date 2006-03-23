@@ -1,6 +1,6 @@
-#include "..\..\types.h"
+#include "types.h"
 #include "sh4_cst.h"
-#include "..\mem\Elf.h"
+#include "dc/mem/Elf.h"
 #include "sh4_registers.h"
 #include <string.h>
 

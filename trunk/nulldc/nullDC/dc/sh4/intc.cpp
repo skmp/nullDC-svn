@@ -1,15 +1,15 @@
 //Sh4 interrupt controller
 //needs a rewrite and check varius things all around
 
-#include "..\..\types.h"
+#include "types.h"
 #include "intc.h"
 #include "tmu.h"
 #include "ccn.h"
 #include "sh4_Registers.h"
 #include "sh4_cst.h"
-#include "..\mem\sh4_internal_reg.h"
-#include "..\..\gdb_stub\gdb_stub.h"
-#include "..\asic\asic.h"
+#include "dc/mem/sh4_internal_reg.h"
+#include "gdb_stub/gdb_stub.h"
+#include "dc/asic/asic.h"
 
 /*
 	Now .. here is some text to keep you busy :D

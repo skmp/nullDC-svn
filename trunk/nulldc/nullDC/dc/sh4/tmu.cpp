@@ -1,7 +1,7 @@
-#include "..\..\types.h"
+#include "types.h"
 #include "tmu.h"
 #include "intc.h"
-#include "..\mem\sh4_internal_reg.h"
+#include "dc/mem/sh4_internal_reg.h"
 
 
 #define tmu_underflow	0x0100

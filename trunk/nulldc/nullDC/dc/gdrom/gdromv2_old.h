@@ -1,7 +1,7 @@
 //new implementation of GD rom
 #pragma once
-#include "..\..\types.h"
-#include "..\..\plugins\plugin_types.h"
+#include "types.h"
+#include "plugins/plugin_types.h"
 
 #define GD_IMPEDHI0	0x005F7000	// (R) These are all 
 #define GD_IMPEDHI4	0x005F7004	// (R) RData bus high imped

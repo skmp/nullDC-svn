@@ -1,5 +1,5 @@
-#include "..\..\types.h"
-#include "..\mem\sh4_internal_reg.h"
+#include "types.h"
+#include "dc/mem/sh4_internal_reg.h"
 #include "scif.h"
 
 //SCIF SCSMR2 0xFFE80000 0x1FE80000 16 0x0000 0x0000 Held Held Pclk

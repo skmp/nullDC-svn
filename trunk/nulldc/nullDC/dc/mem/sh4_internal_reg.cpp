@@ -1,16 +1,16 @@
-#include "..\..\types.h"
+#include "types.h"
 #include "sh4_internal_reg.h"
 
-#include "..\sh4\bsc.h"
-#include "..\sh4\ccn.h"
-#include "..\sh4\cpg.h"
-#include "..\sh4\dmac.h"
-#include "..\sh4\intc.h"
-#include "..\sh4\rtc.h"
-#include "..\sh4\sci.h"
-#include "..\sh4\scif.h"
-#include "..\sh4\tmu.h"
-#include "..\sh4\ubc.h"
+#include "dc/sh4/bsc.h"
+#include "dc/sh4/ccn.h"
+#include "dc/sh4/cpg.h"
+#include "dc/sh4/dmac.h"
+#include "dc/sh4/intc.h"
+#include "dc/sh4/rtc.h"
+#include "dc/sh4/sci.h"
+#include "dc/sh4/scif.h"
+#include "dc/sh4/tmu.h"
+#include "dc/sh4/ubc.h"
 
 u32 sq0_dw[8];
 u32 sq1_dw[8];

@@ -1,12 +1,12 @@
-#include "..\..\types.h"
+#include "types.h"
 #include <memory.h>
 
 #include "memutil.h"
 #include "sh4_mem.h"
 #include "sh4_area0.h"
 #include "sh4_internal_reg.h"
-#include "..\pvr\pvr_if.h"
-#include "..\sh4\sh4_registers.h"
+#include "dc/pvr/pvr_if.h"
+#include "dc/sh4/sh4_registers.h"
 
 //main system mem
 Array<u8> mem_b;

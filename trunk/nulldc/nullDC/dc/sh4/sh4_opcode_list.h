@@ -1,5 +1,5 @@
 #pragma once
-#include "..\..\types.h"
+#include "types.h"
 #include "sh4_interpreter.h"
 
 extern OpCallFP* OpPtr[0x10000];

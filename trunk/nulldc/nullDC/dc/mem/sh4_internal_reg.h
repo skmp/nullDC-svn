@@ -1,5 +1,5 @@
 #pragma once
-#include "..\..\types.h"
+#include "types.h"
 
 #define OnChipRAM_SIZE (0x2000)
 #define OnChipRAM_MASK (OnChipRAM_SIZE-1)

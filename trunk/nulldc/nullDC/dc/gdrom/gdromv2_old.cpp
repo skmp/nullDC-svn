@@ -1,16 +1,16 @@
 //new implementation of teh gd rom lle :)
 //Needs to be cleaned up
 
-#include "..\..\types.h"
-#include "..\..\plugins\plugin_manager.h"
+#include "types.h"
+#include "plugins/plugin_manager.h"
 
 #include "gdromv2_old.h"
-#include "..\mem\sh4_mem.h"
-#include "..\mem\memutil.h"
-#include "..\mem\sb.h"
-#include "..\sh4\dmac.h"
-#include "..\sh4\intc.h"
-#include "..\sh4\sh4_registers.h"
+#include "dc/mem/sh4_mem.h"
+#include "dc/mem/memutil.h"
+#include "dc/mem/sb.h"
+#include "dc/sh4/dmac.h"
+#include "dc/sh4/intc.h"
+#include "dc/sh4/sh4_registers.h"
 
 #include <list>
 

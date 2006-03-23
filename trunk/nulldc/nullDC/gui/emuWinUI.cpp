@@ -2,7 +2,7 @@
 **	emuWinUI.cpp
 */
 
-#include "..\types.h"
+#include "types.h"
 
 #include <windows.h>
 #include <windowsx.h>
@@ -12,13 +12,13 @@
 #include "emuWinUI.h"
 #include "commctrl.h"
 
-#include "..\dc\mem\memutil.h"
-#include "..\dc\mem\sh4_mem.h"
-#include "..\plugins\plugin_manager.h"
-#include "..\dc\maple\maple_if.h"
-#include "..\dc\sh4\sh4_if.h"
-#include "..\dc\sh4\sh4_cst.h"
-#include "..\dc\dc.h"
+#include "dc/mem/memutil.h"
+#include "dc/mem/sh4_mem.h"
+#include "plugins/plugin_manager.h"
+#include "dc/maple/maple_if.h"
+#include "dc/sh4/sh4_if.h"
+#include "dc/sh4/sh4_cst.h"
+#include "dc/dc.h"
 
 /////////////////////////////
 #include "DBG\\CtrlMemView.h"

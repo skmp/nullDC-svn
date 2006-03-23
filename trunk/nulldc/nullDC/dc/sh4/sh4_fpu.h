@@ -1,5 +1,5 @@
 #pragma once
-#include "..\..\types.h"
+#include "types.h"
 #include "sh4_interpreter.h"
 
 //fadd <FREG_M>,<FREG_N>

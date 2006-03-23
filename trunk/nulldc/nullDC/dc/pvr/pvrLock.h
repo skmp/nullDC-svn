@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../types.h"
+#include "types.h"
 
 //16 mb for naomi.. so be carefull not to hardcode it anywhere
 #define VRAM_SIZE (0x800000)

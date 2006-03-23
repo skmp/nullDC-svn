@@ -4,8 +4,8 @@
 //initialse Emu
 #include "types.h"
 #include "stdclass.h"
-#include "dc\dc.h"
-#include "gui\base.h"
+#include "dc/dc.h"
+#include "gui/base.h"
 
 #include <windows.h>
 #include "plugins\plugin_manager.h"

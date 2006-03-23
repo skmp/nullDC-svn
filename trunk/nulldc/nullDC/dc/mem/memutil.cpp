@@ -1,4 +1,4 @@
-#include "..\..\types.h"
+#include "types.h"
 #include "memutil.h"
 #include "sh4_mem.h"
 #include "elf.h"
@@ -22,7 +22,6 @@ u32 LoadFileToSh4Mem(u32 offset,char*file)
 			printf("!\tERROR: LoadELF(%s) has terminated unsuccessfully!\n\n",file);
 			return false;
 		}
-		//bElfLoaded=true;
 		LoadSyscallHooks();
 		return 2;
 	} else

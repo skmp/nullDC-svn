@@ -1,6 +1,6 @@
 #pragma once
 #include "types.h"
-#include "memory.h"
+#include <memory.h>
 
 extern u32 Array_T_id_count;
 char* GetNullDCSoruceFileName(char* full);

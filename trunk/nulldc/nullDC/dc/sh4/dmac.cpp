@@ -1,11 +1,11 @@
 //duh .. this will be dmac
-#include "..\..\types.h"
-#include "..\mem\sh4_internal_reg.h"
-#include "..\mem\sb.h"
-#include "..\mem\sh4_mem.h"
+#include "types.h"
+#include "dc/mem/sh4_internal_reg.h"
+#include "dc/mem/sb.h"
+#include "cd/mem/sh4_mem.h"
 #include "dmac.h"
 #include "intc.h"
-#include "..\..\plugins\plugin_manager.h"
+#include "plugins/plugin_manager.h"
 
 #define DMAOR_MASK	0xFFFF8201
 

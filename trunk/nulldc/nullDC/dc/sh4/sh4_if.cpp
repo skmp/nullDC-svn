@@ -1,4 +1,4 @@
-#include "..\..\types.h"
+#include "types.h"
 #include "sh4_if.h"
 #include "sh4_interpreter.h"
 

@@ -1,19 +1,19 @@
 
-#include "..\..\types.h"
+#include "types.h"
 #include <windows.h>
 
 #include "sh4_interpreter.h"
 #include "sh4_opcode_list.h"
 #include "sh4_registers.h"
 #include "sh4_if.h"
-#include "..\pvr\pvr_if.h"
-#include "..\aica\aica_if.h"
-#include "..\gdrom\gdrom_if.h"
+#include "dc/pvr/pvr_if.h"
+#include "dc/aica/aica_if.h"
+#include "dc/gdrom/gdrom_if.h"
 #include "intc.h"
 #include "tmu.h"
 #include "sh4_cst.h"
-#include "..\mem\sh4_mem.h"
-#include "..\..\gdb_stub\gdb_stub.h"
+#include "dc/mem/sh4_mem.h"
+#include "gdb_stub/gdb_stub.h"
 
 #include <time.h>
 #include <float.h>

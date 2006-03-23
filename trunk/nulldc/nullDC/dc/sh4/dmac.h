@@ -1,6 +1,6 @@
 #pragma once
 
-#include "..\..\types.h"
+#include "types.h"
 
 extern u32 DMAC_SAR0;
 extern u32 DMAC_DAR0;

@@ -150,7 +150,7 @@
 
 
 //gdb sub header
-#include "..\types.h"
+#include "types.h"
 
 #ifdef No_gdb_stub
 

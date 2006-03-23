@@ -1,4 +1,4 @@
-#include "..\..\types.h"
+#include "types.h"
 
 u16 g_aValues0x11[] = 
 {

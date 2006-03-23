@@ -163,8 +163,8 @@ sh4op(i1100_0011_iiii_iiii)
 }
 
 
-
-#include "../../gui/emuWinUI.h"
+//TODO : Fix this
+#include "gui/emuWinUI.h"
 sh4op(sh4_bpt_op)
 {
 	sh4_cpu->Stop();

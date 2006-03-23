@@ -1,5 +1,5 @@
 #pragma once
-#include "..\..\types.h"
+#include "types.h"
 
 void AddCall(u32 pc_callstart,u32 pc_callretadr,u32 branchaddr,u32 calltype);
 void RemoveCall(u32 retaddress,u32 rettype);

@@ -1,8 +1,8 @@
 //gah , ccn emulation
 //CCN: Cache and TLB controller
 
-#include "..\..\types.h"
-#include "..\mem\sh4_internal_reg.h"
+#include "types.h"
+#include "dc/mem/sh4_internal_reg.h"
 #include "ccn.h"
 
 

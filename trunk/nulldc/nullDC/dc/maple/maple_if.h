@@ -1,5 +1,5 @@
 #pragma once
-#include "../../types.h"
+#include "types.h"
 
 
 #define key_CONT_C  (1 << 0);

@@ -1,8 +1,8 @@
-#include "..\types.h"
+#include "types.h"
 #include "base.h"
-#include "..\dc\maple\maple_if.h"
-#include "..\dc\dc.h"
-#include "..\plugins\plugin_manager.h"
+#include "dc/maple/maple_if.h"
+#include "dc/dc.h"
+#include "plugins/plugin_manager.h"
 
 #include <windows.h>
 #include "emuWinUI.h"

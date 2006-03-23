@@ -1,5 +1,5 @@
 #include "rec_v0_recompiler.h"
-#include "..\..\..\emmiter\emmiter.h"
+#include "emmiter\emmiter.h"
 
 //simple recompiler
 //to test up some register allocation code , ect
@@ -377,4 +377,4 @@ void rec_UpdateSR()
 {
 }
 
-#include "..\sh4_cpu_movs.h"
+#include "dc\sh4\sh4_cpu_movs.h"

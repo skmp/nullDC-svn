@@ -1,4 +1,4 @@
-#include "..\..\types.h"
+#include "types.h"
 #include <windows.h>
 #include <math.h>
 #include <stdio.h>
@@ -6,7 +6,7 @@
 #include "../resource.h"
 
 //#include "..\\Icarus.h"
-#include "../../dc/mem/sh4_mem.h"
+#include "dc/mem/sh4_mem.h"
 
 //#include "Debugger_MemChecksdlg.h"
 //#include "Debugger_SymbolMap.h"

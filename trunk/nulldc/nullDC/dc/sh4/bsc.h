@@ -1,6 +1,6 @@
 #pragma once
 
-#include "..\..\types.h"
+#include "types.h"
 
 //Init/Res/Term
 void bsc_Init();

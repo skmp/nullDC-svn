@@ -1,5 +1,5 @@
 #pragma once
-#include "..\..\types.h"
+#include "types.h"
 
 #define AICA_MEM_SIZE (2*1024*1024)
 #define AICA_MEM_MASK (AICA_MEM_SIZE-1)

@@ -1,13 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "../../types.h"
+#include "types.h"
 
-#include "../../dc/mem/memutil.h"
-#include "../../dc/mem/sh4_mem.h"
-#include "../../plugins/plugin_manager.h"
-#include "../../dc/maple/maple_if.h"
-#include "../../dc/sh4/sh4_cst.h"
-#include "../../dc/mem/Elf.h"
+#include "dc/mem/memutil.h"
+#include "dc/mem/sh4_mem.h"
+#include "plugins/plugin_manager.h"
+#include "dc/maple/maple_if.h"
+#include "dc/sh4/sh4_cst.h"
+#include "dc/mem/Elf.h"
 
 #include "DebugInterface.h"
 #include "SH4DbgInterface.h"
