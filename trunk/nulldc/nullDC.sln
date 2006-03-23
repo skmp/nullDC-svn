@@ -9,6 +9,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nullGDR", "plugins\nullGDR\
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "drkPvr", "plugins\drkPvr\drkPvr.vcproj", "{0520BA33-1A98-4DDE-8B36-99F25EDC5BD6}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nullAICA", "plugins\nullAICA\nullAICA\nullAICA.vcproj", "{8004518C-2321-4CFC-BA6C-873736195691}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -145,6 +147,30 @@ Global
 		{0520BA33-1A98-4DDE-8B36-99F25EDC5BD6}.Release-Trace|Win32.Build.0 = Release|Win32
 		{0520BA33-1A98-4DDE-8B36-99F25EDC5BD6}.Release-Trace|x64.ActiveCfg = Release|Win32
 		{0520BA33-1A98-4DDE-8B36-99F25EDC5BD6}.Release-Trace|x86.ActiveCfg = Release|Win32
+		{8004518C-2321-4CFC-BA6C-873736195691}.Debug|Win32.ActiveCfg = Debug|Win32
+		{8004518C-2321-4CFC-BA6C-873736195691}.Debug|Win32.Build.0 = Debug|Win32
+		{8004518C-2321-4CFC-BA6C-873736195691}.Debug|x64.ActiveCfg = Debug|Win32
+		{8004518C-2321-4CFC-BA6C-873736195691}.Debug|x86.ActiveCfg = Debug|Win32
+		{8004518C-2321-4CFC-BA6C-873736195691}.Debug-NoTrace|Win32.ActiveCfg = Debug|Win32
+		{8004518C-2321-4CFC-BA6C-873736195691}.Debug-NoTrace|Win32.Build.0 = Debug|Win32
+		{8004518C-2321-4CFC-BA6C-873736195691}.Debug-NoTrace|x64.ActiveCfg = Debug|Win32
+		{8004518C-2321-4CFC-BA6C-873736195691}.Debug-NoTrace|x86.ActiveCfg = Debug|Win32
+		{8004518C-2321-4CFC-BA6C-873736195691}.Debug-Trace|Win32.ActiveCfg = Debug|Win32
+		{8004518C-2321-4CFC-BA6C-873736195691}.Debug-Trace|Win32.Build.0 = Debug|Win32
+		{8004518C-2321-4CFC-BA6C-873736195691}.Debug-Trace|x64.ActiveCfg = Debug|Win32
+		{8004518C-2321-4CFC-BA6C-873736195691}.Debug-Trace|x86.ActiveCfg = Debug|Win32
+		{8004518C-2321-4CFC-BA6C-873736195691}.Release|Win32.ActiveCfg = Release|Win32
+		{8004518C-2321-4CFC-BA6C-873736195691}.Release|Win32.Build.0 = Release|Win32
+		{8004518C-2321-4CFC-BA6C-873736195691}.Release|x64.ActiveCfg = Release|Win32
+		{8004518C-2321-4CFC-BA6C-873736195691}.Release|x86.ActiveCfg = Release|Win32
+		{8004518C-2321-4CFC-BA6C-873736195691}.Release-NoTrace|Win32.ActiveCfg = Release|Win32
+		{8004518C-2321-4CFC-BA6C-873736195691}.Release-NoTrace|Win32.Build.0 = Release|Win32
+		{8004518C-2321-4CFC-BA6C-873736195691}.Release-NoTrace|x64.ActiveCfg = Release|Win32
+		{8004518C-2321-4CFC-BA6C-873736195691}.Release-NoTrace|x86.ActiveCfg = Release|Win32
+		{8004518C-2321-4CFC-BA6C-873736195691}.Release-Trace|Win32.ActiveCfg = Release|Win32
+		{8004518C-2321-4CFC-BA6C-873736195691}.Release-Trace|Win32.Build.0 = Release|Win32
+		{8004518C-2321-4CFC-BA6C-873736195691}.Release-Trace|x64.ActiveCfg = Release|Win32
+		{8004518C-2321-4CFC-BA6C-873736195691}.Release-Trace|x86.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

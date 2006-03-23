@@ -21,15 +21,19 @@ int RunDC(int argc, char* argv[])
 	//look for plugins and load the first pvr plugin found
 	GrowingList<PluginLoadInfo>* pli_pvr= EnumeratePlugins(PluginType::PowerVR);
 	GrowingList<PluginLoadInfo>* pli_gdr= EnumeratePlugins(PluginType::GDRom);
+	GrowingList<PluginLoadInfo>* pli_aica= EnumeratePlugins(PluginType::AICA);
 	nullDC_PowerVR_plugin pvrplg;
 	nullDC_GDRom_plugin gdrplg;
+	nullDC_AICA_plugin aicaplg;
 
 	pvrplg.LoadnullDCPlugin((*pli_pvr)[1].dll);
 	gdrplg.LoadnullDCPlugin((*pli_gdr)[0].dll);
+	aicaplg.LoadnullDCPlugin((*pli_aica)[0].dll);
 	
 
 	SetPlugin(&pvrplg,PluginType::PowerVR);
 	SetPlugin(&gdrplg,PluginType::GDRom);
+	SetPlugin(&aicaplg,PluginType::AICA);
 
 
 
@@ -98,7 +102,7 @@ void EnumPlugins()
 {
 	GrowingList<PluginLoadInfo>* pvr= EnumeratePlugins(PluginType::PowerVR);
 	GrowingList<PluginLoadInfo>* gdrom= EnumeratePlugins(PluginType::GDRom);
-	GrowingList<PluginLoadInfo>* aica= EnumeratePlugins(PluginType::Aica);
+	GrowingList<PluginLoadInfo>* aica= EnumeratePlugins(PluginType::AICA);
 	GrowingList<PluginLoadInfo>* mdm= EnumeratePlugins(PluginType::MapleDeviceMain);
 	GrowingList<PluginLoadInfo>* mds= EnumeratePlugins(PluginType::MapleDeviceSub);
 

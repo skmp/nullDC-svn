@@ -35,11 +35,36 @@ HINSTANCE g_hInst;
 
 TCHAR g_szFileName[MAX_PATH];
 
-BOOL CALLBACK DlgProc( HWND, UINT, WPARAM, LPARAM );
-BOOL CALLBACK ArmDlgProc( HWND, UINT, WPARAM, LPARAM );
-BOOL CALLBACK DlgProcModal( HWND, UINT, WPARAM, LPARAM );
+INT_PTR CALLBACK DlgProc( HWND, UINT, WPARAM, LPARAM );
+INT_PTR CALLBACK ArmDlgProc( HWND, UINT, WPARAM, LPARAM );
+INT_PTR CALLBACK DlgProcModal( HWND, UINT, WPARAM, LPARAM );
 LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
-BOOL CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
+INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
+
+#pragma warning(disable: 4311)
+#pragma warning(disable: 4312)
+
+void* GetWindowPtr(HWND hWnd,int nIndex)
+{
+#if X64
+	return (void*)GetWindowLongPtr(hWnd,nIndex);
+#else
+	return (void*)GetWindowLongPtr(hWnd,nIndex);
+#endif
+}
+
+void SetWindowPtr( HWND hWnd,int nIndex,void* dwNewLong)
+{
+#if X64
+	SetWindowLongPtr(hWnd,nIndex,(LONG_PTR)dwNewLong);
+#else
+	SetWindowLongPtr(hWnd,nIndex,(LONG)dwNewLong);
+#endif
+}
+
+#pragma warning(default: 4311)
+#pragma warning(default: 4312)
+
 
  int power(int base, int n)
  {
@@ -56,7 +81,8 @@ BOOL CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam 
 
  int htoi(char s[]) {
  
-	int len, value = 1, digit = 0,  total = 0;
+	size_t len;
+	int  value = 1, digit = 0,  total = 0;
     int c, x, y, i = 0;
     char hexchars[] = "abcdef"; /* Helper string to find hex digit values */
  
@@ -73,7 +99,7 @@ BOOL CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam 
  
     len = strlen(s);
  
-    for (x = i; x < len; x++)
+    for (x = i; x < (int)len; x++)
     {
        c = tolower(s[x]);
        if (c >= '0' && c <= '9')
@@ -92,7 +118,7 @@ BOOL CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam 
        } else {
           return 0; /* Return 0 if we get something unexpected */
        }
-       value = power(16, len-x-1);
+       value = power(16, (int)(len-x-1));
        total += value * digit;
     }
     return total;
@@ -195,7 +221,6 @@ __inline static char* _ext( char* szFN, u32 size ) {
 
 LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
-	u8 CheckStr[8]={0x7,0xd0,0x8,0xd1,0x17,0x10,0x5,0xdf};/* String for checking if a binary file has an inbuilt ip.bin */
 	static RECT rc;
 	static TCHAR szFile[128];
 	static OPENFILENAME ofn;
@@ -449,7 +474,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 }
 
 
-BOOL CALLBACK DlgProcModal( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
+INT_PTR CALLBACK DlgProcModal( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	switch( uMsg )
 	{
@@ -480,7 +505,7 @@ BOOL CALLBACK DlgProcModal( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 
 
 
-BOOL CALLBACK ChildDlgProc( HWND hChild, UINT uMsg, WPARAM wParam, LPARAM lParan )
+INT_PTR CALLBACK ChildDlgProc( HWND hChild, UINT uMsg, WPARAM wParam, LPARAM lParan )
 {
 	switch( uMsg ) {
 	case WM_INITDIALOG:	return true;
@@ -528,7 +553,7 @@ DLGTEMPLATE * WINAPI DoLockDlgRes(LPCSTR lpszResName)
 
 void WINAPI OnSizeTab(HWND hDlg) 
 {
-    DLGHDR *pHdr = (DLGHDR *) GetWindowLong(hDlg, GWL_USERDATA); 
+    DLGHDR *pHdr = (DLGHDR *) GetWindowPtr(hDlg, GWLP_USERDATA); 
 	////////////////////////////////////////////////////////////
 
 	RECT rcTab, rcDlg;
@@ -550,7 +575,7 @@ void WINAPI OnSizeTab(HWND hDlg)
  
 VOID WINAPI OnSelChanged(HWND hDlg) 
 { 
-    DLGHDR *pHdr = (DLGHDR *) GetWindowLong( hDlg, GWL_USERDATA); 
+    DLGHDR *pHdr = (DLGHDR *) GetWindowPtr( hDlg, GWLP_USERDATA); 
 
     int iSel = TabCtrl_GetCurSel(pHdr->hTab); 
  
@@ -572,7 +597,7 @@ VOID WINAPI OnSelChanged(HWND hDlg)
 
 void WINAPI OnDestroyTab(HWND hDlg)
 {
-    DLGHDR *pHdr = (DLGHDR *) GetWindowLong( hDlg, GWL_USERDATA); 
+    DLGHDR *pHdr = (DLGHDR *) GetWindowPtr( hDlg, GWLP_USERDATA); 
 
 	if( IsWindow(pHdr->hDisplay) )
 		DestroyWindow( pHdr->hDisplay );
@@ -585,7 +610,7 @@ void WINAPI OnInitTab(HWND hDlg)
 	TCITEM tci; 
 	DLGHDR *pHdr = (DLGHDR *) LocalAlloc(LPTR, sizeof(DLGHDR)); 
 
-	SetWindowLong(hDlg, GWL_USERDATA, (LONG) pHdr);
+	SetWindowPtr(hDlg, GWLP_USERDATA, pHdr);
 
 	pHdr->hTab = GetDlgItem(hDlg, IDC_VIEWSEL);
 	
@@ -610,7 +635,7 @@ void WINAPI OnInitTab(HWND hDlg)
 
 ////////////////////////////// END TAB CTRL	///////////////////////////////////////////////
 
-BOOL CALLBACK DlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
+INT_PTR CALLBACK DlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	static int iSel=0;
 	static char szAddr[32];
@@ -881,7 +906,7 @@ inline static void RefreshArmDbg(void)
 }
 
 
-BOOL CALLBACK ArmDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
+INT_PTR CALLBACK ArmDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	switch( uMsg )
 	{
@@ -896,7 +921,7 @@ BOOL CALLBACK ArmDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 
 void AddItemsToCB(GrowingList<PluginLoadInfo>* list,HWND hw)
 {
-		for (int i=0;i<list->itemcount;i++)
+		for (u32 i=0;i<list->itemcount;i++)
 		{
 			char temp[512];
 			char dll[512];
@@ -916,7 +941,7 @@ void AddItemsToCB(GrowingList<PluginLoadInfo>* list,HWND hw)
 			//ComboBox_AddString(to,temp);
 		}
 }
-BOOL CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
+INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	switch( uMsg )
 	{
@@ -924,12 +949,13 @@ BOOL CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam 
 		{
 		GrowingList<PluginLoadInfo>* pvr= EnumeratePlugins(PluginType::PowerVR);	
 		GrowingList<PluginLoadInfo>* gdrom= EnumeratePlugins(PluginType::GDRom);
+		GrowingList<PluginLoadInfo>* aica= EnumeratePlugins(PluginType::AICA);
 
 		AddItemsToCB(pvr,GetDlgItem(hWnd,IDC_C_PVR));
 		AddItemsToCB(gdrom,GetDlgItem(hWnd,IDC_C_GDR));
+		AddItemsToCB(aica,GetDlgItem(hWnd,IDC_C_AICA));
 		
-		//gdrom->items[0].item
-		delete gdrom,pvr;
+		delete gdrom,pvr,aica;
 		}
 		return true;
 		

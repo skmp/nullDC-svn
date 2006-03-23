@@ -1,6 +1,9 @@
-#include "..\..\types.h"
+#include "types.h"
 #include "aica_if.h"
-#include "..\mem\sh4_mem.h"
+#include "dc\mem\sh4_mem.h"
+#include "plugins\plugin_manager.h"
+
+//*FIXME* Actualy use aica plugin
 
 //arm 7 is emulated within the aica implementation
 //for rtc

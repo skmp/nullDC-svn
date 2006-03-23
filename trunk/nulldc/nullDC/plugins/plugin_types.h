@@ -32,7 +32,7 @@ enum PluginType
 {
 	PowerVR=1,
 	GDRom=2,
-	Aica=4,
+	AICA=4,
 	MapleDeviceMain=8,	//controler ,mouse ect
 	MapleDeviceSub=16	//vms ect
 };
@@ -203,16 +203,22 @@ typedef void dcGetGDRInfoFP(gdr_plugin_if* info);
 
 #define AICA_PLUGIN_I_F_VERSION NDC_MakeVersion(0,1,0)
 
+//Ram/Regs are managed by plugin , exept RTC regs (managed by main emu)
 struct aica_plugin_if
 {
 	VersionNumber	InterfaceVersion;	//interface version , curr 0.0.1
+
+	ReadMemFP* ReadMem_aica_reg;
+	WriteMemFP* WriteMem_aica_reg;
+
+	ReadMemFP* ReadMem_aica_ram;
+	WriteMemFP* WriteMem_aica_ram;
 };
 
 //passed on AICA init call
 struct aica_init_params
 {
-	ReadMemFP* ReadMem_aica;
-	WriteMemFP* aica_regs;
+
 };
 
 //Give to the emu pointers for the aica interface

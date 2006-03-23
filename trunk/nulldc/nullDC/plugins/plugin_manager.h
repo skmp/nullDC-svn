@@ -24,10 +24,10 @@ class nullDC_plugin
 {
 public:
 	plugin_info info;
+	bool Loaded;
 protected:
 	cDllHandler lib;
 	dcGetPluginInfoFP* dcGetPluginInfo;
-	bool Loaded;
 	//must be implemented for each inherited class
 	virtual PluginLoadError PluginExLoad();
 

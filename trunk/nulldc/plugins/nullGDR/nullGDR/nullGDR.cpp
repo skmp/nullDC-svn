@@ -82,7 +82,7 @@ void dcInitGDR(void* param,PluginType type)
 {
 	gdr_init_params* ip=(gdr_init_params*)param;
 	DriveNotifyEvent=ip->DriveNotifyEvent;//(DriveEvent::DiskChange,0)
-	SetDrive(gd_drivers::cdi);
+	SetDrive(gd_drivers::Iso);
 }
 
 //called when plugin is unloaded by emu , olny if dcInitGDR is called (eg , not called to enumerate plugins)

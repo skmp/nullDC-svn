@@ -127,7 +127,7 @@ enum PluginType
 {
 	PowerVR=1,
 	GDRom=2,
-	Aica=4,
+	AICA=4,
 	MapleDeviceMain=8,	//controler ,mouse ect
 	MapleDeviceSub=16	//vms ect
 };
@@ -151,6 +151,10 @@ typedef void dcThreadInitFP(PluginType type);
 
 //called when exiting from sh4 thread , from the new thread context (for any thread speciacific de init) :P
 typedef void dcThreadTermFP(PluginType type);
+
+//
+typedef u32 ReadMemFP(u32 addr,u32 size);
+typedef void WriteMemFP(u32 addr,u32 data,u32 size);
 
 struct plugin_info
 {
@@ -299,8 +303,32 @@ struct gdr_init_params
 typedef void dcGetGDRInfoFP(gdr_plugin_if* info);
 #endif
 
+
 //For Aica
 //TODO : Design and implement this
+
+#define AICA_PLUGIN_I_F_VERSION NDC_MakeVersion(0,1,0)
+
+//Ram/Regs are managed by plugin , exept RTC regs (managed by main emu)
+struct aica_plugin_if
+{
+	VersionNumber	InterfaceVersion;	//interface version , curr 0.0.1
+
+	ReadMemFP* ReadMem_aica_reg;
+	WriteMemFP* WriteMem_aica_reg;
+
+	ReadMemFP* ReadMem_aica_ram;
+	WriteMemFP* WriteMem_aica_ram;
+};
+
+//passed on AICA init call
+struct aica_init_params
+{
+
+};
+
+//Give to the emu pointers for the aica interface
+typedef void dcGetAICAInfoFP(aica_plugin_if* info);
 
 //For MapleDeviceMain
 //TODO : Design and implement this

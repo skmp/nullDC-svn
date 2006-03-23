@@ -115,6 +115,8 @@
 #define IDC_C_PVR                       1097
 #define IDC_COMBO2                      1098
 #define IDC_C_GDR                       1098
+#define IDC_C_GDR3                      1100
+#define IDC_C_AICA                      1100
 #define ID_FILE_EXIT                    40001
 #define ID_SYSTEM_START                 40003
 #define ID_SYSTEM_STOP                  40004

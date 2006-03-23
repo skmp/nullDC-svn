@@ -1,16 +1,21 @@
 #include "..\types.h"
 #include "plugin_manager.h"
 #include "..\dc\pvr\pvr_if.h"
-#include "..\dc\gdrom\gdromv3.h"
+#include "..\dc\gdrom\gdrom_if.h"
 #include "..\gui\base.h"
 
 #include <string.h>
 
-//plugins!
+//Change log [kept since 23/3/2006]
+//Added support for AICA plugin Load/Init/Reset/Termination
+
+
+//o.O plugins! :D
 
 //Currently used plugins
 nullDC_PowerVR_plugin* libPvr;
 nullDC_GDRom_plugin*   libGDR;
+nullDC_AICA_plugin*    libAICA;
 sh4_if*				   sh4_cpu;
 //more to come
 
@@ -249,11 +254,17 @@ GrowingList<PluginLoadInfo>* EnumeratePlugins(u32 Typemask)
 
 bool SetPlugin(nullDC_plugin* plugin,PluginType type)
 {
+	if (plugin->Loaded==false)
+	{
+		EMUERROR("Trying to load plugin that is not initialised");
+		return false;
+	}
+
 	switch(type)
 	{
 
-		case PluginType::Aica:
-			return false;
+		case PluginType::AICA:
+			libAICA=(nullDC_AICA_plugin*)plugin;
 			break;
 
 		case PluginType::GDRom:
@@ -308,30 +319,51 @@ void plugins_Init()
 	}
 	else
 	{
-		EMUERROR("Error , pvr plugin is not loaded");
+		EMUERROR("Error , PowerVR plugin is not loaded");
 	}
 
 	gdr_init_params gdr_info;
-	gdr_info.DriveNotifyEvent=GDNotifyEvent;
+	gdr_info.DriveNotifyEvent=NotifyEvent_gdrom;
 	if (libGDR)
 	{
 		libGDR->info.Init(&gdr_info,PluginType::GDRom);
 	}
 	else
 	{
-		EMUERROR("Error , pvr plugin is not loaded");
+		EMUERROR("Error , GDrom plugin is not loaded");
+	}
+
+	aica_init_params aica_info;
+	//nothing to set kthx
+	if (libAICA)
+	{
+		libAICA->info.Init(&aica_info,PluginType::AICA);
+	}
+	else
+	{
+		EMUERROR("Error , AICA/arm7 plugin is not loaded");
 	}
 }
 
 void plugins_Term()
 {
+	
+	if (libAICA)
+	{
+		libAICA->info.Term(PluginType::AICA);
+	}
+	else
+	{
+		EMUERROR("Error , AICA/arm7 plugin is not loaded");
+	}
+
 	if (libGDR)
 	{
 		libGDR->info.Term(PluginType::GDRom);
 	}
 	else
 	{
-		EMUERROR("Error , gdr plugin is not loaded");
+		EMUERROR("Error , GDrom plugin is not loaded");
 	}
 
 	if (libPvr)
@@ -340,7 +372,7 @@ void plugins_Term()
 	}
 	else
 	{
-		EMUERROR("Error , pvr plugin is not loaded");
+		EMUERROR("Error , PowerVR plugin is not loaded");
 	}
 
 	if (PluginList_cached)
@@ -357,7 +389,7 @@ void plugins_Reset(bool Manual)
 	}
 	else
 	{
-		EMUERROR("Error , pvr plugin is not loaded");
+		EMUERROR("Error , PowerVR plugin is not loaded");
 	}
 
 	if (libGDR)
@@ -366,7 +398,16 @@ void plugins_Reset(bool Manual)
 	}
 	else
 	{
-		EMUERROR("Error , gdr plugin is not loaded");
+		EMUERROR("Error , GDrom plugin is not loaded");
+	}
+
+	if (libAICA)
+	{
+		libAICA->info.Reset(Manual,PluginType::AICA);
+	}
+	else
+	{
+		EMUERROR("Error , AICA/arm7 plugin is not loaded");
 	}
 }
 
@@ -389,10 +430,28 @@ void plugins_ThreadInit()
 	{
 		EMUERROR("Error , gdr plugin is not loaded");
 	}
+
+	if (libAICA)
+	{
+		libAICA->info.ThreadInit(PluginType::AICA);
+	}
+	else
+	{
+		EMUERROR("Error , AICA/arm7 plugin is not loaded");
+	}
 }
 
 void plugins_ThreadTerm()
 {
+	if (libAICA)
+	{
+		libAICA->info.ThreadTerm(PluginType::AICA);
+	}
+	else
+	{
+		EMUERROR("Error , AICA/arm7 plugin is not loaded");
+	}
+
 	if (libGDR)
 	{
 		libGDR->info.ThreadTerm(PluginType::GDRom);
