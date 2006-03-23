@@ -859,14 +859,42 @@
 				Name="gdrom"
 				>
 				<File
+					RelativePath=".\dc\gdrom\gdrom_if.h"
+					>
+				</File>
+				<File
 					RelativePath=".\dc\gdrom\gdrom_response.cpp"
 					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release-NoTrace|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
 				</File>
 				<File
 					RelativePath=".\dc\gdrom\gdromv2_old.cpp"
 					>
 					<FileConfiguration
 						Name="Debug|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release-NoTrace|Win32"
 						ExcludedFromBuild="true"
 						>
 						<Tool
@@ -889,9 +917,40 @@
 				<File
 					RelativePath=".\dc\gdrom\gdromv3.cpp"
 					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release-NoTrace|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
 				</File>
 				<File
 					RelativePath=".\dc\gdrom\gdromv3.h"
+					>
+				</File>
+				<File
+					RelativePath=".\dc\gdrom\zGDROM.cpp"
+					>
+					<FileConfiguration
+						Name="Release-NoTrace|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath=".\dc\gdrom\zGDROM.h"
 					>
 				</File>
 			</Filter>

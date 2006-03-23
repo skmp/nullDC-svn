@@ -8,7 +8,7 @@
 #include "sh4_if.h"
 #include "..\pvr\pvr_if.h"
 #include "..\aica\aica_if.h"
-#include "..\gdrom\gdromv3.h"
+#include "..\gdrom\gdrom_if.h"
 #include "intc.h"
 #include "tmu.h"
 #include "sh4_cst.h"
@@ -351,7 +351,7 @@ bool ExecuteDelayslot()
 
 
 //General update
-u32 gdCnt=0;
+//u32 gdCnt=0;
 int UpdateSystem(u32 Cycles)
 {
 	//TODO : Add Update System implementation
@@ -374,12 +374,13 @@ int UpdateSystem(u32 Cycles)
 	//check Interrupts
 	return Check_Ints();*/
 
-	gdCnt+=Cycles;
+/*	gdCnt+=Cycles;
 	if (gdCnt>0x1000)
 	{
 		gdCnt-=0x1000;
 		UpdateGDRom();
-	}
+	}*/
+
 	UpdateAica(cycles);
 	UpdateTMU(Cycles);
 	UpdatePvr(Cycles);

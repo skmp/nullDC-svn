@@ -1,7 +1,7 @@
 #include "..\types.h"
 #include "plugin_manager.h"
 #include "..\dc\pvr\pvr_if.h"
-#include "..\dc\gdrom\gdromv3.h"
+#include "..\dc\gdrom\gdrom_if.h"
 #include "..\gui\base.h"
 
 #include <string.h>
@@ -284,7 +284,7 @@ void plugins_Init()
 	}
 
 	gdr_init_params gdr_info;
-	gdr_info.DriveNotifyEvent=GDNotifyEvent;
+	gdr_info.DriveNotifyEvent=NotifyEvent_gdrom;
 	if (libGDR)
 	{
 		libGDR->info.Init(&gdr_info,PluginType::GDRom);

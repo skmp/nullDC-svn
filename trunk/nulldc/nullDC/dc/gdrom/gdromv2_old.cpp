@@ -4,7 +4,7 @@
 #include "..\..\types.h"
 #include "..\..\plugins\plugin_manager.h"
 
-#include "gdromv2.h"
+#include "gdromv2_old.h"
 #include "..\mem\sh4_mem.h"
 #include "..\mem\memutil.h"
 #include "..\mem\sb.h"
@@ -17,7 +17,7 @@
 //function declarations start
 bool InitGDROM(void);
 void TermGDROM(void);
-void GDNotifyEvent(DriveEvent info,void* param);
+void NotifyEvent_gdrom(DriveEvent info,void* param);
 u32 ReadMem_gdrom(u32 Addr, u32 sz);
 void WriteMem_gdrom(u32 Addr, u32 data, u32 sz);
 void UpdateGDRom();
@@ -116,7 +116,7 @@ bool InitGDROM(void)
 	ByteCount.full=0;
 
 	//init responces
-	gd_InitData();
+	//gd_InitData();
 
 	return true;
 }
@@ -131,7 +131,7 @@ void TermGDROM(void)
 
 //
 //Drive handler callback
-void GDNotifyEvent(DriveEvent info,void* param)
+void NotifyEvent_gdrom(DriveEvent info,void* param)
 {
 	switch(info)
 	{

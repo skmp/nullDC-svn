@@ -3,8 +3,8 @@
 #include "..\..\types.h"
 #include "sb.h"
 #include "..\asic\asic.h"
-#include "..\gdrom\gdromv3.h"
 #include "..\pvr\pvr_sb_regs.h"
+#include "..\gdrom\gdrom_if.h"
 #include "..\maple\maple_if.h"
 
 Array<RegisterStruct> sb_regs(0x540);	

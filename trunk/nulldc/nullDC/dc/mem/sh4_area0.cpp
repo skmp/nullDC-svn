@@ -1,8 +1,8 @@
 #include "..\..\types.h"
 #include "sh4_mem.h"
-#include "..\pvr\pvr_if.h"
 #include "sb.h"
-#include "..\gdrom\gdromv3.h"
+#include "..\pvr\pvr_if.h"
+#include "..\gdrom\gdrom_if.h"
 #include "..\aica\aica_if.h"
 
 //Area 0 mem map

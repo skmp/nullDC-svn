@@ -71,6 +71,5 @@ enum InterruptID
 
 
 
-
-
+void RaiseInterrupt(InterruptID intr);
 typedef void RaiseInterruptFP(InterruptID intr);

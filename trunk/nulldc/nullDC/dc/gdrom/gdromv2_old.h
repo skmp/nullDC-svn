@@ -275,7 +275,7 @@ void WriteMem_gdrom(u32 Addr, u32 data, u32 sz);
 void UpdateGDRom();
 bool ProcessSPI(SpiCommandInfo* cmd);
 void gd_DoDMA();
-void gd_InitData();
+//void gd_InitData();
 void gdrom_reg_Init();
 void gdrom_reg_Term();
 void gdrom_reg_Reset(bool Manual);
