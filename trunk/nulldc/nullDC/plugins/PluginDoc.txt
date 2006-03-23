@@ -1,0 +1,23 @@
+Changelog (since 23/3/2006)
+Updated 23/3/2006
+-Started writing this doc. It's supposed to keep a documentation on how plugins should work 
+(so i can find bugs on the loader-manager code ..)
+
+
+The plugins have two type of interfaces , the common and the plugin type speciacific.
+
+Posibble plugin types :
+PowerVR
+GDrom
+AICA(contains and arm7)
+
+A Plugin has to implement the common interface , and has to implement one or more plugin type interfaces.
+When a plugin implements many plugin type interfaces , the common init/reset/term is called once for 
+each interface.A parameter is passed in order to easyly find for witch plugin interface the init/reset/term
+is for.
+
+
+Common plugin Interface :
+Function : "dcGetPluginInfo" has to be exported exported from the dll
+For more information about the params look at plugin_types.h(or plugin_header.h)
+
