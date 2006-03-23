@@ -5,6 +5,8 @@
 #include "dc/gdrom/gdrom_if.h"
 #include "dc/aica/aica_if.h"
 
+#include "plugins/plugin_manager.h"
+
 //Area 0 mem map
 //0x00000000- 0x001FFFFF	:MPX	System/Boot ROM
 //0x00200000- 0x0021FFFF	:Flash Memory
@@ -97,17 +99,17 @@ u32 ReadMem_area0(u32 addr,u32 sz)
 	else if ((addr>= 0x00700000) && (addr<=0x00707FFF)) //	:AICA- Sound Cntr. Reg.
 	{
 		//EMUERROR2("Read from area0_32 not implemented [AICA- Sound Cntr. Reg], addr=%x",addr);
-		return aica_readreg(addr,sz);
+		return libAICA->aica_info.ReadMem_aica_reg(addr,sz);
 	}
 	else if ((addr>= 0x00710000) && (addr<= 0x0071000B)) //	:AICA- RTC Cntr. Reg.
 	{
 		//EMUERROR2("Read from area0_32 not implemented [AICA- RTC Cntr. Reg], addr=%x",addr);
-		return aica_readrtc(addr,sz);
+		return ReadMem_aica_rtc(addr,sz);
 	}
 	else if ((addr>= 0x00800000) && (addr<=0x00FFFFFF)) //	:AICA- Wave Memory
 	{
 		//EMUERROR2("Read from area0_32 not implemented [AICA- Wave Memory], addr=%x",addr);
-		return aica_readram(addr,sz);
+		return libAICA->aica_info.ReadMem_aica_ram(addr,sz);
 	}
 	else if ((addr>= 0x01000000) && (addr<= 0x01FFFFFF)) //	:Ext. Device
 	{
@@ -185,19 +187,21 @@ void WriteMem_area0(u32 addr,u32 data,u32 sz)
 	else if ((addr>= 0x00700000) && (addr<=0x00707FFF)) //	:AICA- Sound Cntr. Reg.
 	{
 		//EMUERROR4("Write to area0_32 not implemented [AICA- Sound Cntr. Reg], addr=%x,data=%x,size=%d",addr,data,sz);
-		aica_writereg(addr,data,sz);
+		//aica_writereg(addr,data,sz);
+		libAICA->aica_info.WriteMem_aica_reg(addr,data,sz);
 		return;
 	}
 	else if ((addr>= 0x00710000) && (addr<= 0x0071000B)) //	:AICA- RTC Cntr. Reg.
 	{
 		//EMUERROR4("Write to area0_32 not implemented [AICA- RTC Cntr. Reg], addr=%x,data=%x,size=%d",addr,data,sz);
-		aica_writertc(addr,data,sz);
+		WriteMem_aica_rtc(addr,data,sz);
 		return;
 	}
 	else if ((addr>= 0x00800000) && (addr<=0x00FFFFFF)) //	:AICA- Wave Memory
 	{
 		//EMUERROR4("Write to area0_32 not implemented [AICA- Wave Memory], addr=%x,data=%x,size=%d",addr,data,sz);
-		aica_writeram(addr,data,sz);
+		//aica_writeram(addr,data,sz);
+		libAICA->aica_info.WriteMem_aica_ram(addr,data,sz);
 		return;
 	}
 	else if ((addr>= 0x01000000) && (addr<= 0x01FFFFFF)) //	:Ext. Device

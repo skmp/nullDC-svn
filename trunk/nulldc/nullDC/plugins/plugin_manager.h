@@ -100,6 +100,7 @@ extern sh4_if*				  sh4_cpu;
 //Currently used plugins
 extern nullDC_PowerVR_plugin* libPvr;
 extern nullDC_GDRom_plugin*   libGDR;
+extern nullDC_AICA_plugin*    libAICA;
 //more to come
 
 void plugins_Init();

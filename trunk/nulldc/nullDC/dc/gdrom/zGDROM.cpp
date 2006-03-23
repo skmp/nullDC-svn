@@ -292,7 +292,7 @@ void ProcessSPI(void)
 	switch(cmd[0])
 	{
 	case SPI_TEST_UNIT:
-		lprintf("(GD)\SPI_TEST_UNIT !\n\n");
+		lprintf("(GD)\tSPI_TEST_UNIT !\n\n");
 		goto complete;	// thats all
 
 	case SPI_CD_OPEN:

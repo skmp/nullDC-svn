@@ -2,7 +2,7 @@
 #include "types.h"
 #include "dc/mem/sh4_internal_reg.h"
 #include "dc/mem/sb.h"
-#include "cd/mem/sh4_mem.h"
+#include "dc/mem/sh4_mem.h"
 #include "dmac.h"
 #include "intc.h"
 #include "plugins/plugin_manager.h"

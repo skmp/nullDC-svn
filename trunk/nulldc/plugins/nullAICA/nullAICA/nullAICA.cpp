@@ -39,7 +39,7 @@ EXPORT void dcGetAICAInfo(aica_plugin_if* info)
 
 	info->ReadMem_aica_ram=ReadMem_ram;
 	info->WriteMem_aica_ram=WriteMem_ram;
-	info->ReadMem_aica_ram=ReadMem_reg;
+	info->ReadMem_aica_reg=ReadMem_reg;
 	info->WriteMem_aica_reg=WriteMem_reg;
 }
 

@@ -2,7 +2,7 @@
 #include "sh4_interpreter.h"
 #include "sh4_registers.h"
 
-#include "mem/sh4_mem.h"
+#include "dc/mem/sh4_mem.h"
 
 #include <math.h>
 #include <float.h>
