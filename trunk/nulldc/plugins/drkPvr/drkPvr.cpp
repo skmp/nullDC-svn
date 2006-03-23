@@ -54,7 +54,7 @@ EXPORT void dcGetPvrInfo(pvr_plugin_if* info)
 	info->InterfaceVersion.full=PVR_PLUGIN_I_F_VERSION;
 
 	info->UpdatePvr=spgUpdatePvr;
-	info->dcTaFiFo=TADma;
+	info->TaFIFO=TADma;
 	info->ReadReg=ReadPvrRegister;
 	info->WriteReg=WritePvrRegister;
 }

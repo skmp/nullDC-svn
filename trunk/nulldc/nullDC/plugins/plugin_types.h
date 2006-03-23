@@ -60,6 +60,7 @@ typedef void dcThreadTermFP(PluginType type);
 //
 typedef u32 ReadMemFP(u32 addr,u32 size);
 typedef void WriteMemFP(u32 addr,u32 data,u32 size);
+typedef void UpdateFP(u32 cycles);
 
 struct plugin_info
 {
@@ -109,25 +110,19 @@ struct pvr_init_params
 	vramlock_Unlock_blockFP* vram_unlock;
 };
 
-typedef u32 ReadRegisterPvrFP(u32 addr,u32 size);
-typedef void WriteRegisterPvrFP(u32 addr,u32 data,u32 size);
 
-//called from sh4 context , should update pvr/ta state and evereything else
-typedef void dcUpdatePvrFP(u32 cycles);
-
-//called from sh4 context , in case of dma or SQ to TA memory , size is 32 byte transfer counts
-typedef void dcTaFiFoFP(u32 address,u32* data,u32 size);
+typedef void TaFIFOFP(u32 address,u32* data,u32 size);
 
 //duh stupid C need to have defined types above .. #$%^#$@!#%(&())(
 struct pvr_plugin_if
 {
 	VersionNumber		InterfaceVersion;	//interface version
 
-	dcUpdatePvrFP*		UpdatePvr;
-	dcTaFiFoFP*			TADma;
-	ReadRegisterPvrFP*	ReadReg;
-	WriteRegisterPvrFP* WriteReg;
-	vramLockCBFP*		LockedBlockWrite;
+	UpdateFP*		UpdatePvr;		//called from sh4 context , should update pvr/ta state and evereything else
+	TaFIFOFP*		TADma;			//called from sh4 context , in case of dma or SQ to TA memory , size is 32 byte transfer counts
+	ReadMemFP*		ReadReg;
+	WriteMemFP*		WriteReg;
+	vramLockCBFP*	LockedBlockWrite;
 };
 
 //Give to the emu pointers for the PowerVR interface
@@ -208,11 +203,12 @@ struct aica_plugin_if
 {
 	VersionNumber	InterfaceVersion;	//interface version , curr 0.0.1
 
-	ReadMemFP* ReadMem_aica_reg;
+	ReadMemFP*  ReadMem_aica_reg;
 	WriteMemFP* WriteMem_aica_reg;
 
-	ReadMemFP* ReadMem_aica_ram;
+	ReadMemFP*  ReadMem_aica_ram;
 	WriteMemFP* WriteMem_aica_ram;
+	UpdateFP*	UpdateAICA;
 };
 
 //passed on AICA init call

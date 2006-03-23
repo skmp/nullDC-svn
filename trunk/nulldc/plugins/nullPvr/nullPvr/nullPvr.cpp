@@ -58,7 +58,7 @@ EXPORT void dcGetPvrInfo(pvr_plugin_if* info)
 	info->InterfaceVersion.full=PVR_PLUGIN_I_F_VERSION;
 
 	info->UpdatePvr=dcUpdatePvr;
-	info->dcTaFiFo=dcTADma;
+	info->TaFIFO=dcTADma;
 	info->ReadReg=ReadPvrRegister;
 	info->WriteReg=WritePvrRegister;
 	info->LockedBlockWrite=onLockedBlockWrite;

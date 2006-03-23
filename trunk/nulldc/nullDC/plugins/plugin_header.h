@@ -116,8 +116,17 @@ struct VersionNumber
 	};
 };
 
+struct vram_block
+{
+	u32 start;
+	u32 end;
+	u32 len;
+	u32 type;
+ 
+	void* userdata;
+};
 
-
+typedef void vramLockCBFP (vram_block* block,u32 addr);
 
 //NDC_ so it's not confused w/ win32 one
 #define NDC_SetVersion(to,major,minor,build) {to.major=major;to.minor=minor;to.build=build;}
@@ -155,6 +164,7 @@ typedef void dcThreadTermFP(PluginType type);
 //
 typedef u32 ReadMemFP(u32 addr,u32 size);
 typedef void WriteMemFP(u32 addr,u32 data,u32 size);
+typedef void UpdateFP(u32 cycles);
 
 struct plugin_info
 {
@@ -183,24 +193,12 @@ typedef void dcGetPluginInfoFP(plugin_info* info);
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //*********************** PowerVR ***********************
-struct vram_block
-{
-	u32 start;
-	u32 end;
-	u32 len;
-	u32 type;
- 
-	void* userdata;
-};
-
-typedef void vramLockCBFP (vram_block* block,u32 addr);
-
 #ifdef PVR_CODE
 //Version : beta 1
 
 //TODO : Design and implement this
 #define PVR_PLUGIN_I_F_VERSION NDC_MakeVersion(0,2,0)
-
+ 
 typedef void vramlock_Unlock_blockFP  (vram_block* block);
 typedef vram_block* vramlock_Lock_32FP(u32 start_offset32,u32 end_offset32,void* userdata);
 typedef vram_block* vramlock_Lock_64FP(u32 start_offset64,u32 end_offset64,void* userdata);
@@ -216,25 +214,19 @@ struct pvr_init_params
 	vramlock_Unlock_blockFP* vram_unlock;
 };
 
-typedef u32 ReadRegisterPvrFP(u32 addr,u32 size);
-typedef void WriteRegisterPvrFP(u32 addr,u32 data,u32 size);
 
-//called from sh4 context , should update pvr/ta state and evereything else
-typedef void dcUpdatePvrFP(u32 cycles);
-
-//called from sh4 context , in case of dma or SQ to TA memory , size is 32 byte transfer counts
-typedef void dcTaFiFoFP(u32 address,u32* data,u32 size);
+typedef void TaFIFOFP(u32 address,u32* data,u32 size);
 
 //duh stupid C need to have defined types above .. #$%^#$@!#%(&())(
 struct pvr_plugin_if
 {
 	VersionNumber		InterfaceVersion;	//interface version
 
-	dcUpdatePvrFP*		UpdatePvr;
-	dcTaFiFoFP*			dcTaFiFo;
-	ReadRegisterPvrFP*	ReadReg;
-	WriteRegisterPvrFP* WriteReg;
-	vramLockCBFP*		LockedBlockWrite;
+	UpdateFP*		UpdatePvr;		//called from sh4 context , should update pvr/ta state and evereything else
+	TaFIFOFP*		TaFIFO;			//called from sh4 context , in case of dma or SQ to TA memory , size is 32 byte transfer counts
+	ReadMemFP*		ReadReg;
+	WriteMemFP*		WriteReg;
+	vramLockCBFP*	LockedBlockWrite;
 };
 
 //Give to the emu pointers for the PowerVR interface
@@ -244,6 +236,7 @@ typedef void dcGetPvrInfoFP(pvr_plugin_if* info);
 
 //************************ GDRom ************************
 #ifdef GDROM_CODE
+//this MUST be big endian before sending it :)
 
 enum DiskType
 {
@@ -279,6 +272,7 @@ typedef DiskType DriveGetDiskTypeFP();
 typedef void DriveGetSessionInfoFP(u8* pout,u8 session);
 
 
+//TODO : Design and implement this
 #define GDR_PLUGIN_I_F_VERSION NDC_MakeVersion(0,2,0)
 
 //duh stupid C need to have defined types above .. #$%^#$@!#%(&())(
@@ -303,7 +297,6 @@ struct gdr_init_params
 typedef void dcGetGDRInfoFP(gdr_plugin_if* info);
 #endif
 
-
 //For Aica
 //TODO : Design and implement this
 
@@ -314,11 +307,12 @@ struct aica_plugin_if
 {
 	VersionNumber	InterfaceVersion;	//interface version , curr 0.0.1
 
-	ReadMemFP* ReadMem_aica_reg;
+	ReadMemFP*  ReadMem_aica_reg;
 	WriteMemFP* WriteMem_aica_reg;
 
-	ReadMemFP* ReadMem_aica_ram;
+	ReadMemFP*  ReadMem_aica_ram;
 	WriteMemFP* WriteMem_aica_ram;
+	UpdateFP*	UpdateAICA;
 };
 
 //passed on AICA init call
@@ -329,6 +323,7 @@ struct aica_init_params
 
 //Give to the emu pointers for the aica interface
 typedef void dcGetAICAInfoFP(aica_plugin_if* info);
+
 
 //For MapleDeviceMain
 //TODO : Design and implement this
