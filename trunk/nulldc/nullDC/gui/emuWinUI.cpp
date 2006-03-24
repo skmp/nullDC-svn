@@ -932,13 +932,15 @@ void AddItemsToCB(GrowingList<PluginLoadInfo>* list,HWND hw)
 				,list->items[i].item.plugin_info.PluginVersion.build
 				,dll);
 			
-			char* lp = (char *)malloc(strlen(temp)+8); 
+			char* lp = (char *)malloc(strlen(dll)); 
+			strcpy(lp,dll);
 			int i2 = ComboBox_AddString(hw, temp); 
 			ComboBox_SetItemData(hw, i2, lp); 
-			//if (stricmp(str, lp)==0) 
-			//	ComboBox_SetCurSel(hw, i2); 
+			
+			int cs=ComboBox_GetCurSel(hw);
 
-			//ComboBox_AddString(to,temp);
+			if (cs==0)
+				ComboBox_SetCurSel(hw, i2); 
 		}
 }
 INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )

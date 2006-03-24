@@ -7,6 +7,9 @@
 --------------------------------------------
 
 Version : beta 1
+//24/3/2006
+!Lost track of change log , check the changelong on svn for info what happened when ;)
+
 //11/2/2006
 *minnor fixes on read/write register functions
 +added basic handling for : cpg

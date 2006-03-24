@@ -175,6 +175,37 @@ void GetDriveToc(u32* to,DiskArea area)
 {
 	TocInfo driveTOC;
 	CurrDrive->GetToc(driveTOC,area);
+
+	natTocInfo* toc;
+	toc=(natTocInfo*)to;
+
+	toc->first.number=1;
+	toc->last.number=1;
+	toc->first.ControlInfo=toc->last.ControlInfo=4;
+	toc->first.Addr=toc->last.Addr=0;
+	toc->lba_leadout.FAD=400000;
+
+ 	//toc->entry[0].full	= CTOC_LBA(150) | CTOC_ADR(0) | CTOC_CTRL(4);
+	toc->entry[0].Addr=0;
+	toc->entry[0].ControlInfo=4;
+	//toc->entry[1].Addr=0;
+	//toc->entry[1].ControlInfo=4;
+	if (area==DoubleDensity)
+	{
+		toc->entry[0].FAD=150;
+		//toc->entry[1].FAD=45150;
+	}
+	else
+	{
+		toc->entry[0].FAD=150;
+		//toc->entry[1].FAD=45150;
+	}
+
+	for (int i=1;i<99;i++)
+	{
+		toc->entry[i].full=0xFFFFFFFF;
+	}
+	ConvToc(to,toc);
 }
 
 void GetDriveSessionInfo(u8* to,u8 session)

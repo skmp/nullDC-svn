@@ -5,31 +5,29 @@ FILE* f_iso;
 void iso_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 {
 	printf("GDR->Read : Sector %d , size %d , mode %d \n",StartSector,SectorCount,secsz);
-	if (StartSector<45150)
+	if (StartSector<45000)
 	{
 		//printf("GDR->Read : Start Sector is < 45150 ; can't read sector\n");
 		//return;
 	}
 	
-	if (StartSector>=45150)
+	if (StartSector>=45000)
 	{
 		if (inbios)
 		{
-			StartSector-=45150;
+			StartSector-=45000;
 			if (StartSector==16)
 				inbios=false;//bios dma'd pvd
 		}
-		else
-			StartSector-=150;
 	}
 	else
 	{
 		if (inbios)
 			inbios=false;//prop not bios/bios after pvd
-
-		if (StartSector>=150)
-			StartSector-=150;
 	}
+
+	if (StartSector>=150)
+		StartSector-=150;
 
 	//StartSector-=45150;
 	if (StartSector<16)
@@ -52,7 +50,7 @@ void iso_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 	}
 	else
 	{
-		f_iso=fopen("c:/doa2.iso","rb");
+		f_iso=fopen("F:/cdd/ct1.iso","rb");
 		
 		fseek(f_iso,StartSector*2048,SEEK_SET);
 		size_t rd=fread(buff,1,SectorCount*2048,f_iso);
@@ -67,8 +65,7 @@ void iso_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 
 void iso_DriveGetTocInfo(TocInfo& toc,DiskArea area)
 {
-	/*
-	//Send a fake a$$ toc
+	/*//Send a fake a$$ toc
 	//toc->last.full		= toc->first.full	= CTOC_TRACK(1);
 	toc->first.number=1;
 	toc->last.number=1;

@@ -8,8 +8,9 @@
 #include "plugins/plugin_manager.h"
 
 #define ZGDROM
+
 #ifndef ZGDROM
-#include "gdromv3.h"
+#include "gdromv2_old.h"
 #else
 #include "zGDROM.h"
 #endif

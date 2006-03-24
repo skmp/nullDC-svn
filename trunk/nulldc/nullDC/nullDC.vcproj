@@ -642,7 +642,6 @@
 					</FileConfiguration>
 					<FileConfiguration
 						Name="Release-NoTrace|Win32"
-						ExcludedFromBuild="true"
 						>
 						<Tool
 							Name="VCCLCompilerTool"
@@ -670,7 +669,6 @@
 					</FileConfiguration>
 					<FileConfiguration
 						Name="Release-NoTrace|Win32"
-						ExcludedFromBuild="true"
 						>
 						<Tool
 							Name="VCCLCompilerTool"
@@ -698,7 +696,6 @@
 					</FileConfiguration>
 					<FileConfiguration
 						Name="Release-NoTrace|Win32"
-						ExcludedFromBuild="true"
 						>
 						<Tool
 							Name="VCCustomBuildTool"
@@ -740,10 +737,24 @@
 				<File
 					RelativePath=".\dc\gdrom\zGDROM.cpp"
 					>
+					<FileConfiguration
+						Name="Release-NoTrace|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
 				</File>
 				<File
 					RelativePath=".\dc\gdrom\zGDROM.h"
 					>
+					<FileConfiguration
+						Name="Release-NoTrace|Win32"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
 				</File>
 			</Filter>
 			<Filter
@@ -934,6 +945,18 @@
 				Name="x86-64"
 				>
 			</Filter>
+		</Filter>
+		<Filter
+			Name="config"
+			>
+			<File
+				RelativePath=".\config\config.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\config\config.h"
+				>
+			</File>
 		</Filter>
 		<File
 			RelativePath=".\basic_types.h"

@@ -6,13 +6,16 @@
 #include "aica\aica.h"
 
 
+u8*g_pSH4SoundRAM;
+
+
+
 #define SH4Memory_MASK ( ~0xE0000000)
 #define SH4AicaMemory_START ( 0x00700000)
 
 #define SH4SoundRAM_START ( 0x00800000)
 #define ARM7BIAS (1)
 
-u8*g_pSH4SoundRAM;
 
 bool g_bArm7Enable=true;
 
@@ -25,6 +28,8 @@ RaiseInterruptFP* Sh4RaiseInterrupt;
 u32* SB_ISTEXT;
 
 u32 g_videoCableType=2;
+
+#include "aica\arm7Memory.h"
 
 u32 ReadMem_reg(u32 addr,u32 size)
 {
@@ -67,17 +72,21 @@ u32 ReadMem_ram(u32 addr,u32 size)
 	DWORD uData;
 	DWORD uAddress = addr;
 	uAddress&=SH4Memory_MASK;	
+	 
+	uAddress=uAddress-SH4SoundRAM_START;
 	
+	uAddress&=Arm7SoundRAMMask;
+
 	switch(size)
 	{
 	case 1:
-		uData = *((BYTE*)(g_pSH4SoundRAM + (uAddress-SH4SoundRAM_START)));	
+		uData = *((BYTE*)(g_pSH4SoundRAM + (uAddress)));	
 		break;
 	case 2:
-		uData = *((WORD*)(g_pSH4SoundRAM + (uAddress-SH4SoundRAM_START)));	
+		uData = *((WORD*)(g_pSH4SoundRAM + (uAddress)));	
 		break;
 	case 4:
-		uData = *((DWORD*)(g_pSH4SoundRAM + (uAddress-SH4SoundRAM_START)));	
+		uData = *((DWORD*)(g_pSH4SoundRAM + (uAddress)));	
 		break;
 	}
 
@@ -88,17 +97,21 @@ void WriteMem_ram(u32 addr,u32 data,u32 size)
 {
 	DWORD uAddress = addr;
 	uAddress&=SH4Memory_MASK;	
+	 
+	uAddress=uAddress-SH4SoundRAM_START;
 	
+	uAddress&=Arm7SoundRAMMask;
+
 	switch(size)
 	{
 	case 1:
-		*((BYTE*)(g_pSH4SoundRAM + (uAddress-SH4SoundRAM_START)))=data;	
+		*((BYTE*)(g_pSH4SoundRAM + (uAddress)))=data;	
 		break;
 	case 2:
-		*((WORD*)(g_pSH4SoundRAM + (uAddress-SH4SoundRAM_START)))=data;	
+		*((WORD*)(g_pSH4SoundRAM + (uAddress)))=data;	
 		break;
 	case 4:
-		*((DWORD*)(g_pSH4SoundRAM + (uAddress-SH4SoundRAM_START)))=data;	
+		*((DWORD*)(g_pSH4SoundRAM + (uAddress)))=data;	
 		break;
 	}
 }

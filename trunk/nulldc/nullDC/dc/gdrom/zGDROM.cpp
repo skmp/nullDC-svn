@@ -2,6 +2,7 @@
 **	zGDROM.cpp
 */
 
+#ifndef OLD_GDROM
 #include <vector>
 using namespace std;
 
@@ -464,3 +465,5 @@ void logd(u32 rw, u32 addr, u32 data)
 		lprintf("(W)[%08X] %s := %X \n", addr, gdreg_names[(addr&255)>>2], data);
 
 }
+
+#endif

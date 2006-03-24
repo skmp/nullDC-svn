@@ -1,6 +1,6 @@
 //new implementation of teh gd rom lle :)
 //Needs to be cleaned up
-
+#ifdef OLD_GDROM
 #include "types.h"
 #include "plugins/plugin_manager.h"
 
@@ -161,10 +161,9 @@ void NotifyEvent_gdrom(DriveEvent info,void* param)
 u32 ReadMem_gdrom2(u32 Addr, u32 sz);
 u32 ReadMem_gdrom(u32 Addr, u32 sz)
 {
-
 	u32 data=ReadMem_gdrom2(Addr,sz);
-	if (Addr!=0x5F7080)
-		fprintf(gd_log,"Read: 0x%X=%x[%x]\n",Addr,data,pc);
+	//if (Addr!=0x5F7080)
+		//fprintf(gd_log,"Read: 0x%X=%x[%x]\n",Addr,data,pc);
 	return data;
 }
 u32 ReadMem_gdrom2(u32 Addr, u32 sz)
@@ -250,8 +249,8 @@ u32 ReadMem_gdrom2(u32 Addr, u32 sz)
 //Memory Write Handler ;)
 void WriteMem_gdrom(u32 Addr, u32 data, u32 sz)
 {
-	if (Addr!=0x5F7080)
-	fprintf(gd_log,"Write: 0x%X=%x[%x]\n",Addr,data,pc);
+	//if (Addr!=0x5F7080)
+	//fprintf(gd_log,"Write: 0x%X=%x[%x]\n",Addr,data,pc);
 	switch(Addr)
 	{
 	case GD_BYCTLLO:
@@ -317,6 +316,7 @@ void WriteMem_gdrom(u32 Addr, u32 data, u32 sz)
 		//		GDStatus |= GDSTATUS_DRQ;	// Set DRQ
 
 				// goto _gd_int; // or else just add one here and return
+				UpdateGDRom();
 			}
 			return;
 		}
@@ -427,13 +427,16 @@ void WriteMem_gdrom(u32 Addr, u32 data, u32 sz)
 void UpdateGDRom()
 {
 
-	if (PendSpicmd)
+
+	SpiCommandInfo* PendSpicmd2=PendSpicmd;
+	PendSpicmd=0;
+	if (PendSpicmd2)
 	{
 		//proccess spi :)
-		if (ProcessSPI(PendSpicmd))
+		if (ProcessSPI(PendSpicmd2))
 		{
 			//ok , done w/ it
-			PendSpicmd=0;
+			PendSpicmd2=0;
 			return;//no dma
 		}
 	}
@@ -528,6 +531,7 @@ bool ProcessSPI(SpiCommandInfo* cmd)
 				GDStatus.DRDY=1;
 				RaiseInterrupt(holly_GDROM_CMD);
 				dma_data=true;//we do have data to dma ;)
+				UpdateGDRom();
 			}
 			else
 			{//pio
@@ -753,6 +757,8 @@ void GDROM_DmaSt_Write(u32 data)
 			dma_data=false;//?*/
 	}
 
+	UpdateGDRom();
+
 	if (dma_data && gd_dma_pending)
 		gd_DoDMA();
 
@@ -860,3 +866,4 @@ void gdrom_reg_Reset(bool Manual)
 {
 	//huh?
 }
+#endif

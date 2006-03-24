@@ -146,7 +146,7 @@ void LoadSyscallHooks()
 	//AddHook(ReadMem(dc_bios_syscall_font,4),0x000B);
 	//AddHook(ReadMem32(dc_bios_syscall_flashrom),0x000B);
 	//AddHook(ReadMem32(dc_bios_syscall_GDrom_misc),0x000B);
-	//AddHook(ReadMem32(dc_bios_syscall_resets_Misc),0x000B);
+	AddHook(ReadMem32(dc_bios_syscall_resets_Misc),0x000B);
 	
 	//hook for hle
 	//AddHook(0x0800, 0x000B);			// unknown patch for gdrom
