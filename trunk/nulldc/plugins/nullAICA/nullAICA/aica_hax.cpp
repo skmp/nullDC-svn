@@ -93,7 +93,7 @@ void WriteMem_ram(u32 addr,u32 data,u32 size)
 		*(u32*)&aica_ram[addr&AICA_MEM_MASK]=data;
 }
 
-void UpdateSystem(u32 Cycles)
+void UpdateAICA(u32 Cycles)
 {
 
 }

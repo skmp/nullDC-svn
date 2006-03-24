@@ -1,8 +1,8 @@
-// nullAICA.cpp : Defines the entry point for the DLL application.
+// chankaAICA.cpp : Defines the entry point for the DLL application.
 //
 
-#include "nullAICA.h"
-#include "aica_hax.h"
+#include "chankaAICA.h"
+#include "chanka_aica.h"
 
 
 BOOL APIENTRY DllMain( HMODULE hModule,
@@ -18,7 +18,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 EXPORT void dcGetPluginInfo(plugin_info* info)
 {
 	info->InterfaceVersion.full=PLUGIN_I_F_VERSION;
-	strcpy(info->Name,"null AICA plugin [h4x0rs olny kthx]");
+	strcpy(info->Name,"Chanka's AICA port [drkIIRaziel]");
 	info->PluginVersion.full=NDC_MakeVersion(MAJOR,MINOR,BUILD);
 	
 
@@ -41,13 +41,17 @@ EXPORT void dcGetAICAInfo(aica_plugin_if* info)
 	info->WriteMem_aica_ram=WriteMem_ram;
 	info->ReadMem_aica_reg=ReadMem_reg;
 	info->WriteMem_aica_reg=WriteMem_reg;
-	info->UpdateAICA=UpdateAICA;
+	info->UpdateAICA=UpdateSystem;
 }
 
 
 //called when plugin is used by emu (you should do first time init here)
 void dcInit(void* param,PluginType type)
 {
+	aica_init_params* ip=(aica_init_params*)param;
+	Sh4RaiseInterrupt=ip->RaiseInterrupt;
+	SB_ISTEXT=ip->SB_ISTEXT;
+	InitARM7(ip->WindowHandle);
 }
 
 //called when plugin is unloaded by emu , olny if dcInit is called (eg , not called to enumerate plugins)

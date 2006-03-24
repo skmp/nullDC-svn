@@ -214,7 +214,9 @@ struct aica_plugin_if
 //passed on AICA init call
 struct aica_init_params
 {
-
+	void* WindowHandle;
+	RaiseInterruptFP*	RaiseInterrupt;
+	u32* SB_ISTEXT;
 };
 
 //Give to the emu pointers for the aica interface

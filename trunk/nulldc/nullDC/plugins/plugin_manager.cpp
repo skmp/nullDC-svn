@@ -302,6 +302,7 @@ void SetPluginPath(char* path)
 	//just re enumerate the cache
 	delete EnumeratePlugins(0);
 }
+#include "dc\mem\sb.h"
 void plugins_Init()
 {
 	pvr_init_params pvr_info;
@@ -334,7 +335,9 @@ void plugins_Init()
 	}
 
 	aica_init_params aica_info;
-	//nothing to set kthx
+	aica_info.WindowHandle=GetRenderTargetHandle();
+	aica_info.RaiseInterrupt=sh4_cpu->RaiseInterrupt;
+	aica_info.SB_ISTEXT=&SB_ISTEXT;
 	if (libAICA)
 	{
 		libAICA->info.Init(&aica_info,PluginType::AICA);

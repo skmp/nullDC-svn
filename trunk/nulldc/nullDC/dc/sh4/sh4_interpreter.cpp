@@ -25,7 +25,7 @@
 volatile bool  sh4_int_bCpuRun=false;
 cThread* sh4_int_thr_handle=0;
 
-u32 cycles=0;
+u32 exec_cycles=0;
 time_t odtime=0;
 
 u32 opcode_fam_cycles[0x10]=
@@ -340,7 +340,7 @@ void Sh4_int_SetRegister(Sh4RegType reg,u32 regdata)
 //TODO : Check for valid delayslot instruction
 bool ExecuteDelayslot()
 {
-	cycles++;
+	exec_cycles++;
 
 	pc+=2;
 	u32 op=ReadMem16(pc);
@@ -381,7 +381,7 @@ int UpdateSystem(u32 Cycles)
 		UpdateGDRom();
 	}*/
 
-	UpdateAica(cycles);
+	UpdateAica(Cycles);
 	UpdateTMU(Cycles);
 	UpdatePvr(Cycles);
 	return UpdateINTC();

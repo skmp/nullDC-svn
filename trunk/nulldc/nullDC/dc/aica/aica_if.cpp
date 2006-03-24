@@ -54,4 +54,5 @@ void aica_Term()
 //Cycles are sh4 cpu cycles
 void UpdateAica(u32 cycles)
 {
+	libAICA->aica_info.UpdateAICA(cycles);
 }

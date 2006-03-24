@@ -180,5 +180,6 @@ void GetDriveToc(u32* to,DiskArea area)
 void GetDriveSessionInfo(u8* to,u8 session)
 {
 	SessionInfo driveSeS;
-	CurrDrive->GetSessionInfo(driveSeS);
+	if (CurrDrive->GetSessionInfo)
+		CurrDrive->GetSessionInfo(driveSeS);
 }

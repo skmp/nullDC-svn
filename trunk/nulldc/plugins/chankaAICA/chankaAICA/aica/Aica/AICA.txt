@@ -1,0 +1,11 @@
+=========
+ AICA
+=========
+
+- keyon/off EX
+- los timers solo soportan el modo de aumento de samples 1 a 1
+- comprobar que van bien los loops de los ADPCM del modo PCMS=2
+- quitar bug en readtimer al calcular bien los ciclos pasados
+- bug en la velocidad que toca los s3m (parece que van al 120% de la velocidad que toca)
+- ADPCM con pitch a mas de 200% fallara!!
+
