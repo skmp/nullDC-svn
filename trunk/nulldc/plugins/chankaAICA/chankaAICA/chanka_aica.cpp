@@ -10,6 +10,7 @@
 #define SH4AicaMemory_START ( 0x00700000)
 
 #define SH4SoundRAM_START ( 0x00800000)
+#define ARM7BIAS (1)
 
 u8*g_pSH4SoundRAM;
 
@@ -85,7 +86,6 @@ u32 ReadMem_ram(u32 addr,u32 size)
 }
 void WriteMem_ram(u32 addr,u32 data,u32 size)
 {
-	DWORD uData;
 	DWORD uAddress = addr;
 	uAddress&=SH4Memory_MASK;	
 	
@@ -107,7 +107,7 @@ void UpdateSystem(u32 Cycles)
 {
 	sh4_cycles+=Cycles;
 	AICARefresh();
-	g_pArm7->BlockStepArm7(Cycles/16);
+	g_pArm7->BlockStepArm7(Cycles/(6*ARM7BIAS));
 }
 
 void InitArm7Memory();
