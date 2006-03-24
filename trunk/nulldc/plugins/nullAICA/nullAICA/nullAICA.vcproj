@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1253"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="nullAICA"
 	ProjectGUID="{8004518C-2321-4CFC-BA6C-873736195691}"
 	RootNamespace="nullAICA"
@@ -116,6 +116,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalIncludeDirectories="&quot;C:\Program Files\Microsoft DirectX SDK (February 2006)\Include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;NULLAICA_EXPORTS"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="0"

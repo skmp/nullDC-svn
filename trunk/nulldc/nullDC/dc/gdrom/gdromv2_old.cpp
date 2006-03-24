@@ -1,6 +1,6 @@
 //new implementation of teh gd rom lle :)
 //Needs to be cleaned up
-#ifdef OLD_GDROM
+#ifndef ZGDROM
 #include "types.h"
 #include "plugins/plugin_manager.h"
 

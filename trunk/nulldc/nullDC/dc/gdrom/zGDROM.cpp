@@ -2,7 +2,8 @@
 **	zGDROM.cpp
 */
 
-#ifndef OLD_GDROM
+#if defined(ZGDROM) && !defined(OLD_GDROM)
+
 #include <vector>
 using namespace std;
 

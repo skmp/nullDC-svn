@@ -1,7 +1,7 @@
 //new implementation of GD rom
 
 #pragma once
-#ifdef OLD_GDROM
+#ifndef ZGDROM
 #include "types.h"
 #include "plugins/plugin_types.h"
 

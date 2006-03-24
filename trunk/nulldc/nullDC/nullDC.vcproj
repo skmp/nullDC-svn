@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1253"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="nullDC"
 	ProjectGUID="{47CE9BF1-542B-4C45-A22A-353A9FC97322}"
 	RootNamespace="nullDC"
@@ -206,7 +206,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
-				AdditionalIncludeDirectories="$(SolutionDir)\nullDC"
+				AdditionalIncludeDirectories="&quot;C:\Program Files\Microsoft DirectX SDK (February 2006)\Include&quot;;&quot;$(SolutionDir)\nullDC&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;NULLDC;X86;RELEASE"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="false"
@@ -640,13 +640,6 @@
 							Name="VCCLCompilerTool"
 						/>
 					</FileConfiguration>
-					<FileConfiguration
-						Name="Release-NoTrace|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-						/>
-					</FileConfiguration>
 				</File>
 				<File
 					RelativePath=".\dc\gdrom\gdromv2_old.cpp"
@@ -662,13 +655,6 @@
 					<FileConfiguration
 						Name="Release|Win32"
 						ExcludedFromBuild="true"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release-NoTrace|Win32"
 						>
 						<Tool
 							Name="VCCLCompilerTool"
@@ -737,13 +723,6 @@
 				<File
 					RelativePath=".\dc\gdrom\zGDROM.cpp"
 					>
-					<FileConfiguration
-						Name="Release-NoTrace|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-						/>
-					</FileConfiguration>
 				</File>
 				<File
 					RelativePath=".\dc\gdrom\zGDROM.h"

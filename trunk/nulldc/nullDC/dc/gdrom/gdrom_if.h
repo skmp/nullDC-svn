@@ -7,7 +7,7 @@
 #include "types.h"
 #include "plugins/plugin_manager.h"
 
-#define ZGDROM
+//#define ZGDROM
 
 #ifndef ZGDROM
 #include "gdromv2_old.h"
