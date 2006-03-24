@@ -1,0 +1,10 @@
+Crazy Taxi 2 		: Works
+Crazy Taxi 2 		: Fatal exeption on emu -> fixed [arm ram warp], now loops doing shitty writes somewhere
+Doa2/Doa2le  		: ingame , gfx fuckups
+Virtua Striker 2000 	: menu , 3d , no input
+TrickStyle 		: menu , no input , bad gfx too
+Silent Scope 		: Nothing (seems to need mmu or smth)
+Jet Set Radio		: Loading screen (stuck there ?)
+ikagura			: Can't get it booting (gdrom-.iso compat problem ?)
+TOY COMMANDER		: Can't get it booting (gdrom-.iso compat problem ?)
+Plasma Sword - Nightmare of Blistein : my CDI is fubar or smth (66 tracks ?!)
