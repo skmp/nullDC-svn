@@ -240,9 +240,11 @@ struct RecRegType
 	};
 	void operator--(int wtf)
 	{
+		//this-=1;
 	}
 	void operator++(int wtf)
 	{
+		//this+=1;
 	}
 	
 	bool IsInCache()

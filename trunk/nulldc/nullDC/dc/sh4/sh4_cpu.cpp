@@ -13,6 +13,7 @@
 #include "ccn.h"
 #include "intc.h"
 #include "tmu.h"
+#include "dc/gdrom/gdrom_if.h"
 
 
 
@@ -342,7 +343,7 @@ void cpu_iNimp(u32 op, char* info)
 
 //and <REG_M>,<REG_N>           
  sh4op(i0010_nnnn_mmmm_1001)
-{//ToDo : Check This [26/4/05]
+{
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 	r[n] &= r[m];
@@ -1253,4 +1254,11 @@ sh4op(iNotImplemented)
 	//Error
 }
 
-
+sh4op(gdrom_hle_op)
+{
+	#ifdef ZGDROM
+	gdop(op);
+	#else
+	EMUERROR("GDROM HLE NOT SUPPORTED");
+	#endif
+}

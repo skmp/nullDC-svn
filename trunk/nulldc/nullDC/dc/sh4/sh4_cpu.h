@@ -409,6 +409,6 @@ using namespace std;
 #define BPT_ENABLED		0x0001
 //////////////////////////////
 
-sh4op(sh4_bpt_op);	// breakpoint
-
+sh4op(sh4_bpt_op);			// breakpoint
+sh4op(gdrom_hle_op);	//gdrom hle
 sh4op(iNotImplemented);

@@ -130,7 +130,7 @@ void AddHook(u32 Addr, u16 Opcode)
 
 
 #define SYSINFO_OPCODE	((u16)0x30F1)	// SYSINFO	- 0011 0000 1111 0001
-#define GDROM_OPCODE	((u16)0x30F9)	// GDROMCALL- 0011 0000 1111 1001
+
  
 #define dc_bios_syscall_system		0x8C0000B0
 #define dc_bios_syscall_font		0x8C0000B4

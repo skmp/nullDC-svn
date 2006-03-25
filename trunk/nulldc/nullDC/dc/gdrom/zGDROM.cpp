@@ -1120,5 +1120,8 @@ bool iso9660_Init(u32 session_base)
 	return true;
 }
 
+void gdop(u32 opcode)
+{
+}
 
 #endif

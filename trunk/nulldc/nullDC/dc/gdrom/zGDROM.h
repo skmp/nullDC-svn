@@ -14,7 +14,7 @@
 
 
 void gdBootHLE(void);		// Load Scrambled binary off of Current CD Media and boot ip.bin
-
+void gdop(u32 opcode);
 
 
 
