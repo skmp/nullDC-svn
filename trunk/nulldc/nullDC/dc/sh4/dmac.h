@@ -27,3 +27,7 @@ void DMAC_Ch2St();
 void dmac_Init();
 void dmac_Reset(bool Manual);
 void dmac_Term();
+
+
+
+#define DMAOR_MASK	0xFFFF8201

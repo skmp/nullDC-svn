@@ -1,10 +1,12 @@
 //new implementation of teh gd rom lle :)
 //Needs to be cleaned up
+
+#include "gdrom_if.h"
+
 #ifndef ZGDROM
 #include "types.h"
 #include "plugins/plugin_manager.h"
 
-#include "gdromv2_old.h"
 #include "dc/mem/sh4_mem.h"
 #include "dc/mem/memutil.h"
 #include "dc/mem/sb.h"
@@ -64,13 +66,41 @@ u32 DataIndex=0;
 u32 DataLength=0;
 u32 DmaSubCount=0;
 
+
+
+
+
+//////// TEMP ?
+# define _LOG_ (1)
+#include "stdarg.h"
+
+void lprintf(char* szFmt, ... )
+{
+#ifdef _LOG_
+	FILE * f = fopen("gdv2.txt","a+t");
+
+	va_list va;
+	va_start(va, szFmt);
+	vfprintf_s(f,szFmt,va);
+	va_end(va);
+
+	printf(szFmt,va);
+
+	fclose(f);
+#endif
+}
+
+
+
+
+
 //shits for debug printf's :P
-//#define DebugGD
+#define DebugGD
 #ifndef DebugGD
 #define printf_db NullPrintf_GD
 void NullPrintf_GD(...){}
 #else
-#define printf_db printf
+#define printf_db lprintf
 #endif
 
 
@@ -207,7 +237,8 @@ u32 ReadMem_gdrom2(u32 Addr, u32 sz)
 				}
 				u16 rv=gd_fifo->front();
 				gd_fifo->pop_front();
-				//printf_db("\nGDROM:\tRead From DATA %x!\n",rv);
+	
+				printf_db("\nGDROM:\tRead From DATA %x!\n",rv);
 				return rv;
 			}
 

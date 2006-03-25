@@ -7,8 +7,6 @@
 #include "intc.h"
 #include "plugins/plugin_manager.h"
 
-#define DMAOR_MASK	0xFFFF8201
-
 u32 DMAC_SAR0;
 u32 DMAC_DAR0;
 u32 DMAC_DMATCR0;

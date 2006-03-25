@@ -2,14 +2,18 @@
 **	zGDROM.cpp
 */
 
-#ifdef ZGDROM
-
 #include <vector>
 using namespace std;
 
 #include "gdrom_if.h"
 #include "dc/mem/sb.h"
+#include "dc/sh4/dmac.h"
 #include "dc/sh4/sh4_if.h"
+#include "dc/mem/sh4_mem.h"
+
+
+#ifdef ZGDROM
+
 
 
 // A few vectors or lists for our shitt
@@ -25,9 +29,16 @@ static u32 rDRVSEL=0;
 static u32 rIMPEDHI0=0, rIMPEDHI4=0;
 static u32 rIMPEDHI8=0, rIMPEDHIC=0;
 
+//static gdByCnt		rBYCTL;
 static gdStatusReg	rSTATUS;
 static gdIReasonReg	rIREASON;
 
+
+
+static s32 dmaCount=0;
+static u32 dmaOffset=0;
+
+static u8 gdReadBuffer[1024*1024*8];		// TEMP *FIXME*
 
 
 // Going to K.I.S.S. It ;) hehe
@@ -56,6 +67,7 @@ void ProcessSPI(void);
 void lprintf(char* szFmt, ... );
 void logd(u32 rw, u32 addr, u32 data);
 
+void DMAC_Ch3St(u32 data);
 void TestWrite(u32 data) {
 	printf(" \n\n ******* GDROM TESTWRITE to 4e4 : %X \n", data);
 }
@@ -79,7 +91,7 @@ void gdrom_reg_Init(void)
 	gdRM.zResv1	= 0;
 	gdRM.zResv2	= 0;
 	gdRM.zResv3	= 0;
-	gdRM.CDROM_Speed	= 0;
+	gdRM.CDROM_Speed	= 0x0000;
 	gdRM.Standby_Time	= 0xB400;	// 0x00B4 | B400 ?
 	gdRM.Read_Settings	= 0x19;
 	gdRM.Read_Retry		= 0x08;
@@ -96,6 +108,9 @@ void gdrom_reg_Init(void)
 */
 	sb_regs[(0x5F74E4-SB_BASE)>>2].flags = REG_32BIT_READWRITE | REG_16BIT_READWRITE | REG_8BIT_READWRITE | REG_READ_DATA;
 	sb_regs[(0x5F74E4-SB_BASE)>>2].writeFunction = TestWrite;
+
+	sb_regs[(SB_GDST_addr-SB_BASE)>>2].flags = REG_32BIT_READWRITE | REG_READ_DATA;
+	sb_regs[(SB_GDST_addr-SB_BASE)>>2].writeFunction = DMAC_Ch3St;
 }
 
 void gdrom_reg_Term(void) { }
@@ -104,6 +119,7 @@ void gdrom_reg_Reset(bool Manual)
 	gdrom_reg_Term();
 	gdrom_reg_Init();
 }
+
 
 
 u32  ReadMem_gdrom(u32 Addr, u32 sz)
@@ -131,6 +147,11 @@ u32  ReadMem_gdrom(u32 Addr, u32 sz)
 
 	case GD_STATUS:
 		SB_ISTEXT &= ~1;
+
+		// this actually makes it go past where it stops but just causes it to loop doing error checking?
+	//	if(dmaCount == -666)
+	//		RaiseInterrupt(InterruptID::holly_GDROM_CMD);
+
 		return rSTATUS.Full;
 
 	case GD_ALTSTAT:	return rSTATUS.Full;
@@ -145,6 +166,8 @@ u32  ReadMem_gdrom(u32 Addr, u32 sz)
 				u16 tdata = databuff.back();
 				databuff.pop_back();
 				gdSR.ByteCount -= 2;
+
+				lprintf("(GD)\tData Buffer Read %04X !\n", tdata);
 
 				if(0 == databuff.size())
 				{
@@ -205,8 +228,10 @@ void WriteMem_gdrom(u32 Addr, u32 data, u32 sz)
 	case GD_SECTCNT:	rSECTCNT=data;	return;
 
 	case GD_SECTNUM:	printf("Write to SECTNUM\n");		break;
-	case GD_BYCTLLO:	printf("Write to GD_BYCTLLO\n");	break;
-	case GD_BYCTLHI:	printf("Write to GD_BYCTLHI\n");	break;
+
+	case GD_BYCTLLO:	gdSR.ByteCountLO = (u8)data;		return;
+	case GD_BYCTLHI:	gdSR.ByteCountHI = (u8)data;		return;
+
 	case GD_DEVCTRL:	printf("Write to GD_DEVCTRL\n");	break;
 	case GD_DRVSEL:		printf("Write to GD_DRVSEL\n");		break;
 
@@ -254,6 +279,18 @@ void WriteMem_gdrom(u32 Addr, u32 data, u32 sz)
 		case GDC_NOP:
 		case GDC_SFT_RESET:		// *FIXME*
 			gdrom_reg_Reset(0);
+
+			if(dmaCount) {
+				dmaCount = -666;
+				lprintf("\n~!\tAborting GDROM Dma Transfer!\n");
+				RaiseInterrupt(InterruptID::holly_GDROM_DMA);
+			}
+
+		//	dmaCount = 0;
+			dmaOffset = 0;
+			rSTATUS.BSY = 0;
+			rSTATUS.DRDY = 1;
+			gdSetSR(GD_STATUS_OK);
 			RaiseInterrupt(InterruptID::holly_GDROM_CMD);
 			return;
 
@@ -316,20 +353,34 @@ void ProcessSPI(void)
 
 		lprintf("(GD)\tSPI_REQ_MODE: %02X+%02X !\n\n", cmd[2], cmd[4]);
 
-		for(int x=(int)(cmd[4]-2); x>=0; x-=2)
-			databuff.push_back(gdRM.Words[cmd[2]+x]);	// ? uh.. i think so 
+		for(int x=(int)((cmd[4]-2)>>1); x>=0; x--)
+			databuff.push_back(gdRM.Words[(cmd[2]>>1)+x]);
 
 		gdSR.ByteCount = cmd[4];
 		goto pio_complete;
 
 
 	case SPI_REQ_ERROR:		break;
-	case SPI_GET_TOC:		break;
+
+	case SPI_GET_TOC:
+	 {
+		u32 gdtoc[128];	// plus padding
+		libGDR->gdr_info.GetToc(&gdtoc[0], DiskArea(cmd[1]&1));
+
+		u32 len = (cmd[3]<<8) | cmd[4];
+
+		lprintf("(GD)\tSPI_GET_TOC: len %d !\n\n", len);
+
+		for(int x=(int)((len-2)>>1); x>=0; x--)
+			databuff.push_back( ((u16*)gdtoc)[x] );	// ? uh.. i think so 
+
+		gdSR.ByteCount = len;
+		goto pio_complete;
+	 }
+
 
 	case SPI_REQ_SES:
 		lprintf("(GD)\tSPI_REQ_SES: %02X Len:%02X !\n\n", cmd[2], cmd[4]);
-
-//#define bswap16(x)	((((x)&255)<<8) | (((x)>>8)&255))
 
 		u16 SessionInfo[3];
 		libGDR->gdr_info.GetSessionInfo((u8*)&SessionInfo[0], cmd[2]);
@@ -349,7 +400,48 @@ void ProcessSPI(void)
 
 	case SPI_CD_READ:	// dma or pio
 	case SPI_CD_READ2:
-		break;
+	 {
+		if(0x28 != cmd[1])
+			printf("(GD)\tSPI_CD_READ: Params: %02X Unhandled atm !\n\n", cmd[1]);
+
+		u32 Start  = cmd[2]<<16 | cmd[3]<<8 | cmd[4];
+		u32 Length = cmd[8]<<16 | cmd[9]<<8 | cmd[10];
+
+		lprintf("(GD)\tSPI_CD_READ: Params: %02X, Start: %06X, Len:%d !\n\n",
+			cmd[1],	Start, Length);
+
+			// *FIXME* modify the gd spec, pass all of cmd[1] to lib.
+		libGDR->gdr_info.ReadSector(gdReadBuffer, Start, Length, 2048);
+
+		gdSR.ByteCount = 0;
+		dmaCount = Length*2048;	// *FIXME* test against cmd[1]
+
+		if(rFEATURES&1)	// DMA
+		{
+			goto dma_complete;	// *FIXME* 
+		}
+		else			// PIO
+		{
+			goto pio_complete;	// *FIXME* 
+		}
+	  }
+
+	case 0x70:			// map drive 
+		goto complete;
+
+
+extern u16 g_aValues0x71[];
+extern u16 g_aValues0x71_b[];
+
+	case 0x71:			// ???
+
+		lprintf("\n\tSPI CMD 71 len: %d\n\n", gdSR.ByteCount);
+
+		for(int i=0; i<(gdSR.ByteCount>>1); i++)
+			databuff.push_back(g_aValues0x71_b[(gdSR.ByteCount>>1)-i-1]);
+
+	//	gdSR.ByteCount = rBYCTL.Full;
+		goto pio_complete;
 	}
 	printf("!(GD)\tERROR: GDROM SPI Command %02X Unhandled!\n\n", cmd[0]);
 	lprintf("!(GD)\tERROR: GDROM SPI Command %02X Unhandled!\n\n", cmd[0]);
@@ -373,7 +465,8 @@ pio_complete:
 	return;
 
 dma_complete:
-
+	rSTATUS.BSY = 1;
+	// dma in progress, ...
 	return;
 }
 
@@ -389,6 +482,71 @@ void NotifyEvent_gdrom(DriveEvent info, void* param)
 
 
 
+void DMAC_Ch3St(u32 data)
+{
+	if(!(data&1) || !(SB_GDEN &1))
+		return;
+
+	//TODO : Fix dmaor
+	u32 dmaor	= DMAC_DMAOR;
+
+	u32	src		= SB_GDSTAR,
+		len		= SB_GDLEN ;
+
+	// do we need to do this for gdrom dma ?
+	if(0x8201 != (dmaor &DMAOR_MASK)) {
+		printf("\n!\tGDROM: DMAOR has invalid settings (%X) !\n", dmaor);
+		//return;
+	}
+	if( len & 0x1F ) {
+		printf("\n!\tGDROM: SB_GDLEN has invalid size (%X) !\n", len);
+		return;
+	}
+
+	if( 1 == SB_GDDIR ) {
+		memcpy( &mem_b[src&0xFFFFFF], &gdReadBuffer[dmaOffset], len );
+
+		if (len>=8*1024*1024)
+			printf("\n~\tERROR: GDROM DMA LENGTH LARGER THAN BUFFER SIZE!\n\n");
+
+	//	lprintf("\n(DMA)\tGDROM DMA Started! src: %08X, len: %08X, dmaor: %X (dmaCount=%d)\n\n", src, len, dmaor, dmaCount);
+	}
+	else
+		printf("\n!\tGDROM: SB_GDDIR %X (TO AICA WAVE MEM?) !\n\n", SB_GDDIR);
+
+	SB_GDLEN = 0x00000000;
+	SB_GDSTAR = (src + len);
+	SB_GDST=0;//done
+
+	// The DMA end interrupt flag (SB_ISTNRM - bit 19: DTDE2INT) is set to "1."
+	RaiseInterrupt(holly_GDROM_DMA);
+
+
+
+	if(0 >= (dmaCount-len))	// DMAs Are Finished
+	{
+		dmaCount = 0;
+		dmaOffset = 0;
+		rSTATUS.BSY = 0;
+		rSTATUS.DRDY = 1;
+		gdSetSR(GD_STATUS_OK);
+		RaiseInterrupt(InterruptID::holly_GDROM_CMD);
+		lprintf("GD DMA Complete, Finished!\n");
+	}
+	else
+	{
+		static u32 last = 0x10000000;
+
+		if(dmaCount < (last-0x1000)) {
+			last = dmaCount;
+			lprintf("GD DMA Complete, %d Remaining!\n", dmaCount);
+		}
+
+		dmaCount -= len;
+		dmaOffset += len;
+	}
+
+}
 
 
 char gdreg_names[64][64] =

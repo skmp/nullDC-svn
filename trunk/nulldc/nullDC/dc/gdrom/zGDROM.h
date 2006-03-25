@@ -6,6 +6,9 @@
 
 
 
+#ifdef _MSC_VER
+#pragma pack(push, 1)
+#endif
 
 
 
@@ -206,6 +209,18 @@ typedef union
 
 } gdStatusReg;
 
+typedef union
+{
+	struct {
+		u8 LO;
+		u8 HI;
+		u16 pad;
+	};
+
+	u32 Full;
+
+} gdByCnt;
+
 
 typedef union
 {
@@ -224,8 +239,6 @@ typedef union
 
 
 
-
-
 typedef union
 {
 	struct {
@@ -241,12 +254,15 @@ typedef union
 		u8	SystemDate[6];
 	};
 
-	u8 Bytes[32];
-	u8 Words[16];
+	u16 Words[16];
 
 } gdReqMode;
 
 
+
+#ifdef _MSC_VER
+#pragma pack(pop)
+#endif
 
 
 #endif //__ZGDROM_H__
