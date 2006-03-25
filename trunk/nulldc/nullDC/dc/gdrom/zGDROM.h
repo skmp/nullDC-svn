@@ -158,6 +158,9 @@ typedef enum
 	GD_SEND_DATA	= (6),
 	GD_SEND_MSG		= (7),
 
+	GD_STATUS_ERR	= GD_STATUS_OK | 4,		// Set CHECK
+	GD_STATUS_CERR	= GD_STATUS_OK | 24,	// Set CHECK, CORR
+
 } gdIntStatus;
 
 
@@ -168,7 +171,13 @@ typedef struct			// *FIXME* not finished
 			u8 CoD:	1;
 			u8 DRQ: 1;
 			u8 IO:	1;
-			u8 zRs:	5;
+
+			u8 CHECK:	1;
+			u8 CORR:	1;
+		//	u8 DRDY:	1;
+		//	u8 BSY:		1;
+
+			u8 zRs:	3;			// make sure to keep in sync w/ above if you uncomment
 		};
 
 		u8	iStatus;		// Internal Status, use GD_* from above
@@ -209,6 +218,23 @@ typedef union
 	u32 Full;
 
 } gdStatusReg;
+
+
+typedef union 
+{
+	struct {
+		u8 ILI:		1;
+		u8 EOMF:	1;
+		u8 ABRT:	1;
+		u8 MCR:		1;
+
+		u8 Sense:	4;
+	};
+
+	u8 Full;
+
+} gdErrorReg;
+
 
 typedef union
 {

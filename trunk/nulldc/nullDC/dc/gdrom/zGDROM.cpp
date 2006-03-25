@@ -21,7 +21,6 @@ vector<u16> cmdbuff;	// max 16 bytes
 vector<u16> databuff;	// max ???
 
 
-static u32 rERROR=0;
 static u32 rFEATURES=0;
 static u32 rSECTCNT=0;
 static u32 rDRVSEL=0;
@@ -29,7 +28,7 @@ static u32 rDRVSEL=0;
 static u32 rIMPEDHI0=0, rIMPEDHI4=0;
 static u32 rIMPEDHI8=0, rIMPEDHIC=0;
 
-//static gdByCnt		rBYCTL;
+static gdErrorReg	rERROR;
 static gdStatusReg	rSTATUS;
 static gdIReasonReg	rIREASON;
 
@@ -53,9 +52,11 @@ static void gdSetSR(gdIntStatus sr)
 {
 	gdSR.iStatus = (u8)sr;
 
-	rIREASON.IO	= gdSR.IO;
-	rIREASON.CoD= gdSR.CoD;
-	rSTATUS.DRQ	= gdSR.DRQ;
+	rIREASON.IO		= gdSR.IO;
+	rIREASON.CoD	= gdSR.CoD;
+	rSTATUS.DRQ		= gdSR.DRQ;
+	rSTATUS.CHECK	= gdSR.CHECK;
+	rSTATUS.CORR	= gdSR.CORR;
 
 	// ToDo: Use SR to add other bits as well ie: BSY or DRDY and STATE portion of iDevType
 }
@@ -80,7 +81,7 @@ void gdrom_reg_Init(void)
 {
 	logd(420,0,0);
 
-	rERROR = 1;
+	rERROR.Full	 = 0;
 	rSTATUS.Full = 0;
 	rIREASON.Full= 0;
 	
@@ -135,8 +136,7 @@ u32  ReadMem_gdrom(u32 Addr, u32 sz)
 	case GD_IMPEDHI8:	return rIMPEDHI8;
 	case GD_IMPEDHIC:	return rIMPEDHIC;
 
-	case GD_ERROR:		return rERROR;
-
+	case GD_ERROR:		return rERROR.Full;
 	case GD_IREASON:	return rIREASON.Full;
 
 	case GD_SECTNUM:	return gdSR.iDevType;
@@ -149,8 +149,11 @@ u32  ReadMem_gdrom(u32 Addr, u32 sz)
 		SB_ISTEXT &= ~1;
 
 		// this actually makes it go past where it stops but just causes it to loop doing error checking?
-	//	if(dmaCount == -666)
-	//		RaiseInterrupt(InterruptID::holly_GDROM_CMD);
+		if(rERROR.ABRT) {
+			RaiseInterrupt(InterruptID::holly_GDROM_CMD);	// Raise Interrupt for aborted cmd
+
+			// clear error status
+		}
 
 		return rSTATUS.Full;
 
@@ -280,10 +283,14 @@ void WriteMem_gdrom(u32 Addr, u32 data, u32 sz)
 		case GDC_SFT_RESET:		// *FIXME*
 			gdrom_reg_Reset(0);
 
-			if(dmaCount) {
-				dmaCount = -666;
+			if(dmaCount>0) {
 				lprintf("\n~!\tAborting GDROM Dma Transfer!\n");
 				RaiseInterrupt(InterruptID::holly_GDROM_DMA);
+				gdSetSR(GD_STATUS_CERR);
+				rERROR.ABRT	= 0x1;
+				rERROR.Sense= 0xB; 
+				rSTATUS.DRDY = 0;
+				dmaCount	= 0;
 			}
 
 		//	dmaCount = 0;
@@ -332,6 +339,8 @@ void ProcessSPI(void)
 	{
 	case SPI_TEST_UNIT:
 		lprintf("(GD)\tSPI_TEST_UNIT !\n\n");
+	//	rERROR.Full = 0;
+	//	gdSetSR(GD_STATUS_OK);
 		goto complete;	// thats all
 
 	case SPI_CD_OPEN:
@@ -499,9 +508,14 @@ void DMAC_Ch3St(u32 data)
 		printf("\n!\tGDROM: DMAOR has invalid settings (%X) !\n", dmaor);
 		//return;
 	}
-	if( len & 0x1F ) {
+	if(len & 0x1F) {
 		printf("\n!\tGDROM: SB_GDLEN has invalid size (%X) !\n", len);
 		return;
+	}
+
+	if(0 == len) {
+		printf("\n!\tGDROM: Len: %X, Normal Termination !\n", len);
+		goto complete_dma_chain;	// *FIXME* it needs the proper INTRQ's too
 	}
 
 	if( 1 == SB_GDDIR ) {
@@ -536,6 +550,7 @@ void DMAC_Ch3St(u32 data)
 	}
 	else
 	{
+complete_dma_chain:
 		static u32 last = 0x10000000;
 
 		if(dmaCount < (last-0x1000)) {
@@ -552,52 +567,6 @@ void DMAC_Ch3St(u32 data)
 
 
 
-
-
-/*
-**	HLE Section
-*/
-
-bool iso9660_Init(u32 session_base);
-bool iso9660_LoadFile(char filename[16], u32 dwAddress, bool Descramble);
-
-void gdBootHLE(void)
-{
-
-	printf("\n~~~\tgdBootHLE()\n\n");
-
-	u32 toc[102];
-	libGDR->gdr_info.GetToc(&toc[0], (DiskArea)1);
-
-	u32 i=0;
-	for(i=0; i<102; i++)
-	{
-		if(4 == (toc[i]&4))
-			break;
-		if(~0 == toc[i])
-		{	i--;	break;	}
-	}
-
-	u32 addr = ((toc[i]&0xFF00)<<8) | ((toc[i]>>8)&0xFF00) | ((toc[i]>>24)&255);
-
-	///////////////////////////
-	u8 * pmem = &mem_b[0x8000];
-	libGDR->gdr_info.ReadSector(pmem, 0, 16, 2048);
-
-	char bootfile[16] = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
-	for(i=0; i<16; i++) {
-		if(0x20 == pmem[0x60+i])
-			break;
-		bootfile[i] =  pmem[0x60+i];
-	}
-
-	printf("IP.BIN BootFile: %s\n", bootfile);
-
-	if(!iso9660_Init(addr))
-		printf("GDHLE: ERROR: iso9660_Init() Failed!\n\n");
-	if(!iso9660_LoadFile(bootfile, 0x8c010000, true))
-		printf("GDHLE: ERROR: iso9660_LoadFile() Failed!\n\n");
-}
 
 
 
@@ -676,6 +645,65 @@ void logd(u32 rw, u32 addr, u32 data)
 		lprintf("(W)[%08X] %s := %X \n", addr, gdreg_names[(addr&255)>>2], data);
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+**	HLE Section
+*/
+
+bool iso9660_Init(u32 session_base);
+bool iso9660_LoadFile(char filename[16], u32 dwAddress, bool Descramble);
+
+void gdBootHLE(void)
+{
+
+	printf("\n~~~\tgdBootHLE()\n\n");
+
+	u32 toc[102];
+	libGDR->gdr_info.GetToc(&toc[0], (DiskArea)1);
+
+	u32 i=0;
+	for(i=0; i<102; i++)
+	{
+		if(4 == (toc[i]&4))
+			break;
+		if(~0 == toc[i])
+		{	i--;	break;	}
+	}
+
+	u32 addr = ((toc[i]&0xFF00)<<8) | ((toc[i]>>8)&0xFF00) | ((toc[i]>>24)&255);
+
+	///////////////////////////
+	u8 * pmem = &mem_b[0x8000];
+	libGDR->gdr_info.ReadSector(pmem, 0, 16, 2048);
+
+	char bootfile[16] = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+	for(i=0; i<16; i++) {
+		if(0x20 == pmem[0x60+i])
+			break;
+		bootfile[i] =  pmem[0x60+i];
+	}
+
+	printf("IP.BIN BootFile: %s\n", bootfile);
+
+	if(!iso9660_Init(addr))
+		printf("GDHLE: ERROR: iso9660_Init() Failed!\n\n");
+	if(!iso9660_LoadFile(bootfile, 0x8c010000, true))
+		printf("GDHLE: ERROR: iso9660_LoadFile() Failed!\n\n");
+}
+
 
 
 
