@@ -84,6 +84,8 @@ void gdrom_reg_Init(void)
 	rERROR.Full	 = 0;
 	rSTATUS.Full = 0;
 	rIREASON.Full= 0;
+
+	rSTATUS.DSC = 1;
 	
 	gdSR.iStatus	= GD_RESET_SR;
 	gdSR.iDevType	= GDFORMAT_XA | GDSTATE_STANDBY;
@@ -286,10 +288,11 @@ void WriteMem_gdrom(u32 Addr, u32 data, u32 sz)
 			if(dmaCount>0) {
 				lprintf("\n~!\tAborting GDROM Dma Transfer!\n");
 				RaiseInterrupt(InterruptID::holly_GDROM_DMA);
-				gdSetSR(GD_STATUS_CERR);
+				gdSetSR(GD_STATUS_ERR);
 				rERROR.ABRT	= 0x1;
 				rERROR.Sense= 0xB; 
 				rSTATUS.DRDY = 0;
+				rSTATUS.DSC = 1;
 				dmaCount	= 0;
 			}
 
