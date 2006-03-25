@@ -18,6 +18,7 @@
 #include "dc/maple/maple_if.h"
 #include "dc/sh4/sh4_if.h"
 #include "dc/sh4/sh4_cst.h"
+#include "dc/gdrom/gdrom_if.h"
 #include "dc/dc.h"
 
 /////////////////////////////
@@ -264,6 +265,16 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 			}
 			//add warn message
 			return 0;
+
+		case ID_FILE_BOOTHLE:
+		 {
+			gdBootHLE();
+			sh4_cpu->Reset(false);//do a hard reset
+			sh4_cpu->SetRegister(Sh4RegType::reg_gbr,0x8c000000);
+			sh4_cpu->SetRegister(Sh4RegType::reg_pc,0x8c008300);
+		//	Start_DC();
+			return 0;
+		 }
 
 		case ID_FILE_EXIT:
 			PostMessage(hWnd, WM_CLOSE, 0,0);

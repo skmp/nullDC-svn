@@ -142,14 +142,14 @@ void AddHook(u32 Addr, u16 Opcode)
 void LoadSyscallHooks()
 {
 	//skip em all :)
-	//AddHook(ReadMem32(dc_bios_syscall_system),0x000B);
-	//AddHook(ReadMem(dc_bios_syscall_font,4),0x000B);
-	//AddHook(ReadMem32(dc_bios_syscall_flashrom),0x000B);
-	//AddHook(ReadMem32(dc_bios_syscall_GDrom_misc),0x000B);
+	AddHook(ReadMem32(dc_bios_syscall_system),0x000B);
+	AddHook(ReadMem32(dc_bios_syscall_font),  0x000B);
+	AddHook(ReadMem32(dc_bios_syscall_flashrom),0x000B);
+	AddHook(ReadMem32(dc_bios_syscall_GDrom_misc),0x000B);
 	AddHook(ReadMem32(dc_bios_syscall_resets_Misc),0x000B);
 	
 	//hook for hle
-	//AddHook(0x0800, 0x000B);			// unknown patch for gdrom
-	//AddHook(0x1000, GDROM_OPCODE);	// gdrom call, reads / checks status
-	//AddHook(0x3C00, SYSINFO_OPCODE);	// sysinfo call, sets up flashrom etc
+	AddHook(0x0800, 0x000B);			// unknown patch for gdrom
+	AddHook(0x1000, GDROM_OPCODE);		// gdrom call, reads / checks status
+	AddHook(0x3C00, 0x000B/*SYSINFO_OPCODE*/);	// sysinfo call, sets up flashrom etc
 }

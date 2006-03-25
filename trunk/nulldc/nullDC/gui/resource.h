@@ -133,13 +133,16 @@
 #define ID_DEBUG_ARM7DEBUGGER           40020
 #define ID_OPTIONS_SELECTPLUGIN         40021
 #define ID_OPTIONS_SELECTPLUGINS        40022
+#define ID_FILE_BOOTGDROM               40023
+#define ID_FILE_D                       40024
+#define ID_FILE_BOOTHLE                 40025
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        119
-#define _APS_NEXT_COMMAND_VALUE         40023
+#define _APS_NEXT_COMMAND_VALUE         40026
 #define _APS_NEXT_CONTROL_VALUE         1098
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

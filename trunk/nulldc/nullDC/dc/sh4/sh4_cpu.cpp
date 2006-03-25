@@ -56,7 +56,7 @@ void cpu_iNimp(u32 op, char* info)
 	printf("not implemented opcode : %X : ", op);
 	printf(info);
 	printf(" @ %X\n", pc);
-	//Sh4_int_Stop();
+	Sh4_int_Stop();
 }
 
 #include "sh4_cpu_movs.h"

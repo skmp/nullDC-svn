@@ -244,6 +244,8 @@ BEGIN
     BEGIN
         MENUITEM "&Open",                       ID_FILE_OPENBIN
         MENUITEM SEPARATOR
+        MENUITEM "Boot GDRom (HLE)",            ID_FILE_BOOTHLE
+        MENUITEM SEPARATOR
         MENUITEM "E&xit",                       ID_FILE_EXIT
     END
     POPUP "&System"
