@@ -109,6 +109,11 @@ void Sh4_int_Stop()
 		delete sh4_int_thr_handle;
 		sh4_int_thr_handle=0;
 	}
+	if (sh4_int_thr_handle)
+	{
+		delete sh4_int_thr_handle;
+		sh4_int_thr_handle=0;
+	}
 }
 
 void Sh4_int_Step() 

@@ -91,7 +91,7 @@ void Stop_DC()
 {
 	if (dc_inited)//sh4_cpu may not be inited ;)
 	{
-		if (sh4_cpu->IsCpuRunning())
+		//if (sh4_cpu->IsCpuRunning())
 		{
 			sh4_cpu->Stop();
 		}

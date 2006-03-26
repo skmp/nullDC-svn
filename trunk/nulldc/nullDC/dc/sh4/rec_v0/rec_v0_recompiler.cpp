@@ -63,7 +63,7 @@ struct RecRegType
 	bool IsConst;
 	u32 ConstValue;
 
-	void operator-=(const RecRegType &rhs)
+	void operator-=(const RecRegType& rhs)
     {
        	if (rhs.IsConst)//sub x , value
 		{
@@ -127,7 +127,7 @@ struct RecRegType
 		}
     }
 
-	void operator+=(const RecRegType &rhs)
+	void operator+=(const RecRegType& rhs)
     {
        	if (rhs.IsConst)//add x , value
 		{
@@ -191,7 +191,7 @@ struct RecRegType
 		}
     }
 
-	void operator=(const RecRegType &rhs)
+	void operator=(const RecRegType& rhs)
     {
 		if (rhs.IsConst)
 		{
@@ -222,12 +222,12 @@ struct RecRegType
 
 		}
     }
-	void operator=(const u32 &constv)
+	void operator=(const u32 constv)
     {
 		IsConst=true;
 		ConstValue=constv;	
     }
-	void operator=(const s32 &constv)
+	void operator=(const s32 constv)
     {
 		IsConst=true;
 		ConstValue=constv;	
@@ -240,13 +240,28 @@ struct RecRegType
 	};
 	void operator--(int wtf)
 	{
-		//this-=1;
+		(*this)-=1;
 	}
 	void operator++(int wtf)
 	{
-		//this+=1;
+		(*this)+=1;
 	}
-	
+
+	void operator&=(const s32 constv)
+	{
+	};
+	void operator|=(const s32 constv)
+	{
+	};
+	void operator^=(const s32 constv)
+	{
+	};
+	void operator>>=(const s32 constv)
+	{
+	};
+	void operator<<=(const s32 constv)
+	{
+	};
 	bool IsInCache()
 	{
 		
@@ -268,6 +283,7 @@ struct RecSrType: public RecRegType
 	{
 		
 	}
+	RecRegType full;
 };
 
 struct RecFpscrType: public RecRegType
@@ -291,83 +307,112 @@ RecFpscrType rec_fpscr;
 
 
 //Read Mem macros
-#define ReadMemU32(to,addr) //to=ReadMem32(addr)
-#define ReadMemS16(to,addr)// to=(u32)(s32)(s16)ReadMem16(addr)
-#define ReadMemS8(to,addr) //to=(u32)(s32)(s8)ReadMem8(addr)
+#define ReadMemU32(to,addr)					ReadMemRec(to,addr,0,4)//to=ReadMem32(addr)
+#define ReadMemS16(to,addr)					ReadMemRec(to,addr,0,2)// to=(u32)(s32)(s16)ReadMem16(addr)
+#define ReadMemS8(to,addr)					ReadMemRec(to,addr,0,1)//to=(u32)(s32)(s8)ReadMem8(addr)
 
 //Base,offset format
-#define ReadMemBOU32(to,addr,offset)	//ReadMemU32(to,addr+offset)
-#define ReadMemBOS16(to,addr,offset)	//ReadMemS16(to,addr+offset)
-#define ReadMemBOS8(to,addr,offset)		//ReadMemS8(to,addr+offset)
+#define ReadMemBOU32(to,addr,offset)		ReadMemRec(to,addr,offset,4)//ReadMemU32(to,addr+offset)
+#define ReadMemBOS16(to,addr,offset)		ReadMemRec(to,addr,offset,2)//ReadMemS16(to,addr+offset)
+#define ReadMemBOS8(to,addr,offset)			ReadMemRec(to,addr,offset,1)//ReadMemS8(to,addr+offset)
 
 //Write Mem Macros
-#define WriteMemU32(addr,data)				//WriteMem32(addr,(u32)data)
-#define WriteMemU16(addr,data)				//WriteMem16(addr,(u16)data)
-#define WriteMemU8(addr,data)				//WriteMem8(addr,(u8)data)
+#define WriteMemU32(addr,data)				WriteMemRec(addr,0,data,4)//WriteMem32(addr,(u32)data)
+#define WriteMemU16(addr,data)				WriteMemRec(addr,0,data,2)//WriteMem16(addr,(u16)data)
+#define WriteMemU8(addr,data)				WriteMemRec(addr,0,data,1)//WriteMem8(addr,(u8)data)
 
 //Base,offset format
-#define WriteMemBOU32(addr,offset,data)		//WriteMemU32(addr+offset,data)
-#define WriteMemBOU16(addr,offset,data)		//WriteMemU16(addr+offset,data)
-#define WriteMemBOU8(addr,offset,data)		//WriteMemU8(addr+offset,data)
+#define WriteMemBOU32(addr,offset,data)		WriteMemRec(addr,offset,data,4)//WriteMemU32(addr+offset,data)
+#define WriteMemBOU16(addr,offset,data)		WriteMemRec(addr,offset,data,2)//WriteMemU16(addr+offset,data)
+#define WriteMemBOU8(addr,offset,data)		WriteMemRec(addr,offset,data,1)//WriteMemU8(addr+offset,data)
 
-void ReadMemRec(RecRegType &to,u32 addr,u32 sz)
+void ReadMemRec(RecRegType &to,u32 addr,u32 offset,u32 sz)
 {
 	//do some magic :P
 }
 
-void ReadMemRec(RecRegType &to,RecRegType& addr,u32 sz)
+void ReadMemRec(RecRegType &to,RecRegType& addr,u32 offset,u32 sz)
 {
 	//do some magic :P
 	if (addr.IsConst)
 	{
-		ReadMemRec(to,addr.ConstValue,sz);
+		//ReadMemRec(to,addr.ConstValue,sz);
 		return;
 	}
 }
 
 
 
+void ReadMemRec(RecRegType &to,RecRegType& addr,RecRegType& offset,u32 sz)
+{
+}
 //WriteMem(u32 addr,u32 data,u32 sz)
-void WriteMemRec(u32 addr,u32 data,u32 sz)
+void WriteMemRec(u32 addr,u32 offset,u32 data,u32 sz)
 {
 }
-void WriteMemRec(u32 addr,RecRegType &data,u32 sz)
+void WriteMemRec(u32 addr,u32 offset,RecRegType &data,u32 sz)
 {
 	if (data.IsConst)
 	{
-		WriteMemRec(addr,data.ConstValue,sz);
+		//WriteMemRec(addr,data.ConstValue,sz);
 		return;
 	}
 }
 
-void WriteMemRec(RecRegType& addr,u32 data,u32 sz)
+void WriteMemRec(u32 addr,RecRegType& offset,u32 data,u32 sz)
 {
-	if (addr.IsConst)
-	{
-		WriteMemRec(addr.ConstValue,data,sz);
-		return;
-	}
 }
-void WriteMemRec(RecRegType& addr,RecRegType &data,u32 sz)
+void WriteMemRec(u32 addr,RecRegType& offset,RecRegType &data,u32 sz)
 {
 	if (data.IsConst)
 	{
-		WriteMemRec(addr,data.ConstValue,sz);
+		//WriteMemRec(addr,data.ConstValue,sz);
+		return;
+	}
+}
+
+void WriteMemRec(RecRegType& addr,u32 offset,u32 data,u32 sz)
+{
+	if (addr.IsConst)
+	{
+		//WriteMemRec(addr.ConstValue,data,sz);
+		return;
+	}
+}
+void WriteMemRec(RecRegType& addr,u32 offset,RecRegType &data,u32 sz)
+{
+	if (data.IsConst)
+	{
+		//WriteMemRec(addr,data.ConstValue,sz);
 		return;
 	}
 	else if (addr.IsConst)
 	{
-		WriteMemRec(addr.ConstValue,data,sz);
+		//WriteMemRec(addr.ConstValue,data,sz);
 		return;
 	}
 }
-
-
-
-
-
-
-
+void WriteMemRec(RecRegType& addr,RecRegType& offset,u32 data,u32 sz)
+{
+	if (addr.IsConst)
+	{
+		//WriteMemRec(addr.ConstValue,data,sz);
+		return;
+	}
+}
+void WriteMemRec(RecRegType& addr,RecRegType& offset,RecRegType &data,u32 sz)
+{
+	if (data.IsConst)
+	{
+		//WriteMemRec(addr,data.ConstValue,sz);
+		return;
+	}
+	else if (addr.IsConst)
+	{
+		//WriteMemRec(addr.ConstValue,data,sz);
+		return;
+	}
+}
 #define UpdateFPSCR rec_UpdateFPSCR
 #define UpdateSR rec_UpdateSR
 
