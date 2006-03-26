@@ -272,6 +272,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 			sh4_cpu->Reset(false);//do a hard reset
 			sh4_cpu->SetRegister(Sh4RegType::reg_gbr,0x8c000000);
 			sh4_cpu->SetRegister(Sh4RegType::reg_pc,0x8c008300);
+			LoadSyscallHooks();//
 		//	Start_DC();
 			return 0;
 		 }

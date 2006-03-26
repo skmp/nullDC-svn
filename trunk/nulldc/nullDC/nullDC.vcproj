@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1253"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="8,00"
 	Name="nullDC"
 	ProjectGUID="{47CE9BF1-542B-4C45-A22A-353A9FC97322}"
 	RootNamespace="nullDC"
@@ -625,15 +625,7 @@
 					RelativePath=".\dc\gdrom\gdrom_response.cpp"
 					>
 					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
 						Name="Release|Win32"
-						ExcludedFromBuild="true"
 						>
 						<Tool
 							Name="VCCLCompilerTool"
