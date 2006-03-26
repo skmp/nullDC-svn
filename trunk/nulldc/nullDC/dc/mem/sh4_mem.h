@@ -19,13 +19,14 @@ extern Array<u8> bios_b;
 //flash rom
 extern Array<u8> flash_b;
 
+#define MEMCALL __fastcall
 
-u8 ReadMem8(u32 addr);
-u16 ReadMem16(u32 addr);
-u32 ReadMem32(u32 addr);
-void WriteMem8(u32 addr,u8 data);
-void WriteMem16(u32 addr,u16 data);
-void WriteMem32(u32 addr,u32 data);
+u8 MEMCALL ReadMem8(u32 addr);
+u16 MEMCALL ReadMem16(u32 addr);
+u32 MEMCALL ReadMem32(u32 addr);
+void MEMCALL WriteMem8(u32 addr,u8 data);
+void MEMCALL WriteMem16(u32 addr,u16 data);
+void MEMCALL WriteMem32(u32 addr,u32 data);
 
 //Init/Res/Term
 void mem_Init();

@@ -62,6 +62,8 @@ void cpu_iNimp(u32 op, char* info)
 
 #include "sh4_cpu_movs.h"
 #include "sh4_cpu_branch.h"
+#include "sh4_cpu_arith.h"
+#include "sh4_cpu_logic.h"
 
 
 //movca.l R0, @<REG_N>          
@@ -341,29 +343,6 @@ void cpu_iNimp(u32 op, char* info)
 
 }
 
-//and <REG_M>,<REG_N>           
- sh4op(i0010_nnnn_mmmm_1001)
-{
-	u32 n = GetN(op);
-	u32 m = GetM(op);
-	r[n] &= r[m];
-}
-
-//xor <REG_M>,<REG_N>           
- sh4op(i0010_nnnn_mmmm_1010)
-{//ToDo : Check This [26/4/05]
-	u32 n = GetN(op);
-	u32 m = GetM(op);
-	r[n] ^= r[m];
-}
-
-//or <REG_M>,<REG_N>            
- sh4op(i0010_nnnn_mmmm_1011)
-{//ToDo : Check This [26/4/05]
-	u32 n = GetN(op);
-	u32 m = GetM(op);	
-	r[n] |= r[m];
-}
 
 //cmp/str <REG_M>,<REG_N>       
  sh4op(i0010_nnnn_mmmm_1100)
@@ -615,16 +594,7 @@ void div1_new(u32 *r,u32 m , u32 n, StatusReg& sr)
 		sr.T = 0;
 }
 
-// sub <REG_M>,<REG_N>           
- sh4op(i0011_nnnn_mmmm_1000)
-{
-	u32 n = GetN(op);
-	u32 m = GetM(op);
-	//rn=(s32)r[n];
-	//rm=(s32)r[m];
-	r[n] =(u32)(((s32)r[n])-((s32)r[m]));
-	//r[n]=(u32)rn;
-}
+
 
 //subc <REG_M>,<REG_N>          
  sh4op(i0011_nnnn_mmmm_1010)
@@ -656,13 +626,7 @@ void div1_new(u32 *r,u32 m , u32 n, StatusReg& sr)
 	iNimp(op, "subv <REG_M>,<REG_N>");
 }
 
-//add <REG_M>,<REG_N>           
- sh4op(i0011_nnnn_mmmm_1100)
-{
-	u32 n = GetN(op);
-	u32 m = GetM(op);
-	r[n] =(u32)(((s32)r[n]) + ((s32)r[m]));
-}
+
 
 //dmuls.l <REG_M>,<REG_N>       
  sh4op(i0011_nnnn_mmmm_1101)
@@ -724,7 +688,7 @@ void div1_new(u32 *r,u32 m , u32 n, StatusReg& sr)
  sh4op(i0100_nnnn_0001_0000)
 {
 	u32 n = GetN(op);
-	r[n]=(u32)(((s32)r[n])-1);
+	r[n]-=1;
 	if (r[n] == 0)
 		sr.T=1;
 	else
@@ -883,56 +847,6 @@ void div1_new(u32 *r,u32 m , u32 n, StatusReg& sr)
 										else r[n] &= 0x7FFFFFFF;*/
 }
 
-
-//shll2 <REG_N>                 
- sh4op(i0100_nnnn_0000_1000)
-{//ToDo : Check This [26/4/05]
-	u32 n = GetN(op);
-	r[n] <<= 2;
-}
-
-
-//shll8 <REG_N>                 
- sh4op(i0100_nnnn_0001_1000)
-{//ToDo : Check This [26/4/05]
-	u32 n = GetN(op);
-	r[n] <<= 8;
-}
-
-
-//shll16 <REG_N>                
- sh4op(i0100_nnnn_0010_1000)
-{//ToDo : Check This [26/4/05]
-	u32 n = GetN(op);
-	r[n] <<= 16;
-}
-
-
-//shlr2 <REG_N>                 
- sh4op(i0100_nnnn_0000_1001)
-{//ToDo : Check This [26/4/05]
-	u32 n = GetN(op);
-	r[n] >>= 2;
-}
-
-
-//shlr8 <REG_N>                 
- sh4op(i0100_nnnn_0001_1001)
-{
-	//iNimp("shlr8 <REG_N>");
-	u32 n = GetN(op);
-	r[n] >>= 8;
-}
-
-
-//shlr16 <REG_N>                
- sh4op(i0100_nnnn_0010_1001)
-{//TODO : CHECK ME
-	u32 n = GetN(op);
-	r[n] >>= 16;
-}
-
-
 //jmp @<REG_N>                  
  sh4op(i0100_nnnn_0010_1011)
 {   //ToDo : Check Me [26/4/05] | Check new delay slot code [28/1/06]
@@ -1068,7 +982,7 @@ void div1_new(u32 *r,u32 m , u32 n, StatusReg& sr)
 	//iNimp("negc <REG_M>,<REG_N>");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
-	u32 temp= (u32)(0 - ((s32)r[m]));
+	/*u32 temp= (u32)(0 - ((s32)r[m]));
 
 	r[n] = temp - sr.T;
 
@@ -1078,7 +992,9 @@ void div1_new(u32 *r,u32 m , u32 n, StatusReg& sr)
 		sr.T = 0;
 
 	if (temp < r[n])
-		sr.T = 1;
+		sr.T = 1;*/
+	r[n]=-r[m]-sr.T;
+	sr.T=r[n]>>31;
 }
 
 
@@ -1087,7 +1003,7 @@ void div1_new(u32 *r,u32 m , u32 n, StatusReg& sr)
 {//ToDo : Check This [26/4/05]
 	u32 n = GetN(op);
 	u32 m = GetM(op);
-	r[n] =(u32)(0- ((s32)r[m]));
+	r[n] = -r[m];
 } 
 
 
@@ -1134,12 +1050,7 @@ void div1_new(u32 *r,u32 m , u32 n, StatusReg& sr)
 //
 // 7xxx
 //add #<imm>,<REG_N>
- sh4op(i0111_nnnn_iiii_iiii)
-{//TODO : CHACK THIS 
-	u32 n = GetN(op);
-	s32 stmp1 = (s32)(s8)(GetImm8(op));
-	r[n] = (u32)(((s32)r[n])+stmp1);
-}
+
 
 //
 // 8xxx
@@ -1147,7 +1058,7 @@ void div1_new(u32 *r,u32 m , u32 n, StatusReg& sr)
 // cmp/eq #<imm>,R0              
  sh4op(i1000_1000_iiii_iiii)
 {//TODO : Check This [26/4/05]
-	u32 imm = (u32)(s8)(GetImm8(op));
+	u32 imm = (u32)(s32)(GetSImm8(op));
 	if (r[0] == imm)
 		sr.T =1;
 	else
@@ -1181,31 +1092,6 @@ void div1_new(u32 *r,u32 m , u32 n, StatusReg& sr)
 }
 
 
-// and #<imm>,R0                 
- sh4op(i1100_1001_iiii_iiii)
-{//ToDo : Check This [26/4/05]
-	//iNimp("and #<imm>,R0");
-	u32 imm = GetImm8(op);
-	r[0] &= imm;
-}
-
-
-// xor #<imm>,R0                 
- sh4op(i1100_1010_iiii_iiii)
-{
-	//iNimp("xor #<imm>,R0");
-	u32  imm  = GetImm8(op);
-	r[0] ^= imm;
-}
-
-
-// or #<imm>,R0                  
- sh4op(i1100_1011_iiii_iiii)
-{//ToDo : Check This [26/4/05]
-	//iNimp("or #<imm>,R0");
-	u32 imm = GetImm8(op);
-	r[0] |= imm;
-} 
 
 
 // tst.b #<imm>,@(R0,GBR)        

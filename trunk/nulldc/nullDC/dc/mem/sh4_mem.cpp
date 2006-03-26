@@ -61,7 +61,7 @@ void mem_Term()
 }
 
 
-u8 ReadMem8(u32 addr)
+u8 MEMCALL ReadMem8(u32 addr)
 {
 	//if P4
 	if (((addr>>29) &0x7)==7)
@@ -115,7 +115,7 @@ u8 ReadMem8(u32 addr)
 	return 0;
 }
 
-u16 ReadMem16(u32 addr)
+u16 MEMCALL ReadMem16(u32 addr)
 {
 #ifdef TRACE
 	if (addr&0x1)
@@ -176,7 +176,7 @@ u16 ReadMem16(u32 addr)
 	return 0;
 }
 
-u32 ReadMem32(u32 addr)
+u32 MEMCALL ReadMem32(u32 addr)
 {
 #ifdef TRACE
 	if (addr&0x3)
@@ -238,7 +238,7 @@ u32 ReadMem32(u32 addr)
 }
 
 
-void WriteMem8(u32 addr,u8 data)
+void MEMCALL WriteMem8(u32 addr,u8 data)
 {
 	//if P4
 	if (((addr>>29) &0x7)==7)
@@ -297,7 +297,7 @@ void WriteMem8(u32 addr,u8 data)
 	EMUERROR3("Write to Mem not implemented , addr=%x,data=%x",addr,data);
 }
 
-void WriteMem16(u32 addr,u16 data)
+void MEMCALL WriteMem16(u32 addr,u16 data)
 {
 #ifdef TRACE
 	if (addr&0x1)
@@ -363,7 +363,7 @@ void WriteMem16(u32 addr,u16 data)
 	EMUERROR3("Write to Mem not implemented , addr=%x,data=%x",addr,data);
 }
 
-void WriteMem32(u32 addr,u32 data)
+void MEMCALL WriteMem32(u32 addr,u32 data)
 {
 #ifdef TRACE
 	if (addr&0x3)

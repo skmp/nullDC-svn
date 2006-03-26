@@ -250,16 +250,31 @@ struct RecRegType
 	void operator&=(const s32 constv)
 	{
 	};
+	void operator&=(const RecRegType& constv)
+	{
+	};
 	void operator|=(const s32 constv)
+	{
+	};
+	void operator|=(const RecRegType& constv)
 	{
 	};
 	void operator^=(const s32 constv)
 	{
 	};
+	void operator^=(const RecRegType& constv)
+	{
+	};
 	void operator>>=(const s32 constv)
 	{
 	};
+	void operator>>=(const RecRegType& constv)
+	{
+	};
 	void operator<<=(const s32 constv)
+	{
+	};
+	void operator<<=(const RecRegType& constv)
 	{
 	};
 	bool IsInCache()
@@ -424,4 +439,8 @@ void rec_UpdateSR()
 {
 }
 
+//>:D
+#include "dc\sh4\sh4_cpu_arith.h"
+//#include "dc\sh4\sh4_cpu_branch.h"
+#include "dc\sh4\sh4_cpu_logic.h"
 #include "dc\sh4\sh4_cpu_movs.h"
