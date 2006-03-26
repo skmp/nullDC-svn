@@ -156,7 +156,7 @@ LRESULT CALLBACK CtrlDisAsmView::wndProc(HWND hwnd, UINT msg, WPARAM wParam, LPA
 
 CtrlDisAsmView *CtrlDisAsmView::getFrom(HWND hwnd)
 {
-    return (CtrlDisAsmView *)GetWindowLong(hwnd, 0);
+    return (CtrlDisAsmView *)GetWindowPtr(hwnd, 0);
 }
 
 
@@ -165,7 +165,7 @@ CtrlDisAsmView *CtrlDisAsmView::getFrom(HWND hwnd)
 CtrlDisAsmView::CtrlDisAsmView(HWND _wnd)
 {
 	wnd=_wnd;
-	SetWindowLong(wnd, 0, (LONG)this);
+	SetWindowPtr(wnd, 0, this);
 	SetWindowLong(wnd, GWL_STYLE, GetWindowLong(wnd,GWL_STYLE) | WS_VSCROLL);
 	SetScrollRange(wnd, SB_VERT, -1,1,TRUE);
 	font = CreateFont(16,0,0,0,FW_DONTCARE,FALSE,FALSE,FALSE,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,DEFAULT_QUALITY,DEFAULT_PITCH,

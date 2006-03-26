@@ -235,7 +235,7 @@ struct RecRegType
 	void operator+=(const u32 constv)
 	{
 	};
-	void operator-=(const s32 constv)
+	void operator-=(const u32 constv)
 	{
 	};
 	void operator--(int wtf)
@@ -253,25 +253,25 @@ struct RecRegType
 	void operator&=(const RecRegType& constv)
 	{
 	};
-	void operator|=(const s32 constv)
+	void operator|=(const u32 constv)
 	{
 	};
 	void operator|=(const RecRegType& constv)
 	{
 	};
-	void operator^=(const s32 constv)
+	void operator^=(const u32 constv)
 	{
 	};
 	void operator^=(const RecRegType& constv)
 	{
 	};
-	void operator>>=(const s32 constv)
+	void operator>>=(const u32 constv)
 	{
 	};
 	void operator>>=(const RecRegType& constv)
 	{
 	};
-	void operator<<=(const s32 constv)
+	void operator<<=(const u32 constv)
 	{
 	};
 	void operator<<=(const RecRegType& constv)

@@ -156,7 +156,7 @@ LRESULT CALLBACK CtrlMemView::wndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
 
 CtrlMemView *CtrlMemView::getFrom(HWND hwnd)
 {
-    return (CtrlMemView *)GetWindowLong(hwnd, 0);
+    return (CtrlMemView *)GetWindowPtr(hwnd, 0);
 }
 
 
@@ -165,7 +165,7 @@ CtrlMemView *CtrlMemView::getFrom(HWND hwnd)
 CtrlMemView::CtrlMemView(HWND _wnd)
 {
 	wnd=_wnd;
-	SetWindowLong(wnd, 0, (LONG)this);
+	SetWindowPtr(wnd, 0, this);
 	SetWindowLong(wnd, GWL_STYLE, GetWindowLong(wnd,GWL_STYLE) | WS_VSCROLL);
 	SetScrollRange(wnd, SB_VERT, -1,1,TRUE);
 	font = CreateFont(16,0,0,0,FW_DONTCARE,FALSE,FALSE,FALSE,DEFAULT_CHARSET,

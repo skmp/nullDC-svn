@@ -343,6 +343,10 @@
 							>
 						</File>
 						<File
+							RelativePath=".\dc\sh4\sh4_cpu_logic.h"
+							>
+						</File>
+						<File
 							RelativePath=".\dc\sh4\sh4_cpu_movs.h"
 							>
 						</File>
