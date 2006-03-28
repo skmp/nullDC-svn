@@ -491,7 +491,7 @@ void ReadMemRecS(RecRegType &to,u32 addr,u32 offset,u32 sz)
 			CodeGen->MOVSX32M16toR(EAX,(u16*)GetMemPtr(ReadAddr,sz));
 		}
 		else
-			printf("ReadMemRec , wrong sz param\n");
+			printf("ReadMemRecS , wrong sz param\n");
 	}
 	else
 	{
@@ -508,7 +508,7 @@ void ReadMemRecS(RecRegType &to,u32 addr,u32 offset,u32 sz)
 			CodeGen->MOVSX32R16toR(EAX,EAX);
 		}
 		else
-			printf("ReadMemRec , wrong sz param\n");
+			printf("ReadMemRecS , wrong sz param\n");
 	}
 
 	to.SaveFrom(EAX);	//save the result
@@ -519,7 +519,7 @@ void ReadMemRecS(RecRegType &to,RecRegType& addr,u32 offset,u32 sz)
 	//do some magic :P
 	if (addr.IsConst)
 	{
-		ReadMemRec(to,addr.ConstValue,offset,sz);
+		ReadMemRecS(to,addr.ConstValue,offset,sz);
 		return;
 	}
 
@@ -540,7 +540,7 @@ void ReadMemRecS(RecRegType &to,RecRegType& addr,u32 offset,u32 sz)
 		CodeGen->MOVSX32R16toR(EAX,EAX);
 	}
 	else
-		printf("ReadMemRec , wrong sz param\n");
+		printf("ReadMemRecS , wrong sz param\n");
 
 	to.SaveFrom(EAX);	//save the result
 }
@@ -551,7 +551,7 @@ void ReadMemRecS(RecRegType &to,RecRegType& addr,RecRegType& offset,u32 sz)
 {
 	if (offset.IsConst)
 	{
-		ReadMemRec(to,addr,offset.ConstValue,sz);
+		ReadMemRecS(to,addr,offset.ConstValue,sz);
 		return;
 	}
 
@@ -578,7 +578,7 @@ void ReadMemRecS(RecRegType &to,RecRegType& addr,RecRegType& offset,u32 sz)
 		CodeGen->MOVSX32R16toR(EAX,EAX);
 	}
 	else
-		printf("ReadMemRec , wrong sz param\n");
+		printf("ReadMemRecS , wrong sz param\n");
 
 	
 	to.SaveFrom(EAX);	//save the result
@@ -760,22 +760,32 @@ void recStartRecompile()
 		delete CodeGen;
 	CodeGen=new Emmiter<>();
 }
-void recEndRecompile()
+void recEndRecompile(bool bNoGen,u32 npc)
 {
 	FlushKillAll();
+	if (!bNoGen)
+		CodeGen->MOV32ItoM(&pc,npc);
 	CodeGen->RET();
 }
 u32 recGetCodeSize()
 {
 	return CodeGen->UsedBytes();
 }
-bool recRecompileOp(u32 op,u32 rec_pc)
+u32* rec_pc_ptr;
+void __fastcall rec_cpu_opcode_nimp(u32 op,u32 pc_v);
+bool recRecompileOp(u32 op,u32 &rec_pc)
 {
+	rec_pc_ptr=&rec_pc;
 //	FlushKillAll();
 	RecOpPtr[op](op,rec_pc);
 //	FlushKillAll();
 	if (OpTyp[op] & (Branch | BranchDelay))
-		return false;
+	{
+		if (RecOpPtr[op]==rec_cpu_opcode_nimp)
+			return false;
+		else
+			return true;
+	}
 	else
 		return true;
 }
@@ -783,6 +793,18 @@ RecCodeCall* recGetFunction()
 {
 	return (RecCodeCall*)CodeGen->GetCode();
 }
+
+void SetRecPC(u32 new_pc)
+{
+	*rec_pc_ptr=new_pc;
+}
+
+void recExecDelayslot()
+{
+	u16 op = ReadMem16(*rec_pc_ptr+2);
+	RecOpPtr[op](op,*rec_pc_ptr+2);
+}
+#define ExecuteDelayslot recExecDelayslot
 
 #define UpdateFPSCR rec_UpdateFPSCR
 #define UpdateSR rec_UpdateSR

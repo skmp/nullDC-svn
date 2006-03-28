@@ -4,6 +4,7 @@
 
 struct recBlock
 {
+	u32 Calls;
 	u32 StartAddr;
 	u32 Cycles;
 	u32 Size;
@@ -14,3 +15,4 @@ struct recBlock
 recBlock* FindBlock(u32 start);
 recBlock* AddBlock(u32 start);
 bool RemoveBlock(u32 start);
+void InitHash();

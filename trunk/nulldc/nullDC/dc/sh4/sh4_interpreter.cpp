@@ -18,8 +18,8 @@
 #include <time.h>
 #include <float.h>
 
-#define CPU_TIMESLICE	(152)
-#define CPU_RATIO		(3)
+#define CPU_TIMESLICE	(448)
+#define CPU_RATIO		(1)
 
 //uh uh 
 volatile bool  sh4_int_bCpuRun=false;

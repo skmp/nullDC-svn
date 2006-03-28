@@ -1,14 +1,14 @@
 #include "block_manager.h"
 
 //4096 entry hash
-GrowingList<recBlock> recHash[0x1000];
+GrowingList<recBlock> recHash[0x10000];
 
 //hash function
 INLINE u32 __fastcall GetHash(u32 value)
 {
 	//H are the nibles uses for hash
 	//0x000H0HH0
-	u32 hashv=((value>>4)&0xFF) | ((value>>8)&0xF00);
+	u32 hashv=(value>>2)&0xFFFF;//((value>>4)&0xFF) | ((value>>8)&0xF00);
 	return hashv;
 }
 
@@ -49,4 +49,11 @@ bool RemoveBlock(u32 start)
 		}
 	}
 	return false;
+}
+void InitHash()
+{
+	for (int i=0;i<0x10000;i++)
+	{
+		recHash[i].items.Resize(1,true);
+	}
 }

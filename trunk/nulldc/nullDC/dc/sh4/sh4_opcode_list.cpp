@@ -635,7 +635,7 @@ sh4_opcodelistentry opcodes[]=
 	{rec_cpu_opcode_nimp		,i0000_0000_0001_1000	,Mask_none	,0x0018	,Normal				,OpDissCFS,"sett"},	//sett                          
 	{rec_cpu_opcode_nimp		,i0000_0000_0001_1001	,Mask_none	,0x0019	,Normal				,OpDissCFS,"div0u"},//div0u                         
 	{rec_cpu_opcode_nimp		,i0000_nnnn_0010_1001	,Mask_n		,0x0029	,Normal				,OpDissCFS,"movt <REG_N>"},	//movt <REG_N>                  
-	{rec_cpu_opcode_nimp		,i0000_0000_0000_1001	,Mask_none	,0x0009	,NoOperation		,OpDissCFS,"nop"},	//nop                           
+	{rec_i0000_0000_0000_1001	,i0000_0000_0000_1001	,Mask_none	,0x0009	,NoOperation		,OpDissCFS,"nop"},	//nop                           
 	{rec_i0000_nnnn_0101_1010	,i0000_nnnn_0101_1010	,Mask_n		,0x005A	,Normal				,OpDissCFS,"sts FPUL,<REG_N>"},	//sts FPUL,<REG_N>
 	{rec_i0000_nnnn_0110_1010	,i0000_nnnn_0110_1010	,Mask_n		,0x006A	,Normal				,OpDissCFS,"sts FPSCR,<REG_N>"},//sts FPSCR,<REG_N>             
 	{rec_i0000_nnnn_1111_1010	,i0000_nnnn_1111_1010	,Mask_n		,0x00FA	,Normal				,OpDissCFS,"stc DBR,<REG_N>"},	//stc DBR,<REG_N>             
@@ -764,8 +764,8 @@ sh4_opcodelistentry opcodes[]=
 	{rec_i1000_0100_mmmm_iiii	,i1000_0100_mmmm_iiii	,Mask_imm8	,0x8400	,Normal				,OpDissCFS,"mov.b @(<disp8b>,<REG_M>),R0"},	// mov.b @(<disp>,<REG_M>),R0    
 	{rec_i1000_0101_mmmm_iiii	,i1000_0101_mmmm_iiii	,Mask_imm8	,0x8500	,Normal				,OpDissCFS,"mov.w @(<disp8w>,<REG_M>),R0"},	// mov.w @(<disp>,<REG_M>),R0    
 	{rec_i1001_nnnn_iiii_iiii	,i1001_nnnn_iiii_iiii	,Mask_n_imm8,0x9000	,Normal_needpc		,OpDissCFS,"mov.w @(<PCdisp8>),<REG_N>"},	//mov.w @(<disp>,PC),<REG_N>   
-	{rec_cpu_opcode_nimp		,i1010_iiii_iiii_iiii	,Mask_n_imm8,0xA000	,BranchDelay_u_UsePC,OpDissCFS,"bra <bdisp12>"},	// bra <bdisp12>
-	{rec_cpu_opcode_nimp		,i1011_iiii_iiii_iiii	,Mask_n_imm8,0xB000	,BranchDelay_u_UsePC,OpDissCFS,"bsr <bdisp12>"},	// bsr <bdisp12>
+	{rec_i1010_iiii_iiii_iiii	,i1010_iiii_iiii_iiii	,Mask_n_imm8,0xA000	,BranchDelay_u_UsePC,OpDissCFS,"bra <bdisp12>"},	// bra <bdisp12>
+	{rec_i1011_iiii_iiii_iiii	,i1011_iiii_iiii_iiii	,Mask_n_imm8,0xB000	,BranchDelay_u_UsePC,OpDissCFS,"bsr <bdisp12>"},	// bsr <bdisp12>
 	{rec_i1100_0000_iiii_iiii	,i1100_0000_iiii_iiii	,Mask_imm8	,0xC000	,Normal				,OpDissCFS,"mov.b R0,@(<disp8b>,GBR)"},	// mov.b R0,@(<disp>,GBR)        
 	{rec_i1100_0001_iiii_iiii	,i1100_0001_iiii_iiii	,Mask_imm8	,0xC100	,Normal				,OpDissCFS,"mov.w R0,@(<disp8w>,GBR)"},	// mov.w R0,@(<disp>,GBR)        
 	{rec_i1100_0010_iiii_iiii	,i1100_0010_iiii_iiii	,Mask_imm8	,0xC200	,Normal				,OpDissCFS,"mov.l R0,@(<disp8dw>,GBR)"},	// mov.l R0,@(<disp>,GBR)        
@@ -850,7 +850,7 @@ void BuildOpcodeTables()
 					RecOpPtr[i]=opcodes[i2].rec_oph;
 					//if (((i&0xF00F)>0x4006) && ((i&0xF00F)<0x400F) )//0x9739
 					//if ( ((i&0xF0FF)==0x400E)  || ((i&0xF0FF)==0x4007) )
-					//	RecOpPtr[i]=rec_cpu_opcode_nimp;
+						//RecOpPtr[i]=rec_cpu_opcode_nimp;
 
 					OpTyp[i]=opcodes[i2].type;
 					OpDisasm[i]=&opcodes[i2];

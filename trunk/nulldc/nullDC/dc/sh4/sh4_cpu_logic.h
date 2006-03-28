@@ -99,3 +99,13 @@
 	u32 imm = GetImm8(op);
 	r[0] |= imm;
 } 
+
+
+ 
+//TODO : move it somewhere better
+//nop                           
+sh4op(i0000_0000_0000_1001)
+{
+	//no operation xD XD .. i just love this opcode ..
+} 
+

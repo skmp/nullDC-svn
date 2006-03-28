@@ -175,14 +175,14 @@ u32 uiMain(void)
 	WaitMessage();
 	while( PeekMessage(&msg, NULL, 0,0, PM_REMOVE) != 0 )
 	{
-		if( WM_QUIT == msg.message )
-			return UI_MAIN_QUIT;
-
 		if( !TranslateAccelerator(g_hWnd, hAccel, &msg) )
 		{
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
+
+		if( WM_QUIT == msg.message )
+			return UI_MAIN_QUIT;
 	}
     return UI_OK;
 }
@@ -278,7 +278,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 		 }
 
 		case ID_FILE_EXIT:
-			PostMessage(hWnd, WM_CLOSE, 0,0);
+			SendMessage(hWnd, WM_CLOSE, 0,0);
 			return 0;
 
 			///////// SYSTEM MENU
@@ -944,15 +944,16 @@ void AddItemsToCB(GrowingList<PluginLoadInfo>* list,HWND hw)
 				,list->items[i].item.plugin_info.PluginVersion.build
 				,dll);
 			
-			char* lp = (char *)malloc(strlen(dll)); 
+			int dll_len=strlen(dll);
+			char* lp = (char *)malloc(dll_len+1); 
 			strcpy(lp,dll);
 			int i2 = ComboBox_AddString(hw, temp); 
 			ComboBox_SetItemData(hw, i2, lp); 
 			
-			int cs=ComboBox_GetCurSel(hw);
+			/*int cs=ComboBox_GetCurSel(hw);
 
 			if (cs==0)
-				ComboBox_SetCurSel(hw, i2); 
+				ComboBox_SetCurSel(hw, i2); */
 		}
 }
 INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )

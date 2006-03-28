@@ -20,8 +20,8 @@
 #include <time.h>
 #include <float.h>
 
-#define CPU_TIMESLICE	(152)
-#define CPU_RATIO		(3)
+#define CPU_TIMESLICE	(448)
+#define CPU_RATIO		(1)
 
 //uh uh 
 volatile bool  rec_sh4_int_bCpuRun=false;
@@ -38,6 +38,65 @@ u32 rec_opcode_fam_cycles[0x10]=
 
 u32 avg_rat=0;
 u32 avg_rat_cnt=0;
+u32 avg_bc=0;
+recBlock* lastBlock;
+
+INLINE recBlock* __fastcall GetRecompiledCode(u32 pc)
+{
+	recBlock* currBlock;
+	currBlock=FindBlock(pc);
+	if (!currBlock)
+	{
+		currBlock=AddBlock(pc);
+
+		u32 i=0;
+		u32 rec_pc=0;
+		rec_pc=pc;
+
+		recStartRecompile();
+		int bc=0;
+		bool u_break=false;
+		while(i<CPU_TIMESLICE*CPU_RATIO)
+		{
+
+			u32 op=ReadMem16(rec_pc);
+			i+=rec_opcode_fam_cycles[op>>12];
+			bc+=2;
+			if (!recRecompileOp(op,rec_pc))
+			{
+				char temp_d[1000];
+				DissasembleOpcode(op,rec_pc,temp_d);
+				printf("Ending block at : %s\n",temp_d);
+				u_break=true;
+				break;
+			}
+			rec_pc+=2;
+		}
+		recEndRecompile(u_break,rec_pc-2);
+
+		//save info to block struct
+		currBlock->Code=recGetFunction();
+		currBlock->Size=bc;
+		currBlock->NativeSize=recGetCodeSize();
+		currBlock->Cycles=i;
+
+		//is realloc to less guaranteed ?
+		realloc(currBlock->Code,currBlock->NativeSize+8);
+
+		avg_rat=(avg_rat*avg_rat_cnt+ (recGetCodeSize()*100/bc));
+		avg_rat_cnt++;
+		avg_rat=avg_rat/(avg_rat_cnt);
+		avg_bc+=bc;
+
+		printf("Generated code bytes ratio %d:%d = %d%% , Average %d%% , %d block size\n",bc, recGetCodeSize(),recGetCodeSize()*100/bc,avg_rat,avg_bc/avg_rat_cnt);
+
+		bc=0;
+		i=0;
+	}
+
+	return currBlock;
+}
+
 u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 {
 
@@ -45,9 +104,8 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 	ThreadCallbackFP* ptr=(ThreadCallbackFP*) ptar;
 
 	ptr(true);//call the callback to init
-	u32 i=0;
-	u32 rec_cycles;
-	u32 rec_pc;
+	
+	u32 rec_cycles=0;
 	
 	while(rec_sh4_int_bCpuRun)
 	{
@@ -56,49 +114,12 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 		else
 			_controlfp( _RC_NEAR, _MCW_RC );//round to nearest
 
-		recBlock* currBlock;
-		currBlock=FindBlock(pc);
-		if (!currBlock)
-		{
-			currBlock=AddBlock(pc);
-			//currBlock->StartAddr=pc; // redutant , allready done on add block
-
-			rec_pc=pc;
-			recStartRecompile();
-			int bc=0;
-
-			//for ( int i=0;i<CPU_TIMESLICE;i++)
-			while(i<CPU_TIMESLICE*CPU_RATIO)
-			{
-
-				u32 op=ReadMem16(rec_pc);
-				i+=rec_opcode_fam_cycles[op>>12];
-				bc+=2;
-				if (!recRecompileOp(op,rec_pc))
-				{
-					break;
-				}
-				rec_pc+=2;
-			}
-			recEndRecompile();
-			//save info to block struct
-			currBlock->Code=recGetFunction();
-			currBlock->Size=bc;
-			currBlock->NativeSize=recGetCodeSize();
-			currBlock->Cycles=i;
-			avg_rat=(avg_rat*avg_rat_cnt+ (recGetCodeSize()*100/bc));
-			avg_rat_cnt++;
-			avg_rat=avg_rat/(avg_rat_cnt);
-
-			printf("Generated code bytes ratio %d:%d = %d%% , Average %d%%\n",bc, recGetCodeSize(),recGetCodeSize()*100/bc,avg_rat);
-			
-
-
-			bc=0;
-			i=0;
-		}
-
+		recBlock* currBlock=lastBlock=GetRecompiledCode(pc);
 		rec_cycles+=currBlock->Cycles;
+
+		/*if (currBlock->StartAddr==0x8c012060)
+			__asm int 03;*/
+		currBlock->Calls++;
 		currBlock->Code();
 		//pc+=2 is needed after call
 		pc+=2;
@@ -203,6 +224,7 @@ void rec_Sh4_int_Reset(bool Manual)
 
 void rec_Sh4_int_Init() 
 {
+	InitHash();
 	Sh4_int_Init();
 	printf("recSh4 Init\n");
 }

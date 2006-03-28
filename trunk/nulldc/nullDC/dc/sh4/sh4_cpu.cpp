@@ -224,14 +224,6 @@ void cpu_iNimp(u32 op, char* info)
 } 
 
 
-//nop                           
- sh4op(i0000_0000_0000_1001)
-{
-	//no operation xD XD .. i just love this opcode ..
-} 
-
-
-
 
 //sleep                         
  sh4op(i0000_0000_0001_1011)

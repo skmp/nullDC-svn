@@ -234,3 +234,7 @@
 
 // mov #<imm>,<REG_N>
  rec_sh4op(i1110_nnnn_iiii_iiii);
+
+rec_sh4op(i1011_iiii_iiii_iiii);
+rec_sh4op(i1010_iiii_iiii_iiii);
+rec_sh4op(i0000_0000_0000_1001);

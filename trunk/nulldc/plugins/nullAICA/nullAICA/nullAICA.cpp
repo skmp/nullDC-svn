@@ -48,11 +48,13 @@ EXPORT void dcGetAICAInfo(aica_plugin_if* info)
 //called when plugin is used by emu (you should do first time init here)
 void dcInit(void* param,PluginType type)
 {
+	init_mem();
 }
 
 //called when plugin is unloaded by emu , olny if dcInit is called (eg , not called to enumerate plugins)
 void dcTerm(PluginType type)
 {
+	term_mem();
 }
 
 //It's suposed to reset anything 

@@ -61,7 +61,7 @@ enum x86IntRegType
 } ;
 
 
-template <int DefSize=4096>
+template <int DefSize=16*1024>
 class Emmiter
 {
 private:
@@ -74,6 +74,7 @@ private:
 	//size is never > 4 GB 
 	void Resizex86Ptr()
 	{ 
+		printf("\t\n WARNING *Resizex86Ptr* *Resizex86Ptr* \n *Resizex86Ptr*\n");
 		u32 offset=x86Ptr-x86Ptr_base;
 
 		x86Ptr_base=(s8*)realloc(x86Ptr_base,x86Ptr_size*3/2);

@@ -363,6 +363,10 @@
 							>
 						</File>
 						<File
+							RelativePath=".\dc\sh4\sh4_fpu_mov.h"
+							>
+						</File>
+						<File
 							RelativePath=".\dc\sh4\sh4_opcode_list.cpp"
 							>
 						</File>
@@ -656,20 +660,6 @@
 				<File
 					RelativePath=".\dc\gdrom\gdromv2_old.cpp"
 					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-						/>
-					</FileConfiguration>
 				</File>
 				<File
 					RelativePath=".\dc\gdrom\gdromv2_old.h"

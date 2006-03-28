@@ -133,6 +133,7 @@ u32 ints=0;
 
 int vblk_cnt=0;
 double spd_fps=0;
+double spd_cpu=0;
 void icUpdatePvr (u32 cycles)
 {
 	clcount+=cycles;
@@ -157,13 +158,15 @@ void icUpdatePvr (u32 cycles)
 		if ((timeGetTime()-(double)lasft_fps)>800)
 		{
 			spd_fps=(double)fps/(double)((double)(timeGetTime()-(double)lasft_fps)/1000);
-			//printf("FPS : %f ; list type : %x\n",_spd_fps,ints);
+			spd_cpu=(double)vblk_cnt/(double)((double)(timeGetTime()-(double)lasft_fps)/1000);
+			spd_cpu*=(DCclock/1000000)/60;
+
 			ints=0;
 			lasft_fps=timeGetTime();
 			fps=0;
 
 			char fpsStr[256];
-			sprintf(fpsStr," FPS: %f  -  Sh4: %f mhz  - Rx: %d kb/s - Tx %d kb/s  DCtest0r v0.0.0 ", spd_fps, 0,0,0);
+			sprintf(fpsStr," FPS: %f  -  Sh4: %f mhz  - nullDC v0.0.1", spd_fps, spd_cpu);
 			SetWindowText((HWND)Hwnd, fpsStr);
 			vblk_cnt=0;
 		}
