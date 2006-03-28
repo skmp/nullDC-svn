@@ -38,7 +38,7 @@ int RunDC(int argc, char* argv[])
 
 
 	//Get an interface to the sh4 emu and set the sh4_cpu to it
-	sh4_cpu=Get_Sh4Interpreter();
+	sh4_cpu=Get_Sh4Interpreter();// Get_Sh4Interpreter();//Get_Sh4Recompiler
 
 	//init and reset all h/w exept sh4 (sh4 has to be done manualy)
 	//this includes curently loaded pvr/aica/arm/gdrom/maple plugin [if any]

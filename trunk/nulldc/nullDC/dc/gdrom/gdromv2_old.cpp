@@ -95,7 +95,7 @@ void lprintf(char* szFmt, ... )
 
 
 //shits for debug printf's :P
-#define DebugGD
+//#define DebugGD
 #ifndef DebugGD
 #define printf_db NullPrintf_GD
 void NullPrintf_GD(...){}
@@ -896,5 +896,9 @@ void gdrom_reg_Term()
 void gdrom_reg_Reset(bool Manual)
 {
 	//huh?
+}
+
+void gdBootHLE()
+{
 }
 #endif

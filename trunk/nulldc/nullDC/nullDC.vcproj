@@ -343,6 +343,10 @@
 							>
 						</File>
 						<File
+							RelativePath=".\sh4_cpu_branch_rec.h"
+							>
+						</File>
+						<File
 							RelativePath=".\dc\sh4\sh4_cpu_logic.h"
 							>
 						</File>
@@ -491,6 +495,26 @@
 						Name="rec_v0"
 						>
 						<File
+							RelativePath=".\dc\sh4\rec_v0\block_manager.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\dc\sh4\rec_v0\block_manager.h"
+							>
+						</File>
+						<File
+							RelativePath=".\dc\sh4\rec_v0\rec_v0_driver.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\dc\sh4\rec_v0\rec_v0_driver.h"
+							>
+						</File>
+						<File
+							RelativePath=".\dc\sh4\rec_v0\rec_v0_ops.h"
+							>
+						</File>
+						<File
 							RelativePath=".\dc\sh4\rec_v0\rec_v0_recompiler.cpp"
 							>
 						</File>
@@ -628,20 +652,12 @@
 				<File
 					RelativePath=".\dc\gdrom\gdrom_response.cpp"
 					>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-						/>
-					</FileConfiguration>
 				</File>
 				<File
 					RelativePath=".\dc\gdrom\gdromv2_old.cpp"
 					>
 					<FileConfiguration
 						Name="Debug|Win32"
-						ExcludedFromBuild="true"
 						>
 						<Tool
 							Name="VCCLCompilerTool"
@@ -649,7 +665,6 @@
 					</FileConfiguration>
 					<FileConfiguration
 						Name="Release|Win32"
-						ExcludedFromBuild="true"
 						>
 						<Tool
 							Name="VCCLCompilerTool"
@@ -661,7 +676,6 @@
 					>
 					<FileConfiguration
 						Name="Debug|Win32"
-						ExcludedFromBuild="true"
 						>
 						<Tool
 							Name="VCCustomBuildTool"
@@ -669,7 +683,6 @@
 					</FileConfiguration>
 					<FileConfiguration
 						Name="Release|Win32"
-						ExcludedFromBuild="true"
 						>
 						<Tool
 							Name="VCCustomBuildTool"

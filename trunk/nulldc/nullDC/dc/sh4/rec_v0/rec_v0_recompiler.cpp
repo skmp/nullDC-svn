@@ -1,5 +1,9 @@
 #include "rec_v0_recompiler.h"
 #include "emmiter\emmiter.h"
+#include "dc\mem\sh4_mem.h"
+#include "dc\sh4\sh4_opcode_list.h"
+#include "dc\sh4\sh4_registers.h"
+#undef sh4op
 
 //simple recompiler
 //to test up some register allocation code , ect
@@ -15,10 +19,9 @@
 //no register allocation , no sse , no mmx , and generaly no other optimisations
 //the idea is to test my idea to warp registers onto structs ect
 
-void GenAll()
-{
-	//Emmiter te;
-}
+#define SH4_REC
+
+Emmiter<>* CodeGen;
 
 #define sh4op(str) void  __fastcall rec_##str (u32 op,u32 pc)
 
@@ -40,268 +43,281 @@ void rec_iNimp(u32 pc,u32 op, char* info)
 	printf(" @ %X\n", pc);
 }
 
-#define r rec_r
-#define r_bank	rec_r_bank
-#define gbr		rec_gbr
-#define ssr		rec_ssr
-#define spc		rec_spc
-#define sgr		rec_sgr
-#define dbr		rec_dbr
-#define vbr		rec_vbr
-#define mach	rec_mach
-#define macl	rec_macl
 
-#define pr		rec_pr
-#define fpul	rec_fpul
-
-#define sr		rec_sr
-#define fpscr	rec_fpscr
 
 struct RecRegType
 {
-	u32 nil;
 	bool IsConst;
 	u32 ConstValue;
+	u32* RegLoc;
 
-	void operator-=(const RecRegType& rhs)
-    {
-       	if (rhs.IsConst)//sub x , value
-		{
-			if (IsConst)//sub value,value
-			{
-				ConstValue-=rhs.ConstValue;
-			}
-			else//sub reg,value
-			{
-				/*if (!RegCache)
-				{
-					x86Reg =recAllocReg(ShReg,ReadWrite);
-					RegCache=true;
-				}
-				sub32ItoR(x86Reg,rhs.ConstValue);*/
-			}
-		}
-		else
-		{
-			if (IsConst)//sub const,reg
-			{
-				/*if (!RegCache)
-				{
-					x86Reg =recAllocReg(ShReg,ReadWrite);
-					RegCache=true;
-				}
-				//lea ?
-				MOV32ItoR(x86Reg,ConstValue);
-				if (rhs.RegCache)
-				{
-					sub32RtoR(x86Reg,rhs.x86Reg);
-				}
-				else
-				{
-					sub32MtoR(x86Reg,(u32)rhs.RegLoc);
-				}
-				IsConst=false;//no more const ;(*/
-			}
-			else//sub reg,reg
-			{
-				/*if (rhs.RegCache)//sub reg,x86reg
-				{
-					if (!RegCache)
-					{
-						x86Reg =recAllocReg(ShReg,ReadWrite);
-						RegCache=true;
-					}
-					sub32RtoR(x86Reg,rhs.x86Reg);
-				}
-				else			//sub reg,memreg
-				{
-					if (!RegCache)
-					{
-						x86Reg =recAllocReg(ShReg,ReadWrite);
-						RegCache=true;
-					}
-					sub32MtoR(x86Reg,(u32)rhs.RegLoc);
-				}*/
-			}
-
-		}
-    }
-
-	void operator+=(const RecRegType& rhs)
-    {
-       	if (rhs.IsConst)//add x , value
-		{
-			if (IsConst)//add value,value
-			{
-				ConstValue+=rhs.ConstValue;
-			}
-			else//add reg,value
-			{
-				/*if (!RegCache)
-				{
-					x86Reg =recAllocReg(ShReg,ReadWrite);
-					RegCache=true;
-				}
-				ADD32ItoR(x86Reg,rhs.ConstValue);*/
-			}
-		}
-		else
-		{
-			if (IsConst)//add const,reg
-			{
-				/*if (!RegCache)
-				{
-					x86Reg =recAllocReg(ShReg,ReadWrite);
-					RegCache=true;
-				}
-				//lea ?
-				MOV32ItoR(x86Reg,ConstValue);
-				if (rhs.RegCache)
-				{
-					ADD32RtoR(x86Reg,rhs.x86Reg);
-				}
-				else
-				{
-					ADD32MtoR(x86Reg,(u32)rhs.RegLoc);
-				}
-				IsConst=false;//no more const ;(*/
-			}
-			else//add reg,reg
-			{
-				/*if (rhs.RegCache)//add reg,x86reg
-				{
-					if (!RegCache)
-					{
-						x86Reg =recAllocReg(ShReg,ReadWrite);
-						RegCache=true;
-					}
-					ADD32RtoR(x86Reg,rhs.x86Reg);
-				}
-				else			//add reg,memreg
-				{
-					if (!RegCache)
-					{
-						x86Reg =recAllocReg(ShReg,ReadWrite);
-						RegCache=true;
-					}
-					ADD32MtoR(x86Reg,(u32)rhs.RegLoc);
-				}*/
-			}
-
-		}
-    }
-
-	void operator=(const RecRegType& rhs)
-    {
-		if (rhs.IsConst)
-		{
-			IsConst=true;
-			ConstValue=rhs.ConstValue;
-		}
-		else
+	void FlushKill()
+	{
+		if (IsConst)
 		{
 			IsConst=false;
-			if (rhs.RegCache)
-			{
-				/*if (!RegCache)
-				{
-					x86Reg =recAllocReg(ShReg,Write);
-					RegCache=true;
-				}
-				MOV32RtoR(x86Reg,rhs.x86Reg);*/
-			}
-			else
-			{
-				/*if (!RegCache)
-				{
-					x86Reg =recAllocReg(ShReg,Write);
-					RegCache=true;
-				}
-				MOV32MtoR(x86Reg,(u32)rhs.RegLoc);*/
-			}
-
+			CodeGen->MOV32ItoM(RegLoc,ConstValue);
 		}
-    }
-	void operator=(const u32 constv)
-    {
-		IsConst=true;
-		ConstValue=constv;	
-    }
-	void operator=(const s32 constv)
-    {
-		IsConst=true;
-		ConstValue=constv;	
-    }
-	void operator+=(const u32 constv)
+	}
+	void LoadTo(x86IntRegType to) const
 	{
-	};
+		if (!IsConst)
+			CodeGen->MOV32MtoR(to,RegLoc);
+		else
+			CodeGen->MOV32ItoR(to,ConstValue);
+	}
+	void SaveFrom(x86IntRegType from)
+	{
+		IsConst=false;
+		CodeGen->MOV32RtoM(RegLoc,from);
+	}
+	void SaveFrom(u32 from)
+	{
+		IsConst=true;
+		ConstValue=from;
+	}
+
+	//SUB
 	void operator-=(const u32 constv)
 	{
+		if (IsConst)//const,const : result remains const
+		{
+			ConstValue-=constv;
+		}
+		else//reg,const : result remains non-const
+		{
+			CodeGen->SUB32ItoM(RegLoc,constv);
+		}
 	};
+	void operator-=(const RecRegType& rhs)
+    {
+       	if (rhs.IsConst)//x , const
+		{
+			(*this)-=rhs.ConstValue;
+		}
+		else
+		{
+			//reg,reg	: result remains non-const
+			//const,reg	: result remains non-const
+			LoadTo(EAX);
+			rhs.LoadTo(ECX);
+
+			CodeGen->SUB32RtoR(EAX,ECX);
+
+			SaveFrom(EAX);
+		}
+    }
+
 	void operator--(int wtf)
 	{
 		(*this)-=1;
 	}
+	//ADD
+	void operator+=(const u32 constv)
+	{
+		if (IsConst)//const,const : result remains const
+		{
+			ConstValue+=constv;
+		}
+		else//reg,const : result remains non-const
+		{
+			CodeGen->ADD32ItoM(RegLoc,constv);
+		}
+	};
+	void operator+=(const RecRegType& rhs)
+        {
+       	if (rhs.IsConst)//x , const
+		{
+			(*this)+=rhs.ConstValue;
+		}
+		else
+		{
+			//reg,reg	: result remains non-const
+			//const,reg	: result remains non-const
+			LoadTo(EAX);
+			rhs.LoadTo(ECX);
+
+			CodeGen->ADD32RtoR(EAX,ECX);
+
+			SaveFrom(EAX);
+		}
+    }
 	void operator++(int wtf)
 	{
 		(*this)+=1;
 	}
-
-	void operator&=(const s32 constv)
+	//MOVS
+	void operator=(const u32 constv)
+    {
+		 SaveFrom(constv);
+    }
+	void operator=(const s32 constv)
+    {
+		(*this)=(u32)constv;
+    }
+	void operator=(const RecRegType& rhs)
+    {
+		if (rhs.IsConst)//becomes const
+		{
+			(*this)=rhs.ConstValue;
+		}
+		else			//becomes non-const
+		{
+			rhs.LoadTo(EAX);
+			SaveFrom(EAX);
+		}
+    }
+	//AND
+	void operator&=(const u32 constv)
 	{
+		if (IsConst)//const calc ;P
+		{
+			ConstValue&=constv;
+		}
+		else		//on mem
+		{
+			CodeGen->AND32ItoM(RegLoc,constv);
+		}
 	};
-	void operator&=(const RecRegType& constv)
+	void operator&=(const RecRegType& reg)
 	{
+		if (reg.IsConst)
+		{
+			(*this)&=reg.ConstValue;
+		}
+		else
+		{
+			reg.LoadTo(EAX);
+			if (IsConst)
+			{	//To r and save , no longer const
+				CodeGen->AND32ItoR(EAX,ConstValue);
+				SaveFrom(EAX);
+			}
+			else
+			{
+				//to m
+				CodeGen->AND32RtoM(RegLoc,EAX);
+			}
+		}
 	};
+	//OR
 	void operator|=(const u32 constv)
 	{
+		if (IsConst)//const calc ;P
+		{
+			ConstValue|=constv;
+		}
+		else		//on mem
+		{
+			CodeGen->OR32ItoM(RegLoc,constv);
+		}
 	};
-	void operator|=(const RecRegType& constv)
+	void operator|=(const RecRegType& reg)
 	{
+		if (reg.IsConst)
+		{
+			(*this)|=reg.ConstValue;
+		}
+		else
+		{
+			reg.LoadTo(EAX);
+			if (IsConst)
+			{	//To r and save , no longer const
+				CodeGen->OR32ItoR(EAX,ConstValue);
+				SaveFrom(EAX);
+			}
+			else
+			{
+				//to m
+				CodeGen->OR32RtoM(RegLoc,EAX);
+			}
+		}
 	};
+	//XOR
 	void operator^=(const u32 constv)
 	{
+		if (IsConst)//const calc ;P
+		{
+			ConstValue^=constv;
+		}
+		else		//on mem
+		{
+			CodeGen->XOR32ItoM(RegLoc,constv);
+		}
 	};
-	void operator^=(const RecRegType& constv)
+	void operator^=(const RecRegType& reg)
 	{
+		if (reg.IsConst)
+		{
+			(*this)^=reg.ConstValue;
+		}
+		else
+		{
+			reg.LoadTo(EAX);
+			if (IsConst)
+			{	//To r and save , no longer const
+				CodeGen->XOR32ItoR(EAX,ConstValue);
+				SaveFrom(EAX);
+			}
+			else
+			{
+				//to m
+				CodeGen->XOR32RtoM(RegLoc,EAX);
+			}
+		}
 	};
+	//SHIFT RIGHT
 	void operator>>=(const u32 constv)
 	{
+		if (IsConst)
+		{
+			ConstValue>>=constv;
+		}
+		else
+		{
+			if (constv)
+				CodeGen->SHR32ItoM(RegLoc,(u8)constv);
+		}
 	};
-	void operator>>=(const RecRegType& constv)
+	void operator>>=(const RecRegType& reg)
 	{
+		if (reg.IsConst)
+			(*this)>>=reg.ConstValue;
+		else
+		{
+			//hmm?
+		}
 	};
+	//SHIFT LEFT
 	void operator<<=(const u32 constv)
 	{
+		if (IsConst)
+		{
+			ConstValue<<=constv;
+		}
+		else
+		{
+			if (constv)
+				CodeGen->SHL32ItoM(RegLoc,(u8)constv);
+		}
 	};
-	void operator<<=(const RecRegType& constv)
+	void operator<<=(const RecRegType& reg)
 	{
+		if (reg.IsConst)
+			(*this)<<=reg.ConstValue;
+		else
+		{
+			//hmm?
+		}
 	};
-	bool IsInCache()
-	{
-		
-	}
-
-    //recSh4RegType ShReg;
-	//recx86IntRegType x86Reg;
-	u32* RegLoc;
-	bool RegCache;
 };
 //hm?
-struct RecSrType: public RecRegType
+struct RecSrType
 {
-	u32 GetFull()
-	{
-		return 0;
-	}
-	void SetFull(RecRegType& reg)
-	{
-		
-	}
 	RecRegType full;
 };
 
-struct RecFpscrType: public RecRegType
+struct RecFpscrType
 {
 	RecRegType full;
 };
@@ -319,17 +335,43 @@ RecFpscrType rec_fpscr;
 //TODO : fixup readmem's on interpreter around macros so that i can use em on recompiler
 //TODO : fixup sr type
 
+void FlushKillAll()
+{
+	for (int i=0;i<8;i++)
+	{
+		rec_r[i].FlushKill();
+		rec_r_bank[i].FlushKill();
+	}
 
+	for (int i=8;i<16;i++)
+	{
+		rec_r[i].FlushKill();
+	}
+
+	rec_gbr.FlushKill();
+	rec_ssr.FlushKill();
+	rec_spc.FlushKill();
+	rec_sgr.FlushKill();
+	rec_dbr.FlushKill();
+	rec_vbr.FlushKill();
+
+	rec_mach.FlushKill();
+	rec_macl.FlushKill();
+	rec_pr.FlushKill();
+	rec_fpul.FlushKill();
+	rec_sr.full.FlushKill();
+	rec_fpscr.full.FlushKill();
+}
 
 //Read Mem macros
 #define ReadMemU32(to,addr)					ReadMemRec(to,addr,0,4)//to=ReadMem32(addr)
-#define ReadMemS16(to,addr)					ReadMemRec(to,addr,0,2)// to=(u32)(s32)(s16)ReadMem16(addr)
-#define ReadMemS8(to,addr)					ReadMemRec(to,addr,0,1)//to=(u32)(s32)(s8)ReadMem8(addr)
+#define ReadMemS16(to,addr)					ReadMemRecS(to,addr,0,2)// to=(u32)(s32)(s16)ReadMem16(addr)
+#define ReadMemS8(to,addr)					ReadMemRecS(to,addr,0,1)//to=(u32)(s32)(s8)ReadMem8(addr)
 
 //Base,offset format
 #define ReadMemBOU32(to,addr,offset)		ReadMemRec(to,addr,offset,4)//ReadMemU32(to,addr+offset)
-#define ReadMemBOS16(to,addr,offset)		ReadMemRec(to,addr,offset,2)//ReadMemS16(to,addr+offset)
-#define ReadMemBOS8(to,addr,offset)			ReadMemRec(to,addr,offset,1)//ReadMemS8(to,addr+offset)
+#define ReadMemBOS16(to,addr,offset)		ReadMemRecS(to,addr,offset,2)//ReadMemS16(to,addr+offset)
+#define ReadMemBOS8(to,addr,offset)			ReadMemRecS(to,addr,offset,1)//ReadMemS8(to,addr+offset)
 
 //Write Mem Macros
 #define WriteMemU32(addr,data)				WriteMemRec(addr,0,data,4)//WriteMem32(addr,(u32)data)
@@ -344,6 +386,15 @@ RecFpscrType rec_fpscr;
 void ReadMemRec(RecRegType &to,u32 addr,u32 offset,u32 sz)
 {
 	//do some magic :P
+	//TODO : optimise w/ static reads more
+	CodeGen->MOV32ItoR(ECX,addr+offset);
+	
+	if(sz==4)
+		CodeGen->CALLFunc(ReadMem32);//bwhahaha
+	else
+		printf("ReadMemRec , wrong sz param\n");
+
+	to.SaveFrom(EAX);	//save the result
 }
 
 void ReadMemRec(RecRegType &to,RecRegType& addr,u32 offset,u32 sz)
@@ -351,96 +402,343 @@ void ReadMemRec(RecRegType &to,RecRegType& addr,u32 offset,u32 sz)
 	//do some magic :P
 	if (addr.IsConst)
 	{
-		//ReadMemRec(to,addr.ConstValue,sz);
+		ReadMemRec(to,addr.ConstValue,offset,sz);
 		return;
 	}
+
+	addr.LoadTo(ECX);
+
+	//this could be done on ADD too ;)
+	if (offset)
+		CodeGen->ADD32ItoR(ECX,offset);
+
+	if(sz==4)
+		CodeGen->CALLFunc(ReadMem32);//bwhahaha
+	else
+		printf("ReadMemRec , wrong sz param\n");
+
+	to.SaveFrom(EAX);	//save the result
 }
 
 
 
 void ReadMemRec(RecRegType &to,RecRegType& addr,RecRegType& offset,u32 sz)
 {
-}
-//WriteMem(u32 addr,u32 data,u32 sz)
-void WriteMemRec(u32 addr,u32 offset,u32 data,u32 sz)
-{
-}
-void WriteMemRec(u32 addr,u32 offset,RecRegType &data,u32 sz)
-{
-	if (data.IsConst)
+	if (offset.IsConst)
 	{
-		//WriteMemRec(addr,data.ConstValue,sz);
+		ReadMemRec(to,addr,offset.ConstValue,sz);
 		return;
 	}
-}
 
-void WriteMemRec(u32 addr,RecRegType& offset,u32 data,u32 sz)
-{
-}
-void WriteMemRec(u32 addr,RecRegType& offset,RecRegType &data,u32 sz)
-{
-	if (data.IsConst)
-	{
-		//WriteMemRec(addr,data.ConstValue,sz);
-		return;
-	}
-}
-
-void WriteMemRec(RecRegType& addr,u32 offset,u32 data,u32 sz)
-{
+	offset.LoadTo(ECX);
 	if (addr.IsConst)
 	{
-		//WriteMemRec(addr.ConstValue,data,sz);
+		//this could be done on ADD too ;)
+		if (addr.ConstValue)
+			CodeGen->ADD32ItoR(ECX,addr.ConstValue);
+	}
+	else
+	{
+		CodeGen->ADD32MtoR(ECX,addr.RegLoc);
+	}
+
+	if(sz==4)
+		CodeGen->CALLFunc(ReadMem32);//bwhahaha
+	else
+		printf("ReadMemRec , wrong sz param\n");
+
+	to.SaveFrom(EAX);	//save the result
+}
+
+//signed
+void ReadMemRecS(RecRegType &to,u32 addr,u32 offset,u32 sz)
+{
+	//do some magic :P
+	//TODO : optimise w/ static reads more
+	CodeGen->MOV32ItoR(ECX,addr+offset);
+	
+	if (sz==1)
+	{
+		CodeGen->CALLFunc(ReadMem8);//bwhahaha
+		CodeGen->MOVSX32R8toR(EAX,EAX);
+	}
+	else if (sz==2)
+	{
+		CodeGen->CALLFunc(ReadMem16);//bwhahaha
+		CodeGen->MOVSX32R16toR(EAX,EAX);
+	}
+	else
+		printf("ReadMemRec , wrong sz param\n");
+
+	to.SaveFrom(EAX);	//save the result
+}
+
+void ReadMemRecS(RecRegType &to,RecRegType& addr,u32 offset,u32 sz)
+{
+	//do some magic :P
+	if (addr.IsConst)
+	{
+		ReadMemRec(to,addr.ConstValue,offset,sz);
 		return;
 	}
+
+	addr.LoadTo(ECX);
+
+	//this could be done on ADD too ;)
+	if (offset)
+		CodeGen->ADD32ItoR(ECX,offset);
+
+	if (sz==1)
+	{
+		CodeGen->CALLFunc(ReadMem8);//bwhahaha
+		CodeGen->MOVSX32R8toR(EAX,EAX);
+	}
+	else if (sz==2)
+	{
+		CodeGen->CALLFunc(ReadMem16);//bwhahaha
+		CodeGen->MOVSX32R16toR(EAX,EAX);
+	}
+	else
+		printf("ReadMemRec , wrong sz param\n");
+
+	to.SaveFrom(EAX);	//save the result
+}
+
+
+
+void ReadMemRecS(RecRegType &to,RecRegType& addr,RecRegType& offset,u32 sz)
+{
+	if (offset.IsConst)
+	{
+		ReadMemRec(to,addr,offset.ConstValue,sz);
+		return;
+	}
+
+	offset.LoadTo(ECX);
+	if (addr.IsConst)
+	{
+		//this could be done on ADD too ;)
+		if (addr.ConstValue)
+			CodeGen->ADD32ItoR(ECX,addr.ConstValue);
+	}
+	else
+	{
+		CodeGen->ADD32MtoR(ECX,addr.RegLoc);
+	}
+
+	if (sz==1)
+	{
+		CodeGen->CALLFunc(ReadMem8);//bwhahaha
+		CodeGen->MOVSX32R8toR(EAX,EAX);
+	}
+	else if (sz==2)
+	{
+		CodeGen->CALLFunc(ReadMem16);//bwhahaha
+		CodeGen->MOVSX32R16toR(EAX,EAX);
+	}
+	else
+		printf("ReadMemRec , wrong sz param\n");
+
+	
+	to.SaveFrom(EAX);	//save the result
+}
+//WriteMem(u32 addr,u32 data,u32 sz)
+void WriteMemRec(u32 addr,u32 offset,RecRegType &data,u32 sz)
+{
+	CodeGen->MOV32ItoR(ECX,addr+offset);
+	
+	if (data.IsConst)	//load imm
+		CodeGen->MOV32ItoR(EDX,data.ConstValue);
+	else				//load mem
+		CodeGen->MOV32MtoR(EDX,data.RegLoc);
+
+	if (sz==1)
+		CodeGen->CALLFunc(WriteMem8);//bwhahaha
+	else if (sz==2)
+		CodeGen->CALLFunc(WriteMem16);//bwhahaha
+	else if(sz==4)
+		CodeGen->CALLFunc(WriteMem32);//bwhahaha
+	else
+		printf("WriteMemRec , wrong sz param\n");
+
 }
 void WriteMemRec(RecRegType& addr,u32 offset,RecRegType &data,u32 sz)
 {
-	if (data.IsConst)
-	{
-		//WriteMemRec(addr,data.ConstValue,sz);
-		return;
-	}
-	else if (addr.IsConst)
-	{
-		//WriteMemRec(addr.ConstValue,data,sz);
-		return;
-	}
-}
-void WriteMemRec(RecRegType& addr,RecRegType& offset,u32 data,u32 sz)
-{
 	if (addr.IsConst)
 	{
-		//WriteMemRec(addr.ConstValue,data,sz);
+		WriteMemRec(addr.ConstValue,offset,data,sz);
 		return;
 	}
+
+	//address is not const , we need to calculate it
+	if (offset!=0)
+	{
+		CodeGen->MOV32ItoR(ECX,offset);		//offset
+		CodeGen->ADD32MtoR(ECX,addr.RegLoc);//+base
+	}
+	else
+		CodeGen->MOV32MtoR(ECX,addr.RegLoc);//0+base
+
+	
+	if (data.IsConst)	//load imm
+		CodeGen->MOV32ItoR(EDX,data.ConstValue);
+	else				//load mem
+		CodeGen->MOV32MtoR(EDX,data.RegLoc);
+
+	if (sz==1)
+		CodeGen->CALLFunc(WriteMem8);//bwhahaha
+	else if (sz==2)
+		CodeGen->CALLFunc(WriteMem16);//bwhahaha
+	else if(sz==4)
+		CodeGen->CALLFunc(WriteMem32);//bwhahaha
+	else
+		printf("WriteMemRec , wrong sz param\n");
 }
 void WriteMemRec(RecRegType& addr,RecRegType& offset,RecRegType &data,u32 sz)
 {
-	if (data.IsConst)
-	{
-		//WriteMemRec(addr,data.ConstValue,sz);
+	if (offset.IsConst)
+	{	//call the "offset is const" variant
+		WriteMemRec(addr,offset.ConstValue,data,sz);
 		return;
 	}
-	else if (addr.IsConst)
-	{
-		//WriteMemRec(addr.ConstValue,data,sz);
-		return;
+
+	if (addr.IsConst)
+	{	//call the "offset is const" variant , swap addr w/ offset ;)
+		WriteMemRec(offset,addr.ConstValue,data,sz);
+		return ;
 	}
+
+	//ohh well , address needs to be calculated at runtime :P
+
+	CodeGen->MOV32MtoR(ECX,addr.RegLoc);	//base
+	CodeGen->ADD32MtoR(ECX,offset.RegLoc);	//+=offset
+	//k ready ;P
+
+	if (data.IsConst)	//load imm
+		CodeGen->MOV32ItoR(EDX,data.ConstValue);
+	else				//load mem
+		CodeGen->MOV32MtoR(EDX,data.RegLoc);
+
+	if (sz==1)
+		CodeGen->CALLFunc(WriteMem8);//bwhahaha
+	else if (sz==2)
+		CodeGen->CALLFunc(WriteMem16);//bwhahaha
+	else if(sz==4)
+		CodeGen->CALLFunc(WriteMem32);//bwhahaha
+	else
+		printf("WriteMemRec , wrong sz param\n");
 }
-#define UpdateFPSCR rec_UpdateFPSCR
-#define UpdateSR rec_UpdateSR
+
 
 void rec_UpdateFPSCR()
 {
+	FlushKillAll();
+	
+	CodeGen->CALLFunc(UpdateFPSCR);
 }
 
 void rec_UpdateSR()
 {
+	FlushKillAll();
+	CodeGen->CALLFunc(UpdateSR);
 }
 
+
+void recStartRecompile()
+{
+	for (int i=0;i<8;i++)
+	{
+		rec_r[i].RegLoc=&r[i];
+		rec_r_bank[i].RegLoc=&r_bank[i];
+	}
+
+	for (int i=8;i<16;i++)
+	{
+		rec_r[i].RegLoc=&r[i];
+	}
+
+	rec_gbr.RegLoc=&gbr;
+	rec_ssr.RegLoc=&ssr;
+	rec_spc.RegLoc=&spc;
+	rec_sgr.RegLoc=&sgr;
+	rec_dbr.RegLoc=&dbr;
+	rec_vbr.RegLoc=&vbr;
+
+	rec_mach.RegLoc=&mach;
+	rec_macl.RegLoc=&macl;
+	rec_pr.RegLoc=&pr;
+	rec_fpul.RegLoc=&fpul;
+	rec_sr.full.RegLoc=&sr.full;
+	rec_fpscr.full.RegLoc=&fpscr.full;
+
+	if (CodeGen)
+		delete CodeGen;
+	CodeGen=new Emmiter<>();
+}
+void recEndRecompile()
+{
+	FlushKillAll();
+	CodeGen->RET();
+}
+u32 recGetCodeSize()
+{
+	return CodeGen->UsedBytes();
+}
+bool recRecompileOp(u32 op,u32 rec_pc)
+{
+	//FlushKillAll();
+	RecOpPtr[op](op,rec_pc);
+	//FlushKillAll();
+	if (OpTyp[op] & (Branch | BranchDelay))
+		return false;
+	else
+		return true;
+}
+RecCodeCall* recGetFunction()
+{
+	return (RecCodeCall*)CodeGen->GetCode();
+}
+
+#define UpdateFPSCR rec_UpdateFPSCR
+#define UpdateSR rec_UpdateSR
+
+#define r rec_r
+#define r_bank	rec_r_bank
+#define gbr		rec_gbr
+#define ssr		rec_ssr
+#define spc		rec_spc
+#define sgr		rec_sgr
+#define dbr		rec_dbr
+#define vbr		rec_vbr
+#define mach	rec_mach
+#define macl	rec_macl
+
+#define pr		rec_pr
+#define fpul	rec_fpul
+
+#define sr		rec_sr
+#define fpscr	rec_fpscr
 //>:D
 #include "dc\sh4\sh4_cpu_arith.h"
-//#include "dc\sh4\sh4_cpu_branch.h"
+#include "dc\sh4\sh4_cpu_branch.h"
 #include "dc\sh4\sh4_cpu_logic.h"
 #include "dc\sh4\sh4_cpu_movs.h"
+
+//callback to interpreter ;P
+//we must kill all regcached things/consts
+void __fastcall rec_cpu_opcode_nimp(u32 op,u32 pc_v)
+{
+	FlushKillAll();
+
+	if ( (OpTyp[op] !=Arithm_FPU))
+	{
+		CodeGen->MOV32ItoM(&pc,pc_v);
+	}
+	CodeGen->MOV32ItoR(ECX,op);
+	CodeGen->CALLFunc(OpPtr[op]);
+}
+
+void __fastcall rec_fpu_opcode(u32 op,u32 pc_v)
+{
+	rec_cpu_opcode_nimp(op,pc_v);
+}

@@ -13,3 +13,11 @@ typedef unsigned __int64 u64;
 
 typedef float f32;
 typedef double f64;
+
+#ifdef X86
+typedef u32 unat;
+#endif
+
+#ifdef X64
+typedef u64 unat;
+#endif

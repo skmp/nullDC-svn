@@ -288,4 +288,5 @@ extern u16 g_aValues0x71_b[];
 extern u16 g_aValues0x71[];
 extern char szExDT[8][32];
 
+void gdBootHLE();
 #endif

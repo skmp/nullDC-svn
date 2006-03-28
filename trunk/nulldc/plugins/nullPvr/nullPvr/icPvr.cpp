@@ -414,6 +414,7 @@ bool icInit ()
 	if (cur_icpl->PvrOpen)
 		cur_icpl->PvrOpen();
 
+	icWriteMem_reg(0xA05F8060,0,4);
 return true;
 }
 

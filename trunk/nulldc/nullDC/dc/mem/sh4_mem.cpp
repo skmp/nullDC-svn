@@ -60,7 +60,37 @@ void mem_Term()
 	sh4_area0_Term();
 }
 
+FILE* F_OUT;
+FILE* F_IN;
+#include "dc\sh4\sh4_interpreter.h"
+void WriteTest(u32 dddd)
+{
+	if (!F_OUT)
+	{
+		if ((sh4_cpu->Run==Sh4_int_Run))
+		{
+			F_IN=fopen("f:/reg_rec.log","rb");
+			F_OUT=fopen("f:/reg_int.log","wb");
+		}
+		else
+		{
+			F_IN=fopen("f:/reg_int.log","rb");
+			F_OUT=fopen("f:/reg_rec.log","wb");
+		}
+	}
 
+	fwrite(&dddd,1,4,F_OUT);
+	u32 t_dddd;
+	if (F_IN)
+	{
+		fread(&t_dddd,1,4,F_IN);
+
+		if (t_dddd!=dddd)
+		{
+			MEM_DO_BREAK;
+		}
+	}
+}
 u8 MEMCALL ReadMem8(u32 addr)
 {
 	//if P4
@@ -240,6 +270,7 @@ u32 MEMCALL ReadMem32(u32 addr)
 
 void MEMCALL WriteMem8(u32 addr,u8 data)
 {
+	//WriteTest(addr,data);
 	//if P4
 	if (((addr>>29) &0x7)==7)
 	{
@@ -299,6 +330,7 @@ void MEMCALL WriteMem8(u32 addr,u8 data)
 
 void MEMCALL WriteMem16(u32 addr,u16 data)
 {
+	//WriteTest(addr,data);
 #ifdef TRACE
 	if (addr&0x1)
 	{
@@ -365,6 +397,7 @@ void MEMCALL WriteMem16(u32 addr,u16 data)
 
 void MEMCALL WriteMem32(u32 addr,u32 data)
 {
+	//WriteTest(addr,data);
 #ifdef TRACE
 	if (addr&0x3)
 	{

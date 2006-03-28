@@ -5,7 +5,7 @@
  sh4op(i0000_nnnn_0000_0010)//0002
 {
 	u32 n = GetN(op);
-	r[n] = sr.GetFull();
+	r[n] = sr.full;
 }
 
 
@@ -317,7 +317,7 @@
 	//iNimp("stc.l SR,@-<REG_N>");
 	u32 n = GetN(op);
 	r[n] -= 4;
-	WriteMemU32(r[n], sr.GetFull());
+	WriteMemU32(r[n], sr.full);
 }
 
 
@@ -547,7 +547,7 @@
 {
 	//iNimp("ldc <REG_N>,SR");
 	u32 n = GetN(op);
-	sr.SetFull(r[n]);
+	sr.full=r[n];
 	UpdateSR();
 }
 

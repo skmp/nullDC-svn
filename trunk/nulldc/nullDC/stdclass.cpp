@@ -56,7 +56,7 @@ void GetPathFromFileName(char* path)
 void GetFileNameFromPath(char* path,char* outp)
 {
 	
-	int i=strlen(path)-1;
+	size_t i=strlen(path)-1;
 	
 	while (i>=0)
 	{

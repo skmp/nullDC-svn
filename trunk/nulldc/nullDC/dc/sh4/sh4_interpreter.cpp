@@ -18,8 +18,8 @@
 #include <time.h>
 #include <float.h>
 
-#define CPU_TIMESLICE	(64)
-#define CPU_RATIO		(7)
+#define CPU_TIMESLICE	(152)
+#define CPU_RATIO		(3)
 
 //uh uh 
 volatile bool  sh4_int_bCpuRun=false;
@@ -56,6 +56,8 @@ u32 THREADCALL sh4_int_ThreadEntry(void* ptar)
 
 			u32 op=ReadMem16(pc);
 			i+=opcode_fam_cycles[op>>12];
+			if ((pc&0xFFFFFFF)==0xC00B6BC-2)
+				pc=pc;
 			ExecuteOpcode(op);
 			pc+=2;
 			
@@ -360,31 +362,6 @@ bool ExecuteDelayslot()
 int UpdateSystem(u32 Cycles)
 {
 	//TODO : Add Update System implementation
-	/*
-	speedCnt+=Cycles;
-	if (speedCnt>(DCclock/10))
-	{ 
-		_spd_mh=(double)((double)speedCnt/(1000*1000))/(double)((double)(timeGetTime()-(double)lasft_cpu_cnt)/1000);
-
-		lasft_cpu_cnt=timeGetTime();
-		speedCnt=0;
-	}
-
-
-
-	UpdateTMU(Cycles);
-
-	PvrLib.lib.Update(PVRU_CYCLES,&Cycles);
-
-	//check Interrupts
-	return Check_Ints();*/
-
-/*	gdCnt+=Cycles;
-	if (gdCnt>0x1000)
-	{
-		gdCnt-=0x1000;
-		UpdateGDRom();
-	}*/
 
 	UpdateAica(Cycles);
 	UpdateTMU(Cycles);

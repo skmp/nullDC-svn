@@ -448,8 +448,8 @@ sh4op(i1111_nnn0_1111_1101)
 	 
 	if (fpscr.PR==0)
 	{
-	fr[n | 0] = sin(real_pi);
-	fr[n | 1] = cos(real_pi);
+	fr[n | 0] = (float)sin(real_pi);
+	fr[n | 1] = (float)cos(real_pi);
 	
 	CHECK_FPU_32(fr[n]);
 	CHECK_FPU_32(fr[n+1]);

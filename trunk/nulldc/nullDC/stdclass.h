@@ -171,6 +171,10 @@ public :
 	Array<T> items;
 	s32 top;
 	
+	INLINE s32 FreeSpace()
+	{
+		return items.Size-top;
+	}
 	INLINE T& operator [](const u32 i)
     {
 		#ifdef MEM_BOUND_CHECK
@@ -210,7 +214,7 @@ public :
 		items.Free();
 	}
 	
-	void push(T &data)
+	/*void push(T &data)
 	{
 		if (top>=(s32)items.Size)
 		{
@@ -218,7 +222,7 @@ public :
 		}
 		
 		items[top++]=data;
-	}
+	}*/
 	
 	void push(T data)
 	{
@@ -242,12 +246,12 @@ public :
 	
 	void pop(T* data)
 	{
-		if (top<0)
+		if (top=<0)
 		{
 		}
 		else
 		{
-			*data=items[top--];
+			*data=items[--top];
 			if (top<(items.Size/5))
 			{
 				items.Resize(top*3/2);
@@ -373,9 +377,9 @@ public:
 	
 	bool Remove(u32 item)
 	{
-		bool rv=pitems[item].used;
+		bool rv=items[item].used;
 		if (rv)
-			pitems[item].used=0;
+			items[item].used=0;
 			
 		return rv;
 	}

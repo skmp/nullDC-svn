@@ -1,5 +1,7 @@
-
-
+//Specialised version for recompiler ;)
+#ifdef SH4_REC
+#include "sh4_cpu_branch_rec.h"
+#else
 //braf <REG_N>                  
  sh4op(i0000_nnnn_0010_0011)
 {
@@ -171,3 +173,4 @@ sh4op(sh4_bpt_op)
 	pc-=2;//hehe
 	RefreshDebugger(NULL);//need fixup
 }
+#endif
