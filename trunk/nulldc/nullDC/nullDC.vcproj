@@ -343,7 +343,7 @@
 							>
 						</File>
 						<File
-							RelativePath=".\sh4_cpu_branch_rec.h"
+							RelativePath=".\dc\sh4\sh4_cpu_branch_rec.h"
 							>
 						</File>
 						<File
