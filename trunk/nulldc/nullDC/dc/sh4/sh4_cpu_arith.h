@@ -23,7 +23,7 @@
 
 //add #<imm>,<REG_N>
  sh4op(i0111_nnnn_iiii_iiii)
-{//TODO : CHACK THIS 
+{
 	u32 n = GetN(op);
 	s32 stmp1 = GetSImm8(op);
 	r[n] +=stmp1;
