@@ -382,17 +382,41 @@ void FlushKillAll()
 #define WriteMemBOU32(addr,offset,data)		WriteMemRec(addr,offset,data,4)//WriteMemU32(addr+offset,data)
 #define WriteMemBOU16(addr,offset,data)		WriteMemRec(addr,offset,data,2)//WriteMemU16(addr+offset,data)
 #define WriteMemBOU8(addr,offset,data)		WriteMemRec(addr,offset,data,1)//WriteMemU8(addr+offset,data)
+INLINE bool IsOnRam(u32 addr)
+{
+	if (((addr>>26)&0x7)==3)
+	{
+		if ((((addr>>29) &0x7)!=7))
+		{
+			return true;
+		}
+	}
 
+	return false;
+}
 void ReadMemRec(RecRegType &to,u32 addr,u32 offset,u32 sz)
 {
 	//do some magic :P
 	//TODO : optimise w/ static reads more
-	CodeGen->MOV32ItoR(ECX,addr+offset);
-	
-	if(sz==4)
-		CodeGen->CALLFunc(ReadMem32);//bwhahaha
+	u32 ReadAddr=addr+offset;
+	if (IsOnRam(ReadAddr))
+	{
+		if(sz==4)
+		{
+			CodeGen->MOV32MtoR(EAX,(u32*)GetMemPtr(ReadAddr,sz));
+		}
+		else
+			printf("ReadMemRec , wrong sz param\n");
+	}
 	else
-		printf("ReadMemRec , wrong sz param\n");
+	{
+		CodeGen->MOV32ItoR(ECX,ReadAddr);
+
+		if(sz==4)
+			CodeGen->CALLFunc(ReadMem32);//bwhahaha
+		else
+			printf("ReadMemRec , wrong sz param\n");
+	}
 
 	to.SaveFrom(EAX);	//save the result
 }
@@ -455,20 +479,37 @@ void ReadMemRecS(RecRegType &to,u32 addr,u32 offset,u32 sz)
 {
 	//do some magic :P
 	//TODO : optimise w/ static reads more
-	CodeGen->MOV32ItoR(ECX,addr+offset);
-	
-	if (sz==1)
+	u32 ReadAddr=addr+offset;
+	if (IsOnRam(ReadAddr))
 	{
-		CodeGen->CALLFunc(ReadMem8);//bwhahaha
-		CodeGen->MOVSX32R8toR(EAX,EAX);
-	}
-	else if (sz==2)
-	{
-		CodeGen->CALLFunc(ReadMem16);//bwhahaha
-		CodeGen->MOVSX32R16toR(EAX,EAX);
+		if (sz==1)
+		{
+			CodeGen->MOVSX32M8toR(EAX,GetMemPtr(ReadAddr,sz));
+		}
+		else if (sz==2)
+		{
+			CodeGen->MOVSX32M16toR(EAX,(u16*)GetMemPtr(ReadAddr,sz));
+		}
+		else
+			printf("ReadMemRec , wrong sz param\n");
 	}
 	else
-		printf("ReadMemRec , wrong sz param\n");
+	{
+		CodeGen->MOV32ItoR(ECX,ReadAddr);
+
+		if (sz==1)
+		{
+			CodeGen->CALLFunc(ReadMem8);//bwhahaha
+			CodeGen->MOVSX32R8toR(EAX,EAX);
+		}
+		else if (sz==2)
+		{
+			CodeGen->CALLFunc(ReadMem16);//bwhahaha
+			CodeGen->MOVSX32R16toR(EAX,EAX);
+		}
+		else
+			printf("ReadMemRec , wrong sz param\n");
+	}
 
 	to.SaveFrom(EAX);	//save the result
 }
@@ -545,22 +586,66 @@ void ReadMemRecS(RecRegType &to,RecRegType& addr,RecRegType& offset,u32 sz)
 //WriteMem(u32 addr,u32 data,u32 sz)
 void WriteMemRec(u32 addr,u32 offset,RecRegType &data,u32 sz)
 {
-	CodeGen->MOV32ItoR(ECX,addr+offset);
-	
-	if (data.IsConst)	//load imm
-		CodeGen->MOV32ItoR(EDX,data.ConstValue);
-	else				//load mem
-		CodeGen->MOV32MtoR(EDX,data.RegLoc);
-
-	if (sz==1)
-		CodeGen->CALLFunc(WriteMem8);//bwhahaha
-	else if (sz==2)
-		CodeGen->CALLFunc(WriteMem16);//bwhahaha
-	else if(sz==4)
-		CodeGen->CALLFunc(WriteMem32);//bwhahaha
+	u32 ReadAddr=addr+offset;
+	if (IsOnRam(ReadAddr))
+	{
+		if (sz==1)
+		{
+			if (data.IsConst)
+			{
+				CodeGen->MOV8ItoM(GetMemPtr(ReadAddr,sz),(u8)data.ConstValue);
+			}
+			else
+			{
+				CodeGen->MOV8MtoR(EAX,(u8*)data.RegLoc);
+				CodeGen->MOV8RtoM(GetMemPtr(ReadAddr,sz),EAX);
+			}
+		}
+		else if (sz==2)
+		{
+			if (data.IsConst)
+			{
+				CodeGen->MOV16ItoM((u16*)GetMemPtr(ReadAddr,sz),(u16)data.ConstValue);
+			}
+			else
+			{
+				CodeGen->MOV16MtoR(EAX,(u16*)data.RegLoc);
+				CodeGen->MOV16RtoM((u16*)GetMemPtr(ReadAddr,sz),EAX);
+			}
+		}
+		else if(sz==4)
+		{
+			if (data.IsConst)
+			{
+				CodeGen->MOV32ItoM((u32*)GetMemPtr(ReadAddr,sz),data.ConstValue);
+			}
+			else
+			{
+				CodeGen->MOV32MtoR(EAX,data.RegLoc);
+				CodeGen->MOV32RtoM((u32*)GetMemPtr(ReadAddr,sz),EAX);
+			}
+		}
+		else
+			printf("WriteMemRec , wrong sz param\n");
+	}
 	else
-		printf("WriteMemRec , wrong sz param\n");
+	{
+		CodeGen->MOV32ItoR(ECX,addr+offset);
 
+		if (data.IsConst)	//load imm
+			CodeGen->MOV32ItoR(EDX,data.ConstValue);
+		else				//load mem
+			CodeGen->MOV32MtoR(EDX,data.RegLoc);
+
+		if (sz==1)
+			CodeGen->CALLFunc(WriteMem8);//bwhahaha
+		else if (sz==2)
+			CodeGen->CALLFunc(WriteMem16);//bwhahaha
+		else if(sz==4)
+			CodeGen->CALLFunc(WriteMem32);//bwhahaha
+		else
+			printf("WriteMemRec , wrong sz param\n");
+	}
 }
 void WriteMemRec(RecRegType& addr,u32 offset,RecRegType &data,u32 sz)
 {
@@ -686,9 +771,9 @@ u32 recGetCodeSize()
 }
 bool recRecompileOp(u32 op,u32 rec_pc)
 {
-	//FlushKillAll();
+//	FlushKillAll();
 	RecOpPtr[op](op,rec_pc);
-	//FlushKillAll();
+//	FlushKillAll();
 	if (OpTyp[op] & (Branch | BranchDelay))
 		return false;
 	else

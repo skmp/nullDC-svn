@@ -445,7 +445,7 @@ public :
 	}
 
 	/* mov r16 to m16 */
-	void MOV16RtoM(u32* to, x86IntRegType from ) 
+	void MOV16RtoM(u16* to, x86IntRegType from ) 
 	{
 		write8( 0x66 );
 		write8( 0x89 );
@@ -454,7 +454,7 @@ public :
 	}
 
 	/* mov m16 to r16 */
-	void MOV16MtoR( x86IntRegType to, u32* from ) 
+	void MOV16MtoR( x86IntRegType to, u16* from ) 
 	{
 		write8( 0x66 );
 		write8( 0x8B );
@@ -481,7 +481,7 @@ public :
 	}
 
 	/* mov r8 to m8 */
-	void MOV8RtoM( u32 to, x86IntRegType from ) 
+	void MOV8RtoM( u8* to, x86IntRegType from ) 
 	{
 		write8( 0x88 );
 		ModRM( 0, from, DISP32 );
@@ -489,7 +489,7 @@ public :
 	}
 
 	/* mov m8 to r8 */
-	void MOV8MtoR( x86IntRegType to, u32 from ) 
+	void MOV8MtoR( x86IntRegType to, u8* from ) 
 	{
 		write8( 0x8A );
 		ModRM( 0, to, DISP32 );
@@ -497,7 +497,7 @@ public :
 	}
 
 	/* mov imm8 to m8 */
-	void MOV8ItoM( u32 to, u8 from ) 
+	void MOV8ItoM( u8* to, u8 from ) 
 	{
 		write8( 0xC6 );
 		ModRM( 0, 0, DISP32 );
@@ -513,7 +513,7 @@ public :
 	}
 
 	/* movsx m8 to r32 */
-	void MOVSX32M8toR( x86IntRegType to, u32 from ) 
+	void MOVSX32M8toR( x86IntRegType to, u8* from ) 
 	{
 		write16( 0xBE0F ); 
 		ModRM( 0, to, DISP32 );
@@ -528,7 +528,7 @@ public :
 	}
 
 	/* movsx m16 to r32 */
-	void MOVSX32M16toR( x86IntRegType to, u32 from ) 
+	void MOVSX32M16toR( x86IntRegType to, u16* from ) 
 	{
 		write16( 0xBF0F ); 
 		ModRM( 0, to, DISP32 );
