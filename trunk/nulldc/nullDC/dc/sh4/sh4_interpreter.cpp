@@ -56,8 +56,6 @@ u32 THREADCALL sh4_int_ThreadEntry(void* ptar)
 
 			u32 op=ReadMem16(pc);
 			i+=opcode_fam_cycles[op>>12];
-			if ((pc&0xFFFFFFF)==0xC00B6BC-2)
-				pc=pc;
 			ExecuteOpcode(op);
 			pc+=2;
 			

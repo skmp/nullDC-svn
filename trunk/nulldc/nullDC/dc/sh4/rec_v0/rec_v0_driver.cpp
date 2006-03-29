@@ -83,12 +83,11 @@ INLINE recBlock* __fastcall GetRecompiledCode(u32 pc)
 		//is realloc to less guaranteed ?
 		realloc(currBlock->Code,currBlock->NativeSize+8);
 
-		avg_rat=(avg_rat*avg_rat_cnt+ (recGetCodeSize()*100/bc));
-		avg_rat_cnt++;
-		avg_rat=avg_rat/(avg_rat_cnt);
+		avg_rat+=recGetCodeSize();
 		avg_bc+=bc;
+		avg_rat_cnt++;
 
-		printf("Generated code bytes ratio %d:%d = %d%% , Average %d%% , %d block size\n",bc, recGetCodeSize(),recGetCodeSize()*100/bc,avg_rat,avg_bc/avg_rat_cnt);
+		printf("Generated code bytes ratio %d:%d = %d%% , Average %d%% , %d block size\n",bc, recGetCodeSize(),recGetCodeSize()*100/bc,avg_rat*100/avg_bc,avg_bc/avg_rat_cnt);
 
 		bc=0;
 		i=0;

@@ -26,6 +26,7 @@
 #define GetSImm12(str) (((s16)((GetImm12(str))<<4))>>3)
 
 #define iNimp cpu_iNimp
+#define iWarn cpu_iWarn
 
 //Read Mem macros
 #define ReadMemU32(to,addr) to=ReadMem32(addr)
@@ -60,6 +61,13 @@ void cpu_iNimp(u32 op, char* info)
 	sh4_cpu->Stop();
 }
 
+void cpu_iWarn(u32 op, char* info)
+{
+	printf("Check opcode : %X : ", op);
+	printf(info);
+	printf(" @ %X\n", pc);
+}
+
 #include "sh4_cpu_movs.h"
 #include "sh4_cpu_branch.h"
 #include "sh4_cpu_arith.h"
@@ -71,7 +79,7 @@ void cpu_iNimp(u32 op, char* info)
 {
 	u32 n = GetN(op);
 	WriteMem32(r[n],r[0]);//at r[n],r[0]
-	iNimp(op, "movca.l R0, @<REG_N>");
+	//iWarn(op, "movca.l R0, @<REG_N>");
 } 
 
 
