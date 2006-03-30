@@ -102,7 +102,6 @@ void gdrom_reg_Init(void)
 	memcpy(gdRM.DriveInformation, DriveInfo, 8);
 	memcpy(gdRM.SystemVersion, SystemInfo, 8);
 	memcpy(gdRM.SystemDate, SystemDate, 6);
-
 /*
 	Cylinder Low = 14h,
 	Cylinder High = EBh,
@@ -386,6 +385,10 @@ void ProcessSPI(void)
 		for(int x=(int)((len-2)>>1); x>=0; x--)
 			databuff.push_back( ((u16*)gdtoc)[x] );	// ? uh.. i think so 
 
+		lprintf("TOC: size: %X\n", len);
+		for(int i=0; i<102; i++)
+			lprintf(": %X\n", ((unsigned int*)gdtoc)[i]);
+
 		gdSR.ByteCount = len;
 		goto pio_complete;
 	 }
@@ -652,26 +655,77 @@ void logd(u32 rw, u32 addr, u32 data)
 
 
 
-
-
-
-
-
-
-
-
-
-
 /*
 **	HLE Section
 */
+#include <ctype.h>
+
+enum IMG_ERR
+{
+	IMG_NOTHING	= 0x00000000,	/* IMG: No Error */
+	IMG_OPEN	= 0x10000000,	/* IMG: Open */
+	IMG_CLOSE	= 0x10000001,	/* IMG: Close */
+
+	ISO_FS_INIT = 0x30000000,	/* ISO9660: Filesystem initialization */
+	ISO_FS_LOCTRK=0x30000001,	/* ISO9660: Locate data track */
+	ISO_FS_RDSEC= 0x30000002,	/* ISO9660: Read root sector failure */
+	ISO_FS_CHK  = 0x30000003,	/* ISO9660: ISO String compare check error */
+	ISO_FS_NOBOOT=0x30000004,	/* ISO9660: No Bootfile found */
+	ISO_FS_RD_BT= 0x30000005,	/* ISO9660: Read Bootfile failure */
+
+	DCGD_SOCKET = 0x60000000,	/* DC GDROM: Socket create failed */
+	DCGD_GETHOST= 0x60000001,	/* DC GDROM: Get Host */
+	DCGD_CONNECT= 0x60000002,	/* DC GDROM: Connect */
+	DCGD_SEND	= 0x60000003,	/* DC GDROM: Send */
+	DCGD_RECV	= 0x60000004,	/* DC GDROM: Recv */
+};
+typedef enum IMG_ERR	IMG_ERR;
+
+
+typedef struct {
+	
+	u32 entry[99];
+	u32 first;
+	u32 last;
+	u32 leadout;
+} GDROM_TOC;
+
+GDROM_TOC gdTOC;
+
+extern u32 session_base;
+
+#define TRUE	(1)
+#define FALSE	(0)
+
+#define _SWAP32(w)	((((w)>>24)&255) | (((w)>>8)&0xFF00) | (((w)&0xFF00)<<8) | (((w)&255)<<24))
+
+/* TOC access macros 
+#define TOC_LBA(n) ( _SWAP32(n) & 0x00ffffff)
+#define TOC_ADR(n) ( _SWAP32((n) & 0x0f000000) >> 24 )
+#define TOC_CTRL(n) ( _SWAP32((n) & 0xf0000000) >> 28 )
+#define TOC_TRACK(n) ( _SWAP32((n) & 0x00ff0000) >> 16 )
+*/
+#define TOC_ADR(n)	( ((n) & 0x0000000F) )
+#define TOC_CTRL(n)	( ((n) & 0x000000F0) >> 4)
+#define TOC_TRACK(n)( ((n) & 0x0000FF00) >> 8)
+#define TOC_LBA(n)	( _SWAP32(n) & 0x00FFFFFF)
+
+IMG_ERR ISO_FSInit();
+IMG_ERR ISO9660_LoadFile(char filename[16],u32 dwAddress,bool Descramble);
+
+void SCR_Descramble(u8 *ptr, u8 *srcbuf, u32 filesz);
+
+
+
+//#define USE_IC_SRC
 
 bool iso9660_Init(u32 session_base);
 bool iso9660_LoadFile(char filename[16], u32 dwAddress, bool Descramble);
 
+
+
 void gdBootHLE(void)
 {
-
 	printf("\n~~~\tgdBootHLE()\n\n");
 
 	u32 toc[102];
@@ -701,11 +755,542 @@ void gdBootHLE(void)
 
 	printf("IP.BIN BootFile: %s\n", bootfile);
 
+
+
+#ifdef USE_IC_SRC
+	if(ISO_FSInit())
+		printf("GDHLE: ERROR: iso9660_Init() Failed!\n\n");
+	if(ISO9660_LoadFile(bootfile, 0x8c010000, TRUE))
+		printf("GDHLE: ERROR: iso9660_LoadFile() Failed!\n\n");
+#else
 	if(!iso9660_Init(addr))
 		printf("GDHLE: ERROR: iso9660_Init() Failed!\n\n");
 	if(!iso9660_LoadFile(bootfile, 0x8c010000, true))
 		printf("GDHLE: ERROR: iso9660_LoadFile() Failed!\n\n");
+#endif
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+#ifdef  USE_IC_SRC
+
+
+
+/*
+ISO9660.cpp:
+- ISO9660.cpp high-level processing for generic reading of 1st_read.bin/IP.BIN
+*/
+
+/*************************************************************/
+
+/* This seems kinda silly, but it's important since it allows us
+to do unaligned accesses on a buffer */
+static u32 htohl_32(const void *data) {
+	const u8 *d = (const u8*)data;
+	return (d[0] << 0) | (d[1] << 8) | (d[2] << 16) | (d[3] << 24);
+}
+
+/* Read red-book section 7.3.3 number (32 bit LE / 32 bit BE) */
+static u32 iso_733(const u8 *from) { return htohl_32(from); }
+
+/* ISO Directory entry */
+typedef struct {
+	u8	length;			/* 711 */
+	u8	ext_attr_length;	/* 711 */
+	u8	extent[8];		/* 733 */
+	u8	size[8];		/* 733 */
+	u8	date[7];		/* 7x711 */
+	u8	flags;
+	u8	file_unit_size;		/* 711 */
+	u8	interleave;		/* 711 */
+	u8	vol_sequence[4];	/* 723 */
+	u8	name_len;		/* 711 */
+	char	name[1];
+} iso_dirent_t;
+
+/* Root FS session location (in sectors) */
+u32 session_base = 0;
+
+/* Root directory extent and size in bytes */
+static u32 root_extent = 0, root_size = 0;
+
+/* Root dirent */
+static iso_dirent_t root_dirent;
+
+/*void ISO_ReadTOC(GDROM_TOC *TOC,int session)
+{
+//This is incorrect... hack atm
+TOC->first=CTOC_TRACK(1);
+TOC->last=CTOC_TRACK(1);
+TOC->entry[0]=CTOC_LBA(150)|CTOC_ADR(0)|CTOC_CTRL(4);
+printf("TOC: First=%08x,Last=%08x,Entry=%08x",TOC->first,TOC->last,TOC->entry[0]);
+}*/
+
+/* Locate the LBA sector of the data track; use after reading TOC */
+u32 ISO_LocateDataTrack(GDROM_TOC toc) {
+	int i, first, last;
+
+	printf(" TEMP LOCATE: first: %d last: %d leadout: %x\n", TOC_TRACK(toc.first), TOC_TRACK(toc.last), toc.leadout);
+
+	first = TOC_TRACK(toc.first);
+	last = TOC_TRACK(toc.last);
+
+	printf("ISO9660: First track: %d, Last track: %d\n",first,last);
+	if (last>1)
+		printf("Note: This is a selfbootable dreamcast disc\n");
+	else
+		printf("Note: This is a non-selfbootable dreamcast disc\n");	
+
+	if (first < 1 || last > 99 || first > last)
+		return 0;
+
+	/* Find the last track which has a CTRL of 4 */
+
+	for (i=last; i>=first; i--) {
+		printf("Track %i, Ctrl %d, Lba %d\n",i,TOC_CTRL(toc.entry[i - 1]),TOC_LBA(toc.entry[i - 1]));
+		if (TOC_CTRL(toc.entry[i - 1]) == 4)
+			return TOC_LBA(toc.entry[i - 1]);
+	}
+	if(0==i) i=1;
+	printf("Warning: No track with CTRL=4. Returning last track info (%d,0x%08x)\n",last-1,toc.entry[last-1]);
+	return TOC_LBA(toc.entry[last-1]);
+	//return 0xFFFFFFFF;
+}
+
+/* Compare an ISO9660 filename against a normal filename. This takes into
+account the version code on the end and is not case sensitive. Also
+takes into account the trailing period that some CD burning software
+adds. */
+static int fncompare(const char *isofn, int isosize, const char *normalfn) {
+	int i;
+
+	/* Compare ISO name */
+	for (i=0; i<isosize; i++) {
+		/* Weed out version codes */
+		if (isofn[i] == ';') break;
+
+		/* Deal with crap '.' at end of filenames */
+		if (isofn[i] == '.' &&
+			(i == (isosize-1) || isofn[i+1] == ';'))
+			break;
+
+		/* Otherwise, compare the chars normally */
+		if (tolower(isofn[i]) != tolower(normalfn[i]))
+			return -1;
+	}
+
+	/* Catch ISO name shorter than normal name */
+	if (normalfn[i] != '/' && normalfn[i] != '\0')
+		return -1;
+	else
+		return 0;
+}
+
+/* Locate an ISO9660 object in the given directory; this can be a directory or
+a file, it works fine for either one. Pass in:
+
+fn:		object filename (relative to the passed directory)
+dir:		0 if looking for a file, 1 if looking for a dir
+dir_extent:	directory extent to start with
+dir_size:	directory size (in bytes)
+
+It will return a pointer to a transient dirent buffer (i.e., don't
+expect this buffer to stay around much longer than the call itself).
+*/
+static iso_dirent_t *ISO_FindFile(char filename[16], u32 dir_extent, u32 dir_size) {
+	u32		i;
+	iso_dirent_t	*de;
+	u8 dir=0; //We are just looking for a file
+	int		len;
+	u8		*pnt;
+	char	rrname[16];
+	int		rrnamelen;
+	u8 Data[2048]; /* Sector data */
+
+	while (dir_size > 0) {
+
+		libGDR->gdr_info.ReadSector(Data, dir_extent, 1, 2048);
+	//	if (!IMG_ReadSector(Data, dir_extent, 1))
+	//		return NULL;
+
+		for (i=0; i<2048 && i<dir_size; ) {
+			/* Assume no Rock Ridge name */
+			rrnamelen = 0;
+
+			/* Locate the current dirent */
+			de = (iso_dirent_t *)(&Data[i]);
+			if (!de->length) break;
+
+			/* Check for Rock Ridge NM extension */
+			len = de->length - sizeof(iso_dirent_t)
+				+ sizeof(de->name) - de->name_len;
+			pnt = (u8*)de + sizeof(iso_dirent_t)
+				- sizeof(de->name) + de->name_len;
+			if ((de->name_len & 1) == 0) {
+				pnt++; len--;
+			}
+			while ((len >= 4) && ((pnt[3] == 1) || (pnt[3] == 2))) {
+				if (strncmp((const char *)pnt, "NM", 2) == 0) {
+					rrnamelen = pnt[2] - 5;
+					strncpy((char *)rrname, (const char *)pnt+5, rrnamelen);
+					rrname[rrnamelen] = 0;
+				}
+				len -= pnt[2];
+				pnt += pnt[2];
+			}
+
+
+			/* Check the filename against the requested one */
+			if (rrnamelen > 0) {//Rock Ridge NM extension
+				char *p = strchr(filename, '/');
+				int fnlen;
+
+				if (p)
+					fnlen = p - filename;
+				else
+					fnlen = strlen(filename);
+
+				if (!strnicmp(rrname, filename, fnlen)) {
+					if (!((dir << 1) ^ de->flags))
+						return de;
+				}
+			} else { //No Rock Ridge Name
+#ifdef ICARUS_LOG
+				Debug_PrintToFile(0,"File=%s : Extent=%d : Size=%d",de->name,iso_733(de->extent),iso_733(de->size));
+#endif
+				if (!fncompare(de->name, de->name_len, filename)) {
+					if (!((dir << 1) ^ de->flags))
+						return de;
+				}
+			}
+
+			i += de->length;
+		}
+
+		dir_extent++;
+		dir_size -= 2048;
+	}
+
+	return NULL;
+}
+
+#ifdef ISO_FILE_LIST
+#define MAX_FILES 0xFF
+struct _FileList {
+	LPTSTR Name;
+	u32  Sector;
+};
+
+static _FileList FileList[MAX_FILES];
+static u32 FileListNum;
+
+LPTSTR ISO_SectorToFile(u32 Sector)
+{
+	for (int i=0; i<FileListNum; i++)
+		if (FileList[i].Sector==Sector)
+		{
+			CPU_Halt("DODDGGOD");
+			return FileList[i].Name;
+		}
+		return NULL;
+}
+
+void ISO_InitFileList(u32 dir_extent, u32 dir_size) {
+	int		i, c;
+	iso_dirent_t	*de;
+	u8 dir=0; //We are just looking for a file
+	int		len;
+	u8		*pnt;
+	char	rrname[16];
+	int		rrnamelen;
+	int counter=0;
+	u8 Data[2048]; /* Sector data */
+
+	while (dir_size > 0) {
+		c = IMG_ReadSector(Data, dir_extent, 1);
+		if (c == 0) return;
+
+		for (i=0; i<2048 && i<dir_size; ) {
+			/* Assume no Rock Ridge name */
+			rrnamelen = 0;
+
+			/* Locate the current dirent */
+			de = (iso_dirent_t *)(&Data[i]);
+			if (!de->length) break;
+
+			/* Check for Rock Ridge NM extension */
+			len = de->length - sizeof(iso_dirent_t)
+				+ sizeof(de->name) - de->name_len;
+			pnt = (u8*)de + sizeof(iso_dirent_t)
+				- sizeof(de->name) + de->name_len;
+			if ((de->name_len & 1) == 0) {
+				pnt++; len--;
+			}
+			while ((len >= 4) && ((pnt[3] == 1) || (pnt[3] == 2))) {
+				if (strncmp((const char *)pnt, "NM", 2) == 0) {
+					rrnamelen = pnt[2] - 5;
+					strncpy((char *)rrname, (const char *)pnt+5, rrnamelen);
+					rrname[rrnamelen] = 0;
+				}
+				len -= pnt[2];
+				pnt += pnt[2];
+			}
+
+			FileList[counter].Name=de->name;
+			//	strcpy(FileList[counter].Name,de->name);
+			FileList[counter].Sector=iso_733(de->extent);
+			Debug_PrintToFile(0,"%d: %s , %d",counter,FileList[counter].Name, FileList[counter].Sector);
+			//}
+			counter++;
+			if (counter>MAX_FILES) return;
+
+			i += de->length;
+		}
+
+		dir_extent++;
+		dir_size -= 2048;
+	}
+	FileListNum=counter;
+}
+#endif
+
+/******** ISO9660 Filesystem ****************************************/
+/* Used to load the 1stread.bin or other binary specified in ip.bin */
+/********************************************************************/
+
+IMG_ERR ISO_FSInit()
+{
+	u8 Data[2048]; /* Sector data */
+
+	libGDR->gdr_info.GetToc((u32*)&gdTOC,(DiskArea)1);
+//	IMG_ReadTOC(&gdTOC);
+
+	if ((session_base = ISO_LocateDataTrack(gdTOC))==0xFFFFFFFF)
+		return ISO_FS_LOCTRK;
+	printf("Data Track Located at 0x%08x\n",session_base);
+
+	libGDR->gdr_info.ReadSector(Data, (session_base+16), 1, 2048);
+	/* Read the relevant sector for the volume descriptor */
+/*	if (IMG_ReadSector(Data, (session_base+16),1)==FALSE)
+	{
+		printf("ISO9660: Error reading root sector 0x%08x (%d) - 0 bytes read.",session_base+16,session_base+16);
+		return ISO_FS_RDSEC;
+	}*/
+
+	if (memcmp(&Data[0], "\01CD001", 6)) {
+		printf("ISO: Disc is not iso9660\n");
+		u8 string[7]="\01CD001";
+		printf("IMAGE :%02x%02x%02x%02x%02x%02x\n",string[0],string[1],string[2],string[3],string[4],string[5]);
+		printf("ISOCRC:%02x%02x%02x%02x%02x%02x\n",Data[0],Data[1],Data[2],Data[3],Data[4],Data[5]);
+		return ISO_FS_CHK;
+	}
+
+	/* Locate the root directory */
+	memcpy(&root_dirent, &Data[156], sizeof(iso_dirent_t));
+	root_extent = iso_733(root_dirent.extent);
+	root_size = iso_733(root_dirent.size);
+	printf("ISO9660: dirent:extent=0x%08x, size=0x%08x, length=0x%08x\n",iso_733(root_dirent.extent),iso_733(root_dirent.size),root_dirent.length);
+	printf("ISO_FSInit complete successfully\n");
+
+#ifdef ISO_FILE_LIST
+	ISO_InitFileList(iso_733(root_dirent.extent), iso_733(root_dirent.size));
+#endif
+
+	return IMG_NOTHING;
+}
+
+IMG_ERR ISO9660_ReadBootFile(u32 first_sector,u32 size,u32 dwAddress,bool Descramble)
+{
+	u8 Data[2048]; /* Sector data */
+
+	u8 *pBuf=(u8 *)((u32)&mem_b[0] + (dwAddress& 0xFFFFFF));
+	u32 no_full_sectors=size/2048;
+
+	printf("ISO9660: Reading 1st_read.bin from disc...\n");
+	libGDR->gdr_info.ReadSector(Data, first_sector, no_full_sectors, 2048);
+//	IMG_ReadSector(pBuf,first_sector, no_full_sectors);	/* Read total number of full sectors in one chunk 
+/*
+	if ((size%2048)!=0) // Copy the last remaining bytes manually 
+	{
+		libGDR->gdr_info.ReadSector(Data, no_full_sectors+first_sector, 1, 2048);
+	//	IMG_ReadSector(Data,no_full_sectors+first_sector,1);
+		pBuf=(u8 *)((u8*)&mem_b[0] + ((dwAddress + no_full_sectors*2048)& 0xFFFFFF));
+		memcpy(pBuf,&Data[0],size%2048);
+	}*/
+	return IMG_NOTHING;
+}
+
+IMG_ERR ISO9660_LoadFile(char filename[16],u32 dwAddress,bool Descramble)
+{
+	IMG_ERR error;
+	//	u32 bytesread;
+	iso_dirent_t	*de;
+
+	/* Now we have to search through the directory record to find the relevant bootfile */
+	de = ISO_FindFile(filename,iso_733(root_dirent.extent), iso_733(root_dirent.size));
+
+	if (de==NULL) 
+	{ 
+		printf("No %s file found in iso file.\n",filename); 
+		return ISO_FS_NOBOOT; 
+	}
+
+	u32 first_sector = iso_733(de->extent);
+	u32 size = iso_733(de->size);
+
+	/* Now we have the descriptor info for the bootfile, we have to read its data */
+	printf("First sector=0x%08x,Size=0x%08x,No.Full Sectors=%d,Last sec. bytes=%d\n",first_sector,size,size/2048,size%2048);
+
+	error=ISO9660_ReadBootFile(first_sector,size,dwAddress,Descramble);
+	if (error!=IMG_NOTHING)
+	{
+		//IMG_SY_ERR(error)
+		return ISO_FS_RD_BT;
+	}
+
+	if (Descramble)
+	{
+		u8 *pTmp=(u8 *)malloc(size);
+		u8 *pSrc=(u8 *)((u8*)&mem_b[0]+0x10000);
+		SCR_Descramble(pTmp,pSrc,size);
+		memcpy(pSrc,pTmp,size);
+		free(pTmp);
+		printf("ISO9660: %s descrambled successfully\n",filename);
+	}
+	return IMG_NOTHING;
+}
+
+
+
+
+
+
+
+
+
+/*
+Scramble.c:
+- Bootfile descrambler	////////////////////////////////////////
+*/
+
+
+#define MAXCHUNK (2048*1024)
+
+static unsigned int seed;
+
+void my_srand(unsigned int n)
+{
+	seed = n & 0xffff;
+}
+
+unsigned int my_rand()
+{
+	seed = (seed * 2109 + 9273) & 0x7fff;
+	return (seed + 0xc000) & 0xffff;
+}
+
+void load_chunk(u8 *ptr, u8 *srcbuf, u32 sz)
+{
+	static int idx[MAXCHUNK/32];
+	int i;
+
+	/* Convert chunk size to number of slices */
+	sz /= 32;
+
+	/* Initialize index table with unity,
+	so that each slice gets loaded exactly once */
+	for(i = 0; i < (signed long) sz; i++)
+		idx[i] = i;
+
+	for(i = sz-1; i >= 0; --i)
+	{
+		/* Select a replacement index */
+		int x = (my_rand() * i) >> 16;
+
+		/* Swap */
+		int tmp = idx[i];
+		idx[i] = idx[x];
+		idx[x] = tmp;
+
+		/* Load resulting slice */
+		memcpy(ptr+32*idx[i],srcbuf,32);
+		srcbuf+=32;
+	}
+}
+
+
+void SCR_Descramble(u8 *ptr, u8 *srcbuf, u32 filesz)
+{
+	unsigned long chunksz;
+
+	my_srand(filesz);
+
+	/* Descramble 2 meg blocks for as long as possible, then
+	gradually reduce the window down to 32 bytes (1 slice) */
+	for(chunksz = MAXCHUNK; chunksz >= 32; chunksz >>= 1)
+		while(filesz >= chunksz)
+		{
+			load_chunk(ptr, srcbuf, chunksz);
+			filesz -= chunksz;
+			srcbuf+=chunksz;
+			ptr += chunksz;
+		}
+
+		/* Load final incomplete slice */
+		if(filesz)
+			memcpy(ptr,srcbuf,filesz);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+///////////////////////////////////////////////////////////////
+#else
+
+
+
+
 
 
 
@@ -899,6 +1484,9 @@ static iso_dirent_t * iso9660_FindFile(char filename[16], u32 dir_extent, u32 di
 	return NULL;
 }
 
+
+////// scramble.c
+
 #define MAXCHUNK (2048*1024)
 
 static unsigned int seed;
@@ -953,7 +1541,6 @@ void SCR_Descramble(u8 *ptr, u8 *srcbuf, u32 filesz)
 	/* Descramble 2 meg blocks for as long as possible, then
 	gradually reduce the window down to 32 bytes (1 slice) */
 	for(chunksz = MAXCHUNK; chunksz >= 32; chunksz >>= 1)
-	{
 		while(filesz >= chunksz)
 		{
 			load_chunk(ptr, srcbuf, chunksz);
@@ -965,7 +1552,6 @@ void SCR_Descramble(u8 *ptr, u8 *srcbuf, u32 filesz)
 		/* Load final incomplete slice */
 		if(filesz)
 			memcpy(ptr,srcbuf,filesz);
-	}
 }
 
 
@@ -1045,7 +1631,7 @@ void Descram(u8 * dst, u8 * src, u32 size)
 bool iso9660_LoadFile(char filename[16], u32 dwAddress, bool Descramble)
 {
 	//IMG_ERR error;
-	//	DWORD bytesread;
+	//	u32 bytesread;
 	iso_dirent_t	*de;
 
 	// Now we have to search through the directory record to find the relevant bootfile 
@@ -1119,6 +1705,19 @@ bool iso9660_Init(u32 session_base)
 
 	return true;
 }
+
+#endif
+
+
+
+
+
+
+
+
+
+
+
 
 void gdop(u32 opcode)
 {
