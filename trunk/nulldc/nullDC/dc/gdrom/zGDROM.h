@@ -280,11 +280,28 @@ typedef union
 		u8	SystemVersion[8];
 		u8	SystemDate[6];
 	};
-
 	u16 Words[16];
 
 } gdReqMode;
 
+typedef union
+{
+	struct {
+		u8	Status:	4;
+		u8	zResv1:	4;
+		u8	Repeat:	4;
+		u8	Format:	4;
+		u8	Control:4;
+		u8	Address:4;
+		u8	TNO;
+		u8	X;
+		u8	FAD[3];
+		u8	ReadRetry;
+		u8	zResv2;
+	};
+	u16 Words[5];
+
+} gdReqStat;
 
 
 #ifdef _MSC_VER
