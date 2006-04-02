@@ -6,6 +6,7 @@
 #include "stdclass.h"
 #include "dc/dc.h"
 #include "gui/base.h"
+#include "config/config.h"
 
 #include <windows.h>
 #include "plugins\plugin_manager.h"
@@ -162,12 +163,22 @@ void EnumPlugins()
 
 int main(int argc, char* argv[])
 {
-	//get curent path and set plugin path
-	char * plpath=GetEmuPath("plugins\\");
+	// Could Change plugin path even, do first, is always relative to execution dir.
+	if(!cfgVerify())
+		printf("~ERROR: cfgVerify() Failed!\n");
 
+	if(TRUE == cfgLoadInt("nullDC","bNeedsCfg"))
+		printf(" >>>>>>>>>>> NEEDS A CFG !\n");
+
+	//get curent path and set plugin path
+//	char * plpath=GetEmuPath("plugins\\");
+//	SetPluginPath(plpath);
+//	free(plpath);
+
+	char * plpath = new char[MAX_PATH];
+	cfgLoadStr("nullDC_paths","PluginPath", plpath);
 	SetPluginPath(plpath);
-	
-	free(plpath);
+	delete[] plpath;
 	
 
 	PrintHeader();
