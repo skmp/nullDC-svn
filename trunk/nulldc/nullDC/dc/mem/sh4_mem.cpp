@@ -486,7 +486,7 @@ u8* GetMemPtr(u32 Addr,u32 size)
 			if ((Addr<=0x001FFFFF))//	:MPX	System/Boot ROM
 				return &bios_b[Addr];
 			
-			printf("Area 0 GetMemPtr : out of bios area , addr=%d",Addr);
+			printf("Area 0 GetMemPtr : out of bios area , addr=0x%X",Addr);
 			return 0;
 
 		case 1:
@@ -496,8 +496,8 @@ u8* GetMemPtr(u32 Addr,u32 size)
 		case 6:
 		case 7:
 		default:
-			printf("Get MemPtr not suported area ; addr=%d",Addr);
-			return 0;
+			printf("Get MemPtr not suported area ; addr=0x%X",Addr);
+			return &bios_b[0];
 	}
 			
 }
