@@ -52,7 +52,7 @@ void iso_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 	}
 	else
 	{
-		f_iso=fopen("F:/cdd/thps2.iso","rb");
+		f_iso=fopen("F:/ADS.IXO.ISO","rb");
 		
 		fseek(f_iso,StartSector*2048,SEEK_SET);
 		size_t rd=fread(buff,1,SectorCount*2048,f_iso);
