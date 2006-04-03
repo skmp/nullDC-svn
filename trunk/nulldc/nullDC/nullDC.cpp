@@ -99,6 +99,10 @@ void EnumPlugins()
 
 int main(int argc, char* argv[])
 {
+	char * currpath=GetEmuPath("");
+	SetCurrentDirectoryA(currpath);
+	free(currpath);
+
 	// Could Change plugin path even, do first, is always relative to execution dir.
 	if(!cfgVerify())
 		printf("~ERROR: cfgVerify() Failed!\n");
@@ -107,7 +111,7 @@ int main(int argc, char* argv[])
 		printf(" >>>>>>>>>>> NEEDS A CFG !\n");
 
 	//get curent path and set plugin path
-//	char * plpath=GetEmuPath("plugins\\");
+//	("plugins\\");
 //	SetPluginPath(plpath);
 //	free(plpath);
 

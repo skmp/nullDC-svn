@@ -44,7 +44,7 @@ bool cfgVerify()
 		sprintf(appPath, ".\\");
 	}
 	strcat(appPath,"\\");
-	sprintf(cfgPath,"%s\\nullDC.cfg", appPath);
+	sprintf(cfgPath,"%snullDC.cfg", appPath);
 
 	FILE * fcfg = fopen(cfgPath,"r");
 	if(!fcfg) {
@@ -65,10 +65,10 @@ bool cfgVerify()
 		char finalPath[MAX_PATH];
 		cfgSaveStr("nullDC_paths","AppPath",appPath);	// this is nice, you can always get real curr. path with this
 
-		sprintf(finalPath,"%s\\data\\", appPath);
+		sprintf(finalPath,"%sdata\\", appPath);
 		cfgSaveStr("nullDC_paths","DataPath",finalPath);
 
-		sprintf(finalPath,"%s\\plugins\\", appPath);
+		sprintf(finalPath,"%splugins\\", appPath);
 		cfgSaveStr("nullDC_paths","PluginPath",finalPath);
 
 		return false;
