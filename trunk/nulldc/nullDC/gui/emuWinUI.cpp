@@ -20,6 +20,7 @@
 #include "dc/sh4/sh4_cst.h"
 #include "dc/gdrom/gdrom_if.h"
 #include "dc/dc.h"
+#include "config/config.h"
 
 /////////////////////////////
 #include "DBG\\CtrlMemView.h"
@@ -930,8 +931,11 @@ INT_PTR CALLBACK ArmDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam 
 
 
 }
+char SelectedPlugin_Aica[512]={0};
+char SelectedPlugin_Pvr[512]={0};
+char SelectedPlugin_Gdr[512]={0};
 
-void AddItemsToCB(GrowingList<PluginLoadInfo>* list,HWND hw)
+void AddItemsToCB(GrowingList<PluginLoadInfo>* list,HWND hw,char* selected)
 {
 		for (u32 i=0;i<list->itemcount;i++)
 		{
@@ -949,12 +953,25 @@ void AddItemsToCB(GrowingList<PluginLoadInfo>* list,HWND hw)
 			strcpy(lp,dll);
 			int i2 = ComboBox_AddString(hw, temp); 
 			ComboBox_SetItemData(hw, i2, lp); 
-			
-			/*int cs=ComboBox_GetCurSel(hw);
-
-			if (cs==0)
-				ComboBox_SetCurSel(hw, i2); */
 		}
+
+		int item_count=ComboBox_GetCount(hw);
+		for (int i=0;i<item_count;i++)
+		{
+			char * it=(char*)ComboBox_GetItemData(hw,i);
+			if (strcmp(it,selected)==0)
+			{
+				ComboBox_SetCurSel(hw,i);
+				return;
+			}
+		}
+		ComboBox_SetCurSel(hw,0);
+}
+
+void GetCurrent(HWND hw,char* dest)
+{
+	int sel=ComboBox_GetCurSel(hw);
+	strcpy(dest,(char*)ComboBox_GetItemData(hw,sel));
 }
 INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
@@ -966,33 +983,94 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		GrowingList<PluginLoadInfo>* gdrom= EnumeratePlugins(PluginType::GDRom);
 		GrowingList<PluginLoadInfo>* aica= EnumeratePlugins(PluginType::AICA);
 
-		AddItemsToCB(pvr,GetDlgItem(hWnd,IDC_C_PVR));
-		AddItemsToCB(gdrom,GetDlgItem(hWnd,IDC_C_GDR));
-		AddItemsToCB(aica,GetDlgItem(hWnd,IDC_C_AICA));
+		char temp[512];
+
 		
+		cfgLoadStr("nullDC_plugins","Current_PVR",temp);
+		AddItemsToCB(pvr,GetDlgItem(hWnd,IDC_C_PVR),temp);
+		GetCurrent(GetDlgItem(hWnd,IDC_C_PVR),SelectedPlugin_Pvr);
+
+		cfgLoadStr("nullDC_plugins","Current_GDR",temp);
+		AddItemsToCB(gdrom,GetDlgItem(hWnd,IDC_C_GDR),temp);
+		GetCurrent(GetDlgItem(hWnd,IDC_C_GDR),SelectedPlugin_Gdr);
+
+		cfgLoadStr("nullDC_plugins","Current_AICA",temp);
+		AddItemsToCB(aica,GetDlgItem(hWnd,IDC_C_AICA),temp);
+		GetCurrent(GetDlgItem(hWnd,IDC_C_AICA),SelectedPlugin_Aica);
+
 		delete gdrom,pvr,aica;
 		}
 		return true;
 		
 	case WM_COMMAND:
+
 		switch( LOWORD(wParam) )
 		{
+		case IDC_C_AICA:
+			if (HIWORD(wParam)==CBN_SELCHANGE)
+				GetCurrent(GetDlgItem(hWnd,IDC_C_AICA),SelectedPlugin_Aica);
+			break;
+		case IDC_C_GDR:
+			if (HIWORD(wParam)==CBN_SELCHANGE)
+				GetCurrent(GetDlgItem(hWnd,IDC_C_GDR),SelectedPlugin_Gdr);
+			break;
+		case IDC_C_PVR:
+			if (HIWORD(wParam)==CBN_SELCHANGE)
+				GetCurrent(GetDlgItem(hWnd,IDC_C_PVR),SelectedPlugin_Pvr);
+			break;
+
 		case IDOK:
 			//save settings
+			cfgSaveStr("nullDC_plugins","Current_PVR",SelectedPlugin_Pvr);
+			cfgSaveStr("nullDC_plugins","Current_GDR",SelectedPlugin_Gdr);
+			cfgSaveStr("nullDC_plugins","Current_AICA",SelectedPlugin_Aica);
 		case IDCANCEL://close plugin
 			EndDialog(hWnd,0);
 			return true;
 
 		case IDC_AICA_CONF:
-			libAICA->info.ShowConfig(PluginType::AICA, hWnd);
+			{
+				nullDC_AICA_plugin t;
+				if (t.LoadnullDCPlugin(SelectedPlugin_Aica)==PluginLoadError::NoError)
+				{
+					t.info.ShowConfig(PluginType::AICA,hWnd);
+				}
+				else
+				{
+					//error
+					printf("Failed to load \"%s\"\n",SelectedPlugin_Aica);
+				}
+			}
 			break;
 
 		case IDC_PVR_CONF:
-			libPvr->info.ShowConfig(PluginType::PowerVR,hWnd);
+			{
+				nullDC_PowerVR_plugin t;
+				if (t.LoadnullDCPlugin(SelectedPlugin_Pvr)==PluginLoadError::NoError)
+				{
+					t.info.ShowConfig(PluginType::PowerVR,hWnd);
+				}
+				else
+				{
+					//error
+					printf("Failed to load \"%s\"\n",SelectedPlugin_Pvr);
+				}
+			}
 			break;
 
 		case IDC_GDR_CONF:
-			libGDR->info.ShowConfig(PluginType::GDRom,hWnd);
+			{
+				nullDC_GDRom_plugin t;
+				if (t.LoadnullDCPlugin(SelectedPlugin_Gdr)==PluginLoadError::NoError)
+				{
+					t.info.ShowConfig(PluginType::GDRom,hWnd);
+				}
+				else
+				{
+					//error
+					printf("Failed to load \"%s\"\n",SelectedPlugin_Gdr);
+				}
+			}
 			break;
 		default: break;
 		}

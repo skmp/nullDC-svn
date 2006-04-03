@@ -47,7 +47,9 @@ nullDC_plugin::~nullDC_plugin()
 	{
 		if (lib.IsLoaded())
 		{
+			#ifdef DEBUG_DLL
 			EMUWARN("~nullDC_plugin()  : Plugin still loaded , unloading it");
+			#endif
 			lib.Unload();
 		}
 		else
@@ -60,7 +62,15 @@ nullDC_plugin::~nullDC_plugin()
 PluginLoadError nullDC_plugin::LoadnullDCPlugin(char* plugin)
 {
 	if (!lib.Load(plugin))
-		return PluginLoadError::DllLoadError;;
+	{
+		//retry w/ path
+		char temp[1024];
+		strcpy(temp,plugins_path);
+		strcat(temp,plugin);
+
+		if (!lib.Load(temp))
+			return PluginLoadError::DllLoadError;;
+	}
 
 	dcGetPluginInfo=(dcGetPluginInfoFP*)lib.GetProcAddress("dcGetPluginInfo");
 
@@ -357,7 +367,7 @@ void plugins_Term()
 	}
 	else
 	{
-		EMUERROR("Error , AICA/arm7 plugin is not loaded");
+		//EMUERROR("Error , AICA/arm7 plugin is not loaded");
 	}
 
 	if (libGDR)
@@ -366,7 +376,7 @@ void plugins_Term()
 	}
 	else
 	{
-		EMUERROR("Error , GDrom plugin is not loaded");
+		//EMUERROR("Error , GDrom plugin is not loaded");
 	}
 
 	if (libPvr)
@@ -375,7 +385,7 @@ void plugins_Term()
 	}
 	else
 	{
-		EMUERROR("Error , PowerVR plugin is not loaded");
+		//EMUERROR("Error , PowerVR plugin is not loaded");
 	}
 
 	delete libAICA;

@@ -659,7 +659,7 @@ sh4op(i0100_nnnn_0010_0001)
 {//ToDo : Check This [26/4/05] x2
 	//iNimp("shar <REG_N>");
 	u32 n = GetN(op);
-	u32 t;
+//	u32 t;
 
 	sr.T=r[n] & 1;
 	r[n]=((s32)r[n])>>1;

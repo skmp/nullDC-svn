@@ -6,6 +6,7 @@
 #include "mem\sh4_internal_reg.h"
 #include "aica\aica_if.h"
 #include "dc.h"
+#include "config/config.h"
 
 #include <string.h>
 
@@ -44,19 +45,22 @@ void cputhreadcb(bool shit)
 //Plugins/Cpu core must not change after this call is made.
 bool Init_DC()
 {
-	//look for plugins and load the first pvr plugin found
-	GrowingList<PluginLoadInfo>* pli_pvr= EnumeratePlugins(PluginType::PowerVR);
-	GrowingList<PluginLoadInfo>* pli_gdr= EnumeratePlugins(PluginType::GDRom);
-	GrowingList<PluginLoadInfo>* pli_aica= EnumeratePlugins(PluginType::AICA);
+	char temp_dll[512];
 	nullDC_PowerVR_plugin* pvrplg=new nullDC_PowerVR_plugin();
 	nullDC_GDRom_plugin* gdrplg=new nullDC_GDRom_plugin();
 	nullDC_AICA_plugin* aicaplg=new nullDC_AICA_plugin();
 
-	pvrplg->LoadnullDCPlugin((*pli_pvr)[1].dll);
-	gdrplg->LoadnullDCPlugin((*pli_gdr)[0].dll);
-	aicaplg->LoadnullDCPlugin((*pli_aica)[0].dll);
-	
+	//load the selected plugins
+	cfgLoadStr("nullDC_plugins","Current_PVR",temp_dll);
+	pvrplg->LoadnullDCPlugin(temp_dll);
 
+	cfgLoadStr("nullDC_plugins","Current_GDR",temp_dll);
+	gdrplg->LoadnullDCPlugin(temp_dll);
+
+	cfgLoadStr("nullDC_plugins","Current_AICA",temp_dll);
+	aicaplg->LoadnullDCPlugin(temp_dll);
+
+	//ok , all loaded , set em as selected
 	SetPlugin(pvrplg,PluginType::PowerVR);
 	SetPlugin(gdrplg,PluginType::GDRom);
 	SetPlugin(aicaplg,PluginType::AICA);
@@ -100,7 +104,7 @@ void Term_DC()
 void LoadBiosFiles()
 {
 	char* temp_path=GetEmuPath("data\\");
-	u32 pl=strlen(temp_path);
+	u32 pl=(u32)strlen(temp_path);
 
 	//mwhahaha
 	strcat(temp_path,"dc_boot.bin");

@@ -165,7 +165,9 @@ cDllHandler::~cDllHandler()
 {
 	if (lib)
 	{
+		#ifdef DEBUG_DLL
 		EMUWARN("cDllHandler::~cDllHandler() -> dll still loaded , unloading it..");
+		#endif
 		Unload();
 	}
 }
@@ -175,7 +177,9 @@ bool cDllHandler::Load(char* dll)
 	lib=LoadLibraryA(dll);
 	if (lib==0)
 	{
+	#ifdef DEBUG_DLL
 		EMUERROR2("void cDllHandler::Load(char* dll) -> dll %s could not be loaded",dll);
+	#endif
 	}
 
 	return IsLoaded();
@@ -190,7 +194,9 @@ void cDllHandler::Unload()
 {
 	if (lib==0)
 	{
+		#ifdef DEBUG_DLL
 		EMUWARN("void cDllHandler::Unload() -> dll is not loaded");
+		#endif
 	}
 	else
 	{
