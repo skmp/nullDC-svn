@@ -3,6 +3,7 @@
 #include "dc/pvr/pvr_if.h"
 #include "dc/gdrom/gdrom_if.h"
 #include "gui/base.h"
+#include "config/config.h"
 
 #include <string.h>
 
@@ -79,6 +80,11 @@ PluginLoadError nullDC_plugin::LoadnullDCPlugin(char* plugin)
 		lib.Unload();
 		return PluginLoadError::PluginInterfaceMissing;
 	}
+
+	memset(&info,0,sizeof(info));
+	
+	info.ConfigLoadStr=cfgLoadStr;
+	info.ConfigSaveStr=cfgSaveStr;
 
 	dcGetPluginInfo(&info);
 	

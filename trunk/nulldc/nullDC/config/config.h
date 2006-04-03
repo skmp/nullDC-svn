@@ -12,7 +12,7 @@
 bool cfgVerify();
 s32  cfgLoadInt(const char * lpSection, const char * lpKey);
 void cfgSaveInt(const char * lpSection, const char * lpKey, s32 Int);
-void cfgLoadStr(const char * lpSection, const char * lpKey, const char * lpReturn);
+void cfgLoadStr(const char * lpSection, const char * lpKey, char * lpReturn);
 void cfgSaveStr(const char * lpSection, const char * lpKey, const char * lpString);
 
 

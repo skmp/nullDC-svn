@@ -11,9 +11,9 @@ s32 cfgLoadInt(const char * lpSection, const char * lpKey)
 	return GetPrivateProfileInt(lpSection,lpKey,-1,cfgPath);
 }
 
-void cfgLoadStr(const char * lpSection, const char * lpKey, const char * lpReturn)
+void cfgLoadStr(const char * lpSection, const char * lpKey, char * lpReturn)
 {
-	GetPrivateProfileString(lpSection,lpKey,"NULL",(LPSTR)lpReturn,MAX_PATH,cfgPath);
+	GetPrivateProfileString(lpSection,lpKey,"NULL",lpReturn,MAX_PATH,cfgPath);
 }
 
 void cfgSaveInt(const char * lpSection, const char * lpKey, s32 Int)

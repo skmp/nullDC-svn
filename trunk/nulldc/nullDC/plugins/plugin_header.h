@@ -169,6 +169,10 @@ typedef u32 ReadMemFP(u32 addr,u32 size);
 typedef void WriteMemFP(u32 addr,u32 data,u32 size);
 typedef void UpdateFP(u32 cycles);
 
+//These are provided by the emu
+typedef void ConfigLoadStrFP(const char * lpSection, const char * lpKey, char * lpReturn);
+typedef void ConfigSaveStrFP(const char * lpSection, const char * lpKey, const char * lpString);
+
 struct plugin_info
 {
 	VersionNumber	InterfaceVersion;	//interface version , current 0.0.1
@@ -176,13 +180,17 @@ struct plugin_info
 	VersionNumber	PluginVersion;		//plugin version
 	PluginType		Type;				//plugin type
 	
-	//Functions that are used for all plugins
+	//Functions that are used for all plugins , these are SET by the plugin
 	dcInitFP*		Init;					//Init
 	dcTermFP*		Term;					//Term
 	dcResetFP*		Reset;					//Reset
 	dcThreadInitFP*	ThreadInit;				//Thread init (called from cpu thread)
 	dcThreadTermFP*	ThreadTerm;				//Thread term (called from cpu thread)
 	dcShowConfigFP* ShowConfig;				//Show config ;)
+
+	//Functions "Exported" from the emu , these are SET by the emu
+	ConfigLoadStrFP*   ConfigLoadStr;
+	ConfigSaveStrFP*   ConfigSaveStr;
 };
 
 
