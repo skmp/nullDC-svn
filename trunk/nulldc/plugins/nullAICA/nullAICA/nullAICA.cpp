@@ -14,6 +14,11 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 }
 
 
+void cfgdlg(PluginType type,void* window)
+{
+	printf("null AICA plugin [h4x0rs olny kthx]:No config kthx\n");
+}
+
 //Give to the emu info for the plugin type
 EXPORT void dcGetPluginInfo(plugin_info* info)
 {
@@ -28,7 +33,7 @@ EXPORT void dcGetPluginInfo(plugin_info* info)
 
 	info->ThreadInit=dcThreadInit;
 	info->ThreadTerm=dcThreadTerm;
-
+	info->ShowConfig=cfgdlg;
 	info->Type=PluginType::AICA;
 }
 

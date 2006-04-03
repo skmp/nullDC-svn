@@ -14,7 +14,7 @@ u8*g_pSH4SoundRAM;
 #define SH4AicaMemory_START ( 0x00700000)
 
 #define SH4SoundRAM_START ( 0x00800000)
-#define ARM7BIAS (1)
+#define ARM7BIAS (7)
 
 
 bool g_bArm7Enable=true;

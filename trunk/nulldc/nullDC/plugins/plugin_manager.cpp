@@ -378,6 +378,13 @@ void plugins_Term()
 		EMUERROR("Error , PowerVR plugin is not loaded");
 	}
 
+	delete libAICA;
+	libAICA=0;
+	delete libGDR;
+	libGDR=0;
+	delete libPvr;
+	libPvr=0;
+
 	if (PluginList_cached)
 	{
 		delete PluginList_cached;

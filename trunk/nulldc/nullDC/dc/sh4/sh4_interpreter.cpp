@@ -173,6 +173,7 @@ void Sh4_int_Init()
 
 void Sh4_int_Term() 
 {
+	Sh4_int_Stop();
 	printf("Sh4 Term\n");
 }
 

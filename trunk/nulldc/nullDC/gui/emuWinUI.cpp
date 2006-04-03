@@ -982,6 +982,18 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		case IDCANCEL://close plugin
 			EndDialog(hWnd,0);
 			return true;
+
+		case IDC_AICA_CONF:
+			libAICA->info.ShowConfig(PluginType::AICA, hWnd);
+			break;
+
+		case IDC_PVR_CONF:
+			libPvr->info.ShowConfig(PluginType::PowerVR,hWnd);
+			break;
+
+		case IDC_GDR_CONF:
+			libGDR->info.ShowConfig(PluginType::GDRom,hWnd);
+			break;
 		default: break;
 		}
 		return false;

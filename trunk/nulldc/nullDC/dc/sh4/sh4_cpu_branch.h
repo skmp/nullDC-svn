@@ -2,16 +2,15 @@
 #ifdef SH4_REC
 #include "sh4_cpu_branch_rec.h"
 #else
+
 //braf <REG_N>                  
- sh4op(i0000_nnnn_0010_0011)
+sh4op(i0000_nnnn_0010_0011)
 {
 	u32 n = GetN(op);
 	u32 newpc = r[n] + pc + 2;//pc +2 is done after
 	ExecuteDelayslot();
 	pc = newpc;
 } 
-
-
 //bsrf <REG_N>                  
  sh4op(i0000_nnnn_0000_0011)
 {
@@ -47,33 +46,6 @@
 	pc=newpc-2;
 	RemoveCall(pr,0);
 } 
-
-
- //
-// 1xxx
-
-//
-//	2xxx
-
- //
-// 3xxx
-
-
-
-//
-// 4xxx
-
- //
-// 5xxx
-
- //
-// 6xxx
-
- //
-// 7xxx
-
- //
-// 8xxx
 
 
 // bf <bdisp8>                   
@@ -128,8 +100,6 @@
 
 
 
-//
-// Axxx
 // bra <bdisp12>
 sh4op(i1010_iiii_iiii_iiii)
 {//ToDo : Check Me [26/4/05] | Check ExecuteDelayslot [28/1/06] 
@@ -138,8 +108,6 @@ sh4op(i1010_iiii_iiii_iiii)
 	ExecuteDelayslot();
 	pc=newpc-2;
 }
-//
-// Bxxx
 // bsr <bdisp12>
 sh4op(i1011_iiii_iiii_iiii)
 {//ToDo : Check Me [26/4/05] | Check new delay slot code [28/1/06]
@@ -155,15 +123,67 @@ sh4op(i1011_iiii_iiii_iiii)
 	//pc_funct = 2;//jump delay 1
 }
 
-//
-// Cxxx
 // trapa #<imm>                  
 sh4op(i1100_0011_iiii_iiii)
 {
 	CCN_TRA = (GetImm8(op) << 2);
 	Do_Exeption(0,0x160,0x100);
 }
+//jmp @<REG_N>                  
+ sh4op(i0100_nnnn_0010_1011)
+{   //ToDo : Check Me [26/4/05] | Check new delay slot code [28/1/06]
+	u32 n = GetN(op);
+	//delay 1 instruction
+	u32 newpc=r[n];
+	ExecuteDelayslot();
+	pc=newpc-2;//+2 is done after
+}
 
+
+//jsr @<REG_N>                  
+ sh4op(i0100_nnnn_0000_1011)
+{//ToDo : Check This [26/4/05] | Check new delay slot code [28/1/06]
+	u32 n = GetN(op);
+	
+	pr = pc + 4;
+	//delay one
+	u32 newpc= r[n];
+	ExecuteDelayslot();
+	AddCall(pc-2,pr,newpc,0);
+	pc=newpc-2;
+}
+
+
+
+
+
+//sleep                         
+ sh4op(i0000_0000_0001_1011)
+{
+	//iNimp("Sleep");
+	//just wait for an Interrupt
+	//while on sleep the precition of Interrupt timing is not the same as when cpu is running :)
+	sh4_sleeping=true;
+	int i=0,s=1;
+
+	pc+=2;//so that Interrupt return is on next opcode
+	while (!UpdateSystem(2500))
+	{
+		if (i++>100)
+		{
+			s=0;
+			break;
+		}
+	}
+	//if not Interrupted , we must rexecute the sleep
+	if (s==0)
+		pc-=2;// re execute sleep
+	
+	pc-=2;//+2 is applied after opcode
+
+
+	sh4_sleeping=false;
+} 
 
 //TODO : Fix this
 #include "gui/emuWinUI.h"

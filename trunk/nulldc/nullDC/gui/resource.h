@@ -115,8 +115,12 @@
 #define IDC_C_PVR                       1097
 #define IDC_COMBO2                      1098
 #define IDC_C_GDR                       1098
+#define IDC_PVR_CONF                    1099
 #define IDC_C_GDR3                      1100
 #define IDC_C_AICA                      1100
+#define IDC_GDR_CONF                    1101
+#define IDC_BUTTON3                     1102
+#define IDC_AICA_CONF                   1102
 #define ID_FILE_EXIT                    40001
 #define ID_SYSTEM_START                 40003
 #define ID_SYSTEM_STOP                  40004
@@ -143,7 +147,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        119
 #define _APS_NEXT_COMMAND_VALUE         40026
-#define _APS_NEXT_CONTROL_VALUE         1098
+#define _APS_NEXT_CONTROL_VALUE         1100
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

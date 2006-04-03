@@ -84,6 +84,13 @@ enum Sh4RegType
 	xf_14=xf_0+14,
 	xf_15=xf_0+15,
 
+	//special regs , used _olny_ on rec
+	ftrv=xf_15+1,
+	xmtrx=ftrv+1,
+	sr_T=xmtrx+1,
+	sr_Q=sr_T+1,
+	sr_S=sr_Q+1,
+
 	NoReg=-1
 };
 

@@ -1,8 +1,8 @@
 #include "rec_v0_recompiler.h"
-#include "emmiter\emmiter.h"
-#include "dc\mem\sh4_mem.h"
-#include "dc\sh4\sh4_opcode_list.h"
-#include "dc\sh4\sh4_registers.h"
+#include "emmiter/emmiter.h"
+#include "dc/mem/sh4_mem.h"
+#include "dc/sh4/sh4_opcode_list.h"
+#include "dc/sh4/sh4_registers.h"
 #undef sh4op
 
 //simple recompiler

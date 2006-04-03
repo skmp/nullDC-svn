@@ -1,21 +1,33 @@
-//All non fpu opcodes :)
-#include "types.h"
 
-#include <windows.h>
-
-#include "dc/pvr/pvr_if.h"
-#include "sh4_interpreter.h"
+#include "sh4_cpu_shil.h"
+#include "emmiter/emmiter.h"
 #include "dc/mem/sh4_mem.h"
-#include "dc/mem/sh4_internal_reg.h"
-#include "sh4_registers.h"
-#include "sh4_cst.h"
-#include "sh4_interpreter.h"
-#include "ccn.h"
-#include "intc.h"
-#include "tmu.h"
-#include "dc/gdrom/gdrom_if.h"
+#include "dc/sh4/sh4_opcode_list.h"
+#include "dc/sh4/sh4_registers.h"
+#include "dc/sh4/shil/shil.h"
+
+#undef sh4op
+
+//simple recompiler
+//to test up some register allocation code , ect
+
+// test recompiler stuff
+
+//block manager - need to be writen
+//emitters - need to be writen
+//opcode handlers - need to be writen
+//register structs/class - need to be writen
+
+//this will be a very simple recompiler 
+//no register allocation , no sse , no mmx , and generaly no other optimisations
+//the idea is to test my idea to warp registers onto structs ect
+
+#define SH4_REC
 
 
+shil_stream* ilst;
+
+#define sh4op(str) void  __fastcall rec_shil_##str (u32 op,u32 pc)
 
 #define GetN(str) ((str>>8) & 0xf)
 #define GetM(str) ((str>>4) & 0xf)
@@ -25,53 +37,8 @@
 #define GetImm12(str) ((str>>0) & 0xfff)
 #define GetSImm12(str) (((s16)((GetImm12(str))<<4))>>3)
 
-#define iNimp cpu_iNimp
-#define iWarn cpu_iWarn
-
-//Read Mem macros
-#define ReadMemU32(to,addr) to=ReadMem32(addr)
-#define ReadMemS16(to,addr) to=(u32)(s32)(s16)ReadMem16(addr)
-#define ReadMemS8(to,addr) to=(u32)(s32)(s8)ReadMem8(addr)
-
-//Base,offset format
-#define ReadMemBOU32(to,addr,offset)	ReadMemU32(to,addr+offset)
-#define ReadMemBOS16(to,addr,offset)	ReadMemS16(to,addr+offset)
-#define ReadMemBOS8(to,addr,offset)		ReadMemS8(to,addr+offset)
-
-//Write Mem Macros
-#define WriteMemU32(addr,data)				WriteMem32(addr,(u32)data)
-#define WriteMemU16(addr,data)				WriteMem16(addr,(u16)data)
-#define WriteMemU8(addr,data)				WriteMem8(addr,(u8)data)
-
-//Base,offset format
-#define WriteMemBOU32(addr,offset,data)		WriteMemU32(addr+offset,data)
-#define WriteMemBOU16(addr,offset,data)		WriteMemU16(addr+offset,data)
-#define WriteMemBOU8(addr,offset,data)		WriteMemU8(addr+offset,data)
-
-
-bool sh4_sleeping;
-
-// 0xxx
-
-void cpu_iNimp(u32 op, char* info)
-{
-	printf("not implemented opcode : %X : ", op);
-	printf(info);
-	printf(" @ %X\n", pc);
-	sh4_cpu->Stop();
-}
-
-void cpu_iWarn(u32 op, char* info)
-{
-	printf("Check opcode : %X : ", op);
-	printf(info);
-	printf(" @ %X\n", pc);
-}
-
-#include "sh4_cpu_movs.h"
-#include "sh4_cpu_branch.h"
-#include "sh4_cpu_arith.h"
-#include "sh4_cpu_logic.h"
+//#define tmu_underflow  0x0100
+#define iNimp(op,info) rec_iNimp(pc,op,info)
 
 
 //************************ TLB/Cache ************************
@@ -135,9 +102,6 @@ sh4op(i0000_nnnn_1000_0011)
 			try
 			{
 				//printf("TA dlist SQ to Addr: %08X\n", Address);
-				//TODO: Add pvr handling
-				//				PvrLib.lib.Update(PVRU_TA_SQ,sq);
-				//	PvrPlugin.PvrSQWrite(sq,1);
 				libPvr->pvr_info.TADma(Address,sq,1);
 			}
 			catch(...){}
@@ -164,21 +128,24 @@ sh4op(i0000_nnnn_1000_0011)
 sh4op(i0000_0000_0101_1000)
 {
 	//iNimp("sets");
-	sr.S = 1;
+	//sr.S = 1;
+	ilst->mov(Sh4RegType::sr_S,1);
 } 
 
 
 //clrs                          
 sh4op(i0000_0000_0100_1000)
 {
-	iNimp(op, "clrs");
+	//iNimp(op, "clrs");
+	ilst->mov(Sh4RegType::sr_S,0);
 } 
 
 //sett                          
 sh4op(i0000_0000_0001_1000)
 {
 	//iNimp("sett");
-	sr.T = 1;
+	//sr.T = 1;
+	ilst->mov(Sh4RegType::sr_T,1);
 } 
 
 
@@ -187,14 +154,15 @@ sh4op(i0000_0000_0001_1000)
 sh4op(i0000_0000_0000_1000)
 {
 	//iNimp("clrt");
-	sr.T = 0;
+	//sr.T = 0;
+	ilst->mov(Sh4RegType::sr_T,0);
 } 
 //movt <REG_N>                  
 sh4op(i0000_nnnn_0010_1001)
 {
 	//iNimp("movt <REG_N>");
 	u32 n = GetN(op);
-	r[n] = sr.T;
+	ilst->mov(r[n],Sh4RegType::sr_T);
 } 
 //************************ Reg Compares ************************
 //cmp/pz <REG_N>                
@@ -203,37 +171,39 @@ sh4op(i0100_nnnn_0001_0001)
 	//iNimp("cmp/pz <REG_N>");
 	u32 n = GetN(op);
 
-	if (((s32)r[n]) >= 0)
-		sr.T = 1;
-	else
-		sr.T = 0;
+	//if (((s32)r[n]) >= 0)
+	//	sr.T = 1;
+	//else
+	//	sr.T = 0;
+
+	ilst->cmp(r[n],0);
+	ilst->SaveT(cmd_cond::CC_NL);
 }
-
-
-
 
 //cmp/pl <REG_N>                
 sh4op(i0100_nnnn_0001_0101)
 {//TODO : !Add this
 	//iNimp("cmp/pl <REG_N>");
 	u32 n = GetN(op);
-	if ((s32)r[n] > 0) 
-		sr.T = 1;
-	else 
-		sr.T = 0;
+	//if ((s32)r[n] > 0) 
+	//	sr.T = 1;
+	//else 
+	//	sr.T = 0;
+
+	ilst->cmp(r[n],0);
+	ilst->SaveT(cmd_cond::CC_NLE);
 }
-
-
-
 
 //cmp/eq #<imm>,R0              
 sh4op(i1000_1000_iiii_iiii)
 {//TODO : Check This [26/4/05]
-	u32 imm = (u32)(s32)(GetSImm8(op));
-	if (r[0] == imm)
-		sr.T =1;
-	else
-		sr.T =0;
+	//u32 imm = (u32)(s32)(GetSImm8(op));
+	//if (r[0] == imm)
+	//	sr.T =1;
+	//else
+	//	sr.T =0;
+	ilst->cmp(r[n],GetSImm8(op));
+	ilst->SaveT(cmd_cond::CC_E);
 }
 
 //cmp/eq <REG_M>,<REG_N>        
@@ -243,10 +213,12 @@ sh4op(i0011_nnnn_mmmm_0000)
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 
-	if (r[m] == r[n])
-		sr.T = 1;
-	else
-		sr.T = 0;
+	//if (r[m] == r[n])
+		//sr.T = 1;
+	//else
+		//sr.T = 0;
+	ilst->cmp(r[n],r[m]);
+	ilst->SaveT(cmd_cond::CC_E);
 }
 
 //cmp/hs <REG_M>,<REG_N>        
@@ -254,10 +226,12 @@ sh4op(i0011_nnnn_mmmm_0010)
 {//ToDo : Check Me [26/4/05]
 	u32 n = GetN(op);
 	u32 m = GetM(op);
-	if (r[n] >= r[m])
-		sr.T=1;
-	else
-		sr.T=0;
+//	if (r[n] >= r[m])
+//		sr.T=1;
+//	else
+//		sr.T=0;
+	ilst->cmp(r[n],r[m]);
+	ilst->SaveT(cmd_cond::CC_AE);
 }
 
 //cmp/ge <REG_M>,<REG_N>        
@@ -266,10 +240,12 @@ sh4op(i0011_nnnn_mmmm_0011)
 	//iNimp("cmp/ge <REG_M>,<REG_N>");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
-	if ((s32)r[n] >= (s32)r[m])
-		sr.T = 1;
-	else 
-		sr.T = 0;
+//	if ((s32)r[n] >= (s32)r[m])
+//		sr.T = 1;
+//	else 
+//		sr.T = 0;
+	ilst->cmp(r[n],r[m]);
+	ilst->SaveT(cmd_cond::CC_GE);
 }
 
 //cmp/hi <REG_M>,<REG_N>        
@@ -278,10 +254,12 @@ sh4op(i0011_nnnn_mmmm_0110)
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 
-	if (r[n] > r[m])
-		sr.T=1;
-	else
-		sr.T=0;
+//	if (r[n] > r[m])
+//		sr.T=1;
+	//else
+	//	sr.T=0;
+	ilst->cmp(r[n],r[m]);
+	ilst->SaveT(cmd_cond::CC_A);
 }
 
 //cmp/gt <REG_M>,<REG_N>        
@@ -291,10 +269,12 @@ sh4op(i0011_nnnn_mmmm_0111)
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 
-	if (((s32)r[n]) > ((s32)r[m]))
-		sr.T = 1;
-	else 
-		sr.T = 0;
+	//if (((s32)r[n]) > ((s32)r[m]))
+	//	sr.T = 1;
+	//else 
+	//	sr.T = 0;
+	ilst->cmp(r[n],r[m]);
+	ilst->SaveT(cmd_cond::CC_G);
 }
 
 //cmp/str <REG_M>,<REG_N>       
@@ -322,11 +302,13 @@ sh4op(i0010_nnnn_mmmm_1100)
 sh4op(i1100_1000_iiii_iiii)
 {//TODO : Check This [26/4/05]
 	//iNimp("tst #<imm>,R0");
-	u32 utmp1 = r[0] & GetImm8(op);
-	if (utmp1 == 0) 
-		sr.T = 1;
-	else 
-		sr.T = 0;
+	//u32 utmp1 = r[0] & GetImm8(op);
+	//if (utmp1 == 0) 
+	//	sr.T = 1;
+	//else 
+	//	sr.T = 0;
+	ilst->test(r[0],GetImm8(op));
+	ilst->SaveT(cmd_cond::CC_Z);
 }
 //tst <REG_M>,<REG_N>           
 sh4op(i0010_nnnn_mmmm_1000)
@@ -334,11 +316,13 @@ sh4op(i0010_nnnn_mmmm_1000)
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 
-	if ((r[n] & r[m])!=0)
-		sr.T=0;
-	else
-		sr.T=1;
+	//if ((r[n] & r[m])!=0)
+		//sr.T=0;
+	//else
+		//sr.T=1;
 
+	ilst->test(r[n],r[m]);
+	ilst->SaveT(cmd_cond::CC_Z);
 }
 //************************ mulls! ************************ 
 //mulu.w <REG_M>,<REG_N>          
@@ -433,9 +417,12 @@ sh4op(i0000_nnnn_mmmm_0111)
 sh4op(i0000_0000_0001_1001)
 {//ToDo : Check This [26/4/05]
 	//iNimp("div0u");
-	sr.Q = 0;
-	sr.M = 0;
-	sr.T = 0;
+	//sr.Q = 0;
+	//sr.M = 0;
+	//sr.T = 0;
+	ilst->mov(Sh4RegType::sr_Q,0);
+	ilst->mov(Sh4RegType::sr_M,0);
+	ilst->mov(Sh4RegType::sr_T,0);
 }
 //div0s <REG_M>,<REG_N>         
 sh4op(i0010_nnnn_mmmm_0111)
@@ -449,27 +436,6 @@ sh4op(i0010_nnnn_mmmm_0111)
 	sr.M=r[m]>>31;
 	sr.T=sr.M^sr.Q;
 	return;
-	/*
-	if ((r[n] & 0x80000000)!=0)
-	//SET_BIT(SR, SR_Q);
-	sr.Q = 1;
-	else
-	sr.Q = 0;
-	//REMOVE_BIT(SR, SR_Q);
-
-	if ((r[m] & 0x80000000)!=0)
-	//SET_BIT(SR, SR_M);
-	sr.M = 1;
-	else
-	sr.M = 0;
-	//REMOVE_BIT(SR, SR_M);
-
-	//f ((IS_SR_Q() && IS_SR_M()) || (!IS_SR_Q() && !IS_SR_M()))
-	if (sr.Q == sr.M)
-	//REMOVE_BIT(SR, SR_T);
-	sr.T = 0;
-	else		sr.T = 1;
-	//SET_BIT(SR, SR_T);*/
 }
 
 //div1 <REG_M>,<REG_N>          
@@ -531,21 +497,28 @@ sh4op(i0011_nnnn_mmmm_1110)
 	//iNimp("addc <REG_M>,<REG_N>");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
-	u32 tmp1 = r[n] + r[m];
-	u32 tmp0 = r[n];
 
-	r[n] = tmp1 + sr.T;
+	//u32 tmp1 = r[n] + r[m];
+	//u32 tmp0 = r[n];
 
-	if (tmp0 > tmp1)
-		sr.T=1;
+	//r[n] = tmp1 + sr.T;
+
+	//if (tmp0 > tmp1)
+	//	sr.T=1;
 	//SET_BIT(SR, SR_T);
-	else
-		sr.T = 0;
+	//else
+	//	sr.T = 0;
 	//REMOVE_BIT(SR, SR_T);
 
-	if (tmp1 > r[n])
-		sr.T = 1;
+	//if (tmp1 > r[n])
+	//	sr.T = 1;
 	//SET_BIT(SR, SR_T);
+	
+	
+
+	ilst->LoadT(CF);			//load T to carry flag
+	ilst->adc(r[n],r[m]);		//add w/ carry
+	ilst->SaveT(cmd_cond::CC_B);//save CF to T
 
 }
 
@@ -557,7 +530,7 @@ sh4op(i0011_nnnn_mmmm_1111)
 
 //subc <REG_M>,<REG_N>          
 sh4op(i0011_nnnn_mmmm_1010)
-{//ToDo : Check This [26/4/05]
+{
 	//iNimp("subc <REG_M>,<REG_N>");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
@@ -577,6 +550,8 @@ sh4op(i0011_nnnn_mmmm_1010)
 	{
 		sr.T=1;
 	}
+
+	//no subc on x86 .. what a pain
 }
 
 //subv <REG_M>,<REG_N>          
@@ -588,11 +563,13 @@ sh4op(i0011_nnnn_mmmm_1011)
 sh4op(i0100_nnnn_0001_0000)
 {
 	u32 n = GetN(op);
-	r[n]-=1;
-	if (r[n] == 0)
-		sr.T=1;
-	else
-		sr.T=0;
+//	r[n]-=1;
+//	if (r[n] == 0)
+//		sr.T=1;
+//	else
+//		sr.T=0;
+	ilst->dec(r[n]);
+	ilst->SaveT(cmd_cond::CC_Z);
 }
 
 //negc <REG_M>,<REG_N>          
@@ -601,7 +578,17 @@ sh4op(i0110_nnnn_mmmm_1010)
 	//iNimp("negc <REG_M>,<REG_N>");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
+	/*u32 temp= (u32)(0 - ((s32)r[m]));
 
+	r[n] = temp - sr.T;
+
+	if (0 < temp)
+	sr.T = 1;
+	else
+	sr.T = 0;
+
+	if (temp < r[n])
+	sr.T = 1;*/
 	r[n]=-r[m]-sr.T;
 	sr.T=r[n]>>31;
 }
@@ -612,7 +599,8 @@ sh4op(i0110_nnnn_mmmm_1011)
 {//ToDo : Check This [26/4/05]
 	u32 n = GetN(op);
 	u32 m = GetM(op);
-	r[n] = -r[m];
+	//r[n] = -r[m];
+	ilst->neg(r[n]);
 } 
 
 //not <REG_M>,<REG_N>           
@@ -622,7 +610,8 @@ sh4op(i0110_nnnn_mmmm_0111)
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 
-	r[n] = ~r[m];
+	//r[n] = ~r[m];
+	ilst->not(r[n]);
 } 
 
 
@@ -632,15 +621,18 @@ sh4op(i0100_nnnn_0000_0000)
 {//ToDo : Check This [26/4/05]
 	u32 n = GetN(op);
 
-	sr.T = r[n] >> 31;
-	r[n] <<= 1;
+	//sr.T = r[n] >> 31;
+	//r[n] <<= 1;
+	ilst->shl(r[n]);
+	ilst->SaveT(cmd_cond::CC_B);
 }
 //shal <REG_N>                  
 sh4op(i0100_nnnn_0010_0000)
 {
 	u32 n=GetN(op);
-	sr.T=r[n]>>31;
-	r[n]=((s32)r[n])<<1;
+	//sr.T=r[n]>>31;
+	//((s32)r[n])<<=1;
+	call_sh4op(i0100_nnnn_0000_0000);
 	for (;;)
 		printf("shal is used , WTF\n");
 }
@@ -650,8 +642,11 @@ sh4op(i0100_nnnn_0010_0000)
 sh4op(i0100_nnnn_0000_0001)
 {//ToDo : Check This [26/4/05]
 	u32 n = GetN(op);
-	sr.T = r[n] & 0x1;
-	r[n] >>= 1;
+	//sr.T = r[n] & 0x1;
+	//r[n] >>= 1;
+	
+	ilst->shr(r[n]);
+	ilst->SaveT(cmd_cond::CC_B);
 }
 
 //shar <REG_N>                  
@@ -661,8 +656,10 @@ sh4op(i0100_nnnn_0010_0001)
 	u32 n = GetN(op);
 	u32 t;
 
-	sr.T=r[n] & 1;
-	r[n]=((s32)r[n])>>1;
+	//sr.T=r[n] & 1;
+	//r[n]=((s32)r[n])>>1;
+	ilst->sar(r[n]);
+	ilst->SaveT(cmd_cond::CC_B);
 }
 
 //shad <REG_M>,<REG_N>          
@@ -711,20 +708,15 @@ sh4op(i0100_nnnn_0010_0100)
 {//ToDo : Check This [26/4/05]
 	//iNimp("rotcl <REG_N>");
 	u32 n = GetN(op);
-	u32 t;
-	//return;
-	t = sr.T;
+	//u32 t;
+	//t = sr.T;
+	//sr.T = r[n] >> 31;
+	//r[n] <<= 1;
+	//r[n]|=t;
 
-	sr.T = r[n] >> 31;
-
-	r[n] <<= 1;
-
-	/*
-	if (t==1)
-	r[n] |= 0x1;
-	else
-	r[n] &= 0xFFFFFFFE;*/
-	r[n]|=t;
+	ilst->LoadT(CF);
+	ilst->RCL(r[n],1);
+	ilst->SaveT(CC_B);
 }
 
 

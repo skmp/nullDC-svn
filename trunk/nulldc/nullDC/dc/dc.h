@@ -11,3 +11,4 @@ bool Reset_DC(bool Manual);
 void Term_DC();
 void Start_DC();
 void Stop_DC();
+void LoadBiosFiles();

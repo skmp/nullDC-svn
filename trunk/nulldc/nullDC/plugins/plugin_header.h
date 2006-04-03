@@ -161,6 +161,9 @@ typedef void dcThreadInitFP(PluginType type);
 //called when exiting from sh4 thread , from the new thread context (for any thread speciacific de init) :P
 typedef void dcThreadTermFP(PluginType type);
 
+//simple ehh ?
+typedef void dcShowConfigFP(PluginType type,void* window);
+
 //
 typedef u32 ReadMemFP(u32 addr,u32 size);
 typedef void WriteMemFP(u32 addr,u32 data,u32 size);
@@ -179,6 +182,7 @@ struct plugin_info
 	dcResetFP*		Reset;					//Reset
 	dcThreadInitFP*	ThreadInit;				//Thread init (called from cpu thread)
 	dcThreadTermFP*	ThreadTerm;				//Thread term (called from cpu thread)
+	dcShowConfigFP* ShowConfig;				//Show config ;)
 };
 
 

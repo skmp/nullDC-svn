@@ -840,3 +840,20 @@
 	u32 n = GetN(op);
 	r[n] = (u32)(s32)(s8)(GetImm8(op));//(u32)(s8)= signextend8 :)
 }
+
+
+ //movca.l R0, @<REG_N>          
+sh4op(i0000_nnnn_1100_0011)
+{
+	u32 n = GetN(op);
+	WriteMemU32(r[n],r[0]);//at r[n],r[0]
+	//iWarn(op, "movca.l R0, @<REG_N>");
+} 
+
+//clrmac                        
+sh4op(i0000_0000_0010_1000)
+{
+	//iNimp(op, "clrmac");
+	macl=0;
+	mach=0;
+} 

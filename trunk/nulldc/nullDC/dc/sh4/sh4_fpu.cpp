@@ -56,8 +56,6 @@ INLINE void Denorm32(float &value)
 #define STARTMODE64() _controlfp(_PC_53, MCW_PC)
 #define ENDMODE64()	  _controlfp(_PC_24, MCW_PC)
 
-//#define FPU_DP	(fpscr & DP_MASK)
-
 //all fpu emulation ops :)
 
 	// ZeZu[7/9/05] fpu needs some work ;)
@@ -815,7 +813,8 @@ sh4op(i1111_nn01_1111_1101)
 	v4 = xf[3] * fr[ n + 0] +
 		xf[7] * fr[n + 1] +
 		xf[11] * fr[ n + 2]+
-		xf[15] * fr[ n + 3];
+		xf[15] *
+		fr[ n + 3];
 
 	CHECK_FPU_32(v1);
 	CHECK_FPU_32(v2);

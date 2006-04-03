@@ -21,7 +21,10 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     return TRUE;
 }
 
-
+void cfgdlg(PluginType type,void* window)
+{
+	printf("drkIIRaziel's nullGDR plugin:No config kthx\n");
+}
 void GetSessionInfo(u8* out,u8 ses);
 //Give to the emu info for the plugin type
 EXPORT void dcGetPluginInfo(plugin_info* info)
@@ -36,6 +39,7 @@ EXPORT void dcGetPluginInfo(plugin_info* info)
 	info->ThreadInit=dcThreadInitGDR;
 	info->ThreadTerm=dcThreadTermGDR;
 	info->Type=PluginType::GDRom;
+	info->ShowConfig=cfgdlg;
 }
 
 //Give to the emu pointers for the gd rom interface

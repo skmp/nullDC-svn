@@ -31,6 +31,11 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     return TRUE;
 }
 
+void cfgdlg(PluginType type,void* window)
+{
+	printf("drkIIRaziel's nullPvr plugin:No config kthx\n");
+}
+
 //This plugin will actualy Redirect the work on an icarus plugin
 HMODULE iclib;
 
@@ -49,6 +54,7 @@ EXPORT void dcGetPluginInfo(plugin_info* info)
 	info->ThreadInit=dcThreadInitPvr;
 	info->ThreadTerm=dcThreadTermPvr;
 
+	info->ShowConfig=cfgdlg;
 	info->Type=PluginType::PowerVR;
 }
 
