@@ -254,8 +254,11 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 
 				if(GetOpenFileName(&ofn)>0)
 				{
+					Init_DC();
+					Reset_DC(false);
 					if(!LoadBinfileToSh4Mem(0x10000, g_szFileName))
 						return 0;
+					EnablePatch(patch_resets_Misc);//mwhaha
 					sh4_cpu->Reset(false);//do a hard reset
 					sh4_cpu->SetRegister(Sh4RegType::reg_gbr,0x8c000000);
 					sh4_cpu->SetRegister(Sh4RegType::reg_pc,0x8c008300);
@@ -273,7 +276,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 			sh4_cpu->Reset(false);//do a hard reset
 			sh4_cpu->SetRegister(Sh4RegType::reg_gbr,0x8c000000);
 			sh4_cpu->SetRegister(Sh4RegType::reg_pc,0x8c008300);
-			LoadSyscallHooks();//
+			EnablePatch(patch_resets_Misc);//mwhaha
 		//	Start_DC();
 			return 0;
 		 }
@@ -296,6 +299,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 			printf(">>\tDreamcast Reset\n");
 			sh4_cpu->Reset(false);//do a hard reset
 			sh4_cpu->SetRegister(Sh4RegType::reg_pc,0xA0000000);
+			DisablePatch(patch_all);
 			return 0;
 
 

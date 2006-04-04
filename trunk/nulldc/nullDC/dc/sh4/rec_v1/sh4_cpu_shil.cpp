@@ -518,7 +518,7 @@ sh4op(i0011_nnnn_mmmm_1110)
 
 	ilst->LoadT(CF);			//load T to carry flag
 	ilst->adc(r[n],r[m]);		//add w/ carry
-	ilst->SaveT(cmd_cond::CC_B);//save CF to T
+	ilst->SaveT(SaveCF);//save CF to T
 
 }
 
@@ -624,7 +624,7 @@ sh4op(i0100_nnnn_0000_0000)
 	//sr.T = r[n] >> 31;
 	//r[n] <<= 1;
 	ilst->shl(r[n]);
-	ilst->SaveT(cmd_cond::CC_B);
+	ilst->SaveT(SaveCF);
 }
 //shal <REG_N>                  
 sh4op(i0100_nnnn_0010_0000)
@@ -646,7 +646,7 @@ sh4op(i0100_nnnn_0000_0001)
 	//r[n] >>= 1;
 	
 	ilst->shr(r[n]);
-	ilst->SaveT(cmd_cond::CC_B);
+	ilst->SaveT(SaveCF);
 }
 
 //shar <REG_N>                  
@@ -659,7 +659,7 @@ sh4op(i0100_nnnn_0010_0001)
 	//sr.T=r[n] & 1;
 	//r[n]=((s32)r[n])>>1;
 	ilst->sar(r[n]);
-	ilst->SaveT(cmd_cond::CC_B);
+	ilst->SaveT(SaveCF);
 }
 
 //shad <REG_M>,<REG_N>          
@@ -715,8 +715,8 @@ sh4op(i0100_nnnn_0010_0100)
 	//r[n]|=t;
 
 	ilst->LoadT(CF);
-	ilst->RCL(r[n],1);
-	ilst->SaveT(CC_B);
+	ilst->rcl(r[n],1);
+	ilst->SaveT(SaveCF);
 }
 
 
@@ -725,22 +725,13 @@ sh4op(i0100_nnnn_0000_0100)
 {
 	//iNimp("rotl <REG_N>");
 	u32 n = GetN(op);
-	//return;
-	/*
-	if ((r[n] & 0x80000000)!=0)
-	sr.T=1;
-	else
-	sr.T = 0;*/
 
-	sr.T=r[n]>>31;
+	//sr.T=r[n]>>31;
+	//r[n] <<= 1;
+	//r[n]|=sr.T;
 
-	r[n] <<= 1;
-
-	/*if (sr.T!=0)
-	r[n] |= 0x00000001;
-	else
-	r[n] &= 0xFFFFFFFE;*/
-	r[n]|=sr.T;
+	ilst->rol(r[n],1);
+	ilst->SaveT(SaveCF);
 }
 
 //rotcr <REG_N>                 
@@ -748,30 +739,15 @@ sh4op(i0100_nnnn_0010_0101)
 {
 	//iNimp("rotcr <REG_N>");
 	u32 n = GetN(op);
-	u32 temp;
+	//u32 temp;
+	//temp = r[n] & 0x1;
+	//r[n] >>= 1;
+	//r[n] |=sr.T<<31;
+	//sr.T = temp;
+	ilst->LoadT(CF);
+	ilst->rcr(r[n],1);
+	ilst->SaveT(SaveCF);
 
-	/*if ((R[n] & 0x00000001) == 0) 
-	temp = 0;
-	else 
-	temp = 1;*/
-
-	temp = r[n] & 0x1;
-
-	r[n] >>= 1;
-
-
-	/*
-	if (sr.T == 1) 
-	r[n] |= 0x80000000;
-	else 
-	r[n] &= 0x7FFFFFFF;*/
-	r[n] |=sr.T<<31;
-
-	sr.T = temp;
-	/*if (temp == 1) 
-	T = 1;
-	else 
-	T = 0;*/
 }
 
 
@@ -780,9 +756,11 @@ sh4op(i0100_nnnn_0000_0101)
 {
 	//iNimp("rotr <REG_N>");//check ++
 	u32 n = GetN(op);
-	sr.T = r[n] & 0x1;
-	r[n] >>= 1;
-	r[n] |= (sr.T << 31);
+	//sr.T = r[n] & 0x1;
+	//r[n] >>= 1;
+	//r[n] |= (sr.T << 31);
+	ilst->ror(r[n],1);
+	ilst->SaveT(SaveCF);
 }					
 //************************ byte reorder/sign ************************
 //swap.b <REG_M>,<REG_N>        
@@ -791,7 +769,9 @@ sh4op(i0110_nnnn_mmmm_1000)
 	//iNimp("swap.b <REG_M>,<REG_N>");
 	u32 m = GetM(op);
 	u32 n = GetN(op);
-	r[n] = (r[m] & 0xFFFF0000) | ((r[m]&0xFF)<<8) | ((r[m]>>8)&0xFF);
+	//r[n] = (r[m] & 0xFFFF0000) | ((r[m]&0xFF)<<8) | ((r[m]>>8)&0xFF);
+	ilst->mov(r[n],r[m]);
+	ilst->bswap(r[n]);
 } 
 
 
@@ -801,18 +781,19 @@ sh4op(i0110_nnnn_mmmm_1001)
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 
-	u16 t = (u16)(r[m]>>16);
-	r[n] = (r[m] << 16) | t;
+	//u16 t = (u16)(r[m]>>16);
+	//r[n] = (r[m] << 16) | t;
+	ilst->mov(r[n],r[m]);
+	ilst->wswap(r[n]);
 } 
-
-
 
 //extu.b <REG_M>,<REG_N>        
 sh4op(i0110_nnnn_mmmm_1100)
 {//TODO : CHECK THIS
 	u32 n = GetN(op);
 	u32 m = GetM(op);
-	r[n] = r[m] & 0xFF;
+	//r[n] = r[m] & 0xFF;
+	ilst->movzxb(r[n],r[m]);
 } 
 
 
@@ -821,7 +802,8 @@ sh4op(i0110_nnnn_mmmm_1101)
 {//TODO : Check This [26/4/05]
 	u32 n = GetN(op);
 	u32 m = GetM(op);
-	r[n] = r[m] & 0x0000FFFF;
+	//r[n] = r[m] & 0x0000FFFF;
+	ilst->movzxw(r[n],r[m]);
 } 
 
 
@@ -832,7 +814,8 @@ sh4op(i0110_nnnn_mmmm_1110)
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 
-	r[n] = (u32)(s8)(u8)(r[m] & 0xFF);
+	//r[n] = (u32)(s8)(u8)(r[m] & 0xFF);
+	ilst->movsxb(r[n],r[m]);
 
 } 
 
@@ -844,7 +827,8 @@ sh4op(i0110_nnnn_mmmm_1111)
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 
-	r[n] = (u32)(s16)(u16)(r[m] & 0xFFFF);
+	//r[n] = (u32)(s16)(u16)(r[m] & 0xFFFF);
+	ilst->movsxw(r[n],r[m]);
 } 
 
 

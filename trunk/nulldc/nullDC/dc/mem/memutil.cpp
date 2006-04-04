@@ -138,23 +138,44 @@ void AddHook(u32 Addr, u16 Opcode)
 #define dc_bios_syscall_GDrom_misc	0x8C0000BC
 #define dc_bios_syscall_resets_Misc	0x8c0000E0
 
+u32 EnabledPatches=0;
+
+void EnablePatch(int patch)
+{
+	EnabledPatches|=patch;
+	LoadSyscallHooks();
+}
+
+void DisablePatch(int patch)
+{
+	EnabledPatches&=~patch;
+}
 
 void LoadSyscallHooks()
 {
 	//skip em all :)
 
-	if(0)	// 
-	{
+	if (EnabledPatches & patch_syscall_system)
 		AddHook(ReadMem32(dc_bios_syscall_system),0x000B);
-		AddHook(ReadMem32(dc_bios_syscall_font),  0x000B);
-		AddHook(ReadMem32(dc_bios_syscall_flashrom),0x000B);
-		AddHook(ReadMem32(dc_bios_syscall_GDrom_misc),0x000B);
-	
-		//hook for hle
-		AddHook(0x0800, 0x000B);			// unknown patch for gdrom
-		AddHook(0x1000, GDROM_OPCODE);		// gdrom call, reads / checks status
-		AddHook(0x3C00, 0x000B/*SYSINFO_OPCODE*/);	// sysinfo call, sets up flashrom etc
 
-	//AddHook(ReadMem32(dc_bios_syscall_resets_Misc),0x000B);
-	}
+	if (EnabledPatches & patch_syscall_font)
+		AddHook(ReadMem32(dc_bios_syscall_font),  0x000B);
+
+	if (EnabledPatches & patch_syscall_flashrom)
+		AddHook(ReadMem32(dc_bios_syscall_flashrom),0x000B);
+
+	if (EnabledPatches & patch_syscall_GDrom_misc)
+		AddHook(ReadMem32(dc_bios_syscall_GDrom_misc),0x000B);
+
+
+
+	if (EnabledPatches & patch_syscall_GDrom_HLE)
+		AddHook(0x1000, GDROM_OPCODE);		// gdrom call, reads / checks status
+
+	if (EnabledPatches & patch_syscall_GDrom_HLE)
+		AddHook(ReadMem32(dc_bios_syscall_resets_Misc),0x000B);
+
+	if (EnabledPatches & patch_resets_Misc)
+		AddHook(ReadMem32(dc_bios_syscall_resets_Misc),0x000B);
+
 }

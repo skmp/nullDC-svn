@@ -70,6 +70,7 @@ CC_NC			=3,				//
 CC_AE			=CC_NB,			//
 CC_E			=4,				// zero (ZF=1)
 CC_Z			=CC_E,			//
+SaveZF			=CC_Z,
 CC_NE			=5,				// not zero (ZF=0)
 CC_NZ			=CC_NE,			//
 CC_BE			=6,				// below or equal (CF=1 or ZF=1)
@@ -131,6 +132,16 @@ class shil_stream
 
 	//rotate
 
-	void RCL(Sh4RegType to,u8 count);
-	void RCR(Sh4RegType to,u8 count);
+	void rcl(Sh4RegType to,u8 count);
+	void rcr(Sh4RegType to,u8 count);
+	void rol(Sh4RegType to,u8 count);
+	void ror(Sh4RegType to,u8 count);
+
+	//extends
+	//signed
+	void movsxb(Sh4RegType to,Sh4RegType from);
+	void movsxw(Sh4RegType to,Sh4RegType from);
+	//unsigned
+	void movzxb(Sh4RegType to,Sh4RegType from);
+	void movzxw(Sh4RegType to,Sh4RegType from);
 };
