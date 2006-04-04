@@ -310,6 +310,8 @@ void SetPluginPath(char* path)
 {
 	strcpy(plugins_path,path);
 
+	printf("New plugin path :\n \"%s\"\n",plugins_path);
+
 	if (PluginList_cached)
 	{
 		delete PluginList_cached;

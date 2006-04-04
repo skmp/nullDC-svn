@@ -483,13 +483,6 @@ sh4op(i0011_nnnn_mmmm_0100)
 }
 
 
-
-
-
-
-
-
-
 //************************ Simple maths ************************ 
 //addc <REG_M>,<REG_N>          
 sh4op(i0011_nnnn_mmmm_1110)
@@ -505,14 +498,11 @@ sh4op(i0011_nnnn_mmmm_1110)
 
 	//if (tmp0 > tmp1)
 	//	sr.T=1;
-	//SET_BIT(SR, SR_T);
 	//else
 	//	sr.T = 0;
-	//REMOVE_BIT(SR, SR_T);
 
 	//if (tmp1 > r[n])
 	//	sr.T = 1;
-	//SET_BIT(SR, SR_T);
 	
 	
 
@@ -596,7 +586,7 @@ sh4op(i0110_nnnn_mmmm_1010)
 
 //neg <REG_M>,<REG_N>           
 sh4op(i0110_nnnn_mmmm_1011)
-{//ToDo : Check This [26/4/05]
+{
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 	//r[n] = -r[m];
@@ -618,7 +608,7 @@ sh4op(i0110_nnnn_mmmm_0111)
 //************************ shifts/rotates ************************
 //shll <REG_N>                  
 sh4op(i0100_nnnn_0000_0000)
-{//ToDo : Check This [26/4/05]
+{
 	u32 n = GetN(op);
 
 	//sr.T = r[n] >> 31;
@@ -640,7 +630,7 @@ sh4op(i0100_nnnn_0010_0000)
 
 //shlr <REG_N>                  
 sh4op(i0100_nnnn_0000_0001)
-{//ToDo : Check This [26/4/05]
+{
 	u32 n = GetN(op);
 	//sr.T = r[n] & 0x1;
 	//r[n] >>= 1;
@@ -651,7 +641,7 @@ sh4op(i0100_nnnn_0000_0001)
 
 //shar <REG_N>                  
 sh4op(i0100_nnnn_0010_0001)
-{//ToDo : Check This [26/4/05] x2
+{
 	//iNimp("shar <REG_N>");
 	u32 n = GetN(op);
 	u32 t;
@@ -685,7 +675,7 @@ sh4op(i0100_nnnn_mmmm_1100)
 
 //shld <REG_M>,<REG_N>          
 sh4op(i0100_nnnn_mmmm_1101)
-{//ToDo : Check This [26/4/05] x2
+{
 	//iNimp("shld <REG_M>,<REG_N>");
 	//HACK : CHECKME
 	u32 n = GetN(op);
@@ -777,7 +767,7 @@ sh4op(i0110_nnnn_mmmm_1000)
 
 //swap.w <REG_M>,<REG_N>        
 sh4op(i0110_nnnn_mmmm_1001)
-{//TODO : Check This [26/4/05]
+{
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 
@@ -789,7 +779,7 @@ sh4op(i0110_nnnn_mmmm_1001)
 
 //extu.b <REG_M>,<REG_N>        
 sh4op(i0110_nnnn_mmmm_1100)
-{//TODO : CHECK THIS
+{
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 	//r[n] = r[m] & 0xFF;
@@ -799,7 +789,7 @@ sh4op(i0110_nnnn_mmmm_1100)
 
 //extu.w <REG_M>,<REG_N>        
 sh4op(i0110_nnnn_mmmm_1101)
-{//TODO : Check This [26/4/05]
+{
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 	//r[n] = r[m] & 0x0000FFFF;
@@ -809,7 +799,7 @@ sh4op(i0110_nnnn_mmmm_1101)
 
 //exts.b <REG_M>,<REG_N>        
 sh4op(i0110_nnnn_mmmm_1110)
-{//TODO : Check This [26/4/05]
+{
 	//iNimp("exts.b <REG_M>,<REG_N>");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
@@ -822,7 +812,7 @@ sh4op(i0110_nnnn_mmmm_1110)
 
 //exts.w <REG_M>,<REG_N>        
 sh4op(i0110_nnnn_mmmm_1111)
-{//ToDo : Check This [26/4/05]
+{
 	//iNimp("exts.w <REG_M>,<REG_N>");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
@@ -834,7 +824,7 @@ sh4op(i0110_nnnn_mmmm_1111)
 
 //xtrct <REG_M>,<REG_N>         
 sh4op(i0010_nnnn_mmmm_1101)
-{//TODO: unsure of proper emulation [26/4/05]
+{
 	//iNimp("xtrct <REG_M>,<REG_N>");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
