@@ -40,12 +40,14 @@ shil_stream* ilst;
 //#define tmu_underflow  0x0100
 #define iNimp(op,info) rec_iNimp(pc,op,info)
 
+#define shil_intepret(str) 
 
 //************************ TLB/Cache ************************
 //ldtlb                         
 sh4op(i0000_0000_0011_1000)
 {
-	iNimp(op, "ldtlb");
+	//iNimp(op, "ldtlb");
+	shil_intepret(i0000_0000_0011_1000);
 } 
 
 
