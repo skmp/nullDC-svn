@@ -253,7 +253,8 @@
 	//r[n] -= 4;
 	if (m==n)
 	{
-		iNimp(op,"Mov.l !!!m==n");
+		//iNimp(op,"Mov.l !!!m==n");
+		printf("mov.l <REG_M>,@-<REG_N> !!!m==n\n");
 		//return;
 	}
 	r[n] -= 4;
