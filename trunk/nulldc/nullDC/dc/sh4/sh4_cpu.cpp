@@ -641,8 +641,11 @@ sh4op(i0100_nnnn_0010_0000)
 	u32 n=GetN(op);
 	sr.T=r[n]>>31;
 	r[n]=((s32)r[n])<<1;
-	for (;;)
-		printf("shal is used , WTF\n");
+	//for (;;)
+	printf("shal is used , WTF\n");
+	printf("shal is used , WTF\n");
+	printf("shal is used , WTF\n");
+	printf("shal is used , WTF\n");
 }
 
 
