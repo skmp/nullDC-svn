@@ -60,24 +60,44 @@ void UpdateAica(u32 cycles)
 
 void Write_SB_ADST(u32 data)
 {
+	//0x005F7800	SB_ADSTAG	RW	AICA:G2-DMA G2 start address 
+	//0x005F7804	SB_ADSTAR	RW	AICA:G2-DMA system memory start address 
+	//0x005F7808	SB_ADLEN	RW	AICA:G2-DMA length 
+	//0x005F780C	SB_ADDIR	RW	AICA:G2-DMA direction 
+	//0x005F7810	SB_ADTSEL	RW	AICA:G2-DMA trigger select 
+	//0x005F7814	SB_ADEN	RW	AICA:G2-DMA enable 
+	//0x005F7818	SB_ADST	RW	AICA:G2-DMA start 
+	//0x005F781C	SB_ADSUSP	RW	AICA:G2-DMA suspend 
+	
 	if (data&1)
 	{
 		if (SB_ADEN&1)
 		{
-			u32 rad=SB_ADSTAR;
-			u32 dst=SB_ADST;
-			u32 len=SB_ADLEN & 0x7FFFFF;
+			if (SB_ADDIR==1)
+				printf("AICA DMA : SB_ADDIR==1 !!!!!!!!\n");
 
-			for (int i=0;i<SB_ADLEN;i+=32)
+			u32 src=SB_ADSTAR;
+			u32 dst=SB_ADSTAG;
+			u32 len=SB_ADLEN & 0x7FFFFFFF;
+
+			for (u32 i=0;i<len;i+=4)
 			{
-
+				u32 data=ReadMem32(src+i);
+				libAICA->aica_info.WriteMem_aica_ram(dst+i,data,4);
 			}
 
-			SB_ADSTAR = (SB_ADSTAR + SB_ADLEN);
-			SB_ADST = 0x00000000;
+			if (SB_ADLEN & 0x80000000)
+				SB_ADEN=1;//
+			else
+				SB_ADEN=0;//
+
+			SB_ADSTAR+=len;
+			SB_ADSTAG+=len;
+			SB_ADST = 0x00000000;//dma done
 			SB_ADLEN = 0x00000000;
 
-			SB_ADST=0;//done (?)
+			
+			RaiseInterrupt(holly_SPU_DMA);
 		}
 	}
 }

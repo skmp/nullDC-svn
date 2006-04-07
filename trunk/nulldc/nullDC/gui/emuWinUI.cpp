@@ -250,7 +250,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 				ofn.nMaxFileTitle	= 128;
 				ofn.lpstrFileTitle	= szFile;
 				ofn.lpstrInitialDir	= NULL;
-				ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+				ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
 
 				if(GetOpenFileName(&ofn)>0)
 				{
@@ -272,13 +272,15 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 
 		case ID_FILE_BOOTHLE:
 		 {
-			gdBootHLE();
-			sh4_cpu->Reset(false);//do a hard reset
-			sh4_cpu->SetRegister(Sh4RegType::reg_gbr,0x8c000000);
-			sh4_cpu->SetRegister(Sh4RegType::reg_pc,0x8c008300);
-			EnablePatch(patch_resets_Misc);//mwhaha
-		//	Start_DC();
-			return 0;
+			 Init_DC();
+			 Reset_DC(false);
+			 gdBootHLE();
+			 EnablePatch(patch_resets_Misc);//mwhaha
+			 sh4_cpu->Reset(false);//do a hard reset
+			 sh4_cpu->SetRegister(Sh4RegType::reg_gbr,0x8c000000);
+			 sh4_cpu->SetRegister(Sh4RegType::reg_pc,0x8c008300);
+			 Start_DC();
+			 return 0;
 		 }
 
 		case ID_FILE_EXIT:

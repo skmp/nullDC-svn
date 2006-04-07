@@ -771,15 +771,17 @@ void gdBootHLE(void)
 	u32 toc[102];
 	libGDR->gdr_info.GetToc(&toc[0], (DiskArea)1);
 
-	u32 i=0;
-	for(i=0; i<102; i++)
+	int i=0;
+	for(i=98; i>=0; i--)
 	{
-		if(4 == (toc[i]&4))
-			break;
-		if(~0 == toc[i])
-		{	i--;	break;	}
+		if (toc[i]!=0xFFFFFFFF)
+		{
+			if(4 == (toc[i]&4))
+				break;
+		}
 	}
-
+	if (i==-1)
+		i=0;
 	u32 addr = ((toc[i]&0xFF00)<<8) | ((toc[i]>>8)&0xFF00) | ((toc[i]>>24)&255);
 
 	///////////////////////////
@@ -796,12 +798,12 @@ void gdBootHLE(void)
 	printf("IP.BIN BootFile: %s\n", bootfile);
 
 
-/*
+
 	if(!iso9660_Init(addr))
 		printf("GDHLE: ERROR: iso9660_Init() Failed!\n\n");
 	if(!iso9660_LoadFile(bootfile, 0x8c010000, true))
 		printf("GDHLE: ERROR: iso9660_LoadFile() Failed!\n\n");
-*/
+
 }
 
 
