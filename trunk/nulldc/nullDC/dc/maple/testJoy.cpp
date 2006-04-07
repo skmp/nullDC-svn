@@ -47,9 +47,9 @@ void testJoy_GotData(u32 header1,u32 header2,u32*data,u32 datalen)
 
 			//struct data
 			//3*4
-			WriteMem32(ptr_out, 0xFFFFFFFF); ptr_out += 4;
-			WriteMem32(ptr_out, 0xFFFFFFFF); ptr_out += 4;
-			WriteMem32(ptr_out, 0xFFFFFFFF); ptr_out += 4;
+			WriteMem32(ptr_out, 0xfe060f00); ptr_out += 4;
+			WriteMem32(ptr_out, 0); ptr_out += 4;
+			WriteMem32(ptr_out, 0); ptr_out += 4;
 			//1	area code
 			WriteMem8(ptr_out, 0xFF); ptr_out += 1;
 			//1	direction
