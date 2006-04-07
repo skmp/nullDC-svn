@@ -87,7 +87,7 @@ void dcInitPvr(void* aparam,PluginType type)
 	vram_lock_64=param->vram_lock_64;
 	vram_unlock=param->vram_unlock;
 
-	LoadIcPvrDll("plugins\\icarus\\gfxEctorD3D.dll");
+	LoadIcPvrDll("plugins\\icarus\\gfxEctorD3D.dll");//gfxEctorD3D//IcGfxDX.dll
 	icInit();
 }
 

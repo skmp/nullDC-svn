@@ -11,3 +11,8 @@ void aica_Reset(bool Manual);
 void aica_Term();
 
 void UpdateAica(u32 cycles);
+
+
+void aica_sb_Init();
+void aica_sb_Reset(bool Manual);
+void aica_sb_Term();

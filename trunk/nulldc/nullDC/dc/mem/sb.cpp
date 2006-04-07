@@ -6,6 +6,7 @@
 #include "dc/pvr/pvr_sb_regs.h"
 #include "dc/gdrom/gdrom_if.h"
 #include "dc/maple/maple_if.h"
+#include "dc/aica/aica_if.h"
 
 Array<RegisterStruct> sb_regs(0x540);	
 
@@ -1513,6 +1514,7 @@ void sb_Init()
 	gdrom_reg_Init();
 	pvr_sb_Init();
 	maple_Init();
+	aica_sb_Init();
 }
 
 void sb_Reset(bool Manual)
@@ -1521,10 +1523,12 @@ void sb_Reset(bool Manual)
 	gdrom_reg_Reset(Manual);
 	pvr_sb_Reset(Manual);
 	maple_Reset(Manual);
+	aica_sb_Reset(Manual);
 }
 
 void sb_Term()
 {
+	aica_sb_Term();
 	maple_Term();
 	pvr_sb_Term();
 	gdrom_reg_Term();
