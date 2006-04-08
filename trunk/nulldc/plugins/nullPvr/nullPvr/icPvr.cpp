@@ -121,9 +121,12 @@ u8 HblankInfo()
 u8 VblankInfo()
 {
 	u32 data = *(u32*)&pvr_regs[0xa05f80cc & 0x7FFF];
+	u32 down=(data & 0x3FFF);
+	u32 top=(data >> 16) & 0x3FFF;
+
 	if (data==0)
 		return 0;
-	if (((data & 0x3FFF) <= prv_cur_scanline) || (((data >> 16) & 0x3FFF) <= prv_cur_scanline))
+	if ((prv_cur_scanline <= top) || ( prv_cur_scanline>= down))
 		return 1;
 	else
 		return 0;
@@ -372,7 +375,7 @@ void icDebug_Printf	(u32 dwDebugFlags, char* szFormat, ... )
 	va_start(va, szFormat);
 	vsprintf(szErr,szFormat,va);
 	va_end(va);
-	printf( szErr );
+	printf( "%s\n",szErr );
 }
 void icCPU_Halt	(char * szReason)
 {
