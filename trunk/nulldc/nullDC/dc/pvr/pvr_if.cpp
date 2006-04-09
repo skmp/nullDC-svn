@@ -33,7 +33,7 @@ void pvr_writereg_TA(u32 addr,u32 data,u32 sz)
 	libPvr->pvr_info.WriteReg(addr,data,sz);
 }
 
-
+#define vram_64b
 //vram 32-64b
 #ifdef vram_64b
 //read
@@ -46,12 +46,12 @@ u8 pvr_read_area1_8(u32 addr)
 u16 pvr_read_area1_16(u32 addr)
 {
 	addr =vramlock_ConvAddrtoOffset64(addr);
-	return *(u16*)&vram[addr & VRAM_MASK];
+	return *(u16*)&vram[addr];
 }
 u32 pvr_read_area1_32(u32 addr)
 {
 	addr =vramlock_ConvAddrtoOffset64(addr);
-	return *(u32*)&vram[addr & VRAM_MASK];
+	return *(u32*)&vram[addr ];
 }
 
 //write
@@ -64,12 +64,11 @@ void pvr_write_area1_16(u32 addr,u16 data)
 	u32 Address2=addr;
 	addr=vramlock_ConvAddrtoOffset64(addr);
 
-	u16* vptr=(u16*)&vram[addr & VRAM_MASK];
+	u16* vptr=(u16*)&vram[addr ];
 	if (*vptr != data)
 	{
 		vramlock_Test(Address2,0,0);
 		*vptr=data;
-		//vram_l[(Address)>>2] = Data;
 	}
 }
 void pvr_write_area1_32(u32 addr,u32 data)
@@ -77,12 +76,11 @@ void pvr_write_area1_32(u32 addr,u32 data)
 	u32 Address2=addr;
 	addr=vramlock_ConvAddrtoOffset64(addr);
 
-	u32* vptr=(u32*)&vram[addr & VRAM_MASK];
+	u32* vptr=(u32*)&vram[addr];
 	if (*vptr != data)
 	{
 		vramlock_Test(Address2,0,0);
 		*vptr=data;
-		//vram_l[(Address)>>2] = Data;
 	}
 }
 

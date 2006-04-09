@@ -144,7 +144,7 @@ u32 vramlock_ConvAddrtoOffset64(u32 Address)
 {
 	if (Is_64_Bit(Address))
 	{
-		return  Address & 0x7FFFFF;//64 bit offset
+		return  Address & VRAM_MASK;//64 bit offset
 	}
 	else
 	{
