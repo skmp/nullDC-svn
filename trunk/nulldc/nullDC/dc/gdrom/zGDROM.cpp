@@ -487,7 +487,7 @@ void ProcessSPI(void)
 
 		 gdSR.ByteCount = Len;	// *FIXME* test against cmd[1]
 	 }
-		break;
+	 goto pio_complete;				// *FIXME* 
 
 
 
