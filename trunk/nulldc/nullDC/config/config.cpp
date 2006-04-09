@@ -39,11 +39,15 @@ void cfgSaveStr(const char * lpSection, const char * lpKey, const char * lpStrin
 */
 bool cfgVerify()
 {
-	if(0==GetCurrentDirectory(MAX_PATH,appPath)) {
-		printf("\n~ERROR: cfgVerify: GetCurrentDirector() Failed!\n");
-		sprintf(appPath, ".\\");
-	}
-	strcat(appPath,"\\");
+	char * tmpPath = GetEmuPath("");
+	strcpy(appPath, tmpPath);
+	free(tmpPath);
+
+//	if(0==GetCurrentDirectory(MAX_PATH,appPath)) {
+//		printf("\n~ERROR: cfgVerify: GetCurrentDirector() Failed!\n");
+//		sprintf(appPath, ".\\");
+//	}
+//	strcat(appPath,"\\");
 	sprintf(cfgPath,"%snullDC.cfg", appPath);
 
 	FILE * fcfg = fopen(cfgPath,"r");

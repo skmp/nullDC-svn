@@ -283,6 +283,8 @@ typedef DiskType DriveGetDiskTypeFP();
 //Get Session info for session "session" , put it to "pout" buffer (6 bytes)
 typedef void DriveGetSessionInfoFP(u8* pout,u8 session);
 
+// FTW FTW FTW FTW
+typedef void DriveReadSubChannelFP(u8 * buff, u32 format, u32 len);
 
 //TODO : Design and implement this
 #define GDR_PLUGIN_I_F_VERSION NDC_MakeVersion(0,2,0)
@@ -294,6 +296,7 @@ struct gdr_plugin_if
 
 	//IO
 	DriveReadSectorFP* ReadSector;
+	DriveReadSubChannelFP *ReadSubChannel;
 	DriveGetTocInfoFP* GetToc;
 	DriveGetDiskTypeFP* GetDiskType;
 	DriveGetSessionInfoFP* GetSessionInfo;

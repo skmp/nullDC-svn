@@ -776,11 +776,8 @@ INT_PTR CALLBACK DlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 
 refresh:
 	
-	if( cDisView != NULL )
-		cDisView->gotoPC();
-	if( cMemView != NULL )
-		cMemView->gotoAddr( sh4_cpu->GetRegister(reg_pc));
-
+	if( cDisView != NULL ) cDisView->gotoPC();
+	if( cMemView != NULL ) cMemView->gotoAddr(sh4_cpu->GetRegister(reg_pc));
 	RefreshDebugger(hWnd);
 	return true;
 }

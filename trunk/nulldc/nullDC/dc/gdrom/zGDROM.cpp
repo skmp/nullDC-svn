@@ -426,10 +426,6 @@ void ProcessSPI(void)
 		goto pio_complete;
 
 
-	case SPI_GET_SCD:
-		break;
-
-
 	case SPI_SET_MODE:	// pio from host
 
 		if((cmd[2]+cmd[4]) > 32) {
@@ -474,6 +470,26 @@ void ProcessSPI(void)
 			goto pio_complete;				// *FIXME* 
 		}
 	  }
+
+
+	case SPI_GET_SCD:
+	 {
+		 u32 Fmt = cmd[1] &15;
+		 u32 Len = cmd[3]<<8 | cmd[4];
+
+		 lprintf("(GD)\tSPI_GET_SCD: Fmt: %X, Len:%d !\n\n", Fmt, Len);
+
+		 // *FIXME* modify the gd spec, pass all of cmd[1] to lib.
+		 libGDR->gdr_info.ReadSubChannel(gdReadBuffer, Fmt, Len);
+
+		 for(int x=(int)((Len-2)>>1); x>=0; x--)
+			 databuff.push_back( ((u16*)gdReadBuffer)[x] );
+
+		 gdSR.ByteCount = Len;	// *FIXME* test against cmd[1]
+	 }
+		break;
+
+
 
 	case 0x70:			// map drive 
 		goto complete;
@@ -632,6 +648,7 @@ char gdreg_names[64][64] =
 #include <stdarg.h>
 void lprintf(char* szFmt, ... )
 {
+#ifdef _LOG_GD_
 	static u32 First=1;
 
 	FILE * f;
@@ -647,6 +664,7 @@ void lprintf(char* szFmt, ... )
 	va_end(va);
 
 	fclose(f);
+#endif //_LOG_GD_
 }
 
 
@@ -691,6 +709,26 @@ void logd(u32 rw, u32 addr, u32 data)
 		lprintf("(W)[%08X] %s := %X \n", addr, gdreg_names[(addr&255)>>2], data);
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 
