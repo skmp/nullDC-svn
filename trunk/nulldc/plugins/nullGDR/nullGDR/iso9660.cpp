@@ -7,7 +7,7 @@ void iso_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 	printf("GDR->Read : Sector %d , size %d , mode %d \n",StartSector,SectorCount,secsz);
 	if (StartSector<45000)
 	{
-		//printf("GDR->Read : Start Sector is < 45150 ; can't read sector\n");
+		printf("GDR->Read : Start Sector is < 45150 ; can't read sector\n");
 		//return;
 	}
 	
@@ -52,7 +52,8 @@ void iso_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 	}
 	else
 	{
-		f_iso=fopen("F:/ADS.IXO.ISO","rb");
+		printf(" OOOOOOOOOOOO PPPPPPPPPPPPPP EEEEEEEEEEEEEEEE NNNNNNNNNNNNNNNN ISO :)\n");
+		f_iso=fopen("C:\\test.iso","rb");
 		
 		fseek(f_iso,StartSector*2048,SEEK_SET);
 		size_t rd=fread(buff,1,SectorCount*2048,f_iso);

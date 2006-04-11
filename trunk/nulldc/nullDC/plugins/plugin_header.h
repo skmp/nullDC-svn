@@ -248,7 +248,7 @@ typedef void dcGetPvrInfoFP(pvr_plugin_if* info);
 
 //************************ GDRom ************************
 #ifdef GDROM_CODE
-//this MUST be big endian before sending it :)
+//this MUST be big endian before sending it :)	(ZeZu: this is not true, nothing is big endian really, except addrs in TOC)
 
 enum DiskType
 {

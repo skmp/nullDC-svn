@@ -18,6 +18,19 @@ void gdop(u32 opcode);
 
 
 
+enum GD_Notify
+{
+	Notify_DiskEject,		// Params, DiskType cast to (void*)
+	Notify_DiskInsert,		// Could use Eject for both, we'll see (Spec uses 1)
+
+	Notify_CDAudioStop,		// inform the fucking authorities
+	Notify_CDAudioStart,	// this is better
+	Notify_CDAudioChange,	// change track
+};
+
+
+
+
 // GDROM i/f Control Regs	
 //
 
