@@ -77,7 +77,7 @@ void spgUpdatePvr(u32 cycles)
 		{
 			//Vblank counter
 			vblk_cnt++;
-			RaiseInterrupt(InterruptID::holly_VBLank);
+//			RaiseInterrupt(InterruptID::holly_VBLank); -> This turned out to be HBlank btw , needs to be emulater ;(
 			//TODO : Renderer->PresentFB();
 			renderer->PresentFB();//present FB data
 		}

@@ -146,8 +146,8 @@ void icUpdatePvr (u32 cycles)
 		vblk_cnt++;
 		clcount-=(DCclock)/60;//faked
 		//ok .. here , after much effort , we reached a full screen redraw :P
-		//now , we will copy everything onto the screen (meh) and raise a vblank interupt
-		RaiseInterrupt(holly_VBLank);//weeeee
+		//now , we will copy everything onto the screen (meh) and raise a vblank interupt -- there is no vblank interrupt :P
+		//RaiseInterrupt(InterruptID::holly_VBLank); -> This turned out to be HBlank btw , needs to be emulated ;(
 		if (cur_icpl->PvrUpdate)
 			cur_icpl->PvrUpdate(1);
 
