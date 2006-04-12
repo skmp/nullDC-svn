@@ -36,21 +36,9 @@ u32 YUV_x_size;
 u32 YUV_y_size;
 
 //writes 2 pixels to vram
-INLINE void YUV_putpixel2(u32 pixdata)
+INLINE void YUV_putpixel2(u32 x ,u32 y, u32 pixdata)
 {
-	pvr_write_area1_32(YUV_dest + YUV_x_curr*2+YUV_y_curr*YUV_x_size*2,pixdata);
-	YUV_x_curr+=2;
-
-	if (YUV_x_curr==YUV_x_size)
-	{
-		YUV_x_curr=0;
-		YUV_y_curr+=1;
-		if (YUV_y_curr==YUV_y_size)
-		{
-			//fuq
-			YUV_y_curr=0;//it must realy _not_ happen , unless on 16x16 multy textures or end :)
-		}
-	}
+	pvr_write_area1_32(YUV_dest + (YUV_x_curr+x+(YUV_y_curr+y)*YUV_x_size)*2,pixdata);
 }
 
 void YUV_init()
@@ -76,6 +64,32 @@ void YUV_init()
 	}
 }
 
+
+INLINE u8 GetY422(int x, int y,u8* base)
+{
+	//u32 base=0;
+	if (x>7)
+	{
+		x-=8;
+		base+=64;
+	}
+
+	if (y>7)
+	{
+		y-=8;
+		base+=128;
+	}
+	
+	return base[x+y*8];
+}
+
+INLINE u8 GetUV422(int x, int y,u8* base)
+{
+	int realx=x>>1;
+	int realy=y>>1;
+
+	return base[realx+realy*8];
+}
 INLINE void YUV_DecodeMacroBlock()
 {
 	u32 TA_YUV_TEX_CTRL=pvr_readreg_TA(0x5F814C,4);
@@ -95,21 +109,46 @@ INLINE void YUV_DecodeMacroBlock()
 		
 		u8  yuyv[4];
 
-		for (int i=0;i<16*16;i+=4)//4 pixels at a time
+		for (int y=0;y<16;y++)
 		{
-			yuyv[0]=*Y++;
-			yuyv[1]=*U++;
-			yuyv[2]=*Y++;
-			yuyv[3]=*V++;
+			for (int x=0;x<16;x+=2)
+			{
+				yuyv[1]=GetY422(x,y,Y);
+				yuyv[0]=GetUV422(x,y,U);
+				yuyv[3]=GetY422(x+1,y,Y);
+				yuyv[2]=GetUV422(x,y,V);
+				//pixel x,y , x+1,y
+				YUV_putpixel2(x,y,*(u32*)yuyv);
+			}
+		}
+
+		YUV_x_curr+=16;
+
+		if (YUV_x_curr==YUV_x_size)
+		{
+			YUV_x_curr=0;
+			YUV_y_curr+=16;
+			if (YUV_y_curr==YUV_y_size)
+			{
+				YUV_y_curr=0;
+			}
+		}
+
+		/*for (int i=0;i<16*16;i+=4)//4 pixels at a time
+		{
+			yuyv[1]=*Y++;
+			yuyv[0]=*U++;
+			yuyv[3]=*Y++;
+			yuyv[2]=*V++;
 			//pixel x,y , x+1,y
 			YUV_putpixel2(*(u32*)yuyv);
 
 			//yay even more Y information !
-			yuyv[0]=*Y++;
-			yuyv[2]=*Y++;
+			yuyv[1]=*Y++;
+			yuyv[3]=*Y++;
 			//pixel x,y+1 , x+1,y+1
 			YUV_putpixel2(*(u32*)yuyv);
-		}
+		}*/
 	}
 	else
 	{
@@ -144,12 +183,12 @@ void YUV_data(u32* data , u32 count)
 	u32 TA_YUV_TEX_CTRL=pvr_readreg_TA(0x5F814C,4);
 
 	printf("Yuv Converter : size %d\n",count);
-	printf("Yuv Format : %s , texture type %d ,  %d x %d\n",
+	printf("Yuv Format : %s , texture type %d ,  %d x %d [0x%X]\n",
 		(TA_YUV_TEX_CTRL & (1<<24))==0?"YUV420":"YUV422",
 		(TA_YUV_TEX_CTRL>>16 )&1,
 		(((TA_YUV_TEX_CTRL>>0)&0x3F)+1)*16,
-		(((TA_YUV_TEX_CTRL>>8)&0x3F)+1)*16
-		);
+		(((TA_YUV_TEX_CTRL>>8)&0x3F)+1)*16,
+		TA_YUV_TEX_CTRL);
 	if ((TA_YUV_TEX_CTRL & (1<<24))==0)
 	{
 		printf("%d blocks\n",count*32/384);
@@ -491,11 +530,15 @@ void TAWrite(u32 address,u32* data,u32 count)
 	u32 address_w=address&0x1FFFFFF;//correct ?
 	if (address_w<0x800000)//TA poly
 	{
-		try
-		{
+		//printf("call\n");
+		//fflush(stdout);
+		//try
+		//{
 			libPvr->pvr_info.TADma(address,data,count);
-		}
-		catch(...){}
+		//}
+		//printf("end call\n");
+		//fflush(stdout);
+		//catch(...){}
 	}
 	else if(address_w<0x1000000) //Yuv Converter
 	{
