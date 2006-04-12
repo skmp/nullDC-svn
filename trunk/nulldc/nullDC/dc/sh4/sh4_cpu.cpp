@@ -129,18 +129,14 @@ sh4op(i0000_nnnn_1000_0011)
 		Address = (Dest & 0x03FFFFE0) | (QACR << 26);//ie:(QACR&0x1c>>2)<<26
 
 
-
-		if (((Address >> 26) & 0x7) == 4)//??
-		{
-			try
-			{
 				//printf("TA dlist SQ to Addr: %08X\n", Address);
 				//TODO: Add pvr handling
 				//				PvrLib.lib.Update(PVRU_TA_SQ,sq);
 				//	PvrPlugin.PvrSQWrite(sq,1);
-				libPvr->pvr_info.TADma(Address,sq,1);
-			}
-			catch(...){}
+
+		if (((Address >> 26) & 0x7) == 4)//Area 4 !11!!
+		{
+			TAWrite(Address,sq,1);
 		}
 		else
 		{

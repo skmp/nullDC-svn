@@ -29,7 +29,7 @@ void pvr_Term();
 //Reset -> Reset - Initialise
 void pvr_Reset(bool Manual);
 
-
+void TAWrite(u32 address,u32* data,u32 count);
 //
 #define UpdatePvr(clc) libPvr->pvr_info.UpdatePvr(clc)
 

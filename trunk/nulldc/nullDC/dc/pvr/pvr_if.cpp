@@ -326,6 +326,44 @@ void pvr_write_area1_32(u32 addr,u32 data)
 
 
 #endif
+void TAWrite(u32 address,u32* data,u32 count)
+{
+	u32 address_w=address&0x1FFFFFF;//correct ?
+	if (address_w<0x800000)//TA poly
+	{
+		try
+		{
+			libPvr->pvr_info.TADma(address,data,count);
+		}
+		catch(...){}
+	}
+	else if(address_w<0x1000000) //Yuv Converter
+	{
+		u32 TA_YUV_TEX_BASE=pvr_readreg_TA(0x5F8148,4);
+		u32 TA_YUV_TEX_CTRL=pvr_readreg_TA(0x5F814C,4);
+		printf("Yuv Converter 0x%X , size %d\n",address,count);
+		printf("Yuv Format : %s , texture type %d ,  %d x %d\n",
+			   (TA_YUV_TEX_CTRL & (1<<24))==0?"YUV420":"YUV422",
+			   (TA_YUV_TEX_CTRL>>16 )&1,
+			   (((TA_YUV_TEX_CTRL>>0)&0x3F)+1)*16,
+			   (((TA_YUV_TEX_CTRL>>8)&0x3F)+1)*16
+			   );
+		if ((TA_YUV_TEX_CTRL & (1<<24))==0)
+		{
+			printf("%d blocks\n",count*32/384);
+		}
+		else
+			printf("%d blocks\n",count*32/512);
+		printf("Destination : 0x%X\n",TA_YUV_TEX_BASE);
+		
+		//TODO : Check if it's allrgiht to do it here (cosnidering it's yuv block end too)
+		RaiseInterrupt(holly_YUV_DMA);
+	}
+	else //Vram Write
+	{
+		printf("Vram Write 0x%X , size %d",address,count);
+	}
+}
 //Misc interface
 
 //Init/Term , global

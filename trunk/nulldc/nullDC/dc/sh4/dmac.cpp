@@ -3,6 +3,7 @@
 #include "dc/mem/sh4_internal_reg.h"
 #include "dc/mem/sb.h"
 #include "dc/mem/sh4_mem.h"
+#include "dc/pvr/pvr_if.h"
 #include "dmac.h"
 #include "intc.h"
 #include "plugins/plugin_manager.h"
@@ -49,15 +50,13 @@ void DMAC_Ch2St()
 	// Direct DList DMA (Ch2)
 
 			// Texture DMA 
-	if( (dst >= 0x10000000) && (dst <= 0x10FFFFE0) )
+	if( (dst >= 0x10000000) && (dst <= 0x10FFFFFF) )
 	{
-		//printf(".\tPVR DList DMA (direct unknown)\n\n");
 
 		u32 *sys_buf=(u32 *)(&mem_b[src&0xFFFFFF]);
 
-		//printf("%d\n",len/32);
-		libPvr->pvr_info.TADma(dst,sys_buf,(len/32));
-
+		TAWrite(dst,sys_buf,(len/32));
+		//libPvr->pvr_info.TADma(dst,sys_buf,(len/32));
 	}
 	else	//	If SB_C2DSTAT reg is inrange from 0x11000000 to 0x11FFFFE0,	 set 1 in SB_LMMODE0 reg.
 	if( (dst >= 0x11000000) && (dst <= 0x11FFFFE0) )
@@ -96,6 +95,9 @@ void DMAC_Ch2St()
 	SB_C2DSTAT = (src + len);
 
 	// The DMA end interrupt flag (SB_ISTNRM - bit 19: DTDE2INT) is set to "1."
+	//-> fixed , holly_PVR_DMA is for diferent use now (fixed the interrupts enum too)
+	RaiseInterrupt(holly_CH2_DMA);
+	//TODO : *CHECKME* is that ok here ? the docs don't say here it's used [PVR-DMA , bit 11]
 	RaiseInterrupt(holly_PVR_DMA);
 }
 
