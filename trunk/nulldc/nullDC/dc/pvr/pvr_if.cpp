@@ -20,7 +20,7 @@ void UpdatePvr(u32 cycles)
 }*/
 //
 
-//YUV converter :)
+//YUV converter code :)
 //inits the YUV converter
 u32 YUV_tempdata[512/4];//512 bytes
 
@@ -65,7 +65,7 @@ void YUV_init()
 }
 
 
-INLINE u8 GetY422(int x, int y,u8* base)
+INLINE u8 GetY420(int x, int y,u8* base)
 {
 	//u32 base=0;
 	if (x>7)
@@ -83,14 +83,14 @@ INLINE u8 GetY422(int x, int y,u8* base)
 	return base[x+y*8];
 }
 
-INLINE u8 GetUV422(int x, int y,u8* base)
+INLINE u8 GetUV420(int x, int y,u8* base)
 {
 	int realx=x>>1;
 	int realy=y>>1;
 
 	return base[realx+realy*8];
 }
-INLINE void YUV_DecodeMacroBlock()
+INLINE void YUV_ConvertMacroBlock()
 {
 	u32 TA_YUV_TEX_CTRL=pvr_readreg_TA(0x5F814C,4);
 
@@ -113,17 +113,16 @@ INLINE void YUV_DecodeMacroBlock()
 		{
 			for (int x=0;x<16;x+=2)
 			{
-				yuyv[1]=GetY422(x,y,Y);
-				yuyv[0]=GetUV422(x,y,U);
-				yuyv[3]=GetY422(x+1,y,Y);
-				yuyv[2]=GetUV422(x,y,V);
+				yuyv[1]=GetY420(x,y,Y);
+				yuyv[0]=GetUV420(x,y,U);
+				yuyv[3]=GetY420(x+1,y,Y);
+				yuyv[2]=GetUV420(x,y,V);
 				//pixel x,y , x+1,y
 				YUV_putpixel2(x,y,*(u32*)yuyv);
 			}
 		}
 
 		YUV_x_curr+=16;
-
 		if (YUV_x_curr==YUV_x_size)
 		{
 			YUV_x_curr=0;
@@ -133,22 +132,6 @@ INLINE void YUV_DecodeMacroBlock()
 				YUV_y_curr=0;
 			}
 		}
-
-		/*for (int i=0;i<16*16;i+=4)//4 pixels at a time
-		{
-			yuyv[1]=*Y++;
-			yuyv[0]=*U++;
-			yuyv[3]=*Y++;
-			yuyv[2]=*V++;
-			//pixel x,y , x+1,y
-			YUV_putpixel2(*(u32*)yuyv);
-
-			//yay even more Y information !
-			yuyv[1]=*Y++;
-			yuyv[3]=*Y++;
-			//pixel x,y+1 , x+1,y+1
-			YUV_putpixel2(*(u32*)yuyv);
-		}*/
 	}
 	else
 	{
@@ -204,14 +187,14 @@ void YUV_data(u32* data , u32 count)
 	for (u32 i=0;i<count*32;i+=4)
 	{
 		if (YUV_index==block_size)
-			YUV_DecodeMacroBlock();
+			YUV_ConvertMacroBlock();
 
 		YUV_tempdata[YUV_index>>2]=*data;
 		data++;
 		YUV_index+=4;
 	}
 	if (YUV_index==block_size)
-			YUV_DecodeMacroBlock();
+			YUV_ConvertMacroBlock();
 }
 
 //Regs
