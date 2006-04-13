@@ -58,7 +58,7 @@ u32 THREADCALL sh4_int_ThreadEntry(void* ptar)
 			i+=opcode_fam_cycles[op>>12];
 			ExecuteOpcode(op);
 			pc+=2;
-			
+			//UpdateSystem(1);			
 		}
 
 		UpdateSystem(i);

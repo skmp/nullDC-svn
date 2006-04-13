@@ -434,8 +434,14 @@
 	u32 n = GetN(op);
 	//sr.SetFull(ReadMem32(r[n])) ;
 	ReadMemU32(sr.full,r[n]);
-	UpdateSR();
 	r[n] += 4;
+	if (UpdateSR())
+	{
+		//FIXME olny if interrupts got on .. :P
+		pc+=2;
+		UpdateINTC();
+		pc-=2;
+	}
 }
 
 
@@ -549,7 +555,13 @@
 	//iNimp("ldc <REG_N>,SR");
 	u32 n = GetN(op);
 	sr.full=r[n];
-	UpdateSR();
+	if (UpdateSR())
+	{
+		//FIXME olny if interrupts got on .. :P
+		pc+=2;
+		UpdateINTC();
+		pc-=2;
+	}
 }
 
 

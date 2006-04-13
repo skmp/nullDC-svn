@@ -45,8 +45,8 @@ INLINE void ChangeFP()
 }
 
 #include "sh4_cst.h"
-//called when sr is changed and we must check for rom banks ect..
-void UpdateSR()
+//called when sr is changed and we must check for rom banks ect.. , returns true if interrupts got 
+bool UpdateSR()
 {
 	if (sr.MD)
 	{
@@ -68,8 +68,21 @@ void UpdateSR()
 				ChangeGPR();//switch
 		}
 	}
-	old_sr.MD=sr.MD;
-	old_sr.RB=sr.RB;
+	bool rv=false;
+	if (old_sr.IMASK==0xF && sr.IMASK!=0xF)
+	{
+		//printf("Interrupts enabled !\n");
+		rv=true;
+	}
+	else if (old_sr.IMASK!=0xF && sr.IMASK==0xF)
+	{
+		//printf("Interrupts Disabled !\n");
+	}
+	//old_sr.MD=sr.MD;
+	//old_sr.RB=sr.RB;
+	old_sr.full=sr.full;
+
+	return rv;
 }
 
 //called when fpscr is changed and we must check for rom banks ect..

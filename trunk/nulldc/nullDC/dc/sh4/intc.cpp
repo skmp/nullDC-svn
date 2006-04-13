@@ -190,6 +190,7 @@ bool HandleSH4_exept(InterruptID expt)
 
 bool Do_Interrupt(u32 lvl, u32 intEvn, u32 CallVect)
 {
+	//printf("Interrupt : %d,0x%x,0x%x\n",lvl,intEvn,CallVect);
 	CCN_INTEVT = intEvn;
 
 	ssr = sr.GetFull();

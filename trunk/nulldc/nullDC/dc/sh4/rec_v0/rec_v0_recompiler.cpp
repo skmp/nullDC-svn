@@ -722,10 +722,11 @@ void rec_UpdateFPSCR()
 	CodeGen->CALLFunc(UpdateFPSCR);
 }
 
-void rec_UpdateSR()
+bool rec_UpdateSR()
 {
 	FlushKillAll();
 	CodeGen->CALLFunc(UpdateSR);
+	return true;
 }
 
 

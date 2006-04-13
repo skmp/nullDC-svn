@@ -18,7 +18,7 @@ extern float xf[16],fr[16];
 extern u32*  xf_hex,*fr_hex;
 
 void UpdateFPSCR();
-void UpdateSR();
+bool UpdateSR();
 
 #ifndef DEBUG
 INLINE f64 GetDR(u32 n)

@@ -204,7 +204,7 @@ u32 pvr_readreg_TA(u32 addr,u32 sz)
 	if ((addr&0xFFFFFF)==0x5F8150)
 		return YUV_doneblocks;
 	//EMUERROR3("Not implemented TA register read , addr=%d,sz=%d",addr,sz);
-	return libPvr->pvr_info.ReadReg(addr,sz);;//__pvr_read__reg(addr);
+	return libPvr->pvr_info.ReadReg(addr,sz);//__pvr_read__reg(addr);
 }
 
 void pvr_writereg_TA(u32 addr,u32 data,u32 sz)

@@ -5,18 +5,13 @@ FILE* f_iso;
 void iso_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 {
 	printf("GDR->Read : Sector %d , size %d , mode %d \n",StartSector,SectorCount,secsz);
-	if (StartSector<45000)
-	{
-		//printf("GDR->Read : Start Sector is < 45150 ; can't read sector\n");
-		//return;
-	}
 	
 	if (StartSector>=45000)
 	{
 		if (inbios)
 		{
 			StartSector-=45000;
-			if (StartSector==16)
+			if (StartSector==150+16)
 				inbios=false;//bios dma'd pvd
 		}
 	}
@@ -52,7 +47,6 @@ void iso_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 	}
 	else
 	{
-		printf(" OOOOOOOOOOOO PPPPPPPPPPPPPP EEEEEEEEEEEEEEEE NNNNNNNNNNNNNNNN ISO :)\n");
 		f_iso=fopen("f:\\ninjax.iso","rb");
 		
 		fseek(f_iso,StartSector*2048,SEEK_SET);
