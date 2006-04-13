@@ -43,22 +43,22 @@ struct natTocInfo
 
 void ConvToc(u32* to,natTocInfo* from);
 
-struct TocTrackInfo
+struct mmTocTrackInfo
 {
 	u32 FAD;	//fad , intel format
 	u8 Control;	//cotnrol info
 	u8 Addr;	//addr info
 	u8 Session; //Session where teh track belongs
 };
-struct TocInfo
+struct mmTocInfo
 {
 	//0-98 ->1-99
-	TocTrackInfo tracks[99];
+	mmTocTrackInfo tracks[99];
 
 	u8 FistTrack;
 	u8 LastTrack;
 
-	TocTrackInfo LeadOut;	//session set to 0 on that one
+	mmTocTrackInfo LeadOut;	//session set to 0 on that one
 };
 
 struct SessionInfo
@@ -70,7 +70,7 @@ struct SessionInfo
 
 typedef void InitFP();
 typedef void TermFP();
-typedef void DriveGetTocInfoModFP(TocInfo& toc,DiskArea area);
+typedef void DriveGetTocInfoModFP(mmTocInfo& toc,DiskArea area);
 typedef void DriveGetSessionInfoModFP(SessionInfo& ses);
 
 enum gd_drivers

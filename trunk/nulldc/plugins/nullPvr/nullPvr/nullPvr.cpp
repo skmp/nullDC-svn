@@ -34,6 +34,8 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 void cfgdlg(PluginType type,void* window)
 {
 	printf("drkIIRaziel's nullPvr plugin:No config kthx\n");
+	//if (cur_icpl->PvrDllConfig)
+		//cur_icpl->PvrDllConfig((HWND)window);
 }
 
 //This plugin will actualy Redirect the work on an icarus plugin

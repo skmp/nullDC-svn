@@ -7,7 +7,7 @@ void iso_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 	printf("GDR->Read : Sector %d , size %d , mode %d \n",StartSector,SectorCount,secsz);
 	if (StartSector<45000)
 	{
-		printf("GDR->Read : Start Sector is < 45150 ; can't read sector\n");
+		//printf("GDR->Read : Start Sector is < 45150 ; can't read sector\n");
 		//return;
 	}
 	
@@ -53,7 +53,7 @@ void iso_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 	else
 	{
 		printf(" OOOOOOOOOOOO PPPPPPPPPPPPPP EEEEEEEEEEEEEEEE NNNNNNNNNNNNNNNN ISO :)\n");
-		f_iso=fopen("C:\\test.iso","rb");
+		f_iso=fopen("f:\\ninjax.iso","rb");
 		
 		fseek(f_iso,StartSector*2048,SEEK_SET);
 		size_t rd=fread(buff,1,SectorCount*2048,f_iso);
@@ -66,9 +66,10 @@ void iso_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 
 }
 
-void iso_DriveGetTocInfo(TocInfo& toc,DiskArea area)
+void iso_DriveGetTocInfo(mmTocInfo& toc,DiskArea area)
 {
-	/*//Send a fake a$$ toc
+	printf("GDROM toc\n");
+/*	//Send a fake a$$ toc
 	//toc->last.full		= toc->first.full	= CTOC_TRACK(1);
 	toc->first.number=1;
 	toc->last.number=1;

@@ -1,4 +1,4 @@
-#ifdef X86
+#ifdef _CDI_
 #include "cdi.h"
 #define BYTE u8
 #define WORD u16

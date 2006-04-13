@@ -42,6 +42,9 @@ EXPORT void dcGetPluginInfo(plugin_info* info)
 	info->ShowConfig=cfgdlg;
 }
 
+void DriveReadSubChannel(u8 * buff, u32 format, u32 len)
+{
+}
 //Give to the emu pointers for the gd rom interface
 EXPORT void dcGetGDRInfo(gdr_plugin_if* info)
 {
@@ -51,6 +54,7 @@ EXPORT void dcGetGDRInfo(gdr_plugin_if* info)
 	info->GetToc=DriveGetTocInfo;
 	info->ReadSector=DriveReadSector;
 	info->GetSessionInfo=GetSessionInfo;
+	info->ReadSubChannel=DriveReadSubChannel;
 }
 
 
@@ -87,6 +91,7 @@ void dcInitGDR(void* param,PluginType type)
 	gdr_init_params* ip=(gdr_init_params*)param;
 	DriveNotifyEvent=ip->DriveNotifyEvent;//(DriveEvent::DiskChange,0)
 	SetDrive(gd_drivers::Iso);
+	DriveNotifyEvent(DriveEvent::DiskChange,0);
 }
 
 //called when plugin is unloaded by emu , olny if dcInitGDR is called (eg , not called to enumerate plugins)
@@ -98,6 +103,7 @@ void dcTermGDR(PluginType type)
 //It's suposed to reset everything (if not a manual reset)
 void dcResetGDR(bool Manual,PluginType type)
 {
+	DriveNotifyEvent(DriveEvent::DiskChange,0);
 }
 
 //called when entering sh4 thread , from the new thread context (for any thread speciacific init)

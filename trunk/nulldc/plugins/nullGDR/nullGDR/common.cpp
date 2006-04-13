@@ -2,6 +2,7 @@
 #include "cdi.h"
 #include "iso9660.h"
 #include "FolderMount.h"
+#include <memory.h>
 
 DriveIF* CurrDrive;
 DriveIF drives[]=
@@ -15,7 +16,7 @@ DriveIF drives[]=
 		iso_init,//these need to be filled
 		iso_term
 	},
-	#ifdef X86
+	#ifdef _CDI_
 	//cdi is olny available on x86 :)
 	{
 		//cdi
@@ -173,12 +174,13 @@ void ConvToc(u32* to,natTocInfo* from)
 
 void GetDriveToc(u32* to,DiskArea area)
 {
-	TocInfo driveTOC;
+	mmTocInfo driveTOC;
 	CurrDrive->GetToc(driveTOC,area);
 
+	u32 temp[512];
 	natTocInfo* toc;
-	toc=(natTocInfo*)to;
-
+	toc=(natTocInfo*)temp;
+	memset(toc,0,sizeof(natTocInfo));
 	toc->first.number=1;
 	toc->last.number=1;
 	toc->first.ControlInfo=toc->last.ControlInfo=4;

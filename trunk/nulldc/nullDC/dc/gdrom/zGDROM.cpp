@@ -128,6 +128,7 @@ void gdrom_reg_Reset(bool Manual)
 {
 	gdrom_reg_Term();
 	gdrom_reg_Init();
+	gdSR.iDevType	= (u8)((u32)libGDR->gdr_info.GetDiskType() | GDSTATE_STANDBY);
 }
 
 

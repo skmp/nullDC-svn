@@ -624,7 +624,7 @@ DiskType FM_DriveGetDiskType()
 }
 
 
-void FM_DriveGetTocInfo(TocInfo& toc,DiskArea area)
+void FM_DriveGetTocInfo(mmTocInfo& toc,DiskArea area)
 {/*
 	//Send a fake a$$ toc
 	//toc->last.full		= toc->first.full	= CTOC_TRACK(1);

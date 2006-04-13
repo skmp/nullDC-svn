@@ -148,12 +148,12 @@ typedef void dcGetPvrInfoFP(pvr_plugin_if* info);
 
 enum DiskType
 {
-	CdDA=0x0,
-	CdRom=0x1,
-	CdRom_XA=0x2,
-	CdRom_Extra=0x3,
-	CdRom_CDI=0x4,
-	GdRom=0x8,		// This is correct .. dont know about the rest ..
+	CdDA=0x00,
+	CdRom=0x10,
+	CdRom_XA=0x20,
+	CdRom_Extra=0x30,
+	CdRom_CDI=0x40,
+	GdRom=0x80,		// This is correct .. dont know about the rest ..
 	NoDisk=0x9
 };
 
