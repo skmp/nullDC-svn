@@ -68,18 +68,7 @@ bool UpdateSR()
 				ChangeGPR();//switch
 		}
 	}
-	bool rv=false;
-	if (old_sr.IMASK==0xF && sr.IMASK!=0xF)
-	{
-		//printf("Interrupts enabled !\n");
-		rv=true;
-	}
-	else if (old_sr.IMASK!=0xF && sr.IMASK==0xF)
-	{
-		//printf("Interrupts Disabled !\n");
-	}
-	//old_sr.MD=sr.MD;
-	//old_sr.RB=sr.RB;
+	bool rv=old_sr.IMASK > sr.IMASK;
 	old_sr.full=sr.full;
 
 	return rv;
