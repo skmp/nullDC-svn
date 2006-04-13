@@ -260,6 +260,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 						return 0;
 					EnablePatch(patch_resets_Misc);//mwhaha
 					sh4_cpu->Reset(false);//do a hard reset
+					sh4_cpu->SetRegister(Sh4RegType::reg_sr,0x70000000);
 					sh4_cpu->SetRegister(Sh4RegType::reg_gbr,0x8c000000);
 					sh4_cpu->SetRegister(Sh4RegType::reg_pc,0x8c008300);
 					Start_DC();

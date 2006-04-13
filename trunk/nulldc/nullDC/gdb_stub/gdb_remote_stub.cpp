@@ -968,7 +968,7 @@ void StartGDBSession()
 
     service.sin_family = AF_INET;
     service.sin_addr.s_addr = inet_addr( "127.0.0.1" );
-    service.sin_port = htons( 2223 );
+    service.sin_port = htons( 4222 );
 
     if ( bind( m_socket, (SOCKADDR*) &service, sizeof(service) ) == SOCKET_ERROR ) {
         printf( "bind() failed.\n" );
