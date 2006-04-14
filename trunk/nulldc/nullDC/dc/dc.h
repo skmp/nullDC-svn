@@ -12,3 +12,4 @@ void Term_DC();
 void Start_DC();
 void Stop_DC();
 void LoadBiosFiles();
+bool IsDCInited();

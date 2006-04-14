@@ -138,3 +138,5 @@ void LoadIcPvrDll(char *dll);
 
 
 void UnLoadIcPvrDll(void *pl);
+
+char * GetName();

@@ -151,3 +151,8 @@ void Stop_DC()
 		}
 	}
 }
+
+bool IsDCInited()
+{
+	return dc_inited;
+}

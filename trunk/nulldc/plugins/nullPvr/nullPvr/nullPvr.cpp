@@ -45,7 +45,8 @@ HMODULE iclib;
 EXPORT void dcGetPluginInfo(plugin_info* info)
 {
 	info->InterfaceVersion.full=PLUGIN_I_F_VERSION;
-	strcpy(info->Name,"drkIIRaziel's nullPvr plugin");
+	LoadIcPvrDll("plugins\\icarus\\gfxEctorD3D.dll");//gfxEctorD3D//IcGfxDX.dll
+	sprintf(info->Name,"Icarus plugin converter [using %s]",GetName());
 	info->PluginVersion.full=NDC_MakeVersion(MAJOR,MINOR,BUILD);
 	
 
@@ -89,7 +90,6 @@ void dcInitPvr(void* aparam,PluginType type)
 	vram_lock_64=param->vram_lock_64;
 	vram_unlock=param->vram_unlock;
 
-	LoadIcPvrDll("plugins\\icarus\\gfxEctorD3D.dll");//gfxEctorD3D//IcGfxDX.dll
 	icInit();
 }
 

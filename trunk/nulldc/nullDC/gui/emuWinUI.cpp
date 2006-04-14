@@ -308,6 +308,12 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 
 			//////// DEBUG MENU
 		case ID_DEBUG_DEBUGGER:
+			if (!IsDCInited())
+			{
+				printf("Debugger opened w/o init , initing everything..\n");
+				Init_DC();
+				Reset_DC(false);
+			}
 
 			CtrlMemView::init();
 			CtrlDisAsmView::init();

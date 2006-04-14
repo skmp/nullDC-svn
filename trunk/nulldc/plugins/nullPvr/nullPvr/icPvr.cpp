@@ -316,6 +316,10 @@ void icWriteMem_reg(u32 Address,u32 data,u32 len)
 		}
 		data = 0;		// will this fix anything ?
 	}
+	if( (TA_LIST_CONT&0x7FFF) == (Address&0x7FFF) )
+	{
+		printf("LIST CONTNINUATION!!!\n");
+	}
 	if ((Address&0x7FFF)==(STARTRENDER&0x7FFF))
 	{ 
 		data=0;
@@ -397,6 +401,13 @@ void icLoad_Config		(char *RegStr, DWORD *Config)
 {
 }
 
+
+char * GetName()
+{
+	if (cur_icpl->GetDllInfo)
+		cur_icpl->GetDllInfo(&cur_icpl->plinfo);
+	return &cur_icpl->plinfo.Name[0];
+}
 bool icInit ()
 {
 	GFX_INFO GfxInfo;
@@ -410,9 +421,6 @@ bool icInit ()
 	GfxInfo.StatsFrame=icStatsFrame;
 	GfxInfo.StatsVtxStrip=icStatsVtxStrip;
 	GfxInfo.VRAM=vram_64;
-
-	if (cur_icpl->GetDllInfo)
-		cur_icpl->GetDllInfo(&cur_icpl->plinfo);
 
 	if (cur_icpl->PvrInit)
 		cur_icpl->PvrInit(GfxInfo);
