@@ -780,7 +780,7 @@ bool recRecompileOp(u32 op,u32 &rec_pc)
 //	FlushKillAll();
 	RecOpPtr[op](op,rec_pc);
 //	FlushKillAll();
-	if (OpTyp[op] & (Branch | BranchDelay))
+	if (OpTyp[op] & (Branch | BranchDelay | SystemSt))
 	{
 		if (RecOpPtr[op]==rec_cpu_opcode_nimp)
 			return false;

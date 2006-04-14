@@ -695,7 +695,7 @@ sh4_opcodelistentry opcodes[]=
 	{rec_i0100_nnnn_0010_0110	,i0100_nnnn_0010_0110	,Mask_n		,0x4026	,Normal				,OpDissCFS,"lds.l @<REG_N>+,PR"},	//lds.l @<REG_N>+,PR            
 	{rec_i0100_nnnn_0101_0110	,i0100_nnnn_0101_0110	,Mask_n		,0x4056	,Normal				,OpDissCFS,"lds.l @<REG_N>+,FPUL"},	//lds.l @<REG_N>+,FPUL          
 	{rec_i0100_nnnn_0110_0110	,i0100_nnnn_0110_0110	,Mask_n		,0x4066	,Normal				,OpDissCFS,"lds.l @<REG_N>+,FPSCR"},	//lds.l @<REG_N>+,FPSCR         
-	{rec_i0100_nnnn_0000_0111	,i0100_nnnn_0000_0111	,Mask_n		,0x4007	,Normal				,OpDissCFS,"ldc.l @<REG_N>+,SR"},	//ldc.l @<REG_N>+,SR            
+	{rec_i0100_nnnn_0000_0111	,i0100_nnnn_0000_0111	,Mask_n		,0x4007	,SystemSt				,OpDissCFS,"ldc.l @<REG_N>+,SR"},	//ldc.l @<REG_N>+,SR            
 	{rec_i0100_nnnn_0001_0111	,i0100_nnnn_0001_0111	,Mask_n		,0x4017	,Normal				,OpDissCFS,"ldc.l @<REG_N>+,GBR"},	//ldc.l @<REG_N>+,GBR           
 	{rec_i0100_nnnn_0010_0111	,i0100_nnnn_0010_0111	,Mask_n		,0x4027	,Normal				,OpDissCFS,"ldc.l @<REG_N>+,VBR"},	//ldc.l @<REG_N>+,VBR           
 	{rec_i0100_nnnn_0011_0111	,i0100_nnnn_0011_0111	,Mask_n		,0x4037	,Normal				,OpDissCFS,"ldc.l @<REG_N>+,SSR"},	//ldc.l @<REG_N>+,SSR           
@@ -707,7 +707,7 @@ sh4_opcodelistentry opcodes[]=
 	{rec_i0100_nnnn_0101_1010	,i0100_nnnn_0101_1010	,Mask_n		,0x405A	,Normal				,OpDissCFS,"lds <REG_N>,FPUL"},	//lds <REG_N>,FPUL              
 	{rec_i0100_nnnn_0110_1010	,i0100_nnnn_0110_1010	,Mask_n		,0x406A	,Normal				,OpDissCFS,"lds <REG_N>,FPSCR"},	//lds <REG_N>,FPSCR             
 	{rec_i0100_nnnn_1111_1010	,i0100_nnnn_1111_1010	,Mask_n		,0x40FA	,Normal				,OpDissCFS,"ldc <REG_N>,DBR"},	//ldc <REG_N>,DBR                
-	{rec_i0100_nnnn_0000_1110	,i0100_nnnn_0000_1110	,Mask_n		,0x400E	,Normal				,OpDissCFS,"ldc <REG_N>,SR"},	//ldc <REG_N>,SR                
+	{rec_i0100_nnnn_0000_1110	,i0100_nnnn_0000_1110	,Mask_n		,0x400E	,SystemSt			,OpDissCFS,"ldc <REG_N>,SR"},	//ldc <REG_N>,SR                
 	{rec_i0100_nnnn_0001_1110	,i0100_nnnn_0001_1110	,Mask_n		,0x401E	,Normal				,OpDissCFS,"ldc <REG_N>,GBR"},	//ldc <REG_N>,GBR               
 	{rec_i0100_nnnn_0010_1110	,i0100_nnnn_0010_1110	,Mask_n		,0x402E	,Normal				,OpDissCFS,"ldc <REG_N>,VBR"},	//ldc <REG_N>,VBR               
 	{rec_i0100_nnnn_0011_1110	,i0100_nnnn_0011_1110	,Mask_n		,0x403E	,Normal				,OpDissCFS,"ldc <REG_N>,SSR"},	//ldc <REG_N>,SSR               

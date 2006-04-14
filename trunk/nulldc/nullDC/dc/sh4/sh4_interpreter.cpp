@@ -18,7 +18,7 @@
 #include <time.h>
 #include <float.h>
 
-#define CPU_TIMESLICE	(64)
+#define CPU_TIMESLICE	(448)
 #define CPU_RATIO		(7)
 
 //uh uh 
@@ -50,7 +50,7 @@ u32 THREADCALL sh4_int_ThreadEntry(void* ptar)
 			_controlfp( _RC_NEAR, _MCW_RC );//round to nearest
 
 		//for ( int i=0;i<CPU_TIMESLICE;i++)
-		while(i<CPU_TIMESLICE*CPU_RATIO)
+		while(i<CPU_TIMESLICE)
 		{
 			GDB_BOOT_TEST();
 
