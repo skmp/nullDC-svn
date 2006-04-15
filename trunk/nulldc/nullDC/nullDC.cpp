@@ -102,7 +102,7 @@ int main(int argc, char* argv[])
 	char * currpath=GetEmuPath("");
 	SetCurrentDirectoryA(currpath);
 	free(currpath);
-
+	
 	// Could Change plugin path even, do first, is always relative to execution dir.
 	if(!cfgVerify())
 		printf("~ERROR: cfgVerify() Failed!\n");

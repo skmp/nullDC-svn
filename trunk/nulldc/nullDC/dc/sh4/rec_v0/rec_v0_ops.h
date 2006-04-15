@@ -45,8 +45,7 @@
  //this file contains ALL register to register full moves
 //
 
-//stc SR,<REG_N>                
- rec_sh4op(i0000_nnnn_0000_0010);
+
 //stc GBR,<REG_N>               
  rec_sh4op(i0000_nnnn_0001_0010);
 //stc VBR,<REG_N>               
@@ -59,8 +58,7 @@
  rec_sh4op(i0000_nnnn_1mmm_0010);
 //sts FPUL,<REG_N>              
  rec_sh4op(i0000_nnnn_0101_1010);
- //sts FPSCR,<REG_N>             
- rec_sh4op(i0000_nnnn_0110_1010);
+
 //stc DBR,<REG_N>             
  rec_sh4op(i0000_nnnn_1111_1010);
 //sts MACH,<REG_N>              
@@ -105,16 +103,14 @@
 // 4xxx
 //sts.l FPUL,@-<REG_N>          
  rec_sh4op(i0100_nnnn_0101_0010);
-//sts.l FPSCR,@-<REG_N>         
- rec_sh4op(i0100_nnnn_0110_0010);
+
 //sts.l MACH,@-<REG_N>          
  rec_sh4op(i0100_nnnn_0000_0010);
 //sts.l MACL,@-<REG_N>          
  rec_sh4op(i0100_nnnn_0001_0010);
 //sts.l PR,@-<REG_N>            
  rec_sh4op(i0100_nnnn_0010_0010);
-//stc.l SR,@-<REG_N>            
- rec_sh4op(i0100_nnnn_0000_0011);
+
 //stc.l GBR,@-<REG_N>           
  rec_sh4op(i0100_nnnn_0001_0011);
 //stc.l VBR,@-<REG_N>           
@@ -133,10 +129,6 @@
  rec_sh4op(i0100_nnnn_0010_0110);
 //lds.l @<REG_N>+,FPUL          
  rec_sh4op(i0100_nnnn_0101_0110);
-//lds.l @<REG_N>+,FPSCR         
- rec_sh4op(i0100_nnnn_0110_0110);
-//ldc.l @<REG_N>+,SR            
- rec_sh4op(i0100_nnnn_0000_0111);
 //ldc.l @<REG_N>+,GBR           
  rec_sh4op(i0100_nnnn_0001_0111);
 //ldc.l @<REG_N>+,VBR           
@@ -155,12 +147,10 @@
  rec_sh4op(i0100_nnnn_0010_1010);
 //lds <REG_N>,FPUL              
  rec_sh4op(i0100_nnnn_0101_1010);
-//lds <REG_N>,FPSCR             
- rec_sh4op(i0100_nnnn_0110_1010);
+
 //ldc <REG_N>,DBR                
  rec_sh4op(i0100_nnnn_1111_1010);
-//ldc <REG_N>,SR                
- rec_sh4op(i0100_nnnn_0000_1110);
+
 //ldc <REG_N>,GBR               
  rec_sh4op(i0100_nnnn_0001_1110);
 //ldc <REG_N>,VBR               
@@ -235,6 +225,6 @@
 // mov #<imm>,<REG_N>
  rec_sh4op(i1110_nnnn_iiii_iiii);
 
-rec_sh4op(i1011_iiii_iiii_iiii);
-rec_sh4op(i1010_iiii_iiii_iiii);
+
 rec_sh4op(i0000_0000_0000_1001);
+

@@ -100,12 +100,58 @@ enum x86_flags
 class shil_stream
 {
 	void emit(shil_opcodes op,u16 flags,u32 source,u32 dest);
-
+public :
+	
 	void mov(Sh4RegType to,Sh4RegType from);
-	void movRtoRM(Sh4RegType to,Sh4RegType from_ptr);
-	void movRMtoR(Sh4RegType to,Sh4RegType from_ptr);
 	void mov(Sh4RegType to,u32 from);
 
+	/*** Mem reads ***/
+	//readmem [reg]
+	void readm8(Sh4RegType to,Sh4RegType from,bool sx);
+	void readm16(Sh4RegType to,Sh4RegType from,bool sx);
+	void readm32(Sh4RegType to,Sh4RegType from);
+	void readm64(Sh4RegType to,Sh4RegType from);
+
+	//readmem [const]
+	void readm8(Sh4RegType to,u32 from,bool sx);
+	void readm16(Sh4RegType to,u32  from,bool sx);
+	void readm32(Sh4RegType to,u32  from);
+
+	//readmem base[offset]
+	void readm8(Sh4RegType to,Sh4RegType base,Sh4RegType offset,bool sx);
+	void readm16(Sh4RegType to,Sh4RegType base,Sh4RegType offset,bool sx);
+	void readm32(Sh4RegType to,Sh4RegType base,Sh4RegType offset);
+	void readm64(Sh4RegType to,Sh4RegType base,Sh4RegType offset);
+
+	/*** Mem writes ***/
+	//readmem base[const]
+	void readm8(Sh4RegType to,Sh4RegType base,u32 offset,bool sx);
+	void readm16(Sh4RegType to,Sh4RegType base,u32 offset,bool sx);
+	void readm32(Sh4RegType to,Sh4RegType base,u32 offset);
+
+	//writemem [reg]
+	void writem8(Sh4RegType from,Sh4RegType to,bool sx);
+	void writem16(Sh4RegType from,Sh4RegType to,bool sx);
+	void writem32(Sh4RegType from,Sh4RegType to);
+	void writem64(Sh4RegType from,Sh4RegType to);
+
+	//writemem [const]
+	void writem8(Sh4RegType from,u32 to,bool sx);
+	void writem16(Sh4RegType from,u32  to,bool sx);
+	void writem32(Sh4RegType from,u32  to);
+
+	//writemem base[offset]
+	void writem8(Sh4RegType from,Sh4RegType base,Sh4RegType offset,bool sx);
+	void writem16(Sh4RegType from,Sh4RegType base,Sh4RegType offset,bool sx);
+	void writem32(Sh4RegType from,Sh4RegType base,Sh4RegType offset);
+	void writem64(Sh4RegType from,Sh4RegType base,Sh4RegType offset);
+
+	//writemem base[const]
+	void writem8(Sh4RegType from,Sh4RegType base,u32 offset,bool sx);
+	void writem16(Sh4RegType from,Sh4RegType base,u32 offset,bool sx);
+	void writem32(Sh4RegType from,Sh4RegType base,u32 offset);
+
+	
 	void cmp(Sh4RegType to,Sh4RegType from);
 	void cmp(Sh4RegType to,s8 from);
 	void cmp(Sh4RegType to,u8 from);
@@ -137,6 +183,10 @@ class shil_stream
 	void rol(Sh4RegType to,u8 count);
 	void ror(Sh4RegType to,u8 count);
 
+	//swaps
+	void bswap(Sh4RegType to);
+	void wswap(Sh4RegType to);
+
 	//extends
 	//signed
 	void movsxb(Sh4RegType to,Sh4RegType from);
@@ -144,4 +194,22 @@ class shil_stream
 	//unsigned
 	void movzxb(Sh4RegType to,Sh4RegType from);
 	void movzxw(Sh4RegType to,Sh4RegType from);
+
+	//maths (integer)
+	void adc(Sh4RegType to,Sh4RegType from);
+
+	void add(Sh4RegType to,Sh4RegType from);
+	void add(Sh4RegType to,u32 from);
+	void sub(Sh4RegType to,Sh4RegType from);
+	void sub(Sh4RegType to,u32 from);
+
+	//floating
+	void fadd(Sh4RegType to,Sh4RegType from);
+	void fsub(Sh4RegType to,Sh4RegType from);
+	void fmul(Sh4RegType to,Sh4RegType from);
+	void fmac(Sh4RegType to,Sh4RegType from);
+	void fdiv(Sh4RegType to,Sh4RegType from);
+
+	void fabs(Sh4RegType to);
+	void fneg(Sh4RegType to);
 };

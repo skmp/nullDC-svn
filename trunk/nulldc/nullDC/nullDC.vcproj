@@ -531,11 +531,22 @@
 						Name="rec_v1"
 						>
 						<File
+							RelativePath=".\dc\sh4\rec_v1\rec_v1_basicblock.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\dc\sh4\rec_v1\rec_v1_basicblock.h"
+							>
+						</File>
+						<File
+							RelativePath=".\dc\sh4\rec_v1\rec_v1_recompiler.h"
+							>
+						</File>
+						<File
 							RelativePath=".\dc\sh4\rec_v1\sh4_cpu_shil.cpp"
 							>
 							<FileConfiguration
 								Name="Debug|Win32"
-								ExcludedFromBuild="true"
 								>
 								<Tool
 									Name="VCCLCompilerTool"
@@ -543,7 +554,6 @@
 							</FileConfiguration>
 							<FileConfiguration
 								Name="Release|Win32"
-								ExcludedFromBuild="true"
 								>
 								<Tool
 									Name="VCCLCompilerTool"
@@ -551,7 +561,6 @@
 							</FileConfiguration>
 							<FileConfiguration
 								Name="Release-NoTrace|Win32"
-								ExcludedFromBuild="true"
 								>
 								<Tool
 									Name="VCCLCompilerTool"
@@ -563,7 +572,6 @@
 							>
 							<FileConfiguration
 								Name="Debug|Win32"
-								ExcludedFromBuild="true"
 								>
 								<Tool
 									Name="VCCustomBuildTool"
@@ -571,7 +579,6 @@
 							</FileConfiguration>
 							<FileConfiguration
 								Name="Release|Win32"
-								ExcludedFromBuild="true"
 								>
 								<Tool
 									Name="VCCustomBuildTool"
@@ -579,63 +586,6 @@
 							</FileConfiguration>
 							<FileConfiguration
 								Name="Release-NoTrace|Win32"
-								ExcludedFromBuild="true"
-								>
-								<Tool
-									Name="VCCustomBuildTool"
-								/>
-							</FileConfiguration>
-						</File>
-						<File
-							RelativePath=".\dc\sh4\rec_v1\sh4_fpu_shil.cpp"
-							>
-							<FileConfiguration
-								Name="Debug|Win32"
-								ExcludedFromBuild="true"
-								>
-								<Tool
-									Name="VCCLCompilerTool"
-								/>
-							</FileConfiguration>
-							<FileConfiguration
-								Name="Release|Win32"
-								ExcludedFromBuild="true"
-								>
-								<Tool
-									Name="VCCLCompilerTool"
-								/>
-							</FileConfiguration>
-							<FileConfiguration
-								Name="Release-NoTrace|Win32"
-								ExcludedFromBuild="true"
-								>
-								<Tool
-									Name="VCCLCompilerTool"
-								/>
-							</FileConfiguration>
-						</File>
-						<File
-							RelativePath=".\dc\sh4\rec_v1\sh4_fpu_shil.h"
-							>
-							<FileConfiguration
-								Name="Debug|Win32"
-								ExcludedFromBuild="true"
-								>
-								<Tool
-									Name="VCCustomBuildTool"
-								/>
-							</FileConfiguration>
-							<FileConfiguration
-								Name="Release|Win32"
-								ExcludedFromBuild="true"
-								>
-								<Tool
-									Name="VCCustomBuildTool"
-								/>
-							</FileConfiguration>
-							<FileConfiguration
-								Name="Release-NoTrace|Win32"
-								ExcludedFromBuild="true"
 								>
 								<Tool
 									Name="VCCustomBuildTool"
@@ -652,7 +602,6 @@
 						>
 						<FileConfiguration
 							Name="Debug|Win32"
-							ExcludedFromBuild="true"
 							>
 							<Tool
 								Name="VCCLCompilerTool"
@@ -660,7 +609,6 @@
 						</FileConfiguration>
 						<FileConfiguration
 							Name="Release|Win32"
-							ExcludedFromBuild="true"
 							>
 							<Tool
 								Name="VCCLCompilerTool"
@@ -668,7 +616,6 @@
 						</FileConfiguration>
 						<FileConfiguration
 							Name="Release-NoTrace|Win32"
-							ExcludedFromBuild="true"
 							>
 							<Tool
 								Name="VCCLCompilerTool"
@@ -680,7 +627,6 @@
 						>
 						<FileConfiguration
 							Name="Debug|Win32"
-							ExcludedFromBuild="true"
 							>
 							<Tool
 								Name="VCCustomBuildTool"
@@ -688,7 +634,6 @@
 						</FileConfiguration>
 						<FileConfiguration
 							Name="Release|Win32"
-							ExcludedFromBuild="true"
 							>
 							<Tool
 								Name="VCCustomBuildTool"
@@ -696,7 +641,6 @@
 						</FileConfiguration>
 						<FileConfiguration
 							Name="Release-NoTrace|Win32"
-							ExcludedFromBuild="true"
 							>
 							<Tool
 								Name="VCCustomBuildTool"

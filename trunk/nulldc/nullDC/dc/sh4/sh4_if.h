@@ -90,6 +90,14 @@ enum Sh4RegType
 	sr_T=xmtrx+1,
 	sr_Q=sr_T+1,
 	sr_S=sr_Q+1,
+	sr_M=sr_S+1,
+	
+	dr_0=sr_S+1,
+	dr_15=dr_0+15,
+
+	xd_0=dr_0+1,
+	xd_15=xd_0+15,
+
 
 	NoReg=-1
 };

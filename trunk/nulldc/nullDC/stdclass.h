@@ -549,7 +549,6 @@ struct Fifo_List
 typedef  u32 THREADCALL ThreadEntryFP(void* param);
 typedef void* THREADHANDLE;
 
-
 class cThread
 {
 private:

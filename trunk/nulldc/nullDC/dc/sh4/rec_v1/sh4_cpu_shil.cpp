@@ -32,22 +32,43 @@ shil_stream* ilst;
 #define GetN(str) ((str>>8) & 0xf)
 #define GetM(str) ((str>>4) & 0xf)
 #define GetImm4(str) ((str>>0) & 0xf)
-#define GetImm8(str) ((str>>0) & 0xff)
+#define GetImm8(str) ((u8)(str>>0))
 #define GetSImm8(str) ((s8)((str>>0) & 0xff))
 #define GetImm12(str) ((str>>0) & 0xfff)
 #define GetSImm12(str) (((s16)((GetImm12(str))<<4))>>3)
 
 //#define tmu_underflow  0x0100
-#define iNimp(op,info) rec_iNimp(pc,op,info)
+#define iNimp(info) rec_shil_iNimp(pc,op,info)
 
-#define shil_intepret(str) 
+#define shil_interpret(str) 
 
+Sh4RegType dyna_reg_id_r[16];
+Sh4RegType dyna_reg_id_r_bank[16];
+
+Sh4RegType dyna_reg_id_fr[16];
+Sh4RegType dyna_reg_id_xf[16];
+
+Sh4RegType dyna_reg_id_dr[16];
+Sh4RegType dyna_reg_id_xd[16];
+
+#define r dyna_reg_id_r
+#define r_bank dyna_reg_id_r_bank
+
+#define fr dyna_reg_id_r
+#define xf dyna_reg_id_r_bank
+
+#define dr dyna_reg_id_r
+#define xd dyna_reg_id_r_bank
+
+void rec_shil_iNimp(u32 pc,u32 op ,char * text)
+{
+}
 //************************ TLB/Cache ************************
 //ldtlb                         
 sh4op(i0000_0000_0011_1000)
 {
 	//iNimp(op, "ldtlb");
-	shil_intepret(op);
+	shil_interpret(op);
 } 
 
 
@@ -56,7 +77,7 @@ sh4op(i0000_0000_0011_1000)
 sh4op(i0000_nnnn_1001_0011)
 {
 	//iNimp("ocbi @<REG_N> ");
-	shil_intepret(op);
+	shil_interpret(op);
 } 
 
 
@@ -64,7 +85,7 @@ sh4op(i0000_nnnn_1001_0011)
 sh4op(i0000_nnnn_1010_0011)
 {
 	//iNimp("ocbp @<REG_N> ");
-	shil_intepret(op);
+	shil_interpret(op);
 } 
 
 
@@ -72,13 +93,13 @@ sh4op(i0000_nnnn_1010_0011)
 sh4op(i0000_nnnn_1011_0011)
 {
 	//iNimp("ocbwb @<REG_N> ");
-	shil_intepret(op);
+	shil_interpret(op);
 } 
 
 //pref @<REG_N>                 
 sh4op(i0000_nnnn_1000_0011)
 {
-	shil_intepret(op);
+	shil_interpret(op);
 	/*
 	//iNimp("pref @<REG_N>");
 	u32 n = GetN(op);
@@ -181,7 +202,7 @@ sh4op(i0100_nnnn_0001_0001)
 	//else
 	//	sr.T = 0;
 
-	ilst->cmp(r[n],0);
+	ilst->cmp(r[n],(s8)0);			//singed compare
 	ilst->SaveT(cmd_cond::CC_NL);
 }
 
@@ -195,7 +216,7 @@ sh4op(i0100_nnnn_0001_0101)
 	//else 
 	//	sr.T = 0;
 
-	ilst->cmp(r[n],0);
+	ilst->cmp(r[n],(s8)0);			//singed compare
 	ilst->SaveT(cmd_cond::CC_NLE);
 }
 
@@ -207,7 +228,7 @@ sh4op(i1000_1000_iiii_iiii)
 	//	sr.T =1;
 	//else
 	//	sr.T =0;
-	ilst->cmp(r[n],GetSImm8(op));
+	ilst->cmp(r[0],GetSImm8(op));
 	ilst->SaveT(cmd_cond::CC_E);
 }
 
@@ -285,7 +306,7 @@ sh4op(i0011_nnnn_mmmm_0111)
 //cmp/str <REG_M>,<REG_N>       
 sh4op(i0010_nnnn_mmmm_1100)
 {//TODO : Check This [26/4/05]
-	shil_intepret(i0010_nnnn_mmmm_1100,op);
+	shil_interpret(op);
 	//iNimp("cmp/str <REG_M>,<REG_N>");
 	/*u32 n = GetN(op);
 	u32 m = GetM(op);
@@ -334,7 +355,7 @@ sh4op(i0010_nnnn_mmmm_1000)
 //mulu.w <REG_M>,<REG_N>          
 sh4op(i0010_nnnn_mmmm_1110)
 {
-	shil_intepret(op);
+	shil_interpret(op);
 	//iNimp("mulu.w <REG_M>,<REG_N>");//check  ++
 	/*u32 n = GetN(op);
 	u32 m = GetM(op);
@@ -345,7 +366,7 @@ sh4op(i0010_nnnn_mmmm_1110)
 //muls.w <REG_M>,<REG_N>          
 sh4op(i0010_nnnn_mmmm_1111)
 {
-	shil_intepret(op);
+	shil_interpret(op);
 	//TODO : Check This [26/4/05]
 	//iNimp("muls <REG_M>,<REG_N>");
 	/*
@@ -357,7 +378,7 @@ sh4op(i0010_nnnn_mmmm_1111)
 //dmulu.l <REG_M>,<REG_N>       
 sh4op(i0011_nnnn_mmmm_0101)
 {
-	shil_intepret(op);
+	shil_interpret(op);
 	/*
 	//iNimp("dmulu.l <REG_M>,<REG_N>");
 	u32 n = GetN(op);
@@ -373,7 +394,7 @@ sh4op(i0011_nnnn_mmmm_0101)
 //dmuls.l <REG_M>,<REG_N>       
 sh4op(i0011_nnnn_mmmm_1101)
 {
-	shil_intepret(op);/*
+	shil_interpret(op);/*
 	//iNimp("dmuls.l <REG_M>,<REG_N>");//check ++
 	u32 n = GetN(op);
 	u32 m = GetM(op);
@@ -389,13 +410,13 @@ sh4op(i0011_nnnn_mmmm_1101)
 //mac.w @<REG_M>+,@<REG_N>+     
 sh4op(i0100_nnnn_mmmm_1111)
 {
-	shil_intepret(op);
+	shil_interpret(op);
 	//iNimp(op, "mac.w @<REG_M>+,@<REG_N>+");
 }		
 //mac.l @<REG_M>+,@<REG_N>+     
 sh4op(i0000_nnnn_mmmm_1111)
 {//TODO : !Add this
-	shil_intepret(op);/*
+	shil_interpret(op);/*
 	//iNimp("mac.l @<REG_M>+,@<REG_N>+");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
@@ -422,7 +443,7 @@ sh4op(i0000_nnnn_mmmm_1111)
 //mul.l <REG_M>,<REG_N>         
 sh4op(i0000_nnnn_mmmm_0111)
 {//TODO : CHECK THIS
-	shil_intepret(op);
+	shil_interpret(op);
 	/*
 	u32 n = GetN(op);
 	u32 m = GetM(op);
@@ -436,9 +457,9 @@ sh4op(i0000_0000_0001_1001)
 	//sr.Q = 0;
 	//sr.M = 0;
 	//sr.T = 0;
-	ilst->mov(Sh4RegType::sr_Q,0);
-	ilst->mov(Sh4RegType::sr_M,0);
-	ilst->mov(Sh4RegType::sr_T,0);
+	ilst->mov(sr_Q,0);
+	ilst->mov(sr_M,0);
+	ilst->mov(sr_T,0);
 }
 //div0s <REG_M>,<REG_N>         
 sh4op(i0010_nnnn_mmmm_0111)
@@ -446,11 +467,11 @@ sh4op(i0010_nnnn_mmmm_0111)
 	//iNimp("div0s <REG_M>,<REG_N>");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
-
-	//new implementation
+shil_interpret(op);
+	/*//new implementation
 	sr.Q=r[n]>>31;
 	sr.M=r[m]>>31;
-	sr.T=sr.M^sr.Q;
+	sr.T=sr.M^sr.Q;*/
 	return;
 }
 
@@ -459,7 +480,7 @@ sh4op(i0011_nnnn_mmmm_0100)
 {//ToDo : Check This [26/4/05]
 	u32 n=GetN(op);
 	u32 m=GetM(op);
-	shil_intepret(op);
+	shil_interpret(op);
 /*
 	unsigned long tmp0, tmp2;
 	unsigned char old_q, tmp1;
@@ -532,14 +553,14 @@ sh4op(i0011_nnnn_mmmm_1110)
 // addv <REG_M>,<REG_N>          
 sh4op(i0011_nnnn_mmmm_1111)
 {
-	shil_intepret(op);
+	shil_interpret(op);
 	//iNimp(op, "addv <REG_M>,<REG_N>");
 }
 
 //subc <REG_M>,<REG_N>          
 sh4op(i0011_nnnn_mmmm_1010)
 {
-	shil_intepret(op);
+	shil_interpret(op);
 	/*
 	//iNimp("subc <REG_M>,<REG_N>");
 	u32 n = GetN(op);
@@ -568,7 +589,7 @@ sh4op(i0011_nnnn_mmmm_1010)
 //subv <REG_M>,<REG_N>          
 sh4op(i0011_nnnn_mmmm_1011)
 {
-	shil_intepret(op);
+	shil_interpret(op);
 	//iNimp(op, "subv <REG_M>,<REG_N>");
 }
 //dt <REG_N>                    
@@ -590,7 +611,7 @@ sh4op(i0110_nnnn_mmmm_1010)
 	//iNimp("negc <REG_M>,<REG_N>");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
-	shil_intepret(op);
+	shil_interpret(op);
 	/*u32 temp= (u32)(0 - ((s32)r[m]));
 
 	r[n] = temp - sr.T;
@@ -638,7 +659,7 @@ sh4op(i0100_nnnn_0000_0000)
 
 	//sr.T = r[n] >> 31;
 	//r[n] <<= 1;
-	ilst->shl(r[n]);
+	ilst->shl(r[n],1);
 	ilst->SaveT(SaveCF);
 }
 //shal <REG_N>                  
@@ -651,7 +672,7 @@ sh4op(i0100_nnnn_0010_0000)
 	printf("shal is used , WTF\n");
 	printf("shal is used , WTF\n");
 
-	ilst->shl(r[n]);
+	ilst->shl(r[n],1);
 	ilst->SaveT(SaveCF);
 }
 
@@ -663,7 +684,7 @@ sh4op(i0100_nnnn_0000_0001)
 	//sr.T = r[n] & 0x1;
 	//r[n] >>= 1;
 	
-	ilst->shr(r[n]);
+	ilst->shr(r[n],1);
 	ilst->SaveT(SaveCF);
 }
 
@@ -676,14 +697,14 @@ sh4op(i0100_nnnn_0010_0001)
 
 	//sr.T=r[n] & 1;
 	//r[n]=((s32)r[n])>>1;
-	ilst->sar(r[n]);
+	ilst->sar(r[n],1);
 	ilst->SaveT(SaveCF);
 }
 
 //shad <REG_M>,<REG_N>          
 sh4op(i0100_nnnn_mmmm_1100)
 {
-	shil_intepret(op);
+	shil_interpret(op);
 	/*
 	//iNimp("shad <REG_M>,<REG_N>");
 	u32 n = GetN(op);
@@ -706,7 +727,7 @@ sh4op(i0100_nnnn_mmmm_1100)
 //shld <REG_M>,<REG_N>          
 sh4op(i0100_nnnn_mmmm_1101)
 {
-	shil_intepret(op);
+	shil_interpret(op);
 	/*
 	//iNimp("shld <REG_M>,<REG_N>");
 	//HACK : CHECKME
@@ -861,7 +882,8 @@ sh4op(i0010_nnnn_mmmm_1101)
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 
-	r[n] = ((r[n] >> 16) & 0xFFFF) | ((r[m] << 16) & 0xFFFF0000);
+	shil_interpret(op);
+	//r[n] = ((r[n] >> 16) & 0xFFFF) | ((r[m] << 16) & 0xFFFF0000);
 }
 
 
@@ -869,7 +891,7 @@ sh4op(i0010_nnnn_mmmm_1101)
 //tst.b #<imm>,@(R0,GBR)        
 sh4op(i1100_1100_iiii_iiii)
 {
-	shil_intepret(op);
+	shil_interpret(op);
 	//iNimp(op, "tst.b #<imm>,@(R0,GBR)");
 }
 
@@ -877,7 +899,7 @@ sh4op(i1100_1100_iiii_iiii)
 //and.b #<imm>,@(R0,GBR)        
 sh4op(i1100_1101_iiii_iiii)
 {
-	shil_intepret(op);
+	shil_interpret(op);
 	//iNimp(op, "and.b #<imm>,@(R0,GBR)");
 }
 
@@ -885,7 +907,7 @@ sh4op(i1100_1101_iiii_iiii)
 //xor.b #<imm>,@(R0,GBR)        
 sh4op(i1100_1110_iiii_iiii)
 {
-	shil_intepret(op);
+	shil_interpret(op);
 	//iNimp(op, "xor.b #<imm>,@(R0,GBR)");
 }
 
@@ -893,7 +915,7 @@ sh4op(i1100_1110_iiii_iiii)
 //or.b #<imm>,@(R0,GBR)         
 sh4op(i1100_1111_iiii_iiii)
 {
-	shil_intepret(op);
+	shil_interpret(op);
 	/*
 	//iNimp(op, "or.b #<imm>,@(R0,GBR)");
 	u8 temp = (u8)ReadMem8(gbr +r[0]);
@@ -904,7 +926,7 @@ sh4op(i1100_1111_iiii_iiii)
 //tas.b @<REG_N>                
 sh4op(i0100_nnnn_0001_1011)
 {
-	shil_intepret(op);
+	shil_interpret(op);
 	/*
 	//iNimp("tas.b @<REG_N>");
 	u32 n = GetN(op);
@@ -929,7 +951,8 @@ sh4op(i0100_nnnn_0001_1011)
 //Not implt
 sh4op(iNotImplemented)
 {
-	cpu_iNimp(op,"Unkown opcode");
+	shil_interpret(op);
+	//cpu_iNimp(op,"Unkown opcode");
 	//em.status = EMU_HALTED;
 	//	StopThread();
 	//recSh4Stop();
@@ -945,3 +968,1033 @@ sh4op(gdrom_hle_op)
 	EMUERROR("GDROM HLE NOT SUPPORTED");
 #endif
 }
+
+
+
+//all fpu emulation ops :)
+
+//fadd <FREG_M>,<FREG_N>
+sh4op(i1111_nnnn_mmmm_0000)
+{//TODO : CHECK THIS PR FP
+	if (fpscr.PR == 0)
+	{
+		u32 n = GetN(op);
+		u32 m = GetM(op);
+		ilst->fadd(fr[n],fr[m]);
+		//fr[n] += fr[m];
+		//CHECK_FPU_32(fr[n]);
+	}
+	else
+	{
+		u32 n = (op >> 9) & 0x07;
+		u32 m = (op >> 5) & 0x07;
+		
+		ilst->fadd(dr[n],dr[m]);
+
+		//START64();
+		//double drn=GetDR(n), drm=GetDR(m);
+		//drn += drm;
+		//CHECK_FPU_64(drn);
+		//SetDR(n,drn);
+		//END64();
+	}
+}
+
+//fsub <FREG_M>,<FREG_N>   
+sh4op(i1111_nnnn_mmmm_0001)
+{
+	if (fpscr.PR == 0)
+	{
+		u32 n = GetN(op);
+		u32 m = GetM(op);
+
+		ilst->fsub(fr[n],fr[m]);
+		//fr[n] -= fr[m];
+		//CHECK_FPU_32(fr[n]);
+	}
+	else
+	{
+		u32 n = (op >> 9) & 0x07;
+		u32 m = (op >> 5) & 0x07;
+
+		ilst->fsub(dr[n],dr[m]);
+		//START64();
+		//double drn=GetDR(n), drm=GetDR(m);
+		//drn-=drm;
+		//dr[n] -= dr[m];
+		//SetDR(n,drn);
+		//END64();
+	}
+}																								
+//fmul <FREG_M>,<FREG_N>   
+sh4op(i1111_nnnn_mmmm_0010)
+{
+	if (fpscr.PR == 0)
+	{
+		u32 n = GetN(op);
+		u32 m = GetM(op);
+		//fr[n] *= fr[m];
+		//CHECK_FPU_32(fr[n]);
+		ilst->fmul(fr[n],fr[m]);
+	}
+	else
+	{
+		u32 n = (op >> 9) & 0x07;
+		u32 m = (op >> 5) & 0x07;
+		//START64();
+		//double drn=GetDR(n), drm=GetDR(m);
+		//drn*=drm;
+		//dr[n] *= dr[m];
+		//SetDR(n,drn);
+		//END64();
+		ilst->fmul(dr[n],dr[m]);
+	}
+}
+//fdiv <FREG_M>,<FREG_N>   
+sh4op(i1111_nnnn_mmmm_0011)
+{
+	if (fpscr.PR == 0)
+	{
+		u32 n = GetN(op);
+		u32 m = GetM(op);
+		ilst->fdiv(fr[n],fr[m]);
+		//if(0==fr[m])
+		//printf("\n\n\tDIV by ZERO!\n\n"); // ifdef _DEBUG ?
+		//else
+		//fr[n] /= fr[m];
+		//fr[n] /= fr[m];
+		//CHECK_FPU_32(fr[n]);
+	}
+	else
+	{
+		u32 n = (op >> 9) & 0x07;
+		u32 m = (op >> 5) & 0x07;
+		//START64();
+		//double drn=GetDR(n), drm=GetDR(m);
+		//drn/=drm;
+		//SetDR(n,drn);
+		//END64();
+		ilst->fdiv(dr[n],dr[m]);
+	}
+}
+//fcmp/eq <FREG_M>,<FREG_N>
+sh4op(i1111_nnnn_mmmm_0100)
+{
+	if (fpscr.PR == 0)
+	{
+		u32 n = GetN(op);
+		u32 m = GetM(op);
+
+		//sr.T = (fr[m] == fr[n]) ? 1 : 0;
+		ilst->cmp(fr[n],fr[m]);
+	}
+	else
+	{
+		u32 n = (op >> 9) & 0x07;
+		u32 m = (op >> 5) & 0x07;
+		ilst->cmp(dr[n],dr[m]);
+		//START64();
+		//sr.T = (GetDR(m) == GetDR(n)) ? 1 : 0;
+		//END64();	
+	}
+}
+//fcmp/gt <FREG_M>,<FREG_N>
+sh4op(i1111_nnnn_mmmm_0101)
+{
+	if (fpscr.PR == 0)
+	{
+		u32 n = GetN(op);
+		u32 m = GetM(op);
+
+		/*if (fr[n] > fr[m])
+			sr.T = 1;
+		else
+			sr.T = 0;*/
+		ilst->cmp(fr[n],fr[m]);
+	}
+	else
+	{
+		u32 n = (op >> 9) & 0x07;
+		u32 m = (op >> 5) & 0x07;
+		
+		/*START64();
+		if (GetDR(n) > GetDR(m))
+			sr.T = 1;
+		else
+			sr.T = 0;
+		END64();*/
+
+		ilst->cmp(dr[n],dr[m]);
+	}
+}
+//fmov.s @(R0,<REG_M>),<FREG_N>
+sh4op(i1111_nnnn_mmmm_0110)
+{
+	if (fpscr.SZ == 0)
+	{
+		u32 n = GetN(op);
+		u32 m = GetM(op);
+
+		//fr_hex[n] = ReadMem32(r[m] + r[0]);
+		ilst->readm32(fr[n],r[0],r[m]);
+	}
+	else
+	{
+		u32 n = (op >> 8) & 0x0E;
+		u32 m = GetM(op);
+		if (((op >> 8) & 0x1) == 0)
+		{
+			//fr_hex[n] = ReadMem32(r[m] + r[0]);
+			//fr_hex[n + 1] = ReadMem32(r[m] + r[0] + 4);
+			ilst->readm64(dr[n>>1],r[0],r[m]);
+		}
+		else
+		{
+			//xf_hex[n] = ReadMem32(r[m] + r[0]);
+			//xf_hex[n + 1] = ReadMem32(r[m] + r[0] + 4);
+			ilst->readm64(xd[n>>1],r[0],r[m]);
+		}
+	}
+}
+
+
+//fmov.s <FREG_M>,@(R0,<REG_N>)
+sh4op(i1111_nnnn_mmmm_0111)
+{
+	if (fpscr.SZ == 0)
+	{
+		u32 n = GetN(op);
+		u32 m = GetM(op);
+
+		//WriteMem32(r[0] + r[n], fr_hex[m]);
+		ilst->writem32(fr[m],r[0],r[n]);
+	}
+	else
+	{
+		u32 n = GetN(op);
+		u32 m = (op >> 4) & 0x0E;
+		if (((op >> 4) & 0x1) == 0)
+		{
+			//WriteMem32(r[n] + r[0], fr_hex[m]);
+			//WriteMem32(r[n] + r[0] + 4, fr_hex[m + 1]);
+			ilst->writem64(dr[m>>1],r[0],r[n]);
+		}
+		else
+		{
+			//WriteMem32(r[n] + r[0], xf_hex[m]);
+			//WriteMem32(r[n] + r[0] + 4, xf_hex[m + 1]);
+			ilst->writem64(xd[m>>1],r[0],r[n]);
+		}
+	}
+}
+
+
+//fmov.s @<REG_M>,<FREG_N> 
+sh4op(i1111_nnnn_mmmm_1000)
+{
+	if (fpscr.SZ == 0)
+	{
+		u32 n = GetN(op);
+		u32 m = GetM(op);
+		//fr_hex[n] = ReadMem32(r[m]);
+		ilst->readm32(fr[n],r[m]);
+	}
+	else
+	{
+		u32 n = (op >> 8) & 0x0E;
+		u32 m = GetM(op);
+		if (((op >> 8) & 0x1) == 0)
+		{
+			//fr_hex[n] = ReadMem32(r[m]);
+			//fr_hex[n + 1] = ReadMem32(r[m] + 4);
+			ilst->readm64(dr[n>>1],r[m]);
+		}
+		else
+		{
+			//xf_hex[n] = ReadMem32(r[m]);
+			//xf_hex[n + 1] = ReadMem32(r[m] + 4);
+			ilst->readm64(xd[n>>1],r[m]);
+		}
+	}
+}
+
+
+//fmov.s @<REG_M>+,<FREG_N>
+sh4op(i1111_nnnn_mmmm_1001)
+{
+	if (fpscr.SZ == 0)
+	{
+		u32 n = GetN(op);
+		u32 m = GetM(op);
+
+		//fr_hex[n] = ReadMem32(r[m]);
+		ilst->readm32(fr[n],r[m]);
+		ilst->add(r[m],4);
+		//r[m] += 4;
+	}
+	else 
+	{
+		u32 n = (op >> 8) & 0x0E;
+		u32 m = GetM(op);
+		if (((op >> 8) & 0x1) == 0)
+		{
+			//fr_hex[n] = ReadMem32(r[m]);
+			//fr_hex[n + 1] = ReadMem32(r[m]+ 4);
+			ilst->readm64(dr[n>>1],r[m]);
+		}
+		else
+		{
+			//xf_hex[n] = ReadMem32(r[m] );
+			//xf_hex[n + 1] = ReadMem32(r[m]+ 4);
+			ilst->readm64(xd[n>>1],r[m]);
+		}
+		ilst->add(r[m],8);
+		//r[m] += 8;
+	}
+}
+
+
+//fmov.s <FREG_M>,@<REG_N>
+sh4op(i1111_nnnn_mmmm_1010)
+{
+	if (fpscr.SZ == 0)
+	{
+		u32 n = GetN(op);
+		u32 m = GetM(op);
+		//WriteMem32(r[n], fr_hex[m]);
+		ilst->writem32(fr[m],r[n]);
+	}
+	else
+	{
+		u32 n = GetN(op);
+		u32 m = (op >> 4) & 0x0E;
+
+		if (((op >> 4) & 0x1) == 0)
+		{
+			//WriteMem32(r[n], fr_hex[m]);
+			//WriteMem32(r[n] + 4, fr_hex[m + 1]);
+			ilst->writem64(dr[m>>1],r[n]);
+		}
+		else
+		{
+			//WriteMem32(r[n], xf_hex[m]);
+			//WriteMem32(r[n] + 4, xf_hex[m + 1]);
+			ilst->writem64(xd[m>>1],r[n]);
+		}
+		
+	}
+}
+
+//fmov.s <FREG_M>,@-<REG_N>
+sh4op(i1111_nnnn_mmmm_1011)
+{
+	if (fpscr.SZ == 0)
+	{
+		//iNimp("fmov.s <FREG_M>,@-<REG_N>");
+		u32 n = GetN(op);
+		u32 m = GetM(op);
+
+		//r[n] -= 4;
+		ilst->sub(r[m],4);
+		ilst->writem32(fr[m],r[n]);
+		//WriteMem32(r[n], fr_hex[m]);
+	}
+	else
+	{
+
+		u32 n = GetN(op);
+		u32 m = (op >> 4) & 0x0E;
+
+		//r[n] -= 8;
+		ilst->sub(r[m],8);
+		if (((op >> 4) & 0x1) == 0)
+		{
+			//WriteMem32(r[n] , fr_hex[m]);
+			//WriteMem32(r[n]+ 4, fr_hex[m + 1]);
+			ilst->writem64(dr[m>>1],r[n]);
+		}
+		else
+		{
+			//WriteMem32(r[n] , xf_hex[m]);
+			//WriteMem32(r[n]+ 4, xf_hex[m + 1]);
+			ilst->writem64(xd[m>>1],r[n]);
+		}
+	}
+}
+
+
+//fmov <FREG_M>,<FREG_N>   
+sh4op(i1111_nnnn_mmmm_1100)
+{//TODO : checkthis
+	if (fpscr.SZ == 0)
+	{
+		u32 n = GetN(op);
+		u32 m = GetM(op);
+		//fr[n] = fr[m];
+		ilst->mov(fr[n],fr[m]);
+	}
+	else
+	{
+		u32 n = (op >> 9) & 0x7;
+		u32 m = (op >> 5) & 0x7;
+
+		switch ((op >> 4) & 0x11)
+		{
+			case 0x00:
+				//dr[n] = dr[m];
+				//fr_hex[n] = fr_hex[m];
+				//fr_hex[n + 1] = fr_hex[m + 1];
+				ilst->mov(dr[n],dr[m]);
+				break;
+			case 0x01:
+				//dr[n] = xf[m];
+				//fr_hex[n] = xf_hex[m];
+				//fr_hex[n + 1] = xf_hex[m + 1];
+				ilst->mov(dr[n],xf[m]);
+				break;
+			case 0x10:
+				//xf[n] = dr[m];
+				//xf_hex[n] = fr_hex[m];
+				//xf_hex[n + 1] = fr_hex[m + 1];
+				ilst->mov(xf[n],dr[m]);
+				break;
+			case 0x11:
+				//xf[n] = xf[m];
+				//xf_hex[n] = xf_hex[m];
+				//xf_hex[n + 1] = xf_hex[m + 1];
+				ilst->mov(xf[n],xf[m]);
+				break;
+		}
+	}
+}
+
+
+//fabs <FREG_N>            
+sh4op(i1111_nnnn_0101_1101)
+{
+	int n=GetN(op);
+	
+	if (fpscr.PR ==0)
+	{
+		//fr_hex[n]&=0x7FFFFFFF;
+		ilst->fabs(fr[n]);
+	}
+	else
+	{
+		//fr_hex[(n&0xE)+1]&=0x7FFFFFFF;
+		ilst->fabs(dr[n>>1]);
+	}
+
+}
+
+//FSCA FPUL, DRn//F0FD//1111_nnn0_1111_1101
+sh4op(i1111_nnn0_1111_1101)
+{
+//#define MY_PI2 6.283185307179586f
+//#define MY_ANG_RAD(k)  ((k) * MY_PI2 / 65536.0f)
+	 /*
+	int n=GetN(op) & 0xE;
+	 
+	double real_pi=(((double)(s32)fpul)/65536)*(2*pi);
+	 
+	if (fpscr.PR==0)
+	{
+	fr[n | 0] = (float)sin(real_pi);
+	fr[n | 1] = (float)cos(real_pi);
+	
+	CHECK_FPU_32(fr[n]);
+	CHECK_FPU_32(fr[n+1]);
+	}
+	else
+	iNimp("FSCA : Double precision mode");
+	*/
+
+	shil_interpret(op);
+}
+
+//FSRRA //1111_nnnn_0111_1101
+sh4op(i1111_nnnn_0111_1101)
+{
+	/*
+	// What about double precision?
+	u32 n = GetN(op);
+	if (fpscr.PR==0)
+	{
+		fr[n] = (float)(1/sqrt((double)fr[n]));
+		CHECK_FPU_32(fr[n]);
+	}
+	else
+		iNimp("FSRRA : Double precision mode");		
+*/
+	shil_interpret(op);
+}
+
+//fcnvds <DR_N>,FPUL       
+sh4op(i1111_nnnn_1011_1101)
+{
+	/*if (fpscr.PR == 1)
+	{
+		START64();
+		//iNimp("fcnvds <DR_N>,FPUL");
+		u32 n = (op >> 9) & 0x07;
+		u32*p=&fpul;
+		*((float*)p) = (float)GetDR(n);
+		//fpul= (int)GetDR(n);
+		END64();
+	}
+	else
+	{
+		iNimp("fcnvds <DR_N>,FPUL,m=0");
+	}*/
+
+	shil_interpret(op);
+}
+
+
+//fcnvsd FPUL,<DR_N>       
+sh4op(i1111_nnnn_1010_1101)
+{
+	/*if (fpscr.PR == 1)
+	{
+		START64();
+		u32 n = (op >> 9) & 0x07;
+		u32* p = &fpul;
+		SetDR(n,(double)*((float*)p));
+		//SetDR(n,(double)fpul);
+		END64();
+	}
+	else
+	{
+		iNimp("fcnvsd FPUL,<DR_N>,m=0");
+	}*/
+	shil_interpret(op);
+}
+ 
+//fipr <FV_M>,<FV_N>            
+sh4op(i1111_nnmm_1110_1101)
+{
+//	iNimp("fipr <FV_M>,<FV_N>");
+ 
+
+	/*int n=GetN(op)&0xC;
+	int m=(GetN(op)&0x3)<<2;
+	if(fpscr.PR ==0)
+	{
+		float idp;
+
+		idp=fr[n+0]*fr[m+0];
+		idp+=fr[n+1]*fr[m+1];
+		idp+=fr[n+2]*fr[m+2];
+		idp+=fr[n+3]*fr[m+3];
+
+		CHECK_FPU_32(idp);
+		fr[n+3]=idp;
+	}
+	else
+		printf("FIPR Precision=1");*/
+	shil_interpret(op);
+
+	/*
+	u32 n = (op >> 8) & 0xC;
+	u32 m = ((op >> 8) & 0x3)<<2;
+ 
+	fr[n+3] =	fr[m+0] * fr[n+0] +
+				fr[m+1] * fr[n+1] +
+				fr[m+2] * fr[n+2] +
+				fr[m+3] * fr[n+3];
+
+ 
+	/*
+	union {
+		double d;
+		int l[2];
+	} mlt[4];
+	float dstf;
+	int i;
+ 
+ 
+		for(i=0;i<4;i++) {
+ 
+			mlt[i].d = fr[m+i];
+			mlt[i].d *= fr[n+i];
+			// The multiplication array emulation is necessary for obtaining the
+			//same result as that of the FIPR hardware, because the hardware cut
+			//lower 18 bits of the array output before carry propagate addition.
+			//The following flow is different from the hardware algorism but simple. //
+			mlt[i].l[1] &= 0xff000000;
+			mlt[i].l[1] |= 0x00800000;
+		}
+		mlt[0].d += mlt[1].d + mlt[2].d + mlt[3].d;
+		mlt[0].l[1] &= 0xff800000;
+		dstf =(float) mlt[0].d;
+	//	fp_set_I();*/
+ 
+ 
+ 
+}
+
+
+//fldi0 <FREG_N>           
+sh4op(i1111_nnnn_1000_1101)
+{
+	/*
+	if (fpscr.PR==0)
+	{
+		//iNimp("fldi0 <FREG_N>");
+		u32 n = GetN(op);
+
+		fr[n] = 0.0f;
+	}
+	else
+	{
+		iNimp("fldi0 <Dreg_N>");
+	}*/
+
+	shil_interpret(op);
+}
+
+
+//fldi1 <FREG_N>           
+sh4op(i1111_nnnn_1001_1101)
+{
+	/*
+	if (fpscr.PR==0)
+	{
+		//iNimp("fldi1 <FREG_N>");
+		u32 n = GetN(op);
+
+		fr[n] = 1.0f;
+	}
+	else
+	{
+		iNimp("fldi1 <Dreg_N>");
+	}*/
+
+	shil_interpret(op);
+}
+
+
+//flds <FREG_N>,FPUL       
+sh4op(i1111_nnnn_0001_1101)
+{
+	//iNimp("flds <FREG_N>,FPUL");
+	if (fpscr.PR == 0)
+	{
+		u32 n = GetN(op);
+
+		//fpul = fr_hex[n];
+		ilst->mov(Sh4RegType::reg_fpul,fr[n]);
+	}
+	else
+	{
+		iNimp("flds <DREG_N>,FPUL");
+	}
+}
+
+
+//float FPUL,<FREG_N>      
+sh4op(i1111_nnnn_0010_1101)
+{//TODO : CHECK THIS (FP)
+	/*if (fpscr.PR == 0)
+	{
+		u32 n = GetN(op);
+		fr[n] = (float)(int)fpul;
+	}
+	else
+	{
+		START64();
+		u32 n = (op >> 9) & 0x07;
+		SetDR(n, (double)(int)fpul);
+		//iNimp("float FPUL,<DREG_N>");
+		END64();
+	}*/
+
+	shil_interpret(op);
+}
+
+
+//fneg <FREG_N>            
+sh4op(i1111_nnnn_0100_1101)
+{
+	u32 n = GetN(op);
+
+	if (fpscr.PR ==0)
+	{
+		//fr_hex[n]^=0x80000000;
+		ilst->fneg(fr[n]);
+	}
+	else
+	{
+		ilst->fneg(dr[n>>1]);
+		//fr_hex[(n&0xE)+1]^=0x80000000;
+	}
+}
+
+
+//frchg                    
+sh4op(i1111_1011_1111_1101)
+{
+	//iNimp("frchg");
+ 	//fpscr.FR = 1 - fpscr.FR;
+
+	//UpdateFPSCR();
+	shil_interpret(op);
+}
+
+
+//fschg                    
+sh4op(i1111_0011_1111_1101)
+{
+	//iNimp("fschg");
+	//fpscr.SZ = 1 - fpscr.SZ;
+	//UpdateFPSCR();//*FixME* prob not needed
+	shil_interpret(op);
+}
+
+//fsqrt <FREG_N>                
+sh4op(i1111_nnnn_0110_1101)
+{
+	/*if (fpscr.PR == 0)
+	{
+		//iNimp("fsqrt <FREG_N>");
+		u32 n = GetN(op);
+
+		fr[n] = (float)sqrt((double)fr[n]);
+		CHECK_FPU_32(fr[n]);
+	}
+	else
+	{
+		//Operation _can_ be done on sh4
+		iNimp("fsqrt <DREG_N>");
+	}*/
+
+	shil_interpret(op);
+}
+
+
+//ftrc <FREG_N>, FPUL      
+sh4op(i1111_nnnn_0011_1101)
+{
+	/*
+	if (fpscr.PR == 0)
+	{
+		u32 n = GetN(op);
+		fpul = (u32)(s32)fr[n];
+	}
+	else
+	{
+		START64();
+		u32 n = (op >> 9) & 0x07;
+		fpul = (u32)(s32)GetDR(n);
+		END64();
+	}*/
+
+	shil_interpret(op);
+}
+
+
+//fsts FPUL,<FREG_N>       
+sh4op(i1111_nnnn_0000_1101)
+{
+	//iNimp("fsts FPUL,<FREG_N>");
+	if (fpscr.PR == 0)
+	{
+		u32 n = GetN(op);
+		//fr_hex[n] = fpul;
+		ilst->mov(fr[n],fpul);
+	}
+	else
+	{
+		iNimp("fsts FPUL,<DREG_N>");
+	}
+}
+
+
+//fmac <FREG_0>,<FREG_M>,<FREG_N> 
+sh4op(i1111_nnnn_mmmm_1110)
+{
+	//iNimp("fmac <FREG_0>,<FREG_M>,<FREG_N>");
+	if (fpscr.PR==0)
+	{
+		u32 n = GetN(op);
+		u32 m = GetM(op);
+
+		//fr[n] += fr[0] * fr[m];
+		ilst->fmac(fr[n],fr[m]);
+		//CHECK_FPU_32(fr[n]);
+	}
+	else
+	{
+		iNimp("fmac <DREG_0>,<DREG_M>,<DREG_N>");
+	}
+}
+
+
+//ftrv xmtrx,<FV_N>       
+sh4op(i1111_nn01_1111_1101)
+{
+	shil_interpret(op);
+	//iNimp("ftrv xmtrx,<FV_N>");
+
+
+
+	/*
+	XF[0] XF[4] XF[8] XF[12]	FR[n]			FR[n]
+	XF[1] XF[5] XF[9] XF[13]  *	FR[n+1]		->	FR[n+1]
+	XF[2] XF[6] XF[10] XF[14]	FR[n+2]			FR[n+2]
+	XF[3] XF[7] XF[11] XF[15]	FR[n+3]			FR[n+3]
+	fucking *nih* maths ....*/
+/*
+	u32 n=GetN(op)&0xC;
+	
+	if (fpscr.PR==0)
+	{
+		float tmp[4];
+		//double tmp[4];
+		for (u8 i=0;i<4;i++)
+			tmp[i]=ftrv_dot_prod_1(i,(u8)n);
+		for (u8 i=0;i<4;i++)
+			fr[n+i]=(float)tmp[i];
+	}
+	else
+		iNimp("FTRV in dp mode");
+
+
+
+	/* matrix:
+											XF0		XF4		XF8		XF12
+											XF1		XF5		XF9		XF13
+											XF2		XF6		XF10	XF14
+											XF3		XF7		XF11	XF15 */
+	/*
+	float v1, v2, v3, v4;
+	
+	v1 = xf[0] * fr[ n + 0] +
+		xf[4] * fr[n + 1] +
+		xf[8] * fr[n + 2] +
+		xf[12] * fr [n + 3];
+	
+	v2 = xf[1] * fr[ n + 0] +
+		xf[5] * fr[ n + 1] +
+		xf[9] * fr[ n + 2] +
+		xf[13] * fr[ n + 3];
+	
+	v3 = xf[2] * fr[ n + 0] +
+		xf[6] * fr[n + 1] +
+		xf[10] * fr[ n + 2] +
+		xf[14] * fr[ n + 3];
+
+	v4 = xf[3] * fr[ n + 0] +
+		xf[7] * fr[n + 1] +
+		xf[11] * fr[ n + 2]+
+		xf[15] *
+		fr[ n + 3];
+
+	CHECK_FPU_32(v1);
+	CHECK_FPU_32(v2);
+	CHECK_FPU_32(v3);
+	CHECK_FPU_32(v4);
+
+	fr[n + 0] = v1;
+	fr[n + 1] = v2;
+	fr[n + 2] = v3;
+	fr[n + 3] = v4;*/
+}																				  
+
+
+#define notshit
+#ifdef notshit
+//ok , all the opcodes to here are hard writen for the rec
+//time for the compiler fun 
+//>:D
+
+#undef r
+#undef r_bank
+
+struct shil_RecRegType
+{
+	//SUB
+	void operator-=(const u32 constv)
+	{
+
+	};
+	void operator-=(const shil_RecRegType& rhs)
+    {
+       	
+    }
+
+	void operator--(int wtf)
+	{
+		(*this)-=1;
+	}
+	//ADD
+	void operator+=(const u32 constv)
+	{
+		
+	};
+	void operator+=(const shil_RecRegType& rhs)
+    {
+       
+    }
+	void operator++(int wtf)
+	{
+		(*this)+=1;
+	}
+	//MOVS
+	void operator=(const u32 constv)
+    {
+		 
+    }
+	void operator=(const s32 constv)
+    {
+		(*this)=(u32)constv;
+    }
+	void operator=(const shil_RecRegType& rhs)
+    {
+		
+    }
+	//AND
+	void operator&=(const u32 constv)
+	{
+		
+	};
+	void operator&=(const shil_RecRegType& reg)
+	{
+		
+	};
+	//OR
+	void operator|=(const u32 constv)
+	{
+	
+	};
+	void operator|=(const shil_RecRegType& reg)
+	{
+		
+	};
+	//XOR
+	void operator^=(const u32 constv)
+	{
+		
+	};
+	void operator^=(const shil_RecRegType& reg)
+	{
+		
+	};
+	//SHIFT RIGHT
+	void operator>>=(const u32 constv)
+	{
+		
+	};
+
+	//SHIFT LEFT
+	void operator<<=(const u32 constv)
+	{
+
+	};
+};
+
+
+//Read Mem macros
+#define ReadMemU32(to,addr)					ReadMemRec(to,addr,0,4)//to=ReadMem32(addr)
+#define ReadMemS16(to,addr)					ReadMemRecS(to,addr,0,2)// to=(u32)(s32)(s16)ReadMem16(addr)
+#define ReadMemS8(to,addr)					ReadMemRecS(to,addr,0,1)//to=(u32)(s32)(s8)ReadMem8(addr)
+
+//Base,offset format
+#define ReadMemBOU32(to,addr,offset)		ReadMemRec(to,addr,offset,4)//ReadMemU32(to,addr+offset)
+#define ReadMemBOS16(to,addr,offset)		ReadMemRecS(to,addr,offset,2)//ReadMemS16(to,addr+offset)
+#define ReadMemBOS8(to,addr,offset)			ReadMemRecS(to,addr,offset,1)//ReadMemS8(to,addr+offset)
+
+//Write Mem Macros
+#define WriteMemU32(addr,data)				WriteMemRec(addr,0,data,4)//WriteMem32(addr,(u32)data)
+#define WriteMemU16(addr,data)				WriteMemRec(addr,0,data,2)//WriteMem16(addr,(u16)data)
+#define WriteMemU8(addr,data)				WriteMemRec(addr,0,data,1)//WriteMem8(addr,(u8)data)
+
+//Base,offset format
+#define WriteMemBOU32(addr,offset,data)		WriteMemRec(addr,offset,data,4)//WriteMemU32(addr+offset,data)
+#define WriteMemBOU16(addr,offset,data)		WriteMemRec(addr,offset,data,2)//WriteMemU16(addr+offset,data)
+#define WriteMemBOU8(addr,offset,data)		WriteMemRec(addr,offset,data,1)//WriteMemU8(addr+offset,data)
+
+void ReadMemRec(shil_RecRegType &to,u32 addr,u32 offset,u32 sz)
+{
+}
+
+void ReadMemRec(shil_RecRegType &to,shil_RecRegType& addr,u32 offset,u32 sz)
+{
+
+}
+
+
+void ReadMemRec(shil_RecRegType &to,shil_RecRegType& addr,shil_RecRegType& offset,u32 sz)
+{
+	
+}
+
+//signed
+void ReadMemRecS(shil_RecRegType &to,u32 addr,u32 offset,u32 sz)
+{
+	
+}
+
+void ReadMemRecS(shil_RecRegType &to,shil_RecRegType& addr,u32 offset,u32 sz)
+{
+	
+}
+
+
+void ReadMemRecS(shil_RecRegType &to,shil_RecRegType& addr,shil_RecRegType& offset,u32 sz)
+{
+	
+}
+//WriteMem(u32 addr,u32 data,u32 sz)
+void WriteMemRec(u32 addr,u32 offset,shil_RecRegType &data,u32 sz)
+{
+	
+}
+void WriteMemRec(shil_RecRegType& addr,u32 offset,shil_RecRegType &data,u32 sz)
+{
+	
+}
+void WriteMemRec(shil_RecRegType& addr,shil_RecRegType& offset,shil_RecRegType &data,u32 sz)
+{
+	
+}
+
+
+shil_RecRegType shil_rec_r[16];
+shil_RecRegType shil_rec_r_bank[8];
+
+shil_RecRegType shil_rec_gbr,shil_rec_ssr,shil_rec_spc,shil_rec_sgr,shil_rec_dbr,shil_rec_vbr;
+shil_RecRegType shil_rec_mach,shil_rec_macl,shil_rec_pr,shil_rec_fpul;
+
+
+
+//rename shit
+
+#define UpdateFPSCR rec_UpdateFPSCR
+#define UpdateSR rec_UpdateSR
+
+#define r		shil_rec_r
+#define r_bank	shil_rec_r_bank
+#define gbr		shil_rec_gbr
+#define ssr		shil_rec_ssr
+#define spc		shil_rec_spc
+#define sgr		shil_rec_sgr
+#define dbr		shil_rec_dbr
+#define vbr		shil_rec_vbr
+#define mach	shil_rec_mach
+#define macl	shil_rec_macl
+
+#define pr		shil_rec_pr
+#define fpul	shil_rec_fpul
+
+//todo : move em
+#define sr		a_not_defined_name_has_to_be_rec_sr
+#define fpscr	a_not_defined_name_has_to_be_rec_fpscr
+
+#define iNimp(op,info) rec_shil_iNimp(pc,op,info)
+
+#include "dc\sh4\sh4_cpu_arith.h"
+#include "dc\sh4\sh4_cpu_branch.h"
+#include "dc\sh4\sh4_cpu_logic.h"
+#include "dc\sh4\sh4_cpu_movs.h"
+#endif

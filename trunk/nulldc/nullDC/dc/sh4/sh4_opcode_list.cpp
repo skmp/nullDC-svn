@@ -610,7 +610,7 @@ sh4_opcodelistentry opcodes[]=
 {
 	
 	//CPU
-	{rec_i0000_nnnn_0000_0010	,i0000_nnnn_0000_0010	,Mask_n		,0x0002	,Normal				,OpDissCFS,"stc SR,<REG_N>"},	//stc SR,<REG_N>                
+	{rec_cpu_opcode_nimp	,i0000_nnnn_0000_0010	,Mask_n		,0x0002	,Normal				,OpDissCFS,"stc SR,<REG_N>"},	//stc SR,<REG_N>                
 	{rec_i0000_nnnn_0001_0010	,i0000_nnnn_0001_0010	,Mask_n		,0x0012	,Normal				,OpDissCFS,"stc GBR,<REG_N>"},	//stc GBR,<REG_N>               
 	{rec_i0000_nnnn_0010_0010	,i0000_nnnn_0010_0010	,Mask_n		,0x0022	,Normal				,OpDissCFS,"stc VBR,<REG_N>"},	//stc VBR,<REG_N>               
 	{rec_i0000_nnnn_0011_0010	,i0000_nnnn_0011_0010	,Mask_n		,0x0032	,Normal				,OpDissCFS,"stc SSR,<REG_N>"},	//stc SSR,<REG_N>               
@@ -637,7 +637,7 @@ sh4_opcodelistentry opcodes[]=
 	{rec_cpu_opcode_nimp		,i0000_nnnn_0010_1001	,Mask_n		,0x0029	,Normal				,OpDissCFS,"movt <REG_N>"},	//movt <REG_N>                  
 	{rec_i0000_0000_0000_1001	,i0000_0000_0000_1001	,Mask_none	,0x0009	,NoOperation		,OpDissCFS,"nop"},	//nop                           
 	{rec_i0000_nnnn_0101_1010	,i0000_nnnn_0101_1010	,Mask_n		,0x005A	,Normal				,OpDissCFS,"sts FPUL,<REG_N>"},	//sts FPUL,<REG_N>
-	{rec_i0000_nnnn_0110_1010	,i0000_nnnn_0110_1010	,Mask_n		,0x006A	,Normal				,OpDissCFS,"sts FPSCR,<REG_N>"},//sts FPSCR,<REG_N>             
+	{rec_cpu_opcode_nimp	,i0000_nnnn_0110_1010	,Mask_n		,0x006A	,Normal				,OpDissCFS,"sts FPSCR,<REG_N>"},//sts FPSCR,<REG_N>             
 	{rec_i0000_nnnn_1111_1010	,i0000_nnnn_1111_1010	,Mask_n		,0x00FA	,Normal				,OpDissCFS,"stc DBR,<REG_N>"},	//stc DBR,<REG_N>             
 	{rec_i0000_nnnn_0000_1010	,i0000_nnnn_0000_1010	,Mask_n		,0x000A	,Normal				,OpDissCFS,"sts MACH,<REG_N>"},	//sts MACH,<REG_N>              
 	{rec_i0000_nnnn_0001_1010	,i0000_nnnn_0001_1010	,Mask_n		,0x001A	,Normal				,OpDissCFS,"sts MACL,<REG_N>"},	//sts MACL,<REG_N>              
@@ -680,11 +680,11 @@ sh4_opcodelistentry opcodes[]=
 	{rec_cpu_opcode_nimp		,i0011_nnnn_mmmm_1110	,Mask_n_m	,0x300E	,Normal				,OpDissCFS,"addc <REG_M>,<REG_N>"},	//addc <REG_M>,<REG_N>          
 	{rec_cpu_opcode_nimp		,i0011_nnnn_mmmm_1111	,Mask_n_m	,0x300F	,Normal				,OpDissCFS,"addv <REG_M>,<REG_N>"},	// addv <REG_M>,<REG_N>          
 	{rec_i0100_nnnn_0101_0010	,i0100_nnnn_0101_0010	,Mask_n		,0x4052	,Normal				,OpDissCFS,"addv <REG_M>,<REG_N>"},	//sts.l FPUL,@-<REG_N>          
-	{rec_i0100_nnnn_0110_0010	,i0100_nnnn_0110_0010	,Mask_n		,0x4062	,Normal				,OpDissCFS,"sts.l FPSCR,@-<REG_N>"},	//sts.l FPSCR,@-<REG_N>         
+	{rec_cpu_opcode_nimp	,i0100_nnnn_0110_0010	,Mask_n		,0x4062	,Normal				,OpDissCFS,"sts.l FPSCR,@-<REG_N>"},	//sts.l FPSCR,@-<REG_N>         
 	{rec_i0100_nnnn_0000_0010	,i0100_nnnn_0000_0010	,Mask_n		,0x4002	,Normal				,OpDissCFS,"sts.l MACH,@-<REG_N>"},	//sts.l MACH,@-<REG_N>          
 	{rec_i0100_nnnn_0001_0010	,i0100_nnnn_0001_0010	,Mask_n		,0x4012	,Normal				,OpDissCFS,"sts.l MACL,@-<REG_N> "},	//sts.l MACL,@-<REG_N>          
 	{rec_i0100_nnnn_0010_0010	,i0100_nnnn_0010_0010	,Mask_n		,0x4022	,Normal				,OpDissCFS,"sts.l PR,@-<REG_N> "},	//sts.l PR,@-<REG_N>            
-	{rec_i0100_nnnn_0000_0011	,i0100_nnnn_0000_0011	,Mask_n		,0x4003	,Normal				,OpDissCFS,"stc.l SR,@-<REG_N> "},	//stc.l SR,@-<REG_N>            
+	{rec_cpu_opcode_nimp	,i0100_nnnn_0000_0011	,Mask_n		,0x4003	,Normal				,OpDissCFS,"stc.l SR,@-<REG_N> "},	//stc.l SR,@-<REG_N>            
 	{rec_i0100_nnnn_0001_0011	,i0100_nnnn_0001_0011	,Mask_n		,0x4013	,Normal				,OpDissCFS,"stc.l GBR,@-<REG_N> "},	//stc.l GBR,@-<REG_N>           
 	{rec_i0100_nnnn_0010_0011	,i0100_nnnn_0010_0011	,Mask_n		,0x4023	,Normal				,OpDissCFS,"stc.l VBR,@-<REG_N> "},	//stc.l VBR,@-<REG_N>           
 	{rec_i0100_nnnn_0011_0011	,i0100_nnnn_0011_0011	,Mask_n		,0x4033	,Normal				,OpDissCFS,"stc.l SSR,@-<REG_N> "},	//stc.l SSR,@-<REG_N>           
@@ -694,8 +694,8 @@ sh4_opcodelistentry opcodes[]=
 	{rec_i0100_nnnn_0001_0110	,i0100_nnnn_0001_0110	,Mask_n		,0x4016	,Normal				,OpDissCFS,"lds.l @<REG_N>+,MACL"},	//lds.l @<REG_N>+,MACL          
 	{rec_i0100_nnnn_0010_0110	,i0100_nnnn_0010_0110	,Mask_n		,0x4026	,Normal				,OpDissCFS,"lds.l @<REG_N>+,PR"},	//lds.l @<REG_N>+,PR            
 	{rec_i0100_nnnn_0101_0110	,i0100_nnnn_0101_0110	,Mask_n		,0x4056	,Normal				,OpDissCFS,"lds.l @<REG_N>+,FPUL"},	//lds.l @<REG_N>+,FPUL          
-	{rec_i0100_nnnn_0110_0110	,i0100_nnnn_0110_0110	,Mask_n		,0x4066	,Normal				,OpDissCFS,"lds.l @<REG_N>+,FPSCR"},	//lds.l @<REG_N>+,FPSCR         
-	{rec_i0100_nnnn_0000_0111	,i0100_nnnn_0000_0111	,Mask_n		,0x4007	,SystemSt				,OpDissCFS,"ldc.l @<REG_N>+,SR"},	//ldc.l @<REG_N>+,SR            
+	{rec_cpu_opcode_nimp	,i0100_nnnn_0110_0110	,Mask_n		,0x4066	,Normal				,OpDissCFS,"lds.l @<REG_N>+,FPSCR"},	//lds.l @<REG_N>+,FPSCR         
+	{rec_cpu_opcode_nimp	,i0100_nnnn_0000_0111	,Mask_n		,0x4007	,SystemSt				,OpDissCFS,"ldc.l @<REG_N>+,SR"},	//ldc.l @<REG_N>+,SR            
 	{rec_i0100_nnnn_0001_0111	,i0100_nnnn_0001_0111	,Mask_n		,0x4017	,Normal				,OpDissCFS,"ldc.l @<REG_N>+,GBR"},	//ldc.l @<REG_N>+,GBR           
 	{rec_i0100_nnnn_0010_0111	,i0100_nnnn_0010_0111	,Mask_n		,0x4027	,Normal				,OpDissCFS,"ldc.l @<REG_N>+,VBR"},	//ldc.l @<REG_N>+,VBR           
 	{rec_i0100_nnnn_0011_0111	,i0100_nnnn_0011_0111	,Mask_n		,0x4037	,Normal				,OpDissCFS,"ldc.l @<REG_N>+,SSR"},	//ldc.l @<REG_N>+,SSR           
@@ -705,9 +705,9 @@ sh4_opcodelistentry opcodes[]=
 	{rec_i0100_nnnn_0001_1010	,i0100_nnnn_0001_1010	,Mask_n		,0x401A	,Normal				,OpDissCFS,"lds <REG_N>,MACL"},	//lds <REG_N>,MACL              
 	{rec_i0100_nnnn_0010_1010	,i0100_nnnn_0010_1010	,Mask_n		,0x402A	,Normal				,OpDissCFS,"lds <REG_N>,PR"},	//lds <REG_N>,PR                
 	{rec_i0100_nnnn_0101_1010	,i0100_nnnn_0101_1010	,Mask_n		,0x405A	,Normal				,OpDissCFS,"lds <REG_N>,FPUL"},	//lds <REG_N>,FPUL              
-	{rec_i0100_nnnn_0110_1010	,i0100_nnnn_0110_1010	,Mask_n		,0x406A	,Normal				,OpDissCFS,"lds <REG_N>,FPSCR"},	//lds <REG_N>,FPSCR             
+	{rec_cpu_opcode_nimp	,i0100_nnnn_0110_1010	,Mask_n		,0x406A	,Normal				,OpDissCFS,"lds <REG_N>,FPSCR"},	//lds <REG_N>,FPSCR             
 	{rec_i0100_nnnn_1111_1010	,i0100_nnnn_1111_1010	,Mask_n		,0x40FA	,Normal				,OpDissCFS,"ldc <REG_N>,DBR"},	//ldc <REG_N>,DBR                
-	{rec_i0100_nnnn_0000_1110	,i0100_nnnn_0000_1110	,Mask_n		,0x400E	,SystemSt			,OpDissCFS,"ldc <REG_N>,SR"},	//ldc <REG_N>,SR                
+	{rec_cpu_opcode_nimp	,i0100_nnnn_0000_1110	,Mask_n		,0x400E	,SystemSt			,OpDissCFS,"ldc <REG_N>,SR"},	//ldc <REG_N>,SR                
 	{rec_i0100_nnnn_0001_1110	,i0100_nnnn_0001_1110	,Mask_n		,0x401E	,Normal				,OpDissCFS,"ldc <REG_N>,GBR"},	//ldc <REG_N>,GBR               
 	{rec_i0100_nnnn_0010_1110	,i0100_nnnn_0010_1110	,Mask_n		,0x402E	,Normal				,OpDissCFS,"ldc <REG_N>,VBR"},	//ldc <REG_N>,VBR               
 	{rec_i0100_nnnn_0011_1110	,i0100_nnnn_0011_1110	,Mask_n		,0x403E	,Normal				,OpDissCFS,"ldc <REG_N>,SSR"},	//ldc <REG_N>,SSR               
@@ -764,8 +764,8 @@ sh4_opcodelistentry opcodes[]=
 	{rec_i1000_0100_mmmm_iiii	,i1000_0100_mmmm_iiii	,Mask_imm8	,0x8400	,Normal				,OpDissCFS,"mov.b @(<disp8b>,<REG_M>),R0"},	// mov.b @(<disp>,<REG_M>),R0    
 	{rec_i1000_0101_mmmm_iiii	,i1000_0101_mmmm_iiii	,Mask_imm8	,0x8500	,Normal				,OpDissCFS,"mov.w @(<disp8w>,<REG_M>),R0"},	// mov.w @(<disp>,<REG_M>),R0    
 	{rec_i1001_nnnn_iiii_iiii	,i1001_nnnn_iiii_iiii	,Mask_n_imm8,0x9000	,Normal_needpc		,OpDissCFS,"mov.w @(<PCdisp8>),<REG_N>"},	//mov.w @(<disp>,PC),<REG_N>   
-	{rec_i1010_iiii_iiii_iiii	,i1010_iiii_iiii_iiii	,Mask_n_imm8,0xA000	,BranchDelay_u_UsePC,OpDissCFS,"bra <bdisp12>"},	// bra <bdisp12>
-	{rec_i1011_iiii_iiii_iiii	,i1011_iiii_iiii_iiii	,Mask_n_imm8,0xB000	,BranchDelay_u_UsePC,OpDissCFS,"bsr <bdisp12>"},	// bsr <bdisp12>
+	{rec_cpu_opcode_nimp	,i1010_iiii_iiii_iiii	,Mask_n_imm8,0xA000	,BranchDelay_u_UsePC,OpDissCFS,"bra <bdisp12>"},	// bra <bdisp12>
+	{rec_cpu_opcode_nimp	,i1011_iiii_iiii_iiii	,Mask_n_imm8,0xB000	,BranchDelay_u_UsePC,OpDissCFS,"bsr <bdisp12>"},	// bsr <bdisp12>
 	{rec_i1100_0000_iiii_iiii	,i1100_0000_iiii_iiii	,Mask_imm8	,0xC000	,Normal				,OpDissCFS,"mov.b R0,@(<disp8b>,GBR)"},	// mov.b R0,@(<disp>,GBR)        
 	{rec_i1100_0001_iiii_iiii	,i1100_0001_iiii_iiii	,Mask_imm8	,0xC100	,Normal				,OpDissCFS,"mov.w R0,@(<disp8w>,GBR)"},	// mov.w R0,@(<disp>,GBR)        
 	{rec_i1100_0010_iiii_iiii	,i1100_0010_iiii_iiii	,Mask_imm8	,0xC200	,Normal				,OpDissCFS,"mov.l R0,@(<disp8dw>,GBR)"},	// mov.l R0,@(<disp>,GBR)        

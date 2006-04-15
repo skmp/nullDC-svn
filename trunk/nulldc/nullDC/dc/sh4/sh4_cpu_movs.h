@@ -1,14 +1,6 @@
 //this file contains ALL register to register full moves
 //
 
-//stc SR,<REG_N>                
- sh4op(i0000_nnnn_0000_0010)//0002
-{
-	u32 n = GetN(op);
-	r[n] = sr.full;
-}
-
-
 //stc GBR,<REG_N>               
  sh4op(i0000_nnnn_0001_0010)
 {
@@ -60,15 +52,6 @@
 	u32 n = GetN(op);
 	r[n] = fpul;
 } 
-
- //sts FPSCR,<REG_N>             
- sh4op(i0000_nnnn_0110_1010)
-{
-	//iNimp("sts FPSCR,<REG_N>");
-	u32 n = GetN(op);
-	r[n] = fpscr.full;
-	UpdateFPSCR();
-}
 
 //stc DBR,<REG_N>             
  sh4op(i0000_nnnn_1111_1010)
@@ -272,16 +255,6 @@
 	WriteMemU32(r[n], fpul);
 }
 
-
-//sts.l FPSCR,@-<REG_N>         
- sh4op(i0100_nnnn_0110_0010)
-{//TODO : Check This [26/4/05]
-	u32 n = GetN(op);
-	r[n] -= 4;
-	WriteMemU32(r[n],fpscr.full);
-}
-
-
 //sts.l MACH,@-<REG_N>          
  sh4op(i0100_nnnn_0000_0010)
 {
@@ -308,17 +281,6 @@
 	u32 n = GetN(op);
 	r[n] -= 4;
 	WriteMemU32(r[n],pr);
-}
-
-
-
-//stc.l SR,@-<REG_N>            
- sh4op(i0100_nnnn_0000_0011)
-{
-	//iNimp("stc.l SR,@-<REG_N>");
-	u32 n = GetN(op);
-	r[n] -= 4;
-	WriteMemU32(r[n], sr.full);
 }
 
 
@@ -416,33 +378,10 @@
 }
 
 
-//lds.l @<REG_N>+,FPSCR         
- sh4op(i0100_nnnn_0110_0110)
-{//TODO : Check This [26/4/05]
-	u32 n = GetN(op);
-	//fpscr.full =ReadMem32(r[n]);
-	ReadMemU32(fpscr.full,r[n]);
-	UpdateFPSCR();
-	r[n] += 4;
-}
 
 
-//ldc.l @<REG_N>+,SR            
- sh4op(i0100_nnnn_0000_0111)
-{
-	//iNimp("ldc.l @<REG_N>+,SR");
-	u32 n = GetN(op);
-	//sr.SetFull(ReadMem32(r[n])) ;
-	ReadMemU32(sr.full,r[n]);
-	r[n] += 4;
-	if (UpdateSR())
-	{
-		//FIXME olny if interrupts got on .. :P
-		pc+=2;
-		UpdateINTC();
-		pc-=2;
-	}
-}
+
+
 
 
 //ldc.l @<REG_N>+,GBR           
@@ -534,13 +473,7 @@
 }
 
 
-//lds <REG_N>,FPSCR             
- sh4op(i0100_nnnn_0110_1010)
-{//TODO : Check This [26/4/05]
-	u32 n = GetN(op);
-	fpscr.full = r[n];
-	UpdateFPSCR();
-}
+
 
 //ldc <REG_N>,DBR                
  sh4op(i0100_nnnn_1111_1010)
@@ -549,20 +482,7 @@
 	dbr = r[n];
 }
 
-//ldc <REG_N>,SR                
- sh4op(i0100_nnnn_0000_1110)
-{
-	//iNimp("ldc <REG_N>,SR");
-	u32 n = GetN(op);
-	sr.full=r[n];
-	if (UpdateSR())
-	{
-		//FIXME olny if interrupts got on .. :P
-		pc+=2;
-		UpdateINTC();
-		pc-=2;
-	}
-}
+
 
 
 //ldc <REG_N>,GBR               
