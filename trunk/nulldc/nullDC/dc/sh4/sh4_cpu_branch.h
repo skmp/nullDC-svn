@@ -29,11 +29,11 @@ sh4op(i0000_nnnn_0010_0011)
 {
 	//iNimp("rte");
 	sr.SetFull(ssr);
-	UpdateSR();
 	u32 newpc = spc;//+2 is added after instruction
 	ExecuteDelayslot();
 	pc = newpc -2;
 	RemoveCall(spc,1);
+	UpdateSR();
 } 
 
 

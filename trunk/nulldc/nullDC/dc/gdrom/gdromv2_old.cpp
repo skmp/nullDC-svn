@@ -175,7 +175,7 @@ void NotifyEvent_gdrom(DriveEvent info,void* param)
 			else
 			{
 				//o.O is this suposed to work ??
-				SecNumber.DiscFormat=drive->GetDiskType();
+				SecNumber.DiscFormat=drive->GetDiskType()>>4;
 				SecNumber.Status=2;
 			}
 			break;

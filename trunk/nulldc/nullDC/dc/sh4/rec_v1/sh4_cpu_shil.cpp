@@ -47,7 +47,7 @@ shil_stream* ilst;
 sh4op(i0000_0000_0011_1000)
 {
 	//iNimp(op, "ldtlb");
-	shil_intepret(i0000_0000_0011_1000);
+	shil_intepret(op);
 } 
 
 
@@ -56,6 +56,7 @@ sh4op(i0000_0000_0011_1000)
 sh4op(i0000_nnnn_1001_0011)
 {
 	//iNimp("ocbi @<REG_N> ");
+	shil_intepret(op);
 } 
 
 
@@ -63,6 +64,7 @@ sh4op(i0000_nnnn_1001_0011)
 sh4op(i0000_nnnn_1010_0011)
 {
 	//iNimp("ocbp @<REG_N> ");
+	shil_intepret(op);
 } 
 
 
@@ -70,11 +72,14 @@ sh4op(i0000_nnnn_1010_0011)
 sh4op(i0000_nnnn_1011_0011)
 {
 	//iNimp("ocbwb @<REG_N> ");
+	shil_intepret(op);
 } 
 
 //pref @<REG_N>                 
 sh4op(i0000_nnnn_1000_0011)
 {
+	shil_intepret(op);
+	/*
 	//iNimp("pref @<REG_N>");
 	u32 n = GetN(op);
 	u32 Dest = r[n];
@@ -114,9 +119,7 @@ sh4op(i0000_nnnn_1000_0011)
 				WriteMem32((Address + (i << 2)), sq[i]);
 		}
 
-	}
-
-
+	}*/
 }
 
 
@@ -282,8 +285,9 @@ sh4op(i0011_nnnn_mmmm_0111)
 //cmp/str <REG_M>,<REG_N>       
 sh4op(i0010_nnnn_mmmm_1100)
 {//TODO : Check This [26/4/05]
+	shil_intepret(i0010_nnnn_mmmm_1100,op);
 	//iNimp("cmp/str <REG_M>,<REG_N>");
-	u32 n = GetN(op);
+	/*u32 n = GetN(op);
 	u32 m = GetM(op);
 
 	u32 temp;
@@ -297,7 +301,7 @@ sh4op(i0010_nnnn_mmmm_1100)
 	LL=temp&0x000000FF;
 	HH=HH&&HL&&LH&&LL;
 	if (HH==0) sr.T=1;
-	else sr.T=0;
+	else sr.T=0;*/
 }
 
 //tst #<imm>,R0                 
@@ -330,26 +334,31 @@ sh4op(i0010_nnnn_mmmm_1000)
 //mulu.w <REG_M>,<REG_N>          
 sh4op(i0010_nnnn_mmmm_1110)
 {
+	shil_intepret(op);
 	//iNimp("mulu.w <REG_M>,<REG_N>");//check  ++
-	u32 n = GetN(op);
+	/*u32 n = GetN(op);
 	u32 m = GetM(op);
 	macl=((u16)(s32)r[n])*
-		((u16)(s32)r[m]);
+		((u16)(s32)r[m]);*/
 }
 
 //muls.w <REG_M>,<REG_N>          
 sh4op(i0010_nnnn_mmmm_1111)
 {
+	shil_intepret(op);
 	//TODO : Check This [26/4/05]
 	//iNimp("muls <REG_M>,<REG_N>");
+	/*
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 
-	macl = (u32)(((s16)(s32)r[n]) * ((s16)(s32)r[m]));
+	macl = (u32)(((s16)(s32)r[n]) * ((s16)(s32)r[m]));*/
 }
 //dmulu.l <REG_M>,<REG_N>       
 sh4op(i0011_nnnn_mmmm_0101)
 {
+	shil_intepret(op);
+	/*
 	//iNimp("dmulu.l <REG_M>,<REG_N>");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
@@ -358,12 +367,13 @@ sh4op(i0011_nnnn_mmmm_0101)
 	x = (u64)r[n] * (u64)r[m];
 
 	macl = (u32)(x & 0xFFFFFFFF);
-	mach = (u32)((x >> 32) & 0xFFFFFFFF);
+	mach = (u32)((x >> 32) & 0xFFFFFFFF);*/
 }
 
 //dmuls.l <REG_M>,<REG_N>       
 sh4op(i0011_nnnn_mmmm_1101)
 {
+	shil_intepret(op);/*
 	//iNimp("dmuls.l <REG_M>,<REG_N>");//check ++
 	u32 n = GetN(op);
 	u32 m = GetM(op);
@@ -372,18 +382,20 @@ sh4op(i0011_nnnn_mmmm_1101)
 	x = (s64)(s32)r[n] * (s64)(s32)r[m];
 
 	macl = (u32)(x & 0xFFFFFFFF);
-	mach = (u32)((x >> 32) & 0xFFFFFFFF);
+	mach = (u32)((x >> 32) & 0xFFFFFFFF);*/
 }
 
 
 //mac.w @<REG_M>+,@<REG_N>+     
 sh4op(i0100_nnnn_mmmm_1111)
 {
-	iNimp(op, "mac.w @<REG_M>+,@<REG_N>+");
+	shil_intepret(op);
+	//iNimp(op, "mac.w @<REG_M>+,@<REG_N>+");
 }		
 //mac.l @<REG_M>+,@<REG_N>+     
 sh4op(i0000_nnnn_mmmm_1111)
 {//TODO : !Add this
+	shil_intepret(op);/*
 	//iNimp("mac.l @<REG_M>+,@<REG_N>+");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
@@ -404,15 +416,17 @@ sh4op(i0000_nnnn_mmmm_1111)
 	result = mac + mul;
 
 	macl = (u32)(result & 0xFFFFFFFF);
-	mach = (u32)((result >> 32) & 0xFFFFFFFF);
+	mach = (u32)((result >> 32) & 0xFFFFFFFF);*/
 }
 
 //mul.l <REG_M>,<REG_N>         
 sh4op(i0000_nnnn_mmmm_0111)
 {//TODO : CHECK THIS
+	shil_intepret(op);
+	/*
 	u32 n = GetN(op);
 	u32 m = GetM(op);
-	macl = (u32)((((s32)r[n]) * ((s32)r[m])));
+	macl = (u32)((((s32)r[n]) * ((s32)r[m])));*/
 }
 //************************ Div ! ************************ 
 //div0u                         
@@ -445,7 +459,8 @@ sh4op(i0011_nnnn_mmmm_0100)
 {//ToDo : Check This [26/4/05]
 	u32 n=GetN(op);
 	u32 m=GetM(op);
-
+	shil_intepret(op);
+/*
 	unsigned long tmp0, tmp2;
 	unsigned char old_q, tmp1;
 
@@ -481,7 +496,7 @@ sh4op(i0011_nnnn_mmmm_0100)
 		sr.Q	= (sr.Q==0) ? (u8)(tmp1==0) : tmp1 ;
 	}
 	}
-	sr.T = (sr.Q==sr.M);
+	sr.T = (sr.Q==sr.M);*/
 }
 
 
@@ -517,12 +532,15 @@ sh4op(i0011_nnnn_mmmm_1110)
 // addv <REG_M>,<REG_N>          
 sh4op(i0011_nnnn_mmmm_1111)
 {
-	iNimp(op, "addv <REG_M>,<REG_N>");
+	shil_intepret(op);
+	//iNimp(op, "addv <REG_M>,<REG_N>");
 }
 
 //subc <REG_M>,<REG_N>          
 sh4op(i0011_nnnn_mmmm_1010)
 {
+	shil_intepret(op);
+	/*
 	//iNimp("subc <REG_M>,<REG_N>");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
@@ -544,12 +562,14 @@ sh4op(i0011_nnnn_mmmm_1010)
 	}
 
 	//no subc on x86 .. what a pain
+	*/
 }
 
 //subv <REG_M>,<REG_N>          
 sh4op(i0011_nnnn_mmmm_1011)
 {
-	iNimp(op, "subv <REG_M>,<REG_N>");
+	shil_intepret(op);
+	//iNimp(op, "subv <REG_M>,<REG_N>");
 }
 //dt <REG_N>                    
 sh4op(i0100_nnnn_0001_0000)
@@ -570,6 +590,7 @@ sh4op(i0110_nnnn_mmmm_1010)
 	//iNimp("negc <REG_M>,<REG_N>");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
+	shil_intepret(op);
 	/*u32 temp= (u32)(0 - ((s32)r[m]));
 
 	r[n] = temp - sr.T;
@@ -581,8 +602,10 @@ sh4op(i0110_nnnn_mmmm_1010)
 
 	if (temp < r[n])
 	sr.T = 1;*/
+	/*
 	r[n]=-r[m]-sr.T;
 	sr.T=r[n]>>31;
+	*/
 }
 
 
@@ -624,9 +647,12 @@ sh4op(i0100_nnnn_0010_0000)
 	u32 n=GetN(op);
 	//sr.T=r[n]>>31;
 	//((s32)r[n])<<=1;
-	call_sh4op(i0100_nnnn_0000_0000);
-	for (;;)
-		printf("shal is used , WTF\n");
+	printf("shal is used , WTF\n");
+	printf("shal is used , WTF\n");
+	printf("shal is used , WTF\n");
+
+	ilst->shl(r[n]);
+	ilst->SaveT(SaveCF);
 }
 
 
@@ -657,6 +683,8 @@ sh4op(i0100_nnnn_0010_0001)
 //shad <REG_M>,<REG_N>          
 sh4op(i0100_nnnn_mmmm_1100)
 {
+	shil_intepret(op);
+	/*
 	//iNimp("shad <REG_M>,<REG_N>");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
@@ -671,13 +699,15 @@ sh4op(i0100_nnnn_mmmm_1100)
 			r[n] = 0xFFFFFFFF;
 	}
 	else
-		r[n] = ((s32)r[n]) >> (s32)((~r[m] & 0x1F) + 1);
+		r[n] = ((s32)r[n]) >> (s32)((~r[m] & 0x1F) + 1);*/
 }
 
 
 //shld <REG_M>,<REG_N>          
 sh4op(i0100_nnnn_mmmm_1101)
 {
+	shil_intepret(op);
+	/*
 	//iNimp("shld <REG_M>,<REG_N>");
 	//HACK : CHECKME
 	u32 n = GetN(op);
@@ -690,7 +720,7 @@ sh4op(i0100_nnnn_mmmm_1101)
 	else if ((r[m] & 0x1f) == 0)
 		r[n] = 0;
 	else
-		r[n] = (u32)r[n] >> (32-r[m]);
+		r[n] = (u32)r[n] >> (32-r[m]);*/
 }
 
 
@@ -839,35 +869,43 @@ sh4op(i0010_nnnn_mmmm_1101)
 //tst.b #<imm>,@(R0,GBR)        
 sh4op(i1100_1100_iiii_iiii)
 {
-	iNimp(op, "tst.b #<imm>,@(R0,GBR)");
+	shil_intepret(op);
+	//iNimp(op, "tst.b #<imm>,@(R0,GBR)");
 }
 
 
 //and.b #<imm>,@(R0,GBR)        
 sh4op(i1100_1101_iiii_iiii)
 {
-	iNimp(op, "and.b #<imm>,@(R0,GBR)");
+	shil_intepret(op);
+	//iNimp(op, "and.b #<imm>,@(R0,GBR)");
 }
 
 
 //xor.b #<imm>,@(R0,GBR)        
 sh4op(i1100_1110_iiii_iiii)
 {
-	iNimp(op, "xor.b #<imm>,@(R0,GBR)");
+	shil_intepret(op);
+	//iNimp(op, "xor.b #<imm>,@(R0,GBR)");
 }
 
 
 //or.b #<imm>,@(R0,GBR)         
 sh4op(i1100_1111_iiii_iiii)
 {
+	shil_intepret(op);
+	/*
 	//iNimp(op, "or.b #<imm>,@(R0,GBR)");
 	u8 temp = (u8)ReadMem8(gbr +r[0]);
 	temp |= GetImm8(op);
 	WriteMem8(gbr +r[0], temp);
+	*/
 }
 //tas.b @<REG_N>                
 sh4op(i0100_nnnn_0001_1011)
 {
+	shil_intepret(op);
+	/*
 	//iNimp("tas.b @<REG_N>");
 	u32 n = GetN(op);
 	u8 val;
@@ -881,7 +919,7 @@ sh4op(i0100_nnnn_0001_1011)
 
 	val |= 0x80;
 
-	WriteMem8(r[n], val);
+	WriteMem8(r[n], val);*/
 }
 
 
