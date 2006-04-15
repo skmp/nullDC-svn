@@ -531,11 +531,23 @@
 						Name="rec_v1"
 						>
 						<File
+							RelativePath=".\dc\sh4\rec_v1\rec_v1_analyser.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\dc\sh4\rec_v1\rec_v1_analyser.h"
+							>
+						</File>
+						<File
 							RelativePath=".\dc\sh4\rec_v1\rec_v1_basicblock.cpp"
 							>
 						</File>
 						<File
 							RelativePath=".\dc\sh4\rec_v1\rec_v1_basicblock.h"
+							>
+						</File>
+						<File
+							RelativePath=".\dc\sh4\rec_v1\rec_v1_ops.h"
 							>
 						</File>
 						<File

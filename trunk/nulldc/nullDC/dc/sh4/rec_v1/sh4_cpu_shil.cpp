@@ -1,10 +1,10 @@
-
 #include "sh4_cpu_shil.h"
 #include "emmiter/emmiter.h"
 #include "dc/mem/sh4_mem.h"
 #include "dc/sh4/sh4_opcode_list.h"
 #include "dc/sh4/sh4_registers.h"
 #include "dc/sh4/shil/shil.h"
+#include <assert.h>
 
 #undef sh4op
 
@@ -1802,6 +1802,11 @@ sh4op(i1111_nn01_1111_1101)
 }																				  
 
 
+
+sh4op(icpu_nimp)
+{
+	shil_interpret(op);
+}
 #define notshit
 #ifdef notshit
 //ok , all the opcodes to here are hard writen for the rec
@@ -1813,14 +1818,15 @@ sh4op(i1111_nn01_1111_1101)
 
 struct shil_RecRegType
 {
+	Sh4RegType regid;
 	//SUB
 	void operator-=(const u32 constv)
 	{
-
+		ilst->sub(regid,constv);
 	};
-	void operator-=(const shil_RecRegType& rhs)
+	void operator-=(const shil_RecRegType& reg)
     {
-       	
+		ilst->sub(regid,reg.regid);
     }
 
 	void operator--(int wtf)
@@ -1830,11 +1836,11 @@ struct shil_RecRegType
 	//ADD
 	void operator+=(const u32 constv)
 	{
-		
+		ilst->add(regid,constv);
 	};
-	void operator+=(const shil_RecRegType& rhs)
+	void operator+=(const shil_RecRegType& reg)
     {
-       
+       ilst->add(regid,reg.regid);
     }
 	void operator++(int wtf)
 	{
@@ -1843,53 +1849,53 @@ struct shil_RecRegType
 	//MOVS
 	void operator=(const u32 constv)
     {
-		 
+		 ilst->mov(regid,constv);
     }
 	void operator=(const s32 constv)
     {
 		(*this)=(u32)constv;
     }
-	void operator=(const shil_RecRegType& rhs)
+	void operator=(const shil_RecRegType& reg)
     {
-		
+		ilst->mov(regid,reg.regid);	
     }
 	//AND
 	void operator&=(const u32 constv)
 	{
-		
+		ilst->and(regid,constv);
 	};
 	void operator&=(const shil_RecRegType& reg)
 	{
-		
+		ilst->and(regid,reg.regid);
 	};
 	//OR
 	void operator|=(const u32 constv)
 	{
-	
+		ilst->or(regid,constv);
 	};
 	void operator|=(const shil_RecRegType& reg)
 	{
-		
+		ilst->or(regid,reg.regid);
 	};
 	//XOR
 	void operator^=(const u32 constv)
 	{
-		
+		ilst->xor(regid,constv);
 	};
 	void operator^=(const shil_RecRegType& reg)
 	{
-		
+		ilst->xor(regid,reg.regid);
 	};
 	//SHIFT RIGHT
 	void operator>>=(const u32 constv)
 	{
-		
+		ilst->shr(regid,constv);
 	};
 
 	//SHIFT LEFT
 	void operator<<=(const u32 constv)
 	{
-
+		ilst->shl(regid,constv);
 	};
 };
 
@@ -1914,50 +1920,75 @@ struct shil_RecRegType
 #define WriteMemBOU16(addr,offset,data)		WriteMemRec(addr,offset,data,2)//WriteMemU16(addr+offset,data)
 #define WriteMemBOU8(addr,offset,data)		WriteMemRec(addr,offset,data,1)//WriteMemU8(addr+offset,data)
 
+
 void ReadMemRec(shil_RecRegType &to,u32 addr,u32 offset,u32 sz)
 {
+	assert(sz==4);
+	ilst->readm32(to.regid,addr+offset);
 }
 
 void ReadMemRec(shil_RecRegType &to,shil_RecRegType& addr,u32 offset,u32 sz)
 {
-
+	assert(sz==4);
+	ilst->readm32(to.regid,addr.regid,offset);
 }
 
 
 void ReadMemRec(shil_RecRegType &to,shil_RecRegType& addr,shil_RecRegType& offset,u32 sz)
 {
-	
+	assert(sz==4);
+	ilst->readm32(to.regid,addr.regid,offset.regid);
 }
 
 //signed
 void ReadMemRecS(shil_RecRegType &to,u32 addr,u32 offset,u32 sz)
 {
-	
-}
+	assert(sz!=4);
+	if (sz==1)
+		ilst->readm8(to.regid,addr+offset,true);
+	else
+		ilst->readm16(to.regid,addr+offset,true);
 
+}
 void ReadMemRecS(shil_RecRegType &to,shil_RecRegType& addr,u32 offset,u32 sz)
 {
-	
+	assert(sz!=4);
+	if (sz==1)
+		ilst->readm8(to.regid,addr.regid,offset,true);
+	else
+		ilst->readm16(to.regid,addr.regid,offset,true);
 }
 
 
 void ReadMemRecS(shil_RecRegType &to,shil_RecRegType& addr,shil_RecRegType& offset,u32 sz)
 {
-	
+	assert(sz!=4);
+	if (sz==1)
+		ilst->readm8(to.regid,addr.regid,offset.regid,true);
+	else
+		ilst->readm16(to.regid,addr.regid,offset.regid,true);
 }
 //WriteMem(u32 addr,u32 data,u32 sz)
-void WriteMemRec(u32 addr,u32 offset,shil_RecRegType &data,u32 sz)
-{
-	
-}
 void WriteMemRec(shil_RecRegType& addr,u32 offset,shil_RecRegType &data,u32 sz)
 {
-	
+	if (sz==1)
+		ilst->writem8(data.regid,addr.regid,offset);
+	else if (sz==2)
+		ilst->writem16(data.regid,addr.regid,offset);
+	else
+		ilst->writem32(data.regid,addr.regid,offset);
 }
 void WriteMemRec(shil_RecRegType& addr,shil_RecRegType& offset,shil_RecRegType &data,u32 sz)
 {
-	
+	if (sz==1)
+		ilst->writem8(data.regid,addr.regid,offset.regid);
+	else if (sz==2)
+		ilst->writem16(data.regid,addr.regid,offset.regid);
+	else
+		ilst->writem32(data.regid,addr.regid,offset.regid);
 }
+
+
 
 
 shil_RecRegType shil_rec_r[16];

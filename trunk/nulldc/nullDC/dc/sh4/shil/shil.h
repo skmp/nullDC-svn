@@ -162,11 +162,19 @@ public :
 	void SaveT(cmd_cond cond);
 	void LoadT(x86_flags to);
 
-
+	//bit shits
 	void dec(Sh4RegType to);
 	void inc(Sh4RegType to);
 	void neg(Sh4RegType to);
 	void not(Sh4RegType to);
+
+	//bitwise ops
+	void and(Sh4RegType to,Sh4RegType from);
+	void and(Sh4RegType to,u32 from);
+	void or(Sh4RegType to,Sh4RegType from);
+	void or(Sh4RegType to,u32 from);
+	void xor(Sh4RegType to,Sh4RegType from);
+	void xor(Sh4RegType to,u32 from);
 
 	//logical shifts
 	void shl(Sh4RegType to,u8 count);

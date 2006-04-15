@@ -167,6 +167,26 @@ void shil_stream::not(Sh4RegType to)
 {
 }
 
+//bitwise ops
+void shil_stream::and(Sh4RegType to,Sh4RegType from)
+{
+}
+void shil_stream::and(Sh4RegType to,u32 from)
+{
+}
+void shil_stream::or(Sh4RegType to,Sh4RegType from)
+{
+}
+void shil_stream::or(Sh4RegType to,u32 from)
+{
+}
+void shil_stream::xor(Sh4RegType to,Sh4RegType from)
+{
+}
+void shil_stream::xor(Sh4RegType to,u32 from)
+{
+}
+
 //logical shifts
 void shil_stream::shl(Sh4RegType to,u8 count)
 {
