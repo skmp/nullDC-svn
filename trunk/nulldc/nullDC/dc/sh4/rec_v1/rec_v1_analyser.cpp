@@ -1,7 +1,9 @@
 #include "rec_v1_analyser.h"
 
-//will analyse code starting at "start" :)
-rec_v1_BasicBlock* AnalyseCode(u32 start)
+//will alayse code and convert it to shil
+//the basicblock (and suprtblock later) will be the send to the optimiser , and after that
+//to the compiler
+void AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 {
 
 }

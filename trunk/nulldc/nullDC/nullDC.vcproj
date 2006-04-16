@@ -547,6 +547,22 @@
 							>
 						</File>
 						<File
+							RelativePath=".\dc\sh4\rec_v1\rec_v1_blockmanager.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\dc\sh4\rec_v1\rec_v1_blockmanager.h"
+							>
+						</File>
+						<File
+							RelativePath=".\dc\sh4\rec_v1\rec_v1_driver.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\dc\sh4\rec_v1\rec_v1_driver.h"
+							>
+						</File>
+						<File
 							RelativePath=".\dc\sh4\rec_v1\rec_v1_ops.h"
 							>
 						</File>
