@@ -93,10 +93,10 @@ enum Sh4RegType
 	sr_M=sr_S+1,
 	
 	dr_0=sr_S+1,
-	dr_15=dr_0+15,
+	dr_7=dr_0+7,
 
-	xd_0=dr_0+1,
-	xd_15=xd_0+15,
+	xd_0=dr_7+1,
+	xd_7=xd_0+7,
 
 
 	NoReg=-1

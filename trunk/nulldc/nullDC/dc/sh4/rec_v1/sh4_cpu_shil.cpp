@@ -40,16 +40,16 @@ shil_stream* ilst;
 //#define tmu_underflow  0x0100
 #define iNimp(info) rec_shil_iNimp(pc,op,info)
 
-#define shil_interpret(str) 
+#define shil_interpret(str)  ilst->shil_ifb(str,pc);
 
 Sh4RegType dyna_reg_id_r[16];
-Sh4RegType dyna_reg_id_r_bank[16];
+Sh4RegType dyna_reg_id_r_bank[8];
 
 Sh4RegType dyna_reg_id_fr[16];
 Sh4RegType dyna_reg_id_xf[16];
 
-Sh4RegType dyna_reg_id_dr[16];
-Sh4RegType dyna_reg_id_xd[16];
+Sh4RegType dyna_reg_id_dr[8];
+Sh4RegType dyna_reg_id_xd[8];
 
 #define r dyna_reg_id_r
 #define r_bank dyna_reg_id_r_bank
@@ -693,7 +693,7 @@ sh4op(i0100_nnnn_0010_0001)
 {
 	//iNimp("shar <REG_N>");
 	u32 n = GetN(op);
-	u32 t;
+//	u32 t;
 
 	//sr.T=r[n] & 1;
 	//r[n]=((s32)r[n])>>1;
@@ -1998,7 +1998,39 @@ shil_RecRegType shil_rec_gbr,shil_rec_ssr,shil_rec_spc,shil_rec_sgr,shil_rec_dbr
 shil_RecRegType shil_rec_mach,shil_rec_macl,shil_rec_pr,shil_rec_fpul;
 
 
+void shil_DynarecInit()
+{
+	for (int i=0;i<8;i++)
+	{
+		dyna_reg_id_fr[i]=(Sh4RegType)(fr_0+i);
+		dyna_reg_id_xf[i]=(Sh4RegType)(xf_0+i);
+		dyna_reg_id_dr[i]=(Sh4RegType)(dr_0+i);
+		dyna_reg_id_xd[i]=(Sh4RegType)(xd_0+i);
 
+		shil_rec_r[i].regid=dyna_reg_id_r[i]=(Sh4RegType)(r0+i);
+		shil_rec_r_bank[i].regid=dyna_reg_id_r_bank[i]=(Sh4RegType)(r0_Bank+i);
+	}
+
+	for (int i=8;i<16;i++)
+	{
+		dyna_reg_id_fr[i]=(Sh4RegType)(fr_0+i);
+		dyna_reg_id_xf[i]=(Sh4RegType)(xf_0+i);
+
+		shil_rec_r[i].regid=dyna_reg_id_r[i]=(Sh4RegType)(r0+i);
+	}
+
+	shil_rec_gbr.regid=reg_gbr;
+	shil_rec_ssr.regid=reg_ssr;
+	shil_rec_spc.regid=reg_spc;
+	shil_rec_sgr.regid=reg_sgr;
+	shil_rec_dbr.regid=reg_dbr;
+	shil_rec_vbr.regid=reg_vbr;
+
+	shil_rec_mach.regid=reg_mach;
+	shil_rec_macl.regid=reg_macl;
+	shil_rec_pr.regid=reg_pr;
+	shil_rec_fpul.regid=reg_fpul;
+}
 //rename shit
 
 #define UpdateFPSCR rec_UpdateFPSCR

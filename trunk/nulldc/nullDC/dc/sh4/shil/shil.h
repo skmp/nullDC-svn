@@ -102,6 +102,11 @@ class shil_stream
 	void emit(shil_opcodes op,u16 flags,u32 source,u32 dest);
 public :
 	
+	shil_stream()
+	{
+		op_count=0;
+	}
+	u32 op_count;
 	void mov(Sh4RegType to,Sh4RegType from);
 	void mov(Sh4RegType to,u32 from);
 
@@ -220,4 +225,7 @@ public :
 
 	void fabs(Sh4RegType to);
 	void fneg(Sh4RegType to);
+
+	//misc
+	void shil_ifb(u32 opcode,u32 pc);
 };
