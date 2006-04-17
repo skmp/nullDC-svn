@@ -9,17 +9,28 @@ using namespace std;
 //16 byte il representation
 struct shil_opcode
 {
+	shil_opcode()
+	{
+		opcode=0;
+		flags=0;
+		flags_ex=0;
+		reg1=0;
+		reg2=0;
+		imm1=0;
+		imm2=0;
+	}
 	//opcode info
 	u16 opcode;
-	u16 flags;
-	//flags
-	u16 flags_ex;
+	u16 flags;//-> opcode related
+	
+	u16 flags_ex;//flags		-> opts related
 
-	u32 source;
-	u32 dest;
+	
+	u8 reg1;	//reg 
+	u8 reg2;	//reg
 
-	u8 source_ex;
-	u8 dest_ex;
+	u32 imm1;	//imm1
+	u32 imm2;	//imm2
 
 	INLINE bool ReadsReg(Sh4RegType reg);
 	INLINE bool OverwritesReg(Sh4RegType reg);
@@ -27,6 +38,16 @@ struct shil_opcode
 };
 
 #pragma pack (pop)
+
+//flags
+enum shil_opflags
+{
+	FLAG_8,
+	FLAG_16,
+	FLAG_32,
+	FLAG_64,
+	FLAG_SX,
+};
 
 //shil is a combination of sh4 and x86 opcodes , in a decoded form so that varius optimisations
 //are possible (inlcuding cost removal , dead code elimination , flag elimination , more)
@@ -47,17 +68,134 @@ struct shil_opcode
 
 enum shil_opcodes
 {
-	//reg2reg , reg2ram , ram2reg , reg2const , ram2const
-	mov=0,
+	//mov reg,reg
+	//mov reg,const	[32]
+	mov,
 
-	add,
-	sub,
+	/*** Mem reads ***/
+	//readmem [reg]			[s]			[8|16|32|64]
+	//readmem [const]		[s]			[8|16|32|64]
+	//readmem base[offset]	[s]			[8|16|32|64]
+	//readmem base[const]	[s]			[8|16|32|64]
+	readm,
+
+	/*** Mem writes ***/
+	//writemem [reg]		[]			[8|16|32|64]
+	//writemem [const]		[]			[8|16|32|64]
+	//writemem base[offset]	[]			[8|16|32|64]
+	//writemem base[const]	[]			[8|16|32|64]
+	writem,
 	
+	//cmp reg,reg
+	//cmp reg,imm [s] [8]
+	cmp,
+
+	//cmp reg,reg
+	//cmp reg,imm [] [8]
+	test,
+
+	//SaveT/LoadT cond
+	SaveT,
+	LoadT,
+
+	//bit shits
+	//neg reg
+	neg,
+	//not reg
+	not,
+
+	//bitwise ops
+
+	//and reg,reg
+	//and reg,const [32]
+	and,
+
+	//and reg,reg
+	//and reg,const [32]
+	or,
+
+	//and reg,reg
+	//and reg,const [32]
+	xor,
+	
+
+	//logical shifts
+
+	//shl reg,const [8]
+	shl,
+	//shr reg,const [8]
+	shr,
+
+	//arithmetic shifts
+
+	//sal reg,const [8]
+	//sal is same as shl
+	//sar reg,const [8]
+	sar,
+
+	//rotate
+
+	//rcl reg,const [8]
+	rcl,
+	
+	//rcr reg,const [8]
+	rcr,
+	
+	//rol reg,const [8]
+	rol,
+	
+	//ror reg,const [8]
+	ror,
+
+	//swaps
+	//swap [16|32]
+	swap,
+
+	//moves w/ extend
+	//signed - unsigned
+	//movex reg,reg		[s] [8|16]
+	//movsxb reg,reg	 s	 8
+	//movsxb reg,reg	 s	 16
+	//movzxb reg,reg	 z	 8
+	//movzxw reg,reg	 z	 16
+	movex,
+
+	//maths (integer)
+	//adc reg,reg
+	adc,
+
+	//add reg,reg
+	//add reg,const
+	add,
+
+	//sub reg,reg
+	//sub reg,const
+	sub,
+
+	//floating
+	//basic ops
+
+	//fadd reg,reg [32|64]
 	fadd,
+	//fsub reg,reg [32|64]
 	fsub,
+	//fmul reg,reg [32|64]
 	fmul,
+	//fdiv reg,reg [32|64]
 	fdiv,
-	fmac
+
+	
+	//fabs reg [32|64]
+	fabs,
+	//fneg reg [32|64]
+	fneg,
+
+	//pfftt
+	//fmac r0,reg,reg [32|64]
+	fmac,
+
+	//shil_ifb const , const
+	shil_ifb
 };
 
 enum cmd_cond
@@ -103,7 +241,9 @@ enum x86_flags
 class shil_stream
 {
 	vector<shil_opcode> opcodes;
-	void shil_stream::emit(shil_opcodes op,u32 source,u32 dest,u16 flags);
+	void shil_stream::emit(shil_opcodes op,Sh4RegType reg,u32 param);
+	void shil_stream::emit(shil_opcodes op,Sh4RegType reg);
+
 public :
 	
 	shil_stream()
@@ -132,12 +272,12 @@ public :
 	void readm32(Sh4RegType to,Sh4RegType base,Sh4RegType offset);
 	void readm64(Sh4RegType to,Sh4RegType base,Sh4RegType offset);
 
-	/*** Mem writes ***/
 	//readmem base[const]
 	void readm8(Sh4RegType to,Sh4RegType base,u32 offset,bool sx);
 	void readm16(Sh4RegType to,Sh4RegType base,u32 offset,bool sx);
 	void readm32(Sh4RegType to,Sh4RegType base,u32 offset);
 
+	/*** Mem writes ***/
 	//writemem [reg]
 	void writem8(Sh4RegType from,Sh4RegType to,bool sx);
 	void writem16(Sh4RegType from,Sh4RegType to,bool sx);
@@ -163,7 +303,6 @@ public :
 	
 	void cmp(Sh4RegType to,Sh4RegType from);
 	void cmp(Sh4RegType to,s8 from);
-	void cmp(Sh4RegType to,u8 from);
 
 	void test(Sh4RegType to,Sh4RegType from);
 	void test(Sh4RegType to,u8 from);
