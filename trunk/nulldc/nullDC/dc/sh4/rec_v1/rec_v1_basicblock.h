@@ -25,7 +25,7 @@ public :
 	u32 flags;
 	u32 cycles;
 
-	list<shil_opcode> ilst;
+	shil_stream ilst;
 
 	rec_v1_CompiledBlock* compiled;
 };

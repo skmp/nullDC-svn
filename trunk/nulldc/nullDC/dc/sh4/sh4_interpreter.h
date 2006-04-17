@@ -9,40 +9,27 @@ typedef void (__fastcall OpCallFP) (u32 op);
 
 enum OpcodeType
 {
-	UsePC=1,		//uses pc
-	UseDslot=2,		//writes to dslot 
-	UseDslot_c=4,   //may write to dslot
-	Branch=8,		//direct branch
-	BranchDelay=16,	//Branch with delay
-	//////////////////////////////
-	Normal=0,			//does not modify the state of the cpu nor uses pc :)
-	Normal_needpc=Normal|UsePC,//does not modify the state of the cpu, uses PC
+	//basic
+	Normal=0,			//heh , nothing special :P
+	ReadsPC=1,			//pc must be set upon calling it
+	WritesPC=2,			//it will write pc (branch)
+	Delayslot=4,		//has a delayslot opcode , valid olny when WritesPC is set
 
-	Branch_c=Branch|UseDslot_c,			//conditional branch
-	Branch_c_UsePC=Branch_c|UsePC,
+	WritesSR=8,			//Writes to SR , and UpdateSR needs to be called
+	WritesFPSCR=16,		//Writes to FPSCR , and UpdateSR needs to be called
 
-	BranchDelay_c=BranchDelay|UseDslot_c,//conditional branch with delay
-	BranchDelay_c_UsePC=BranchDelay_c|UsePC,
-	
+	Invalid=128,			//invalid
 
-	Branch_u=Branch|UseDslot,			//unconditional branch
-	Branch_u_UsePC=Branch_u|UsePC,
+	//heh not basic :P
+	ReadWritePC=ReadsPC|WritesPC,		//Read and writes pc :P
 
-	BranchDelay_u=BranchDelay|UseDslot,//unconditional branch with delay
-	BranchDelay_u_UsePC=BranchDelay_u|UsePC,
-	
-	/////////////////////////////
-	Arithm_FPU=4096	,	//fpu opcode
-	Arithm_FPU_SP=Arithm_FPU|256,	//Fpu opcode , single prec (ops)
-	Arithm_FPU_DP=Arithm_FPU|512,	//Fpu opcode , double prec (ops)
-
-	Arithm_FPU_SM=Arithm_FPU|1024,	//Fpu opcode , single data (mov's)
-	Arithm_FPU_DM=Arithm_FPU|2048,	//Fpu opcode , double data (mov's)
-	Arithm_FPU_Mode_Mask=0x0F00,
-
-	SystemSt=96,		//changes system status (register banks ect)
-	NoOperation=112,	//nop
-	Invalid=128			//invalid
+	//branches : 
+	//not delay slot
+	Branch_dir=ReadWritePC,		//direct (eg , pc=r[xx]) -- this one is ReadWritePC b/c the delayslot may use pc ;)
+	Branch_rel=ReadWritePC,		//relative (rg pc+=10);
+	//delay slot
+	Branch_dir_d=Delayslot|Branch_dir,	//direct (eg , pc=r[xx])
+	Branch_rel_d=Delayslot|Branch_rel,	//relative (rg pc+=10);
 };
 
 

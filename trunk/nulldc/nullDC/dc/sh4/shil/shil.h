@@ -1,6 +1,9 @@
 #pragma once
 #include "types.h"
 #include "dc\sh4\sh4_if.h"
+#include <Vector>
+
+using namespace std;
 
 #pragma pack (push,1)
 //16 byte il representation
@@ -99,7 +102,8 @@ enum x86_flags
 };
 class shil_stream
 {
-	void emit(shil_opcodes op,u16 flags,u32 source,u32 dest);
+	vector<shil_opcode> opcodes;
+	void shil_stream::emit(shil_opcodes op,u32 source,u32 dest,u16 flags);
 public :
 	
 	shil_stream()

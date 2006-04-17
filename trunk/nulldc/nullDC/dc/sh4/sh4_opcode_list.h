@@ -6,7 +6,7 @@ extern OpCallFP* OpPtr[0x10000];
 extern RecOpCallFP* RecOpPtr[0x10000];
 extern OpcodeType OpTyp[0x10000];
 
-typedef void OpDissasmFP(char* out,char* FormatString,u32 pc,u16 opcode);
+typedef void OpDissasmFP(char* out,const char* const FormatString,u32 pc,u16 opcode);
 
 struct sh4_opcodelistentry
 {
@@ -17,6 +17,32 @@ struct sh4_opcodelistentry
 	OpcodeType type;
 	OpDissasmFP* dissasm;
 	char disasm1[64];
+
+	void Dissasemble(char* strout,u32 pc , u16 params) const
+	{
+		dissasm(strout,&disasm1[0],pc,params);
+	}
+
+	INLINE bool SetPC() const
+	{
+		return (type & WritesPC)!=0;
+	}
+
+	INLINE bool NeedPC() const
+	{
+		return (type & ReadsPC)!=0;
+	}
+
+	INLINE bool SetSR() const
+	{
+		return (type & WritesSR)!=0;
+	}
+
+	INLINE bool SetFPSCR() const
+	{
+		return (type & WritesFPSCR)!=0;
+	}
+	
 };
 
 #define ExecuteOpcode(op) {OpPtr[op](op);}

@@ -32,10 +32,10 @@ sh4_opcodelistentry* OpDisasm[0x10000];
 #define GetImm12(str) ((str>>0) & 0xfff)
 #define GetSImm12(str) (((s16)((GetImm12(str))<<4))>>3)
 
-INLINE bool strcmp2(char* &str1_o,const char * str2)
+INLINE bool strcmp2(const char* &str1_o,const char * str2)
 {
 	u32 sz=0;
-	char* str1=str1_o;
+	const char* str1=str1_o;
 	while (*str2!='\0')
 	{
 		if (*str1!=*str2)
@@ -50,7 +50,7 @@ INLINE bool strcmp2(char* &str1_o,const char * str2)
 	return true;
 }
 //custom format string
-void OpDissCFS(char* text,char* tx1,u32 pc,u16 opcode)
+void OpDissCFS(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	while (*tx1!='\0')
 	{
@@ -164,10 +164,10 @@ void OpDissCFS(char* text,char* tx1,u32 pc,u16 opcode)
 						ti++;
 				}
 
-				char old=tx1[ti];
-				tx1[ti]='\0';
+//				char old=tx1[ti];
+				//tx1[ti]='\0';
 				printf("Sh4Dissasm : Tag not known\"%s\"\n",tx1);
-				tx1[ti]=old;
+				//tx1[ti]=old;
 				
 				*text='<';text++;
 				*text=*tx1;
@@ -205,7 +205,7 @@ fpscr_type Get_fpscr()
 	return t;
 }
 //fadd <FREG_M>,<FREG_N>
-void d1111_nnnn_mmmm_0000(char* text,char* tx1,u32 pc,u16 opcode)
+void d1111_nnnn_mmmm_0000(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	if (Get_fpscr().PR==0)
 	{
@@ -218,7 +218,7 @@ void d1111_nnnn_mmmm_0000(char* text,char* tx1,u32 pc,u16 opcode)
 }
 
 //fsub <FREG_M>,<FREG_N>
-void d1111_nnnn_mmmm_0001(char* text,char* tx1,u32 pc,u16 opcode)
+void d1111_nnnn_mmmm_0001(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	if (Get_fpscr().PR==0)
 	{
@@ -231,7 +231,7 @@ void d1111_nnnn_mmmm_0001(char* text,char* tx1,u32 pc,u16 opcode)
 }
 
 //fmul <FREG_M>,<FREG_N>
-void d1111_nnnn_mmmm_0010(char* text,char* tx1,u32 pc,u16 opcode)
+void d1111_nnnn_mmmm_0010(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	if (Get_fpscr().PR==0)
 	{
@@ -244,7 +244,7 @@ void d1111_nnnn_mmmm_0010(char* text,char* tx1,u32 pc,u16 opcode)
 }
 
 //fdiv <FREG_M>,<FREG_N>
-void d1111_nnnn_mmmm_0011(char* text,char* tx1,u32 pc,u16 opcode)
+void d1111_nnnn_mmmm_0011(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	if (Get_fpscr().PR==0)
 	{
@@ -257,7 +257,7 @@ void d1111_nnnn_mmmm_0011(char* text,char* tx1,u32 pc,u16 opcode)
 }
 
 //fcmp/eq <FREG_M>,<FREG_N>
-void d1111_nnnn_mmmm_0100(char* text,char* tx1,u32 pc,u16 opcode)
+void d1111_nnnn_mmmm_0100(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	if (Get_fpscr().PR==0)
 	{
@@ -270,7 +270,7 @@ void d1111_nnnn_mmmm_0100(char* text,char* tx1,u32 pc,u16 opcode)
 }
 
 //fcmp/gt <FREG_M>,<FREG_N>
-void d1111_nnnn_mmmm_0101(char* text,char* tx1,u32 pc,u16 opcode)
+void d1111_nnnn_mmmm_0101(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	if (Get_fpscr().PR==0)
 	{
@@ -283,7 +283,7 @@ void d1111_nnnn_mmmm_0101(char* text,char* tx1,u32 pc,u16 opcode)
 }
 
 //fmov.s @(R0,<REG_M>),<FREG_N>
-void d1111_nnnn_mmmm_0110(char* text,char* tx1,u32 pc,u16 opcode)
+void d1111_nnnn_mmmm_0110(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	if (Get_fpscr().SZ==0)
 	{
@@ -296,7 +296,7 @@ void d1111_nnnn_mmmm_0110(char* text,char* tx1,u32 pc,u16 opcode)
 }
 
 //fmov.s <FREG_M>,@(R0,<REG_N>)
-void d1111_nnnn_mmmm_0111(char* text,char* tx1,u32 pc,u16 opcode)
+void d1111_nnnn_mmmm_0111(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	if (Get_fpscr().SZ==0)
 	{
@@ -309,7 +309,7 @@ void d1111_nnnn_mmmm_0111(char* text,char* tx1,u32 pc,u16 opcode)
 }
 
 //fmov.s @<REG_M>,<FREG_N>
-void d1111_nnnn_mmmm_1000(char* text,char* tx1,u32 pc,u16 opcode)
+void d1111_nnnn_mmmm_1000(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	if (Get_fpscr().SZ==0)
 	{
@@ -322,7 +322,7 @@ void d1111_nnnn_mmmm_1000(char* text,char* tx1,u32 pc,u16 opcode)
 }
 
 //fmov.s @<REG_M>+,<FREG_N>
-void d1111_nnnn_mmmm_1001(char* text,char* tx1,u32 pc,u16 opcode)
+void d1111_nnnn_mmmm_1001(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	if (Get_fpscr().SZ==0)
 	{
@@ -335,7 +335,7 @@ void d1111_nnnn_mmmm_1001(char* text,char* tx1,u32 pc,u16 opcode)
 }
 
 //fmov.s <FREG_M>,@<REG_N>
-void d1111_nnnn_mmmm_1010(char* text,char* tx1,u32 pc,u16 opcode)
+void d1111_nnnn_mmmm_1010(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	if (Get_fpscr().SZ==0)
 	{
@@ -348,7 +348,7 @@ void d1111_nnnn_mmmm_1010(char* text,char* tx1,u32 pc,u16 opcode)
 }
 
 //fmov.s <FREG_M>,@-<REG_N>
-void d1111_nnnn_mmmm_1011(char* text,char* tx1,u32 pc,u16 opcode)
+void d1111_nnnn_mmmm_1011(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	if (Get_fpscr().SZ==0)
 	{
@@ -361,7 +361,7 @@ void d1111_nnnn_mmmm_1011(char* text,char* tx1,u32 pc,u16 opcode)
 }
 
 //fmov <FREG_M>,<FREG_N>
-void d1111_nnnn_mmmm_1100(char* text,char* tx1,u32 pc,u16 opcode)
+void d1111_nnnn_mmmm_1100(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	if (Get_fpscr().SZ==0)
 	{
@@ -374,7 +374,7 @@ void d1111_nnnn_mmmm_1100(char* text,char* tx1,u32 pc,u16 opcode)
 }
 
 //fabs <FREG_N>
-void d1111_nnnn_0101_1101(char* text,char* tx1,u32 pc,u16 opcode)
+void d1111_nnnn_0101_1101(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	if (Get_fpscr().PR==0)
 	{
@@ -386,7 +386,7 @@ void d1111_nnnn_0101_1101(char* text,char* tx1,u32 pc,u16 opcode)
 	}
 }
 //FSCA FPUL, DRn//F0FD//1111_nnn0_1111_1101
-void OpDissFSCA(char* text,char* tx1,u32 pc,u16 opcode)
+void OpDissFSCA(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	if (Get_fpscr().PR==0)
 	{
@@ -402,7 +402,7 @@ void OpDissFSCA(char* text,char* tx1,u32 pc,u16 opcode)
 }
 
 //fcnvds <DR_N>,FPUL
-void d1111_nnnn_1011_1101(char* text,char* tx1,u32 pc,u16 opcode)
+void d1111_nnnn_1011_1101(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	if (Get_fpscr().PR==0)
 	{
@@ -415,7 +415,7 @@ void d1111_nnnn_1011_1101(char* text,char* tx1,u32 pc,u16 opcode)
 }
 
 //fcnvsd FPUL,<DR_N>
-void d1111_nnnn_1010_1101(char* text,char* tx1,u32 pc,u16 opcode)
+void d1111_nnnn_1010_1101(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	if (Get_fpscr().PR==0)
 	{
@@ -428,7 +428,7 @@ void d1111_nnnn_1010_1101(char* text,char* tx1,u32 pc,u16 opcode)
 }
 
 //fipr <FV_M>,<FV_N>
-void OpDissfipr(char* text,char* tx1,u32 pc,u16 opcode)
+void OpDissfipr(char* text,const char* tx1,u32 pc,u16 opcode)
 {	
 	if (Get_fpscr().PR==0)
 	{
@@ -444,7 +444,7 @@ void OpDissfipr(char* text,char* tx1,u32 pc,u16 opcode)
 
 }
 //fldi0 <FREG_N>
-void d1111_nnnn_1000_1101(char* text,char* tx1,u32 pc,u16 opcode)
+void d1111_nnnn_1000_1101(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	if (Get_fpscr().PR==0)
 	{
@@ -457,7 +457,7 @@ void d1111_nnnn_1000_1101(char* text,char* tx1,u32 pc,u16 opcode)
 }
 
 //fldi1 <FREG_N>
-void d1111_nnnn_1001_1101(char* text,char* tx1,u32 pc,u16 opcode)
+void d1111_nnnn_1001_1101(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	if (Get_fpscr().PR==0)
 	{
@@ -470,7 +470,7 @@ void d1111_nnnn_1001_1101(char* text,char* tx1,u32 pc,u16 opcode)
 }
 
 //flds <FREG_N>,FPUL
-void d1111_nnnn_0001_1101(char* text,char* tx1,u32 pc,u16 opcode)
+void d1111_nnnn_0001_1101(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	if (Get_fpscr().PR==0)
 	{
@@ -482,7 +482,7 @@ void d1111_nnnn_0001_1101(char* text,char* tx1,u32 pc,u16 opcode)
 	}
 }
 //float FPUL,<FREG_N>
-void d1111_nnnn_0010_1101(char* text,char* tx1,u32 pc,u16 opcode)
+void d1111_nnnn_0010_1101(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	if (Get_fpscr().PR==0)
 	{
@@ -494,7 +494,7 @@ void d1111_nnnn_0010_1101(char* text,char* tx1,u32 pc,u16 opcode)
 	}	      
 }
 //fneg <FREG_N>
-void d1111_nnnn_0100_1101(char* text,char* tx1,u32 pc,u16 opcode)
+void d1111_nnnn_0100_1101(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	if (Get_fpscr().PR==0)
 	{
@@ -509,7 +509,7 @@ void d1111_nnnn_0100_1101(char* text,char* tx1,u32 pc,u16 opcode)
 //fschg	- no need
 
 //fsqrt <FREG_N>                
-void d1111_nnnn_0110_1101(char* text,char* tx1,u32 pc,u16 opcode)
+void d1111_nnnn_0110_1101(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	if (Get_fpscr().PR==0)
 	{
@@ -522,7 +522,7 @@ void d1111_nnnn_0110_1101(char* text,char* tx1,u32 pc,u16 opcode)
 }
 
 //ftrc <FREG_N>, FPUL
-void d1111_nnnn_0011_1101(char* text,char* tx1,u32 pc,u16 opcode)
+void d1111_nnnn_0011_1101(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	if (Get_fpscr().PR==0)
 	{
@@ -534,7 +534,7 @@ void d1111_nnnn_0011_1101(char* text,char* tx1,u32 pc,u16 opcode)
 	}
 }
 //fsts FPUL,<FREG_N>
-void d1111_nnnn_0000_1101(char* text,char* tx1,u32 pc,u16 opcode)
+void d1111_nnnn_0000_1101(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	if (Get_fpscr().PR==0)
 	{
@@ -546,7 +546,7 @@ void d1111_nnnn_0000_1101(char* text,char* tx1,u32 pc,u16 opcode)
 	}
 }
 //ftrv xmtrx,<FV_N>
-void OpDissftrv(char* text,char* tx1,u32 pc,u16 opcode)
+void OpDissftrv(char* text,const char* tx1,u32 pc,u16 opcode)
 {	
 	if (Get_fpscr().PR==0)
 	{
@@ -559,7 +559,7 @@ void OpDissftrv(char* text,char* tx1,u32 pc,u16 opcode)
 	}
 }
 //fmac <FREG_0>,<FREG_M>,<FREG_N> 
-void OpDissfmac(char* text,char* tx1,u32 pc,u16 opcode)
+void OpDissfmac(char* text,const char* tx1,u32 pc,u16 opcode)
 {	
 	if (Get_fpscr().PR==0)
 	{
@@ -574,7 +574,7 @@ void OpDissfmac(char* text,char* tx1,u32 pc,u16 opcode)
 }
 
 //FSRRA <FREG_N> (1111nnnn 01111101)
-void d1111_nnnn_0111_1101(char* text,char* tx1,u32 pc,u16 opcode)
+void d1111_nnnn_0111_1101(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	if (Get_fpscr().PR==0)
 	{
@@ -586,19 +586,19 @@ void d1111_nnnn_0111_1101(char* text,char* tx1,u32 pc,u16 opcode)
 	}	
 }
 
-void OpNoDiss(char* text,char* tx1,u32 pc,u16 opcode)
+void OpNoDiss(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	sprintf(text,"Missing Disassemble");
 }
 
-void dissasm_Break(char* text,char* tx1,u32 pc,u16 opcode)
+void dissasm_Break(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	DissasembleOpcode(0,pc,text);
 
 	strcat(text,"[Break]");
 }
 
-void dissasm_GDROM(char* text,char* tx1,u32 pc,u16 opcode)
+void dissasm_GDROM(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	sprintf(text,"gdrom opcode *ADD REAL DISSASM*");
 }
@@ -616,8 +616,8 @@ sh4_opcodelistentry opcodes[]=
 	{rec_shil_i0000_nnnn_0011_0010	,i0000_nnnn_0011_0010	,Mask_n		,0x0032	,Normal				,OpDissCFS,"stc SSR,<REG_N>"},	//stc SSR,<REG_N>               
 	{rec_shil_i0000_nnnn_0100_0010	,i0000_nnnn_0100_0010	,Mask_n		,0x0042	,Normal				,OpDissCFS,"stc SPC,<REG_N>"},	//stc SPC,<REG_N>               
 	{rec_shil_i0000_nnnn_1mmm_0010	,i0000_nnnn_1mmm_0010	,Mask_n_ml3bit,0x0082,Normal			,OpDissCFS,"stc R0_BANK,<REG_N>"},	//stc R0_BANK,<REG_N>           
-	{rec_shil_icpu_nimp	,i0000_nnnn_0010_0011	,Mask_n		,0x0023	,BranchDelay_u_UsePC,OpDissCFS,"braf <REG_N>"},	//braf <REG_N>                  
-	{rec_shil_icpu_nimp	,i0000_nnnn_0000_0011	,Mask_n		,0x0003	,BranchDelay_u_UsePC,OpDissCFS,"bsrf <REG_N>"},	//bsrf <REG_N>                  
+	{rec_shil_icpu_nimp				,i0000_nnnn_0010_0011	,Mask_n		,0x0023	,Branch_rel_d		,OpDissCFS,"braf <REG_N>"},	//braf <REG_N>                  
+	{rec_shil_icpu_nimp				,i0000_nnnn_0000_0011	,Mask_n		,0x0003	,Branch_rel_d		,OpDissCFS,"bsrf <REG_N>"},	//bsrf <REG_N>                  
 	{rec_shil_i0000_nnnn_1100_0011	,i0000_nnnn_1100_0011	,Mask_n		,0x00C3	,Normal				,OpDissCFS,"movca.l R0, @<REG_N>"},	//movca.l R0, @<REG_N>          
 	{rec_shil_i0000_nnnn_1001_0011	,i0000_nnnn_1001_0011	,Mask_n		,0x0093	,Normal				,OpDissCFS,"ocbi @<REG_N>"},	//ocbi @<REG_N>                 
 	{rec_shil_i0000_nnnn_1010_0011	,i0000_nnnn_1010_0011	,Mask_n		,0x00A3	,Normal				,OpDissCFS,"ocbp @<REG_N>"},	//ocbp @<REG_N>                 
@@ -635,16 +635,16 @@ sh4_opcodelistentry opcodes[]=
 	{rec_shil_i0000_0000_0001_1000	,i0000_0000_0001_1000	,Mask_none	,0x0018	,Normal				,OpDissCFS,"sett"},	//sett                          
 	{rec_shil_i0000_0000_0001_1001	,i0000_0000_0001_1001	,Mask_none	,0x0019	,Normal				,OpDissCFS,"div0u"},//div0u                         
 	{rec_shil_i0000_nnnn_0010_1001	,i0000_nnnn_0010_1001	,Mask_n		,0x0029	,Normal				,OpDissCFS,"movt <REG_N>"},	//movt <REG_N>                  
-	{rec_shil_i0000_0000_0000_1001	,i0000_0000_0000_1001	,Mask_none	,0x0009	,NoOperation		,OpDissCFS,"nop"},	//nop                           
+	{rec_shil_i0000_0000_0000_1001	,i0000_0000_0000_1001	,Mask_none	,0x0009	,Normal				,OpDissCFS,"nop"},	//nop                           
 	{rec_shil_i0000_nnnn_0101_1010	,i0000_nnnn_0101_1010	,Mask_n		,0x005A	,Normal				,OpDissCFS,"sts FPUL,<REG_N>"},	//sts FPUL,<REG_N>
-	{rec_shil_icpu_nimp	,i0000_nnnn_0110_1010	,Mask_n		,0x006A	,Normal				,OpDissCFS,"sts FPSCR,<REG_N>"},//sts FPSCR,<REG_N>             
+	{rec_shil_icpu_nimp				,i0000_nnnn_0110_1010	,Mask_n		,0x006A	,Normal				,OpDissCFS,"sts FPSCR,<REG_N>"},//sts FPSCR,<REG_N>             
 	{rec_shil_i0000_nnnn_1111_1010	,i0000_nnnn_1111_1010	,Mask_n		,0x00FA	,Normal				,OpDissCFS,"stc DBR,<REG_N>"},	//stc DBR,<REG_N>             
 	{rec_shil_i0000_nnnn_0000_1010	,i0000_nnnn_0000_1010	,Mask_n		,0x000A	,Normal				,OpDissCFS,"sts MACH,<REG_N>"},	//sts MACH,<REG_N>              
 	{rec_shil_i0000_nnnn_0001_1010	,i0000_nnnn_0001_1010	,Mask_n		,0x001A	,Normal				,OpDissCFS,"sts MACL,<REG_N>"},	//sts MACL,<REG_N>              
 	{rec_shil_i0000_nnnn_0010_1010	,i0000_nnnn_0010_1010	,Mask_n		,0x002A	,Normal				,OpDissCFS,"sts PR,<REG_N>"},	//sts PR,<REG_N>                
-	{rec_shil_icpu_nimp	,i0000_0000_0010_1011	,Mask_none	,0x002B	,BranchDelay_u		,OpDissCFS,"rte"},	//rte                           
-	{rec_shil_icpu_nimp	,i0000_0000_0000_1011	,Mask_none	,0x000B	,BranchDelay_u		,OpDissCFS,"rts"},	//rts                           
-	{rec_shil_icpu_nimp	,i0000_0000_0001_1011	,Mask_none	,0x001B	,Branch_u_UsePC		,OpDissCFS,"sleep"},	//sleep                         
+	{rec_shil_icpu_nimp				,i0000_0000_0010_1011	,Mask_none	,0x002B	,WritesPC			,OpDissCFS,"rte"},	//rte                           
+	{rec_shil_icpu_nimp				,i0000_0000_0000_1011	,Mask_none	,0x000B	,Branch_dir_d		,OpDissCFS,"rts"},	//rts                           
+	{rec_shil_icpu_nimp				,i0000_0000_0001_1011	,Mask_none	,0x001B	,ReadWritePC		,OpDissCFS,"sleep"},	//sleep                         
 	{rec_shil_i0000_nnnn_mmmm_1100	,i0000_nnnn_mmmm_1100	,Mask_n_m	,0x000C	,Normal				,OpDissCFS,"mov.b @(R0,<REG_M>),<REG_N>"},	//mov.b @(R0,<REG_M>),<REG_N>   
 	{rec_shil_i0000_nnnn_mmmm_1101	,i0000_nnnn_mmmm_1101	,Mask_n_m	,0x000D	,Normal				,OpDissCFS,"mov.w @(R0,<REG_M>),<REG_N>"},	//mov.w @(R0,<REG_M>),<REG_N>   
 	{rec_shil_i0000_nnnn_mmmm_1110	,i0000_nnnn_mmmm_1110	,Mask_n_m	,0x000E	,Normal				,OpDissCFS,"mov.l @(R0,<REG_M>),<REG_N>"},	//mov.l @(R0,<REG_M>),<REG_N>   
@@ -680,11 +680,11 @@ sh4_opcodelistentry opcodes[]=
 	{rec_shil_i0011_nnnn_mmmm_1110	,i0011_nnnn_mmmm_1110	,Mask_n_m	,0x300E	,Normal				,OpDissCFS,"addc <REG_M>,<REG_N>"},	//addc <REG_M>,<REG_N>          
 	{rec_shil_i0011_nnnn_mmmm_1111	,i0011_nnnn_mmmm_1111	,Mask_n_m	,0x300F	,Normal				,OpDissCFS,"addv <REG_M>,<REG_N>"},	// addv <REG_M>,<REG_N>          
 	{rec_shil_i0100_nnnn_0101_0010	,i0100_nnnn_0101_0010	,Mask_n		,0x4052	,Normal				,OpDissCFS,"addv <REG_M>,<REG_N>"},	//sts.l FPUL,@-<REG_N>          
-	{rec_shil_icpu_nimp	,i0100_nnnn_0110_0010	,Mask_n		,0x4062	,Normal				,OpDissCFS,"sts.l FPSCR,@-<REG_N>"},	//sts.l FPSCR,@-<REG_N>         
+	{rec_shil_icpu_nimp				,i0100_nnnn_0110_0010	,Mask_n		,0x4062	,Normal				,OpDissCFS,"sts.l FPSCR,@-<REG_N>"},	//sts.l FPSCR,@-<REG_N>         
 	{rec_shil_i0100_nnnn_0000_0010	,i0100_nnnn_0000_0010	,Mask_n		,0x4002	,Normal				,OpDissCFS,"sts.l MACH,@-<REG_N>"},	//sts.l MACH,@-<REG_N>          
 	{rec_shil_i0100_nnnn_0001_0010	,i0100_nnnn_0001_0010	,Mask_n		,0x4012	,Normal				,OpDissCFS,"sts.l MACL,@-<REG_N> "},	//sts.l MACL,@-<REG_N>          
 	{rec_shil_i0100_nnnn_0010_0010	,i0100_nnnn_0010_0010	,Mask_n		,0x4022	,Normal				,OpDissCFS,"sts.l PR,@-<REG_N> "},	//sts.l PR,@-<REG_N>            
-	{rec_shil_icpu_nimp	,i0100_nnnn_0000_0011	,Mask_n		,0x4003	,Normal				,OpDissCFS,"stc.l SR,@-<REG_N> "},	//stc.l SR,@-<REG_N>            
+	{rec_shil_icpu_nimp				,i0100_nnnn_0000_0011	,Mask_n		,0x4003	,Normal				,OpDissCFS,"stc.l SR,@-<REG_N> "},	//stc.l SR,@-<REG_N>            
 	{rec_shil_i0100_nnnn_0001_0011	,i0100_nnnn_0001_0011	,Mask_n		,0x4013	,Normal				,OpDissCFS,"stc.l GBR,@-<REG_N> "},	//stc.l GBR,@-<REG_N>           
 	{rec_shil_i0100_nnnn_0010_0011	,i0100_nnnn_0010_0011	,Mask_n		,0x4023	,Normal				,OpDissCFS,"stc.l VBR,@-<REG_N> "},	//stc.l VBR,@-<REG_N>           
 	{rec_shil_i0100_nnnn_0011_0011	,i0100_nnnn_0011_0011	,Mask_n		,0x4033	,Normal				,OpDissCFS,"stc.l SSR,@-<REG_N> "},	//stc.l SSR,@-<REG_N>           
@@ -694,8 +694,8 @@ sh4_opcodelistentry opcodes[]=
 	{rec_shil_i0100_nnnn_0001_0110	,i0100_nnnn_0001_0110	,Mask_n		,0x4016	,Normal				,OpDissCFS,"lds.l @<REG_N>+,MACL"},	//lds.l @<REG_N>+,MACL          
 	{rec_shil_i0100_nnnn_0010_0110	,i0100_nnnn_0010_0110	,Mask_n		,0x4026	,Normal				,OpDissCFS,"lds.l @<REG_N>+,PR"},	//lds.l @<REG_N>+,PR            
 	{rec_shil_i0100_nnnn_0101_0110	,i0100_nnnn_0101_0110	,Mask_n		,0x4056	,Normal				,OpDissCFS,"lds.l @<REG_N>+,FPUL"},	//lds.l @<REG_N>+,FPUL          
-	{rec_shil_icpu_nimp	,i0100_nnnn_0110_0110	,Mask_n		,0x4066	,Normal				,OpDissCFS,"lds.l @<REG_N>+,FPSCR"},	//lds.l @<REG_N>+,FPSCR         
-	{rec_shil_icpu_nimp	,i0100_nnnn_0000_0111	,Mask_n		,0x4007	,SystemSt				,OpDissCFS,"ldc.l @<REG_N>+,SR"},	//ldc.l @<REG_N>+,SR            
+	{rec_shil_icpu_nimp				,i0100_nnnn_0110_0110	,Mask_n		,0x4066	,Normal				,OpDissCFS,"lds.l @<REG_N>+,FPSCR"},	//lds.l @<REG_N>+,FPSCR         
+	{rec_shil_icpu_nimp				,i0100_nnnn_0000_0111	,Mask_n		,0x4007	,WritesSR			,OpDissCFS,"ldc.l @<REG_N>+,SR"},	//ldc.l @<REG_N>+,SR            
 	{rec_shil_i0100_nnnn_0001_0111	,i0100_nnnn_0001_0111	,Mask_n		,0x4017	,Normal				,OpDissCFS,"ldc.l @<REG_N>+,GBR"},	//ldc.l @<REG_N>+,GBR           
 	{rec_shil_i0100_nnnn_0010_0111	,i0100_nnnn_0010_0111	,Mask_n		,0x4027	,Normal				,OpDissCFS,"ldc.l @<REG_N>+,VBR"},	//ldc.l @<REG_N>+,VBR           
 	{rec_shil_i0100_nnnn_0011_0111	,i0100_nnnn_0011_0111	,Mask_n		,0x4037	,Normal				,OpDissCFS,"ldc.l @<REG_N>+,SSR"},	//ldc.l @<REG_N>+,SSR           
@@ -705,9 +705,9 @@ sh4_opcodelistentry opcodes[]=
 	{rec_shil_i0100_nnnn_0001_1010	,i0100_nnnn_0001_1010	,Mask_n		,0x401A	,Normal				,OpDissCFS,"lds <REG_N>,MACL"},	//lds <REG_N>,MACL              
 	{rec_shil_i0100_nnnn_0010_1010	,i0100_nnnn_0010_1010	,Mask_n		,0x402A	,Normal				,OpDissCFS,"lds <REG_N>,PR"},	//lds <REG_N>,PR                
 	{rec_shil_i0100_nnnn_0101_1010	,i0100_nnnn_0101_1010	,Mask_n		,0x405A	,Normal				,OpDissCFS,"lds <REG_N>,FPUL"},	//lds <REG_N>,FPUL              
-	{rec_shil_icpu_nimp	,i0100_nnnn_0110_1010	,Mask_n		,0x406A	,Normal				,OpDissCFS,"lds <REG_N>,FPSCR"},	//lds <REG_N>,FPSCR             
+	{rec_shil_icpu_nimp				,i0100_nnnn_0110_1010	,Mask_n		,0x406A	,Normal				,OpDissCFS,"lds <REG_N>,FPSCR"},	//lds <REG_N>,FPSCR             
 	{rec_shil_i0100_nnnn_1111_1010	,i0100_nnnn_1111_1010	,Mask_n		,0x40FA	,Normal				,OpDissCFS,"ldc <REG_N>,DBR"},	//ldc <REG_N>,DBR                
-	{rec_shil_icpu_nimp	,i0100_nnnn_0000_1110	,Mask_n		,0x400E	,SystemSt			,OpDissCFS,"ldc <REG_N>,SR"},	//ldc <REG_N>,SR                
+	{rec_shil_icpu_nimp				,i0100_nnnn_0000_1110	,Mask_n		,0x400E	,WritesSR			,OpDissCFS,"ldc <REG_N>,SR"},	//ldc <REG_N>,SR                
 	{rec_shil_i0100_nnnn_0001_1110	,i0100_nnnn_0001_1110	,Mask_n		,0x401E	,Normal				,OpDissCFS,"ldc <REG_N>,GBR"},	//ldc <REG_N>,GBR               
 	{rec_shil_i0100_nnnn_0010_1110	,i0100_nnnn_0010_1110	,Mask_n		,0x402E	,Normal				,OpDissCFS,"ldc <REG_N>,VBR"},	//ldc <REG_N>,VBR               
 	{rec_shil_i0100_nnnn_0011_1110	,i0100_nnnn_0011_1110	,Mask_n		,0x403E	,Normal				,OpDissCFS,"ldc <REG_N>,SSR"},	//ldc <REG_N>,SSR               
@@ -730,8 +730,8 @@ sh4_opcodelistentry opcodes[]=
 	{rec_shil_i0100_nnnn_0000_1001	,i0100_nnnn_0000_1001	,Mask_n		,0x4009	,Normal				,OpDissCFS,"shlr2 <REG_N>"},	//shlr2 <REG_N>                 
 	{rec_shil_i0100_nnnn_0001_1001	,i0100_nnnn_0001_1001	,Mask_n		,0x4019	,Normal				,OpDissCFS,"shlr8 <REG_N>"},	//shlr8 <REG_N>                 
 	{rec_shil_i0100_nnnn_0010_1001	,i0100_nnnn_0010_1001	,Mask_n		,0x4029	,Normal				,OpDissCFS,"shlr16 <REG_N>"},	//shlr16 <REG_N>                
-	{rec_shil_icpu_nimp	,i0100_nnnn_0010_1011	,Mask_n		,0x402B	,BranchDelay_u		,OpDissCFS,"jmp @<REG_N>"},		//jmp @<REG_N>                  
-	{rec_shil_icpu_nimp	,i0100_nnnn_0000_1011	,Mask_n		,0x400B	,BranchDelay_u_UsePC,OpDissCFS,"jsr @<REG_N>"},	//jsr @<REG_N>                  
+	{rec_shil_icpu_nimp				,i0100_nnnn_0010_1011	,Mask_n		,0x402B	,Branch_dir_d		,OpDissCFS,"jmp @<REG_N>"},		//jmp @<REG_N>                  
+	{rec_shil_icpu_nimp				,i0100_nnnn_0000_1011	,Mask_n		,0x400B	,Branch_dir_d		,OpDissCFS,"jsr @<REG_N>"},	//jsr @<REG_N>                  
 	{rec_shil_i0100_nnnn_0001_1011	,i0100_nnnn_0001_1011	,Mask_n		,0x401B	,Normal				,OpDissCFS,"tas.b @<REG_N>"},	//tas.b @<REG_N>                
 	{rec_shil_i0100_nnnn_mmmm_1100	,i0100_nnnn_mmmm_1100	,Mask_n_m	,0x400C	,Normal				,OpDissCFS,"shad <REG_M>,<REG_N>"},	//shad <REG_M>,<REG_N>          
 	{rec_shil_i0100_nnnn_mmmm_1101	,i0100_nnnn_mmmm_1101	,Mask_n_m	,0x400D	,Normal				,OpDissCFS,"shld <REG_M>,<REG_N>"},	//shld <REG_M>,<REG_N>          
@@ -754,26 +754,26 @@ sh4_opcodelistentry opcodes[]=
 	{rec_shil_i0110_nnnn_mmmm_1110	,i0110_nnnn_mmmm_1110	,Mask_n_m	,0x600E	,Normal				,OpDissCFS,"exts.b <REG_M>,<REG_N>"},	//exts.b <REG_M>,<REG_N>        
 	{rec_shil_i0110_nnnn_mmmm_1111	,i0110_nnnn_mmmm_1111	,Mask_n_m	,0x600F	,Normal				,OpDissCFS,"exts.w <REG_M>,<REG_N>"},	//exts.w <REG_M>,<REG_N>        
 	{rec_shil_i0111_nnnn_iiii_iiii	,i0111_nnnn_iiii_iiii	,Mask_n_imm8,0x7000	,Normal				,OpDissCFS,"add #<simm8>,<REG_N>"},	//add #<imm>,<REG_N>
-	{rec_shil_icpu_nimp	,i1000_1011_iiii_iiii	,Mask_imm8	,0x8B00	,Branch_c_UsePC		,OpDissCFS,"bf <bdisp8>"},	// bf <bdisp8>                   
-	{rec_shil_icpu_nimp	,i1000_1111_iiii_iiii	,Mask_imm8	,0x8F00	,BranchDelay_c_UsePC,OpDissCFS,"bf.s <bdisp8>"},	// bf.s <bdisp8>                 
-	{rec_shil_icpu_nimp	,i1000_1001_iiii_iiii	,Mask_imm8	,0x8900	,Branch_c_UsePC		,OpDissCFS,"bt <bdisp8>"},	// bt <bdisp8>                   
-	{rec_shil_icpu_nimp	,i1000_1101_iiii_iiii	,Mask_imm8	,0x8D00	,BranchDelay_c_UsePC,OpDissCFS,"bt.s <bdisp8>"},	// bt.s <bdisp8>                 
+	{rec_shil_icpu_nimp				,i1000_1011_iiii_iiii	,Mask_imm8	,0x8B00	,Branch_rel			,OpDissCFS,"bf <bdisp8>"},	// bf <bdisp8>                   
+	{rec_shil_icpu_nimp				,i1000_1111_iiii_iiii	,Mask_imm8	,0x8F00	,Branch_rel_d		,OpDissCFS,"bf.s <bdisp8>"},	// bf.s <bdisp8>                 
+	{rec_shil_icpu_nimp				,i1000_1001_iiii_iiii	,Mask_imm8	,0x8900	,Branch_rel			,OpDissCFS,"bt <bdisp8>"},	// bt <bdisp8>                   
+	{rec_shil_icpu_nimp				,i1000_1101_iiii_iiii	,Mask_imm8	,0x8D00	,Branch_rel_d		,OpDissCFS,"bt.s <bdisp8>"},	// bt.s <bdisp8>                 
 	{rec_shil_i1000_1000_iiii_iiii	,i1000_1000_iiii_iiii	,Mask_imm8	,0x8800	,Normal				,OpDissCFS,"cmp/eq #<simm8hex>,R0"},	// cmp/eq #<imm>,R0              
 	{rec_shil_i1000_0000_mmmm_iiii	,i1000_0000_mmmm_iiii	,Mask_imm8	,0x8000	,Normal				,OpDissCFS,"mov.b R0,@(<disp8b>,<REG_M>)"},	// mov.b R0,@(<disp>,<REG_M>)    
 	{rec_shil_i1000_0001_mmmm_iiii	,i1000_0001_mmmm_iiii	,Mask_imm8	,0x8100	,Normal				,OpDissCFS,"mov.w R0,@(<disp8w>,<REG_M>)"},	// mov.w R0,@(<disp>,<REG_M>)    
 	{rec_shil_i1000_0100_mmmm_iiii	,i1000_0100_mmmm_iiii	,Mask_imm8	,0x8400	,Normal				,OpDissCFS,"mov.b @(<disp8b>,<REG_M>),R0"},	// mov.b @(<disp>,<REG_M>),R0    
 	{rec_shil_i1000_0101_mmmm_iiii	,i1000_0101_mmmm_iiii	,Mask_imm8	,0x8500	,Normal				,OpDissCFS,"mov.w @(<disp8w>,<REG_M>),R0"},	// mov.w @(<disp>,<REG_M>),R0    
-	{rec_shil_i1001_nnnn_iiii_iiii	,i1001_nnnn_iiii_iiii	,Mask_n_imm8,0x9000	,Normal_needpc		,OpDissCFS,"mov.w @(<PCdisp8>),<REG_N>"},	//mov.w @(<disp>,PC),<REG_N>   
-	{rec_shil_icpu_nimp	,i1010_iiii_iiii_iiii	,Mask_n_imm8,0xA000	,BranchDelay_u_UsePC,OpDissCFS,"bra <bdisp12>"},	// bra <bdisp12>
-	{rec_shil_icpu_nimp	,i1011_iiii_iiii_iiii	,Mask_n_imm8,0xB000	,BranchDelay_u_UsePC,OpDissCFS,"bsr <bdisp12>"},	// bsr <bdisp12>
+	{rec_shil_i1001_nnnn_iiii_iiii	,i1001_nnnn_iiii_iiii	,Mask_n_imm8,0x9000	,ReadsPC			,OpDissCFS,"mov.w @(<PCdisp8>),<REG_N>"},	//mov.w @(<disp>,PC),<REG_N>   
+	{rec_shil_icpu_nimp				,i1010_iiii_iiii_iiii	,Mask_n_imm8,0xA000	,Branch_rel_d		,OpDissCFS,"bra <bdisp12>"},	// bra <bdisp12>
+	{rec_shil_icpu_nimp				,i1011_iiii_iiii_iiii	,Mask_n_imm8,0xB000	,Branch_rel_d		,OpDissCFS,"bsr <bdisp12>"},	// bsr <bdisp12>
 	{rec_shil_i1100_0000_iiii_iiii	,i1100_0000_iiii_iiii	,Mask_imm8	,0xC000	,Normal				,OpDissCFS,"mov.b R0,@(<disp8b>,GBR)"},	// mov.b R0,@(<disp>,GBR)        
 	{rec_shil_i1100_0001_iiii_iiii	,i1100_0001_iiii_iiii	,Mask_imm8	,0xC100	,Normal				,OpDissCFS,"mov.w R0,@(<disp8w>,GBR)"},	// mov.w R0,@(<disp>,GBR)        
 	{rec_shil_i1100_0010_iiii_iiii	,i1100_0010_iiii_iiii	,Mask_imm8	,0xC200	,Normal				,OpDissCFS,"mov.l R0,@(<disp8dw>,GBR)"},	// mov.l R0,@(<disp>,GBR)        
-	{rec_shil_icpu_nimp	,i1100_0011_iiii_iiii	,Mask_imm8	,0xC300	,Branch_u_UsePC		,OpDissCFS,"trapa #<imm8>"},	// trapa #<imm>                  
+	{rec_shil_icpu_nimp				,i1100_0011_iiii_iiii	,Mask_imm8	,0xC300	,ReadWritePC		,OpDissCFS,"trapa #<imm8>"},	// trapa #<imm>                  
 	{rec_shil_i1100_0100_iiii_iiii	,i1100_0100_iiii_iiii	,Mask_imm8	,0xC400	,Normal				,OpDissCFS,"mov.b @(<GBRdisp8b>),R0"},	// mov.b @(<disp>,GBR),R0        
 	{rec_shil_i1100_0101_iiii_iiii	,i1100_0101_iiii_iiii	,Mask_imm8	,0xC500	,Normal				,OpDissCFS,"mov.w @(<GBRdisp8w>),R0"},	// mov.w @(<disp>,GBR),R0        
 	{rec_shil_i1100_0110_iiii_iiii	,i1100_0110_iiii_iiii	,Mask_imm8	,0xC600	,Normal				,OpDissCFS,"mov.l @(<GBRdisp8dw>),R0"},	// mov.l @(<disp>,GBR),R0        
-	{rec_shil_i1100_0111_iiii_iiii	,i1100_0111_iiii_iiii	,Mask_imm8	,0xC700	,Normal_needpc		,OpDissCFS,"mova @(<PCdisp8>),R0"},	// mova @(<disp>,PC),R0          
+	{rec_shil_i1100_0111_iiii_iiii	,i1100_0111_iiii_iiii	,Mask_imm8	,0xC700	,ReadsPC			,OpDissCFS,"mova @(<PCdisp8>),R0"},	// mova @(<disp>,PC),R0          
 	{rec_shil_i1100_1000_iiii_iiii	,i1100_1000_iiii_iiii	,Mask_imm8	,0xC800	,Normal				,OpDissCFS,"tst #<imm8>,R0"},	// tst #<imm>,R0                 
 	{rec_shil_i1100_1001_iiii_iiii	,i1100_1001_iiii_iiii	,Mask_imm8	,0xC900	,Normal				,OpDissCFS,"and #<imm8>,R0"},	// and #<imm>,R0                 
 	{rec_shil_i1100_1010_iiii_iiii	,i1100_1010_iiii_iiii	,Mask_imm8	,0xCA00	,Normal				,OpDissCFS,"xor #<imm8>,R0"},	// xor #<imm>,R0                 
@@ -782,48 +782,48 @@ sh4_opcodelistentry opcodes[]=
 	{rec_shil_i1100_1101_iiii_iiii	,i1100_1101_iiii_iiii	,Mask_imm8	,0xCD00	,Normal				,OpDissCFS,"and.b #<imm8>,@(R0,GBR)"},	// and.b #<imm>,@(R0,GBR)        
 	{rec_shil_i1100_1110_iiii_iiii	,i1100_1110_iiii_iiii	,Mask_imm8	,0xCE00	,Normal				,OpDissCFS,"xor.b #<imm8>,@(R0,GBR)"},	// xor.b #<imm>,@(R0,GBR)        
 	{rec_shil_i1100_1111_iiii_iiii	,i1100_1111_iiii_iiii	,Mask_imm8	,0xCF00	,Normal				,OpDissCFS,"or.b #<imm8>,@(R0,GBR)"},	// or.b #<imm>,@(R0,GBR)         
-	{rec_shil_i1101_nnnn_iiii_iiii	,i1101_nnnn_iiii_iiii	,Mask_n_imm8,0xD000	,Normal_needpc		,OpDissCFS,"mov.l @(<PCdisp8>),<REG_N>"},	// mov.l @(<disp>,PC),<REG_N>    
+	{rec_shil_i1101_nnnn_iiii_iiii	,i1101_nnnn_iiii_iiii	,Mask_n_imm8,0xD000	,ReadsPC			,OpDissCFS,"mov.l @(<PCdisp8>),<REG_N>"},	// mov.l @(<disp>,PC),<REG_N>    
 	{rec_shil_i1110_nnnn_iiii_iiii	,i1110_nnnn_iiii_iiii	,Mask_n_imm8,0xE000	,Normal				,OpDissCFS,"mov #<simm8hex>,<REG_N>"},	// mov #<imm>,<REG_N>
 	
 	//and here are the new ones :D
-	{rec_shil_i1111_nnnn_mmmm_0000	,i1111_nnnn_mmmm_0000	,Mask_n_m		,0xF000,Arithm_FPU		,d1111_nnnn_mmmm_0000},	//fadd <FREG_M>,<FREG_N>
-	{rec_shil_i1111_nnnn_mmmm_0001	,i1111_nnnn_mmmm_0001	,Mask_n_m		,0xF001,Arithm_FPU		,d1111_nnnn_mmmm_0001},	//fsub <FREG_M>,<FREG_N>   
-	{rec_shil_i1111_nnnn_mmmm_0010	,i1111_nnnn_mmmm_0010	,Mask_n_m		,0xF002,Arithm_FPU		,d1111_nnnn_mmmm_0010},	//fmul <FREG_M>,<FREG_N>   
-	{rec_shil_i1111_nnnn_mmmm_0011	,i1111_nnnn_mmmm_0011	,Mask_n_m		,0xF003,Arithm_FPU		,d1111_nnnn_mmmm_0011},	//fdiv <FREG_M>,<FREG_N>   
-	{rec_shil_i1111_nnnn_mmmm_0100	,i1111_nnnn_mmmm_0100	,Mask_n_m		,0xF004,Arithm_FPU		,d1111_nnnn_mmmm_0100},	//fcmp/eq <FREG_M>,<FREG_N>
-	{rec_shil_i1111_nnnn_mmmm_0101	,i1111_nnnn_mmmm_0101	,Mask_n_m		,0xF005,Arithm_FPU		,d1111_nnnn_mmmm_0101},	//fcmp/gt <FREG_M>,<FREG_N>
-	{rec_shil_i1111_nnnn_mmmm_0110	,i1111_nnnn_mmmm_0110	,Mask_n_m		,0xF006,Arithm_FPU		,d1111_nnnn_mmmm_0110},	//fmov.s @(R0,<REG_M>),<FREG_N>
-	{rec_shil_i1111_nnnn_mmmm_0111	,i1111_nnnn_mmmm_0111	,Mask_n_m		,0xF007,Arithm_FPU		,d1111_nnnn_mmmm_0111},	//fmov.s <FREG_M>,@(R0,<REG_N>)
-	{rec_shil_i1111_nnnn_mmmm_1000	,i1111_nnnn_mmmm_1000	,Mask_n_m		,0xF008,Arithm_FPU		,d1111_nnnn_mmmm_1000},	//fmov.s @<REG_M>,<FREG_N> 
-	{rec_shil_i1111_nnnn_mmmm_1001	,i1111_nnnn_mmmm_1001	,Mask_n_m		,0xF009,Arithm_FPU		,d1111_nnnn_mmmm_1001},	//fmov.s @<REG_M>+,<FREG_N>
-	{rec_shil_i1111_nnnn_mmmm_1010	,i1111_nnnn_mmmm_1010	,Mask_n_m		,0xF00A,Arithm_FPU		,d1111_nnnn_mmmm_1010},	//fmov.s <FREG_M>,@<REG_N>
-	{rec_shil_i1111_nnnn_mmmm_1011	,i1111_nnnn_mmmm_1011	,Mask_n_m		,0xF00B,Arithm_FPU		,d1111_nnnn_mmmm_1011},	//fmov.s <FREG_M>,@-<REG_N>
-	{rec_shil_i1111_nnnn_mmmm_1100	,i1111_nnnn_mmmm_1100	,Mask_n_m		,0xF00C,Arithm_FPU		,d1111_nnnn_mmmm_1100},	//fmov <FREG_M>,<FREG_N>   
-	{rec_shil_i1111_nnnn_0101_1101	,i1111_nnnn_0101_1101	,Mask_n			,0xF05D,Arithm_FPU		,d1111_nnnn_0101_1101},	//fabs <FREG_N>            
-	{rec_shil_i1111_nnn0_1111_1101	,i1111_nnn0_1111_1101	,Mask_nh3bit	,0xF0FD,Arithm_FPU		,OpDissFSCA},	//FSCA FPUL, DRn//F0FD//1111_nnnn_1111_1101
-	{rec_shil_i1111_nnnn_1011_1101	,i1111_nnnn_1011_1101	,Mask_n			,0xF0BD,Arithm_FPU		,d1111_nnnn_1011_1101},	//fcnvds <DR_N>,FPUL       
-	{rec_shil_i1111_nnnn_1010_1101	,i1111_nnnn_1010_1101	,Mask_n			,0xF0AD,Arithm_FPU		,d1111_nnnn_1010_1101},	//fcnvsd FPUL,<DR_N>       
-	{rec_shil_i1111_nnmm_1110_1101	,i1111_nnmm_1110_1101	,Mask_n			,0xF0ED,Arithm_FPU		,OpDissfipr},	//fipr <FV_M>,<FV_N>            
-	{rec_shil_i1111_nnnn_1000_1101	,i1111_nnnn_1000_1101	,Mask_n			,0xF08D,Arithm_FPU		,d1111_nnnn_1000_1101},	//fldi0 <FREG_N>           
-	{rec_shil_i1111_nnnn_1001_1101	,i1111_nnnn_1001_1101	,Mask_n			,0xF09D,Arithm_FPU		,d1111_nnnn_1001_1101},	//fldi1 <FREG_N>           
-	{rec_shil_i1111_nnnn_0001_1101	,i1111_nnnn_0001_1101	,Mask_n			,0xF01D,Arithm_FPU		,d1111_nnnn_0001_1101},	//flds <FREG_N>,FPUL       
-	{rec_shil_i1111_nnnn_0010_1101	,i1111_nnnn_0010_1101	,Mask_n			,0xF02D,Arithm_FPU		,d1111_nnnn_0010_1101},	//float FPUL,<FREG_N>      
-	{rec_shil_i1111_nnnn_0100_1101	,i1111_nnnn_0100_1101	,Mask_n			,0xF04D,Arithm_FPU		,d1111_nnnn_0100_1101},	//fneg <FREG_N>            
-	{rec_shil_i1111_1011_1111_1101	,i1111_1011_1111_1101	,Mask_none		,0xFBFD,Arithm_FPU		,OpDissCFS,"frchg"},	//frchg                    
-	{rec_shil_i1111_0011_1111_1101	,i1111_0011_1111_1101	,Mask_none		,0xF3FD,Arithm_FPU		,OpDissCFS,"fschg"},	//fschg                    
-	{rec_shil_i1111_nnnn_0110_1101	,i1111_nnnn_0110_1101	,Mask_n			,0xF06D,Arithm_FPU		,d1111_nnnn_0110_1101},	//fsqrt <FREG_N>                
-	{rec_shil_i1111_nnnn_0011_1101	,i1111_nnnn_0011_1101	,Mask_n			,0xF03D,Arithm_FPU		,d1111_nnnn_0011_1101},	//ftrc <FREG_N>, FPUL      
-	{rec_shil_i1111_nnnn_0000_1101	,i1111_nnnn_0000_1101	,Mask_n			,0xF00D,Arithm_FPU		,d1111_nnnn_0000_1101},	//fsts FPUL,<FREG_N>       
-	{rec_shil_i1111_nn01_1111_1101	,i1111_nn01_1111_1101	,Mask_nh2bit	,0xF1FD,Arithm_FPU		,OpDissftrv},	//ftrv xmtrx,<FV_N> 
-	{rec_shil_i1111_nnnn_mmmm_1110	,i1111_nnnn_mmmm_1110	,Mask_n_m		,0xF00E,Arithm_FPU		,OpDissfmac},	//fmac <FREG_0>,<FREG_M>,<FREG_N> 
-	{rec_shil_i1111_nnnn_0111_1101	,i1111_nnnn_0111_1101	,Mask_n			,0xF07D,Arithm_FPU		,d1111_nnnn_0111_1101},	//FSRRA <FREG_N> (1111nnnn 01111101)
+	{rec_shil_i1111_nnnn_mmmm_0000	,i1111_nnnn_mmmm_0000	,Mask_n_m		,0xF000,Normal			,d1111_nnnn_mmmm_0000},	//fadd <FREG_M>,<FREG_N>
+	{rec_shil_i1111_nnnn_mmmm_0001	,i1111_nnnn_mmmm_0001	,Mask_n_m		,0xF001,Normal			,d1111_nnnn_mmmm_0001},	//fsub <FREG_M>,<FREG_N>   
+	{rec_shil_i1111_nnnn_mmmm_0010	,i1111_nnnn_mmmm_0010	,Mask_n_m		,0xF002,Normal			,d1111_nnnn_mmmm_0010},	//fmul <FREG_M>,<FREG_N>   
+	{rec_shil_i1111_nnnn_mmmm_0011	,i1111_nnnn_mmmm_0011	,Mask_n_m		,0xF003,Normal			,d1111_nnnn_mmmm_0011},	//fdiv <FREG_M>,<FREG_N>   
+	{rec_shil_i1111_nnnn_mmmm_0100	,i1111_nnnn_mmmm_0100	,Mask_n_m		,0xF004,Normal			,d1111_nnnn_mmmm_0100},	//fcmp/eq <FREG_M>,<FREG_N>
+	{rec_shil_i1111_nnnn_mmmm_0101	,i1111_nnnn_mmmm_0101	,Mask_n_m		,0xF005,Normal			,d1111_nnnn_mmmm_0101},	//fcmp/gt <FREG_M>,<FREG_N>
+	{rec_shil_i1111_nnnn_mmmm_0110	,i1111_nnnn_mmmm_0110	,Mask_n_m		,0xF006,Normal			,d1111_nnnn_mmmm_0110},	//fmov.s @(R0,<REG_M>),<FREG_N>
+	{rec_shil_i1111_nnnn_mmmm_0111	,i1111_nnnn_mmmm_0111	,Mask_n_m		,0xF007,Normal			,d1111_nnnn_mmmm_0111},	//fmov.s <FREG_M>,@(R0,<REG_N>)
+	{rec_shil_i1111_nnnn_mmmm_1000	,i1111_nnnn_mmmm_1000	,Mask_n_m		,0xF008,Normal			,d1111_nnnn_mmmm_1000},	//fmov.s @<REG_M>,<FREG_N> 
+	{rec_shil_i1111_nnnn_mmmm_1001	,i1111_nnnn_mmmm_1001	,Mask_n_m		,0xF009,Normal			,d1111_nnnn_mmmm_1001},	//fmov.s @<REG_M>+,<FREG_N>
+	{rec_shil_i1111_nnnn_mmmm_1010	,i1111_nnnn_mmmm_1010	,Mask_n_m		,0xF00A,Normal			,d1111_nnnn_mmmm_1010},	//fmov.s <FREG_M>,@<REG_N>
+	{rec_shil_i1111_nnnn_mmmm_1011	,i1111_nnnn_mmmm_1011	,Mask_n_m		,0xF00B,Normal			,d1111_nnnn_mmmm_1011},	//fmov.s <FREG_M>,@-<REG_N>
+	{rec_shil_i1111_nnnn_mmmm_1100	,i1111_nnnn_mmmm_1100	,Mask_n_m		,0xF00C,Normal			,d1111_nnnn_mmmm_1100},	//fmov <FREG_M>,<FREG_N>   
+	{rec_shil_i1111_nnnn_0101_1101	,i1111_nnnn_0101_1101	,Mask_n			,0xF05D,Normal			,d1111_nnnn_0101_1101},	//fabs <FREG_N>            
+	{rec_shil_i1111_nnn0_1111_1101	,i1111_nnn0_1111_1101	,Mask_nh3bit	,0xF0FD,Normal			,OpDissFSCA},	//FSCA FPUL, DRn//F0FD//1111_nnnn_1111_1101
+	{rec_shil_i1111_nnnn_1011_1101	,i1111_nnnn_1011_1101	,Mask_n			,0xF0BD,Normal			,d1111_nnnn_1011_1101},	//fcnvds <DR_N>,FPUL       
+	{rec_shil_i1111_nnnn_1010_1101	,i1111_nnnn_1010_1101	,Mask_n			,0xF0AD,Normal			,d1111_nnnn_1010_1101},	//fcnvsd FPUL,<DR_N>       
+	{rec_shil_i1111_nnmm_1110_1101	,i1111_nnmm_1110_1101	,Mask_n			,0xF0ED,Normal			,OpDissfipr},	//fipr <FV_M>,<FV_N>            
+	{rec_shil_i1111_nnnn_1000_1101	,i1111_nnnn_1000_1101	,Mask_n			,0xF08D,Normal			,d1111_nnnn_1000_1101},	//fldi0 <FREG_N>           
+	{rec_shil_i1111_nnnn_1001_1101	,i1111_nnnn_1001_1101	,Mask_n			,0xF09D,Normal			,d1111_nnnn_1001_1101},	//fldi1 <FREG_N>           
+	{rec_shil_i1111_nnnn_0001_1101	,i1111_nnnn_0001_1101	,Mask_n			,0xF01D,Normal			,d1111_nnnn_0001_1101},	//flds <FREG_N>,FPUL       
+	{rec_shil_i1111_nnnn_0010_1101	,i1111_nnnn_0010_1101	,Mask_n			,0xF02D,Normal			,d1111_nnnn_0010_1101},	//float FPUL,<FREG_N>      
+	{rec_shil_i1111_nnnn_0100_1101	,i1111_nnnn_0100_1101	,Mask_n			,0xF04D,Normal			,d1111_nnnn_0100_1101},	//fneg <FREG_N>            
+	{rec_shil_i1111_1011_1111_1101	,i1111_1011_1111_1101	,Mask_none		,0xFBFD,Normal			,OpDissCFS,"frchg"},	//frchg                    
+	{rec_shil_i1111_0011_1111_1101	,i1111_0011_1111_1101	,Mask_none		,0xF3FD,Normal			,OpDissCFS,"fschg"},	//fschg                    
+	{rec_shil_i1111_nnnn_0110_1101	,i1111_nnnn_0110_1101	,Mask_n			,0xF06D,Normal			,d1111_nnnn_0110_1101},	//fsqrt <FREG_N>                
+	{rec_shil_i1111_nnnn_0011_1101	,i1111_nnnn_0011_1101	,Mask_n			,0xF03D,Normal			,d1111_nnnn_0011_1101},	//ftrc <FREG_N>, FPUL      
+	{rec_shil_i1111_nnnn_0000_1101	,i1111_nnnn_0000_1101	,Mask_n			,0xF00D,Normal			,d1111_nnnn_0000_1101},	//fsts FPUL,<FREG_N>       
+	{rec_shil_i1111_nn01_1111_1101	,i1111_nn01_1111_1101	,Mask_nh2bit	,0xF1FD,Normal			,OpDissftrv},	//ftrv xmtrx,<FV_N> 
+	{rec_shil_i1111_nnnn_mmmm_1110	,i1111_nnnn_mmmm_1110	,Mask_n_m		,0xF00E,Normal			,OpDissfmac},	//fmac <FREG_0>,<FREG_M>,<FREG_N> 
+	{rec_shil_i1111_nnnn_0111_1101	,i1111_nnnn_0111_1101	,Mask_n			,0xF07D,Normal			,d1111_nnnn_0111_1101},	//FSRRA <FREG_N> (1111nnnn 01111101)
 	
 	//HLE ops
-	{0							,gdrom_hle_op			,Mask_none		,GDROM_OPCODE,Normal_needpc,dissasm_GDROM},
-	{0							,sh4_bpt_op				,Mask_none		,BPT_OPCODE,Normal_needpc,dissasm_Break},
+	{0								,gdrom_hle_op			,Mask_none	,GDROM_OPCODE,ReadWritePC	,dissasm_GDROM},
+	{0								,sh4_bpt_op				,Mask_none	,BPT_OPCODE	 ,ReadWritePC	,dissasm_Break},
 
 	//end of list
-	{0,0,0,0,Branch_u_UsePC}//Branch in order to stop the block and save pc ect :)
+	{0,0,0,0,ReadWritePC}//Branch in order to stop the block and save pc ect :)
 };
 
 bool bBuilded=false;
@@ -888,7 +888,7 @@ void DissasembleOpcode(u16 opcode,u32 pc,char* Dissasm)
 
 	if (OpDisasm[opcode]!=0)
 	{	
-		OpDisasm[opcode]->dissasm(Dissasm,OpDisasm[opcode]->disasm1,pc,opcode);
+		OpDisasm[opcode]->Dissasemble(Dissasm,pc,opcode);
 	}
 	else
 	{

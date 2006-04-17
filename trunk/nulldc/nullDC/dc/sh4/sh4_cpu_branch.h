@@ -8,7 +8,7 @@ sh4op(i0000_nnnn_0010_0011)
 {
 	u32 n = GetN(op);
 	u32 newpc = r[n] + pc + 2;//pc +2 is done after
-	ExecuteDelayslot();
+	ExecuteDelayslot();	//WARN : r[n] can change here
 	pc = newpc;
 } 
 //bsrf <REG_N>                  
@@ -17,7 +17,7 @@ sh4op(i0000_nnnn_0010_0011)
 	u32 n = GetN(op);
 	u32 newpc = r[n] + pc +2;//pc +2 is done after
 	pr = pc + 4;		   //after delayslot
-	ExecuteDelayslot();
+	ExecuteDelayslot();	//WARN : pr and r[n] can change here
 	pc = newpc;
 
 	AddCall(pr-4,pr,pc,0);
@@ -42,7 +42,7 @@ sh4op(i0000_nnnn_0010_0011)
 {
 	//TODO Check new delay slot code [28/1/06]
 	u32 newpc=pr;//+2 is added after instruction
-	ExecuteDelayslot();
+	ExecuteDelayslot();	//WARN : pr can change here
 	pc=newpc-2;
 	RemoveCall(pr,0);
 } 
@@ -116,11 +116,9 @@ sh4op(i1011_iiii_iiii_iiii)
 	pr = pc + 4;
 	//delay 1 opcode
 	u32 newpc = (u32)((((s16)(disp<<4)) >> 3) + pc + 4);
-	AddCall(pc,pr,newpc,0);
+	AddCall(pc,pr,newpc,0);	//WARN : pr can change here
 	ExecuteDelayslot();
 	pc=newpc-2;
-	//	CallStackTrace.cstAddCall(pc, pr, delayslot, CallType.Normal);
-	//pc_funct = 2;//jump delay 1
 }
 
 // trapa #<imm>                  
@@ -148,7 +146,7 @@ sh4op(i1100_0011_iiii_iiii)
 	pr = pc + 4;
 	//delay one
 	u32 newpc= r[n];
-	ExecuteDelayslot();
+	ExecuteDelayslot();	//WARN : pr can change here
 	AddCall(pc-2,pr,newpc,0);
 	pc=newpc-2;
 }

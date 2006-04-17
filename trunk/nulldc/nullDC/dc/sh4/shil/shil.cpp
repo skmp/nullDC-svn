@@ -15,9 +15,14 @@ INLINE bool shil_opcode::UpdatesReg(Sh4RegType reg)
 	return true;
 }
 
-void shil_stream::emit(shil_opcodes op,u16 flags,u32 source,u32 dest)
+void shil_stream::emit(shil_opcodes op,u32 source,u32 dest,u16 flags)
 {
 	op_count++;
+	shil_opcode sh_op;
+
+	sh_op.dest=dest;
+	
+	opcodes.push_back(sh_op);
 }
 
 void shil_stream::mov(Sh4RegType to,Sh4RegType from)

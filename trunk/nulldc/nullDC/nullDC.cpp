@@ -21,7 +21,7 @@ int RunDC(int argc, char* argv[])
 
 	//Get an interface to the sh4 emu and set the sh4_cpu to it
 	//TODO : add to settings
-	sh4_cpu=Get_Sh4Interpreter();// Get_Sh4Interpreter();//Get_Sh4Recompiler
+	sh4_cpu=Get_Sh4Recompiler();// Get_Sh4Interpreter();//Get_Sh4Recompiler
 	
 	GuiLoop();
 
