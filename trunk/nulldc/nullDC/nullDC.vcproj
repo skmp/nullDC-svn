@@ -1093,11 +1093,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\shil_compile_slow.cpp"
+				RelativePath=".\emitter\shil_compile_slow.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\shil_compile_slow.h"
+				RelativePath=".\emitter\shil_compile_slow.h"
 				>
 			</File>
 			<Filter
