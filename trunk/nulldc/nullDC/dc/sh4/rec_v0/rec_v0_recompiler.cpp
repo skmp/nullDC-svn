@@ -1,5 +1,5 @@
 #include "rec_v0_recompiler.h"
-#include "emmiter/emmiter.h"
+#include "emitter/emitter.h"
 #include "dc/mem/sh4_mem.h"
 #include "dc/sh4/sh4_opcode_list.h"
 #include "dc/sh4/sh4_registers.h"
@@ -21,7 +21,7 @@
 
 #define SH4_REC
 
-Emmiter<>* CodeGen;
+emitter<>* CodeGen;
 
 #define sh4op(str) void  __fastcall rec_##str (u32 op,u32 pc)
 
@@ -759,7 +759,7 @@ void recStartRecompile()
 
 	if (CodeGen)
 		delete CodeGen;
-	CodeGen=new Emmiter<>();
+	CodeGen=new emitter<>();
 }
 void recEndRecompile(bool bNoGen,u32 npc)
 {

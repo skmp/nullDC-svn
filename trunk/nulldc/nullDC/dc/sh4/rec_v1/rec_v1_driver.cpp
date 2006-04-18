@@ -14,6 +14,8 @@
 #include "dc/sh4/sh4_cst.h"
 #include "dc/mem/sh4_mem.h"
 
+#include "emitter/shil_compile_slow.h"
+
 #include "rec_v1_recompiler.h"
 #include "rec_v1_blockmanager.h"
 #include "rec_v1_analyser.h"
@@ -103,6 +105,7 @@ INLINE rec_v1_BasicBlock* __fastcall GetRecompiledCode(u32 pc)
 		block=rec_v1_AddBlock(pc);
 		//analyse code
 		rec_v1_AnalyseCode(pc,block);
+		CompileBasicBlock_slow(block);
 		//compile code
 		//return pointer
 		return block;

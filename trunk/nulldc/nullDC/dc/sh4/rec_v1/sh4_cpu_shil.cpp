@@ -1,5 +1,5 @@
 #include "sh4_cpu_shil.h"
-#include "emmiter/emmiter.h"
+#include "emitter/emitter.h"
 #include "dc/mem/sh4_mem.h"
 #include "dc/sh4/sh4_opcode_list.h"
 #include "dc/sh4/sh4_registers.h"
@@ -1945,18 +1945,18 @@ void ReadMemRecS(shil_RecRegType &to,u32 addr,u32 offset,u32 sz)
 {
 	assert(sz!=4);
 	if (sz==1)
-		ilst->readm8(to.regid,addr+offset,true);
+		ilst->readm8(to.regid,addr+offset);
 	else
-		ilst->readm16(to.regid,addr+offset,true);
+		ilst->readm16(to.regid,addr+offset);
 
 }
 void ReadMemRecS(shil_RecRegType &to,shil_RecRegType& addr,u32 offset,u32 sz)
 {
 	assert(sz!=4);
 	if (sz==1)
-		ilst->readm8(to.regid,addr.regid,offset,true);
+		ilst->readm8(to.regid,addr.regid,offset);
 	else
-		ilst->readm16(to.regid,addr.regid,offset,true);
+		ilst->readm16(to.regid,addr.regid,offset);
 }
 
 
@@ -1964,9 +1964,9 @@ void ReadMemRecS(shil_RecRegType &to,shil_RecRegType& addr,shil_RecRegType& offs
 {
 	assert(sz!=4);
 	if (sz==1)
-		ilst->readm8(to.regid,addr.regid,offset.regid,true);
+		ilst->readm8(to.regid,addr.regid,offset.regid);
 	else
-		ilst->readm16(to.regid,addr.regid,offset.regid,true);
+		ilst->readm16(to.regid,addr.regid,offset.regid);
 }
 //WriteMem(u32 addr,u32 data,u32 sz)
 void WriteMemRec(shil_RecRegType& addr,u32 offset,shil_RecRegType &data,u32 sz)

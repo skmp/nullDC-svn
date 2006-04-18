@@ -645,27 +645,6 @@
 						<File
 							RelativePath=".\dc\sh4\rec_v1\sh4_cpu_shil.cpp"
 							>
-							<FileConfiguration
-								Name="Debug|Win32"
-								>
-								<Tool
-									Name="VCCLCompilerTool"
-								/>
-							</FileConfiguration>
-							<FileConfiguration
-								Name="Release|Win32"
-								>
-								<Tool
-									Name="VCCLCompilerTool"
-								/>
-							</FileConfiguration>
-							<FileConfiguration
-								Name="Release-NoTrace|Win32"
-								>
-								<Tool
-									Name="VCCLCompilerTool"
-								/>
-							</FileConfiguration>
 						</File>
 						<File
 							RelativePath=".\dc\sh4\rec_v1\sh4_cpu_shil.h"
@@ -700,27 +679,6 @@
 					<File
 						RelativePath=".\dc\sh4\shil\shil.cpp"
 						>
-						<FileConfiguration
-							Name="Debug|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-							/>
-						</FileConfiguration>
-						<FileConfiguration
-							Name="Release|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-							/>
-						</FileConfiguration>
-						<FileConfiguration
-							Name="Release-NoTrace|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-							/>
-						</FileConfiguration>
 					</File>
 					<File
 						RelativePath=".\dc\sh4\shil\shil.h"
@@ -1124,14 +1082,22 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="emiter"
+			Name="emitter"
 			>
 			<File
-				RelativePath=".\emmiter\emmiter.cpp"
+				RelativePath=".\emmiter\emitter.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\emmiter\emmiter.h"
+				RelativePath=".\emmiter\emitter.h"
+				>
+			</File>
+			<File
+				RelativePath=".\shil_compile_slow.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\shil_compile_slow.h"
 				>
 			</File>
 			<Filter
