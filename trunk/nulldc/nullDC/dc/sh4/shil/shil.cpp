@@ -23,28 +23,16 @@ INLINE bool shil_opcode::UpdatesReg(Sh4RegType reg)
 	return true;
 }
 
-void shil_stream::emit32(shil_opcodes op,u32 imm1)
+bool IsReg64(Sh4RegType reg)
 {
-	emit(op,NoReg,NoReg,imm1,0,FLAG_32 | FLAG_IMM1);
+	if (reg>=dr_0 && reg<=dr_7)
+		return true;
+
+	if (reg>=xd_0 && reg<=xd_7)
+		return true;
+
+	return false;
 }
-
-
-void shil_stream::emit32(shil_opcodes op,Sh4RegType reg1)
-{
-	emit(op,reg1,NoReg,0,0,FLAG_32 | FLAG_REG1);
-}
-
-
-void shil_stream::emit32(shil_opcodes op,Sh4RegType reg1,u32 imm1)
-{
-	emit(op,reg1,NoReg,imm1,0,FLAG_32 | FLAG_REG1| FLAG_IMM1);
-}
-
-void shil_stream::emit32(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2)
-{
-	emit(op,reg1,reg2,0,0,FLAG_32 | FLAG_REG1| FLAG_REG2);
-}
-
 
 void shil_stream::emit(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2,u32 imm1,u32 imm2,u16 flags)
 {
@@ -59,6 +47,27 @@ void shil_stream::emit(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2,u32 imm1
 	sh_op.flags=flags;
 
 	opcodes.push_back(sh_op);
+}
+
+
+void shil_stream::emit32(shil_opcodes op,u32 imm1)
+{
+	emit(op,NoReg,NoReg,imm1,0,FLAG_32 | FLAG_IMM1);
+}
+
+void shil_stream::emit32(shil_opcodes op,Sh4RegType reg1)
+{
+	emit(op,reg1,NoReg,0,0,FLAG_32 | FLAG_REG1);
+}
+
+void shil_stream::emit32(shil_opcodes op,Sh4RegType reg1,u32 imm1)
+{
+	emit(op,reg1,NoReg,imm1,0,FLAG_32 | FLAG_REG1| FLAG_IMM1);
+}
+
+void shil_stream::emit32(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2)
+{
+	emit(op,reg1,reg2,0,0,FLAG_32 | FLAG_REG1| FLAG_REG2);
 }
 
 void shil_stream::emitReg(shil_opcodes op,Sh4RegType reg1,u16 flags)
@@ -89,12 +98,31 @@ void shil_stream::emitRegRegImm(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2
 	//emit
 	emit(op,reg1,reg2,imm1,0,flags|FLAG_IMM1|FLAG_REG1|FLAG_REG2);
 }
+
+//******* opcode emitters ******
 void shil_stream::mov(Sh4RegType to,Sh4RegType from)
 {
+	if (IsReg64(to) || IsReg64(from))
+	{
+		if (!(IsReg64(from) && IsReg64(from)))
+		{
+			printf("SHIL ERROR\n");
+		}
+		emitRegReg(shil_opcodes::mov,to,from,FLAG_64);
+	}
+	else
+	{
+		emitRegReg(shil_opcodes::mov,to,from,FLAG_32);
+	}
 	//emit32(shil_opcodes::mov,to,from);
 }
 void shil_stream::mov(Sh4RegType to,u32 from)
 {
+	if (IsReg64(to))
+	{
+		printf("SHIL ERROR\n");
+	}
+	emit32(shil_opcodes::mov,to,from);
 	//emit(shil_opcodes::mov,to,from);
 }
 
@@ -419,15 +447,6 @@ void shil_stream::sub(Sh4RegType to,u32 from)
 
 //floating
 
-bool IsReg64(Sh4RegType reg)
-{
-	if (reg>=dr_0 && reg<=dr_7)
-		return true;
-
-	if (reg>=xd_0 && reg<=xd_7)
-		return true;
-}
-
 u16 shil_stream::GetFloatFlags(Sh4RegType reg1,Sh4RegType reg2)
 {
 	u32 rv=0;
@@ -503,4 +522,140 @@ void shil_stream::fneg(Sh4RegType to)
 void shil_stream::shil_ifb(u32 opcode,u32 pc)
 {
 	emit(shil_opcodes::shil_ifb,NoReg,NoReg,opcode,pc,FLAG_IMM1|FLAG_IMM2);	//size flags ect are ignored on this opcode
+}
+
+char* shil_names[]=
+{
+	//mov reg,reg	[32|64]
+	//mov reg,const	[32]
+	"mov",
+
+	/*** Mem reads ***/
+	//readmem reg,[base+reg]	[s]			[8|16|32|64]
+	//readmem reg,[base+const]	[s]			[8|16|32|64]
+	"readm",
+
+	/*** Mem writes ***/
+	//writemem reg,[base+reg]	[]			[8|16|32|64]
+	//writemem reg,[base+const]	[]			[8|16|32|64]
+	"writem",
+	
+	//cmp reg,reg
+	//cmp reg,imm [s] [8]
+	"cmp",
+
+	//cmp reg,reg
+	//cmp reg,imm [] [8]
+	"test",
+
+	//SaveT/LoadT cond
+	"SaveT",
+	"LoadT",
+
+	//bit shits
+	//neg reg
+	"neg",
+	//not reg
+	"not",
+
+	//bitwise ops
+
+	//and reg,reg
+	//and reg,const [32]
+	"and",
+
+	//and reg,reg
+	//and reg,const [32]
+	"or",
+
+	//and reg,reg
+	//and reg,const [32]
+	"xor",
+	
+
+	//logical shifts
+
+	//shl reg,const [8]
+	"shl",
+	//shr reg,const [8]
+	"shr",
+
+	//arithmetic shifts
+
+	//sal reg,const [8]
+	//sal is same as shl
+	//sar reg,const [8]
+	"sar",
+
+	//rotate
+
+	//rcl reg,const [8]
+	"rcl",
+	
+	//rcr reg,const [8]
+	"rcr",
+	
+	//rol reg,const [8]
+	"rol",
+	
+	//ror reg,const [8]
+	"ror",
+
+	//swaps
+	//swap [16|32]
+	"swap",
+
+	//moves w/ extend
+	//signed - unsigned
+	//movex reg,reg		[s] [8|16]
+	//movsxb reg,reg	 s	 8
+	//movsxb reg,reg	 s	 16
+	//movzxb reg,reg	 z	 8
+	//movzxw reg,reg	 z	 16
+	"movex",
+
+	//maths (integer)
+	//adc reg,reg
+	"adc",
+
+	//add reg,reg
+	//add reg,const
+	"add",
+
+	//sub reg,reg
+	//sub reg,const
+	"sub",
+
+	//floating
+	//basic ops
+
+	//fadd reg,reg [32|64]
+	"fadd",
+	//fsub reg,reg [32|64]
+	"fsub",
+	//fmul reg,reg [32|64]
+	"fmul",
+	//fdiv reg,reg [32|64]
+	"fdiv",
+
+	
+	//fabs reg [32|64]
+	"fabs",
+	//fneg reg [32|64]
+	"fneg",
+
+	//pfftt
+	//fmac r0,reg,reg [32|64]
+	"fmac",
+
+	//shil_ifb const , const
+	"shil_ifb"
+};
+char* GetShilName(shil_opcodes ops)
+{
+	if (ops>31)
+	{
+		printf("SHIL ERROR\n");
+	}
+	return shil_names[ops];
 }

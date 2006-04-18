@@ -247,8 +247,6 @@ enum x86_flags
 };
 class shil_stream
 {
-	vector<shil_opcode> opcodes;
-
 	u16 shil_stream::GetFloatFlags(Sh4RegType reg1,Sh4RegType reg2);
 	void shil_stream::emit32(shil_opcodes op,u32 imm1);
 	void shil_stream::emit32(shil_opcodes op,Sh4RegType reg1);
@@ -263,6 +261,8 @@ class shil_stream
 	void shil_stream::emitRegRegImm(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2,u32 imm1,u16 flags);
 
 public :
+
+	vector<shil_opcode> opcodes;
 	
 	shil_stream()
 	{
@@ -395,3 +395,5 @@ public :
 	//misc
 	void shil_ifb(u32 opcode,u32 pc);
 };
+
+char* GetShilName(shil_opcodes ops);
