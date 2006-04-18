@@ -1085,11 +1085,11 @@
 			Name="emitter"
 			>
 			<File
-				RelativePath=".\emmiter\emitter.cpp"
+				RelativePath=".\emitter\emitter.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\emmiter\emitter.h"
+				RelativePath=".\emitter\emitter.h"
 				>
 			</File>
 			<File
