@@ -23,25 +23,50 @@ INLINE bool shil_opcode::UpdatesReg(Sh4RegType reg)
 	return true;
 }
 
-void shil_stream::emit(shil_opcodes op,Sh4RegType reg,u32 param)
+void shil_stream::emit32(shil_opcodes op,u32 imm1)
 {
 	op_count++;
 	shil_opcode sh_op;
 
 	sh_op.opcode=(u16)op;
-	sh_op.imm1=param;
-	sh_op.reg1=(u8)reg;
+	sh_op.imm1=imm1;
 
 	opcodes.push_back(sh_op);
 }
 
-void shil_stream::emit(shil_opcodes op,Sh4RegType reg)
+
+void shil_stream::emit32(shil_opcodes op,Sh4RegType reg1)
 {
 	op_count++;
 	shil_opcode sh_op;
 
 	sh_op.opcode=(u16)op;
-	sh_op.reg1=(u8)reg;
+	sh_op.reg1=(u8)reg1;
+
+	opcodes.push_back(sh_op);
+}
+
+
+void shil_stream::emit32(shil_opcodes op,Sh4RegType reg1,u32 imm1)
+{
+	op_count++;
+	shil_opcode sh_op;
+
+	sh_op.opcode=(u16)op;
+	sh_op.reg1=(u8)reg1;
+	sh_op.imm1=imm1;
+
+	opcodes.push_back(sh_op);
+}
+
+void shil_stream::emit32(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2)
+{
+	op_count++;
+	shil_opcode sh_op;
+
+	sh_op.opcode=(u16)op;
+	sh_op.reg1=(u8)reg1;
+	sh_op.reg2=(u8)reg2;
 
 	opcodes.push_back(sh_op);
 }
@@ -49,11 +74,11 @@ void shil_stream::emit(shil_opcodes op,Sh4RegType reg)
 
 void shil_stream::mov(Sh4RegType to,Sh4RegType from)
 {
-	emit(shil_opcodes::mov,to,from);
+	//emit32(shil_opcodes::mov,to,from);
 }
 void shil_stream::mov(Sh4RegType to,u32 from)
 {
-	emit(shil_opcodes::mov,to,from);
+	//emit(shil_opcodes::mov,to,from);
 }
 
 /*** Mem reads ***/
@@ -193,203 +218,202 @@ void shil_stream::writem32(Sh4RegType from,Sh4RegType base,u32 offset)
 
 void shil_stream::cmp(Sh4RegType to,Sh4RegType from)
 {
-	emit(shil_opcodes::cmp,to,from);
+	emit32(shil_opcodes::cmp,to,from);
 }
 void shil_stream::cmp(Sh4RegType to,s8 from)
 {
-	//emit(shil_opcodes::cmp,to,(from);
+	emit32(shil_opcodes::cmp,to,from);
 }
-/*void shil_stream::cmp(Sh4RegType to,u8 from)
-{
-//	emit(shil_opcodes::add,0,0,0);
-}*/
 
 void shil_stream::test(Sh4RegType to,Sh4RegType from)
 {
-	//emit(shil_opcodes::add,0,0,0);
+	emit32(shil_opcodes::test,to,from);
 }
 void shil_stream::test(Sh4RegType to,u8 from)
 {
-	//emit(shil_opcodes::add,0,0,0);
+	emit32(shil_opcodes::test,to,from);
 }
 
 void shil_stream::SaveT(cmd_cond cond)
 {
-	//emit(shil_opcodes::add,0,0,0);
+	emit32(shil_opcodes::SaveT,cond);
 }
 void shil_stream::LoadT(x86_flags to)
 {
-	//emit(shil_opcodes::add,0,0,0);
+	emit32(shil_opcodes::LoadT,to);
 }
 
 
 void shil_stream::dec(Sh4RegType to)
 {
-	//emit(shil_opcodes::add,0,0,0);
+	sub(to,1);
 }
 void shil_stream::inc(Sh4RegType to)
 {
-	//emit(shil_opcodes::add,0,0,0);
+	add(to,1);
 }
 void shil_stream::neg(Sh4RegType to)
 {
-	//emit(shil_opcodes::add,0,0,0);
+	emit32(shil_opcodes::neg,to);
+
 }
 void shil_stream::not(Sh4RegType to)
 {
-	//emit(shil_opcodes::add,0,0,0);
+	emit32(shil_opcodes::not,to);
+
 }
 
 //bitwise ops
 void shil_stream::and(Sh4RegType to,Sh4RegType from)
 {
-	//emit(shil_opcodes::add,0,0,0);
+	emit32(shil_opcodes::and,to,from);
+
 }
 void shil_stream::and(Sh4RegType to,u32 from)
 {
-	//emit(shil_opcodes::add,0,0,0);
+	emit32(shil_opcodes::and,to,from);
 }
 void shil_stream::or(Sh4RegType to,Sh4RegType from)
 {
-	//emit(shil_opcodes::add,0,0,0);
+	emit32(shil_opcodes::or,to,from);
 }
 void shil_stream::or(Sh4RegType to,u32 from)
 {
-	//emit(shil_opcodes::add,0,0,0);
+	emit32(shil_opcodes::or,to,from);
 }
 void shil_stream::xor(Sh4RegType to,Sh4RegType from)
 {
-	//emit(shil_opcodes::add,0,0,0);
+	emit32(shil_opcodes::xor,to,from);
 }
 void shil_stream::xor(Sh4RegType to,u32 from)
 {
-	//emit(shil_opcodes::add,0,0,0);
+	emit32(shil_opcodes::xor,to,from);
 }
 
 //logical shifts
 void shil_stream::shl(Sh4RegType to,u8 count)
 {
-	//emit(shil_opcodes::add,0,0,0);
+	emit32(shil_opcodes::shl,to,count);
 }
 void shil_stream::shr(Sh4RegType to,u8 count)
 {
-	//emit(shil_opcodes::add,0,0,0);
+	emit32(shil_opcodes::shr,to,count);
 }
 
 //arithmetic shifts
 void shil_stream::sal(Sh4RegType to,u8 count)
-{
+{//<- is this used ?
 	shl(to,count);
-}//<- is this used ?
+}
 void shil_stream::sar(Sh4RegType to,u8 count)
 {
-	//emit(shil_opcodes::add,0,0,0);
+	emit32(shil_opcodes::sar,to,count);
 }
 
 //rotate
 
 void shil_stream::rcl(Sh4RegType to,u8 count)
 {
-	//emit(shil_opcodes::add,0,0,0);
+	emit32(shil_opcodes::rcl,to,count);
 }
 void shil_stream::rcr(Sh4RegType to,u8 count)
 {
-	//emit(shil_opcodes::add,0,0,0);
+	emit32(shil_opcodes::rcr,to,count);
 }
 void shil_stream::rol(Sh4RegType to,u8 count)
 {
-	//emit(shil_opcodes::add,0,0,0);
+	emit32(shil_opcodes::rol,to,count);
 }
 void shil_stream::ror(Sh4RegType to,u8 count)
 {
-	//emit(shil_opcodes::add,0,0,0);
+	emit32(shil_opcodes::ror,to,count);
 }
 
 //swaps
 void shil_stream::bswap(Sh4RegType to)
 {
-	//emit(shil_opcodes::add,0,0,0);
+
 }
 void shil_stream::wswap(Sh4RegType to)
 {
-	//emit(shil_opcodes::add,0,0,0);
+
 }
 
 //extends
 //signed
 void shil_stream::movsxb(Sh4RegType to,Sh4RegType from)
 {
-	//emit(shil_opcodes::add,0,0,0);
+
 }
 void shil_stream::movsxw(Sh4RegType to,Sh4RegType from)
 {
-	//emit(shil_opcodes::add,0,0,0);
+
 }
 //unsigned
 void shil_stream::movzxb(Sh4RegType to,Sh4RegType from)
 {
-	//emit(shil_opcodes::add,0,0,0);
+
 }
 void shil_stream::movzxw(Sh4RegType to,Sh4RegType from)
 {
-	//emit(shil_opcodes::add,0,0,0);
+
 }
 
 //maths (integer)
 void shil_stream::adc(Sh4RegType to,Sh4RegType from)
 {
-	//emit(shil_opcodes::add,0,0,0);
+
 }
 
 void shil_stream::add(Sh4RegType to,Sh4RegType from)
 {
-	//emit(shil_opcodes::add,0,0,0);
+
 }
 void shil_stream::add(Sh4RegType to,u32 from)
 {
-	//emit(shil_opcodes::add,0,0,0);
+
 }
 void shil_stream::sub(Sh4RegType to,Sh4RegType from)
 {
-	//emit(shil_opcodes::add,0,0,0);
+
 }
 void shil_stream::sub(Sh4RegType to,u32 from)
 {
-	//emit(shil_opcodes::add,0,0,0);
+
 }
 
 //floating
 void shil_stream::fadd(Sh4RegType to,Sh4RegType from)
 {
-	//emit(shil_opcodes::add,0,0,0);
+
 }
 void shil_stream::fsub(Sh4RegType to,Sh4RegType from)
 {
-	//emit(shil_opcodes::add,0,0,0);
+
 }
 void shil_stream::fmul(Sh4RegType to,Sh4RegType from)
 {
-	//emit(shil_opcodes::add,0,0,0);
+
 }
 void shil_stream::fmac(Sh4RegType to,Sh4RegType from)
 {
-	//emit(shil_opcodes::add,0,0,0);
+
 }
 void shil_stream::fdiv(Sh4RegType to,Sh4RegType from)
 {
-	//emit(shil_opcodes::add,0,0,0);
+
 }
 
 void shil_stream::fabs(Sh4RegType to)
 {
-	//emit(shil_opcodes::add,0,0,0);
+
 }
 void shil_stream::fneg(Sh4RegType to)
 {
-	//emit(shil_opcodes::add,0,0,0);
+
 }
 
 void shil_stream::shil_ifb(u32 opcode,u32 pc)
 {
-	//emit(shil_opcodes::add,0,0,0);
+
 }

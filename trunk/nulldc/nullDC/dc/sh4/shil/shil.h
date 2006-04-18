@@ -241,8 +241,10 @@ enum x86_flags
 class shil_stream
 {
 	vector<shil_opcode> opcodes;
-	void shil_stream::emit(shil_opcodes op,Sh4RegType reg,u32 param);
-	void shil_stream::emit(shil_opcodes op,Sh4RegType reg);
+	void shil_stream::emit32(shil_opcodes op,u32 imm1);
+	void shil_stream::emit32(shil_opcodes op,Sh4RegType reg1);
+	void shil_stream::emit32(shil_opcodes op,Sh4RegType reg1,u32 param);
+	void shil_stream::emit32(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2);
 
 public :
 	

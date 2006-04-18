@@ -3,6 +3,14 @@
 
 #include "dc\mem\sh4_mem.h"
 
+//w/ a block size of 256 we can have max 7 levels of basic blocks (heh)
+//w/ a block size of 448 (bad number for inlinings , but good for vsyncs) we can have 13-14
+//w/ a block size of 512 (prop i will use this) we can have 15
+
+//target for analyser :
+//stop blocks olny on unkown jumps [jump to reg]
+//handle delayslots
+
 //will alayse code and convert it to shil
 //the basicblock (and suprtblock later) will be the send to the optimiser , and after that
 //to the compiler

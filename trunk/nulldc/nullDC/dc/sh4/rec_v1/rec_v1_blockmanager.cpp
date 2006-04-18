@@ -8,7 +8,7 @@ vector<rec_v1_BasicBlock*> blocklist;
 
 rec_v1_BasicBlock* rec_v1_FindBlock(u32 address)
 {
-	for (int i=0;i<blocklist.size();i++)
+	for (u32 i=0;i<blocklist.size();i++)
 	{
 		if (blocklist[i]->start==address)
 			return blocklist[i];
