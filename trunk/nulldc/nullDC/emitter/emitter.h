@@ -1453,6 +1453,11 @@ public :
 		write8( from );
 	}
 
+	void ROL321toR( x86IntRegType to ) 
+	{
+		write8( 0xd1 );
+		write8( 0xC0 | to );
+	}
 
 	void RCL32ItoR( x86IntRegType to, u8 from ) 
 	{

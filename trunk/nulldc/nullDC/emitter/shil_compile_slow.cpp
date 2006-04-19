@@ -257,6 +257,10 @@ void __fastcall shil_compile_ror(shil_opcode* op)
 {
 	OP_NtR_noimm(ROR321toR);
 }
+void __fastcall shil_compile_rol(shil_opcode* op)
+{
+	OP_NtR_noimm(ROL321toR);
+}
 //neg
 void __fastcall shil_compile_neg(shil_opcode* op)
 {
@@ -502,7 +506,7 @@ void Init()
 	SetH(shil_opcodes::rcl,shil_compile_rcl);
 	SetH(shil_opcodes::rcr,shil_compile_rcr);
 	SetH(shil_opcodes::readm,shil_compile_readm);
-	SetH(shil_opcodes::rol,shil_compile_nimp);
+	SetH(shil_opcodes::rol,shil_compile_rol);
 	SetH(shil_opcodes::ror,shil_compile_ror);
 	SetH(shil_opcodes::sar,shil_compile_sar);
 	SetH(shil_opcodes::SaveT,shil_compile_SaveT);
