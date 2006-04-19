@@ -5,3 +5,7 @@
 
 rec_v1_BasicBlock* rec_v1_FindBlock(u32 address);
 rec_v1_BasicBlock* rec_v1_AddBlock(u32 address);
+
+void rec_v1_ResetBlockTest(u32 addr);
+void rec_v1_SetBlockTest(u32 addr);
+void rec_v1_BlockTest(u32 addr);

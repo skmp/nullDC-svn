@@ -1,5 +1,6 @@
 #include "rec_v1_analyser.h"
 #include "sh4_cpu_shil.h"
+#include "rec_v1_blockmanager.h"
 
 #include "dc\mem\sh4_mem.h"
 
@@ -26,6 +27,7 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 		block_size++;
 		u16 opcode=ReadMem16(pc);
 
+		rec_v1_SetBlockTest(pc);
 		if (OpTyp[opcode]&WritesPC)
 		{
 			//sh4

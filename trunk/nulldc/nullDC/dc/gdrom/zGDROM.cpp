@@ -10,7 +10,7 @@ using namespace std;
 #include "dc/sh4/dmac.h"
 #include "dc/sh4/sh4_if.h"
 #include "dc/mem/sh4_mem.h"
-
+#include "dc/sh4/rec_v1/rec_v1_blockmanager.h"
 
 #ifdef ZGDROM
 
@@ -597,6 +597,10 @@ void DMAC_Ch3St(u32 data)
 	if( 1 == SB_GDDIR ) {
 		memcpy( &mem_b[src&0xFFFFFF], &gdReadBuffer[dmaOffset], len );
 
+		for (int i=0;i<len;i+=0x100)
+		{
+			rec_v1_BlockTest(src+i);
+		}
 		if (len>=8*1024*1024)
 			printf("\n~\tERROR: GDROM DMA LENGTH LARGER THAN BUFFER SIZE!\n\n");
 

@@ -8,6 +8,7 @@
 #include "dc/pvr/pvr_if.h"
 #include "dc/sh4/sh4_registers.h"
 #include "dc/dc.h"
+#include "dc/sh4/rec_v1/rec_v1_blockmanager.h"
 
 //main system mem
 Array<u8> mem_b;
@@ -302,6 +303,7 @@ void MEMCALL WriteMem8(u32 addr,u8 data)
 
 	//area 3 : System Ram 16 mb, {64b}x4
 	case 3:
+		rec_v1_BlockTest(addr);
 		mem_b[addr&RAM_MASK]=data;
 		return;
 		break;
@@ -369,6 +371,7 @@ void MEMCALL WriteMem16(u32 addr,u16 data)
 
 	//area 3 : System Ram 16 mb, {64b}x4
 	case 3:
+		rec_v1_BlockTest(addr);
 		*(u16*)&mem_b[addr&RAM_MASK]=data;
 		return;
 		break;
@@ -436,6 +439,7 @@ void MEMCALL WriteMem32(u32 addr,u32 data)
 
 	//area 3 : System Ram 16 mb, {64b}x4
 	case 3:
+		rec_v1_BlockTest(addr);
 		*(u32*)&mem_b[addr&RAM_MASK]=data;
 		return;
 		break;
