@@ -60,6 +60,17 @@ enum x86IntRegType
    GPR_Error=0xFFFFFFFF
 } ;
 
+enum x86_8breg
+{
+	Reg_AL=0x0,
+	Reg_CL,
+	Reg_DL,
+	Reg_BL,
+	Reg_AH,
+	Reg_CH,
+	Reg_DH,
+	Reg_BH,
+};
 
 template <int DefSize=16*1024>
 class emitter
@@ -229,6 +240,14 @@ private:
 		#endif
 	}
 public :
+
+	void XCHG8RtoR(x86_8breg to, x86_8breg from)
+	{
+		if(to == from) return;
+		write8( 0x86 );
+		write8((u8) (0xC0 | (to << 3) | from) );
+	}
+
 	u32 UsedBytes()
 	{
 		return (u32)(x86Ptr-x86Ptr_base);
@@ -904,7 +923,7 @@ public :
 	}
 
 	/* adc imm32 to m32 */
-	void ADC32ItoM( u32 to, u32 from ) 
+	void ADC32ItoM( u32* to, u32 from ) 
 	{
 		write8( 0x81 ); 
 		ModRM( 0, 2, DISP32 );
@@ -920,7 +939,7 @@ public :
 	}
 
 	/* adc m32 to r32 */
-	void ADC32MtoR( x86IntRegType to, u32 from ) 
+	void ADC32MtoR( x86IntRegType to, u32* from ) 
 	{
 		write8( 0x13 ); 
 		ModRM( 0, to, DISP32 );
@@ -1260,7 +1279,7 @@ public :
 		if ( from == 1 )
 		{
 			write8( 0xD1 );
-			write8( 0xE0 | (to & 0x7) );
+			write8( (u8)(0xE0 | (to & 0x7)) );
 			return;
 		}
 		write8( 0xC1 ); 
@@ -1304,7 +1323,7 @@ public :
 		if ( from == 1 )
 		{
 			write8( 0xD1 );
-			write8( 0xE8 | (to & 0x7) );
+			write8( (u8)(0xE8 | (to & 0x7)) );
 		}
 		else
 		{
@@ -1416,6 +1435,48 @@ public :
 			write8( from );
 		}
 	}
+	void RCR321toR( x86IntRegType to ) 
+	{
+		RCR32ItoR(to,1);
+	}
+
+	void ROR321toR( x86IntRegType to ) 
+	{
+		write8( 0xd1 );
+		write8( 0xc8 | to );
+	}
+
+	void ROR32ItoR( x86IntRegType to ,u8 from) 
+	{
+		write8( 0xc1 );
+		write8( 0xc8 | to );
+		write8( from );
+	}
+
+
+	void RCL32ItoR( x86IntRegType to, u8 from ) 
+	{
+		if ( from == 1 ) {
+			write8( 0xd1 );
+			write8( 0xd0 | to );
+		} 
+		else 
+		{
+			write8( 0xc1 );
+			write8( 0xd0 | to );
+			write8( from );
+		}
+	}
+
+	void RCL321toM(u32*to) 
+	{
+		//if (count!=1)
+		//	printf("RCL32ItoM count!=1 die kthx\n");
+
+		write8(0xD1);
+		write8(0x15);
+		write32((u32)to);		
+	}
 
 	// shld imm8 to r32
 	void SHLD32ItoR( u32 to, u32 from, u8 shift )
@@ -1510,7 +1571,7 @@ public :
 	}
 
 	/* or m32 to r32 */
-	void OR32MtoR( x86IntRegType to, u32 from ) 
+	void OR32MtoR( x86IntRegType to, u32* from ) 
 	{
 		write8( 0x0B ); 
 		ModRM( 0, to, DISP32 );
@@ -1690,7 +1751,7 @@ public :
 	}
 
 	/* and m32 to r32 */
-	void AND32MtoR( x86IntRegType to, u32 from ) 
+	void AND32MtoR( x86IntRegType to, u32* from ) 
 	{
 		write8( 0x23 ); 
 		ModRM( 0, to, DISP32 );
@@ -2175,6 +2236,12 @@ public :
 	{
 		write8( 0x85 );
 		ModRM( 3, from, to );
+	}
+
+	/* setcc r8 */
+	void SETcc8R( x86IntRegType to ,u32 cc) 
+	{ 
+		SET8R( (u8)(0x90|cc),(u8) to ); 
 	}
 
 	/* sets r8 */

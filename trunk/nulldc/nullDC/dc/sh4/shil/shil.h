@@ -357,10 +357,10 @@ public :
 
 	//rotate
 
-	void rcl(Sh4RegType to,u8 count);
-	void rcr(Sh4RegType to,u8 count);
-	void rol(Sh4RegType to,u8 count);
-	void ror(Sh4RegType to,u8 count);
+	void rcl(Sh4RegType to);
+	void rcr(Sh4RegType to);
+	void rol(Sh4RegType to);
+	void ror(Sh4RegType to);
 
 	//swaps
 	void bswap(Sh4RegType to);

@@ -137,3 +137,85 @@ void SetXD(u32 n,f64 val)
 	xf_hex[(n<<1) | 0]=((u32*)(&val))[1];
 }
 #endif
+
+u32* Sh4_int_GetRegisterPtr(Sh4RegType reg)
+{
+	if ((reg>=r0) && (reg<=r15))
+	{
+		return &r[reg-r0];
+	}
+	else if ((reg>=r0_Bank) && (reg<=r7_Bank))
+	{
+		return &r_bank[reg-r0_Bank];
+	}
+	else if ((reg>=fr_0) && (reg<=fr_15))
+	{
+		return &fr_hex[reg-fr_0];
+	}
+	else if ((reg>=xf_0) && (reg<=xf_15))
+	{
+		return &xf_hex[reg-xf_0];
+	}
+	else
+	{
+		switch(reg)
+		{
+		case Sh4RegType::reg_gbr :
+			return &gbr;
+			break;
+		case Sh4RegType::reg_vbr :
+			return &vbr;
+			break;
+
+		case Sh4RegType::reg_ssr :
+			return &ssr;
+			break;
+
+		case Sh4RegType::reg_spc :
+			return &spc;
+			break;
+
+		case Sh4RegType::reg_sgr :
+			return &sgr;
+			break;
+
+		case Sh4RegType::reg_dbr :
+			return &dbr;
+			break;
+
+		case Sh4RegType::reg_mach :
+			return &mach;
+			break;
+
+		case Sh4RegType::reg_macl :
+			return &macl;
+			break;
+
+		case Sh4RegType::reg_pr :
+			return &pr;
+			break;
+
+		case Sh4RegType::reg_fpul :
+			return &fpul;
+			break;
+
+
+		case Sh4RegType::reg_pc :
+			return &pc;
+			break;
+
+		case Sh4RegType::reg_sr :
+			return &sr.full;
+			break;
+		case Sh4RegType::reg_fpscr :
+			return &fpscr.full;
+			break;
+
+
+		default:
+			EMUERROR2("Unkown register Id %d",reg);
+			return 0;
+			break;
+		}
+	}
+}

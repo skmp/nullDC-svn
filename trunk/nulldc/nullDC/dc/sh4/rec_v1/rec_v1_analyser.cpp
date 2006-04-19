@@ -25,7 +25,6 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 	{
 		block_size++;
 		u16 opcode=ReadMem16(pc);
-		RecOpPtr[opcode](opcode,pc);
 
 		if (OpTyp[opcode]&WritesPC)
 		{
@@ -37,21 +36,41 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 			to->end=pc;
 			break;
 		}
+		else//(((opcode&0xF000)>=0x3000) && ((opcode&0xF000)<0x5000))
+		{
+			if ((opcode&0xF000)==0xF000)
+				ilst->shil_ifb(opcode,pc);
+			//else if (((opcode&0xF00F)==0x600B))//>5000 is another one
+			//	ilst->shil_ifb(opcode,pc);
+			else
+				//ilst->shil_ifb(opcode,pc);
+				RecOpPtr[opcode](opcode,pc);
+		}
 		
-		pc+=2;
 
-		if ((OpTyp[opcode]&(WritesSR | WritesFPSCR)) || block_size==448)
+		if ((OpTyp[opcode]&(WritesSR | WritesFPSCR)))
 		{
 			//block end , but b/c last opcode does not set PC
 			//after execution , resume to recompile from pc+2
-			ilst->mov(reg_pc,pc);//save next opcode pc
+			//ilst->mov(reg_pc,pc);//save next opcode pc-2 , pc+2 is done after execution
+			//opcode is interpreter so pc is set , if update shit() is called , pc must remain
 
 			to->end=pc;
 			break;
 		}
+
+		if (block_size==448)
+		{
+			ilst->mov(reg_pc,pc);//save next opcode pc-2 , pc+2 is done after execution
+
+			to->end=pc;
+			break;
+		}
+
+		pc+=2;
 		
 	}
 
 	to->cycles=block_size*3;
-	printf("SH4: Analysed block pc:%x , block size : %d. Shil size %d\n",to->start,block_size,to->ilst.op_count);
+	//printf("SH4: Analysed block pc:%x , block size : %d. Shil size %d\n",to->start,block_size,to->ilst.op_count);
 }

@@ -155,7 +155,8 @@ sh4op(i0000_0000_0101_1000)
 {
 	//iNimp("sets");
 	//sr.S = 1;
-	ilst->mov(Sh4RegType::sr_S,1);
+	shil_interpret(op);
+	//ilst->mov(Sh4RegType::sr_S,1);
 } 
 
 
@@ -163,7 +164,8 @@ sh4op(i0000_0000_0101_1000)
 sh4op(i0000_0000_0100_1000)
 {
 	//iNimp(op, "clrs");
-	ilst->mov(Sh4RegType::sr_S,0);
+	shil_interpret(op);
+	//ilst->mov(Sh4RegType::sr_S,0);
 } 
 
 //sett                          
@@ -171,7 +173,8 @@ sh4op(i0000_0000_0001_1000)
 {
 	//iNimp("sett");
 	//sr.T = 1;
-	ilst->mov(Sh4RegType::sr_T,1);
+	shil_interpret(op);
+	//ilst->mov(Sh4RegType::sr_T,1);
 } 
 
 
@@ -181,14 +184,16 @@ sh4op(i0000_0000_0000_1000)
 {
 	//iNimp("clrt");
 	//sr.T = 0;
-	ilst->mov(Sh4RegType::sr_T,0);
+	shil_interpret(op);
+	//ilst->mov(Sh4RegType::sr_T,0);
 } 
 //movt <REG_N>                  
 sh4op(i0000_nnnn_0010_1001)
 {
 	//iNimp("movt <REG_N>");
 	u32 n = GetN(op);
-	ilst->mov(r[n],Sh4RegType::sr_T);
+	shil_interpret(op);
+	//ilst->mov(r[n],Sh4RegType::sr_T);
 } 
 //************************ Reg Compares ************************
 //cmp/pz <REG_N>                
@@ -277,6 +282,8 @@ sh4op(i0011_nnnn_mmmm_0011)
 //cmp/hi <REG_M>,<REG_N>        
 sh4op(i0011_nnnn_mmmm_0110)
 {
+	//shil_interpret(op);
+	//return;
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 
@@ -457,9 +464,10 @@ sh4op(i0000_0000_0001_1001)
 	//sr.Q = 0;
 	//sr.M = 0;
 	//sr.T = 0;
-	ilst->mov(sr_Q,0);
-	ilst->mov(sr_M,0);
-	ilst->mov(sr_T,0);
+	//ilst->mov(sr_Q,0);
+	//ilst->mov(sr_M,0);
+	//ilst->mov(sr_T,0);
+	shil_interpret(op);
 }
 //div0s <REG_M>,<REG_N>         
 sh4op(i0010_nnnn_mmmm_0111)
@@ -636,7 +644,9 @@ sh4op(i0110_nnnn_mmmm_1011)
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 	//r[n] = -r[m];
+	ilst->mov(r[n],r[m]);
 	ilst->neg(r[n]);
+	//shil_interpret(op);
 } 
 
 //not <REG_M>,<REG_N>           
@@ -758,7 +768,7 @@ sh4op(i0100_nnnn_0010_0100)
 	//r[n]|=t;
 
 	ilst->LoadT(CF);
-	ilst->rcl(r[n],1);
+	ilst->rcl(r[n]);
 	ilst->SaveT(SaveCF);
 }
 
@@ -773,7 +783,7 @@ sh4op(i0100_nnnn_0000_0100)
 	//r[n] <<= 1;
 	//r[n]|=sr.T;
 
-	ilst->rol(r[n],1);
+	ilst->rol(r[n]);
 	ilst->SaveT(SaveCF);
 }
 
@@ -788,7 +798,7 @@ sh4op(i0100_nnnn_0010_0101)
 	//r[n] |=sr.T<<31;
 	//sr.T = temp;
 	ilst->LoadT(CF);
-	ilst->rcr(r[n],1);
+	ilst->rcr(r[n]);
 	ilst->SaveT(SaveCF);
 
 }
@@ -802,7 +812,7 @@ sh4op(i0100_nnnn_0000_0101)
 	//sr.T = r[n] & 0x1;
 	//r[n] >>= 1;
 	//r[n] |= (sr.T << 31);
-	ilst->ror(r[n],1);
+	ilst->ror(r[n]);
 	ilst->SaveT(SaveCF);
 }					
 //************************ byte reorder/sign ************************
@@ -1889,13 +1899,13 @@ struct shil_RecRegType
 	//SHIFT RIGHT
 	void operator>>=(const u32 constv)
 	{
-		ilst->shr(regid,constv);
+		ilst->shr(regid,(u8)constv);
 	};
 
 	//SHIFT LEFT
 	void operator<<=(const u32 constv)
 	{
-		ilst->shl(regid,constv);
+		ilst->shl(regid,(u8)constv);
 	};
 };
 

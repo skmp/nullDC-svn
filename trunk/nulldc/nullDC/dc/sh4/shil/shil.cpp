@@ -375,21 +375,21 @@ void shil_stream::sar(Sh4RegType to,u8 count)
 
 //rotate
 
-void shil_stream::rcl(Sh4RegType to,u8 count)
+void shil_stream::rcl(Sh4RegType to)
 {
-	emit32(shil_opcodes::rcl,to,count);
+	emit32(shil_opcodes::rcl,to);
 }
-void shil_stream::rcr(Sh4RegType to,u8 count)
+void shil_stream::rcr(Sh4RegType to)
 {
-	emit32(shil_opcodes::rcr,to,count);
+	emit32(shil_opcodes::rcr,to);
 }
-void shil_stream::rol(Sh4RegType to,u8 count)
+void shil_stream::rol(Sh4RegType to)
 {
-	emit32(shil_opcodes::rol,to,count);
+	emit32(shil_opcodes::rol,to);
 }
-void shil_stream::ror(Sh4RegType to,u8 count)
+void shil_stream::ror(Sh4RegType to)
 {
-	emit32(shil_opcodes::ror,to,count);
+	emit32(shil_opcodes::ror,to);
 }
 
 //swaps
@@ -406,20 +406,20 @@ void shil_stream::wswap(Sh4RegType to)
 //signed
 void shil_stream::movsxb(Sh4RegType to,Sh4RegType from)
 {
-	emit(shil_opcodes::movex,to,from,0,0,FLAG_SX | FLAG_8);
+	emitRegReg(shil_opcodes::movex,to,from,FLAG_SX | FLAG_8);
 }
 void shil_stream::movsxw(Sh4RegType to,Sh4RegType from)
 {
-	emit(shil_opcodes::movex,to,from,0,0,FLAG_SX | FLAG_16);
+	emitRegReg(shil_opcodes::movex,to,from,FLAG_SX | FLAG_16);
 }
 //unsigned
 void shil_stream::movzxb(Sh4RegType to,Sh4RegType from)
 {
-	emit(shil_opcodes::movex,to,from,0,0,FLAG_ZX | FLAG_8);
+	emitRegReg(shil_opcodes::movex,to,from,FLAG_ZX | FLAG_8);
 }
 void shil_stream::movzxw(Sh4RegType to,Sh4RegType from)
 {
-	emit(shil_opcodes::movex,to,from,0,0,FLAG_ZX | FLAG_16);
+	emitRegReg(shil_opcodes::movex,to,from,FLAG_ZX | FLAG_16);
 }
 
 //maths (integer)

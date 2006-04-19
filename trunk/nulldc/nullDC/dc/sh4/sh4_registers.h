@@ -74,3 +74,5 @@ void SetXD(u32 n,f64 val);
 
 extern StatusReg old_sr;
 extern fpscr_type old_fpscr;
+
+u32* Sh4_int_GetRegisterPtr(Sh4RegType reg);
