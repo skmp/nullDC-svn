@@ -78,6 +78,6 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 		
 	}
 
-	to->cycles=block_size*1;
+	to->cycles=block_size*4;
 	//printf("SH4: Analysed block pc:%x , block size : %d. Shil size %d\n",to->start,block_size,to->ilst.op_count);
 }
