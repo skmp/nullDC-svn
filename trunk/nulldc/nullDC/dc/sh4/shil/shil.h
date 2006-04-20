@@ -58,6 +58,8 @@ enum shil_opflags
 
 	FLAG_R0=128,
 	FLAG_GBR=256,
+	FLAG_MACH=512,
+	FLAG_MACL=1024
 };
 
 //shil is a combination of sh4 and x86 opcodes , in a decoded form so that varius optimisations
@@ -202,7 +204,16 @@ enum shil_opcodes
 	fmac,
 
 	//shil_ifb const , const
-	shil_ifb
+	shil_ifb,
+
+	//JCond T==imm
+	jcond,
+	//Jmp
+	jmp,
+	//mul [s] [16|32|64] 16*16->32 , 32*32->32 , 32*32->64
+	mul,
+
+	shil_count,
 };
 
 enum cmd_cond
@@ -261,6 +272,13 @@ class shil_stream
 	void shil_stream::emitRegRegImm(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2,u32 imm1,u16 flags);
 
 public :
+
+	void shil_stream::muls_16_16_32(Sh4RegType reg1,Sh4RegType reg2);
+	void shil_stream::mulu_16_16_32(Sh4RegType reg1,Sh4RegType reg2);
+	void shil_stream::muls_32_32_32(Sh4RegType reg1,Sh4RegType reg2);
+	void shil_stream::mulu_32_32_32(Sh4RegType reg1,Sh4RegType reg2);
+	void shil_stream::muls_32_32_64(Sh4RegType reg1,Sh4RegType reg2);
+	void shil_stream::mulu_32_32_64(Sh4RegType reg1,Sh4RegType reg2);
 
 	vector<shil_opcode> opcodes;
 	

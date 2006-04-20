@@ -362,10 +362,12 @@ sh4op(i0010_nnnn_mmmm_1000)
 //mulu.w <REG_M>,<REG_N>          
 sh4op(i0010_nnnn_mmmm_1110)
 {
-	shil_interpret(op);
+	//shil_interpret(op);
 	//iNimp("mulu.w <REG_M>,<REG_N>");//check  ++
-	/*u32 n = GetN(op);
+	u32 n = GetN(op);
 	u32 m = GetM(op);
+	ilst->mulu_16_16_32(r[n],r[m]);
+	/*
 	macl=((u16)(s32)r[n])*
 		((u16)(s32)r[m]);*/
 }
@@ -373,23 +375,29 @@ sh4op(i0010_nnnn_mmmm_1110)
 //muls.w <REG_M>,<REG_N>          
 sh4op(i0010_nnnn_mmmm_1111)
 {
-	shil_interpret(op);
+	//shil_interpret(op);
 	//TODO : Check This [26/4/05]
 	//iNimp("muls <REG_M>,<REG_N>");
-	/*
+	
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 
+	ilst->muls_16_16_32(r[n],r[m]);
+	/*
 	macl = (u32)(((s16)(s32)r[n]) * ((s16)(s32)r[m]));*/
 }
 //dmulu.l <REG_M>,<REG_N>       
 sh4op(i0011_nnnn_mmmm_0101)
 {
-	shil_interpret(op);
-	/*
+//	shil_interpret(op);
+
 	//iNimp("dmulu.l <REG_M>,<REG_N>");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
+	
+	ilst->mulu_32_32_64(r[n],r[m]);
+
+	/*
 	u64 x;
 
 	x = (u64)r[n] * (u64)r[m];
@@ -401,11 +409,14 @@ sh4op(i0011_nnnn_mmmm_0101)
 //dmuls.l <REG_M>,<REG_N>       
 sh4op(i0011_nnnn_mmmm_1101)
 {
-	shil_interpret(op);/*
+	//shil_interpret(op);
 	//iNimp("dmuls.l <REG_M>,<REG_N>");//check ++
 	u32 n = GetN(op);
 	u32 m = GetM(op);
-	s64 x;
+	
+	ilst->muls_32_32_64(r[n],r[m]);
+
+	/*s64 x;
 
 	x = (s64)(s32)r[n] * (s64)(s32)r[m];
 
@@ -450,11 +461,14 @@ sh4op(i0000_nnnn_mmmm_1111)
 //mul.l <REG_M>,<REG_N>         
 sh4op(i0000_nnnn_mmmm_0111)
 {//TODO : CHECK THIS
-	shil_interpret(op);
-	/*
+	//shil_interpret(op);
+
+
+	
 	u32 n = GetN(op);
 	u32 m = GetM(op);
-	macl = (u32)((((s32)r[n]) * ((s32)r[m])));*/
+	ilst->muls_32_32_32(r[n],r[m]);
+	/*macl = (u32)((((s32)r[n]) * ((s32)r[m])));*/
 }
 //************************ Div ! ************************ 
 //div0u                         
@@ -657,6 +671,7 @@ sh4op(i0110_nnnn_mmmm_0111)
 	u32 m = GetM(op);
 
 	//r[n] = ~r[m];
+	ilst->mov(r[n],r[m]);
 	ilst->not(r[n]);
 } 
 
@@ -1723,6 +1738,7 @@ sh4op(i1111_nnnn_0000_1101)
 //fmac <FREG_0>,<FREG_M>,<FREG_N> 
 sh4op(i1111_nnnn_mmmm_1110)
 {
+	shil_interpret(op);
 	//iNimp("fmac <FREG_0>,<FREG_M>,<FREG_N>");
 	if (fpscr.PR==0)
 	{

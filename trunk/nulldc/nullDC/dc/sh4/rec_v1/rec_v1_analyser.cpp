@@ -27,8 +27,10 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 		block_size++;
 		u16 opcode=ReadMem16(pc);
 
-		rec_v1_SetBlockTest(pc);
-		if (OpTyp[opcode]&WritesPC)
+		if (((pc>>26)&0x7)==3)
+			rec_v1_SetBlockTest(pc);
+
+		/*if (OpTyp[opcode]&WritesPC)
 		{
 			//sh4
 			//an opcode that writes to PC (branch)
@@ -37,18 +39,21 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 
 			to->end=pc;
 			break;
-		}
-		else//(((opcode&0xF000)>=0x3000) && ((opcode&0xF000)<0x5000))
-		{
-			if ((opcode&0xF000)==0xF000)
-				ilst->shil_ifb(opcode,pc);
-			//else if (((opcode&0xF00F)==0x600B))//>5000 is another one
-			//	ilst->shil_ifb(opcode,pc);
-			else
-				//ilst->shil_ifb(opcode,pc);
-				RecOpPtr[opcode](opcode,pc);
-		}
+		}*/
+		//else//(((opcode&0xF000)>=0x3000) && ((opcode&0xF000)<0x5000))
+		//{
+		if ((opcode&0xF000)==0xF000)
+			ilst->shil_ifb(opcode,pc);
+		else
+			RecOpPtr[opcode](opcode,pc);
+		//}
 		
+		if (OpTyp[opcode]&WritesPC)
+		{
+			to->end=pc;
+
+			break;
+		}
 
 		if ((OpTyp[opcode]&(WritesSR | WritesFPSCR)))
 		{
@@ -73,6 +78,6 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 		
 	}
 
-	to->cycles=block_size*3;
+	to->cycles=block_size*1;
 	//printf("SH4: Analysed block pc:%x , block size : %d. Shil size %d\n",to->start,block_size,to->ilst.op_count);
 }

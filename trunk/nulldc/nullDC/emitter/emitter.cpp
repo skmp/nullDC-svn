@@ -2,6 +2,5 @@
 
 void TestEmit()
 {
-	emitter<> temp;
-	temp.XOR32RtoR(EAX,EAX);
+
 }

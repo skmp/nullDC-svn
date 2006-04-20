@@ -132,12 +132,15 @@ u16 GetBaseFlags(Sh4RegType base)
 	if (base!=r0 && base!=reg_gbr )
 	{
 		printf("SHIL ERROR\n");
+		return 0;
 	}
 
 	if (base==r0)
 		return FLAG_R0;
 	else if (base==reg_gbr)
 		return FLAG_GBR;
+
+	return 0;
 }
 //readmem [const]
 void shil_stream::readm8(Sh4RegType to,u32 from)
@@ -445,6 +448,34 @@ void shil_stream::sub(Sh4RegType to,u32 from)
 	emit32(shil_opcodes::sub,to,from);
 }
 
+void shil_stream::muls_16_16_32(Sh4RegType reg1,Sh4RegType reg2)
+{
+	shil_stream::emitRegReg(mul,reg1,reg2,FLAG_MACL | FLAG_16| FLAG_SX);
+}
+
+void shil_stream::mulu_16_16_32(Sh4RegType reg1,Sh4RegType reg2)
+{
+	shil_stream::emitRegReg(mul,reg1,reg2,FLAG_MACL | FLAG_16| FLAG_ZX);
+}
+
+void shil_stream::muls_32_32_32(Sh4RegType reg1,Sh4RegType reg2)
+{
+	shil_stream::emitRegReg(mul,reg1,reg2,FLAG_MACL | FLAG_32| FLAG_SX);
+}
+void shil_stream::mulu_32_32_32(Sh4RegType reg1,Sh4RegType reg2)
+{
+	shil_stream::emitRegReg(mul,reg1,reg2,FLAG_MACL | FLAG_32| FLAG_ZX);
+}
+
+void shil_stream::muls_32_32_64(Sh4RegType reg1,Sh4RegType reg2)
+{
+	shil_stream::emitRegReg(mul,reg1,reg2,FLAG_MACL | FLAG_MACH | FLAG_64| FLAG_SX);
+}
+void shil_stream::mulu_32_32_64(Sh4RegType reg1,Sh4RegType reg2)
+{
+	shil_stream::emitRegReg(mul,reg1,reg2,FLAG_MACL | FLAG_MACH | FLAG_64| FLAG_ZX);
+}
+
 //floating
 
 u16 shil_stream::GetFloatFlags(Sh4RegType reg1,Sh4RegType reg2)
@@ -487,7 +518,7 @@ u16 shil_stream::GetFloatFlags(Sh4RegType reg1,Sh4RegType reg2)
 		rv|=FLAG_64;
 	}
 
-	return rv;
+	return (u16)rv;
 }
 void shil_stream::fadd(Sh4RegType to,Sh4RegType from)
 {
@@ -649,11 +680,17 @@ char* shil_names[]=
 	"fmac",
 
 	//shil_ifb const , const
-	"shil_ifb"
+	"shil_ifb",
+	//JCond T==imm
+	"jcond",
+	//Jmp
+	"jmp",
+	//mul [s] [16|32|64] 16*16->32 , 32*32->32 , 32*32->64
+	"mul"
 };
 char* GetShilName(shil_opcodes ops)
 {
-	if (ops>31)
+	if (ops>33)
 	{
 		printf("SHIL ERROR\n");
 	}

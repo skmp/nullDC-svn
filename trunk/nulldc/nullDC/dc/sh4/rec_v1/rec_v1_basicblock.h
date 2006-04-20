@@ -28,4 +28,7 @@ public :
 	shil_stream ilst;
 
 	rec_v1_CompiledBlock* compiled;
+
+	rec_v1_BasicBlock* TF_next;
+	rec_v1_BasicBlock* TT_next;
 };

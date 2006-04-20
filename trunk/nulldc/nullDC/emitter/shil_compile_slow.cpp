@@ -9,7 +9,7 @@
 //TEMP!!!
 emitter<>* x86e;
 
-typedef void __fastcall shil_compileFP(shil_opcode* op);
+typedef void __fastcall shil_compileFP(shil_opcode* op,rec_v1_BasicBlock* block);
 
 //a few helpers
 u32* GetRegPtr(u8 reg)
@@ -112,12 +112,12 @@ void SaveReg(u8 reg,u32 from)
 	SaveReg(op->reg1,EAX);
 
 //shil compilation
-void __fastcall shil_compile_nimp(shil_opcode* op)
+void __fastcall shil_compile_nimp(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	printf("*********SHIL \"%s\" not recompiled*********\n",GetShilName((shil_opcodes)op->opcode));
 }
 
-void __fastcall shil_compile_mov(shil_opcode* op)
+void __fastcall shil_compile_mov(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	u32 size=op->flags&3;
 	assert(op->flags & FLAG_REG1);//reg1 has to be used on mov :)
@@ -152,7 +152,7 @@ void __fastcall shil_compile_mov(shil_opcode* op)
 
 
 //mnnn movex !! wowhoo
-void __fastcall shil_compile_movex(shil_opcode* op)
+void __fastcall shil_compile_movex(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	u32 size=op->flags&3;
 	assert(op->flags & (FLAG_REG1|FLAG_REG2));	//reg1 , reg2 has to be used on movex :)
@@ -191,7 +191,7 @@ void __fastcall shil_compile_movex(shil_opcode* op)
 }
 
 //ahh
-void __fastcall shil_compile_shil_ifb(shil_opcode* op)
+void __fastcall shil_compile_shil_ifb(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 
 	//if opcode needs pc , save it
@@ -203,7 +203,7 @@ void __fastcall shil_compile_shil_ifb(shil_opcode* op)
 }
 
 //shift
-void __fastcall shil_compile_swap(shil_opcode* op)
+void __fastcall shil_compile_swap(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	u32 size=op->flags&3;
 	
@@ -229,58 +229,58 @@ void __fastcall shil_compile_swap(shil_opcode* op)
 	}
 }
 
-void __fastcall shil_compile_shl(shil_opcode* op)
+void __fastcall shil_compile_shl(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_ItM(SHL32ItoM,(u8)op->imm1);
 }
 
-void __fastcall shil_compile_shr(shil_opcode* op)
+void __fastcall shil_compile_shr(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_ItM(SHR32ItoM,(u8)op->imm1);
 }
 
-void __fastcall shil_compile_sar(shil_opcode* op)
+void __fastcall shil_compile_sar(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_ItM(SAR32ItoM,(u8)op->imm1);
 }
 
 //rotates
-void __fastcall shil_compile_rcl(shil_opcode* op)
+void __fastcall shil_compile_rcl(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_NtM_noimm(RCL321toM);
 }
-void __fastcall shil_compile_rcr(shil_opcode* op)
+void __fastcall shil_compile_rcr(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_NtR_noimm(RCR321toR);
 }
-void __fastcall shil_compile_ror(shil_opcode* op)
+void __fastcall shil_compile_ror(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_NtR_noimm(ROR321toR);
 }
-void __fastcall shil_compile_rol(shil_opcode* op)
+void __fastcall shil_compile_rol(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_NtR_noimm(ROL321toR);
 }
 //neg
-void __fastcall shil_compile_neg(shil_opcode* op)
+void __fastcall shil_compile_neg(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_NtR_noimm(NEG32R);
 }
 //not
-void __fastcall shil_compile_not(shil_opcode* op)
+void __fastcall shil_compile_not(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_NtR_noimm(NOT32R);
 }
 //or xor and
-void __fastcall shil_compile_xor(shil_opcode* op)
+void __fastcall shil_compile_xor(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_MtR_ItR(XOR32MtoR,XOR32ItoR);
 }
-void __fastcall shil_compile_or(shil_opcode* op)
+void __fastcall shil_compile_or(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_MtR_ItR(OR32MtoR,OR32ItoR);
 }
-void __fastcall shil_compile_and(shil_opcode* op)
+void __fastcall shil_compile_and(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_MtR_ItR(AND32MtoR,AND32ItoR);
 }
@@ -322,7 +322,7 @@ void readwrteparams(shil_opcode* op)
 		x86e->ADD32MtoR(ECX,GetRegPtr(op->reg2));
 	}
 }
-void __fastcall shil_compile_readm(shil_opcode* op)
+void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	u32 size=op->flags&3;
 
@@ -347,7 +347,7 @@ void __fastcall shil_compile_readm(shil_opcode* op)
 
 	SaveReg(op->reg1,EAX);//save return value
 }
-void __fastcall shil_compile_writem(shil_opcode* op)
+void __fastcall shil_compile_writem(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	u32 size=op->flags&3;
 
@@ -373,7 +373,7 @@ void __fastcall shil_compile_writem(shil_opcode* op)
 }
 
 //save-loadT
-void __fastcall shil_compile_SaveT(shil_opcode* op)
+void __fastcall shil_compile_SaveT(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	assert(op->flags & FLAG_IMM1);//imm1
 	assert(0==(op->flags & (FLAG_IMM2|FLAG_REG1|FLAG_REG2)));//no imm2/r1/r2
@@ -387,7 +387,7 @@ void __fastcall shil_compile_SaveT(shil_opcode* op)
 	x86e->OR32RtoR(ECX,EAX);
 	SaveReg(reg_sr,ECX);
 }
-void __fastcall shil_compile_LoadT(shil_opcode* op)
+void __fastcall shil_compile_LoadT(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	assert(op->flags & FLAG_IMM1);//imm1
 	assert(0==(op->flags & (FLAG_IMM2|FLAG_REG1|FLAG_REG2)));//no imm2/r1/r2
@@ -401,7 +401,7 @@ void __fastcall shil_compile_LoadT(shil_opcode* op)
 }
 //cmp-test
 
-void __fastcall shil_compile_cmp(shil_opcode* op)
+void __fastcall shil_compile_cmp(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	assert(FLAG_32==(op->flags & 3));
 	if (op->flags & FLAG_IMM1)
@@ -421,7 +421,7 @@ void __fastcall shil_compile_cmp(shil_opcode* op)
 		//eflags is used w/ combination of SaveT
 	}
 }
-void __fastcall shil_compile_test(shil_opcode* op)
+void __fastcall shil_compile_test(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	assert(FLAG_32==(op->flags & 3));
 
@@ -444,19 +444,83 @@ void __fastcall shil_compile_test(shil_opcode* op)
 }
 
 //add-sub
-void __fastcall shil_compile_add(shil_opcode* op)
+void __fastcall shil_compile_add(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_MtR_ItR(ADD32MtoR,ADD32ItoR);
 }
-void __fastcall shil_compile_adc(shil_opcode* op)
+void __fastcall shil_compile_adc(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_MtR_ItR(ADC32MtoR,ADC32ItoR);
 }
-void __fastcall shil_compile_sub(shil_opcode* op)
+void __fastcall shil_compile_sub(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_MtR_ItR(SUB32MtoR,SUB32ItoR);
 }
-shil_compileFP* sclt[32]=
+
+//**
+void __fastcall shil_compile_jcond(shil_opcode* op,rec_v1_BasicBlock* block)
+{
+	printf("jcond ... heh not implemented\n");
+}
+void __fastcall shil_compile_jmp(shil_opcode* op,rec_v1_BasicBlock* block)
+{
+	printf("jmp ... heh not implemented\n");
+}
+
+void __fastcall shil_compile_mul(shil_opcode* op,rec_v1_BasicBlock* block)
+{
+	u32 sz=op->flags&3;
+
+	assert(sz==FLAG_8);//nope , can't be 16 bit..
+
+	if (sz==FLAG_64)//mach is olny used on 64b version
+		assert(op->flags & FLAG_MACH);
+	else
+		assert(0==(op->flags & FLAG_MACH));
+	
+
+	if (sz!=FLAG_64)
+	{
+		if (sz==FLAG_16)
+		{
+			if (op->flags & FLAG_SX)
+			{
+				x86e->MOVSX32M16toR(EAX,(u16*)GetRegPtr(op->reg1));
+				x86e->MOVSX32M16toR(ECX,(u16*)GetRegPtr(op->reg2));
+			}
+			else
+			{
+				x86e->MOVZX32M16toR(EAX,(u16*)GetRegPtr(op->reg1));
+				x86e->MOVZX32M16toR(ECX,(u16*)GetRegPtr(op->reg2));
+			}
+		}
+		else
+		{
+			x86e->MOV32MtoR(EAX,GetRegPtr(op->reg1));
+			x86e->MOV32MtoR(ECX,GetRegPtr(op->reg2));
+		}
+
+		x86e->IMUL32RtoR(EAX,ECX);
+		
+		SaveReg((u8)reg_macl,EAX);
+	}
+	else
+	{
+		assert(sz==FLAG_64);
+
+		x86e->MOV32MtoR(EAX,GetRegPtr(op->reg1));
+
+		if (op->flags & FLAG_SX)
+			x86e->IMUL32M(GetRegPtr(op->reg2));
+		else
+			x86e->MUL32M(GetRegPtr(op->reg2));
+
+		SaveReg((u8)reg_macl,EAX);
+		SaveReg((u8)reg_mach,EDX);
+	}
+}
+
+shil_compileFP* sclt[shil_count]=
 {
 	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,
 	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,
@@ -465,12 +529,13 @@ shil_compileFP* sclt[32]=
 	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,
 	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,
 	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,
-	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp
+	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,
+	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp
 };
 
 void SetH(shil_opcodes op,shil_compileFP* ha)
 {
-	if (op>31)
+	if (op>(shil_count-1))
 	{
 		printf("SHIL COMPILER ERROR\n");
 	}
@@ -519,17 +584,24 @@ void Init()
 	SetH(shil_opcodes::test,shil_compile_test);
 	SetH(shil_opcodes::writem,shil_compile_writem);
 	SetH(shil_opcodes::xor,shil_compile_xor);
+	SetH(shil_opcodes::jcond,shil_compile_jcond);
+	SetH(shil_opcodes::jmp,shil_compile_jmp);
+	SetH(shil_opcodes::mul,shil_compile_mul);
 
-	u32 shil_nimp=32;
-	for (int i=0;i<32;i++)
+	
+	u32 shil_nimp=shil_opcodes::shil_count;
+	for (int i=0;i<shil_opcodes::shil_count;i++)
 	{
 		if (sclt[i]==shil_compile_nimp)
 			shil_nimp--;
 	}
 
-	printf("lazy shil compiler stats : %d%% opcodes done\n",shil_nimp*100/32);
+	printf("lazy shil compiler stats : %d%% opcodes done\n",shil_nimp*100/shil_opcodes::shil_count);
 }
 bool inited=false;
+int fallbacks=0;
+int native=0;
+
 void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 {
 	if (!inited)
@@ -544,11 +616,16 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 	for (u32 i=0;i<block->ilst.opcodes.size();i++)
 	{
 		shil_opcode* op=&block->ilst.opcodes[i];
-		if (op->opcode>31)
+		if (op->opcode==shil_ifb)
+			fallbacks++;
+		else
+			native++;
+
+		if (op->opcode>(shil_opcodes::shil_count-1))
 		{
 			printf("SHIL COMPILER ERROR\n");
 		}
-		sclt[op->opcode](op);
+		sclt[op->opcode](op,block);
 	}
 
 	x86e->RET();
@@ -558,5 +635,7 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 	block->compiled->parent=block;
 	block->compiled->size=10;
 
+	u32 rat=native>fallbacks?fallbacks:native;
+	printf("Native/Fallback ratio : %d:%d [%d:%d]\n",native,fallbacks,native/rat,fallbacks/rat);
 	delete x86e;
 }

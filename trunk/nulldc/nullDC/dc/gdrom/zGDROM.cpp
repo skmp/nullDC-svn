@@ -597,7 +597,7 @@ void DMAC_Ch3St(u32 data)
 	if( 1 == SB_GDDIR ) {
 		memcpy( &mem_b[src&0xFFFFFF], &gdReadBuffer[dmaOffset], len );
 
-		for (int i=0;i<len;i+=0x100)
+		for (int i=0;i<len;i+=0x8)
 		{
 			rec_v1_BlockTest(src+i);
 		}

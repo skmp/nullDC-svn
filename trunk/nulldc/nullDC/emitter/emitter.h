@@ -578,7 +578,7 @@ public :
 	}
 
 	/* movzx m16 to r32 */
-	void MOVZX32M16toR( x86IntRegType to, u32 from ) 
+	void MOVZX32M16toR( x86IntRegType to, u16* from ) 
 	{
 		write16( 0xB70F ); 
 		ModRM( 0, to, DISP32 );
@@ -1166,7 +1166,7 @@ public :
 	}
 
 	/* mul eax by m32 to edx:eax */
-	void MUL32M( u32 from ) 
+	void MUL32M( u32* from ) 
 	{
 		write8( 0xF7 ); 
 		ModRM( 0, 4, DISP32 );
@@ -1174,7 +1174,7 @@ public :
 	}
 
 	/* imul eax by m32 to edx:eax */
-	void IMUL32M( u32 from ) 
+	void IMUL32M( u32* from ) 
 	{
 		write8( 0xF7 ); 
 		ModRM( 0, 5, DISP32 );
