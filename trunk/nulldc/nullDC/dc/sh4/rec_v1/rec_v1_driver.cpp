@@ -129,9 +129,9 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 	while(rec_sh4_int_bCpuRun)
 	{
 		rec_v1_BasicBlock* currBlock=GetRecompiledCode(pc);
-		rec_cycles+=currBlock->cycles;
+		//rec_cycles+=currBlock->cycles;
 
-		currBlock->compiled->Code();
+		rec_cycles+=currBlock->compiled->Code();
 		//pc+=2 is needed after call
 		pc+=2;
 

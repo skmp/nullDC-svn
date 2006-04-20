@@ -25,10 +25,17 @@ rec_v1_BasicBlock* rec_v1_FindBlock(u32 address)
 }
 
 
-rec_v1_BasicBlock* rec_v1_AddBlock(u32 address)
+rec_v1_BasicBlock* rec_v1_NewBlock(u32 address)
 {
 	rec_v1_BasicBlock* rv=new rec_v1_BasicBlock();
 	rv->start=address;
+
+	return rv;
+}
+
+rec_v1_BasicBlock* rec_v1_AddBlock(u32 address)
+{
+	rec_v1_BasicBlock* rv=rec_v1_NewBlock(address);
 	
 	vector<rec_v1_BasicBlock*>*blocklst= &blocklist[(address>>2)&(block_cnt-1)];
 

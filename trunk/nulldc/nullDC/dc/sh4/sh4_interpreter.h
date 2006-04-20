@@ -3,8 +3,8 @@
 #include "sh4_if.h"
 #include "intc.h"
 
+
 #define sh4op(str) void  __fastcall str (u32 op)
-typedef void (__fastcall RecOpCallFP) (u32 op,u32 pc);
 typedef void (__fastcall OpCallFP) (u32 op);
 
 enum OpcodeType

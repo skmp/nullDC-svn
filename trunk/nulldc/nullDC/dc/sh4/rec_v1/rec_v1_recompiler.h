@@ -4,6 +4,7 @@
 #include "types.h"
 #include "dc\sh4\shil\shil.h"
 
-typedef void rec_v1_BasicBlockEP();
+typedef u32 rec_v1_BasicBlockEP();
+
 
 using namespace std;

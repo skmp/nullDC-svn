@@ -254,7 +254,8 @@ CC_G			=CC_NLE 		//
 
 enum x86_flags
 {
-	CF=1
+	CF=1,
+	jcond_flag=128
 };
 class shil_stream
 {
@@ -272,6 +273,8 @@ class shil_stream
 	void shil_stream::emitRegRegImm(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2,u32 imm1,u16 flags);
 
 public :
+	void shil_stream::jcond(u32 cond);
+	void shil_stream::jmp();
 
 	void shil_stream::muls_16_16_32(Sh4RegType reg1,Sh4RegType reg2);
 	void shil_stream::mulu_16_16_32(Sh4RegType reg1,Sh4RegType reg2);

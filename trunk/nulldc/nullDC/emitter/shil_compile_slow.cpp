@@ -8,6 +8,7 @@
 
 //TEMP!!!
 emitter<>* x86e;
+u32 pre_cycles_on_block=0;
 
 typedef void __fastcall shil_compileFP(shil_opcode* op,rec_v1_BasicBlock* block);
 
@@ -95,14 +96,14 @@ void SaveReg(u8 reg,u32 from)
 	assert(0==(op->flags & FLAG_REG2));\
 	x86e->_ItM_(GetRegPtr(op->reg1),_Imm_);
 
-#define OP_NtM_noimm(_ItM_,_Imm_)	assert(FLAG_32==(op->flags & 3));\
+#define OP_NtM_noimm(_ItM_)	assert(FLAG_32==(op->flags & 3));\
 	assert(0==(op->flags & FLAG_IMM1));\
 	assert(0==(op->flags & (FLAG_IMM2)));\
 	assert(op->flags & FLAG_REG1);\
 	assert(0==(op->flags & FLAG_REG2));\
 	x86e->_ItM_(GetRegPtr(op->reg1));
 
-#define OP_NtR_noimm(_ItR_,_Imm_)	assert(FLAG_32==(op->flags & 3));\
+#define OP_NtR_noimm(_ItR_)	assert(FLAG_32==(op->flags & 3));\
 	assert(0==(op->flags & FLAG_IMM1));\
 	assert(0==(op->flags & (FLAG_IMM2)));\
 	assert(op->flags & FLAG_REG1);\
@@ -111,6 +112,7 @@ void SaveReg(u8 reg,u32 from)
 	x86e->_ItR_(EAX);\
 	SaveReg(op->reg1,EAX);
 
+u32 T_jcond_value;
 //shil compilation
 void __fastcall shil_compile_nimp(shil_opcode* op,rec_v1_BasicBlock* block)
 {
@@ -392,12 +394,19 @@ void __fastcall shil_compile_LoadT(shil_opcode* op,rec_v1_BasicBlock* block)
 	assert(op->flags & FLAG_IMM1);//imm1
 	assert(0==(op->flags & (FLAG_IMM2|FLAG_REG1|FLAG_REG2)));//no imm2/r1/r2
 	
-	assert(op->imm1==x86_flags::CF);
-	
-	//SHR_RegByImm(1,Reg_EAX,1);
 
-	LoadReg(EAX,reg_sr);
-	x86e->SHR32ItoR(EAX,1);//heh T bit is there now :P CF
+	assert( (op->imm1==x86_flags::CF) || (op->imm1==x86_flags::jcond_flag) );
+
+	if (op->imm1==x86_flags::jcond_flag)
+	{
+		LoadReg(EAX,reg_sr);
+		x86e->MOV32RtoM(&T_jcond_value,EAX);//T_jcond_value;
+	}
+	else
+	{
+		LoadReg(EAX,reg_sr);
+		x86e->SHR32ItoR(EAX,1);//heh T bit is there now :P CF
+	}
 }
 //cmp-test
 
@@ -460,7 +469,54 @@ void __fastcall shil_compile_sub(shil_opcode* op,rec_v1_BasicBlock* block)
 //**
 void __fastcall shil_compile_jcond(shil_opcode* op,rec_v1_BasicBlock* block)
 {
-	printf("jcond ... heh not implemented\n");
+	//printf("jcond ... heh not implemented\n");
+	x86e->MOV32MtoR(EAX,&T_jcond_value);
+	x86e->TEST32ItoR(EAX,1);//test for T
+	emitter<>* x86e_b=x86e;
+
+	u32 pre_cbup=pre_cycles_on_block;
+	assert(block->TF_next);
+	assert(block->TT_next);
+
+	//if (block->TF_next->compiled==0)
+		CompileBasicBlock_slow(block->TF_next,pre_cycles_on_block);
+	//else
+	//	printf("COMPILE HIT!\n");
+
+	//if (block->TT_next->compiled==0)
+		CompileBasicBlock_slow(block->TT_next,pre_cycles_on_block);
+	//else
+	//	printf("COMPILE HIT!\n");
+
+	pre_cycles_on_block=pre_cbup;
+	x86e=x86e_b;
+
+	assert(op->flags & FLAG_IMM1);
+	assert((op->imm1==1) || (op->imm1==0));
+
+	if (op->imm1==0)
+	{
+		x86e->JNE32(block->TF_next->compiled->Code);//!=
+		x86e->JMP(block->TT_next->compiled->Code);		 //==
+	}
+	else
+	{
+		x86e->JNE32(block->TT_next->compiled->Code);//!=
+		x86e->JMP(block->TF_next->compiled->Code);		 //==
+	}
+
+	if (block->TT_next->flags & BLOCK_TEMP)
+	{
+		delete block->TT_next->compiled;
+		delete block->TT_next;
+		//printf("Deleted temp block \n");
+	}
+	if (block->TF_next->flags & BLOCK_TEMP)
+	{
+		delete block->TF_next->compiled;
+		delete block->TF_next;
+		//printf("Deleted temp block \n");
+	}
 }
 void __fastcall shil_compile_jmp(shil_opcode* op,rec_v1_BasicBlock* block)
 {
@@ -471,7 +527,7 @@ void __fastcall shil_compile_mul(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	u32 sz=op->flags&3;
 
-	assert(sz==FLAG_8);//nope , can't be 16 bit..
+	assert(sz!=FLAG_8);//nope , can't be 16 bit..
 
 	if (sz==FLAG_64)//mach is olny used on 64b version
 		assert(op->flags & FLAG_MACH);
@@ -602,7 +658,9 @@ bool inited=false;
 int fallbacks=0;
 int native=0;
 
-void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
+int block_count=0;
+
+void CompileBasicBlock_slow(rec_v1_BasicBlock* block, u32 pre_cycles)
 {
 	if (!inited)
 	{
@@ -612,6 +670,8 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 
 	x86e=new emitter<>();
 	block->compiled=new rec_v1_CompiledBlock();
+
+	pre_cycles_on_block=pre_cycles+block->cycles;
 
 	for (u32 i=0;i<block->ilst.opcodes.size();i++)
 	{
@@ -628,14 +688,23 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 		sclt[op->opcode](op,block);
 	}
 
+	x86e->MOV32ItoR(EAX,pre_cycles_on_block);
 	x86e->RET();
 
+	x86e->GenCode();//heh
 	block->compiled->Code=(rec_v1_BasicBlockEP*)x86e->GetCode();
 	block->compiled->count=10;
 	block->compiled->parent=block;
 	block->compiled->size=10;
 
-	u32 rat=native>fallbacks?fallbacks:native;
-	printf("Native/Fallback ratio : %d:%d [%d:%d]\n",native,fallbacks,native/rat,fallbacks/rat);
+	block_count++;
+	if ((block_count%512)==128)
+		printf("Recompiled %d blocks\n",block_count);
+	/*u32 rat=native>fallbacks?fallbacks:native;
+	if (rat!=0)
+		printf("Native/Fallback ratio : %d:%d [%d:%d]\n",native,fallbacks,native/rat,fallbacks/rat);
+	else
+		printf("Native/Fallback ratio : %d:%d [%d:%d]\n",native,fallbacks,native,fallbacks);
+*/
 	delete x86e;
 }

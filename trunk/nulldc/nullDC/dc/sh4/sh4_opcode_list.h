@@ -1,6 +1,7 @@
 #pragma once
 #include "types.h"
 #include "sh4_interpreter.h"
+#include "dc\sh4\rec_v1\rec_v1_basicblock.h"
 
 extern OpCallFP* OpPtr[0x10000];
 extern RecOpCallFP* RecOpPtr[0x10000];

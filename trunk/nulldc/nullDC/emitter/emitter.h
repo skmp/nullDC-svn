@@ -72,7 +72,10 @@ enum x86_8breg
 	Reg_BH,
 };
 
-template <int DefSize=16*1024>
+
+void* EmitAlloc(u32 minsize);
+void EmitAllocSet(u32 usedsize);
+template <int DefSize=12*1024>
 class emitter
 {
 private:
@@ -88,7 +91,7 @@ private:
 		printf("\t\n WARNING *Resizex86Ptr* *Resizex86Ptr* \n *Resizex86Ptr*\n");
 		u32 offset=x86Ptr-x86Ptr_base;
 
-		x86Ptr_base=(s8*)realloc(x86Ptr_base,x86Ptr_size*3/2);
+		//x86Ptr_base=(s8*)realloc(x86Ptr_base,x86Ptr_size*3/2);
 
 		x86Ptr=x86Ptr_base+offset;//new base so recalc
 
@@ -203,7 +206,7 @@ private:
 
 
 	////////////////////////////////////////////////////
-	void x86SetJ8( u8* j8 )
+	void x86SetJ8( void* j8 )
 	{
 		u32 jump = ( x86Ptr - (s8*)j8 ) - 1;
 
@@ -216,7 +219,7 @@ private:
 
 
 	////////////////////////////////////////////////////
-	void x86SetJ32( u32* j32 ) 
+	void x86SetJ32( void* j32 ) 
 	{
 		*j32 = ( x86Ptr - (s8*)j32 ) - 4;
 	}
@@ -267,6 +270,13 @@ public :
 	}
 	void GenCode()
 	{
+		s8*base=x86Ptr_base;
+		x86Ptr_base=(s8*)realloc(x86Ptr_base,x86Ptr-x86Ptr_base+10);
+		
+		if (base!=x86Ptr_base)
+		{
+			printf("REALLOC ERROR -> CRASH\n");
+		}
 	}
 
 	/********************/
@@ -1822,13 +1832,13 @@ public :
 	////////////////////////////////////
 	// jump instructions               /
 	////////////////////////////////////
-	u8* JMP( u32 to ) {
+	u8* JMP( void* to ) {
 		u32 jump = ( x86Ptr - (s8*)to ) - 1;
 
 		if ( jump > 0x7f ) {
-			return (u8*)JMP32( to );
+			return (u8*)JMP32( (u8*)to - ( (u8*)x86Ptr + 5 )  );
 		} else {
-			return (u8*)JMP8( to );
+			return (u8*)JMP8( (u8*)to - ( (u8*)x86Ptr + 2 )  );
 		}
 	}
 
@@ -1837,7 +1847,7 @@ public :
 	{
 		write8( 0xEB ); 
 		write8( to );
-		return x86Ptr - 1;
+		return (u8*)x86Ptr - 1;
 	}
 
 	/* jmp rel32 */
@@ -2027,10 +2037,16 @@ public :
 	}
 
 	/* jne rel32 */
-	u32* JNE32( u32 to ) 
+	u32* JNE32( void* to ) 
 	{ 
-		return J32Rel( 0x85, to ); 
+		return J32Rel( 0x85,  (u8*)to - ( (u8*)x86Ptr + 6 )  ); 
 	}
+
+	//void CALLFunc( void* func ) 
+	//{
+	//	CALL32( (u8*)func - ( (u8*)x86Ptr + 5 ) );
+	//}
+
 
 	/* jnz rel32 */
 	u32* JNZ32( u32 to ) 

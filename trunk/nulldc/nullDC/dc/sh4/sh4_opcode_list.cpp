@@ -754,10 +754,10 @@ sh4_opcodelistentry opcodes[]=
 	{rec_shil_i0110_nnnn_mmmm_1110	,i0110_nnnn_mmmm_1110	,Mask_n_m	,0x600E	,Normal				,OpDissCFS,"exts.b <REG_M>,<REG_N>"},	//exts.b <REG_M>,<REG_N>        
 	{rec_shil_i0110_nnnn_mmmm_1111	,i0110_nnnn_mmmm_1111	,Mask_n_m	,0x600F	,Normal				,OpDissCFS,"exts.w <REG_M>,<REG_N>"},	//exts.w <REG_M>,<REG_N>        
 	{rec_shil_i0111_nnnn_iiii_iiii	,i0111_nnnn_iiii_iiii	,Mask_n_imm8,0x7000	,Normal				,OpDissCFS,"add #<simm8>,<REG_N>"},	//add #<imm>,<REG_N>
-	{rec_shil_icpu_nimp				,i1000_1011_iiii_iiii	,Mask_imm8	,0x8B00	,Branch_rel			,OpDissCFS,"bf <bdisp8>"},	// bf <bdisp8>                   
-	{rec_shil_icpu_nimp				,i1000_1111_iiii_iiii	,Mask_imm8	,0x8F00	,Branch_rel_d		,OpDissCFS,"bf.s <bdisp8>"},	// bf.s <bdisp8>                 
-	{rec_shil_icpu_nimp				,i1000_1001_iiii_iiii	,Mask_imm8	,0x8900	,Branch_rel			,OpDissCFS,"bt <bdisp8>"},	// bt <bdisp8>                   
-	{rec_shil_icpu_nimp				,i1000_1101_iiii_iiii	,Mask_imm8	,0x8D00	,Branch_rel_d		,OpDissCFS,"bt.s <bdisp8>"},	// bt.s <bdisp8>                 
+	{rec_shil_i1000_1011_iiii_iiii	,i1000_1011_iiii_iiii	,Mask_imm8	,0x8B00	,Branch_rel			,OpDissCFS,"bf <bdisp8>"},	// bf <bdisp8>                   
+	{rec_shil_i1000_1111_iiii_iiii	,i1000_1111_iiii_iiii	,Mask_imm8	,0x8F00	,Branch_rel_d		,OpDissCFS,"bf.s <bdisp8>"},	// bf.s <bdisp8>                 
+	{rec_shil_i1000_1001_iiii_iiii	,i1000_1001_iiii_iiii	,Mask_imm8	,0x8900	,Branch_rel			,OpDissCFS,"bt <bdisp8>"},	// bt <bdisp8>                   
+	{rec_shil_i1000_1101_iiii_iiii	,i1000_1101_iiii_iiii	,Mask_imm8	,0x8D00	,Branch_rel_d		,OpDissCFS,"bt.s <bdisp8>"},	// bt.s <bdisp8>                 
 	{rec_shil_i1000_1000_iiii_iiii	,i1000_1000_iiii_iiii	,Mask_imm8	,0x8800	,Normal				,OpDissCFS,"cmp/eq #<simm8hex>,R0"},	// cmp/eq #<imm>,R0              
 	{rec_shil_i1000_0000_mmmm_iiii	,i1000_0000_mmmm_iiii	,Mask_imm8	,0x8000	,Normal				,OpDissCFS,"mov.b R0,@(<disp8b>,<REG_M>)"},	// mov.b R0,@(<disp>,<REG_M>)    
 	{rec_shil_i1000_0001_mmmm_iiii	,i1000_0001_mmmm_iiii	,Mask_imm8	,0x8100	,Normal				,OpDissCFS,"mov.w R0,@(<disp8w>,<REG_M>)"},	// mov.w R0,@(<disp>,<REG_M>)    

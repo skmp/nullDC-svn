@@ -100,6 +100,14 @@ void shil_stream::emitRegRegImm(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2
 }
 
 //******* opcode emitters ******
+void shil_stream::jcond(u32 cond)
+{
+	emit32(shil_opcodes::jcond,cond);
+}
+void shil_stream::jmp()
+{
+	emit(shil_opcodes::jcond,NoReg,NoReg,0,0,0);
+}
 void shil_stream::mov(Sh4RegType to,Sh4RegType from)
 {
 	if (IsReg64(to) || IsReg64(from))
