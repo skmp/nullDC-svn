@@ -616,8 +616,8 @@ sh4_opcodelistentry opcodes[]=
 	{rec_shil_i0000_nnnn_0011_0010	,i0000_nnnn_0011_0010	,Mask_n		,0x0032	,Normal				,OpDissCFS,"stc SSR,<REG_N>"},	//stc SSR,<REG_N>               
 	{rec_shil_i0000_nnnn_0100_0010	,i0000_nnnn_0100_0010	,Mask_n		,0x0042	,Normal				,OpDissCFS,"stc SPC,<REG_N>"},	//stc SPC,<REG_N>               
 	{rec_shil_i0000_nnnn_1mmm_0010	,i0000_nnnn_1mmm_0010	,Mask_n_ml3bit,0x0082,Normal			,OpDissCFS,"stc R0_BANK,<REG_N>"},	//stc R0_BANK,<REG_N>           
-	{rec_shil_icpu_nimp				,i0000_nnnn_0010_0011	,Mask_n		,0x0023	,Branch_rel_d		,OpDissCFS,"braf <REG_N>"},	//braf <REG_N>                  
-	{rec_shil_icpu_nimp				,i0000_nnnn_0000_0011	,Mask_n		,0x0003	,Branch_rel_d		,OpDissCFS,"bsrf <REG_N>"},	//bsrf <REG_N>                  
+	{rec_shil_i0000_nnnn_0010_0011	,i0000_nnnn_0010_0011	,Mask_n		,0x0023	,Branch_rel_d		,OpDissCFS,"braf <REG_N>"},	//braf <REG_N>                  
+	{rec_shil_i0000_nnnn_0000_0011	,i0000_nnnn_0000_0011	,Mask_n		,0x0003	,Branch_rel_d		,OpDissCFS,"bsrf <REG_N>"},	//bsrf <REG_N>                  
 	{rec_shil_i0000_nnnn_1100_0011	,i0000_nnnn_1100_0011	,Mask_n		,0x00C3	,Normal				,OpDissCFS,"movca.l R0, @<REG_N>"},	//movca.l R0, @<REG_N>          
 	{rec_shil_i0000_nnnn_1001_0011	,i0000_nnnn_1001_0011	,Mask_n		,0x0093	,Normal				,OpDissCFS,"ocbi @<REG_N>"},	//ocbi @<REG_N>                 
 	{rec_shil_i0000_nnnn_1010_0011	,i0000_nnnn_1010_0011	,Mask_n		,0x00A3	,Normal				,OpDissCFS,"ocbp @<REG_N>"},	//ocbp @<REG_N>                 
@@ -642,9 +642,9 @@ sh4_opcodelistentry opcodes[]=
 	{rec_shil_i0000_nnnn_0000_1010	,i0000_nnnn_0000_1010	,Mask_n		,0x000A	,Normal				,OpDissCFS,"sts MACH,<REG_N>"},	//sts MACH,<REG_N>              
 	{rec_shil_i0000_nnnn_0001_1010	,i0000_nnnn_0001_1010	,Mask_n		,0x001A	,Normal				,OpDissCFS,"sts MACL,<REG_N>"},	//sts MACL,<REG_N>              
 	{rec_shil_i0000_nnnn_0010_1010	,i0000_nnnn_0010_1010	,Mask_n		,0x002A	,Normal				,OpDissCFS,"sts PR,<REG_N>"},	//sts PR,<REG_N>                
-	{rec_shil_icpu_nimp				,i0000_0000_0010_1011	,Mask_none	,0x002B	,WritesPC			,OpDissCFS,"rte"},	//rte                           
-	{rec_shil_icpu_nimp				,i0000_0000_0000_1011	,Mask_none	,0x000B	,Branch_dir_d		,OpDissCFS,"rts"},	//rts                           
-	{rec_shil_icpu_nimp				,i0000_0000_0001_1011	,Mask_none	,0x001B	,ReadWritePC		,OpDissCFS,"sleep"},	//sleep                         
+	{rec_shil_i0000_0000_0010_1011	,i0000_0000_0010_1011	,Mask_none	,0x002B	,WritesPC			,OpDissCFS,"rte"},	//rte                           
+	{rec_shil_i0000_0000_0000_1011	,i0000_0000_0000_1011	,Mask_none	,0x000B	,Branch_dir_d		,OpDissCFS,"rts"},	//rts                           
+	{rec_shil_i0000_0000_0001_1011	,i0000_0000_0001_1011	,Mask_none	,0x001B	,ReadWritePC		,OpDissCFS,"sleep"},	//sleep                         
 	{rec_shil_i0000_nnnn_mmmm_1100	,i0000_nnnn_mmmm_1100	,Mask_n_m	,0x000C	,Normal				,OpDissCFS,"mov.b @(R0,<REG_M>),<REG_N>"},	//mov.b @(R0,<REG_M>),<REG_N>   
 	{rec_shil_i0000_nnnn_mmmm_1101	,i0000_nnnn_mmmm_1101	,Mask_n_m	,0x000D	,Normal				,OpDissCFS,"mov.w @(R0,<REG_M>),<REG_N>"},	//mov.w @(R0,<REG_M>),<REG_N>   
 	{rec_shil_i0000_nnnn_mmmm_1110	,i0000_nnnn_mmmm_1110	,Mask_n_m	,0x000E	,Normal				,OpDissCFS,"mov.l @(R0,<REG_M>),<REG_N>"},	//mov.l @(R0,<REG_M>),<REG_N>   
@@ -730,8 +730,8 @@ sh4_opcodelistentry opcodes[]=
 	{rec_shil_i0100_nnnn_0000_1001	,i0100_nnnn_0000_1001	,Mask_n		,0x4009	,Normal				,OpDissCFS,"shlr2 <REG_N>"},	//shlr2 <REG_N>                 
 	{rec_shil_i0100_nnnn_0001_1001	,i0100_nnnn_0001_1001	,Mask_n		,0x4019	,Normal				,OpDissCFS,"shlr8 <REG_N>"},	//shlr8 <REG_N>                 
 	{rec_shil_i0100_nnnn_0010_1001	,i0100_nnnn_0010_1001	,Mask_n		,0x4029	,Normal				,OpDissCFS,"shlr16 <REG_N>"},	//shlr16 <REG_N>                
-	{rec_shil_icpu_nimp				,i0100_nnnn_0010_1011	,Mask_n		,0x402B	,Branch_dir_d		,OpDissCFS,"jmp @<REG_N>"},		//jmp @<REG_N>                  
-	{rec_shil_icpu_nimp				,i0100_nnnn_0000_1011	,Mask_n		,0x400B	,Branch_dir_d		,OpDissCFS,"jsr @<REG_N>"},	//jsr @<REG_N>                  
+	{rec_shil_i0100_nnnn_0010_1011	,i0100_nnnn_0010_1011	,Mask_n		,0x402B	,Branch_dir_d		,OpDissCFS,"jmp @<REG_N>"},		//jmp @<REG_N>                  
+	{rec_shil_i0100_nnnn_0000_1011	,i0100_nnnn_0000_1011	,Mask_n		,0x400B	,Branch_dir_d		,OpDissCFS,"jsr @<REG_N>"},	//jsr @<REG_N>                  
 	{rec_shil_i0100_nnnn_0001_1011	,i0100_nnnn_0001_1011	,Mask_n		,0x401B	,Normal				,OpDissCFS,"tas.b @<REG_N>"},	//tas.b @<REG_N>                
 	{rec_shil_i0100_nnnn_mmmm_1100	,i0100_nnnn_mmmm_1100	,Mask_n_m	,0x400C	,Normal				,OpDissCFS,"shad <REG_M>,<REG_N>"},	//shad <REG_M>,<REG_N>          
 	{rec_shil_i0100_nnnn_mmmm_1101	,i0100_nnnn_mmmm_1101	,Mask_n_m	,0x400D	,Normal				,OpDissCFS,"shld <REG_M>,<REG_N>"},	//shld <REG_M>,<REG_N>          
@@ -769,7 +769,7 @@ sh4_opcodelistentry opcodes[]=
 	{rec_shil_i1100_0000_iiii_iiii	,i1100_0000_iiii_iiii	,Mask_imm8	,0xC000	,Normal				,OpDissCFS,"mov.b R0,@(<disp8b>,GBR)"},	// mov.b R0,@(<disp>,GBR)        
 	{rec_shil_i1100_0001_iiii_iiii	,i1100_0001_iiii_iiii	,Mask_imm8	,0xC100	,Normal				,OpDissCFS,"mov.w R0,@(<disp8w>,GBR)"},	// mov.w R0,@(<disp>,GBR)        
 	{rec_shil_i1100_0010_iiii_iiii	,i1100_0010_iiii_iiii	,Mask_imm8	,0xC200	,Normal				,OpDissCFS,"mov.l R0,@(<disp8dw>,GBR)"},	// mov.l R0,@(<disp>,GBR)        
-	{rec_shil_icpu_nimp				,i1100_0011_iiii_iiii	,Mask_imm8	,0xC300	,ReadWritePC		,OpDissCFS,"trapa #<imm8>"},	// trapa #<imm>                  
+	{rec_shil_i1100_0011_iiii_iiii	,i1100_0011_iiii_iiii	,Mask_imm8	,0xC300	,ReadWritePC		,OpDissCFS,"trapa #<imm8>"},	// trapa #<imm>                  
 	{rec_shil_i1100_0100_iiii_iiii	,i1100_0100_iiii_iiii	,Mask_imm8	,0xC400	,Normal				,OpDissCFS,"mov.b @(<GBRdisp8b>),R0"},	// mov.b @(<disp>,GBR),R0        
 	{rec_shil_i1100_0101_iiii_iiii	,i1100_0101_iiii_iiii	,Mask_imm8	,0xC500	,Normal				,OpDissCFS,"mov.w @(<GBRdisp8w>),R0"},	// mov.w @(<disp>,GBR),R0        
 	{rec_shil_i1100_0110_iiii_iiii	,i1100_0110_iiii_iiii	,Mask_imm8	,0xC600	,Normal				,OpDissCFS,"mov.l @(<GBRdisp8dw>),R0"},	// mov.l @(<disp>,GBR),R0        

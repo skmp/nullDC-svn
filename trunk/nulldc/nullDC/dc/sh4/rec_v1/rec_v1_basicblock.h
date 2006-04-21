@@ -20,6 +20,7 @@ public :
 
 #define BLOCK_ATSC_END 4			//end , analyse 
 
+#define BLOCKLIST_MAX_CYCLES (448)
 class rec_v1_BasicBlock
 {
 public :

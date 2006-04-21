@@ -739,7 +739,7 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 	case BLOCK_TYPE_COND_0:
 	case BLOCK_TYPE_COND_1:
 		{
-			x86e->CMP32ItoR(ESI,448);
+			x86e->CMP32ItoR(ESI,BLOCKLIST_MAX_CYCLES);
 			
 			u8* Link=x86e->JB8(0);
 
@@ -752,12 +752,10 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 			if ((block->flags & BLOCK_TYPE_MASK)==BLOCK_TYPE_COND_1)
 			{
 				u8* cond=x86e->JNE8(0);
-				//x86e->INT3();
 				x86e->MOV32ItoM(GetRegPtr(reg_pc),block->TF_next_addr-2);//==
 				x86e->RET();//return to caller to check for interrupts
 				//!=
 				x86e->x86SetJ8(cond);
-			//	x86e->INT3();
 				x86e->MOV32ItoM(GetRegPtr(reg_pc),block->TT_next_addr-2);//!=
 				x86e->RET();//return to caller to check for interrupts
 			}
@@ -811,7 +809,7 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 		break;
 	case BLOCK_TYPE_FIXED:
 		{
-			x86e->CMP32ItoR(ESI,448);
+			x86e->CMP32ItoR(ESI,BLOCKLIST_MAX_CYCLES);
 			u8* Link=x86e->JB8(0);
 			
 			//If our cycle count is expired

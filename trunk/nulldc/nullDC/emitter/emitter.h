@@ -81,7 +81,7 @@ class emitter
 private:
 	s8* x86Ptr_base;
 	s8* x86Ptr_end;
-	s8* x86Ptr;
+
 	u32 x86Ptr_size;
 	GrowingList<Label> labels;
 
@@ -189,21 +189,6 @@ private:
 		return (u32*)( x86Ptr - 4 );
 	}
 
-	void CMOV32RtoR( u8 cc, u8 to, u8 from )
-	{
-		write8( 0x0F );
-		write8( cc );
-		ModRM( 3, to, from );
-	}
-
-	void CMOV32MtoR( u8 cc, u8 to, u32* from )
-	{
-		write8( 0x0F );
-		write8( cc );
-		ModRM( 0, to, DISP32 );
-		write32( MEMADDR(from, 4) );
-	}
-
 
 	////////////////////////////////////////////////////
 	void x86Align( int bytes ) 
@@ -224,7 +209,22 @@ private:
 		#endif
 	}
 public :
+	void CMOV32RtoR( u8 cc, u8 to, u8 from )
+	{
+		write8( 0x0F );
+		write8( cc );
+		ModRM( 3, to, from );
+	}
 
+	void CMOV32MtoR( u8 cc, u8 to, u32* from )
+	{
+		write8( 0x0F );
+		write8( cc );
+		ModRM( 0, to, DISP32 );
+		write32( MEMADDR(from, 4) );
+	}
+
+	s8* x86Ptr;
 	
 	////////////////////////////////////////////////////
 	void x86SetJ8( void* j8 )
@@ -260,10 +260,21 @@ public :
 	{
 		return x86Ptr_base;
 	}
+	void Pad(u8 bytes)
+	{
+		for (int i=0;i<bytes;i++)
+			INT3();
+	}
 	emitter()
 	{
 		x86Ptr_size=DefSize;
 		x86Ptr_base=x86Ptr=(s8*)EmitAlloc(x86Ptr_size);
+		x86Ptr_end=x86Ptr_base+x86Ptr_size;
+	}
+	emitter(u8* existing)
+	{
+		x86Ptr_size=100000;
+		x86Ptr_base=x86Ptr=(s8*)existing;
 		x86Ptr_end=x86Ptr_base+x86Ptr_size;
 	}
 	void GetCpuInfo(CpuInfo& cpuinfo)
@@ -271,13 +282,8 @@ public :
 	}
 	void GenCode()
 	{
-		s8*base=x86Ptr_base;
-		/*x86Ptr_base=(s8*)*/EmitAllocSet(x86Ptr-x86Ptr_base+4);
-		
-		if (base!=x86Ptr_base)
-		{
-			printf("REALLOC ERROR -> CRASH\n");
-		}
+		if (DefSize!=0)
+			EmitAllocSet(x86Ptr-x86Ptr_base+1);
 	}
 
 	/********************/

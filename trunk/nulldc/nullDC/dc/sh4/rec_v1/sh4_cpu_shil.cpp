@@ -1848,6 +1848,8 @@ sh4op(i0000_nnnn_0010_0011)
 	ExecuteDelayslot();	//WARN : r[n] can change here
 	pc = newpc;
 	*/
+
+	shil_interpret(op);	return;
 } 
 //bsrf <REG_N>                  
  sh4op(i0000_nnnn_0000_0011)
@@ -1861,6 +1863,8 @@ sh4op(i0000_nnnn_0010_0011)
 
 	AddCall(pr-4,pr,pc,0);
 	*/
+
+	shil_interpret(op);	return;
 } 
 
 
@@ -1938,7 +1942,7 @@ sh4op(i0000_nnnn_0010_0011)
 	//return;
 shil_interpret(op);	return;
 	bb->TF_next_addr=pc+4;
-	bb->TT_next_addr=(u32)((GetSImm8(op))*2 + 4 + pc );
+	bb->TT_next_addr=((u32) ( (GetSImm8(op)<<1) + pc+4));
 
 	ilst->LoadT(jcond_flag);
 	DoDslot(pc,bb);
@@ -1981,7 +1985,7 @@ shil_interpret(op);	return;
 	*/
 	shil_interpret(op);	return;
 	bb->TF_next_addr=pc+4;
-	bb->TT_next_addr=(u32)((GetSImm8(op))*2 + 4 + pc );
+	bb->TT_next_addr=((u32) ( (GetSImm8(op)<<1) + pc+4));
 
 	ilst->LoadT(jcond_flag);
 	DoDslot(pc,bb);
@@ -2016,7 +2020,11 @@ sh4op(i1011_iiii_iiii_iiii)
 	AddCall(pc,pr,newpc,0);	//WARN : pr can change here
 	ExecuteDelayslot();
 	pc=newpc-2;*/
-		shil_interpret(op);	return;
+		//shil_interpret(op);	return;
+	ilst->mov(reg_pr,pc+4);
+	DoDslot(pc,bb);
+	bb->TF_next_addr=(u32) ((  ((s16)((GetImm12(op))<<4)) >>3)  + pc + 4);
+	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_FIXED;
 }
 
 // trapa #<imm>                  
