@@ -18,8 +18,7 @@
 #include <time.h>
 #include <float.h>
 
-#define CPU_TIMESLICE	(448)
-#define CPU_RATIO		(7)
+
 
 //uh uh 
 volatile bool  sh4_int_bCpuRun=false;
@@ -27,6 +26,9 @@ cThread* sh4_int_thr_handle=0;
 
 u32 exec_cycles=0;
 time_t odtime=0;
+
+#define CPU_TIMESLICE	(448)
+#define CPU_RATIO		(7)
 
 u32 opcode_fam_cycles[0x10]=
 {
