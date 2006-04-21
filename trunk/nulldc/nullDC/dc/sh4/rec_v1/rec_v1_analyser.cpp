@@ -34,6 +34,16 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 		if (((pc>>26)&0x7)==3)
 			rec_v1_SetBlockTest(pc);
 
+		//if branch , then block end
+		/*if (OpTyp[opcode]&WritesPC)
+		{
+			to->end=pc;
+			to->flags |=BLOCK_TYPE_DYNAMIC;
+			ilst->shil_ifb(opcode,pc);
+			ilst->add(reg_pc,2);
+			break;
+		}*/
+
 		if ((opcode&0xF000)==0xF000)
 			ilst->shil_ifb(opcode,pc);
 		else
@@ -45,29 +55,23 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 			break;
 		}
 
-		//if branch , then block end
-		if (OpTyp[opcode]&WritesPC)
-		{
-			to->end=pc;
-			to->flags |=BLOCK_TYPE_DYNAMIC;
-			break;
-		}
-
 		if ((OpTyp[opcode]&(WritesSR | WritesFPSCR)))
 		{
 			//block end , but b/c last opcode does not set PC
 			//after execution , resume to recompile from pc+2
-			//ilst->mov(reg_pc,pc);//save next opcode pc-2 , pc+2 is done after execution
+			//ilst->mov(reg_pc,pc);//save next opcode pc , pc+2 is _NOT_ done after execution
 			//opcode is interpreter so pc is set , if update shit() is called , pc must remain
 
 			to->end=pc;
 			to->flags |=BLOCK_TYPE_DYNAMIC;
+			//ilst->mov(reg_pc,pc+2);//pc +2
+			ilst->add(reg_pc,2);
 			break;
 		}
 
 		if (block_size==448)
 		{
-			ilst->mov(reg_pc,pc);//save next opcode pc-2 , pc+2 is done after execution
+			ilst->mov(reg_pc,pc);//save next opcode pc , pc is used directly
 			
 			to->flags |=BLOCK_TYPE_FIXED;
 			to->end=pc;

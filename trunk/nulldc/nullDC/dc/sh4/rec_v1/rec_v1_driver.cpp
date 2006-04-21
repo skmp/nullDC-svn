@@ -150,12 +150,12 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 		//rec_cycles+=currBlock->compiled->Code();
 
 		//pc+=2 is needed after call
-		pc+=2;
+		//pc+=2;
 
 		if (rec_cycles>CPU_TIMESLICE)
 		{
 			UpdateSystem(rec_cycles);
-			rec_cycles-=CPU_TIMESLICE;
+			rec_cycles=0;
 			if (fpscr.RM)
 				_controlfp( _RC_DOWN, _MCW_RC );//round to 0
 			else

@@ -783,7 +783,7 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 			if ((block->flags & BLOCK_TYPE_MASK)==BLOCK_TYPE_COND_1)
 			{
 				u8* cond=x86e->JNE8(0);
-				x86e->MOV32ItoM(GetRegPtr(reg_pc),block->TF_next_addr-2);//==
+				x86e->MOV32ItoM(GetRegPtr(reg_pc),block->TF_next_addr);//==
 #ifdef EXIT_ON_ACCEPT
 				x86e->JMP(check_interrupts_dyna);
 #else
@@ -792,7 +792,7 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 				
 				//!=
 				x86e->x86SetJ8(cond);
-				x86e->MOV32ItoM(GetRegPtr(reg_pc),block->TT_next_addr-2);//!=
+				x86e->MOV32ItoM(GetRegPtr(reg_pc),block->TT_next_addr);//!=
 #ifdef EXIT_ON_ACCEPT
 				x86e->JMP(check_interrupts_dyna);
 #else
@@ -803,7 +803,7 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 			else
 			{
 				u8* cond=x86e->JNE8(0);
-				x86e->MOV32ItoM(GetRegPtr(reg_pc),block->TT_next_addr-2);//==
+				x86e->MOV32ItoM(GetRegPtr(reg_pc),block->TT_next_addr);//==
 				//				
 #ifdef EXIT_ON_ACCEPT
 				x86e->JMP(check_interrupts_dyna);
@@ -812,7 +812,7 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 #endif
 				//!=
 				x86e->x86SetJ8(cond);
-				x86e->MOV32ItoM(GetRegPtr(reg_pc),block->TF_next_addr-2);//!=
+				x86e->MOV32ItoM(GetRegPtr(reg_pc),block->TF_next_addr);//!=
 #ifdef EXIT_ON_ACCEPT
 				x86e->JMP(check_interrupts_dyna);
 #else
@@ -871,7 +871,7 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 			x86e->PUSH32I(0x11223344);
 #endif
 			//If our cycle count is expired
-			x86e->MOV32ItoM(GetRegPtr(reg_pc),block->TF_next_addr-2);
+			x86e->MOV32ItoM(GetRegPtr(reg_pc),block->TF_next_addr);
 #ifdef EXIT_ON_ACCEPT			
 			x86e->JMP(check_interrupts_dyna);
 #else
