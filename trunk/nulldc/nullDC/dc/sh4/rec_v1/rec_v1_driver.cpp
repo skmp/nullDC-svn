@@ -152,7 +152,8 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 		//pc+=2 is needed after call
 		//pc+=2;
 
-		if (rec_cycles>CPU_TIMESLICE)
+		//dynamic shit ? just update the missing cycles
+		if (rec_cycles>(CPU_TIMESLICE/8))
 		{
 			UpdateSystem(rec_cycles);
 			rec_cycles=0;

@@ -703,7 +703,7 @@ void naked link_compile_inject_TT_stub(rec_v1_BasicBlock* ptr)
 }
 
 
-//#define EXIT_ON_ACCEPT
+#define EXIT_ON_ACCEPT
 #ifdef EXIT_ON_ACCEPT
 extern u32 pc;
 void naked check_interrupts_dyna()
@@ -712,9 +712,9 @@ void naked check_interrupts_dyna()
 	{
 		mov ecx,esi;
 		xor esi,esi;
-		add [pc],2
+		//add [pc],2
 		call UpdateSystem;
-		sub [pc],2
+		//sub [pc],2
 		pop ecx;
 		cmp eax,0;
 		jne do_ret;
@@ -911,13 +911,14 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 
 	block_count++;
 	if ((block_count%512)==128)
+	{
 		printf("Recompiled %d blocks\n",block_count);
 
-	/*u32 rat=native>fallbacks?fallbacks:native;
+	u32 rat=native>fallbacks?fallbacks:native;
 	if (rat!=0)
 		printf("Native/Fallback ratio : %d:%d [%d:%d]\n",native,fallbacks,native/rat,fallbacks/rat);
 	else
 		printf("Native/Fallback ratio : %d:%d [%d:%d]\n",native,fallbacks,native,fallbacks);
-*/
+	}
 	delete x86e;
 }
