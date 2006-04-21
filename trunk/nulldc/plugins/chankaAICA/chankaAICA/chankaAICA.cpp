@@ -62,6 +62,7 @@ void dcInit(void* param,PluginType type)
 //called when plugin is unloaded by emu , olny if dcInit is called (eg , not called to enumerate plugins)
 void dcTerm(PluginType type)
 {
+	TerminateARM7();
 }
 
 //It's suposed to reset anything 

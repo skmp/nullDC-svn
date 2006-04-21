@@ -9,6 +9,7 @@ void WriteMem_ram(u32 addr,u32 data,u32 size);
 
 void UpdateSystem(u32 Cycles);
 void InitARM7(void* winh);
+void TerminateARM7();
 
 extern RaiseInterruptFP* Sh4RaiseInterrupt;
 extern u32* SB_ISTEXT;

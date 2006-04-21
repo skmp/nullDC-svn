@@ -119,8 +119,8 @@ void WriteMem_ram(u32 addr,u32 data,u32 size)
 void UpdateSystem(u32 Cycles)
 {
 	sh4_cycles+=Cycles;
-	AICARefresh();
 	g_pArm7->BlockStepArm7(Cycles/(6*ARM7BIAS));
+	AICARefresh();
 }
 
 void InitArm7Memory();
@@ -131,6 +131,12 @@ void InitARM7(void* winh)
   InitArm7Memory();
   g_pArm7->Init();
   AicaInit();
+}
+void TerminateARM7()
+{
+	g_pArm7->End();
+	delete g_pArm7;
+	AicaEnd();
 }
 
 void LogVentanaDebug( const char *szFichero, int linea, const char *szExpr )
