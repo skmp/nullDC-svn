@@ -15,18 +15,19 @@
 //will alayse code and convert it to shil
 //the basicblock (and suprtblock later) will be the send to the optimiser , and after that
 //to the compiler
-u32 nest_level=0;
-#define MAX_NEST 5
-void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to,u32 cycles_before)
+
+void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 {
-	nest_level++;
 
 	u32 pc=start;
-	u32 block_size=cycles_before;
+
+	u32 block_size=0;
 
 	shil_DynarecInit();
+
 	ilst=&to->ilst;
-	while (block_size<448)
+
+	while (true)
 	{
 		block_size++;
 		u16 opcode=ReadMem16(pc);
@@ -34,25 +35,22 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to,u32 cycles_before)
 		if (((pc>>26)&0x7)==3)
 			rec_v1_SetBlockTest(pc);
 
-		//if branch , then block end , force it to stop inlining
-		if ((OpTyp[opcode]&WritesPC) && (nest_level==MAX_NEST))
-		{
-			ilst->shil_ifb(opcode,pc);
-			to->end=pc;
-
-			break;
-		}
-
 		if ((opcode&0xF000)==0xF000)
 			ilst->shil_ifb(opcode,pc);
 		else
 			RecOpPtr[opcode](opcode,pc,to);
 		
+		if (to->flags & BLOCK_ATSC_END)
+		{
+			to->end=pc;
+			break;
+		}
+
 		//if branch , then block end
 		if (OpTyp[opcode]&WritesPC)
 		{
 			to->end=pc;
-
+			to->flags |=BLOCK_TYPE_DYNAMIC;
 			break;
 		}
 
@@ -64,59 +62,27 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to,u32 cycles_before)
 			//opcode is interpreter so pc is set , if update shit() is called , pc must remain
 
 			to->end=pc;
+			to->flags |=BLOCK_TYPE_DYNAMIC;
 			break;
 		}
 
-		if (block_size==512)
+		if (block_size==448)
 		{
 			ilst->mov(reg_pc,pc);//save next opcode pc-2 , pc+2 is done after execution
-
+			
+			to->flags |=BLOCK_TYPE_FIXED;
 			to->end=pc;
+			to->TF_next_addr=pc+2;
 			break;
 		}
 
 		pc+=2;
-		
 	}
 
-	to->cycles=(block_size-cycles_before)*2;
+	//clear flags that are used olny for analysis
+	to->flags &= ~BLOCK_ATSC_END;
 
-	if (to->TF_next_addr!=0xFFFFFFFF)
-	{
-		//printf("Analysing block chain [TF] : addr=0x%x : level %d\n",to->TF_next_addr,nest_level);
-		rec_v1_BasicBlock* bb_b;//=rec_v1_FindBlock(to->TF_next_addr);
-		
-		//if(bb_b==0)
-		{
-			bb_b= rec_v1_NewBlock(to->TF_next_addr);
-			bb_b->flags|=BLOCK_TEMP;
-			rec_v1_AnalyseCode(to->TF_next_addr,bb_b,block_size);
-		}
-		//else
-		//	printf("HIT !!!!!\n");
-
-		to->TF_next=bb_b;
-		//printf("Analysing block chain [TF] : addr=0x%x -> [done!] : level %d\n",to->TF_next_addr,nest_level);
-	}
-
-	if (to->TT_next_addr!=0xFFFFFFFF)
-	{
-		//printf("Analysing block chain [TT] : addr=0x%x : level %d\n",to->TT_next_addr,nest_level);
-		rec_v1_BasicBlock* bb_b;//=rec_v1_FindBlock(to->TT_next_addr);
-		
-		//if(bb_b==0)
-		{
-			bb_b= rec_v1_NewBlock(to->TT_next_addr);
-			bb_b->flags|=BLOCK_TEMP;
-			rec_v1_AnalyseCode(to->TT_next_addr,bb_b,block_size);
-		}
-		//else 
-		//	printf("HIT !!!!!\n");
-
-		to->TT_next=bb_b;
-		//printf("Analysing block chain [TT] : addr=0x%x -> [done!] : level %d\n",to->TT_next_addr,nest_level);
-	}
+	to->cycles=block_size*2;
 
 	//printf("SH4: Analysed block pc:%x , block size : %d. Shil size %d , level = %d\n",to->start,block_size,to->ilst.op_count,nest_level);
-	nest_level--;
 }

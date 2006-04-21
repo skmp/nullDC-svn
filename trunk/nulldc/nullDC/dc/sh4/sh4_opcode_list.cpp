@@ -764,8 +764,8 @@ sh4_opcodelistentry opcodes[]=
 	{rec_shil_i1000_0100_mmmm_iiii	,i1000_0100_mmmm_iiii	,Mask_imm8	,0x8400	,Normal				,OpDissCFS,"mov.b @(<disp8b>,<REG_M>),R0"},	// mov.b @(<disp>,<REG_M>),R0    
 	{rec_shil_i1000_0101_mmmm_iiii	,i1000_0101_mmmm_iiii	,Mask_imm8	,0x8500	,Normal				,OpDissCFS,"mov.w @(<disp8w>,<REG_M>),R0"},	// mov.w @(<disp>,<REG_M>),R0    
 	{rec_shil_i1001_nnnn_iiii_iiii	,i1001_nnnn_iiii_iiii	,Mask_n_imm8,0x9000	,ReadsPC			,OpDissCFS,"mov.w @(<PCdisp8>),<REG_N>"},	//mov.w @(<disp>,PC),<REG_N>   
-	{rec_shil_icpu_nimp				,i1010_iiii_iiii_iiii	,Mask_n_imm8,0xA000	,Branch_rel_d		,OpDissCFS,"bra <bdisp12>"},	// bra <bdisp12>
-	{rec_shil_icpu_nimp				,i1011_iiii_iiii_iiii	,Mask_n_imm8,0xB000	,Branch_rel_d		,OpDissCFS,"bsr <bdisp12>"},	// bsr <bdisp12>
+	{rec_shil_i1010_iiii_iiii_iiii	,i1010_iiii_iiii_iiii	,Mask_n_imm8,0xA000	,Branch_rel_d		,OpDissCFS,"bra <bdisp12>"},	// bra <bdisp12>
+	{rec_shil_i1011_iiii_iiii_iiii	,i1011_iiii_iiii_iiii	,Mask_n_imm8,0xB000	,Branch_rel_d		,OpDissCFS,"bsr <bdisp12>"},	// bsr <bdisp12>
 	{rec_shil_i1100_0000_iiii_iiii	,i1100_0000_iiii_iiii	,Mask_imm8	,0xC000	,Normal				,OpDissCFS,"mov.b R0,@(<disp8b>,GBR)"},	// mov.b R0,@(<disp>,GBR)        
 	{rec_shil_i1100_0001_iiii_iiii	,i1100_0001_iiii_iiii	,Mask_imm8	,0xC100	,Normal				,OpDissCFS,"mov.w R0,@(<disp8w>,GBR)"},	// mov.w R0,@(<disp>,GBR)        
 	{rec_shil_i1100_0010_iiii_iiii	,i1100_0010_iiii_iiii	,Mask_imm8	,0xC200	,Normal				,OpDissCFS,"mov.l R0,@(<disp8dw>,GBR)"},	// mov.l R0,@(<disp>,GBR)        

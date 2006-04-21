@@ -1876,6 +1876,7 @@ sh4op(i0000_nnnn_0010_0011)
 	RemoveCall(spc,1);
 	UpdateSR();
 	*/
+		shil_interpret(op);	return;
 } 
 
 
@@ -1889,6 +1890,7 @@ sh4op(i0000_nnnn_0010_0011)
 	pc=newpc-2;
 	RemoveCall(pr,0);
 	*/
+		shil_interpret(op);	return;
 } 
 
  void DoDslot(u32 pc,rec_v1_BasicBlock* bb)
@@ -1910,13 +1912,13 @@ sh4op(i0000_nnnn_0010_0011)
 		pc-=2;
 	}
 	*/
-	shil_interpret(op);	return;
 	
 	bb->TF_next_addr=pc+2;
 	bb->TT_next_addr=(u32)((GetSImm8(op))*2 + 4 + pc );
 
 	ilst->LoadT(jcond_flag);
-	ilst->jcond(0);
+	
+	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_COND_0;
 }
 
 
@@ -1940,7 +1942,7 @@ shil_interpret(op);	return;
 
 	ilst->LoadT(jcond_flag);
 	DoDslot(pc,bb);
-	ilst->jcond(0);
+	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_COND_0;
 }
 
 
@@ -1955,12 +1957,13 @@ shil_interpret(op);	return;
 	}
 	*/
 
-	shil_interpret(op);	return;
+
 	bb->TF_next_addr=pc+2;
 	bb->TT_next_addr=(u32)((GetSImm8(op))*2 + 4 + pc );
 
 	ilst->LoadT(jcond_flag);
-	ilst->jcond(1);
+	
+	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_COND_1;
 }
 
 
@@ -1982,10 +1985,8 @@ shil_interpret(op);	return;
 
 	ilst->LoadT(jcond_flag);
 	DoDslot(pc,bb);
-	ilst->jcond(1);
+	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_COND_1;
 }
-
-
 
 
 
@@ -1998,6 +1999,10 @@ sh4op(i1010_iiii_iiii_iiii)
 	ExecuteDelayslot();
 	pc=newpc-2;
 	*/
+
+	DoDslot(pc,bb);
+	bb->TF_next_addr=(u32) ((  ((s16)((GetImm12(op))<<4)) >>3)  + pc + 4);
+	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_FIXED;
 }
 // bsr <bdisp12>
 sh4op(i1011_iiii_iiii_iiii)
@@ -2011,6 +2016,7 @@ sh4op(i1011_iiii_iiii_iiii)
 	AddCall(pc,pr,newpc,0);	//WARN : pr can change here
 	ExecuteDelayslot();
 	pc=newpc-2;*/
+		shil_interpret(op);	return;
 }
 
 // trapa #<imm>                  
@@ -2020,6 +2026,7 @@ sh4op(i1100_0011_iiii_iiii)
 	CCN_TRA = (GetImm8(op) << 2);
 	Do_Exeption(0,0x160,0x100);
 	*/
+		shil_interpret(op);	return;
 }
 //jmp @<REG_N>                  
  sh4op(i0100_nnnn_0010_1011)
@@ -2032,6 +2039,7 @@ sh4op(i1100_0011_iiii_iiii)
 	pc=newpc-2;//+2 is done after
 
 	*/
+		shil_interpret(op);	return;
 }
 
 
@@ -2048,6 +2056,7 @@ sh4op(i1100_0011_iiii_iiii)
 	AddCall(pc-2,pr,newpc,0);
 	pc=newpc-2;
 	*/
+		shil_interpret(op);	return;
 }
 
 
@@ -2082,6 +2091,7 @@ sh4op(i1100_0011_iiii_iiii)
 
 	sh4_sleeping=false;
 	*/
+		shil_interpret(op);	return;
 } 
 #define notshit
 #ifdef notshit

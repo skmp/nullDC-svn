@@ -178,7 +178,7 @@ private:
 	{
 		write8( cc );
 		write8( to );
-		return x86Ptr - 1;
+		return (u8*)x86Ptr - 1;
 	}
 
 	u32* J32Rel( u8 cc, u32 to )
@@ -206,25 +206,6 @@ private:
 
 
 	////////////////////////////////////////////////////
-	void x86SetJ8( void* j8 )
-	{
-		u32 jump = ( x86Ptr - (s8*)j8 ) - 1;
-
-		if ( jump > 0x7f )
-		{
-			printf( "j8 greater than 0x7f!!\n" );
-		}
-		*j8 = (u8)jump;
-	}
-
-
-	////////////////////////////////////////////////////
-	void x86SetJ32( void* j32 ) 
-	{
-		*j32 = ( x86Ptr - (s8*)j32 ) - 4;
-	}
-
-	////////////////////////////////////////////////////
 	void x86Align( int bytes ) 
 	{
 		// fordward align
@@ -244,6 +225,26 @@ private:
 	}
 public :
 
+	
+	////////////////////////////////////////////////////
+	void x86SetJ8( void* j8 )
+	{
+		u32 jump = ( x86Ptr - (s8*)j8 ) - 1;
+
+		if ( jump > 0x7f )
+		{
+			printf( "j8 greater than 0x7f!!\n" );
+		}
+		*(u8*)j8 = (u8)jump;
+	}
+
+
+	////////////////////////////////////////////////////
+	void x86SetJ32( void* j32 ) 
+	{
+		*j32 = ( x86Ptr - (s8*)j32 ) - 4;
+	}
+
 	void XCHG8RtoR(x86_8breg to, x86_8breg from)
 	{
 		if(to == from) return;
@@ -262,7 +263,7 @@ public :
 	emitter()
 	{
 		x86Ptr_size=DefSize;
-		x86Ptr_base=x86Ptr=(s8*)malloc(x86Ptr_size);
+		x86Ptr_base=x86Ptr=(s8*)EmitAlloc(x86Ptr_size);
 		x86Ptr_end=x86Ptr_base+x86Ptr_size;
 	}
 	void GetCpuInfo(CpuInfo& cpuinfo)
@@ -271,7 +272,7 @@ public :
 	void GenCode()
 	{
 		s8*base=x86Ptr_base;
-		x86Ptr_base=(s8*)realloc(x86Ptr_base,x86Ptr-x86Ptr_base+10);
+		/*x86Ptr_base=(s8*)*/EmitAllocSet(x86Ptr-x86Ptr_base+4);
 		
 		if (base!=x86Ptr_base)
 		{
@@ -2129,6 +2130,11 @@ public :
 	////////////////////////////////////
 	// misc instructions               /
 	////////////////////////////////////
+
+	void INT3( ) 
+	{
+		write8( 0xCC );
+	}
 
 	/* cmp imm32 to r64 */
 	void CMP64ItoR( x86IntRegType to, u32 from ) 

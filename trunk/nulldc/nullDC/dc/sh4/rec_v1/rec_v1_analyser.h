@@ -5,4 +5,4 @@
 #include "dc\sh4\sh4_opcode_list.h"
 
 
-void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to,u32 cycles_before=0);
+void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to);

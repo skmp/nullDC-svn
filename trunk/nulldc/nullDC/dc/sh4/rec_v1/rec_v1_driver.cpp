@@ -44,6 +44,7 @@ u32 avg_rat_cnt=0;
 u32 avg_bc=0;
 //recBlock* lastBlock;
 
+
 INLINE rec_v1_BasicBlock* __fastcall GetRecompiledCode(u32 pc)
 {
 	/*recBlock* currBlock;
@@ -112,6 +113,11 @@ INLINE rec_v1_BasicBlock* __fastcall GetRecompiledCode(u32 pc)
 	}
 }
 
+rec_v1_BasicBlock* rec_v1_FindOrRecompileCode(u32 pc)
+{
+	return GetRecompiledCode(pc);
+}
+
 u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 {
 	//just cast it
@@ -130,8 +136,19 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 	{
 		rec_v1_BasicBlock* currBlock=GetRecompiledCode(pc);
 		//rec_cycles+=currBlock->cycles;
+		rec_v1_BasicBlockEP* fp=currBlock->compiled->Code;
 
-		rec_cycles+=currBlock->compiled->Code();
+		//call block :)
+		__asm
+		{
+			push esi;
+			xor esi,esi;
+			call fp;
+			add rec_cycles,esi;
+			pop esi;
+		}
+		//rec_cycles+=currBlock->compiled->Code();
+
 		//pc+=2 is needed after call
 		pc+=2;
 
