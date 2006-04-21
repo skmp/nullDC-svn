@@ -74,7 +74,7 @@ enum x86_8breg
 
 
 void* EmitAlloc(u32 minsize);
-void EmitAllocSet(u32 usedsize);
+void EmitAllocSet(void * ptr,u32 usedsize);
 template <int DefSize=12*1024>
 class emitter
 {
@@ -283,7 +283,7 @@ public :
 	void GenCode()
 	{
 		if (DefSize!=0)
-			EmitAllocSet(x86Ptr-x86Ptr_base+1);
+			EmitAllocSet(x86e->x86Ptr_base,x86Ptr-x86Ptr_base+1);
 	}
 
 	/********************/

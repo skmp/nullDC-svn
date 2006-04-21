@@ -698,6 +698,28 @@ void naked link_compile_inject_TT_stub(rec_v1_BasicBlock* ptr)
 	}
 }
 
+
+//#define EXIT_ON_ACCEPT
+#ifdef EXIT_ON_ACCEPT
+extern u32 pc;
+void naked check_interrupts_dyna()
+{
+	__asm
+	{
+		mov ecx,esi;
+		xor esi,esi;
+		add [pc],2
+		call UpdateSystem;
+		sub [pc],2
+		pop ecx;
+		cmp eax,0;
+		jne do_ret;
+		jmp ecx;
+do_ret:
+		ret;
+	}
+}
+#endif
 void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 {
 	if (!inited)
@@ -749,25 +771,50 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 			x86e->MOV32MtoR(EAX,&T_jcond_value);
 			x86e->TEST32ItoR(EAX,1);//test for T
 			//see witch pc to set
+#ifdef EXIT_ON_ACCEPT
+			u32* p_patch;
+			p_patch=(u32*)(x86e->x86Ptr+1);
+			x86e->PUSH32I(0x11223344);
+#endif
 			if ((block->flags & BLOCK_TYPE_MASK)==BLOCK_TYPE_COND_1)
 			{
 				u8* cond=x86e->JNE8(0);
 				x86e->MOV32ItoM(GetRegPtr(reg_pc),block->TF_next_addr-2);//==
+#ifdef EXIT_ON_ACCEPT
+				x86e->JMP(check_interrupts_dyna);
+#else
 				x86e->RET();//return to caller to check for interrupts
+#endif
+				
 				//!=
 				x86e->x86SetJ8(cond);
 				x86e->MOV32ItoM(GetRegPtr(reg_pc),block->TT_next_addr-2);//!=
+#ifdef EXIT_ON_ACCEPT
+				x86e->JMP(check_interrupts_dyna);
+#else
 				x86e->RET();//return to caller to check for interrupts
+#endif
+				
 			}
 			else
 			{
 				u8* cond=x86e->JNE8(0);
 				x86e->MOV32ItoM(GetRegPtr(reg_pc),block->TT_next_addr-2);//==
+				//				
+#ifdef EXIT_ON_ACCEPT
+				x86e->JMP(check_interrupts_dyna);
+#else
 				x86e->RET();//return to caller to check for interrupts
+#endif
 				//!=
 				x86e->x86SetJ8(cond);
 				x86e->MOV32ItoM(GetRegPtr(reg_pc),block->TF_next_addr-2);//!=
+#ifdef EXIT_ON_ACCEPT
+				x86e->JMP(check_interrupts_dyna);
+#else
 				x86e->RET();//return to caller to check for interrupts
+#endif
+				//
 			}
 
 			
@@ -777,7 +824,9 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 			//if we can execute more blocks
 			
 			x86e->x86SetJ8(Link);
-
+#ifdef EXIT_ON_ACCEPT
+			*p_patch=(u32)x86e->x86Ptr;
+#endif
 			//for dynamic link!
 			x86e->MOV32ItoR(ECX,(u32)block);					//mov ecx , block
 			x86e->MOV32MtoR(EAX,&T_jcond_value);
@@ -812,12 +861,24 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 			x86e->CMP32ItoR(ESI,BLOCKLIST_MAX_CYCLES);
 			u8* Link=x86e->JB8(0);
 			
+#ifdef EXIT_ON_ACCEPT
+			u32* p_patch;
+			p_patch=(u32*)(x86e->x86Ptr+1);
+			x86e->PUSH32I(0x11223344);
+#endif
 			//If our cycle count is expired
 			x86e->MOV32ItoM(GetRegPtr(reg_pc),block->TF_next_addr-2);
+#ifdef EXIT_ON_ACCEPT			
+			x86e->JMP(check_interrupts_dyna);
+#else
 			x86e->RET();//return to caller to check for interrupts
+#endif
 
 			//Link:
 			//if we can execute more blocks
+#ifdef EXIT_ON_ACCEPT
+			*p_patch=(u32)x86e->x86Ptr;
+#endif
 			x86e->x86SetJ8(Link);
 			//link to next block :
 			x86e->MOV32ItoR(ECX,(u32)block);					//mov ecx , block

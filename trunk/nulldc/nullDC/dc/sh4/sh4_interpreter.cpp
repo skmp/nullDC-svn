@@ -358,7 +358,7 @@ bool ExecuteDelayslot()
 
 //General update
 //u32 gdCnt=0;
-int UpdateSystem(u32 Cycles)
+int __fastcall UpdateSystem(u32 Cycles)
 {
 	//TODO : Add Update System implementation
 

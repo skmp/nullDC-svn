@@ -11,6 +11,7 @@ int alloced_free=0;
 u32 gen_8_mb=0;
 void* EmitAlloc(u32 minsize)
 {
+	return malloc(minsize);
 	if (alloced_free>=(int)minsize)
 	{
 		return alloced_ptr;
@@ -26,8 +27,9 @@ void* EmitAlloc(u32 minsize)
 	}
 }
 
-void EmitAllocSet(u32 usedsize)
+void EmitAllocSet(void * ptr,u32 usedsize)
 {
+	realloc(ptr,usedsize);
 	alloced_free-=(usedsize+31)&(~31);
 	alloced_ptr+=(usedsize+31)&(~31);
 	if (alloced_free<0)

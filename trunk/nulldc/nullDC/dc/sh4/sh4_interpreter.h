@@ -47,4 +47,4 @@ u32 Sh4_int_GetRegister(Sh4RegType reg);
 void Sh4_int_SetRegister(Sh4RegType reg,u32 regdata);
 //Other things (mainly used by the cpu core
 bool ExecuteDelayslot();
-int UpdateSystem(u32 Cycles);
+int  __fastcall UpdateSystem(u32 Cycles);
