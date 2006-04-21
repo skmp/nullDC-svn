@@ -69,7 +69,22 @@ void rec_v1_BlockTest(u32 addr)
 		u32 bas=addr<<(HASH_BITS);
 		for (int i=0;i<(1<<(HASH_BITS));i++)
 		{
-			blocklist[((bas +i)>>2)&(block_cnt-1)].clear();
+			vector<rec_v1_BasicBlock*>* tbl=&blocklist[((bas +i)>>2)&(block_cnt-1)];
+			if (tbl->size())
+			{
+				int max_ind=tbl->size();
+				//Discard
+				for (int j=0;j<max_ind;j++)
+				{
+					rec_v1_BasicBlock* bb=(*tbl)[j];
+					bb->Discard();
+					delete bb;
+				}
+
+				tbl->clear();
+			}
+
+			//blocklist[((bas +i)>>2)&(block_cnt-1)].clear();
 			rec_v1_ResetBlockTest(bas+i);
 		}
 		//damn a block is overwrited

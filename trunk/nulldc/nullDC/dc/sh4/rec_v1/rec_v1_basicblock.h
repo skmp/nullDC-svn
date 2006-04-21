@@ -21,6 +21,7 @@ public :
 #define BLOCK_ATSC_END 4			//end , analyse 
 
 #define BLOCKLIST_MAX_CYCLES (448)
+
 class rec_v1_BasicBlock
 {
 public :
@@ -33,7 +34,11 @@ public :
 		compiled=0;
 		TF_next_addr=0xFFFFFFFF;
 		TT_next_addr=0xFFFFFFFF;
+		ilst=new shil_stream();
 	}	
+
+	void Discard();
+
 	//start pc
 	u32 start;
 	//end pc
@@ -43,7 +48,7 @@ public :
 	u32 flags;
 	u32 cycles;
 
-	shil_stream ilst;
+	shil_stream* ilst;
 
 	rec_v1_CompiledBlock* compiled;
 
@@ -53,6 +58,9 @@ public :
 	//pointers to blocks
 	void* pTF_next_addr;//tfalse or jmp
 	void* pTT_next_addr;
+
+
+	vector<rec_v1_BasicBlock*> reflist;
 };
 
 typedef void (__fastcall RecOpCallFP) (u32 op,u32 pc,rec_v1_BasicBlock* bb);

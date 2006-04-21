@@ -667,6 +667,8 @@ void* __fastcall link_compile_inject_TF(rec_v1_BasicBlock* ptr)
 {
 	//printf("Inject TF 0x%p\n",ptr->TF_next_addr);
 	rec_v1_BasicBlock* target= rec_v1_FindOrRecompileCode(ptr->TF_next_addr);
+	
+	target->reflist.push_back(ptr);
 
 	return ptr->pTF_next_addr=target->compiled->Code;
 }
@@ -675,6 +677,8 @@ void* __fastcall link_compile_inject_TT(rec_v1_BasicBlock* ptr)
 {
 	//printf("Inject TT 0x%p\n",ptr->TT_next_addr);
 	rec_v1_BasicBlock* target= rec_v1_FindOrRecompileCode(ptr->TT_next_addr);
+
+	target->reflist.push_back(ptr);
 
 	return ptr->pTT_next_addr=target->compiled->Code;
 }
@@ -735,9 +739,9 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 
 	pre_cycles_on_block=block->cycles;
 
-	for (u32 i=0;i<block->ilst.opcodes.size();i++)
+	for (u32 i=0;i<block->ilst->opcodes.size();i++)
 	{
-		shil_opcode* op=&block->ilst.opcodes[i];
+		shil_opcode* op=&block->ilst->opcodes[i];
 		if (op->opcode==shil_ifb)
 			fallbacks++;
 		else
@@ -898,7 +902,11 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 
 	block->pTF_next_addr=link_compile_inject_TF_stub;
 	block->pTT_next_addr=link_compile_inject_TT_stub;
-	block->ilst.opcodes.clear();
+
+	block->ilst->opcodes.clear();
+	delete block->ilst;
+	block->ilst=0;
+
 
 
 	block_count++;

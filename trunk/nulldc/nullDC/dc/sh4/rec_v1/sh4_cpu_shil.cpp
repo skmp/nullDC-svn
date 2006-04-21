@@ -1940,7 +1940,7 @@ sh4op(i0000_nnnn_0010_0011)
 	*/
 	//shil_interpret(op);
 	//return;
-shil_interpret(op);	return;
+//shil_interpret(op);	return;
 	bb->TF_next_addr=pc+4;
 	bb->TT_next_addr=((u32) ( (GetSImm8(op)<<1) + pc+4));
 
@@ -1983,7 +1983,7 @@ shil_interpret(op);	return;
 		pc = newpc;
 	}
 	*/
-	shil_interpret(op);	return;
+	//shil_interpret(op);	return;
 	bb->TF_next_addr=pc+4;
 	bb->TT_next_addr=((u32) ( (GetSImm8(op)<<1) + pc+4));
 

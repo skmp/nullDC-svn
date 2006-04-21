@@ -18,14 +18,13 @@
 
 void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 {
-
 	u32 pc=start;
 
 	u32 block_size=0;
 
 	shil_DynarecInit();
 
-	ilst=&to->ilst;
+	ilst=to->ilst;
 
 	while (true)
 	{
