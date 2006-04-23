@@ -1,26 +1,97 @@
 #include "rec_v1_basicblock.h"
+#include "emitter/shil_compile_slow.h"
+#include "emitter/emitter.h"
 
-void link_compile_inject_TF_stub(rec_v1_BasicBlock* ptr);
-void link_compile_inject_TT_stub(rec_v1_BasicBlock* ptr);
+extern rec_v1_BasicBlock* rec_v1_pCurrentBlock;
 
-void rec_v1_BasicBlock::Discard()
+void rec_v1_BasicBlock::AddRef(rec_v1_BasicBlock* bb)
 {
-	int lsz=reflist.size();
-	for (int i=0;i<lsz;i++)
+	//printf("AddRef block %x\n",bb->start);
+
+	u32 ref_count=callers.size();
+	for (u32 i=0;i<ref_count;i++)
 	{
-		rec_v1_BasicBlock* pbl=reflist[i];
-
-		if (pbl->pTF_next_addr==compiled->Code)
+		if (callers[i]==0)
 		{
-			pbl->pTF_next_addr=link_compile_inject_TF_stub;
-		}
-
-		if (pbl->pTT_next_addr==compiled->Code)
-		{
-			pbl->pTT_next_addr=link_compile_inject_TT_stub;
+			callers[i]=bb;
+			return ;
 		}
 	}
 
-	free(this->compiled->Code);
-	delete this->compiled;
+	callers.push_back(bb);
+}
+
+void rec_v1_BasicBlock::Discard()
+{
+	printf("Discard block %x\n",start);
+	u32 ref_count=callers.size();
+	for (u32 i=0;i<ref_count;i++)
+	{
+		if (callers[i]!=0)
+		{
+			rec_v1_BasicBlock* cal=callers[i];
+			if (cal->TF_block==this)
+			{
+				cal->TF_block=0;
+				cal->pTF_next_addr= link_compile_inject_TF_stub;
+			}
+
+			if (cal->TT_block==this)
+			{
+				cal->TT_block=0;
+				cal->pTT_next_addr= link_compile_inject_TT_stub;
+			}
+		}
+	}
+	if (TT_block)
+	{
+		u32 cal_ls=TT_block->callers.size();
+		for (u32 j=0;j<cal_ls;j++)
+		{
+			if (TT_block->callers[j]==this)
+				TT_block->callers[j]=0;
+		}
+	}
+
+	if (TF_block)
+	{
+		u32 cal_ls=TF_block->callers.size();
+		for (u32 j=0;j<cal_ls;j++)
+		{
+			if (TF_block->callers[j]==this)
+				TF_block->callers[j]=0;
+		}
+	}
+
+	/*emitter<> *x86e = new emitter<>((u8*)compiled->Code);
+	x86e->Pad(compiled->size);*/
+	//if (rec_v1_pCurrentBlock!=this)
+	//if (start==0x8c0000e8)
+	//	start=0x8c0000e8;
+
+	if (rec_v1_pCurrentBlock==this)
+	{
+		printf("FUCK!!!!\n");
+		return;
+	}
+	if (compiled)
+	{
+		free(compiled->Code);
+		compiled->Code=0;
+		delete compiled;
+		compiled=0;
+	}
+	else
+	{
+		printf("FREE!!! 0x%x\n",start);
+	}	
+}
+
+bool rec_v1_BasicBlock::Contains(u32 pc)
+{
+	u32 pc_real=pc &0xFFFFFF;
+	u32 real_start=start &0xFFFFFF;
+	u32 real_end=end &0xFFFFFF;
+
+	return ((pc_real>=(real_start-4)) && (pc_real<=(real_end+6)));
 }

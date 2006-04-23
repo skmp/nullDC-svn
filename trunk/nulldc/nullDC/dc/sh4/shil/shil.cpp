@@ -13,7 +13,7 @@
 INLINE bool shil_opcode::ReadsReg(Sh4RegType reg)
 {
 	return true;
-}
+}  
 INLINE bool shil_opcode::OverwritesReg(Sh4RegType reg)
 {
 	return true;

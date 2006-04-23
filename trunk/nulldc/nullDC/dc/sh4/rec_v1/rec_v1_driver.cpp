@@ -47,56 +47,6 @@ u32 avg_bc=0;
 
 INLINE rec_v1_BasicBlock* __fastcall GetRecompiledCode(u32 pc)
 {
-	/*recBlock* currBlock;
-	currBlock=FindBlock(pc);
-	if (!currBlock)
-	{
-		currBlock=AddBlock(pc);
-
-		u32 i=0;
-		u32 rec_pc=0;
-		rec_pc=pc;
-
-		recStartRecompile();
-		int bc=0;
-		bool u_break=false;
-		while(i<CPU_TIMESLICE)
-		{
-
-			u32 op=ReadMem16(rec_pc);
-			i+=rec_opcode_fam_cycles[op>>12];
-			bc+=2;
-			if (!recRecompileOp(op,rec_pc))
-			{
-				char temp_d[1000];
-				DissasembleOpcode(op,rec_pc,temp_d);
-				printf("Ending block at : %s\n",temp_d);
-				u_break=true;
-				break;
-			}
-			rec_pc+=2;
-		}
-		recEndRecompile(u_break,rec_pc-2);
-
-		//save info to block struct
-		currBlock->Code=recGetFunction();
-		currBlock->Size=bc;
-		currBlock->NativeSize=recGetCodeSize();
-		currBlock->Cycles=i;
-
-		//is realloc to less guaranteed ?
-		realloc(currBlock->Code,currBlock->NativeSize+8);
-
-		avg_rat+=recGetCodeSize();
-		avg_bc+=bc;
-		avg_rat_cnt++;
-
-		printf("Generated code bytes ratio %d:%d = %d%% , Average %d%% , %d block size\n",bc, recGetCodeSize(),recGetCodeSize()*100/bc,avg_rat*100/avg_bc,avg_bc/avg_rat_cnt);
-
-		bc=0;
-		i=0;
-	}*/
-
 	rec_v1_BasicBlock* block=rec_v1_FindBlock(pc);
 	
 	if (block)
@@ -149,11 +99,10 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 		}
 		//rec_cycles+=currBlock->compiled->Code();
 
-		//pc+=2 is needed after call
+		//pc+=2 is needed after call -> NOT ANY MORE
 		//pc+=2;
 
-		//dynamic shit ? just update the missing cycles
-		if (rec_cycles>(CPU_TIMESLICE))
+		if (rec_cycles>CPU_TIMESLICE)
 		{
 			UpdateSystem(rec_cycles);
 			rec_cycles=0;

@@ -6,5 +6,4 @@
 
 typedef u32 rec_v1_BasicBlockEP();
 
-
-using namespace std;
+using namespace std;  

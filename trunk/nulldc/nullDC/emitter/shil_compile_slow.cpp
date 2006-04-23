@@ -9,13 +9,26 @@
 
 //TEMP!!!
 emitter<>* x86e;
-u32 pre_cycles_on_block=0;
 
 typedef void __fastcall shil_compileFP(shil_opcode* op,rec_v1_BasicBlock* block);
+
+
+bool inited=false;
+
+int fallbacks=0;
+int native=0;
+u32 T_jcond_value;
+u32 reg_pc_temp_value;
+rec_v1_BasicBlock* rec_v1_pCurrentBlock;
+
+int block_count=0;
 
 //a few helpers
 u32* GetRegPtr(u8 reg)
 {
+	if (reg==Sh4RegType::reg_pc_temp)
+		return &reg_pc_temp_value;
+
 	u32* rv=Sh4_int_GetRegisterPtr((Sh4RegType)reg);
 	assert(rv!=0);
 	return rv;
@@ -113,7 +126,6 @@ void SaveReg(u8 reg,u32 from)
 	x86e->_ItR_(EAX);\
 	SaveReg(op->reg1,EAX);
 
-u32 T_jcond_value;
 //shil compilation
 void __fastcall shil_compile_nimp(shil_opcode* op,rec_v1_BasicBlock* block)
 {
@@ -657,32 +669,28 @@ void Init()
 
 	printf("lazy shil compiler stats : %d%% opcodes done\n",shil_nimp*100/shil_opcodes::shil_count);
 }
-bool inited=false;
-int fallbacks=0;
-int native=0;
-
-int block_count=0;
-
+//Compile block and return pointer to it's code
 void* __fastcall link_compile_inject_TF(rec_v1_BasicBlock* ptr)
 {
-	//printf("Inject TF 0x%p\n",ptr->TF_next_addr);
 	rec_v1_BasicBlock* target= rec_v1_FindOrRecompileCode(ptr->TF_next_addr);
 	
-	target->reflist.push_back(ptr);
-
+	//Add reference so we can undo the chain later
+	target->AddRef(ptr);
+	ptr->TF_block=target;
 	return ptr->pTF_next_addr=target->compiled->Code;
 }
 
 void* __fastcall link_compile_inject_TT(rec_v1_BasicBlock* ptr)
 {
-	//printf("Inject TT 0x%p\n",ptr->TT_next_addr);
 	rec_v1_BasicBlock* target= rec_v1_FindOrRecompileCode(ptr->TT_next_addr);
 
-	target->reflist.push_back(ptr);
-
+	//Add reference
+	target->AddRef(ptr);
+	ptr->TT_block=target;
 	return ptr->pTT_next_addr=target->compiled->Code;
-}
+} 
 
+//call link_compile_inject_TF , and jump to code
 void naked link_compile_inject_TF_stub(rec_v1_BasicBlock* ptr)
 {
 	__asm
@@ -701,29 +709,8 @@ void naked link_compile_inject_TT_stub(rec_v1_BasicBlock* ptr)
 		jmp eax;
 	}
 }
+//compile a basicblock
 
-
-#define EXIT_ON_ACCEPT
-#ifdef EXIT_ON_ACCEPT
-extern u32 pc;
-void naked check_interrupts_dyna()
-{
-	__asm
-	{
-		mov ecx,esi;
-		xor esi,esi;
-		//add [pc],2
-		call UpdateSystem;
-		//sub [pc],2
-		pop ecx;
-		cmp eax,0;
-		jne do_ret;
-		jmp ecx;
-do_ret:
-		ret;
-	}
-}
-#endif
 void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 {
 	if (!inited)
@@ -736,12 +723,12 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 	block->compiled=new rec_v1_CompiledBlock();
 	
 	x86e->ADD32ItoR(ESI,block->cycles);
+	//x86e->MOV32ItoM((u32*)&rec_v1_pCurrentBlock,(u32)block);
 
-	pre_cycles_on_block=block->cycles;
 
-	for (u32 i=0;i<block->ilst->opcodes.size();i++)
+	for (u32 i=0;i<block->ilst.opcodes.size();i++)
 	{
-		shil_opcode* op=&block->ilst->opcodes[i];
+		shil_opcode* op=&block->ilst.opcodes[i];
 		if (op->opcode==shil_ifb)
 			fallbacks++;
 		else
@@ -765,97 +752,54 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 	case BLOCK_TYPE_COND_0:
 	case BLOCK_TYPE_COND_1:
 		{
+			//ok , handle COND_0/COND_1 here :)
+			//mem address
+			u32* TT_a=&block->TT_next_addr;
+			u32* TF_a=&block->TF_next_addr;
+			//functions
+			u32* pTF_f=(u32*)&(block->pTF_next_addr);
+			u32* pTT_f=(u32*)&(block->pTT_next_addr);
+
+			if ((block->flags & BLOCK_TYPE_MASK)==BLOCK_TYPE_COND_0)
+			{
+				TT_a=&block->TF_next_addr;
+				TF_a=&block->TT_next_addr;
+				pTF_f=(u32*)&(block->pTT_next_addr);
+				pTT_f=(u32*)&(block->pTF_next_addr);
+			}
+
+
 			x86e->CMP32ItoR(ESI,BLOCKLIST_MAX_CYCLES);
 			
 			u8* Link=x86e->JB8(0);
-
-			//x86e->INT3();
-			//If our cycle count is expired
-			//save the dest address to pc
-			x86e->MOV32MtoR(EAX,&T_jcond_value);
-			x86e->TEST32ItoR(EAX,1);//test for T
-			//see witch pc to set
-#ifdef EXIT_ON_ACCEPT
-			u32* p_patch;
-			p_patch=(u32*)(x86e->x86Ptr+1);
-			x86e->PUSH32I(0x11223344);
-#endif
-			if ((block->flags & BLOCK_TYPE_MASK)==BLOCK_TYPE_COND_1)
 			{
-				u8* cond=x86e->JNE8(0);
-				x86e->MOV32ItoM(GetRegPtr(reg_pc),block->TF_next_addr);//==
-#ifdef EXIT_ON_ACCEPT
-				x86e->JMP(check_interrupts_dyna);
-#else
-				x86e->RET();//return to caller to check for interrupts
-#endif
-				
-				//!=
-				x86e->x86SetJ8(cond);
-				x86e->MOV32ItoM(GetRegPtr(reg_pc),block->TT_next_addr);//!=
-#ifdef EXIT_ON_ACCEPT
-				x86e->JMP(check_interrupts_dyna);
-#else
-				x86e->RET();//return to caller to check for interrupts
-#endif
-				
-			}
-			else
-			{
-				u8* cond=x86e->JNE8(0);
-				x86e->MOV32ItoM(GetRegPtr(reg_pc),block->TT_next_addr);//==
-				//				
-#ifdef EXIT_ON_ACCEPT
-				x86e->JMP(check_interrupts_dyna);
-#else
-				x86e->RET();//return to caller to check for interrupts
-#endif
-				//!=
-				x86e->x86SetJ8(cond);
-				x86e->MOV32ItoM(GetRegPtr(reg_pc),block->TF_next_addr);//!=
-#ifdef EXIT_ON_ACCEPT
-				x86e->JMP(check_interrupts_dyna);
-#else
-				x86e->RET();//return to caller to check for interrupts
-#endif
-				//
-			}
+				//If our cycle count is expired
+				//save the dest address to pc
 
-			
-			
+				x86e->MOV32MtoR(EAX,&T_jcond_value);
+				x86e->TEST32ItoR(EAX,1);//test for T
+				//see witch pc to set
 
+				x86e->MOV32ItoR(EAX,*TF_a);//==
+				//!=
+				x86e->CMOVNE32MtoR(EAX,TT_a);//!=
+				x86e->MOV32RtoM(GetRegPtr(reg_pc),EAX);
+				x86e->RET();//return to caller to check for interrupts
+			}
 			//Link:
 			//if we can execute more blocks
-			
 			x86e->x86SetJ8(Link);
-#ifdef EXIT_ON_ACCEPT
-			*p_patch=(u32)x86e->x86Ptr;
-#endif
-			//for dynamic link!
-			x86e->MOV32ItoR(ECX,(u32)block);					//mov ecx , block
-			x86e->MOV32MtoR(EAX,&T_jcond_value);
-			x86e->TEST32ItoR(EAX,1);//test for T
-			
+			{
+				//for dynamic link!
+				x86e->MOV32ItoR(ECX,(u32)block);					//mov ecx , block
+				x86e->MOV32MtoR(EAX,&T_jcond_value);
+				x86e->TEST32ItoR(EAX,1);//test for T
 
-			//link to next block :
-			if ((block->flags & BLOCK_TYPE_MASK)==BLOCK_TYPE_COND_1)
-			{
-				u8* cond=x86e->JNE8(0);
-				x86e->MOV32MtoR(EAX,(u32*)&(block->pTF_next_addr));	//mov eax , [pTF_next_addr]
-				x86e->JMP32R(EAX);		 //==
+
+				//link to next block :
+				x86e->MOV32MtoR(EAX,pTF_f);		//assume it's this condition , unless CMOV overwrites
 				//!=
-				x86e->x86SetJ8(cond);
-				x86e->MOV32MtoR(EAX,(u32*)&(block->pTT_next_addr));	//mov eax , [pTT_next_addr]
-				x86e->JMP32R(EAX);		 //!=
-			}
-			else
-			{
-				u8* cond=x86e->JNE8(0);
-				x86e->MOV32MtoR(EAX,(u32*)&(block->pTT_next_addr));	//mov eax , [pTT_next_addr]
-				x86e->JMP32R(EAX);		 //==
-				//!=
-				x86e->x86SetJ8(cond);
-				x86e->MOV32MtoR(EAX,(u32*)&(block->pTF_next_addr));	//mov eax , [pTF_next_addr]
+				x86e->CMOVNE32MtoR(EAX,pTT_f);	//overwrite the "other" pointer if needed
 				x86e->JMP32R(EAX);		 //!=
 			}
 		}
@@ -864,25 +808,14 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 		{
 			x86e->CMP32ItoR(ESI,BLOCKLIST_MAX_CYCLES);
 			u8* Link=x86e->JB8(0);
-			
-#ifdef EXIT_ON_ACCEPT
-			u32* p_patch;
-			p_patch=(u32*)(x86e->x86Ptr+1);
-			x86e->PUSH32I(0x11223344);
-#endif
+
 			//If our cycle count is expired
 			x86e->MOV32ItoM(GetRegPtr(reg_pc),block->TF_next_addr);
-#ifdef EXIT_ON_ACCEPT			
-			x86e->JMP(check_interrupts_dyna);
-#else
 			x86e->RET();//return to caller to check for interrupts
-#endif
+
 
 			//Link:
 			//if we can execute more blocks
-#ifdef EXIT_ON_ACCEPT
-			*p_patch=(u32)x86e->x86Ptr;
-#endif
 			x86e->x86SetJ8(Link);
 			//link to next block :
 			x86e->MOV32ItoR(ECX,(u32)block);					//mov ecx , block
@@ -896,29 +829,27 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 
 
 	block->compiled->Code=(rec_v1_BasicBlockEP*)x86e->GetCode();
-	block->compiled->count=10;
+	block->compiled->count=x86e->UsedBytes()/5;
 	block->compiled->parent=block;
-	block->compiled->size=10;
+	block->compiled->size=x86e->UsedBytes();
 
+	//make it call the stubs , unless otherwise needed
 	block->pTF_next_addr=link_compile_inject_TF_stub;
 	block->pTT_next_addr=link_compile_inject_TT_stub;
 
-	block->ilst->opcodes.clear();
-	delete block->ilst;
-	block->ilst=0;
-
+	block->ilst.opcodes.clear();
 
 
 	block_count++;
 	if ((block_count%512)==128)
 	{
 		printf("Recompiled %d blocks\n",block_count);
-
-	u32 rat=native>fallbacks?fallbacks:native;
-	if (rat!=0)
-		printf("Native/Fallback ratio : %d:%d [%d:%d]\n",native,fallbacks,native/rat,fallbacks/rat);
-	else
-		printf("Native/Fallback ratio : %d:%d [%d:%d]\n",native,fallbacks,native,fallbacks);
+		u32 rat=native>fallbacks?fallbacks:native;
+		if (rat!=0)
+			printf("Native/Fallback ratio : %d:%d [%d:%d]\n",native,fallbacks,native/rat,fallbacks/rat);
+		else
+			printf("Native/Fallback ratio : %d:%d [%d:%d]\n",native,fallbacks,native,fallbacks);
+		printf("Average block size : %d opcodes\n",(fallbacks+native)/block_count);
 	}
 	delete x86e;
 }

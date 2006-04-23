@@ -201,11 +201,17 @@
 	//r[n]--;
 	if (n==m)
 	{
-		iNimp(op,"Mov.b !!!m==n");
+		printf("Mov.b !!!m==n\n");
 		//return;
+		//
+		WriteMemBOU8(r[n],-1,r[m]);
+		r[n]--;
 	}
-	r[n]--;
-	WriteMemU8(r[n],r[m]);
+	else
+	{
+		r[n]--;
+		WriteMemU8(r[n],r[m]);
+	}
 	
 
 	//WriteMemoryB(r[n], R(m) & 0xFF);
@@ -221,11 +227,15 @@
 	//r[n] -= 2;
 	if (n==m)
 	{
-		iNimp(op,"Mov.w !!!m==n");
+		printf("Mov.w !!!m==n\n");
 		//return;
+		WriteMemBOU16(r[n],-2,r[m]);
+		r[n] -= 2;
 	}
-	r[n] -= 2;
-	WriteMemU16(r[n], r[m]);
+	{
+		r[n] -= 2;
+		WriteMemU16(r[n], r[m]);
+	}
 }
 
 //mov.l <REG_M>,@-<REG_N>       
@@ -238,10 +248,15 @@
 	{
 		//iNimp(op,"Mov.l !!!m==n");
 		printf("mov.l <REG_M>,@-<REG_N> !!!m==n\n");
-		//return;
+		//return;	
+		WriteMemBOU32(r[n],-4,r[m]);
+		r[n] -= 4;
 	}
-	r[n] -= 4;
-	WriteMemU32(r[n],r[m]);
+	else
+	{
+		r[n] -= 4;
+		WriteMemU32(r[n],r[m]);
+	}
 }
 
  //

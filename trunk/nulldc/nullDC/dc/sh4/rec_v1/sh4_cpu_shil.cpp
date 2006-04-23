@@ -1838,6 +1838,7 @@ sh4op(icpu_nimp)
 
 
 //Branches
+
  void DoDslot(u32 pc,rec_v1_BasicBlock* bb)
  {
 	 u16 opcode=ReadMem16(pc+2);
@@ -1846,26 +1847,27 @@ sh4op(icpu_nimp)
 	 else
 		 RecOpPtr[opcode](opcode,pc+2,bb);
  }
-//braf <REG_N> - native
+
+//braf <REG_N>                  
 sh4op(i0000_nnnn_0010_0011)
 {
 	u32 n = GetN(op);
-
 	/*
 	u32 newpc = r[n] + pc + 2;//pc +2 is done after
 	ExecuteDelayslot();	//WARN : r[n] can change here
 	pc = newpc;
 	*/
+
+	//shil_interpret(op);
+	//ilst->add(reg_pc,2);
+	//return;
 	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_DYNAMIC;
-	/*shil_interpret(op);	
-	ilst->add(reg_pc,2);
-	return;*/
-	ilst->mov(reg_pc,r[n]);
-	ilst->add(reg_pc,pc+4);
+	ilst->mov(reg_pc_temp,r[n]);
+	ilst->add(reg_pc_temp,pc+4);
 	DoDslot(pc,bb);
-	//shil_interpret(op);	return;
+	ilst->mov(reg_pc,reg_pc_temp);
 } 
-//bsrf <REG_N> - native
+//bsrf <REG_N>                  
  sh4op(i0000_nnnn_0000_0011)
 {
 	u32 n = GetN(op);
@@ -1877,19 +1879,21 @@ sh4op(i0000_nnnn_0010_0011)
 
 	AddCall(pr-4,pr,pc,0);
 	*/
+
+	//shil_interpret(op);
+	//ilst->add(reg_pc,2);
+	//return;
+
 	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_DYNAMIC;
-	/*shil_interpret(op);	
-	ilst->add(reg_pc,2);
-	return;*/
 	ilst->mov(reg_pr,pc+4);
-	ilst->mov(reg_pc,r[n]);
-	ilst->add(reg_pc,pc+4);
+	ilst->mov(reg_pc_temp,r[n]);
+	ilst->add(reg_pc_temp,pc+4);
 	DoDslot(pc,bb);
-	//shil_interpret(op);	return;
+	ilst->mov(reg_pc,reg_pc_temp);
 } 
 
 
- //rte - not native
+ //rte                           
  sh4op(i0000_0000_0010_1011)
 {
 	/*
@@ -1901,14 +1905,13 @@ sh4op(i0000_nnnn_0010_0011)
 	RemoveCall(spc,1);
 	UpdateSR();
 	*/
-	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_DYNAMIC;
-	shil_interpret(op);	
+	shil_interpret(op);
 	ilst->add(reg_pc,2);
 	return;
 } 
 
 
-//rts - native - not : NEEDS FIX :
+//rts                           
  sh4op(i0000_0000_0000_1011)
 {
 	/*
@@ -1918,19 +1921,17 @@ sh4op(i0000_nnnn_0010_0011)
 	pc=newpc-2;
 	RemoveCall(pr,0);
 	*/
+	//shil_interpret(op);
+	//ilst->add(reg_pc,2);
+	//return;
 	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_DYNAMIC;
-	shil_interpret(op);	
-	ilst->add(reg_pc,2);
-	return;
-	ilst->mov(reg_pc,pc+2);
-	//ilst->sub(reg_pc,2);
+	ilst->mov(reg_pc_temp,reg_pr);
 	DoDslot(pc,bb);
-	ilst->add(reg_pc,2);
-
-	//shil_interpret(op);	return;
+	ilst->mov(reg_pc,reg_pc_temp);
 } 
 
-// bf <bdisp8> - native                
+
+// bf <bdisp8>                   
  sh4op(i1000_1011_iiii_iiii)
 {//ToDo : Check Me [26/4/05]  | Check DELAY SLOT [28/1/06]
 	/*
@@ -1951,7 +1952,7 @@ sh4op(i0000_nnnn_0010_0011)
 }
 
 
-// bf.s <bdisp8> - native         
+// bf.s <bdisp8>                 
  sh4op(i1000_1111_iiii_iiii)
 {//TODO : Check This [26/4/05] | Check DELAY SLOT [28/1/06]
 	/*
@@ -1965,6 +1966,10 @@ sh4op(i0000_nnnn_0010_0011)
 	*/
 	//shil_interpret(op);
 	//return;
+	shil_interpret(op);
+	ilst->add(reg_pc,2);
+	return;
+
 	bb->TF_next_addr=pc+4;
 	bb->TT_next_addr=((u32) ( (GetSImm8(op)<<1) + pc+4));
 
@@ -1974,7 +1979,7 @@ sh4op(i0000_nnnn_0010_0011)
 }
 
 
-// bt <bdisp8> - native
+// bt <bdisp8>                   
  sh4op(i1000_1001_iiii_iiii)
 {//TODO : Check This [26/4/05]  | Check DELAY SLOT [28/1/06]
 	/*
@@ -1995,7 +2000,7 @@ sh4op(i0000_nnnn_0010_0011)
 }
 
 
-// bt.s <bdisp8> - native
+// bt.s <bdisp8>                 
  sh4op(i1000_1101_iiii_iiii)
 {
 	/*
@@ -2007,7 +2012,10 @@ sh4op(i0000_nnnn_0010_0011)
 		pc = newpc;
 	}
 	*/
-	//shil_interpret(op);	return;
+	shil_interpret(op);	
+	ilst->add(reg_pc,2);
+	return;
+
 	bb->TF_next_addr=pc+4;
 	bb->TT_next_addr=((u32) ( (GetSImm8(op)<<1) + pc+4));
 
@@ -2018,7 +2026,7 @@ sh4op(i0000_nnnn_0010_0011)
 
 
 
-// bra <bdisp12> - native
+// bra <bdisp12>
 sh4op(i1010_iiii_iiii_iiii)
 {//ToDo : Check Me [26/4/05] | Check ExecuteDelayslot [28/1/06] 
 	//delay 1 jump imm12
@@ -2028,11 +2036,11 @@ sh4op(i1010_iiii_iiii_iiii)
 	pc=newpc-2;
 	*/
 
-	DoDslot(pc,bb);
 	bb->TF_next_addr=(u32) ((  ((s16)((GetImm12(op))<<4)) >>3)  + pc + 4);
 	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_FIXED;
+	DoDslot(pc,bb);
 }
-// bsr <bdisp12> - native
+// bsr <bdisp12>
 sh4op(i1011_iiii_iiii_iiii)
 {//ToDo : Check Me [26/4/05] | Check new delay slot code [28/1/06]
 	/*
@@ -2044,26 +2052,27 @@ sh4op(i1011_iiii_iiii_iiii)
 	AddCall(pc,pr,newpc,0);	//WARN : pr can change here
 	ExecuteDelayslot();
 	pc=newpc-2;*/
-		//shil_interpret(op);	return;
-	ilst->mov(reg_pr,pc+4);
-	DoDslot(pc,bb);
+
 	bb->TF_next_addr=(u32) ((  ((s16)((GetImm12(op))<<4)) >>3)  + pc + 4);
 	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_FIXED;
+
+	ilst->mov(reg_pr,pc+4);
+	DoDslot(pc,bb);
+
 }
 
-// trapa #<imm> - not native
+// trapa #<imm>                  
 sh4op(i1100_0011_iiii_iiii)
 {
 	/*
 	CCN_TRA = (GetImm8(op) << 2);
 	Do_Exeption(0,0x160,0x100);
 	*/
-	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_DYNAMIC;
 	shil_interpret(op);	
 	ilst->add(reg_pc,2);
 	return;
 }
-//jmp @<REG_N> - native
+//jmp @<REG_N>                  
  sh4op(i0100_nnnn_0010_1011)
 {   //ToDo : Check Me [26/4/05] | Check new delay slot code [28/1/06]
 	u32 n = GetN(op);
@@ -2074,18 +2083,17 @@ sh4op(i1100_0011_iiii_iiii)
 	pc=newpc-2;//+2 is done after
 
 	*/
+	//shil_interpret(op);	
+	//ilst->add(reg_pc,2);
+	//return;
 	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_DYNAMIC;
-	/*shil_interpret(op);	
-	ilst->add(reg_pc,2);
-	return;*/
-	ilst->mov(reg_pc,r[n]);
+	ilst->mov(reg_pc_temp,r[n]);
 	DoDslot(pc,bb);
-
-	//shil_interpret(op);	return;
+	ilst->mov(reg_pc,reg_pc_temp);
 }
 
 
-//jsr @<REG_N> - native
+//jsr @<REG_N>                  
  sh4op(i0100_nnnn_0000_1011)
 {//ToDo : Check This [26/4/05] | Check new delay slot code [28/1/06]
 	u32 n = GetN(op);
@@ -2098,22 +2106,21 @@ sh4op(i1100_0011_iiii_iiii)
 	AddCall(pc-2,pr,newpc,0);
 	pc=newpc-2;
 	*/
+	//shil_interpret(op);	
+	//ilst->add(reg_pc,2);
+	//return;
 	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_DYNAMIC;
-	/*shil_interpret(op);	
-	ilst->add(reg_pc,2);
-	return;*/
 	ilst->mov(reg_pr,pc+4);
-	ilst->mov(reg_pc,r[n]);
+	ilst->mov(reg_pc_temp,r[n]);
 	DoDslot(pc,bb);
-
-	//shil_interpret(op);	return;
+	ilst->mov(reg_pc,reg_pc_temp);
 }
 
 
 
 
 
-//sleep - not native
+//sleep                         
  sh4op(i0000_0000_0001_1011)
 {
 	/*
@@ -2141,7 +2148,6 @@ sh4op(i1100_0011_iiii_iiii)
 
 	sh4_sleeping=false;
 	*/
-	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_DYNAMIC;
 	shil_interpret(op);	
 	ilst->add(reg_pc,2);
 	return;

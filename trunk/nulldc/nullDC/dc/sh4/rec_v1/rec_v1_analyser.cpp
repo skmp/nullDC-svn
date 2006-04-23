@@ -16,38 +16,24 @@
 //the basicblock (and suprtblock later) will be the send to the optimiser , and after that
 //to the compiler
 
-#define CPU_TIMESLICE	(448)
-#define CPU_RATIO		(3)
-
-u32 opcode_fam_cycles_dyna[0x10]=
-{
- CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,
- CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,1
-};
-
-
 void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 {
+
 	u32 pc=start;
 
 	u32 block_size=0;
 
 	shil_DynarecInit();
 
-	ilst=to->ilst;
-	to->cycles=0;
+	ilst=&to->ilst;
 
 	while (true)
 	{
 		block_size++;
 		u16 opcode=ReadMem16(pc);
 
-		to->cycles+=opcode_fam_cycles_dyna[opcode>>12];
-
 		if (((pc>>26)&0x7)==3)
 			rec_v1_SetBlockTest(pc);
-
-		//if branch , then block end
 
 		if ((opcode&0xF000)==0xF000)
 			ilst->shil_ifb(opcode,pc);
@@ -60,23 +46,30 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 			break;
 		}
 
+		//if branch , then block end
+		if (OpTyp[opcode]&WritesPC)
+		{
+			to->end=pc;
+			to->flags |=BLOCK_TYPE_DYNAMIC;
+			break;
+		}
+
 		if ((OpTyp[opcode]&(WritesSR | WritesFPSCR)))
 		{
 			//block end , but b/c last opcode does not set PC
 			//after execution , resume to recompile from pc+2
-			//ilst->mov(reg_pc,pc);//save next opcode pc , pc+2 is _NOT_ done after execution
+			//ilst->mov(reg_pc,pc);//save next opcode pc-2 , pc+2 is done after execution
 			//opcode is interpreter so pc is set , if update shit() is called , pc must remain
 
 			to->end=pc;
 			to->flags |=BLOCK_TYPE_DYNAMIC;
-			//ilst->mov(reg_pc,pc+2);//pc +2
 			ilst->add(reg_pc,2);
 			break;
 		}
 
-		if (block_size==CPU_TIMESLICE)
+		if (block_size==448)
 		{
-			ilst->mov(reg_pc,pc);//save next opcode pc , pc is used directly
+			ilst->mov(reg_pc,pc);//save next opcode pc-2 , pc+2 is done after execution
 			
 			to->flags |=BLOCK_TYPE_FIXED;
 			to->end=pc;
@@ -90,7 +83,7 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 	//clear flags that are used olny for analysis
 	to->flags &= ~BLOCK_ATSC_END;
 
-	//to->cycles=block_size*3;
+	to->cycles=block_size*3;
 
 	//printf("SH4: Analysed block pc:%x , block size : %d. Shil size %d , level = %d\n",to->start,block_size,to->ilst.op_count,nest_level);
 }

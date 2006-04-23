@@ -729,7 +729,7 @@ public :
 	}
 
 	/* cmovne m32 to r32*/
-	void CMOVNE32MtoR( x86IntRegType to, u32 from ) 
+	void CMOVNE32MtoR( x86IntRegType to, u32* from ) 
 	{
 		CMOV32MtoR( 0x45, to, from );
 	}

@@ -17,7 +17,7 @@ sh4_opcodelistentry* OpDisasm[0x10000];
 #define Mask_n_m_imm4 0xF000
 #define Mask_n 0xF0FF
 #define Mask_none 0xFFFF
-#define Mask_imm8 0xFF00
+#define Mask_imm8 0xFF00 
 #define Mask_imm12 0xF000
 #define Mask_n_imm8 0xF000
 #define Mask_n_ml3bit 0xF08F

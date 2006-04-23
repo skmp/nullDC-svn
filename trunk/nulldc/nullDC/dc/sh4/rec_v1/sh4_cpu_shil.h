@@ -4,4 +4,4 @@
 #include "rec_v1_basicblock.h"
 
 void shil_DynarecInit();
-extern shil_stream* ilst;
+extern shil_stream* ilst;  

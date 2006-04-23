@@ -16,7 +16,7 @@ struct sh4_opcodelistentry
 	u32 mask;
 	u32 rez;
 	OpcodeType type;
-	OpDissasmFP* dissasm;
+	OpDissasmFP* dissasm; 
 	char disasm1[64];
 
 	void Dissasemble(char* strout,u32 pc , u16 params) const

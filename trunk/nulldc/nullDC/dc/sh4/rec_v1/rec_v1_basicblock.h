@@ -21,10 +21,13 @@ public :
 #define BLOCK_ATSC_END 4			//end , analyse 
 
 #define BLOCKLIST_MAX_CYCLES (448)
-
 class rec_v1_BasicBlock
 {
-public :
+	vector<rec_v1_BasicBlock*> callers;
+	public :
+
+	rec_v1_BasicBlock* TF_block;
+	rec_v1_BasicBlock* TT_block;
 	rec_v1_BasicBlock()
 	{
 		start=0;
@@ -34,10 +37,13 @@ public :
 		compiled=0;
 		TF_next_addr=0xFFFFFFFF;
 		TT_next_addr=0xFFFFFFFF;
-		ilst=new shil_stream();
+		TF_block=TT_block=0;
 	}	
 
 	void Discard();
+	bool Contains(u32 pc);
+	//we get called by bb
+	void AddRef(rec_v1_BasicBlock* bb);
 
 	//start pc
 	u32 start;
@@ -48,7 +54,7 @@ public :
 	u32 flags;
 	u32 cycles;
 
-	shil_stream* ilst;
+	shil_stream ilst;
 
 	rec_v1_CompiledBlock* compiled;
 
@@ -58,9 +64,6 @@ public :
 	//pointers to blocks
 	void* pTF_next_addr;//tfalse or jmp
 	void* pTT_next_addr;
-
-
-	vector<rec_v1_BasicBlock*> reflist;
 };
 
 typedef void (__fastcall RecOpCallFP) (u32 op,u32 pc,rec_v1_BasicBlock* bb);

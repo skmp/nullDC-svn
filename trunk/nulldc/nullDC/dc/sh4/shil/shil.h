@@ -15,7 +15,7 @@ struct shil_opcode
 		flags=0;
 		flags_ex=0;
 		reg1=0;
-		reg2=0;
+		reg2=0;  
 		imm1=0;
 		imm2=0;
 	}

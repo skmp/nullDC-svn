@@ -21,7 +21,7 @@ void* EmitAlloc(u32 minsize)
 		alloced_ptr=(u8*)malloc(8*1024*1024);
 		alloced_free=8*1024*1024;
 		alloced_ptr=(u8*)(((u32)alloced_ptr+31)&(~31));
-		printf("Dynarec Stats : Generated %d Mb of code , allocating more\n",gen_8_mb*8);
+		printf("Dynarec Stats : Generated %d Mb of code , allocating more\n",gen_8_mb*8); 
 		gen_8_mb++;
 		return alloced_ptr;
 	}

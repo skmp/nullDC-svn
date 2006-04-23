@@ -12,7 +12,7 @@
 //stc SR,<REG_N>                
  sh4op(i0000_nnnn_0000_0010);
 //stc GBR,<REG_N>               
- sh4op(i0000_nnnn_0001_0010);
+ sh4op(i0000_nnnn_0001_0010);  
 //stc VBR,<REG_N>               
  sh4op(i0000_nnnn_0010_0010);
 //stc SSR,<REG_N>               

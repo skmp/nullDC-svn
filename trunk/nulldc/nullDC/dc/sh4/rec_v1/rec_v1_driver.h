@@ -11,4 +11,4 @@ void rec_Sh4_int_Skip();
 void rec_Sh4_int_Reset(bool Manual);
 void rec_Sh4_int_Init();
 void rec_Sh4_int_Term();
-bool rec_Sh4_int_IsCpuRunning();
+bool rec_Sh4_int_IsCpuRunning();   

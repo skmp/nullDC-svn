@@ -97,7 +97,7 @@ enum Sh4RegType
 
 	xd_0=dr_7+1,
 	xd_7=xd_0+7,
-
+	reg_pc_temp=xd_7+1,
 
 	NoReg=-1
 };
