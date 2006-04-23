@@ -337,6 +337,10 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 			DialogBox(NULL,MAKEINTRESOURCE(IDD_ABOUT),hWnd,DlgProcModal);
 			return 0;
 
+		case ID_OPTIONS_CONFIG:
+			DialogBox(NULL,MAKEINTRESOURCE(IDD_CONFIG),hWnd,DlgProcModal);
+			return 0;
+
 		//Plugin Selection Menu
 		case ID_OPTIONS_SELECTPLUGINS:
 			DialogBox(NULL,MAKEINTRESOURCE(IDD_PLUGIN_SELECT),hWnd,PluginDlgProc);
@@ -511,6 +515,14 @@ INT_PTR CALLBACK DlgProcModal( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 		switch( LOWORD(wParam) )
 		{
 		case IDOK:
+
+			if(IsWindow(GetDlgItem(hWnd,IDC_REC)))	// this is Config dialog
+			{
+				int tmp = 0;
+				tmp = (BST_CHECKED==IsDlgButtonChecked(hWnd,IDC_REC)) ? 1 : 0 ;
+				cfgSaveInt("nullDC","enable_recompiler",tmp);
+			}
+
 			EndDialog(hWnd,0);
 			return true;
 

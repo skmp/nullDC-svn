@@ -21,6 +21,7 @@
 #define IDD_PVRVIEW                     116
 #define IDD_ARM7DEBUG                   117
 #define IDD_PLUGIN_SELECT               118
+#define IDD_CONFIG                      119
 #define IDC_CUSTOM                      1001
 #define IDC_SEARCH                      1003
 #define IDC_FIND                        1004
@@ -118,6 +119,7 @@
 #define IDC_PVR_CONF                    1099
 #define IDC_C_GDR3                      1100
 #define IDC_C_AICA                      1100
+#define IDC_REC                         1100
 #define IDC_GDR_CONF                    1101
 #define IDC_BUTTON3                     1102
 #define IDC_AICA_CONF                   1102
@@ -140,14 +142,16 @@
 #define ID_FILE_BOOTGDROM               40023
 #define ID_FILE_D                       40024
 #define ID_FILE_BOOTHLE                 40025
+#define ID_OPTIONS_CONFIGURE            40026
+#define ID_OPTIONS_CONFIG               40027
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        119
-#define _APS_NEXT_COMMAND_VALUE         40026
-#define _APS_NEXT_CONTROL_VALUE         1100
+#define _APS_NEXT_RESOURCE_VALUE        120
+#define _APS_NEXT_COMMAND_VALUE         40028
+#define _APS_NEXT_CONTROL_VALUE         1101
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

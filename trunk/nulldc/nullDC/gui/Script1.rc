@@ -216,6 +216,16 @@ BEGIN
     LTEXT           "fuck somethin",IDC_ARM7INFO,244,45,160,32
 END
 
+IDD_CONFIG DIALOGEX 0, 0, 211, 131
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "nullDC Configuration"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,154,110,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,154,93,50,14
+    CONTROL         "Enable Recompiler",IDC_REC,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,7,197,15
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -231,6 +241,14 @@ BEGIN
         RIGHTMARGIN, 366
         TOPMARGIN, 3
         BOTTOMMARGIN, 160
+    END
+
+    IDD_CONFIG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 204
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 124
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -259,7 +277,8 @@ BEGIN
     END
     POPUP "&Options"
     BEGIN
-        MENUITEM "&Select Plugins",             ID_OPTIONS_SELECTPLUGINS
+        MENUITEM "&Configure",                  ID_OPTIONS_CONFIG
+        MENUITEM "Select &Plugins",             ID_OPTIONS_SELECTPLUGINS
     END
     POPUP "&Debug"
     BEGIN
