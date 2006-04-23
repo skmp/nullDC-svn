@@ -509,6 +509,11 @@ INT_PTR CALLBACK DlgProcModal( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 	switch( uMsg )
 	{
 	case WM_INITDIALOG:
+		{
+			int tmp;
+			tmp=cfgLoadInt("nullDC","enable_recompiler");
+			CheckDlgButton(hWnd,IDC_REC,tmp==1?BST_CHECKED:BST_UNCHECKED);
+		}
 		return true;
 
 	case WM_COMMAND:
@@ -522,7 +527,7 @@ INT_PTR CALLBACK DlgProcModal( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 				tmp = (BST_CHECKED==IsDlgButtonChecked(hWnd,IDC_REC)) ? 1 : 0 ;
 				cfgSaveInt("nullDC","enable_recompiler",tmp);
 			}
-
+		case IDCANCEL:
 			EndDialog(hWnd,0);
 			return true;
 
