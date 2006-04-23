@@ -520,12 +520,32 @@ INT_PTR CALLBACK DlgProcModal( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 		switch( LOWORD(wParam) )
 		{
 		case IDOK:
-
 			if(IsWindow(GetDlgItem(hWnd,IDC_REC)))	// this is Config dialog
 			{
 				int tmp = 0;
 				tmp = (BST_CHECKED==IsDlgButtonChecked(hWnd,IDC_REC)) ? 1 : 0 ;
 				cfgSaveInt("nullDC","enable_recompiler",tmp);
+				bool bStart=false;
+				if (sh4_cpu)
+				{
+					if (sh4_cpu->IsCpuRunning())
+					{
+						//sh4_cpu->Stop();
+						Stop_DC();
+						bStart=true;
+					}
+				}
+				if(0 != cfgLoadInt("nullDC","enable_recompiler"))
+					sh4_cpu=Get_Sh4Recompiler();
+				else
+					sh4_cpu=Get_Sh4Interpreter();
+
+				if (bStart)
+				{
+					sh4_cpu->Init();
+					//sh4_cpu->Run();
+					Start_DC();
+				}
 			}
 		case IDCANCEL:
 			EndDialog(hWnd,0);
