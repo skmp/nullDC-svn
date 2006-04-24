@@ -12,6 +12,9 @@ emitter<>* x86e;
 
 typedef void __fastcall shil_compileFP(shil_opcode* op,rec_v1_BasicBlock* block);
 
+#ifdef PROFILE_DYNAREC
+u64 ifb_calls;
+#endif
 
 bool inited=false;
 
@@ -22,6 +25,13 @@ u32 reg_pc_temp_value;
 rec_v1_BasicBlock* rec_v1_pCurrentBlock;
 
 int block_count=0;
+//profiling related things
+#ifdef PROFILE_DYNAREC
+void profile_ifb_call()
+{
+	ifb_calls++;
+}
+#endif
 
 //a few helpers
 u32* GetRegPtr(u8 reg)
@@ -205,7 +215,7 @@ void __fastcall shil_compile_movex(shil_opcode* op,rec_v1_BasicBlock* block)
 	}
 }
 
-//ahh
+//ahh .. just run interpreter :P
 void __fastcall shil_compile_shil_ifb(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 
@@ -215,6 +225,9 @@ void __fastcall shil_compile_shil_ifb(shil_opcode* op,rec_v1_BasicBlock* block)
 
 	x86e->MOV32ItoR(ECX,op->imm1);
 	x86e->CALLFunc(OpPtr[op->imm1]);
+#ifdef PROFILE_DYNAREC
+	x86e->CALLFunc(profile_ifb_call);
+#endif
 }
 
 //shift

@@ -130,7 +130,7 @@ void testJoy_GotData(u32 header1,u32 header2,u32*data,u32 datalen)
 			break;
 
 		default:
-
+			printf("UNKOWN MAPLE COMMAND \n");
 			break;
 	}
 }

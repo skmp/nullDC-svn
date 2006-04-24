@@ -16,6 +16,8 @@
 //the basicblock (and suprtblock later) will be the send to the optimiser , and after that
 //to the compiler
 
+#define CPU_RATIO 3
+#define CPU_BASIC_BLOCK_SIZE (448/2)
 void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 {
 
@@ -29,7 +31,7 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 
 	while (true)
 	{
-		block_size++;
+		block_size+=CPU_RATIO;
 		u16 opcode=ReadMem16(pc);
 
 		if (((pc>>26)&0x7)==3)
@@ -67,7 +69,7 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 			break;
 		}
 
-		if (block_size==448)
+		if (block_size>=CPU_BASIC_BLOCK_SIZE)
 		{
 			ilst->mov(reg_pc,pc);//save next opcode pc-2 , pc+2 is done after execution
 			
@@ -83,7 +85,7 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 	//clear flags that are used olny for analysis
 	to->flags &= ~BLOCK_ATSC_END;
 
-	to->cycles=block_size*3;
+	to->cycles=block_size;
 
 	//printf("SH4: Analysed block pc:%x , block size : %d. Shil size %d , level = %d\n",to->start,block_size,to->ilst.op_count,nest_level);
 }

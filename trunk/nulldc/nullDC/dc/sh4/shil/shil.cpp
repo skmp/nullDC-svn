@@ -12,15 +12,35 @@
 //op reg reg [imm32]
 INLINE bool shil_opcode::ReadsReg(Sh4RegType reg)
 {
-	return true;
+	bool used=false;
+
+	if (this->flags & FLAG_REG1)
+		used |= (reg1==reg) ;
+
+	if (this->flags & FLAG_REG2)
+		used |= (reg2==reg) ;
+
+	if (this->flags & FLAG_R0)
+		used |= (r0==reg) ;
+
+	if (this->flags & FLAG_GBR)
+		used |= (reg_gbr==reg) ;
+
+	if (this->flags & FLAG_MACH)
+		used |= (reg_mach==reg) ;
+
+	if (this->flags & FLAG_MACL)
+		used |= (reg_macl==reg) ;
+
+	return used;
 }  
 INLINE bool shil_opcode::OverwritesReg(Sh4RegType reg)
 {
-	return true;
+	return ReadsReg(reg);
 }
 INLINE bool shil_opcode::UpdatesReg(Sh4RegType reg)
 {
-	return true;
+	return ReadsReg(reg);
 }
 
 bool IsReg64(Sh4RegType reg)

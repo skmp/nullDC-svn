@@ -1966,12 +1966,12 @@ sh4op(i0000_nnnn_0010_0011)
 	*/
 	//shil_interpret(op);
 	//return;
-	shil_interpret(op);
+	/*shil_interpret(op);
 	ilst->add(reg_pc,2);
-	return;
+	return;*/
 
 	bb->TF_next_addr=pc+4;
-	bb->TT_next_addr=((u32) ( (GetSImm8(op)<<1) + pc+4));
+	bb->TT_next_addr=(u32)((GetSImm8(op))*2 + 4 + pc );
 
 	ilst->LoadT(jcond_flag);
 	DoDslot(pc,bb);
@@ -2012,12 +2012,12 @@ sh4op(i0000_nnnn_0010_0011)
 		pc = newpc;
 	}
 	*/
-	shil_interpret(op);	
+	/*shil_interpret(op);	
 	ilst->add(reg_pc,2);
-	return;
+	return;*/
 
 	bb->TF_next_addr=pc+4;
-	bb->TT_next_addr=((u32) ( (GetSImm8(op)<<1) + pc+4));
+	bb->TT_next_addr=(u32)((GetSImm8(op))*2 + 4 + pc );
 
 	ilst->LoadT(jcond_flag);
 	DoDslot(pc,bb);

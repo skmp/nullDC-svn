@@ -68,6 +68,12 @@ rec_v1_BasicBlock* rec_v1_FindOrRecompileCode(u32 pc)
 	return GetRecompiledCode(pc);
 }
 
+#ifdef PROFILE_DYNAREC
+u64 calls=0;
+u64 total_cycles=0;
+extern u64 ifb_calls;
+#endif
+
 u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 {
 	//just cast it
@@ -97,13 +103,27 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 			add rec_cycles,esi;
 			pop esi;
 		}
-		//rec_cycles+=currBlock->compiled->Code();
 
-		//pc+=2 is needed after call -> NOT ANY MORE
-		//pc+=2;
-
-		if (rec_cycles>CPU_TIMESLICE)
+#ifdef PROFILE_DYNAREC
+		calls++;
+		total_cycles+=rec_cycles;
+		if ((calls & (0x8000-1))==(0x8000-1))//more ?
 		{
+			printf("Dynarec Stats : average link cycles : %d , ifb opcodes : %d%% [%d]\n",(u32)(total_cycles/calls),(u32)(ifb_calls*100/total_cycles),ifb_calls);
+			calls=total_cycles=ifb_calls=0;
+		}
+#endif
+
+		if (rec_cycles>(CPU_TIMESLICE/2))
+		{
+			if (rec_cycles>CPU_TIMESLICE*2)
+			{
+				printf("rec_cycles>CPU_TIMESLICE*2 !!!\n");
+				if (rec_cycles>CPU_TIMESLICE*3)
+					printf("rec_cycles>CPU_TIMESLICE*3 !!!\n");
+				printf("rec_cycles=%d\n",rec_cycles);
+			}
+
 			UpdateSystem(rec_cycles);
 			rec_cycles=0;
 			if (fpscr.RM)

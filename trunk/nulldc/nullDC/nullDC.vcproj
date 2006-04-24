@@ -1057,6 +1057,14 @@
 				<File
 					RelativePath=".\dc\maple\maple_if.cpp"
 					>
+					<FileConfiguration
+						Name="Release-NoTrace|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="3"
+						/>
+					</FileConfiguration>
 				</File>
 				<File
 					RelativePath=".\dc\maple\maple_if.h"

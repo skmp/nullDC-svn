@@ -4,6 +4,7 @@
 #include "types.h"
 #include "dc\sh4\shil\shil.h"
 
+//#define PROFILE_DYNAREC
 typedef u32 rec_v1_BasicBlockEP();
 
 using namespace std;  

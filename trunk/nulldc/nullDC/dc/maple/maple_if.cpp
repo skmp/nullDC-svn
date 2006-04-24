@@ -64,12 +64,7 @@ void DoMapleDma()
 		
 		if (MaplePlugin[device][0].Connected)
 		{
-			u32* p_data =(u32*) malloc((int)plen*sizeof(u32));
-
-			for (u32 i=0;i<plen;i++)
-			{
-				p_data[i] = ReadMem32(addr + 8 + (i << 2));
-			}
+			u32* p_data =(u32*) GetMemPtr(addr + 8,plen*sizeof(u32));
 
 			u32 recv=(p_data[0] >> 8) & 0xFF;//0-5;
 			if (recv==0x20)
@@ -83,13 +78,13 @@ void DoMapleDma()
 				while((recv&(1<<subdevice))==0)
 					subdevice++;
 
+				printf("Maple subdevice packet , recv 0x%X,sdi %d\n",recv,subdevice);
+
 				if (MaplePlugin[device][subdevice].Connected)
 					MaplePlugin[device][subdevice].GotDataCB(header_1,header_2,p_data,plen);
 				else
 					WriteMem32(header_2, 0xFFFFFFFF);//not conected
-
 			}
-			free(p_data);
 		}
 		else
 		{

@@ -4,7 +4,7 @@
 
 //What is needed in order to change from kos to emu ?
 //reag reads from exeption info must be mapped to  emulated regs
-//trapa must be handled first had [transaparently]
+//trapa must be handled first haNd [transaparently]
 //writes/reads must be done using readMem/WriteMem
 
 //Additions
