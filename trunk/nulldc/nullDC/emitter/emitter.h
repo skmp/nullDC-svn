@@ -1499,6 +1499,15 @@ public :
 		write8(0x15);
 		write32((u32)to);		
 	}
+	void RCL321toR(x86IntRegType to) 
+	{
+		//if (count!=1)
+		//	printf("RCL32ItoM count!=1 die kthx\n");
+
+		write8(0xD1);
+		write8(0xD0|to);
+		//write32((u32)to);		
+	}
 
 	// shld imm8 to r32
 	void SHLD32ItoR( u32 to, u32 from, u8 shift )
