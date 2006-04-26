@@ -617,7 +617,7 @@ public :
 	}
 
 	/* movzx m8 to r32 */
-	void MOVZX32M8toR( x86IntRegType to, u32 from ) 
+	void MOVZX32M8toR( x86IntRegType to, u8* from ) 
 	{
 		write16( 0xB60F ); 
 		ModRM( 0, to, DISP32 );
@@ -2229,7 +2229,7 @@ public :
 	}
 
 	/* cmp imm32 to m32 */
-	void CMP32ItoM( u32 to, u32 from ) 
+	void CMP32ItoM( u32* to, u32 from ) 
 	{
 		write8( 0x81 ); 
 		ModRM( 0, 7, DISP32 );

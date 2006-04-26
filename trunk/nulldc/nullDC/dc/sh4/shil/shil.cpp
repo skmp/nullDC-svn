@@ -10,12 +10,15 @@
 
 //operations on 2 regs
 //op reg reg [imm32]
-INLINE bool shil_opcode::ReadsReg(Sh4RegType reg)
+bool shil_opcode::ReadsReg(Sh4RegType reg)
 {
 	bool used=false;
 
 	if (this->flags & FLAG_REG1)
-		used |= (reg1==reg) ;
+	{
+		if (opcode!=mov && opcode!=movex && opcode!=readm)
+			used |= (reg1==reg) ;
+	}
 
 	if (this->flags & FLAG_REG2)
 		used |= (reg2==reg) ;
@@ -27,20 +30,68 @@ INLINE bool shil_opcode::ReadsReg(Sh4RegType reg)
 		used |= (reg_gbr==reg) ;
 
 	if (this->flags & FLAG_MACH)
-		used |= (reg_mach==reg) ;
+	{
+		if (opcode!=mul)
+			used |= (reg_mach==reg) ;
+	}
 
 	if (this->flags & FLAG_MACL)
-		used |= (reg_macl==reg) ;
+	{
+		if (opcode!=mul)
+			used |= (reg_macl==reg) ;
+	}
 
 	return used;
 }  
-INLINE bool shil_opcode::OverwritesReg(Sh4RegType reg)
+bool shil_opcode::OverwritesReg(Sh4RegType reg)
 {
-	return ReadsReg(reg);
+	return (!ReadsReg(reg)) && WritesReg(reg);
 }
-INLINE bool shil_opcode::UpdatesReg(Sh4RegType reg)
+bool shil_opcode::UpdatesReg(Sh4RegType reg)
 {
-	return ReadsReg(reg);
+	return ReadsReg(reg) && WritesReg(reg);
+}
+bool shil_opcode::WritesReg(Sh4RegType reg)
+{
+		bool used=false;
+
+	if (this->flags & FLAG_REG1)
+	{
+		if (opcode!=cmp && opcode!=test && opcode!=writem)
+			used |= (reg1==reg) ;
+	}
+
+	if (this->flags & FLAG_REG2)
+	{
+		//none writes to reg 2 :)
+		//used |= (reg2==reg) ;
+	}
+
+	if (this->flags & FLAG_R0)
+	{
+		//none writes to r0 flag :)
+		//used |= (r0==reg) ;
+	}
+
+	if (this->flags & FLAG_GBR)
+	{
+		//none writes to gbr flag :)
+		//used |= (reg_gbr==reg) ;
+	}
+
+	if (this->flags & FLAG_MACH)
+	{
+		//flag mach is allways writen
+		used |= (reg_mach==reg) ;
+	}
+
+	if (this->flags & FLAG_MACL)
+	{
+		//flag macl is allways writen
+		used |= (reg_macl==reg) ;
+	}
+
+	return used;
 }
 
 bool IsReg64(Sh4RegType reg)
@@ -54,7 +105,7 @@ bool IsReg64(Sh4RegType reg)
 	return false;
 }
 
-void shil_stream::emit(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2,u32 imm1,u32 imm2,u16 flags)
+void shil_stream::emit(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2,u32 imm1,u32 imm2,u32 flags)
 {
 	op_count++;
 	shil_opcode sh_op;
@@ -64,7 +115,7 @@ void shil_stream::emit(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2,u32 imm1
 	sh_op.reg2=(u8)reg2;
 	sh_op.imm1=imm1;
 	sh_op.imm2=imm2;
-	sh_op.flags=flags;
+	sh_op.flags=(u16)flags;
 
 	opcodes.push_back(sh_op);
 }
@@ -90,30 +141,30 @@ void shil_stream::emit32(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2)
 	emit(op,reg1,reg2,0,0,FLAG_32 | FLAG_REG1| FLAG_REG2);
 }
 
-void shil_stream::emitReg(shil_opcodes op,Sh4RegType reg1,u16 flags)
+void shil_stream::emitReg(shil_opcodes op,Sh4RegType reg1,u32 flags)
 {
 	//emit
 	emit(op,reg1,NoReg,0,0,flags|FLAG_REG1);
 }
 
-void shil_stream::emitRegImm(shil_opcodes op,Sh4RegType reg1,u32 imm1,u16 flags)
+void shil_stream::emitRegImm(shil_opcodes op,Sh4RegType reg1,u32 imm1,u32 flags)
 {
 	//emit
 	emit(op,reg1,NoReg,imm1,0,flags|FLAG_IMM1|FLAG_REG1);
 }
 
-void shil_stream::emitRegImmImm(shil_opcodes op,Sh4RegType reg1,u32 imm1,u32 imm2,u16 flags)
+void shil_stream::emitRegImmImm(shil_opcodes op,Sh4RegType reg1,u32 imm1,u32 imm2,u32 flags)
 {
 	//emit
 	emit(op,reg1,NoReg,imm1,imm2,flags|FLAG_IMM1|FLAG_IMM2|FLAG_REG1);
 }
 
-void shil_stream::emitRegReg(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2,u16 flags)
+void shil_stream::emitRegReg(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2,u32 flags)
 {
 	//emit
 	emit(op,reg1,reg2,0,0,flags|FLAG_REG1|FLAG_REG2);
 }
-void shil_stream::emitRegRegImm(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2,u32 imm1,u16 flags)
+void shil_stream::emitRegRegImm(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2,u32 imm1,u32 flags)
 {
 	//emit
 	emit(op,reg1,reg2,imm1,0,flags|FLAG_IMM1|FLAG_REG1|FLAG_REG2);

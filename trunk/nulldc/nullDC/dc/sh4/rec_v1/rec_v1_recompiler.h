@@ -5,6 +5,8 @@
 #include "dc\sh4\shil\shil.h"
 
 //#define PROFILE_DYNAREC
+//#define REG_ALLOC_DISABLE
+
 typedef u32 rec_v1_BasicBlockEP();
 
 using namespace std;  

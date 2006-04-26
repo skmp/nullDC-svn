@@ -32,9 +32,10 @@ struct shil_opcode
 	u32 imm1;	//imm1
 	u32 imm2;	//imm2
 
-	INLINE bool ReadsReg(Sh4RegType reg);
-	INLINE bool OverwritesReg(Sh4RegType reg);
-	INLINE bool UpdatesReg(Sh4RegType reg);
+	bool ReadsReg(Sh4RegType reg);
+	bool OverwritesReg(Sh4RegType reg);
+	bool UpdatesReg(Sh4RegType reg);
+	bool WritesReg(Sh4RegType reg);
 };
 
 #pragma pack (pop)
@@ -157,7 +158,7 @@ enum shil_opcodes
 	ror,
 
 	//swaps
-	//swap [16|32]
+	//swap [16|32] reg
 	swap,
 
 	//moves w/ extend
@@ -211,7 +212,8 @@ enum shil_opcodes
 	//Jmp
 	jmp,
 	//mul [s] [16|32|64] 16*16->32 , 32*32->32 , 32*32->64
-	mul,
+	//mul mac[l|h|lh] [16|32|64] [s] , reg , reg
+	mul,	
 
 	shil_count,
 };
@@ -264,13 +266,13 @@ class shil_stream
 	void shil_stream::emit32(shil_opcodes op,Sh4RegType reg1);
 	void shil_stream::emit32(shil_opcodes op,Sh4RegType reg1,u32 param);
 	void shil_stream::emit32(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2);
-	void shil_stream::emit(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2,u32 imm1,u32 imm2,u16 flags);
+	void shil_stream::emit(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2,u32 imm1,u32 imm2,u32 flags);
 
-	void shil_stream::emitReg(shil_opcodes op,Sh4RegType reg1,u16 flags);
-	void shil_stream::emitRegImm(shil_opcodes op,Sh4RegType reg1,u32 imm1,u16 flags);
-	void shil_stream::emitRegImmImm(shil_opcodes op,Sh4RegType reg1,u32 imm1,u32 imm2,u16 flags);
-	void shil_stream::emitRegReg(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2,u16 flags);
-	void shil_stream::emitRegRegImm(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2,u32 imm1,u16 flags);
+	void shil_stream::emitReg(shil_opcodes op,Sh4RegType reg1,u32 flags);
+	void shil_stream::emitRegImm(shil_opcodes op,Sh4RegType reg1,u32 imm1,u32 flags);
+	void shil_stream::emitRegImmImm(shil_opcodes op,Sh4RegType reg1,u32 imm1,u32 imm2,u32 flags);
+	void shil_stream::emitRegReg(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2,u32 flags);
+	void shil_stream::emitRegRegImm(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2,u32 imm1,u32 flags);
 
 public :
 	void shil_stream::jcond(u32 cond);

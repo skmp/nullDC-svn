@@ -74,6 +74,7 @@ u64 total_cycles=0;
 extern u64 ifb_calls;
 #endif
 
+u32 rec_cycles=0;
 u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 {
 	//just cast it
@@ -81,8 +82,8 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 
 	ptr(true);//call the callback to init
 	
-	u32 rec_cycles=0;
 	
+	rec_cycles=0;
 	if (fpscr.RM)
 		_controlfp( _RC_DOWN, _MCW_RC );//round to 0
 	else
@@ -98,9 +99,18 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 		__asm
 		{
 			push esi;
-			xor esi,esi;
+			//xor esi,esi;
+			push edi
+			push ebx
+			push ebp
+
 			call fp;
-			add rec_cycles,esi;
+
+			pop  ebp
+			pop  edi
+			pop ebx
+
+			//add rec_cycles,esi;
 			pop esi;
 		}
 

@@ -33,8 +33,9 @@ void profile_ifb_call()
 }
 #endif
 
+
 //a few helpers
-u32* GetRegPtr(u8 reg)
+INLINE u32* GetRegPtr(u8 reg)
 {
 	if (reg==Sh4RegType::reg_pc_temp)
 		return &reg_pc_temp_value;
@@ -44,19 +45,290 @@ u32* GetRegPtr(u8 reg)
 	return rv;
 }
 
-void LoadReg(x86IntRegType to,u8 reg)
+//REGISTER ALLOCATION
+
+struct RegAllocInfo
 {
-	x86e->MOV32MtoR(to,GetRegPtr(reg));
+	x86IntRegType x86reg;
+	bool InReg;
+};
+ RegAllocInfo r_alloced[16];
+//compile a basicblock
+
+struct sort_temp
+{
+	int cnt;
+	int reg;
+};
+
+//ebx, ebp, esi, and edi are preserved
+
+#ifdef REG_ALLOC_DISABLE
+#define REG_ALLOC_COUNT 0
+#else
+#define REG_ALLOC_COUNT 4
+#endif
+x86IntRegType reg_to_alloc[REG_ALLOC_COUNT+10]=
+{
+	EBX,
+	EBP,
+	ESI,//-> reserved for cycle counts : no more
+	EDI
+};
+
+void bubble_sort(sort_temp numbers[] , int array_size)
+{
+  int i, j;
+  sort_temp temp;
+  for (i = (array_size - 1); i >= 0; i--)
+  {
+    for (j = 1; j <= i; j++)
+	{
+		if (numbers[j-1].cnt < numbers[j].cnt)
+		{
+			temp = numbers[j-1];
+			numbers[j-1] = numbers[j];
+			numbers[j] = temp;
+		}
+	}
+  }
+}
+INLINE void FlushRegCache_reg(u8 reg)
+{
+	if (r_alloced[reg].InReg)
+	{
+		r_alloced[reg].InReg=false;
+		x86e->MOV32RtoM(GetRegPtr(reg),r_alloced[reg].x86reg);
+	}
+}
+INLINE bool IsRegCached(u8 reg)
+{
+#ifndef REG_ALLOC_DISABLE
+	return r_alloced[reg].x86reg!=GPR_Error;
+#else
+	return false;
+#endif
+}
+INLINE x86IntRegType LoadRegCache_reg(u8 reg)
+{
+	if (IsRegCached(reg))
+	{
+		if (r_alloced[reg].InReg==false )
+		{
+			r_alloced[reg].InReg=true;
+			x86e->MOV32MtoR(r_alloced[reg].x86reg,GetRegPtr(reg));
+		}
+		return r_alloced[reg].x86reg;
+	}
+
+	return GPR_Error;
 }
 
-void SaveReg(u8 reg,x86IntRegType from)
+INLINE x86IntRegType LoadRegCache_reg_nodata(u8 reg)
 {
-	x86e->MOV32RtoM(GetRegPtr(reg),from);
+	if (IsRegCached(reg))
+	{
+		if (r_alloced[reg].InReg==false )
+		{
+			r_alloced[reg].InReg=true;
+		}
+		return r_alloced[reg].x86reg;
+	}
+
+	return GPR_Error;
+}
+INLINE void FlushRegCache()
+{
+	#ifndef REG_ALLOC_DISABLE
+	for (int i=0;i<16;i++)
+	{
+		FlushRegCache_reg(i);
+	}
+#endif
+}
+void AllocateRegisters(rec_v1_BasicBlock* block)
+{
+	#ifndef REG_ALLOC_DISABLE
+	sort_temp used[16];
+	for (int i=0;i<16;i++)
+	{
+		used[i].cnt=0;
+		used[i].reg=r0+i;
+		r_alloced[i].x86reg=GPR_Error;
+		r_alloced[i].InReg=false;
+	}
+
+	u32 op_count=block->ilst.op_count;
+	shil_opcode* curop;
+	
+	for (int j=0;j<op_count;j++)
+	{
+		curop=&block->ilst.opcodes[j];
+		for (int i = 0;i<16;i++)
+		{
+			if (curop->ReadsReg((Sh4RegType) (r0+i)))
+				used[i].cnt+=1;
+			if (curop->WritesReg((Sh4RegType) (r0+i)))
+				used[i].cnt+=1;
+		}
+	}
+
+	bubble_sort(used,16);
+
+	for (int i=0;i<REG_ALLOC_COUNT;i++)
+	{
+		if (used[i].cnt==0)
+			break;
+		r_alloced[used[i].reg].x86reg=reg_to_alloc[i];
+	}
+#endif
+}
+//more helpers
+INLINE x86IntRegType LoadReg_force(x86IntRegType to,u8 reg)
+{
+	#ifndef REG_ALLOC_DISABLE
+	if (reg>r15 || (!IsRegCached(reg)))
+	{
+#endif
+		x86e->MOV32MtoR(to,GetRegPtr(reg));
+#ifndef REG_ALLOC_DISABLE
+	}
+	else
+	{
+		x86IntRegType x86reg=LoadRegCache_reg(reg);
+		if (!(to==x86reg))
+			x86e->MOV32RtoR(to,x86reg);
+	}
+#endif
+
+	return to;
 }
 
-void SaveReg(u8 reg,u32 from)
+INLINE x86IntRegType LoadReg(x86IntRegType to,u8 reg)
 {
-	x86e->MOV32ItoM(GetRegPtr(reg),from);
+#ifndef REG_ALLOC_DISABLE
+	if (reg>r15 || (!IsRegCached(reg)))
+	{
+#endif
+		x86e->MOV32MtoR(to,GetRegPtr(reg));
+		return to;
+#ifndef REG_ALLOC_DISABLE
+	}
+	else
+	{
+		return LoadRegCache_reg(reg);
+	}
+#endif
+}
+
+INLINE x86IntRegType LoadReg_nodata(x86IntRegType to,u8 reg)
+{
+#ifndef REG_ALLOC_DISABLE
+	if (reg>r15 || (!IsRegCached(reg)))
+	{
+#endif
+		//x86e->MOV32MtoR(to,GetRegPtr(reg)); -> do nothin :P
+		return to;
+#ifndef REG_ALLOC_DISABLE
+	}
+	else
+	{
+		return LoadRegCache_reg_nodata(reg);
+	}
+#endif
+}
+
+
+INLINE void SaveReg(u8 reg,x86IntRegType from)
+{
+#ifndef REG_ALLOC_DISABLE
+	if (reg>r15 || (!IsRegCached(reg)))
+	{
+#endif
+		x86e->MOV32RtoM(GetRegPtr(reg),from);
+#ifndef REG_ALLOC_DISABLE
+	}
+	else
+	{
+		x86IntRegType x86reg=LoadRegCache_reg_nodata(reg);
+		if (x86reg!=from)
+			x86e->MOV32RtoR(x86reg,from);
+	}
+#endif	
+}
+
+INLINE void SaveReg(u8 reg,u32 from)
+{
+#ifndef REG_ALLOC_DISABLE
+	if (reg>r15 || (!IsRegCached(reg)))
+	{
+#endif
+		x86e->MOV32ItoM(GetRegPtr(reg),from);
+#ifndef REG_ALLOC_DISABLE
+	}
+	else
+	{
+		x86IntRegType x86reg=LoadRegCache_reg_nodata(reg);
+		if (from==0)
+			x86e->XOR32RtoR(x86reg,x86reg);
+		else
+			x86e->MOV32ItoR(x86reg,from);
+	}
+#endif
+}
+
+INLINE void SaveReg(u8 reg,u32* from)
+{
+#ifndef REG_ALLOC_DISABLE
+	if (reg>r15 || (!IsRegCached(reg)))
+	{
+#endif
+		x86e->MOV32MtoR(ECX,from);
+		x86e->MOV32RtoM(GetRegPtr(reg),ECX);
+#ifndef REG_ALLOC_DISABLE
+	}
+	else
+	{
+		x86IntRegType x86reg=LoadRegCache_reg_nodata(reg);
+		x86e->MOV32MtoR(x86reg,from);
+	}
+#endif
+}
+
+INLINE void SaveReg(u8 reg,u16* from)
+{
+#ifndef REG_ALLOC_DISABLE
+	if (reg>r15 || (!IsRegCached(reg)))
+	{
+#endif
+		x86e->MOVSX32M16toR(ECX,from);
+		x86e->MOV32RtoM(GetRegPtr(reg),ECX);
+#ifndef REG_ALLOC_DISABLE
+	}
+	else
+	{
+		x86IntRegType x86reg=LoadRegCache_reg_nodata(reg);
+		x86e->MOVSX32M16toR(x86reg,from);
+	}
+#endif
+}
+
+INLINE void SaveReg(u8 reg,u8* from)
+{
+#ifndef REG_ALLOC_DISABLE
+	if (reg>r15 || (!IsRegCached(reg)))
+	{
+#endif
+		x86e->MOVSX32M8toR(ECX,from);
+		x86e->MOV32RtoM(GetRegPtr(reg),ECX);
+#ifndef REG_ALLOC_DISABLE
+	}
+	else
+	{
+		x86IntRegType x86reg=LoadRegCache_reg_nodata(reg);
+		x86e->MOVSX32M8toR(x86reg,from);
+	}
+#endif
 }
 
 //Original :
@@ -84,22 +356,29 @@ void SaveReg(u8 reg,u32 from)
 	}*/
 
 //Macro :
-#define OP_MtR_ItR(_MtR_,_ItR_)	assert(FLAG_32==(op->flags & 3));\
+#define OP_MoRtR_ItR(_MtR_,_RtR_,_ItR_)	assert(FLAG_32==(op->flags & 3));\
 	assert(0==(op->flags & (FLAG_IMM2)));\
 	assert(op->flags & FLAG_REG1);\
 	if (op->flags & FLAG_IMM1)\
 	{\
 		assert(0==(op->flags & FLAG_REG2));\
-		LoadReg(EAX,op->reg1);\
-		x86e-> _ItR_ (EAX,op->imm1);\
-		SaveReg(op->reg1,EAX);\
+		x86IntRegType r1 = LoadReg(EAX,op->reg1);\
+		x86e-> _ItR_ (r1,op->imm1);\
+		SaveReg(op->reg1,r1);\
 	}\
 	else\
 	{\
 		assert(op->flags & FLAG_REG2);\
-		LoadReg(EAX,op->reg1);\
-		x86e-> _MtR_ (EAX,GetRegPtr(op->reg2));\
-		SaveReg(op->reg1,EAX);\
+		x86IntRegType r1 = LoadReg(EAX,op->reg1);\
+		if (IsRegCached(op->reg2))\
+		{\
+			x86IntRegType r2 = LoadReg(EAX,op->reg2);\
+			assert(r2!=EAX);\
+			x86e-> _RtR_ (r1,r2);\
+		}\
+		else\
+			x86e-> _MtR_ (r1,GetRegPtr(op->reg2));\
+		SaveReg(op->reg1,r1);\
 	}
 
 //original
@@ -108,33 +387,49 @@ void SaveReg(u8 reg,u32 from)
 
 	assert(op->flags & FLAG_IMM1);//reg1
 	assert(0==(op->flags & (FLAG_IMM2)));//no imms2
-	assert(op->flags & FLAG_REG1);//reg1
+	assert(op->flags & FLAG_REG1);//reg1 
 	assert(0==(op->flags & FLAG_REG2));//no reg2
 
 	x86e->SHR32ItoM(GetRegPtr(op->reg1),(u8)op->imm1);
 */
-#define OP_ItM(_ItM_,_Imm_)	assert(FLAG_32==(op->flags & 3));\
+#define OP_ItMoR(_ItM_,_ItR_,_Imm_)	assert(FLAG_32==(op->flags & 3));\
 	assert(op->flags & FLAG_IMM1);\
 	assert(0==(op->flags & (FLAG_IMM2)));\
 	assert(op->flags & FLAG_REG1);\
 	assert(0==(op->flags & FLAG_REG2));\
-	x86e->_ItM_(GetRegPtr(op->reg1),_Imm_);
+	if (IsRegCached(op->reg1))\
+	{\
+		x86IntRegType r1=LoadReg(EAX,op->reg1);\
+		assert(r1!=EAX);\
+		x86e->_ItR_(r1,_Imm_);\
+		SaveReg(op->reg1,r1);\
+	}\
+	else\
+		x86e->_ItM_(GetRegPtr(op->reg1),_Imm_);
 
-#define OP_NtM_noimm(_ItM_)	assert(FLAG_32==(op->flags & 3));\
+#define OP_NtMoR_noimm(_ItM_,_ItR_)	assert(FLAG_32==(op->flags & 3));\
 	assert(0==(op->flags & FLAG_IMM1));\
 	assert(0==(op->flags & (FLAG_IMM2)));\
 	assert(op->flags & FLAG_REG1);\
 	assert(0==(op->flags & FLAG_REG2));\
-	x86e->_ItM_(GetRegPtr(op->reg1));
+	if (IsRegCached(op->reg1))\
+	{\
+		x86IntRegType r1=LoadReg(EAX,op->reg1);\
+		assert(r1!=EAX);\
+		x86e->_ItR_(r1);\
+		SaveReg(op->reg1,r1);\
+	}\
+	else\
+		x86e->_ItM_(GetRegPtr(op->reg1));
 
 #define OP_NtR_noimm(_ItR_)	assert(FLAG_32==(op->flags & 3));\
 	assert(0==(op->flags & FLAG_IMM1));\
 	assert(0==(op->flags & (FLAG_IMM2)));\
 	assert(op->flags & FLAG_REG1);\
 	assert(0==(op->flags & FLAG_REG2));\
-	LoadReg(EAX,op->reg1);\
-	x86e->_ItR_(EAX);\
-	SaveReg(op->reg1,EAX);
+	x86IntRegType r1= LoadReg(EAX,op->reg1);\
+	x86e->_ItR_(r1);\
+	SaveReg(op->reg1,r1);
 
 //shil compilation
 void __fastcall shil_compile_nimp(shil_opcode* op,rec_v1_BasicBlock* block)
@@ -154,16 +449,17 @@ void __fastcall shil_compile_mov(shil_opcode* op,rec_v1_BasicBlock* block)
 			assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2)));//no imm can be used
 			//printf("mov [r]%d=[r]%d , sz==%d\n",op->reg1,op->reg2,size);
 
-			LoadReg(EAX,op->reg2);
-			SaveReg(op->reg1,EAX);
+		 	//LoadReg(EAX,op->reg2);
+			x86IntRegType r2=LoadReg(EAX,op->reg2);
+			SaveReg(op->reg1,r2);
 		}
 		else
 		{
 			assert(0==(op->flags & (FLAG_IMM2)));//no imm2 can be used
 			//printf("mov [r]%d=[imm]%d , sz==%d\n",op->reg1,op->imm1,size);
 
-			x86e->MOV32ItoR(EAX,op->imm1);
-			SaveReg(op->reg1,EAX);
+			//x86e->MOV32ItoR(EAX,);
+			SaveReg(op->reg1,op->imm1);
 		}
 	}
 	else
@@ -172,7 +468,6 @@ void __fastcall shil_compile_mov(shil_opcode* op,rec_v1_BasicBlock* block)
 		assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2)));//no imm can be used
 		printf("mov64 not supported\n");
 	}
-	
 }
 
 
@@ -187,30 +482,60 @@ void __fastcall shil_compile_movex(shil_opcode* op,rec_v1_BasicBlock* block)
 	{//8 bit
 		if (op->flags & FLAG_SX)
 		{//SX 8
-			LoadReg(EAX,op->reg2);
-			x86e->MOVSX32R8toR(EAX,EAX);
-			SaveReg(op->reg1,EAX);
+			x86IntRegType r2= LoadReg_force(EAX,op->reg2);
+			x86IntRegType r1= LoadReg_nodata(ECX,op->reg1);//if same reg (so data is needed) that is done by the above op
+			x86e->MOVSX32R8toR(r1,r2);
+			SaveReg(op->reg1,r1);
 		}
 		else
 		{//ZX 8
-			LoadReg(EAX,op->reg2);
-			x86e->MOVZX32R8toR(EAX,EAX);
-			SaveReg(op->reg1,EAX);
+			x86IntRegType r2= LoadReg_force(EAX,op->reg2);
+			x86IntRegType r1= LoadReg_nodata(ECX,op->reg1);//if same reg (so data is needed) that is done by the above op
+			x86e->MOVZX32R8toR(r1,r2);
+			SaveReg(op->reg1,r1);
 		}
 	}
 	else
 	{//16 bit
 		if (op->flags & FLAG_SX)
 		{//SX 16
-			LoadReg(EAX,op->reg2);
-			x86e->MOVSX32R16toR(EAX,EAX);
-			SaveReg(op->reg1,EAX);
+			x86IntRegType r1;
+			if (op->reg1!=op->reg2)
+				r1= LoadReg_nodata(ECX,op->reg1);	//get a spare reg , or the allocated one. Data will be overwriten
+			else
+				r1= LoadReg(ECX,op->reg1);	//get or alocate reg 1 , load data b/c it's gona be used
+
+			if (IsRegCached(op->reg2))
+			{
+				x86IntRegType r2= LoadReg(EAX,op->reg2);
+				assert(r2!=EAX);//reg 2 must be allocated
+				x86e->MOVSX32R16toR(r1,r2);
+			}
+			else
+			{
+				x86e->MOVSX32M16toR(r1,(u16*)GetRegPtr(op->reg2));
+			}
+			SaveReg(op->reg1,r1);	//ensure it is saved
 		}
 		else
 		{//ZX 16
-			LoadReg(EAX,op->reg2);
-			x86e->MOVZX32R16toR(EAX,EAX);
-			SaveReg(op->reg1,EAX);
+			x86IntRegType r1;
+			if (op->reg1!=op->reg2)
+				r1= LoadReg_nodata(ECX,op->reg1);	//get a spare reg , or the allocated one. Data will be overwriten
+			else
+				r1= LoadReg(ECX,op->reg1);	//get or alocate reg 1 , load data b/c it's gona be used
+
+			if (IsRegCached(op->reg2))
+			{
+				x86IntRegType r2= LoadReg(EAX,op->reg2);
+				assert(r2!=EAX);//reg 2 must be allocated
+				x86e->MOVZX32R16toR(r1,r2);
+			}
+			else
+			{
+				x86e->MOVZX32M16toR(r1,(u16*)GetRegPtr(op->reg2));
+			}
+			SaveReg(op->reg1,r1);	//ensure it is saved
 		}
 	}
 }
@@ -222,6 +547,8 @@ void __fastcall shil_compile_shil_ifb(shil_opcode* op,rec_v1_BasicBlock* block)
 	//if opcode needs pc , save it
 	if (OpTyp[op->imm1] !=Normal)
 		SaveReg(reg_pc,op->imm2);
+	
+	FlushRegCache();
 
 	x86e->MOV32ItoR(ECX,op->imm1);
 	x86e->CALLFunc(OpPtr[op->imm1]);
@@ -241,9 +568,9 @@ void __fastcall shil_compile_swap(shil_opcode* op,rec_v1_BasicBlock* block)
 
 	if (size==FLAG_8)
 	{
-		LoadReg(EAX,op->reg1);
-		x86e->XCHG8RtoR(Reg_AH,Reg_AL);
-		SaveReg(op->reg1,EAX);
+		x86IntRegType r1 = LoadReg_force(EAX,op->reg1);
+		x86e->XCHG8RtoR(Reg_AH,Reg_AL);//ror16 ?
+		SaveReg(op->reg1,r1);
 	}
 	else
 	{
@@ -251,31 +578,31 @@ void __fastcall shil_compile_swap(shil_opcode* op,rec_v1_BasicBlock* block)
 		//printf("Shil : wswap not implemented\n");
 		
 		//use rotate ?
-		LoadReg(EAX,op->reg1);
-		x86e->ROR32ItoR(EAX,16);
-		SaveReg(op->reg1,EAX);
+		x86IntRegType r1 = LoadReg(EAX,op->reg1);
+		x86e->ROR32ItoR(r1,16);
+		SaveReg(op->reg1,r1);
 	}
 }
 
 void __fastcall shil_compile_shl(shil_opcode* op,rec_v1_BasicBlock* block)
 {
-	OP_ItM(SHL32ItoM,(u8)op->imm1);
+	OP_ItMoR(SHL32ItoM,SHL32ItoR,(u8)op->imm1);
 }
 
 void __fastcall shil_compile_shr(shil_opcode* op,rec_v1_BasicBlock* block)
 {
-	OP_ItM(SHR32ItoM,(u8)op->imm1);
+	OP_ItMoR(SHR32ItoM,SHR32ItoR,(u8)op->imm1);
 }
 
 void __fastcall shil_compile_sar(shil_opcode* op,rec_v1_BasicBlock* block)
 {
-	OP_ItM(SAR32ItoM,(u8)op->imm1);
+	OP_ItMoR(SAR32ItoM,SAR32ItoR,(u8)op->imm1);
 }
 
 //rotates
 void __fastcall shil_compile_rcl(shil_opcode* op,rec_v1_BasicBlock* block)
 {
-	OP_NtM_noimm(RCL321toM);
+	OP_NtMoR_noimm(RCL321toM,RCL321toR);
 }
 void __fastcall shil_compile_rcr(shil_opcode* op,rec_v1_BasicBlock* block)
 {
@@ -302,15 +629,15 @@ void __fastcall shil_compile_not(shil_opcode* op,rec_v1_BasicBlock* block)
 //or xor and
 void __fastcall shil_compile_xor(shil_opcode* op,rec_v1_BasicBlock* block)
 {
-	OP_MtR_ItR(XOR32MtoR,XOR32ItoR);
+	OP_MoRtR_ItR(XOR32MtoR,XOR32RtoR,XOR32ItoR);
 }
 void __fastcall shil_compile_or(shil_opcode* op,rec_v1_BasicBlock* block)
 {
-	OP_MtR_ItR(OR32MtoR,OR32ItoR);
+	OP_MoRtR_ItR(OR32MtoR,OR32RtoR,OR32ItoR);
 }
 void __fastcall shil_compile_and(shil_opcode* op,rec_v1_BasicBlock* block)
 {
-	OP_MtR_ItR(AND32MtoR,AND32ItoR);
+	OP_MoRtR_ItR(AND32MtoR,AND32RtoR,AND32ItoR);
 }
 //read-write
 void readwrteparams(shil_opcode* op)
@@ -325,7 +652,7 @@ void readwrteparams(shil_opcode* op)
 
 		if (op->flags & FLAG_REG2)
 		{	//[reg2+imm1]
-			LoadReg(ECX,op->reg2);
+			LoadReg_force(ECX,op->reg2);
 			if (op->imm1)//no imm :P
 				x86e->ADD32ItoR(ECX,op->imm1);
 		}
@@ -343,17 +670,65 @@ void readwrteparams(shil_opcode* op)
 		assert(0==(op->flags & FLAG_IMM1));
 
 		if (op->flags & FLAG_R0)
-			LoadReg(ECX,r0);
+			LoadReg_force(ECX,r0);
 		else
-			LoadReg(ECX,reg_gbr);
+			LoadReg_force(ECX,reg_gbr);
 
-		x86e->ADD32MtoR(ECX,GetRegPtr(op->reg2));
+		if (IsRegCached(op->reg2))
+		{
+			x86IntRegType r2=LoadReg(EAX,op->reg2);
+			assert(r2!=EAX);
+			x86e->ADD32RtoR(ECX,r2);
+		}
+		else
+			x86e->ADD32MtoR(ECX,GetRegPtr(op->reg2));
 	}
+}
+INLINE bool IsOnRam(u32 addr)
+{
+	if (((addr>>26)&0x7)==3)
+	{
+		if ((((addr>>29) &0x7)!=7))
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	u32 size=op->flags&3;
 
+	if (!(op->flags & (FLAG_R0|FLAG_GBR)))
+	{//[reg2] form
+		assert(op->flags & FLAG_IMM1);
+
+		if (op->flags & FLAG_REG2)
+		{	//[reg2+imm1]
+
+		}
+		else
+		{	//[imm1]
+			assert(0==(op->flags & FLAG_REG2));
+			if (IsOnRam(op->imm1))
+			{
+				if (size==0)
+				{
+					SaveReg(op->reg1,(u8 *)GetMemPtr(op->imm1,1));
+				}
+				else 	if (size==1)
+				{
+					SaveReg(op->reg1,(u16*)GetMemPtr(op->imm1,2));
+				}
+				else 	if (size==2)
+				{
+					SaveReg(op->reg1,(u32*)GetMemPtr(op->imm1,4));
+				}
+				return;
+			}
+		}
+	}
 	readwrteparams(op);
 
 	if (size==0)
@@ -377,23 +752,24 @@ void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
 }
 void __fastcall shil_compile_writem(shil_opcode* op,rec_v1_BasicBlock* block)
 {
+	
 	u32 size=op->flags&3;
 
 	readwrteparams(op);
 
 	if (size==FLAG_8)
 	{	//maby zx ?
-		LoadReg(EDX,op->reg1);
+		LoadReg_force(EDX,op->reg1);
 		x86e->CALLFunc(WriteMem8);
 	}
 	else if (size==FLAG_16)
 	{	//maby zx ?
-		LoadReg(EDX,op->reg1);
+		LoadReg_force(EDX,op->reg1);
 		x86e->CALLFunc(WriteMem16);
 	}
 	else if (size==FLAG_32)
 	{
-		LoadReg(EDX,op->reg1);
+		LoadReg_force(EDX,op->reg1);
 		x86e->CALLFunc(WriteMem32);
 	}
 	else
@@ -410,7 +786,7 @@ void __fastcall shil_compile_SaveT(shil_opcode* op,rec_v1_BasicBlock* block)
 	
 	//x86e->AND32ItoR(EAX,1);		//and 1
 
-	LoadReg(ECX,reg_sr);			//ecx=sr(~1)|T
+	LoadReg_force(ECX,reg_sr);			//ecx=sr(~1)|T
 	x86e->AND32ItoR(ECX,(u32)~1);
 	x86e->OR32RtoR(ECX,EAX);
 	SaveReg(reg_sr,ECX);
@@ -425,12 +801,12 @@ void __fastcall shil_compile_LoadT(shil_opcode* op,rec_v1_BasicBlock* block)
 
 	if (op->imm1==x86_flags::jcond_flag)
 	{
-		LoadReg(EAX,reg_sr);
+		LoadReg_force(EAX,reg_sr);
 		x86e->MOV32RtoM(&T_jcond_value,EAX);//T_jcond_value;
 	}
 	else
 	{
-		LoadReg(EAX,reg_sr);
+		LoadReg_force(EAX,reg_sr);
 		x86e->SHR32ItoR(EAX,1);//heh T bit is there now :P CF
 	}
 }
@@ -442,17 +818,17 @@ void __fastcall shil_compile_cmp(shil_opcode* op,rec_v1_BasicBlock* block)
 	if (op->flags & FLAG_IMM1)
 	{
 		assert(0==(op->flags & (FLAG_REG2|FLAG_IMM2)));
-		LoadReg(EAX,op->reg1);
-		x86e->CMP32ItoR(EAX,op->imm1);
+		x86IntRegType r1 = LoadReg(EAX,op->reg1);
+		x86e->CMP32ItoR(r1,op->imm1);
 		//eflags is used w/ combination of SaveT
 	}
 	else
 	{
 		assert(0==(op->flags & FLAG_IMM2));
 		assert(op->flags & FLAG_REG2);
-		LoadReg(EAX,op->reg1);
-		LoadReg(ECX,op->reg2);
-		x86e->CMP32RtoR(EAX,ECX);//rm,rn
+		x86IntRegType r1 = LoadReg(EAX,op->reg1);
+		x86IntRegType r2 = LoadReg(ECX,op->reg2);
+		x86e->CMP32RtoR(r1,r2);//rm,rn
 		//eflags is used w/ combination of SaveT
 	}
 }
@@ -463,17 +839,17 @@ void __fastcall shil_compile_test(shil_opcode* op,rec_v1_BasicBlock* block)
 	if (op->flags & FLAG_IMM1)
 	{
 		assert(0==(op->flags & (FLAG_REG2|FLAG_IMM2)));
-		LoadReg(EAX,op->reg1);
-		x86e->TEST32ItoR(EAX,op->imm1);
+		x86IntRegType r1 = LoadReg(EAX,op->reg1);
+		x86e->TEST32ItoR(r1,op->imm1);
 		//eflags is used w/ combination of SaveT
 	}
 	else
 	{
 		assert(0==(op->flags & FLAG_IMM2));
 		assert(op->flags & FLAG_REG2);
-		LoadReg(EAX,op->reg1);
-		LoadReg(ECX,op->reg2);
-		x86e->TEST32RtoR(EAX,ECX);
+		x86IntRegType r1 = LoadReg(EAX,op->reg1);
+		x86IntRegType r2 = LoadReg(ECX,op->reg2);
+		x86e->TEST32RtoR(r1,r2);
 		//eflags is used w/ combination of SaveT
 	}
 }
@@ -481,15 +857,15 @@ void __fastcall shil_compile_test(shil_opcode* op,rec_v1_BasicBlock* block)
 //add-sub
 void __fastcall shil_compile_add(shil_opcode* op,rec_v1_BasicBlock* block)
 {
-	OP_MtR_ItR(ADD32MtoR,ADD32ItoR);
+	OP_MoRtR_ItR(ADD32MtoR,ADD32RtoR,ADD32ItoR);
 }
 void __fastcall shil_compile_adc(shil_opcode* op,rec_v1_BasicBlock* block)
 {
-	OP_MtR_ItR(ADC32MtoR,ADC32ItoR);
+	OP_MoRtR_ItR(ADC32MtoR,ADC32RtoR,ADC32ItoR);
 }
 void __fastcall shil_compile_sub(shil_opcode* op,rec_v1_BasicBlock* block)
 {
-	OP_MtR_ItR(SUB32MtoR,SUB32ItoR);
+	OP_MoRtR_ItR(SUB32MtoR,SUB32RtoR,SUB32ItoR);
 }
 
 //**
@@ -551,6 +927,28 @@ void __fastcall shil_compile_jmp(shil_opcode* op,rec_v1_BasicBlock* block)
 	printf("jmp ... heh not implemented\n");
 }
 
+void load_with_se16(x86IntRegType to,u8 from)
+{
+	if (IsRegCached(from))
+	{
+		x86IntRegType r1=LoadReg(EAX,from);
+		x86e->MOVSX32R16toR(to,r1);
+	}
+	else
+		x86e->MOVSX32M16toR(to,(u16*)GetRegPtr(from));
+}
+
+void load_with_ze16(x86IntRegType to,u8 from)
+{
+	if (IsRegCached(from))
+	{
+		x86IntRegType r1=LoadReg(EAX,from);
+		x86e->MOVZX32R16toR(to,r1);
+	}
+	else
+		x86e->MOVZX32M16toR(to,(u16*)GetRegPtr(from));
+}
+
 void __fastcall shil_compile_mul(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	u32 sz=op->flags&3;
@@ -561,27 +959,37 @@ void __fastcall shil_compile_mul(shil_opcode* op,rec_v1_BasicBlock* block)
 		assert(op->flags & FLAG_MACH);
 	else
 		assert(0==(op->flags & FLAG_MACH));
-	
+
 
 	if (sz!=FLAG_64)
 	{
+		x86IntRegType r1,r2;
 		if (sz==FLAG_16)
 		{
+			//FlushRegCache_reg(op->reg1);
+			//FlushRegCache_reg(op->reg2);
+
 			if (op->flags & FLAG_SX)
 			{
-				x86e->MOVSX32M16toR(EAX,(u16*)GetRegPtr(op->reg1));
-				x86e->MOVSX32M16toR(ECX,(u16*)GetRegPtr(op->reg2));
+				//x86e->MOVSX32M16toR(EAX,(u16*)GetRegPtr(op->reg1));
+				load_with_se16(EAX,op->reg1);
+				//x86e->MOVSX32M16toR(ECX,(u16*)GetRegPtr(op->reg2));
+				load_with_se16(ECX,op->reg2);
 			}
 			else
 			{
-				x86e->MOVZX32M16toR(EAX,(u16*)GetRegPtr(op->reg1));
-				x86e->MOVZX32M16toR(ECX,(u16*)GetRegPtr(op->reg2));
+				//x86e->MOVZX32M16toR(EAX,(u16*)GetRegPtr(op->reg1));
+				load_with_ze16(EAX,op->reg1);
+				//x86e->MOVZX32M16toR(ECX,(u16*)GetRegPtr(op->reg2));
+				load_with_ze16(ECX,op->reg2);
 			}
 		}
 		else
 		{
-			x86e->MOV32MtoR(EAX,GetRegPtr(op->reg1));
-			x86e->MOV32MtoR(ECX,GetRegPtr(op->reg2));
+			//x86e->MOV32MtoR(EAX,GetRegPtr(op->reg1));
+			//x86e->MOV32MtoR(ECX,GetRegPtr(op->reg2));
+			r1=LoadReg_force(EAX,op->reg1);
+			r2=LoadReg_force(ECX,op->reg2);
 		}
 
 		x86e->IMUL32RtoR(EAX,ECX);
@@ -591,6 +999,9 @@ void __fastcall shil_compile_mul(shil_opcode* op,rec_v1_BasicBlock* block)
 	else
 	{
 		assert(sz==FLAG_64);
+
+		FlushRegCache_reg(op->reg1);
+		FlushRegCache_reg(op->reg2);
 
 		x86e->MOV32MtoR(EAX,GetRegPtr(op->reg1));
 
@@ -722,8 +1133,8 @@ void naked link_compile_inject_TT_stub(rec_v1_BasicBlock* ptr)
 		jmp eax;
 	}
 }
-//compile a basicblock
 
+extern u32 rec_cycles;
 void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 {
 	if (!inited)
@@ -735,9 +1146,10 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 	x86e=new emitter<>();
 	block->compiled=new rec_v1_CompiledBlock();
 	
-	x86e->ADD32ItoR(ESI,block->cycles);
+	x86e->ADD32ItoM(&rec_cycles,block->cycles);
 	//x86e->MOV32ItoM((u32*)&rec_v1_pCurrentBlock,(u32)block);
 
+	AllocateRegisters(block);
 
 	for (u32 i=0;i<block->ilst.opcodes.size();i++)
 	{
@@ -754,6 +1166,9 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 		sclt[op->opcode](op,block);
 	}
 
+	FlushRegCache();//flush reg cache
+
+	//end block acording to block type :)
 	switch(block->flags & BLOCK_TYPE_MASK)
 	{
 		case BLOCK_TYPE_DYNAMIC:
@@ -782,7 +1197,7 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 			}
 
 
-			x86e->CMP32ItoR(ESI,BLOCKLIST_MAX_CYCLES);
+			x86e->CMP32ItoM(&rec_cycles,BLOCKLIST_MAX_CYCLES);
 			
 			u8* Link=x86e->JB8(0);
 			{
@@ -819,7 +1234,7 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 		break;
 	case BLOCK_TYPE_FIXED:
 		{
-			x86e->CMP32ItoR(ESI,BLOCKLIST_MAX_CYCLES);
+			x86e->CMP32ItoM(&rec_cycles,BLOCKLIST_MAX_CYCLES);
 			u8* Link=x86e->JB8(0);
 
 			//If our cycle count is expired
