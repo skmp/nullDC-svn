@@ -94,16 +94,6 @@ bool shil_opcode::WritesReg(Sh4RegType reg)
 	return used;
 }
 
-bool IsReg64(Sh4RegType reg)
-{
-	if (reg>=dr_0 && reg<=dr_7)
-		return true;
-
-	if (reg>=xd_0 && reg<=xd_7)
-		return true;
-
-	return false;
-}
 
 void shil_stream::emit(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2,u32 imm1,u32 imm2,u32 flags)
 {
@@ -586,15 +576,16 @@ u16 shil_stream::GetFloatFlags(Sh4RegType reg1,Sh4RegType reg2)
 	}
 	else
 	{
-		if (rv&FLAG_REG2)
+		rv|=FLAG_32;
+		/*if (rv&FLAG_REG2)
 		{
 			if (IsReg64(reg2))
 			{
 				//both operands need to be 64bit on float,float
 				//?
+				rv|=FLAG_64;
 			}
-		}
-		rv|=FLAG_64;
+		}*/
 	}
 
 	return (u16)rv;
@@ -627,6 +618,23 @@ void shil_stream::fabs(Sh4RegType to)
 void shil_stream::fneg(Sh4RegType to)
 {
 	emitReg(shil_opcodes::fneg,to,GetFloatFlags(to,NoReg));
+}
+
+
+void shil_stream::fipr(Sh4RegType to,Sh4RegType from)
+{
+	emitRegReg(shil_opcodes::fipr,to,from,GetFloatFlags(to,from));
+}
+
+
+void shil_stream::fsqrt(Sh4RegType to)
+{
+	emitReg(shil_opcodes::fsqrt,to,GetFloatFlags(to,NoReg));
+}
+
+void shil_stream::ftrv(Sh4RegType fv_n)
+{
+	emitReg(shil_opcodes::ftrv,fv_n,GetFloatFlags(fv_n,NoReg));
 }
 
 void shil_stream::shil_ifb(u32 opcode,u32 pc)

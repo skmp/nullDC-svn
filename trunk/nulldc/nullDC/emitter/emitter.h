@@ -3217,26 +3217,26 @@ public :
 	//**********************************************************************************/
 	//MOVAPS: Move aligned Packed Single Precision FP values                           *
 	//**********************************************************************************
-	void SSE_MOVAPS_M128_to_XMM( x86SSERegType to, u32 from )          { SSEMtoR( 0x280f, 0 ); }
-	void SSE_MOVAPS_XMM_to_M128( u32 to, x86SSERegType from )          { SSERtoM( 0x290f, 0 ); }
+	void SSE_MOVAPS_M128_to_XMM( x86SSERegType to, u32* from )          { SSEMtoR( 0x280f, 0 ); }
+	void SSE_MOVAPS_XMM_to_M128( u32* to, x86SSERegType from )          { SSERtoM( 0x290f, 0 ); }
 	void SSE_MOVAPS_XMM_to_XMM( x86SSERegType to, x86SSERegType from )     { SSERtoR( 0x280f ); }
 	//**********************************************************************************/
 	//MOVSS: Move Scalar Single-Precision FP  value                                    *
 	//**********************************************************************************
-	void SSE_MOVSS_M32_to_XMM( x86SSERegType to, u32 from )           { SSE_SS_MtoR( 0x100f, 0 ); }
-	void SSE_MOVSS_XMM_to_M32( u32 to, x86SSERegType from )           { SSE_SS_RtoM( 0x110f, 0 ); }
+	void SSE_MOVSS_M32_to_XMM( x86SSERegType to, u32* from )           { SSE_SS_MtoR( 0x100f, 0 ); }
+	void SSE_MOVSS_XMM_to_M32( u32* to, x86SSERegType from )           { SSE_SS_RtoM( 0x110f, 0 ); }
 	void SSE_MOVSS_XMM_to_XMM( x86SSERegType to, x86SSERegType from )      { SSE_SS_RtoR( 0x100f ); }
 	//**********************************************************************************/
 	//MOVLPS: Move low Packed Single-Precision FP                                     *
 	//**********************************************************************************
-	void SSE_MOVLPS_M64_to_XMM( x86SSERegType to, u32 from )          { SSEMtoR( 0x120f, 0 ); }
-	void SSE_MOVLPS_XMM_to_M64( u32 to, x86SSERegType from )          { SSERtoM( 0x130f, 0 ); }
+	void SSE_MOVLPS_M64_to_XMM( x86SSERegType to, u32* from )          { SSEMtoR( 0x120f, 0 ); }
+	void SSE_MOVLPS_XMM_to_M64( u32* to, x86SSERegType from )          { SSERtoM( 0x130f, 0 ); }
 	/////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
 	//MOVHPS: Move High Packed Single-Precision FP                                     *
 	//**********************************************************************************
-	void SSE_MOVHPS_M64_to_XMM( x86SSERegType to, u32 from )          { SSEMtoR( 0x160f, 0 ); }
-	void SSE_MOVHPS_XMM_to_M64( u32 to, x86SSERegType from )          { SSERtoM( 0x170f, 0 ); }
+	void SSE_MOVHPS_M64_to_XMM( x86SSERegType to, u32* from )          { SSEMtoR( 0x160f, 0 ); }
+	void SSE_MOVHPS_XMM_to_M64( u32* to, x86SSERegType from )          { SSERtoM( 0x170f, 0 ); }
 	/////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
 	//MOVLHPS: Moved packed Single-Precision FP low to high                            *
@@ -3251,67 +3251,67 @@ public :
 	//**********************************************************************************/
 	//ANDPS: Logical Bit-wise  AND for Single FP                                        *
 	//**********************************************************************************
-	void SSE_ANDPS_M128_to_XMM( x86SSERegType to, u32 from )           { SSEMtoR( 0x540f, 0 ); }
+	void SSE_ANDPS_M128_to_XMM( x86SSERegType to, u32* from )           { SSEMtoR( 0x540f, 0 ); }
 	void SSE_ANDPS_XMM_to_XMM( x86SSERegType to, x86SSERegType from ) { SSERtoR( 0x540f ); }
 	///////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
 	//ANDNPS : Logical Bit-wise  AND NOT of Single-precision FP values                 *
 	//**********************************************************************************
-	void SSE_ANDNPS_M128_to_XMM( x86SSERegType to, u32 from )          { SSEMtoR( 0x550f, 0 ); }
+	void SSE_ANDNPS_M128_to_XMM( x86SSERegType to, u32* from )          { SSEMtoR( 0x550f, 0 ); }
 	void SSE_ANDNPS_XMM_to_XMM( x86SSERegType to, x86SSERegType from ){ SSERtoR( 0x550f ); }
 	/////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
 	//RCPPS : Packed Single-Precision FP Reciprocal                                     *
 	//**********************************************************************************
 	void SSE_RCPPS_XMM_to_XMM( x86SSERegType to, x86SSERegType from ) { SSERtoR( 0x530f ); }
-	void SSE_RCPPS_M128_to_XMM( x86SSERegType to, u32 from )           { SSEMtoR( 0x530f, 0 ); }
+	void SSE_RCPPS_M128_to_XMM( x86SSERegType to, u32* from )           { SSEMtoR( 0x530f, 0 ); }
 	//////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
 	//ORPS : Bit-wise Logical OR of Single-Precision FP Data                            *
 	//**********************************************************************************
-	void SSE_ORPS_M128_to_XMM( x86SSERegType to, u32 from )            { SSEMtoR( 0x560f, 0 ); }
+	void SSE_ORPS_M128_to_XMM( x86SSERegType to, u32* from )            { SSEMtoR( 0x560f, 0 ); }
 	void SSE_ORPS_XMM_to_XMM( x86SSERegType to, x86SSERegType from )  { SSERtoR( 0x560f ); }
 	/////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
 	//XORPS : Bitwise Logical XOR of Single-Precision FP Values                        *
 	//**********************************************************************************
-	void SSE_XORPS_M128_to_XMM( x86SSERegType to, u32 from )           { SSEMtoR( 0x570f, 0 ); }
+	void SSE_XORPS_M128_to_XMM( x86SSERegType to, u32* from )           { SSEMtoR( 0x570f, 0 ); }
 	void SSE_XORPS_XMM_to_XMM( x86SSERegType to, x86SSERegType from ) { SSERtoR( 0x570f ); }
 	///////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
 	//ADDPS : ADD Packed Single-Precision FP Values                                    *
 	//**********************************************************************************
-	void SSE_ADDPS_M128_to_XMM( x86SSERegType to, u32 from )           { SSEMtoR( 0x580f, 0 ); }
+	void SSE_ADDPS_M128_to_XMM( x86SSERegType to, u32* from )           { SSEMtoR( 0x580f, 0 ); }
 	void SSE_ADDPS_XMM_to_XMM( x86SSERegType to, x86SSERegType from ) { SSERtoR( 0x580f ); }
 	////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
 	//ADDSS : ADD Scalar Single-Precision FP Values                                    *
 	//**********************************************************************************
-	void SSE_ADDSS_M32_to_XMM( x86SSERegType to, u32 from )           { SSE_SS_MtoR( 0x580f, 0 ); }
+	void SSE_ADDSS_M32_to_XMM( x86SSERegType to, u32* from )           { SSE_SS_MtoR( 0x580f, 0 ); }
 	void SSE_ADDSS_XMM_to_XMM( x86SSERegType to, x86SSERegType from ) { SSE_SS_RtoR( 0x580f ); }
 	/////////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
 	//SUBPS: Packed Single-Precision FP Subtract                                       *
 	//**********************************************************************************
-	void SSE_SUBPS_M128_to_XMM( x86SSERegType to, u32 from )           { SSEMtoR( 0x5c0f, 0 ); }
+	void SSE_SUBPS_M128_to_XMM( x86SSERegType to, u32* from )           { SSEMtoR( 0x5c0f, 0 ); }
 	void SSE_SUBPS_XMM_to_XMM( x86SSERegType to, x86SSERegType from ) { SSERtoR( 0x5c0f ); }
 	///////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
 	//SUBSS : Scalar  Single-Precision FP Subtract                                       *
 	//**********************************************************************************
-	void SSE_SUBSS_M32_to_XMM( x86SSERegType to, u32 from )           { SSE_SS_MtoR( 0x5c0f, 0 ); }
+	void SSE_SUBSS_M32_to_XMM( x86SSERegType to, u32* from )           { SSE_SS_MtoR( 0x5c0f, 0 ); }
 	void SSE_SUBSS_XMM_to_XMM( x86SSERegType to, x86SSERegType from ) { SSE_SS_RtoR( 0x5c0f ); }
 	/////////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
 	//MULPS : Packed Single-Precision FP Multiply                                      *
 	//**********************************************************************************
-	void SSE_MULPS_M128_to_XMM( x86SSERegType to, u32 from )           { SSEMtoR( 0x590f, 0 ); }
+	void SSE_MULPS_M128_to_XMM( x86SSERegType to, u32* from )           { SSEMtoR( 0x590f, 0 ); }
 	void SSE_MULPS_XMM_to_XMM( x86SSERegType to, x86SSERegType from ) { SSERtoR( 0x590f ); }
 	////////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
 	//MULSS : Scalar  Single-Precision FP Multiply                                       *
 	//**********************************************************************************
-	void SSE_MULSS_M32_to_XMM( x86SSERegType to, u32 from )           { SSE_SS_MtoR( 0x590f, 0 ); }
+	void SSE_MULSS_M32_to_XMM( x86SSERegType to, u32* from )           { SSE_SS_MtoR( 0x590f, 0 ); }
 	void SSE_MULSS_XMM_to_XMM( x86SSERegType to, x86SSERegType from ) { SSE_SS_RtoR( 0x590f ); }
 	////////////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
@@ -3320,21 +3320,21 @@ public :
 	//missing  SSE_CMPPS_I8_to_XMM
 	//         SSE_CMPPS_M32_to_XMM
 	//	       SSE_CMPPS_XMM_to_XMM
-	void SSE_CMPEQPS_M128_to_XMM( x86SSERegType to, u32 from )         { CMPPSMtoR( 0 ); }
+	void SSE_CMPEQPS_M128_to_XMM( x86SSERegType to, u32* from )         { CMPPSMtoR( 0 ); }
 	void SSE_CMPEQPS_XMM_to_XMM( x86SSERegType to, x86SSERegType from )    { CMPPSRtoR( 0 ); }
-	void SSE_CMPLTPS_M128_to_XMM( x86SSERegType to, u32 from )         { CMPPSMtoR( 1 ); }
+	void SSE_CMPLTPS_M128_to_XMM( x86SSERegType to, u32* from )         { CMPPSMtoR( 1 ); }
 	void SSE_CMPLTPS_XMM_to_XMM( x86SSERegType to, x86SSERegType from )    { CMPPSRtoR( 1 ); }
-	void SSE_CMPLEPS_M128_to_XMM( x86SSERegType to, u32 from )         { CMPPSMtoR( 2 ); }
+	void SSE_CMPLEPS_M128_to_XMM( x86SSERegType to, u32* from )         { CMPPSMtoR( 2 ); }
 	void SSE_CMPLEPS_XMM_to_XMM( x86SSERegType to, x86SSERegType from )    { CMPPSRtoR( 2 ); }
-	void SSE_CMPUNORDPS_M128_to_XMM( x86SSERegType to, u32 from )      { CMPPSMtoR( 3 ); }
+	void SSE_CMPUNORDPS_M128_to_XMM( x86SSERegType to, u32* from )      { CMPPSMtoR( 3 ); }
 	void SSE_CMPUNORDPS_XMM_to_XMM( x86SSERegType to, x86SSERegType from ) { CMPPSRtoR( 3 ); }
-	void SSE_CMPNEPS_M128_to_XMM( x86SSERegType to, u32 from )         { CMPPSMtoR( 4 ); }
+	void SSE_CMPNEPS_M128_to_XMM( x86SSERegType to, u32* from )         { CMPPSMtoR( 4 ); }
 	void SSE_CMPNEPS_XMM_to_XMM( x86SSERegType to, x86SSERegType from )    { CMPPSRtoR( 4 ); }
-	void SSE_CMPNLTPS_M128_to_XMM( x86SSERegType to, u32 from )        { CMPPSMtoR( 5 ); }
+	void SSE_CMPNLTPS_M128_to_XMM( x86SSERegType to, u32* from )        { CMPPSMtoR( 5 ); }
 	void SSE_CMPNLTPS_XMM_to_XMM( x86SSERegType to, x86SSERegType from )   { CMPPSRtoR( 5 ); }
-	void SSE_CMPNLEPS_M128_to_XMM( x86SSERegType to, u32 from )        { CMPPSMtoR( 6 ); }
+	void SSE_CMPNLEPS_M128_to_XMM( x86SSERegType to, u32* from )        { CMPPSMtoR( 6 ); }
 	void SSE_CMPNLEPS_XMM_to_XMM( x86SSERegType to, x86SSERegType from )   { CMPPSRtoR( 6 ); }
-	void SSE_CMPORDPS_M128_to_XMM( x86SSERegType to, u32 from )        { CMPPSMtoR( 7 ); }
+	void SSE_CMPORDPS_M128_to_XMM( x86SSERegType to, u32* from )        { CMPPSMtoR( 7 ); }
 	void SSE_CMPORDPS_XMM_to_XMM( x86SSERegType to, x86SSERegType from )   { CMPPSRtoR( 7 ); }
 	///////////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
@@ -3343,92 +3343,92 @@ public :
 	//missing  SSE_CMPSS_I8_to_XMM
 	//         SSE_CMPSS_M32_to_XMM
 	//	       SSE_CMPSS_XMM_to_XMM
-	void SSE_CMPEQSS_M32_to_XMM( x86SSERegType to, u32 from )         { CMPSSMtoR( 0 ); }
+	void SSE_CMPEQSS_M32_to_XMM( x86SSERegType to, u32* from )         { CMPSSMtoR( 0 ); }
 	void SSE_CMPEQSS_XMM_to_XMM( x86SSERegType to, x86SSERegType from )    { CMPSSRtoR( 0 ); }
-	void SSE_CMPLTSS_M32_to_XMM( x86SSERegType to, u32 from )         { CMPSSMtoR( 1 ); }
+	void SSE_CMPLTSS_M32_to_XMM( x86SSERegType to, u32* from )         { CMPSSMtoR( 1 ); }
 	void SSE_CMPLTSS_XMM_to_XMM( x86SSERegType to, x86SSERegType from )    { CMPSSRtoR( 1 ); }
-	void SSE_CMPLESS_M32_to_XMM( x86SSERegType to, u32 from )         { CMPSSMtoR( 2 ); }
+	void SSE_CMPLESS_M32_to_XMM( x86SSERegType to, u32* from )         { CMPSSMtoR( 2 ); }
 	void SSE_CMPLESS_XMM_to_XMM( x86SSERegType to, x86SSERegType from )    { CMPSSRtoR( 2 ); }
-	void SSE_CMPUNORDSS_M32_to_XMM( x86SSERegType to, u32 from )      { CMPSSMtoR( 3 ); }
+	void SSE_CMPUNORDSS_M32_to_XMM( x86SSERegType to, u32* from )      { CMPSSMtoR( 3 ); }
 	void SSE_CMPUNORDSS_XMM_to_XMM( x86SSERegType to, x86SSERegType from ) { CMPSSRtoR( 3 ); }
-	void SSE_CMPNESS_M32_to_XMM( x86SSERegType to, u32 from )         { CMPSSMtoR( 4 ); }
+	void SSE_CMPNESS_M32_to_XMM( x86SSERegType to, u32* from )         { CMPSSMtoR( 4 ); }
 	void SSE_CMPNESS_XMM_to_XMM( x86SSERegType to, x86SSERegType from )    { CMPSSRtoR( 4 ); }
-	void SSE_CMPNLTSS_M32_to_XMM( x86SSERegType to, u32 from )        { CMPSSMtoR( 5 ); }
+	void SSE_CMPNLTSS_M32_to_XMM( x86SSERegType to, u32* from )        { CMPSSMtoR( 5 ); }
 	void SSE_CMPNLTSS_XMM_to_XMM( x86SSERegType to, x86SSERegType from )   { CMPSSRtoR( 5 ); }
-	void SSE_CMPNLESS_M32_to_XMM( x86SSERegType to, u32 from )        { CMPSSMtoR( 6 ); }
+	void SSE_CMPNLESS_M32_to_XMM( x86SSERegType to, u32* from )        { CMPSSMtoR( 6 ); }
 	void SSE_CMPNLESS_XMM_to_XMM( x86SSERegType to, x86SSERegType from )   { CMPSSRtoR( 6 ); }
-	void SSE_CMPORDSS_M32_to_XMM( x86SSERegType to, u32 from )        { CMPSSMtoR( 7 ); }
+	void SSE_CMPORDSS_M32_to_XMM( x86SSERegType to, u32* from )        { CMPSSMtoR( 7 ); }
 	void SSE_CMPORDSS_XMM_to_XMM( x86SSERegType to, x86SSERegType from )   { CMPSSRtoR( 7 ); }
 	//////////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
 	//RSQRTPS : Packed Single-Precision FP Square Root Reciprocal                      *
 	//**********************************************************************************
-	void SSE_RSQRTPS_M128_to_XMM( x86SSERegType to, u32 from )          { SSEMtoR( 0x520f, 0 ); }
+	void SSE_RSQRTPS_M128_to_XMM( x86SSERegType to, u32* from )          { SSEMtoR( 0x520f, 0 ); }
 	void SSE_RSQRTPS_XMM_to_XMM( x86SSERegType to, x86SSERegType from ){ SSERtoR( 0x520f ); }
 	/////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
 	//RSQRTSS : Scalar Single-Precision FP Square Root Reciprocal                      *
 	//**********************************************************************************
-	void SSE_RSQRTSS_M32_to_XMM( x86SSERegType to, u32 from )          { SSE_SS_MtoR( 0x520f, 0 ); }
+	void SSE_RSQRTSS_M32_to_XMM( x86SSERegType to, u32* from )          { SSE_SS_MtoR( 0x520f, 0 ); }
 	void SSE_RSQRTSS_XMM_to_XMM( x86SSERegType to, x86SSERegType from ){ SSE_SS_RtoR( 0x520f ); }
 	////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
 	//SQRTPS : Packed Single-Precision FP Square Root                                  *
 	//**********************************************************************************
-	void SSE_SQRTPS_M128_to_XMM( x86SSERegType to, u32 from )          { SSEMtoR( 0x510f, 0 ); }
+	void SSE_SQRTPS_M128_to_XMM( x86SSERegType to, u32* from )          { SSEMtoR( 0x510f, 0 ); }
 	void SSE_SQRTPS_XMM_to_XMM( x86SSERegType to, x86SSERegType from ){ SSERtoR( 0x510f ); }
 	//////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
 	//SQRTSS : Scalar Single-Precision FP Square Root                                  *
 	//**********************************************************************************
-	void SSE_SQRTSS_M32_to_XMM( x86SSERegType to, u32 from )          { SSE_SS_MtoR( 0x510f, 0 ); }
+	void SSE_SQRTSS_M32_to_XMM( x86SSERegType to, u32* from )          { SSE_SS_MtoR( 0x510f, 0 ); }
 	void SSE_SQRTSS_XMM_to_XMM( x86SSERegType to, x86SSERegType from ){ SSE_SS_RtoR( 0x510f ); }
 	////////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
 	//MAXPS: Return Packed Single-Precision FP Maximum                                 *
 	//**********************************************************************************
-	void SSE_MAXPS_M128_to_XMM( x86SSERegType to, u32 from )           { SSEMtoR( 0x5f0f, 0 ); }
+	void SSE_MAXPS_M128_to_XMM( x86SSERegType to, u32* from )           { SSEMtoR( 0x5f0f, 0 ); }
 	void SSE_MAXPS_XMM_to_XMM( x86SSERegType to, x86SSERegType from ) { SSERtoR( 0x5f0f ); }
 	/////////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
 	//MAXSS: Return Scalar Single-Precision FP Maximum                                 *
 	//**********************************************************************************
-	void SSE_MAXSS_M32_to_XMM( x86SSERegType to, u32 from )           { SSE_SS_MtoR( 0x5f0f, 0 ); }
+	void SSE_MAXSS_M32_to_XMM( x86SSERegType to, u32* from )           { SSE_SS_MtoR( 0x5f0f, 0 ); }
 	void SSE_MAXSS_XMM_to_XMM( x86SSERegType to, x86SSERegType from ) { SSE_SS_RtoR( 0x5f0f ); }
 	/////////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
 	//CVTPI2PS: Packed Signed INT32 to Packed Single  FP Conversion                    *
 	//**********************************************************************************
-	void SSE_CVTPI2PS_M64_to_XMM( x86SSERegType to, u32 from )        { SSEMtoR( 0x2a0f, 0 ); }
+	void SSE_CVTPI2PS_M64_to_XMM( x86SSERegType to, u32* from )        { SSEMtoR( 0x2a0f, 0 ); }
 	void SSE_CVTPI2PS_MM_to_XMM( x86SSERegType to, x86MMXRegType from )   { SSERtoR( 0x2a0f ); }
 	///////////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
 	//CVTPS2PI: Packed Single FP to Packed Signed INT32 Conversion                      *
 	//**********************************************************************************
-	void SSE_CVTPS2PI_M64_to_MM( x86MMXRegType to, u32 from )        { SSEMtoR( 0x2d0f, 0 ); }
+	void SSE_CVTPS2PI_M64_to_MM( x86MMXRegType to, u32* from )        { SSEMtoR( 0x2d0f, 0 ); }
 	void SSE_CVTPS2PI_XMM_to_MM( x86MMXRegType to, x86SSERegType from )   { SSERtoR( 0x2d0f ); }
 	///////////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
 	//CVTDQ2PS: Packed Signed INT32  to Packed Single Precision FP  Conversion         *
 	//**********************************************************************************
-	void SSE2_CVTDQ2PS_M128_to_XMM( x86SSERegType to, u32 from )        { SSEMtoR( 0x5b0f, 0 ); }
+	void SSE2_CVTDQ2PS_M128_to_XMM( x86SSERegType to, u32* from )        { SSEMtoR( 0x5b0f, 0 ); }
 	void SSE2_CVTDQ2PS_XMM_to_XMM( x86SSERegType to, x86SSERegType from )   { SSERtoR( 0x5b0f ); }
 	//**********************************************************************************/
 	//CVTPS2DQ: Packed Single Precision FP to Packed Signed INT32 Conversion           *
 	//**********************************************************************************
-	void SSE2_CVTPS2DQ_M128_to_XMM( x86SSERegType to, u32 from )        { SSEMtoR66( 0x5b0f ); }
+	void SSE2_CVTPS2DQ_M128_to_XMM( x86SSERegType to, u32* from )        { SSEMtoR66( 0x5b0f ); }
 	void SSE2_CVTPS2DQ_XMM_to_XMM( x86SSERegType to, x86SSERegType from )   { SSERtoR66( 0x5b0f ); }
 	/////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
 	//MINPS: Return Packed Single-Precision FP Minimum                                 *
 	//**********************************************************************************
-	void SSE_MINPS_M128_to_XMM( x86SSERegType to, u32 from )           { SSEMtoR( 0x5d0f, 0 ); }
+	void SSE_MINPS_M128_to_XMM( x86SSERegType to, u32* from )           { SSEMtoR( 0x5d0f, 0 ); }
 	void SSE_MINPS_XMM_to_XMM( x86SSERegType to, x86SSERegType from ) { SSERtoR( 0x5d0f ); }
 	//////////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
 	//MINSS: Return Scalar Single-Precision FP Minimum                                 *
 	//**********************************************************************************
-	void SSE_MINSS_M32_to_XMM( x86SSERegType to, u32 from )           { SSE_SS_MtoR( 0x5d0f, 0 ); }
+	void SSE_MINSS_M32_to_XMM( x86SSERegType to, u32* from )           { SSE_SS_MtoR( 0x5d0f, 0 ); }
 	void SSE_MINSS_XMM_to_XMM( x86SSERegType to, x86SSERegType from ) { SSE_SS_RtoR( 0x5d0f ); }
 	///////////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
@@ -3476,13 +3476,13 @@ public :
 	//**********************************************************************************/
 	//DIVPS : Packed Single-Precision FP Divide                                       *
 	//**********************************************************************************
-	void SSE_DIVPS_M128_to_XMM( x86SSERegType to, u32 from )           { SSEMtoR( 0x5e0F, 0 ); }
+	void SSE_DIVPS_M128_to_XMM( x86SSERegType to, u32* from )           { SSEMtoR( 0x5e0F, 0 ); }
 	void SSE_DIVPS_XMM_to_XMM( x86SSERegType to, x86SSERegType from ) { SSERtoR( 0x5e0F ); }
 	//////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
 	//DIVSS : Scalar  Single-Precision FP Divide                                       *
 	//**********************************************************************************
-	void SSE_DIVSS_M32_to_XMM( x86SSERegType to, u32 from )           { SSE_SS_MtoR( 0x5e0F, 0 ); }
+	void SSE_DIVSS_M32_to_XMM( x86SSERegType to, u32* from )           { SSE_SS_MtoR( 0x5e0F, 0 ); }
 	void SSE_DIVSS_XMM_to_XMM( x86SSERegType to, x86SSERegType from ) { SSE_SS_RtoR( 0x5e0F ); }
 	/////////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
@@ -3544,16 +3544,16 @@ public :
 	//**********************************************************************************/
 	//MOVD: Move Dword(32bit) to /from XMM reg                                         *
 	//**********************************************************************************
-	void SSE2_MOVD_M32_to_XMM( x86SSERegType to, u32 from ) { SSEMtoR66(0x6E0F); }
+	void SSE2_MOVD_M32_to_XMM( x86SSERegType to, u32* from ) { SSEMtoR66(0x6E0F); }
 	void SSE2_MOVD_32R_to_XMM( x86SSERegType to, x86IntRegType from ) { _SSERtoR66(0x6E0F); }
-	void SSE2_MOVD_XMM_to_M32( u32 to, x86SSERegType from ) { SSERtoM66(0x7E0F); }
+	void SSE2_MOVD_XMM_to_M32( u32* to, x86SSERegType from ) { SSERtoM66(0x7E0F); }
 	void SSE2_MOVD_XMM_to_32R( x86IntRegType to, x86SSERegType from ) { _SSERtoR66(0x7E0F); }
 	////////////////////////////////////////////////////////////////////////////////////
 
 
 	//linuz add these thanks ;P
 	void SSE2_MOVDQA_M128_to_XMM(x86SSERegType to, u32 from) {SSEMtoR66(0x6F0F); } //npt sure
-	void SSE2_MOVDQA_XMM_to_M128( u32 to, x86SSERegType from ){SSERtoM66(0x7F0F);} //not sure
+	void SSE2_MOVDQA_XMM_to_M128( u32* to, x86SSERegType from ){SSERtoM66(0x7F0F);} //not sure
 	/*
 	void SSE2_PSRLW_I8_to_XMM(x86SSERegType to, u32 from) { }
 	void SSE2_PSRLD_I8_to_XMM(x86SSERegType to, u32 from) { }
@@ -3678,42 +3678,42 @@ public :
 	//
 
 	void SSE2_PMAXSW_XMM_to_XMM( x86SSERegType to, x86SSERegType from ){ SSERtoR66( 0xEE0F ); }
-	void SSE2_PMAXSW_M128_to_XMM( x86SSERegType to, u32 from ){ SSEMtoR66( 0xEE0F ); }
+	void SSE2_PMAXSW_M128_to_XMM( x86SSERegType to, u32* from ){ SSEMtoR66( 0xEE0F ); }
 
 	void SSE2_PMAXUB_XMM_to_XMM( x86SSERegType to, x86SSERegType from ){ SSERtoR66( 0xDE0F ); }
-	void SSE2_PMAXUB_M128_to_XMM( x86SSERegType to, u32 from ){ SSEMtoR66( 0xDE0F ); }
+	void SSE2_PMAXUB_M128_to_XMM( x86SSERegType to, u32* from ){ SSEMtoR66( 0xDE0F ); }
 
 	void SSE2_PMINSW_XMM_to_XMM( x86SSERegType to, x86SSERegType from ){ SSERtoR66( 0xEA0F ); }
-	void SSE2_PMINSW_M128_to_XMM( x86SSERegType to, u32 from ){ SSEMtoR66( 0xEA0F ); }
+	void SSE2_PMINSW_M128_to_XMM( x86SSERegType to, u32* from ){ SSEMtoR66( 0xEA0F ); }
 
 	void SSE2_PMINUB_XMM_to_XMM( x86SSERegType to, x86SSERegType from ){ SSERtoR66( 0xDA0F ); }
-	void SSE2_PMINUB_M128_to_XMM( x86SSERegType to, u32 from ){ SSEMtoR66( 0xDA0F ); }
+	void SSE2_PMINUB_M128_to_XMM( x86SSERegType to, u32* from ){ SSEMtoR66( 0xDA0F ); }
 
 	//
 
 	void SSE2_PADDSB_XMM_to_XMM( x86SSERegType to, x86SSERegType from ){ SSERtoR66( 0xEC0F ); }
-	void SSE2_PADDSB_M128_to_XMM( x86SSERegType to, u32 from ){ SSEMtoR66( 0xEC0F ); }
+	void SSE2_PADDSB_M128_to_XMM( x86SSERegType to, u32* from ){ SSEMtoR66( 0xEC0F ); }
 
 	void SSE2_PADDSW_XMM_to_XMM( x86SSERegType to, x86SSERegType from ){ SSERtoR66( 0xED0F ); }
-	void SSE2_PADDSW_M128_to_XMM( x86SSERegType to, u32 from ){ SSEMtoR66( 0xED0F ); }
+	void SSE2_PADDSW_M128_to_XMM( x86SSERegType to, u32* from ){ SSEMtoR66( 0xED0F ); }
 
 	void SSE2_PSUBSB_XMM_to_XMM( x86SSERegType to, x86SSERegType from ){ SSERtoR66( 0xE80F ); }
-	void SSE2_PSUBSB_M128_to_XMM( x86SSERegType to, u32 from ){ SSEMtoR66( 0xE80F ); }
+	void SSE2_PSUBSB_M128_to_XMM( x86SSERegType to, u32* from ){ SSEMtoR66( 0xE80F ); }
 
 	void SSE2_PSUBSW_XMM_to_XMM( x86SSERegType to, x86SSERegType from ){ SSERtoR66( 0xE90F ); }
-	void SSE2_PSUBSW_M128_to_XMM( x86SSERegType to, u32 from ){ SSEMtoR66( 0xE90F ); }
+	void SSE2_PSUBSW_M128_to_XMM( x86SSERegType to, u32* from ){ SSEMtoR66( 0xE90F ); }
 
 	//
 
 	void SSE2_PXOR_XMM_to_XMM( x86SSERegType to, x86SSERegType from ){ SSERtoR66( 0xEF0F ); }
-	void SSE2_PXOR_M128_to_XMM( x86SSERegType to, u32 from ){ SSEMtoR66( 0xEF0F ); }
+	void SSE2_PXOR_M128_to_XMM( x86SSERegType to, u32* from ){ SSEMtoR66( 0xEF0F ); }
 
 
 
 	void SSE2_PADDUSB_XMM_to_XMM( x86SSERegType to, x86SSERegType from ){ SSERtoR66( 0xDC0F ); }
-	void SSE2_PADDUSB_M128_to_XMM( x86SSERegType to, u32 from ){ SSEMtoR66( 0xDC0F ); }
+	void SSE2_PADDUSB_M128_to_XMM( x86SSERegType to, u32* from ){ SSEMtoR66( 0xDC0F ); }
 	void SSE2_PADDUSW_XMM_to_XMM( x86SSERegType to, x86SSERegType from ){ SSERtoR66( 0xDD0F ); }
-	void SSE2_PADDUSW_M128_to_XMM( x86SSERegType to, u32 from ){ SSEMtoR66( 0xDD0F ); }
+	void SSE2_PADDUSW_M128_to_XMM( x86SSERegType to, u32* from ){ SSEMtoR66( 0xDD0F ); }
 
 
 

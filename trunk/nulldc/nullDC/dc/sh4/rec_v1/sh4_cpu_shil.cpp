@@ -54,11 +54,11 @@ Sh4RegType dyna_reg_id_xd[8];
 #define r dyna_reg_id_r
 #define r_bank dyna_reg_id_r_bank
 
-#define fr dyna_reg_id_r
-#define xf dyna_reg_id_r_bank
+#define fr dyna_reg_id_fr
+#define xf dyna_reg_id_xf
 
-#define dr dyna_reg_id_r
-#define xd dyna_reg_id_r_bank
+#define dr dyna_reg_id_dr
+#define xd dyna_reg_id_xd
 
 void rec_shil_iNimp(u32 pc,u32 op ,char * text)
 {
@@ -1011,6 +1011,8 @@ sh4op(i1111_nnnn_mmmm_0000)
 	}
 	else
 	{
+		shil_interpret(op);
+		return;
 		u32 n = (op >> 9) & 0x07;
 		u32 m = (op >> 5) & 0x07;
 		
@@ -1039,6 +1041,8 @@ sh4op(i1111_nnnn_mmmm_0001)
 	}
 	else
 	{
+		shil_interpret(op);
+		return;
 		u32 n = (op >> 9) & 0x07;
 		u32 m = (op >> 5) & 0x07;
 
@@ -1064,6 +1068,8 @@ sh4op(i1111_nnnn_mmmm_0010)
 	}
 	else
 	{
+		shil_interpret(op);
+		return;
 		u32 n = (op >> 9) & 0x07;
 		u32 m = (op >> 5) & 0x07;
 		//START64();
@@ -1092,6 +1098,8 @@ sh4op(i1111_nnnn_mmmm_0011)
 	}
 	else
 	{
+		shil_interpret(op);
+		return;
 		u32 n = (op >> 9) & 0x07;
 		u32 m = (op >> 5) & 0x07;
 		//START64();
@@ -1105,6 +1113,8 @@ sh4op(i1111_nnnn_mmmm_0011)
 //fcmp/eq <FREG_M>,<FREG_N>
 sh4op(i1111_nnnn_mmmm_0100)
 {
+				shil_interpret(op);
+	return;
 	if (fpscr.PR == 0)
 	{
 		u32 n = GetN(op);
@@ -1112,9 +1122,12 @@ sh4op(i1111_nnnn_mmmm_0100)
 
 		//sr.T = (fr[m] == fr[n]) ? 1 : 0;
 		ilst->cmp(fr[n],fr[m]);
+		ilst->SaveT(cmd_cond::CC_E);
 	}
 	else
 	{
+			shil_interpret(op);
+	return;
 		u32 n = (op >> 9) & 0x07;
 		u32 m = (op >> 5) & 0x07;
 		ilst->cmp(dr[n],dr[m]);
@@ -1126,6 +1139,8 @@ sh4op(i1111_nnnn_mmmm_0100)
 //fcmp/gt <FREG_M>,<FREG_N>
 sh4op(i1111_nnnn_mmmm_0101)
 {
+			shil_interpret(op);
+		return;
 	if (fpscr.PR == 0)
 	{
 		u32 n = GetN(op);
@@ -1136,9 +1151,12 @@ sh4op(i1111_nnnn_mmmm_0101)
 		else
 			sr.T = 0;*/
 		ilst->cmp(fr[n],fr[m]);
+		ilst->SaveT(cmd_cond::CC_G);
 	}
 	else
 	{
+		shil_interpret(op);
+		return;
 		u32 n = (op >> 9) & 0x07;
 		u32 m = (op >> 5) & 0x07;
 		
@@ -1165,6 +1183,8 @@ sh4op(i1111_nnnn_mmmm_0110)
 	}
 	else
 	{
+		shil_interpret(op);
+		return;
 		u32 n = (op >> 8) & 0x0E;
 		u32 m = GetM(op);
 		if (((op >> 8) & 0x1) == 0)
@@ -1185,7 +1205,7 @@ sh4op(i1111_nnnn_mmmm_0110)
 
 //fmov.s <FREG_M>,@(R0,<REG_N>)
 sh4op(i1111_nnnn_mmmm_0111)
-{
+{//used
 	if (fpscr.SZ == 0)
 	{
 		u32 n = GetN(op);
@@ -1196,6 +1216,8 @@ sh4op(i1111_nnnn_mmmm_0111)
 	}
 	else
 	{
+		shil_interpret(op);
+		return;
 		u32 n = GetN(op);
 		u32 m = (op >> 4) & 0x0E;
 		if (((op >> 4) & 0x1) == 0)
@@ -1216,7 +1238,7 @@ sh4op(i1111_nnnn_mmmm_0111)
 
 //fmov.s @<REG_M>,<FREG_N> 
 sh4op(i1111_nnnn_mmmm_1000)
-{
+{//used
 	if (fpscr.SZ == 0)
 	{
 		u32 n = GetN(op);
@@ -1226,6 +1248,8 @@ sh4op(i1111_nnnn_mmmm_1000)
 	}
 	else
 	{
+		shil_interpret(op);
+		return;
 		u32 n = (op >> 8) & 0x0E;
 		u32 m = GetM(op);
 		if (((op >> 8) & 0x1) == 0)
@@ -1247,6 +1271,8 @@ sh4op(i1111_nnnn_mmmm_1000)
 //fmov.s @<REG_M>+,<FREG_N>
 sh4op(i1111_nnnn_mmmm_1001)
 {
+			shil_interpret(op);
+		return;
 	if (fpscr.SZ == 0)
 	{
 		u32 n = GetN(op);
@@ -1259,6 +1285,8 @@ sh4op(i1111_nnnn_mmmm_1001)
 	}
 	else 
 	{
+		shil_interpret(op);
+		return;
 		u32 n = (op >> 8) & 0x0E;
 		u32 m = GetM(op);
 		if (((op >> 8) & 0x1) == 0)
@@ -1291,6 +1319,8 @@ sh4op(i1111_nnnn_mmmm_1010)
 	}
 	else
 	{
+		shil_interpret(op);
+		return;
 		u32 n = GetN(op);
 		u32 m = (op >> 4) & 0x0E;
 
@@ -1312,7 +1342,9 @@ sh4op(i1111_nnnn_mmmm_1010)
 
 //fmov.s <FREG_M>,@-<REG_N>
 sh4op(i1111_nnnn_mmmm_1011)
-{
+{//used
+			shil_interpret(op);
+		return;
 	if (fpscr.SZ == 0)
 	{
 		//iNimp("fmov.s <FREG_M>,@-<REG_N>");
@@ -1320,13 +1352,14 @@ sh4op(i1111_nnnn_mmmm_1011)
 		u32 m = GetM(op);
 
 		//r[n] -= 4;
-		ilst->sub(r[m],4);
+		ilst->sub(r[n],4);
 		ilst->writem32(fr[m],r[n]);
 		//WriteMem32(r[n], fr_hex[m]);
 	}
 	else
 	{
-
+	shil_interpret(op);
+	return;
 		u32 n = GetN(op);
 		u32 m = (op >> 4) & 0x0E;
 
@@ -1375,19 +1408,19 @@ sh4op(i1111_nnnn_mmmm_1100)
 				//dr[n] = xf[m];
 				//fr_hex[n] = xf_hex[m];
 				//fr_hex[n + 1] = xf_hex[m + 1];
-				ilst->mov(dr[n],xf[m]);
+				ilst->mov(dr[n],xd[m]);
 				break;
 			case 0x10:
 				//xf[n] = dr[m];
 				//xf_hex[n] = fr_hex[m];
 				//xf_hex[n + 1] = fr_hex[m + 1];
-				ilst->mov(xf[n],dr[m]);
+				ilst->mov(xd[n],dr[m]);
 				break;
 			case 0x11:
 				//xf[n] = xf[m];
 				//xf_hex[n] = xf_hex[m];
 				//xf_hex[n + 1] = xf_hex[m + 1];
-				ilst->mov(xf[n],xf[m]);
+				ilst->mov(xd[n],xd[m]);
 				break;
 		}
 	}
@@ -1415,6 +1448,8 @@ sh4op(i1111_nnnn_0101_1101)
 //FSCA FPUL, DRn//F0FD//1111_nnn0_1111_1101
 sh4op(i1111_nnn0_1111_1101)
 {
+	shil_interpret(op);
+	return;
 //#define MY_PI2 6.283185307179586f
 //#define MY_ANG_RAD(k)  ((k) * MY_PI2 / 65536.0f)
 	 /*
@@ -1440,6 +1475,8 @@ sh4op(i1111_nnn0_1111_1101)
 //FSRRA //1111_nnnn_0111_1101
 sh4op(i1111_nnnn_0111_1101)
 {
+	shil_interpret(op);
+	return;
 	/*
 	// What about double precision?
 	u32 n = GetN(op);
@@ -1457,6 +1494,8 @@ sh4op(i1111_nnnn_0111_1101)
 //fcnvds <DR_N>,FPUL       
 sh4op(i1111_nnnn_1011_1101)
 {
+	shil_interpret(op);
+	return;
 	/*if (fpscr.PR == 1)
 	{
 		START64();
@@ -1479,6 +1518,8 @@ sh4op(i1111_nnnn_1011_1101)
 //fcnvsd FPUL,<DR_N>       
 sh4op(i1111_nnnn_1010_1101)
 {
+	shil_interpret(op);
+	return;
 	/*if (fpscr.PR == 1)
 	{
 		START64();
@@ -1498,11 +1539,15 @@ sh4op(i1111_nnnn_1010_1101)
 //fipr <FV_M>,<FV_N>            
 sh4op(i1111_nnmm_1110_1101)
 {
+	int n=GetN(op)&0xC;
+	int m=(GetN(op)&0x3)<<2;
+	ilst->fipr(fr[n],fr[m]);
+	/*shil_interpret(op);
+	return;*/
 //	iNimp("fipr <FV_M>,<FV_N>");
  
 
-	/*int n=GetN(op)&0xC;
-	int m=(GetN(op)&0x3)<<2;
+	/*
 	if(fpscr.PR ==0)
 	{
 		float idp;
@@ -1517,7 +1562,6 @@ sh4op(i1111_nnmm_1110_1101)
 	}
 	else
 		printf("FIPR Precision=1");*/
-	shil_interpret(op);
 
 	/*
 	u32 n = (op >> 8) & 0xC;
@@ -1562,40 +1606,38 @@ sh4op(i1111_nnmm_1110_1101)
 //fldi0 <FREG_N>           
 sh4op(i1111_nnnn_1000_1101)
 {
-	/*
 	if (fpscr.PR==0)
 	{
 		//iNimp("fldi0 <FREG_N>");
 		u32 n = GetN(op);
 
-		fr[n] = 0.0f;
+		//fr[n] = 0.0f;
+		ilst->mov(fr[n],0);//0.0f is 0x0 , right ?
 	}
 	else
 	{
 		iNimp("fldi0 <Dreg_N>");
-	}*/
-
-	shil_interpret(op);
+	}
 }
 
 
 //fldi1 <FREG_N>           
 sh4op(i1111_nnnn_1001_1101)
 {
-	/*
 	if (fpscr.PR==0)
 	{
 		//iNimp("fldi1 <FREG_N>");
 		u32 n = GetN(op);
 
-		fr[n] = 1.0f;
+		//fr[n] = 1.0f;
+		ilst->mov(fr[n],0x3f800000);//1.0f is 0x3f800000 , right ?
 	}
 	else
 	{
 		iNimp("fldi1 <Dreg_N>");
-	}*/
+	}
 
-	shil_interpret(op);
+	//shil_interpret(op);
 }
 
 
@@ -1608,7 +1650,7 @@ sh4op(i1111_nnnn_0001_1101)
 		u32 n = GetN(op);
 
 		//fpul = fr_hex[n];
-		ilst->mov(Sh4RegType::reg_fpul,fr[n]);
+		ilst->mov(reg_fpul,fr[n]);
 	}
 	else
 	{
@@ -1620,6 +1662,9 @@ sh4op(i1111_nnnn_0001_1101)
 //float FPUL,<FREG_N>      
 sh4op(i1111_nnnn_0010_1101)
 {//TODO : CHECK THIS (FP)
+
+	shil_interpret(op);
+	return;
 	/*if (fpscr.PR == 0)
 	{
 		u32 n = GetN(op);
@@ -1659,39 +1704,49 @@ sh4op(i1111_nnnn_0100_1101)
 //frchg                    
 sh4op(i1111_1011_1111_1101)
 {
+	shil_interpret(op);
+	return;
+
 	//iNimp("frchg");
  	//fpscr.FR = 1 - fpscr.FR;
 
 	//UpdateFPSCR();
-	shil_interpret(op);
 }
 
 
 //fschg                    
 sh4op(i1111_0011_1111_1101)
 {
+
+	shil_interpret(op);
+	return;
+
 	//iNimp("fschg");
 	//fpscr.SZ = 1 - fpscr.SZ;
 	//UpdateFPSCR();//*FixME* prob not needed
-	shil_interpret(op);
 }
 
 //fsqrt <FREG_N>                
 sh4op(i1111_nnnn_0110_1101)
 {
-	/*if (fpscr.PR == 0)
+
+	shil_interpret(op);
+	return;
+
+	if (fpscr.PR == 0)
 	{
 		//iNimp("fsqrt <FREG_N>");
 		u32 n = GetN(op);
 
-		fr[n] = (float)sqrt((double)fr[n]);
-		CHECK_FPU_32(fr[n]);
+		//fr[n] = (float)sqrt((double)fr[n]);
+		//CHECK_FPU_32(fr[n]);
+		ilst->fsqrt(fr[n]);
 	}
 	else
 	{
 		//Operation _can_ be done on sh4
 		iNimp("fsqrt <DREG_N>");
-	}*/
+	}
 
 	shil_interpret(op);
 }
@@ -1700,6 +1755,10 @@ sh4op(i1111_nnnn_0110_1101)
 //ftrc <FREG_N>, FPUL      
 sh4op(i1111_nnnn_0011_1101)
 {
+
+	shil_interpret(op);
+	return;
+
 	/*
 	if (fpscr.PR == 0)
 	{
@@ -1726,7 +1785,7 @@ sh4op(i1111_nnnn_0000_1101)
 	{
 		u32 n = GetN(op);
 		//fr_hex[n] = fpul;
-		ilst->mov(fr[n],fpul);
+		ilst->mov(fr[n],reg_fpul);
 	}
 	else
 	{
@@ -1738,7 +1797,6 @@ sh4op(i1111_nnnn_0000_1101)
 //fmac <FREG_0>,<FREG_M>,<FREG_N> 
 sh4op(i1111_nnnn_mmmm_1110)
 {
-	shil_interpret(op);
 	//iNimp("fmac <FREG_0>,<FREG_M>,<FREG_N>");
 	if (fpscr.PR==0)
 	{
@@ -1759,7 +1817,12 @@ sh4op(i1111_nnnn_mmmm_1110)
 //ftrv xmtrx,<FV_N>       
 sh4op(i1111_nn01_1111_1101)
 {
-	shil_interpret(op);
+	u32 n=GetN(op)&0xC;
+	ilst->ftrv(fr[n]);
+
+	//shil_interpret(op);
+	//return;
+	
 	//iNimp("ftrv xmtrx,<FV_N>");
 
 
@@ -1839,14 +1902,12 @@ sh4op(icpu_nimp)
 
 //Branches
 
- void DoDslot(u32 pc,rec_v1_BasicBlock* bb)
- {
-	 u16 opcode=ReadMem16(pc+2);
-	 if ((opcode&0xF000)==0xF000)
-		 ilst->shil_ifb(opcode,pc+2);
-	 else
-		 RecOpPtr[opcode](opcode,pc+2,bb);
- }
+void DoDslot(u32 pc,rec_v1_BasicBlock* bb)
+{
+	u16 opcode=ReadMem16(pc+2);
+
+	RecOpPtr[opcode](opcode,pc+2,bb);
+}
 
 //braf <REG_N>                  
 sh4op(i0000_nnnn_0010_0011)

@@ -3,6 +3,7 @@
 #include "rec_v1_blockmanager.h"
 
 #include "dc\mem\sh4_mem.h"
+#include "dc\sh4\sh4_registers.h"
 
 //w/ a block size of 256 we can have max 7 levels of basic blocks (heh)
 //w/ a block size of 448 (bad number for inlinings , but good for vsyncs) we can have 13-14
@@ -28,6 +29,7 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 	shil_DynarecInit();
 
 	ilst=&to->ilst;
+	to->flags|=GET_CURRENT_FPU_MODE();
 
 	while (true)
 	{
@@ -37,10 +39,7 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 		if (((pc>>26)&0x7)==3)
 			rec_v1_SetBlockTest(pc);
 
-		if ((opcode&0xF000)==0xF000)
-			ilst->shil_ifb(opcode,pc);
-		else
-			RecOpPtr[opcode](opcode,pc,to);
+		RecOpPtr[opcode](opcode,pc,to);
 		
 		if (to->flags & BLOCK_ATSC_END)
 		{

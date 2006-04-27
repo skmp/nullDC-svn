@@ -2,8 +2,8 @@
 #include "types.h"
 #include "sh4_if.h"
 
-extern u32 r[16];
-extern u32 r_bank[8];
+__declspec(align(32)) extern u32 r[16];
+__declspec(align(32)) extern u32 r_bank[8];
 
 extern u32 gbr,ssr,spc,sgr,dbr,vbr;
 extern u32 mach,macl,pr,fpul;
@@ -13,7 +13,9 @@ extern StatusReg sr;
 
 extern fpscr_type fpscr;
 
-extern float xf[16],fr[16];
+extern __declspec(align(32)) f32 xf[16];
+extern __declspec(align(32)) f32 fr[16];
+
 
 extern u32*  xf_hex,*fr_hex;
 

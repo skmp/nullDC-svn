@@ -215,6 +215,10 @@ enum shil_opcodes
 	//mul mac[l|h|lh] [16|32|64] [s] , reg , reg
 	mul,	
 
+	//more fpu fun :)
+	fsqrt,
+	ftrv,
+	fipr,
 	shil_count,
 };
 
@@ -414,6 +418,10 @@ public :
 
 	void fabs(Sh4RegType to);
 	void fneg(Sh4RegType to);
+
+	void shil_stream::fipr(Sh4RegType to,Sh4RegType from);
+	void shil_stream::fsqrt(Sh4RegType to);
+	void shil_stream::ftrv(Sh4RegType fv_n);
 
 	//misc
 	void shil_ifb(u32 opcode,u32 pc);

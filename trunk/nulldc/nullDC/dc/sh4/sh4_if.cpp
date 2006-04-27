@@ -3,6 +3,34 @@
 #include "sh4_interpreter.h"
 #include "rec_v0\rec_v0_driver.h"
 
+extern u8 GetSingleFromDouble(u8 dbl)
+{
+	if (dbl>=Sh4RegType::dr_0 && dbl<=Sh4RegType::dr_7)
+	{
+		u8 res=dbl-Sh4RegType::dr_0;
+		return (Sh4RegType::fr_0+(res<<1));
+	}
+	else if (dbl>=Sh4RegType::xd_0 && dbl<=Sh4RegType::xd_7)
+	{
+		u8 res=dbl-Sh4RegType::xd_0;
+		return (Sh4RegType::xf_0+(res<<1));
+	}
+
+	printf("GetSingleFromDouble : WRONG ID %X\n",dbl);
+
+	return Sh4RegType::reg_xmtrx;//error :P
+}
+
+bool IsReg64(Sh4RegType reg)
+{
+	if (reg>=dr_0 && reg<=dr_7)
+		return true;
+
+	if (reg>=xd_0 && reg<=xd_7)
+		return true;
+
+	return false;
+}
 //what to put here ?
 //Ahh i know i know :P
 

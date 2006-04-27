@@ -1,3 +1,4 @@
+#include "dc\sh4\sh4_registers.h"
 #include "rec_v1_blockmanager.h"
 
 #include <vector>
@@ -24,7 +25,10 @@ rec_v1_BasicBlock* rec_v1_FindBlock(u32 address)
 	for (u32 i=0;i<listsz;i++)
 	{
 		if (((*blklist)[i]!=0) && ((*blklist)[i]->start==address))
-			return (*blklist)[i];
+		{
+			if ((*blklist)[i]->cpu_mode_tag==fpscr.PR_SZ)
+				return (*blklist)[i];
+		}
 	}
 
 	return 0;
@@ -35,6 +39,7 @@ rec_v1_BasicBlock* rec_v1_NewBlock(u32 address)
 {
 	rec_v1_BasicBlock* rv=new rec_v1_BasicBlock();
 	rv->start=address;
+	rv->cpu_mode_tag=fpscr.PR_SZ;
 
 	return rv;
 }

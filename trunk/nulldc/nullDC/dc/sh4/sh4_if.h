@@ -85,14 +85,14 @@ enum Sh4RegType
 	xf_15=xf_0+15,
 
 	//special regs , used _olny_ on rec
-	ftrv=xf_15+1,
-	xmtrx=ftrv+1,
+	reg_ftrv=xf_15+1,
+	reg_xmtrx=reg_ftrv+1,
 	//sr_T=xmtrx+1,
 	//sr_Q=sr_T+1,
 	//sr_S=sr_Q+1,
 	//sr_M=sr_S+1,
 	
-	dr_0=xmtrx+1,
+	dr_0=reg_xmtrx+1,
 	dr_7=dr_0+7,
 
 	xd_0=dr_7+1,
@@ -101,6 +101,7 @@ enum Sh4RegType
 
 	NoReg=-1
 };
+extern u8 GetSingleFromDouble(u8 dbl);
 
 struct StatusReg
 {//
@@ -164,6 +165,11 @@ struct fpscr_type
 			u32 SZ:1;
 			u32 FR:1;
 		};
+		struct
+		{
+			u32 nil:2+1+1+1+1+4+8+1;
+			u32 PR_SZ:2;
+		};
 	};
 };
 
@@ -209,3 +215,5 @@ void Release_Sh4If(sh4_if* cpu);
 void DissasembleOpcode(u16 opcode,u32 pc,char* Dissasm);
 
 #define BPT_OPCODE		0x8A00
+
+bool IsReg64(Sh4RegType reg);
