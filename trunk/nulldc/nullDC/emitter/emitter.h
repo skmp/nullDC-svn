@@ -211,6 +211,7 @@ private:
 		write8( 0xC0 | ( to ) );
 	}
 
+
 	u8* J8Rel( u8 cc, u8 to )
 	{
 		write8( cc );
@@ -246,6 +247,16 @@ private:
 		#endif
 	}
 public :
+	bool CanJ8(void* to)
+	{
+		u32 jump = ( x86Ptr - (s8*)to );
+		if ((jump&0x7f)>0x70)
+			return false;
+
+		jump=jump & 0xFFFFFF80;
+		return (jump==0 || jump==0xFFFFFF80);
+
+	}
 	void CMOV32RtoR( u8 cc, u8 to, u8 from )
 	{
 		write8( 0x0F );
@@ -1936,8 +1947,8 @@ public :
 	}
 
 	/* je rel8 */
-	u8* JE8( u8 to ) {
-		return J8Rel( 0x74, to );
+	u8* JE8( void* to ) {
+		return J8Rel( 0x74, (u8*)to - ( (u8*)x86Ptr + 2 )  );
 	}
 
 	/* jz rel8 */
@@ -2006,9 +2017,9 @@ public :
 	}
 
 	/* jne rel8 */
-	u8* JNE8( u8 to ) 
+	u8* JNE8( void* to ) 
 	{ 
-		return J8Rel( 0x75, to ); 
+		return J8Rel( 0x75, (u8*)to - ( (u8*)x86Ptr + 2 )  ); 
 	}
 
 	/* jnz rel8 */
@@ -2054,9 +2065,9 @@ public :
 	}
 
 	/* je rel32 */
-	u32* JE32( u32 to ) 
+	u32* JE32( void* to ) 
 	{
-		return J32Rel( 0x84, to );
+		return J32Rel( 0x84,   (u8*)to - ( (u8*)x86Ptr + 6 )   );
 	}
 
 	/* jz rel32 */

@@ -16,7 +16,7 @@
 //the basicblock (and suprtblock later) will be the send to the optimiser , and after that
 //to the compiler
 
-#define CPU_RATIO 3
+#define CPU_RATIO 2
 #define CPU_BASIC_BLOCK_SIZE (448/2)
 void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 {

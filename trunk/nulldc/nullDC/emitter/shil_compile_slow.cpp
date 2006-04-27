@@ -72,7 +72,7 @@ x86IntRegType reg_to_alloc[REG_ALLOC_COUNT+10]=
 {
 	EBX,
 	EBP,
-	ESI,//-> reserved for cycle counts : no more
+	ESI,//-> reserved for cycle counts : no more :)
 	EDI
 };
 
@@ -166,8 +166,13 @@ void AllocateRegisters(rec_v1_BasicBlock* block)
 		curop=&block->ilst.opcodes[j];
 		for (int i = 0;i<16;i++)
 		{
+			//both reads and writes , give it one more ;P
+			if ( curop->UpdatesReg((Sh4RegType) (r0+i)) )
+				used[i].cnt+=1;
+
 			if (curop->ReadsReg((Sh4RegType) (r0+i)))
 				used[i].cnt+=1;
+
 			if (curop->WritesReg((Sh4RegType) (r0+i)))
 				used[i].cnt+=1;
 		}
@@ -1146,6 +1151,8 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 	x86e=new emitter<>();
 	block->compiled=new rec_v1_CompiledBlock();
 	
+	s8* start_ptr=x86e->x86Ptr;
+
 	x86e->ADD32ItoM(&rec_cycles,block->cycles);
 	//x86e->MOV32ItoM((u32*)&rec_v1_pCurrentBlock,(u32)block);
 
@@ -1187,7 +1194,7 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 			//functions
 			u32* pTF_f=(u32*)&(block->pTF_next_addr);
 			u32* pTT_f=(u32*)&(block->pTT_next_addr);
-
+			
 			if ((block->flags & BLOCK_TYPE_MASK)==BLOCK_TYPE_COND_0)
 			{
 				TT_a=&block->TF_next_addr;
@@ -1225,9 +1232,35 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 
 
 				//link to next block :
-				x86e->MOV32MtoR(EAX,pTF_f);		//assume it's this condition , unless CMOV overwrites
+				if (*TF_a==block->start)
+				{
+					//fast link (direct jmp to block start)
+					//x86e->MOV32ItoR(EAX,(u32)start_ptr);		//assume it's this condition , unless CMOV overwrites
+					if (x86e->CanJ8(start_ptr))
+						x86e->JE8(start_ptr);
+					else
+						x86e->JE32(start_ptr);
+				}
+				else
+				{
+					x86e->MOV32MtoR(EAX,pTF_f);		//assume it's this condition , unless CMOV overwrites
+				}
 				//!=
-				x86e->CMOVNE32MtoR(EAX,pTT_f);	//overwrite the "other" pointer if needed
+
+				if (*TT_a==block->start)
+				{
+					//fast link (direct jmp to block start)
+					//x86e->MOV32ItoR(EDX,(u32)start_ptr);
+					//x86e->CMOVNE32RtoR(EAX,EDX);	//overwrite the "other" pointer if needed
+					if (x86e->CanJ8(start_ptr))
+						x86e->JNE8(start_ptr);
+					else
+						x86e->JNE32(start_ptr);
+				}
+				else
+				{
+					x86e->CMOVNE32MtoR(EAX,pTT_f);	//overwrite the "other" pointer if needed
+				}
 				x86e->JMP32R(EAX);		 //!=
 			}
 		}
@@ -1245,6 +1278,12 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 			//Link:
 			//if we can execute more blocks
 			x86e->x86SetJ8(Link);
+			if (block->TF_next_addr==block->start)
+			{
+				//__asm int 03;
+				printf("Fast Link possible\n");
+			}
+
 			//link to next block :
 			x86e->MOV32ItoR(ECX,(u32)block);					//mov ecx , block
 			x86e->MOV32MtoR(EAX,(u32*)&(block->pTF_next_addr));	//mov eax , [pTF_next_addr]
@@ -1264,6 +1303,7 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 	//make it call the stubs , unless otherwise needed
 	block->pTF_next_addr=link_compile_inject_TF_stub;
 	block->pTT_next_addr=link_compile_inject_TT_stub;
+
 
 	block->ilst.opcodes.clear();
 
