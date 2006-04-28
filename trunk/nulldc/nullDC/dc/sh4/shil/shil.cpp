@@ -636,6 +636,14 @@ void shil_stream::ftrv(Sh4RegType fv_n)
 {
 	emitReg(shil_opcodes::ftrv,fv_n,GetFloatFlags(fv_n,NoReg));
 }
+void shil_stream::floatfpul(Sh4RegType frn)
+{
+	emitReg(shil_opcodes::floatfpul,frn,GetFloatFlags(frn,NoReg));
+}
+void shil_stream::ftrc(Sh4RegType frn)
+{
+	emitReg(shil_opcodes::ftrc,frn,GetFloatFlags(frn,NoReg));
+}
 
 void shil_stream::shil_ifb(u32 opcode,u32 pc)
 {

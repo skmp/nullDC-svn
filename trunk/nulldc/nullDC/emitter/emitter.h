@@ -3395,6 +3395,21 @@ public :
 	//**********************************************************************************
 	void SSE_MAXSS_M32_to_XMM( x86SSERegType to, u32* from )           { SSE_SS_MtoR( 0x5f0f, 0 ); }
 	void SSE_MAXSS_XMM_to_XMM( x86SSERegType to, x86SSERegType from ) { SSE_SS_RtoR( 0x5f0f ); }
+
+	/////////////////////////////////////////////////////////////////////////////////////////
+	//**********************************************************************************/
+	//CVTSI2SS	Convert Single Integer to Single Scalar		                           *
+	//**********************************************************************************
+	void SSE_CVTSI2SS_M32_to_R32( x86IntRegType to,u32* from )           { SSE_SS_MtoR( 0x2A0F, 0 ); }
+	//void SSE_CVTSI2SS_XMM_to_XMM( x86SSERegType to, x86SSERegType from ) { SSE_SS_RtoR( 0x2A0F ); }
+
+	/////////////////////////////////////////////////////////////////////////////////////////
+	//**********************************************************************************/
+	//CVTSS2SI	Convert Single Scalar to Single Integer								   *
+	//**********************************************************************************
+	void SSE_CVTSS2SI_M32_to_R32( x86IntRegType to, u32* from )           { SSE_SS_MtoR( 0x2D0F, 0 ); }
+//	void SSE_CVTSS2SI_XMM_to_XMM( x86SSERegType to, x86SSERegType from ) { SSE_SS_RtoR( 0x2D0F ); }
+
 	/////////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
 	//CVTPI2PS: Packed Signed INT32 to Packed Single  FP Conversion                    *

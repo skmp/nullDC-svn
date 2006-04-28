@@ -1001,6 +1001,7 @@ sh4op(gdrom_hle_op)
 //fadd <FREG_M>,<FREG_N>
 sh4op(i1111_nnnn_mmmm_0000)
 {//TODO : CHECK THIS PR FP
+	
 	if (fpscr.PR == 0)
 	{
 		u32 n = GetN(op);
@@ -1062,8 +1063,6 @@ sh4op(i1111_nnnn_mmmm_0010)
 	{
 		u32 n = GetN(op);
 		u32 m = GetM(op);
-		//fr[n] *= fr[m];
-		//CHECK_FPU_32(fr[n]);
 		ilst->fmul(fr[n],fr[m]);
 	}
 	else
@@ -1089,12 +1088,6 @@ sh4op(i1111_nnnn_mmmm_0011)
 		u32 n = GetN(op);
 		u32 m = GetM(op);
 		ilst->fdiv(fr[n],fr[m]);
-		//if(0==fr[m])
-		//printf("\n\n\tDIV by ZERO!\n\n"); // ifdef _DEBUG ?
-		//else
-		//fr[n] /= fr[m];
-		//fr[n] /= fr[m];
-		//CHECK_FPU_32(fr[n]);
 	}
 	else
 	{
@@ -1113,7 +1106,7 @@ sh4op(i1111_nnnn_mmmm_0011)
 //fcmp/eq <FREG_M>,<FREG_N>
 sh4op(i1111_nnnn_mmmm_0100)
 {
-				shil_interpret(op);
+	shil_interpret(op);
 	return;
 	if (fpscr.PR == 0)
 	{
@@ -1126,8 +1119,8 @@ sh4op(i1111_nnnn_mmmm_0100)
 	}
 	else
 	{
-			shil_interpret(op);
-	return;
+		shil_interpret(op);
+		return;
 		u32 n = (op >> 9) & 0x07;
 		u32 m = (op >> 5) & 0x07;
 		ilst->cmp(dr[n],dr[m]);
@@ -1139,8 +1132,8 @@ sh4op(i1111_nnnn_mmmm_0100)
 //fcmp/gt <FREG_M>,<FREG_N>
 sh4op(i1111_nnnn_mmmm_0101)
 {
-			shil_interpret(op);
-		return;
+	shil_interpret(op);
+	return;
 	if (fpscr.PR == 0)
 	{
 		u32 n = GetN(op);
@@ -1271,8 +1264,6 @@ sh4op(i1111_nnnn_mmmm_1000)
 //fmov.s @<REG_M>+,<FREG_N>
 sh4op(i1111_nnnn_mmmm_1001)
 {
-			shil_interpret(op);
-		return;
 	if (fpscr.SZ == 0)
 	{
 		u32 n = GetN(op);
@@ -1343,8 +1334,6 @@ sh4op(i1111_nnnn_mmmm_1010)
 //fmov.s <FREG_M>,@-<REG_N>
 sh4op(i1111_nnnn_mmmm_1011)
 {//used
-			shil_interpret(op);
-		return;
 	if (fpscr.SZ == 0)
 	{
 		//iNimp("fmov.s <FREG_M>,@-<REG_N>");
@@ -1469,7 +1458,6 @@ sh4op(i1111_nnn0_1111_1101)
 	iNimp("FSCA : Double precision mode");
 	*/
 
-	shil_interpret(op);
 }
 
 //FSRRA //1111_nnnn_0111_1101
@@ -1488,7 +1476,6 @@ sh4op(i1111_nnnn_0111_1101)
 	else
 		iNimp("FSRRA : Double precision mode");		
 */
-	shil_interpret(op);
 }
 
 //fcnvds <DR_N>,FPUL       
@@ -1510,8 +1497,6 @@ sh4op(i1111_nnnn_1011_1101)
 	{
 		iNimp("fcnvds <DR_N>,FPUL,m=0");
 	}*/
-
-	shil_interpret(op);
 }
 
 
@@ -1533,7 +1518,6 @@ sh4op(i1111_nnnn_1010_1101)
 	{
 		iNimp("fcnvsd FPUL,<DR_N>,m=0");
 	}*/
-	shil_interpret(op);
 }
  
 //fipr <FV_M>,<FV_N>            
@@ -1542,64 +1526,6 @@ sh4op(i1111_nnmm_1110_1101)
 	int n=GetN(op)&0xC;
 	int m=(GetN(op)&0x3)<<2;
 	ilst->fipr(fr[n],fr[m]);
-	/*shil_interpret(op);
-	return;*/
-//	iNimp("fipr <FV_M>,<FV_N>");
- 
-
-	/*
-	if(fpscr.PR ==0)
-	{
-		float idp;
-
-		idp=fr[n+0]*fr[m+0];
-		idp+=fr[n+1]*fr[m+1];
-		idp+=fr[n+2]*fr[m+2];
-		idp+=fr[n+3]*fr[m+3];
-
-		CHECK_FPU_32(idp);
-		fr[n+3]=idp;
-	}
-	else
-		printf("FIPR Precision=1");*/
-
-	/*
-	u32 n = (op >> 8) & 0xC;
-	u32 m = ((op >> 8) & 0x3)<<2;
- 
-	fr[n+3] =	fr[m+0] * fr[n+0] +
-				fr[m+1] * fr[n+1] +
-				fr[m+2] * fr[n+2] +
-				fr[m+3] * fr[n+3];
-
- 
-	/*
-	union {
-		double d;
-		int l[2];
-	} mlt[4];
-	float dstf;
-	int i;
- 
- 
-		for(i=0;i<4;i++) {
- 
-			mlt[i].d = fr[m+i];
-			mlt[i].d *= fr[n+i];
-			// The multiplication array emulation is necessary for obtaining the
-			//same result as that of the FIPR hardware, because the hardware cut
-			//lower 18 bits of the array output before carry propagate addition.
-			//The following flow is different from the hardware algorism but simple. //
-			mlt[i].l[1] &= 0xff000000;
-			mlt[i].l[1] |= 0x00800000;
-		}
-		mlt[0].d += mlt[1].d + mlt[2].d + mlt[3].d;
-		mlt[0].l[1] &= 0xff800000;
-		dstf =(float) mlt[0].d;
-	//	fp_set_I();*/
- 
- 
- 
 }
 
 
@@ -1636,8 +1562,6 @@ sh4op(i1111_nnnn_1001_1101)
 	{
 		iNimp("fldi1 <Dreg_N>");
 	}
-
-	//shil_interpret(op);
 }
 
 
@@ -1663,23 +1587,23 @@ sh4op(i1111_nnnn_0001_1101)
 sh4op(i1111_nnnn_0010_1101)
 {//TODO : CHECK THIS (FP)
 
-	shil_interpret(op);
-	return;
-	/*if (fpscr.PR == 0)
+	if (fpscr.PR == 0)
 	{
 		u32 n = GetN(op);
-		fr[n] = (float)(int)fpul;
+		//fr[n] = (float)(int)fpul;
+		//ilst->floatfpul(fr[n]);
+		shil_interpret(op);
 	}
 	else
 	{
-		START64();
-		u32 n = (op >> 9) & 0x07;
-		SetDR(n, (double)(int)fpul);
+		//START64();
+		//u32 n = (op >> 9) & 0x07;
+		//SetDR(n, (double)(int)fpul);
 		//iNimp("float FPUL,<DREG_N>");
-		END64();
-	}*/
-
-	shil_interpret(op);
+		//END64();
+		shil_interpret(op);
+		return;
+	}
 }
 
 
@@ -1729,10 +1653,6 @@ sh4op(i1111_0011_1111_1101)
 //fsqrt <FREG_N>                
 sh4op(i1111_nnnn_0110_1101)
 {
-
-	shil_interpret(op);
-	return;
-
 	if (fpscr.PR == 0)
 	{
 		//iNimp("fsqrt <FREG_N>");
@@ -1747,8 +1667,6 @@ sh4op(i1111_nnnn_0110_1101)
 		//Operation _can_ be done on sh4
 		iNimp("fsqrt <DREG_N>");
 	}
-
-	shil_interpret(op);
 }
 
 
@@ -1756,24 +1674,21 @@ sh4op(i1111_nnnn_0110_1101)
 sh4op(i1111_nnnn_0011_1101)
 {
 
-	shil_interpret(op);
-	return;
-
-	/*
 	if (fpscr.PR == 0)
 	{
 		u32 n = GetN(op);
-		fpul = (u32)(s32)fr[n];
+		//fpul = (u32)(s32)fr[n];
+		//ilst->ftrc(fr[n]);
+		shil_interpret(op);
 	}
 	else
 	{
-		START64();
-		u32 n = (op >> 9) & 0x07;
-		fpul = (u32)(s32)GetDR(n);
-		END64();
-	}*/
-
-	shil_interpret(op);
+		//START64();
+		//u32 n = (op >> 9) & 0x07;
+		//fpul = (u32)(s32)GetDR(n);
+		//END64();
+		shil_interpret(op);
+	}
 }
 
 
@@ -1819,75 +1734,6 @@ sh4op(i1111_nn01_1111_1101)
 {
 	u32 n=GetN(op)&0xC;
 	ilst->ftrv(fr[n]);
-
-	//shil_interpret(op);
-	//return;
-	
-	//iNimp("ftrv xmtrx,<FV_N>");
-
-
-
-	/*
-	XF[0] XF[4] XF[8] XF[12]	FR[n]			FR[n]
-	XF[1] XF[5] XF[9] XF[13]  *	FR[n+1]		->	FR[n+1]
-	XF[2] XF[6] XF[10] XF[14]	FR[n+2]			FR[n+2]
-	XF[3] XF[7] XF[11] XF[15]	FR[n+3]			FR[n+3]
-	fucking *nih* maths ....*/
-/*
-	u32 n=GetN(op)&0xC;
-	
-	if (fpscr.PR==0)
-	{
-		float tmp[4];
-		//double tmp[4];
-		for (u8 i=0;i<4;i++)
-			tmp[i]=ftrv_dot_prod_1(i,(u8)n);
-		for (u8 i=0;i<4;i++)
-			fr[n+i]=(float)tmp[i];
-	}
-	else
-		iNimp("FTRV in dp mode");
-
-
-
-	/* matrix:
-											XF0		XF4		XF8		XF12
-											XF1		XF5		XF9		XF13
-											XF2		XF6		XF10	XF14
-											XF3		XF7		XF11	XF15 */
-	/*
-	float v1, v2, v3, v4;
-	
-	v1 = xf[0] * fr[ n + 0] +
-		xf[4] * fr[n + 1] +
-		xf[8] * fr[n + 2] +
-		xf[12] * fr [n + 3];
-	
-	v2 = xf[1] * fr[ n + 0] +
-		xf[5] * fr[ n + 1] +
-		xf[9] * fr[ n + 2] +
-		xf[13] * fr[ n + 3];
-	
-	v3 = xf[2] * fr[ n + 0] +
-		xf[6] * fr[n + 1] +
-		xf[10] * fr[ n + 2] +
-		xf[14] * fr[ n + 3];
-
-	v4 = xf[3] * fr[ n + 0] +
-		xf[7] * fr[n + 1] +
-		xf[11] * fr[ n + 2]+
-		xf[15] *
-		fr[ n + 3];
-
-	CHECK_FPU_32(v1);
-	CHECK_FPU_32(v2);
-	CHECK_FPU_32(v3);
-	CHECK_FPU_32(v4);
-
-	fr[n + 0] = v1;
-	fr[n + 1] = v2;
-	fr[n + 2] = v3;
-	fr[n + 3] = v4;*/
 }																				  
 
 
@@ -1898,15 +1744,16 @@ sh4op(icpu_nimp)
 }
 
 
-
-
 //Branches
 
 void DoDslot(u32 pc,rec_v1_BasicBlock* bb)
 {
 	u16 opcode=ReadMem16(pc+2);
 
-	RecOpPtr[opcode](opcode,pc+2,bb);
+	/*if ((opcode&0xF000)==0xF000)
+		ilst->shil_ifb(opcode,pc+2);
+	else*/
+		RecOpPtr[opcode](opcode,pc+2,bb);
 }
 
 //braf <REG_N>                  

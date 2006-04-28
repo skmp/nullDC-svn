@@ -219,6 +219,9 @@ enum shil_opcodes
 	fsqrt,
 	ftrv,
 	fipr,
+	floatfpul,
+	ftrc,
+
 	shil_count,
 };
 
@@ -422,6 +425,8 @@ public :
 	void shil_stream::fipr(Sh4RegType to,Sh4RegType from);
 	void shil_stream::fsqrt(Sh4RegType to);
 	void shil_stream::ftrv(Sh4RegType fv_n);
+	void shil_stream::floatfpul(Sh4RegType frn);
+	void shil_stream::ftrc(Sh4RegType frn);
 
 	//misc
 	void shil_ifb(u32 opcode,u32 pc);

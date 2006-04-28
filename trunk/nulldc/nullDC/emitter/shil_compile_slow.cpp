@@ -33,8 +33,18 @@ void profile_ifb_call()
 }
 #endif
 
-
 //a few helpers
+
+void c_Ensure32()
+{
+	assert(fpscr.PR==0);
+}
+bool Ensure32()
+{
+	x86e->CALLFunc(c_Ensure32);
+	return true;
+}
+
 INLINE u32* GetRegPtr(u8 reg)
 {
 	if (reg==Sh4RegType::reg_pc_temp)
@@ -1065,6 +1075,7 @@ void __fastcall shil_compile_fabs(shil_opcode* op,rec_v1_BasicBlock* block)
 	}
 }
 
+
 void __fastcall shil_compile_fadd(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2)));
@@ -1072,6 +1083,7 @@ void __fastcall shil_compile_fadd(shil_opcode* op,rec_v1_BasicBlock* block)
 	if (sz==FLAG_32)
 	{
 		assert(!IsReg64((Sh4RegType)op->reg1));
+		assert(Ensure32());
 		//x86e->AND32ItoM(GetRegPtr(op->reg1),0x7FFFFFFF);
 		x86e->SSE_MOVSS_M32_to_XMM(XMM0,GetRegPtr(op->reg1));
 		x86e->SSE_ADDSS_M32_to_XMM(XMM0,GetRegPtr(op->reg2));
@@ -1090,7 +1102,8 @@ void __fastcall shil_compile_fsub(shil_opcode* op,rec_v1_BasicBlock* block)
 	if (sz==FLAG_32)
 	{
 		assert(!IsReg64((Sh4RegType)op->reg1));
-		//x86e->AND32ItoM(GetRegPtr(op->reg1),0x7FFFFFFF);
+		assert(Ensure32());
+		
 		x86e->SSE_MOVSS_M32_to_XMM(XMM0,GetRegPtr(op->reg1));
 		x86e->SSE_SUBSS_M32_to_XMM(XMM0,GetRegPtr(op->reg2));
 		x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),XMM0);
@@ -1108,7 +1121,8 @@ void __fastcall shil_compile_fmul(shil_opcode* op,rec_v1_BasicBlock* block)
 	if (sz==FLAG_32)
 	{
 		assert(!IsReg64((Sh4RegType)op->reg1));
-		//x86e->AND32ItoM(GetRegPtr(op->reg1),0x7FFFFFFF);
+		assert(Ensure32());
+
 		x86e->SSE_MOVSS_M32_to_XMM(XMM0,GetRegPtr(op->reg1));
 		x86e->SSE_MULSS_M32_to_XMM(XMM0,GetRegPtr(op->reg2));
 		x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),XMM0);
@@ -1126,7 +1140,8 @@ void __fastcall shil_compile_fdiv(shil_opcode* op,rec_v1_BasicBlock* block)
 	if (sz==FLAG_32)
 	{
 		assert(!IsReg64((Sh4RegType)op->reg1));
-		//x86e->AND32ItoM(GetRegPtr(op->reg1),0x7FFFFFFF);
+		assert(Ensure32());
+
 		x86e->SSE_MOVSS_M32_to_XMM(XMM0,GetRegPtr(op->reg1));
 		x86e->SSE_DIVSS_M32_to_XMM(XMM0,GetRegPtr(op->reg2));
 		x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),XMM0);
@@ -1145,6 +1160,7 @@ void __fastcall shil_compile_fmac(shil_opcode* op,rec_v1_BasicBlock* block)
 	{
 		assert(!IsReg64((Sh4RegType)op->reg1));
 		//fr[n] += fr[0] * fr[m];
+		assert(Ensure32());
 
 		x86e->SSE_MOVSS_M32_to_XMM(XMM0,GetRegPtr(fr_0));		//xmm0=fr[0]
 		x86e->SSE_MULSS_M32_to_XMM(XMM0,GetRegPtr(op->reg2));	//xmm0*=fr[m]
@@ -1165,7 +1181,8 @@ void __fastcall shil_compile_ftrv(shil_opcode* op,rec_v1_BasicBlock* block)
 	if (sz==FLAG_32)
 	{
 		assert(!IsReg64((Sh4RegType)op->reg1));
-		
+		assert(Ensure32());
+
 		x86e->SSE_MOVAPS_M128_to_XMM(XMM0,GetRegPtr(op->reg1));
 		x86e->SSE_MOVAPS_XMM_to_XMM(XMM3,XMM0);
 		x86e->SSE_SHUFPS_XMM_to_XMM(XMM0,XMM0,0);
@@ -1198,6 +1215,8 @@ void __fastcall shil_compile_fipr(shil_opcode* op,rec_v1_BasicBlock* block)
 	u32 sz=op->flags & 3;
 	if (sz==FLAG_32)
 	{
+		assert(Ensure32());
+
 		x86e->SSE_MOVAPS_M128_to_XMM(XMM0,GetRegPtr(op->reg1));
 		x86e->SSE_MULPS_M128_to_XMM(XMM0,GetRegPtr(op->reg2));
 		x86e->SSE_MOVHLPS_XMM_to_XMM(XMM1,XMM0);
@@ -1218,9 +1237,49 @@ void __fastcall shil_compile_fsqrt(shil_opcode* op,rec_v1_BasicBlock* block)
 	u32 sz=op->flags & 3;
 	if (sz==FLAG_32)
 	{
+		assert(Ensure32());
+
 		assert(!IsReg64((Sh4RegType)op->reg1));
 		x86e->SSE_SQRTSS_M32_to_XMM(XMM0,GetRegPtr(op->reg1));
 		x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),XMM0);
+	}
+	else
+	{
+		assert(false);
+	}
+}
+void __fastcall shil_compile_floatfpul(shil_opcode* op,rec_v1_BasicBlock* block)
+{
+	assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2|FLAG_REG2)));
+	u32 sz=op->flags & 3;
+	if (sz==FLAG_32)
+	{
+		assert(Ensure32());
+		assert(!IsReg64((Sh4RegType)op->reg1));
+		//GOTA UNFUCK THE x86 EMITTER
+		//x86e->SSE_CVTSI2SS_M32_to_R32(EAX,GetRegPtr(reg_fpul));
+		//x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),XMM0);
+		
+	}
+	else
+	{
+		assert(false);
+	}
+}
+void __fastcall shil_compile_ftrc(shil_opcode* op,rec_v1_BasicBlock* block)
+{
+	assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2|FLAG_REG2)));
+	u32 sz=op->flags & 3;
+	if (sz==FLAG_32)
+	{
+		assert(Ensure32());
+		assert(!IsReg64((Sh4RegType)op->reg1));
+/*
+//GOTA UNFUCK THE x86 EMITTER
+		//EAX=(float)fr[n]
+		x86e->SSE_CVTSS2SI_M32_to_R32(EAX,GetRegPtr(op->reg1));
+		//fpul=EAX
+		SaveReg(reg_fpul,EAX);*/
 	}
 	else
 	{
@@ -1239,7 +1298,7 @@ shil_compileFP* sclt[shil_count]=
 	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,
 	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,
 	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,
-	shil_compile_nimp,shil_compile_nimp
+	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp
 };
 
 void SetH(shil_opcodes op,shil_compileFP* ha)
@@ -1300,6 +1359,8 @@ void Init()
 	SetH(shil_opcodes::ftrv,shil_compile_ftrv);
 	SetH(shil_opcodes::fsqrt,shil_compile_fsqrt);
 	SetH(shil_opcodes::fipr,shil_compile_fipr);
+	SetH(shil_opcodes::floatfpul,shil_compile_floatfpul);
+	SetH(shil_opcodes::ftrc,shil_compile_ftrc);
 
 	
 	u32 shil_nimp=shil_opcodes::shil_count;

@@ -39,7 +39,10 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 		if (((pc>>26)&0x7)==3)
 			rec_v1_SetBlockTest(pc);
 
-		RecOpPtr[opcode](opcode,pc,to);
+		/*if ((opcode&0xF000)==0xF000)
+			ilst->shil_ifb(opcode,pc);
+		else*/
+			RecOpPtr[opcode](opcode,pc,to);
 		
 		if (to->flags & BLOCK_ATSC_END)
 		{
