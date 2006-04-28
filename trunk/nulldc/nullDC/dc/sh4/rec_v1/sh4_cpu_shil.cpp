@@ -1591,8 +1591,8 @@ sh4op(i1111_nnnn_0010_1101)
 	{
 		u32 n = GetN(op);
 		//fr[n] = (float)(int)fpul;
-		//ilst->floatfpul(fr[n]);
-		shil_interpret(op);
+		ilst->floatfpul(fr[n]);
+		//shil_interpret(op);
 	}
 	else
 	{
@@ -1602,7 +1602,26 @@ sh4op(i1111_nnnn_0010_1101)
 		//iNimp("float FPUL,<DREG_N>");
 		//END64();
 		shil_interpret(op);
-		return;
+	}
+}
+
+//ftrc <FREG_N>, FPUL      
+sh4op(i1111_nnnn_0011_1101)
+{
+	if (fpscr.PR == 0)
+	{
+		u32 n = GetN(op);
+		//fpul = (u32)(s32)fr[n];
+		ilst->ftrc(fr[n]);
+		//shil_interpret(op);
+	}
+	else
+	{
+		//START64();
+		//u32 n = (op >> 9) & 0x07;
+		//fpul = (u32)(s32)GetDR(n);
+		//END64();
+		shil_interpret(op);
 	}
 }
 
@@ -1670,26 +1689,6 @@ sh4op(i1111_nnnn_0110_1101)
 }
 
 
-//ftrc <FREG_N>, FPUL      
-sh4op(i1111_nnnn_0011_1101)
-{
-
-	if (fpscr.PR == 0)
-	{
-		u32 n = GetN(op);
-		//fpul = (u32)(s32)fr[n];
-		//ilst->ftrc(fr[n]);
-		shil_interpret(op);
-	}
-	else
-	{
-		//START64();
-		//u32 n = (op >> 9) & 0x07;
-		//fpul = (u32)(s32)GetDR(n);
-		//END64();
-		shil_interpret(op);
-	}
-}
 
 
 //fsts FPUL,<FREG_N>       

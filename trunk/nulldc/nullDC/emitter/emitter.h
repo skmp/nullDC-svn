@@ -3398,17 +3398,56 @@ public :
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
-	//CVTSI2SS	Convert Single Integer to Single Scalar		                           *
+	//CVTSI2SS	Convert Single Integer to Single Scalar                                *
 	//**********************************************************************************
-	void SSE_CVTSI2SS_M32_to_R32( x86IntRegType to,u32* from )           { SSE_SS_MtoR( 0x2A0F, 0 ); }
-	//void SSE_CVTSI2SS_XMM_to_XMM( x86SSERegType to, x86SSERegType from ) { SSE_SS_RtoR( 0x2A0F ); }
+	void SSE_CVTSI2SS_R32_To_XMM(x86SSERegType to,x86IntRegType from)
+	{
+		write8(0xF3);
+		write8(0x0F);
+		write8(0x2A);
+
+		ModRM( 3, to, from );
+	}
+
+
+	void SSE_CVTSI2SS_M32_To_XMM(x86SSERegType to,u32* from)
+	{
+		write8(0xF3);
+		write8(0x0F);
+		write8(0x2A);
+
+		ModRM( 0, to, DISP32 );
+		write32( MEMADDR(from, 4) );
+	}
+
+
+
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
-	//CVTSS2SI	Convert Single Scalar to Single Integer								   *
+	//CVTTSS2SI	Convert Single Scalar to Single Integer	, w/o rounding				   *
 	//**********************************************************************************
-	void SSE_CVTSS2SI_M32_to_R32( x86IntRegType to, u32* from )           { SSE_SS_MtoR( 0x2D0F, 0 ); }
-//	void SSE_CVTSS2SI_XMM_to_XMM( x86SSERegType to, x86SSERegType from ) { SSE_SS_RtoR( 0x2D0F ); }
+	void SSE_CVTTSS2SI_XMM_To_R32(x86IntRegType to,x86SSERegType from)
+	{
+		write8(0xF3);
+		write8(0x0F);
+		write8(0x2C);
+
+		ModRM( 3, to, from );
+	}
+
+
+	void SSE_CVTTSS2SI_M32_To_R32(x86IntRegType to,u32* from)
+	{
+		write8(0xF3);
+		write8(0x0F);
+		write8(0x2C);
+
+		ModRM( 0, to, DISP32 );
+		write32( MEMADDR(from, 4) );
+	}
+
+
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/

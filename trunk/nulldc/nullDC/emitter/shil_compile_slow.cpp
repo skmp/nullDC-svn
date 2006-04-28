@@ -1256,9 +1256,11 @@ void __fastcall shil_compile_floatfpul(shil_opcode* op,rec_v1_BasicBlock* block)
 	{
 		assert(Ensure32());
 		assert(!IsReg64((Sh4RegType)op->reg1));
+
+		//TODO : This is not entietly correct , sh4 rounds too [need to set MXCSR]
 		//GOTA UNFUCK THE x86 EMITTER
-		//x86e->SSE_CVTSI2SS_M32_to_R32(EAX,GetRegPtr(reg_fpul));
-		//x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),XMM0);
+		x86e->SSE_CVTSI2SS_M32_To_XMM(XMM0,GetRegPtr(reg_fpul));
+		x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),XMM0);
 		
 	}
 	else
@@ -1274,12 +1276,13 @@ void __fastcall shil_compile_ftrc(shil_opcode* op,rec_v1_BasicBlock* block)
 	{
 		assert(Ensure32());
 		assert(!IsReg64((Sh4RegType)op->reg1));
-/*
-//GOTA UNFUCK THE x86 EMITTER
+
+		//TODO : This is not entietly correct , sh4 saturates too
+		//GOTA UNFUCK THE x86 EMITTER
 		//EAX=(float)fr[n]
-		x86e->SSE_CVTSS2SI_M32_to_R32(EAX,GetRegPtr(op->reg1));
+		x86e->SSE_CVTTSS2SI_M32_To_R32(EAX,GetRegPtr(op->reg1));
 		//fpul=EAX
-		SaveReg(reg_fpul,EAX);*/
+		SaveReg(reg_fpul,EAX);
 	}
 	else
 	{
