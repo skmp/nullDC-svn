@@ -596,10 +596,10 @@ void DMAC_Ch3St(u32 data)
 
 	if( 1 == SB_GDDIR ) {
 		memcpy( &mem_b[src&0xFFFFFF], &gdReadBuffer[dmaOffset], len );
-
-		for (int i=0;i<len;i+=0x8)
+ 
+		for (int i=0;i<len;i+=0x2)
 		{
-			rec_v1_BlockTest(src+i);
+			rec_v1_BlockTest(src+i); 
 		}
 		if (len>=8*1024*1024)
 			printf("\n~\tERROR: GDROM DMA LENGTH LARGER THAN BUFFER SIZE!\n\n");

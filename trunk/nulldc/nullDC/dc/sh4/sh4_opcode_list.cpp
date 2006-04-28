@@ -191,12 +191,6 @@ void OpDissCFS(char* text,const char* tx1,u32 pc,u16 opcode)
 
 
 
-
-
-
-
-
-
 fpscr_type Get_fpscr()
 {
 	fpscr_type t;
