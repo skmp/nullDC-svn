@@ -2447,7 +2447,7 @@ public :
 	/********************/
 
 	/* fild m32 to fpu reg stack */
-	void FILD32( u32 from )
+	void FILD32( u32* from )
 	{
 		write8( 0xDB );
 		ModRM( 0, 0x0, DISP32 );
@@ -2455,7 +2455,7 @@ public :
 	}
 
 	/* fistp m32 from fpu reg stack */
-	void FISTP32( u32 from ) 
+	void FISTP32( u32* from ) 
 	{
 		write8( 0xDB );
 		ModRM( 0, 0x3, DISP32 );
@@ -2463,7 +2463,7 @@ public :
 	}
 
 	/* fld m32 to fpu reg stack */
-	void FLD32( u32 from )
+	void FLD32( u32* from )
 	{
 		write8( 0xD9 );
 		ModRM( 0, 0x0, DISP32 );
@@ -2471,7 +2471,7 @@ public :
 	}
 
 	/* fst m32 from fpu reg stack */
-	void FST32( u32 to ) 
+	void FST32( u32* to ) 
 	{
 		write8( 0xD9 );
 		ModRM( 0, 0x2, DISP32 );
@@ -2479,7 +2479,7 @@ public :
 	}
 
 	/* fstp m32 from fpu reg stack */
-	void FSTP32( u32 to )
+	void FSTP32( u32* to )
 	{
 		write8( 0xD9 );
 		ModRM( 0, 0x3, DISP32 );
@@ -2487,7 +2487,7 @@ public :
 	}
 
 	/* fldcw fpu control word from m16 */
-	void FLDCW( u32 from )
+	void FLDCW( u16* from )
 	{
 		write8( 0xD9 );
 		ModRM( 0, 0x5, DISP32 );
@@ -2495,7 +2495,7 @@ public :
 	}
 
 	/* fnstcw fpu control word to m16 */
-	void FNSTCW( u32 to ) 
+	void FNSTCW( u16* to ) 
 	{
 		write8( 0xD9 );
 		ModRM( 0, 0x7, DISP32 );
@@ -2571,7 +2571,7 @@ public :
 	}
 
 	/* fadd m32 to fpu reg stack */
-	void FADD32( u32 from ) 
+	void FADD32( u32* from ) 
 	{
 		write8( 0xD8 );
 		ModRM( 0, 0x0, DISP32 );
@@ -2579,7 +2579,7 @@ public :
 	}
 
 	/* fsub m32 to fpu reg stack */
-	void FSUB32( u32 from ) 
+	void FSUB32( u32* from ) 
 	{
 		write8( 0xD8 );
 		ModRM( 0, 0x4, DISP32 );
@@ -2587,7 +2587,7 @@ public :
 	}
 
 	/* fmul m32 to fpu reg stack */
-	void FMUL32( u32 from )
+	void FMUL32( u32* from )
 	{
 		write8( 0xD8 );
 		ModRM( 0, 0x1, DISP32 );
@@ -2595,7 +2595,7 @@ public :
 	}
 
 	/* fdiv m32 to fpu reg stack */
-	void FDIV32( u32 from ) 
+	void FDIV32( u32* from ) 
 	{
 		write8( 0xD8 );
 		ModRM( 0, 0x6, DISP32 );
@@ -2608,10 +2608,18 @@ public :
 		write16( 0xE1D9 );
 	}
 
+
 	/* fsqrt fpu reg stack */
 	void FSQRT( void ) 
 	{
 		write16( 0xFAD9 );
+	}
+
+	/* fsincos fpu st(0)->sin, push cos */
+	void FSINCOS( void ) 
+	{;
+		write8(0xD9);
+		write8(0xFB);
 	}
 
 	/* fchs fpu reg stack */
@@ -2657,7 +2665,7 @@ public :
 	}
 
 	/* fcomp m32 to fpu reg stack */
-	void FCOMP32( u32 from )
+	void FCOMP32( u32* from )
 	{
 		write8( 0xD8 );
 		ModRM( 0, 0x3, DISP32 );
@@ -3259,6 +3267,12 @@ public :
 	//**********************************************************************************
 	void SSE_ANDNPS_M128_to_XMM( x86SSERegType to, u32* from )          { SSEMtoR( 0x550f, 0 ); }
 	void SSE_ANDNPS_XMM_to_XMM( x86SSERegType to, x86SSERegType from ){ SSERtoR( 0x550f ); }
+	/////////////////////////////////////////////////////////////////////////////////////
+	//**********************************************************************************/
+	//RCPPS : Scalar Single-Precision FP Reciprocal                                     *
+	//**********************************************************************************
+	void SSE_RCPSS_XMM_to_XMM( x86SSERegType to, x86SSERegType from ) { SSE_SS_RtoR( 0x530f ); }
+	void SSE_RCPSS_M32_to_XMM( x86SSERegType to, u32* from )           { SSE_SS_MtoR( 0x530f, 0 ); }
 	/////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
 	//RCPPS : Packed Single-Precision FP Reciprocal                                     *

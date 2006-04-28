@@ -640,6 +640,18 @@ void shil_stream::floatfpul(Sh4RegType frn)
 {
 	emitReg(shil_opcodes::floatfpul,frn,GetFloatFlags(frn,NoReg));
 }
+
+void shil_stream::fsca(Sh4RegType frn)
+{
+	emitReg(shil_opcodes::fsca,frn,GetFloatFlags(frn,NoReg));
+}
+
+void shil_stream::fsrra(Sh4RegType frn)
+{
+	emitReg(shil_opcodes::fsrra,frn,GetFloatFlags(frn,NoReg));
+}
+
+
 void shil_stream::ftrc(Sh4RegType frn)
 {
 	emitReg(shil_opcodes::ftrc,frn,GetFloatFlags(frn,NoReg));

@@ -87,6 +87,14 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 	//clear flags that are used olny for analysis
 	to->flags &= ~BLOCK_ATSC_END;
 
+#ifdef PROFILE_DYNAREC
+	if( (to->flags & BLOCK_TYPE_MASK)==BLOCK_TYPE_DYNAMIC)
+	{
+		char temp[1000];
+		DissasembleOpcode(ReadMem16(to->end),to->end,temp);
+		printf("Dynamic block ending at %s\n",temp);
+	}
+#endif
 	to->cycles=block_size;
 
 	//printf("SH4: Analysed block pc:%x , block size : %d. Shil size %d , level = %d\n",to->start,block_size,to->ilst.op_count,nest_level);

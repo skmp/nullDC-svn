@@ -17,7 +17,7 @@
 #define GetDN(opc)	((op&0x0F00)>>9)
 #define GetDM(opc)	((op&0x00F0)>>5)
 
-#define pi ((float)3.14159265)
+#define pi (3.14159265f)
 
 void iNimp(char*str);
 
@@ -442,15 +442,16 @@ sh4op(i1111_nnn0_1111_1101)
 	 
 	int n=GetN(op) & 0xE;
 	 
-	double real_pi=(((double)(s32)fpul)/65536)*(2*pi);
+	
 	 
 	if (fpscr.PR==0)
 	{
-	fr[n | 0] = (float)sin(real_pi);
-	fr[n | 1] = (float)cos(real_pi);
-	
-	CHECK_FPU_32(fr[n]);
-	CHECK_FPU_32(fr[n+1]);
+		float real_pi=(((float)(s32)fpul)/65536)*(2*pi);
+		fr[n | 0] = sinf(real_pi);
+		fr[n | 1] = cosf(real_pi);
+
+		CHECK_FPU_32(fr[n]);
+		CHECK_FPU_32(fr[n+1]);
 	}
 	else
 	iNimp("FSCA : Double precision mode");

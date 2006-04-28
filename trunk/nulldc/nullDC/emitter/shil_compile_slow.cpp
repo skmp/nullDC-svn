@@ -1240,6 +1240,7 @@ void __fastcall shil_compile_fsqrt(shil_opcode* op,rec_v1_BasicBlock* block)
 		assert(Ensure32());
 
 		assert(!IsReg64((Sh4RegType)op->reg1));
+		//RSQRT vs SQRTSS -- why rsqrt no workie ? :P
 		x86e->SSE_SQRTSS_M32_to_XMM(XMM0,GetRegPtr(op->reg1));
 		x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),XMM0);
 	}
@@ -1290,6 +1291,56 @@ void __fastcall shil_compile_ftrc(shil_opcode* op,rec_v1_BasicBlock* block)
 	}
 }
 
+#define pi (3.14159265f)
+
+__declspec(align(32)) float mm_1[4]={1.0f,1.0f,1.0f,1.0f};
+__declspec(align(32)) float fsca_fpul_adj[4]={((2*pi)/65536.0f),((2*pi)/65536.0f),((2*pi)/65536.0f),((2*pi)/65536.0f)};
+
+void __fastcall shil_compile_fsca(shil_opcode* op,rec_v1_BasicBlock* block)
+{
+	assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2|FLAG_REG2)));
+	u32 sz=op->flags & 3;
+	if (sz==FLAG_32)
+	{
+		assert(Ensure32());
+		//bah()
+		assert(!IsReg64((Sh4RegType)op->reg1));
+		//float real_pi=(((float)(s32)fpul)/65536)*(2*pi);
+		//real_pi=(s32)fpul * ((2*pi)/65536.0f);
+		x86e->FILD32(GetRegPtr(reg_fpul));		//st(0)=(s32)fpul
+		x86e->FMUL32((u32*)fsca_fpul_adj);			//st(0)=(s32)fpul * ((2*pi)/65536.0f)
+		x86e->FSINCOS();						//st(0)=sin , st(1)=cos
+		
+		x86e->FSTP32(GetRegPtr(op->reg1 +1));	//Store cos to reg+1
+		x86e->FSTP32(GetRegPtr(op->reg1));		//store sin to reg
+		assert(false);
+	}
+	else
+	{
+		assert(false);
+	}
+}
+
+void __fastcall shil_compile_fsrra(shil_opcode* op,rec_v1_BasicBlock* block)
+{
+	assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2|FLAG_REG2)));
+	u32 sz=op->flags & 3;
+	if (sz==FLAG_32)
+	{
+		assert(Ensure32());
+		assert(!IsReg64((Sh4RegType)op->reg1));
+		//maby need to calculate 1/sqrt manualy ? -> yes , it seems rcp is not as accurate as needed :)
+		x86e->SSE_SQRTSS_M32_to_XMM(XMM0,GetRegPtr(op->reg1));	//XMM0=sqrt
+		x86e->SSE_MOVSS_M32_to_XMM(XMM1,(u32*)mm_1);					//XMM1=1
+		x86e->SSE_DIVSS_XMM_to_XMM(XMM1,XMM0);					//XMM1=1/sqrt
+		x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),XMM1);	//fr=XMM1
+	}
+	else
+	{
+		assert(false);
+	}
+}
+
 shil_compileFP* sclt[shil_count]=
 {
 	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,
@@ -1301,7 +1352,8 @@ shil_compileFP* sclt[shil_count]=
 	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,
 	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,
 	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,
-	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp
+	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,
+	shil_compile_nimp,shil_compile_nimp
 };
 
 void SetH(shil_opcodes op,shil_compileFP* ha)
@@ -1364,6 +1416,8 @@ void Init()
 	SetH(shil_opcodes::fipr,shil_compile_fipr);
 	SetH(shil_opcodes::floatfpul,shil_compile_floatfpul);
 	SetH(shil_opcodes::ftrc,shil_compile_ftrc);
+	SetH(shil_opcodes::fsca,shil_compile_fsca);
+	SetH(shil_opcodes::fsrra,shil_compile_fsrra);
 
 	
 	u32 shil_nimp=shil_opcodes::shil_count;
