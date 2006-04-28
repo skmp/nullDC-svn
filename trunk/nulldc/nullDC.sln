@@ -7,8 +7,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nullPvr", "plugins\nullPvr\
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nullGDR", "plugins\nullGDR\nullGDR\nullGDR.vcproj", "{2415C385-C878-4D66-A097-FF25BCCDC1EB}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "drkPvr", "plugins\drkPvr\drkPvr.vcproj", "{0520BA33-1A98-4DDE-8B36-99F25EDC5BD6}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nullAICA", "plugins\nullAICA\nullAICA\nullAICA.vcproj", "{8004518C-2321-4CFC-BA6C-873736195691}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "chankaAICA", "plugins\chankaAICA\chankaAICA\chankaAICA.vcproj", "{71E731E3-8111-41B6-BD13-F2249DBF9928}"
@@ -45,14 +43,6 @@ Global
 		{2415C385-C878-4D66-A097-FF25BCCDC1EB}.Release-NoTrace|Win32.Build.0 = Release|Win32
 		{2415C385-C878-4D66-A097-FF25BCCDC1EB}.Release-Trace|Win32.ActiveCfg = Release|Win32
 		{2415C385-C878-4D66-A097-FF25BCCDC1EB}.Release-Trace|Win32.Build.0 = Release|Win32
-		{0520BA33-1A98-4DDE-8B36-99F25EDC5BD6}.Debug-NoTrace|Win32.ActiveCfg = Debug|Win32
-		{0520BA33-1A98-4DDE-8B36-99F25EDC5BD6}.Debug-NoTrace|Win32.Build.0 = Debug|Win32
-		{0520BA33-1A98-4DDE-8B36-99F25EDC5BD6}.Debug-Trace|Win32.ActiveCfg = Debug|Win32
-		{0520BA33-1A98-4DDE-8B36-99F25EDC5BD6}.Debug-Trace|Win32.Build.0 = Debug|Win32
-		{0520BA33-1A98-4DDE-8B36-99F25EDC5BD6}.Release-NoTrace|Win32.ActiveCfg = Release|Win32
-		{0520BA33-1A98-4DDE-8B36-99F25EDC5BD6}.Release-NoTrace|Win32.Build.0 = Release|Win32
-		{0520BA33-1A98-4DDE-8B36-99F25EDC5BD6}.Release-Trace|Win32.ActiveCfg = Release|Win32
-		{0520BA33-1A98-4DDE-8B36-99F25EDC5BD6}.Release-Trace|Win32.Build.0 = Release|Win32
 		{8004518C-2321-4CFC-BA6C-873736195691}.Debug-NoTrace|Win32.ActiveCfg = Debug|Win32
 		{8004518C-2321-4CFC-BA6C-873736195691}.Debug-NoTrace|Win32.Build.0 = Debug|Win32
 		{8004518C-2321-4CFC-BA6C-873736195691}.Debug-Trace|Win32.ActiveCfg = Debug|Win32

@@ -72,6 +72,29 @@ rec_v1_BasicBlock* rec_v1_FindOrRecompileCode(u32 pc)
 u64 calls=0;
 u64 total_cycles=0;
 extern u64 ifb_calls;
+
+#endif
+
+#ifdef PROFILE_DYNAREC_CALL
+typedef void __fastcall RunCode(void * code);
+void __fastcall DoRunCode(void * code)
+{
+	__asm
+	{
+		push esi;
+		push edi;
+		push ebx;
+		push ebp;
+
+		call code;
+
+		pop  ebp;
+		pop  edi;
+		pop ebx;
+		pop esi;
+	}
+}
+RunCode* RunCodePTR=DoRunCode;
 #endif
 
 u32 rec_cycles=0;
@@ -96,10 +119,10 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 		rec_v1_BasicBlockEP* fp=currBlock->compiled->Code;
 
 		//call block :)
+#ifndef PROFILE_DYNAREC_CALL
 		__asm
 		{
 			push esi;
-			//xor esi,esi;
 			push edi
 			push ebx
 			push ebp
@@ -109,10 +132,11 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 			pop  ebp
 			pop  edi
 			pop ebx
-
-			//add rec_cycles,esi;
 			pop esi;
 		}
+#else	//so we can profile :)
+		DoRunCode(fp);
+#endif
 
 #ifdef PROFILE_DYNAREC
 		calls++;

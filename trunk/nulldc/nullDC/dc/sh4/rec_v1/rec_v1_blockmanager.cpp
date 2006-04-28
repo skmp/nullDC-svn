@@ -89,6 +89,7 @@ int rec_v1_GetBlockTest(u32 addr)
 	return RamTest[addr>>3]&BitTest[addr&7];
 }
 
+
 //Do a block test
 void rec_v1_BlockTest(u32 addr)
 {
