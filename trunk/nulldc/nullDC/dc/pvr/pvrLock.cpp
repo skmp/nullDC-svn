@@ -132,7 +132,7 @@ u32 vramlock_ConvOffset64toOffset32(u32 offset64)
 		//64b wide bus is archevied by interleavingthe banks every 32 bits
 		//so bank is Address>>3
 		//so >>1 to get real uper offset
-		u32 t=(offset64>>1)& 0x7FFFFC;	//upper bits
+		u32 t=(offset64>>1)& (VRAM_MASK-3);	//upper bits
 		u32 t2=offset64&0x3;	//lower bits
 		//u32 t3=t& 0x7FFFFC;		//clean upper bits
 		t=((offset64& (1<<2))<<20)|t|t2;//bank offset |clean upper bits|lower bits -> Ready :)!
@@ -156,7 +156,7 @@ u32 vramlock_ConvAddrtoOffset64(u32 Address)
 		u32 lv=Address&0x3; //these will survive
 		Address<<=1;
 		//       |inbank offset    |       bank id        | lower 2 bits (not changed)
-		u32 rv=  (Address&0x7FFFF8)|bank                  | lv;
+		u32 rv=  (Address&(VRAM_MASK-7))|bank                  | lv;
  
 		return rv;
 	}
@@ -172,7 +172,7 @@ u32 vramlock_ConvOffset32toOffset64(u32 offset32)
 		u32 lv=offset32&0x3; //these will survive
 		offset32<<=1;
 		//       |inbank offset    |       bank id        | lower 2 bits (not changed)
-		u32 rv=  (offset32&0x7FFFF8)|bank                  | lv;
+		u32 rv=  (offset32&(VRAM_MASK-7))|bank                  | lv;
  
 		return rv;
 }
