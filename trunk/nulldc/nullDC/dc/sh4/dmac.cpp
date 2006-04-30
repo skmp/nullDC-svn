@@ -52,8 +52,8 @@ void DMAC_Ch2St()
 			// Texture DMA 
 	if( (dst >= 0x10000000) && (dst <= 0x10FFFFFF) )
 	{
-
-		u32 *sys_buf=(u32 *)(&mem_b[src&0xFFFFFF]);
+		//GetMemPtr perhaps ? it's not good to use teh mem arrays directly 
+		u32 *sys_buf=(u32 *)(&mem_b[src&RAM_MASK]);
 
 		TAWrite(dst,sys_buf,(len/32));
 		//libPvr->pvr_info.TADma(dst,sys_buf,(len/32));
@@ -63,7 +63,7 @@ void DMAC_Ch2St()
 	{
 		//printf(">>\tDMAC: TEX LNMODE0 Ch2 DMA SRC=%X DST=%X LEN=%X | LN(%X::%X)\n", src, dst, len, *pSB_LMMODE0, *pSB_LMMODE1 );
 
-		u32 *sys_buf=(u32 *)(&mem_b[src&0xFFFFFF]);
+		u32 *sys_buf=(u32 *)(&mem_b[src&RAM_MASK]);
 		u32 dst_ptr=(dst&0xFFFFFF) |0xa4000000;//
 
 		for (u32 i_c=0;i_c<len;i_c+=4)

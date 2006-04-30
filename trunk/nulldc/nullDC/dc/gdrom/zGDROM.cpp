@@ -594,8 +594,10 @@ void DMAC_Ch3St(u32 data)
 		goto complete_dma_chain;	// *FIXME* it needs the proper INTRQ's too
 	}
 
-	if( 1 == SB_GDDIR ) {
-		memcpy( &mem_b[src&0xFFFFFF], &gdReadBuffer[dmaOffset], len );
+	if( 1 == SB_GDDIR ) 
+	{
+		//GetMemPtr perhaps ? it's better not to use the arrays like that ;P
+		memcpy( &mem_b[src&RAM_MASK], &gdReadBuffer[dmaOffset], len );
  
 		for (int i=0;i<len;i+=0x2)
 		{

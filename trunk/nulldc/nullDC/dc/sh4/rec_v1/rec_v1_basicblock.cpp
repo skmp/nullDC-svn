@@ -1,5 +1,6 @@
 #include "rec_v1_basicblock.h"
 #include "emitter/shil_compile_slow.h"
+#include "dc/mem/sh4_mem.h"
 #include "emitter/emitter.h"
 
 extern rec_v1_BasicBlock* rec_v1_pCurrentBlock;
@@ -89,9 +90,9 @@ void rec_v1_BasicBlock::Discard()
 
 bool rec_v1_BasicBlock::Contains(u32 pc)
 {
-	u32 pc_real=pc &0xFFFFFF;
-	u32 real_start=start &0xFFFFFF;
-	u32 real_end=end &0xFFFFFF;
+	u32 pc_real=pc & RAM_MASK;
+	u32 real_start=start & RAM_MASK;
+	u32 real_end=end & RAM_MASK;
 
 	return ((pc_real>=(real_start-4)) && (pc_real<=(real_end+6)));
 }

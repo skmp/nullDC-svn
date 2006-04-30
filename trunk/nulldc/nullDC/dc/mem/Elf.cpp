@@ -42,7 +42,7 @@ int GetSymbName(u32 address,char *szDesc,bool bUseUnkAddress)
 	else
 	{
 		for(u32 i=0; i<(symindex>>16); i++)	{
-			if( (address&0xFFFFFF) == (pSymTab[i].st_value&0xFFFFFF) )
+			if( (address&RAM_MASK) == (pSymTab[i].st_value&RAM_MASK) )
 			{
 				return sprintf(szDesc, "%s v:%X", (char*)(strtab+pSymTab[i].st_name), pSymTab[i].st_value);
 			}
@@ -178,7 +178,7 @@ bool LoadELF( char* szFileName )
 
 				if( (pShdr->sh_addr & 0x0F000000) == 0x0C000000 )
 					for( u32 x=0; x<=pShdr->sh_size; x++ )	// +=2
-						mem_b[(pShdr->sh_addr&0xFFFFFF)+x] = pElf[pShdr->sh_offset+x];
+						mem_b[(pShdr->sh_addr&RAM_MASK)+x] = pElf[pShdr->sh_offset+x];
 						//WriteMem16((pShdr->sh_addr+(x*2)), pElf[(pShdr->sh_offset+(x*2))]);
 			}
 		break;
