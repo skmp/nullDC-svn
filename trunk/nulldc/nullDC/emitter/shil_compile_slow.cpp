@@ -1313,7 +1313,6 @@ void __fastcall shil_compile_fsca(shil_opcode* op,rec_v1_BasicBlock* block)
 		
 		x86e->FSTP32(GetRegPtr(op->reg1 +1));	//Store cos to reg+1
 		x86e->FSTP32(GetRegPtr(op->reg1));		//store sin to reg
-		assert(false);
 	}
 	else
 	{

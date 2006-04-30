@@ -33,7 +33,13 @@ sh4op(i0000_nnnn_0010_0011)
 	ExecuteDelayslot();
 	pc = newpc -2;
 	RemoveCall(spc,1);
-	UpdateSR();
+	if (UpdateSR())
+	{
+		//FIXME olny if interrupts got on .. :P
+		pc+=2;
+		UpdateINTC();
+		pc-=2;
+	}
 } 
 
 
