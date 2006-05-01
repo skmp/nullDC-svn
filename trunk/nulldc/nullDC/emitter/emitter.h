@@ -1002,6 +1002,13 @@ public :
 		write8( 0x11 ); 
 		ModRM( 3, from, to );
 	}
+	/* adc r32 to m32 */
+	void ADC32RtoM(u32* to, x86IntRegType from ) 
+	{
+		write8( 0x11 ); 
+		ModRM( 0, from, DISP32 );
+		write32( MEMADDR(to, 4) );
+	}
 
 	/* adc m32 to r32 */
 	void ADC32MtoR( x86IntRegType to, u32* from ) 
@@ -1107,6 +1114,14 @@ public :
 		}
 		write8( 0x29 ); 
 		ModRM( 3, from, to );
+	}
+
+	/* sub r32 to m32 */
+	void SUB32RtoM(u32* to, x86IntRegType from ) 
+	{
+		write8( 0x29 ); 
+		ModRM( 0, from, DISP32 );
+		write32( MEMADDR(to, 4) );
 	}
 
 	/* sub m32 to r32 */

@@ -530,21 +530,30 @@ INT_PTR CALLBACK DlgProcModal( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 				{
 					if (sh4_cpu->IsCpuRunning())
 					{
+						//SwitchCPU_DC();
 						//sh4_cpu->Stop();
 						Stop_DC();
 						bStart=true;
 					}
 				}
 				if(0 != cfgLoadInt("nullDC","enable_recompiler"))
+				{
 					sh4_cpu=Get_Sh4Recompiler();
+					printf("Switched to Recompiler\n");
+				}
 				else
+				{
 					sh4_cpu=Get_Sh4Interpreter();
+					printf("Switched to Interpreter\n");
+				}
 
 				if (bStart)
 				{
 					sh4_cpu->Init();
-					//sh4_cpu->Run();
+					//SwitchCPU_DC();
 					Start_DC();
+					//sh4_cpu->Run();
+					
 				}
 			}
 		case IDCANCEL:

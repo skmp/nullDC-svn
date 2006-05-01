@@ -148,7 +148,7 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 		}
 #endif
 
-		if (rec_cycles>(CPU_TIMESLICE/2))
+		if (rec_cycles>(CPU_TIMESLICE*0.9f))
 		{
 			if (rec_cycles>CPU_TIMESLICE*2)
 			{

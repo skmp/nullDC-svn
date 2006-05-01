@@ -371,30 +371,47 @@ INLINE void SaveReg(u8 reg,u8* from)
 	}*/
 
 //Macro :
-#define OP_MoRtR_ItR(_MtR_,_RtR_,_ItR_)	assert(FLAG_32==(op->flags & 3));\
+#define OP_MoRtR_ItR(_MtR_,_RtR_,_ItR_,_ItM_,_RtM_)	assert(FLAG_32==(op->flags & 3));\
 	assert(0==(op->flags & (FLAG_IMM2)));\
 	assert(op->flags & FLAG_REG1);\
 	if (op->flags & FLAG_IMM1)\
 	{\
 		assert(0==(op->flags & FLAG_REG2));\
-		x86IntRegType r1 = LoadReg(EAX,op->reg1);\
-		x86e-> _ItR_ (r1,op->imm1);\
-		SaveReg(op->reg1,r1);\
+		if (IsRegCached(op->reg1))\
+		{\
+			x86IntRegType r1 = LoadReg(EAX,op->reg1);\
+			x86e-> _ItR_ (r1,op->imm1);\
+			SaveReg(op->reg1,r1);\
+		}\
+		else\
+		{\
+			x86e-> _ItM_ (GetRegPtr(op->reg1),op->imm1);\
+		}\
 	}\
 	else\
 	{\
 		assert(op->flags & FLAG_REG2);\
-		x86IntRegType r1 = LoadReg(EAX,op->reg1);\
-		if (IsRegCached(op->reg2))\
+		if (IsRegCached(op->reg1))\
+		{\
+			x86IntRegType r1 = LoadReg(EAX,op->reg1);\
+			if (IsRegCached(op->reg2))\
+			{\
+				x86IntRegType r2 = LoadReg(EAX,op->reg2);\
+				assert(r2!=EAX);\
+				x86e-> _RtR_ (r1,r2);\
+			}\
+			else\
+				x86e-> _MtR_ (r1,GetRegPtr(op->reg2));\
+			SaveReg(op->reg1,r1);\
+		}\
+	else\
 		{\
 			x86IntRegType r2 = LoadReg(EAX,op->reg2);\
-			assert(r2!=EAX);\
-			x86e-> _RtR_ (r1,r2);\
+			x86e-> _RtM_(GetRegPtr(op->reg1),r2);\
 		}\
-		else\
-			x86e-> _MtR_ (r1,GetRegPtr(op->reg2));\
-		SaveReg(op->reg1,r1);\
 	}
+
+#define OP_RegToReg_simple(opcd) OP_MoRtR_ItR(opcd##MtoR,opcd##RtoR,opcd##ItoR,opcd##ItoM,opcd##RtoM);
 
 //original
 /*
@@ -652,15 +669,15 @@ void __fastcall shil_compile_not(shil_opcode* op,rec_v1_BasicBlock* block)
 //or xor and
 void __fastcall shil_compile_xor(shil_opcode* op,rec_v1_BasicBlock* block)
 {
-	OP_MoRtR_ItR(XOR32MtoR,XOR32RtoR,XOR32ItoR);
+	OP_RegToReg_simple(XOR32);
 }
 void __fastcall shil_compile_or(shil_opcode* op,rec_v1_BasicBlock* block)
 {
-	OP_MoRtR_ItR(OR32MtoR,OR32RtoR,OR32ItoR);
+	OP_RegToReg_simple(OR32);
 }
 void __fastcall shil_compile_and(shil_opcode* op,rec_v1_BasicBlock* block)
 {
-	OP_MoRtR_ItR(AND32MtoR,AND32RtoR,AND32ItoR);
+	OP_RegToReg_simple(AND32);
 }
 //read-write
 void readwrteparams(shil_opcode* op)
@@ -880,15 +897,15 @@ void __fastcall shil_compile_test(shil_opcode* op,rec_v1_BasicBlock* block)
 //add-sub
 void __fastcall shil_compile_add(shil_opcode* op,rec_v1_BasicBlock* block)
 {
-	OP_MoRtR_ItR(ADD32MtoR,ADD32RtoR,ADD32ItoR);
+	OP_RegToReg_simple(ADD32);
 }
 void __fastcall shil_compile_adc(shil_opcode* op,rec_v1_BasicBlock* block)
 {
-	OP_MoRtR_ItR(ADC32MtoR,ADC32RtoR,ADC32ItoR);
+	OP_RegToReg_simple(ADC32);
 }
 void __fastcall shil_compile_sub(shil_opcode* op,rec_v1_BasicBlock* block)
 {
-	OP_MoRtR_ItR(SUB32MtoR,SUB32RtoR,SUB32ItoR);
+	OP_RegToReg_simple(SUB32);
 }
 
 //**

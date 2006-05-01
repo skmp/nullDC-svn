@@ -12,7 +12,7 @@
 
 bool dc_inited=false;
 bool dc_reseted=false;
-
+bool dc_ingore_init=false;
 //called from the new thread
 void ThreadCallback_DC(bool start)
 {
@@ -34,8 +34,9 @@ void cputhreadcb(bool shit)
 		printf("+Sh4 thread started \n");
 	else
 		printf("-Sh4 thread stoped \n");
-
-	ThreadCallback_DC(shit);
+	if (!dc_ingore_init)
+		ThreadCallback_DC(shit);
+	dc_ingore_init=false;
 }
 
 //Init mainly means allocate
@@ -155,4 +156,8 @@ void Stop_DC()
 bool IsDCInited()
 {
 	return dc_inited;
+}
+void SwitchCPU_DC()
+{
+	dc_ingore_init=true;//hehe just ingore next thread callback :P
 }

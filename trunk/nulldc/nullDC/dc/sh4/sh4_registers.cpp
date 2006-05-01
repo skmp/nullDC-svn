@@ -79,6 +79,10 @@ bool UpdateSR()
 		//printf("Interrupts enabled  , pc=0x%X\n",pc);
 	}
 	bool rv=old_sr.IMASK > sr.IMASK;
+	rv|=old_sr.BL==1 && sr.BL==0; 
+	if (sr.IMASK==0xF)
+		rv=false;
+
 	old_sr.full=sr.full;
 
 	return rv;

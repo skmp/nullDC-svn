@@ -20,9 +20,15 @@ int RunDC(int argc, char* argv[])
 {
 
 	if(0 != cfgLoadInt("nullDC","enable_recompiler"))
+	{
 		sh4_cpu=Get_Sh4Recompiler();
+		printf("Using Recompiler\n");
+	}
 	else
+	{
 		sh4_cpu=Get_Sh4Interpreter();
+		printf("Using Interpreter\n");
+	}
 	
 	GuiLoop();
 
