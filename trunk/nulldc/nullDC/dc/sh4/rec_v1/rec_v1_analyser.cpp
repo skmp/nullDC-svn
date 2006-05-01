@@ -17,7 +17,7 @@
 //the basicblock (and suprtblock later) will be the send to the optimiser , and after that
 //to the compiler
 
-#define CPU_RATIO 2
+#define CPU_RATIO 1
 #define CPU_BASIC_BLOCK_SIZE (448/2)
 void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 {
@@ -31,10 +31,14 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 	ilst=&to->ilst;
 	to->flags|=GET_CURRENT_FPU_MODE();
 
+
 	while (true)
 	{
-		block_size+=CPU_RATIO;
 		u16 opcode=ReadMem16(pc);
+		if (OpDesc[opcode]->LatencyCycles!=0)
+			block_size+= OpDesc[opcode]->LatencyCycles*CPU_RATIO;
+		else
+			block_size+=OpDesc[opcode]->IssueCycles*CPU_RATIO;
 
 		if (((pc>>26)&0x7)==3)
 			rec_v1_SetBlockTest(pc);
