@@ -121,11 +121,7 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 	
 	
 	rec_cycles=0;
-	if (fpscr.RM)
-		_controlfp( _RC_DOWN, _MCW_RC );//round to 0
-	else
-		_controlfp( _RC_NEAR, _MCW_RC );//round to nearest
-
+	SetFloatStatusReg();
 	while(rec_sh4_int_bCpuRun)
 	{
 		rec_v1_BasicBlock* currBlock=GetRecompiledCode(pc);
@@ -187,6 +183,15 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 	return 0;
 }
 
+//yep , for profiling :)
+u32 THREADCALL rec_sh4_int_ThreadEntry_stub(void* ptar)
+{
+	__asm 
+	{
+		push ptar;
+		call rec_sh4_int_ThreadEntry;
+	}
+}
 
 //interface
 void rec_Sh4_int_Run(ThreadCallbackFP* tcb)
@@ -198,7 +203,7 @@ void rec_Sh4_int_Run(ThreadCallbackFP* tcb)
 	else
 	{
 		rec_sh4_int_bCpuRun=true;
-		rec_sh4_int_thr_handle=new cThread(rec_sh4_int_ThreadEntry,tcb);
+		rec_sh4_int_thr_handle=new cThread(rec_sh4_int_ThreadEntry_stub,tcb);
 
 		if (rec_sh4_int_thr_handle==0)
 		{

@@ -23,7 +23,7 @@ int native=0;
 u32 T_jcond_value;
 u32 reg_pc_temp_value;
 rec_v1_BasicBlock* rec_v1_pCurrentBlock;
-
+u32 IsRamAddr[0xFF];
 int block_count=0;
 //profiling related things
 #ifdef PROFILE_DYNAREC
@@ -783,6 +783,28 @@ void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
 	}
 	readwrteparams(op);
 
+	//ECX is address
+	
+	//eax = ((ecx>>24) & 0xFF)<<2
+
+	//mov eax,ecx
+	x86e->MOV32RtoR(EAX,ECX);
+	//shr eax,24
+	//shl eax,2
+	x86e->SHR32ItoR(EAX,24);
+	x86e->SHL32ItoR(EAX,2);
+
+	//add eax , imm	;//should realy use lea/mov eax,[eax+xx]
+	x86e->ADD32ItoR(EAX,(u32)IsRamAddr);
+	//mov eax,[eax]
+	x86e->MOV32RmtoR(EAX,EAX);
+	//test eax,eax
+	x86e->TEST32RtoR(EAX,EAX);
+	//jz inline;//if !0 , then do normal read
+	u8* inline_label = x86e->JZ8(0);
+	
+	//call ReadMem32
+	//movsx [if needed]
 	if (size==0)
 	{
 		x86e->CALLFunc(ReadMem8);
@@ -800,6 +822,36 @@ void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
 	else
 		printf("ReadMem error\n");
 
+	//jmp normal;
+	u8* normal_label = x86e->JMP8(0);
+	//
+	//inline:  //inlined ram read
+	x86e->x86SetJ8(inline_label);
+	//and ecx , ram_mask
+	x86e->AND32ItoR(ECX,RAM_MASK);
+	//add ecx, ram_base
+	x86e->ADD32ItoR(ECX,(u32)(&mem_b[0]));
+	//mov/sx eax,[ecx]
+	if (size==0)
+	{
+		x86e->MOV32RmtoR(EAX,ECX);		//1 byte read ?
+		x86e->MOVSX32R8toR(EAX,EAX);	//se8
+	}
+	else if (size==1)
+	{
+		x86e->MOV32RmtoR(EAX,ECX);		//2 bytes read ?
+		x86e->MOVSX32R16toR(EAX,EAX);	//se16
+	}
+	else if (size==2)
+	{
+		x86e->MOV32RmtoR(EAX,ECX);
+	}
+	else
+		printf("ReadMem error\n");
+	//normal:
+	x86e->x86SetJ8(normal_label);
+
+	//mov reg,eax
 	SaveReg(op->reg1,EAX);//save return value
 }
 void __fastcall shil_compile_writem(shil_opcode* op,rec_v1_BasicBlock* block)
@@ -1044,7 +1096,10 @@ void __fastcall shil_compile_mul(shil_opcode* op,rec_v1_BasicBlock* block)
 			r2=LoadReg_force(ECX,op->reg2);
 		}
 
-		x86e->IMUL32RtoR(EAX,ECX);
+		if (op->flags & FLAG_SX)
+			x86e->IMUL32RtoR(EAX,ECX);
+		else
+			x86e->MUL32R(ECX);
 		
 		SaveReg((u8)reg_macl,EAX);
 	}
@@ -1544,6 +1599,11 @@ void Init()
 	{
 		if (sclt[i]==shil_compile_nimp)
 			shil_nimp--;
+	}
+
+	for (int i=0;i<0x100;i++)
+	{
+		IsRamAddr[i]=IsOnRam(i<<24)?0:0xFFFFFFFF;
 	}
 
 	printf("lazy shil compiler stats : %d%% opcodes done\n",shil_nimp*100/shil_opcodes::shil_count);
