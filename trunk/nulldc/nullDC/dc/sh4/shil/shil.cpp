@@ -793,11 +793,21 @@ char* shil_names[]=
 	//Jmp
 	"jmp",
 	//mul [s] [16|32|64] 16*16->32 , 32*32->32 , 32*32->64
-	"mul"
+	"mul",
+	
+	//more fpu fun :)
+	"fsqrt",
+	"ftrv",
+	"fipr",
+	"floatfpul",
+	"ftrc",
+
+	"fsca",
+	"fsrra"
 };
 char* GetShilName(shil_opcodes ops)
 {
-	if (ops>33)
+	if (ops>shil_count)
 	{
 		printf("SHIL ERROR\n");
 	}

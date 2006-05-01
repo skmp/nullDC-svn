@@ -63,6 +63,22 @@ INLINE rec_v1_BasicBlock* __fastcall GetRecompiledCode(u32 pc)
 	}
 }
 
+rec_v1_BasicBlock* rec_v1_FindOrAnalyse(u32 pc)
+{
+	rec_v1_BasicBlock* block=rec_v1_FindBlock(pc);
+	
+	if (block)
+		return block;
+	else
+	{
+		block=rec_v1_AddBlock(pc);
+		//analyse code
+		rec_v1_AnalyseCode(pc,block);
+		//compile code
+		//return pointer
+		return block;
+	}
+}
 rec_v1_BasicBlock* rec_v1_FindOrRecompileCode(u32 pc)
 {
 	return GetRecompiledCode(pc);
@@ -145,6 +161,7 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 		{
 			printf("Dynarec Stats : average link cycles : %d , ifb opcodes : %d%% [%d]\n",(u32)(total_cycles/calls),(u32)(ifb_calls*100/total_cycles),ifb_calls);
 			calls=total_cycles=ifb_calls=0;
+			printprofile();
 		}
 #endif
 
@@ -160,10 +177,7 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 
 			UpdateSystem(rec_cycles);
 			rec_cycles=0;
-			if (fpscr.RM)
-				_controlfp( _RC_DOWN, _MCW_RC );//round to 0
-			else
-				_controlfp( _RC_NEAR, _MCW_RC );//round to nearest
+			SetFloatStatusReg();
 		}
 	}
 	ptr(false);//call the callback

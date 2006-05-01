@@ -11,3 +11,4 @@ void rec_v1_SetBlockTest(u32 addr);
 void rec_v1_BlockTest(u32 addr);
 rec_v1_BasicBlock* rec_v1_NewBlock(u32 address);
 rec_v1_BasicBlock* rec_v1_FindOrRecompileCode(u32 pc);
+rec_v1_BasicBlock* rec_v1_FindOrAnalyse(u32 pc);

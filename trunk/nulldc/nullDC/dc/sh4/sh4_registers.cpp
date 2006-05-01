@@ -88,12 +88,36 @@ bool UpdateSR()
 	return rv;
 }
 
+//make x86 and sh4 float status registers match ;)
+u32 old_rm=0xFF;
+u32 old_dn=0xFF;
+void SetFloatStatusReg()
+{
+	if ((old_rm!=fpscr.RM) || (old_dn!=fpscr.DN) || (old_rm==0xFF )|| (old_dn==0xFF))
+	{
+		old_rm=fpscr.RM ;
+		old_dn=fpscr.DN ;
+		u32 temp=0x1f80;	//no flush to zero && round to nearest
+
+		if (fpscr.RM==1)	//if round to 0 , set the flag
+			temp|=(3<<13);
+
+		if (fpscr.DN)		//denormals are considered 0
+			temp|=(1<<15);
+
+		_asm 
+		{
+			ldmxcsr temp;	//load the float status :)
+		}
+	}
+}
 //called when fpscr is changed and we must check for rom banks ect..
 void UpdateFPSCR()
 {
 	if (fpscr.FR !=old_fpscr.FR)
 		ChangeFP();//fpu bank change
 	old_fpscr=fpscr;
+	SetFloatStatusReg();//ensure they are on sync :)
 }
 
 #ifdef DEBUG

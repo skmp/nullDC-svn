@@ -78,3 +78,4 @@ extern StatusReg old_sr;
 extern fpscr_type old_fpscr;
 
 u32* Sh4_int_GetRegisterPtr(Sh4RegType reg);
+void SetFloatStatusReg();

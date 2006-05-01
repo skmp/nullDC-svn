@@ -198,6 +198,16 @@ void AllocateRegisters(rec_v1_BasicBlock* block)
 	}
 #endif
 }
+void LoadRegisters()
+{
+	for (int i=0;i<16;i++)
+	{
+		if (IsRegCached(i))
+		{
+			LoadRegCache_reg(i);
+		}
+	}
+}
 //more helpers
 INLINE x86IntRegType LoadReg_force(x86IntRegType to,u8 reg)
 {
@@ -502,11 +512,13 @@ void __fastcall shil_compile_mov(shil_opcode* op,rec_v1_BasicBlock* block)
 		u8 dest=GetSingleFromDouble((Sh4RegType)op->reg1);
 		u8 source=GetSingleFromDouble((Sh4RegType)op->reg2);
 
-		x86e->MOV32MtoR(EAX,GetRegPtr(source));
-		x86e->MOV32MtoR(ECX,GetRegPtr(source+1));
+		//x86e->MOV32MtoR(EAX,GetRegPtr(source));
+		//x86e->MOV32MtoR(ECX,GetRegPtr(source+1));
+		x86e->SSE_MOVLPS_M64_to_XMM(XMM0,GetRegPtr(source));
 
-		x86e->MOV32RtoM(GetRegPtr(dest),EAX);
-		x86e->MOV32RtoM(GetRegPtr(dest+1),ECX);
+		//x86e->MOV32RtoM(GetRegPtr(dest),EAX);
+		//x86e->MOV32RtoM(GetRegPtr(dest+1),ECX);
+		x86e->SSE_MOVLPS_XMM_to_M64(GetRegPtr(dest),XMM0);
 	}
 }
 
@@ -1297,7 +1309,7 @@ void __fastcall shil_compile_ftrc(shil_opcode* op,rec_v1_BasicBlock* block)
 
 		//TODO : This is not entietly correct , sh4 saturates too
 		//GOTA UNFUCK THE x86 EMITTER
-		//EAX=(float)fr[n]
+		//EAX=(int)fr[n]
 		x86e->SSE_CVTTSS2SI_M32_To_R32(EAX,GetRegPtr(op->reg1));
 		//fpul=EAX
 		SaveReg(reg_fpul,EAX);
@@ -1347,7 +1359,7 @@ void __fastcall shil_compile_fsrra(shil_opcode* op,rec_v1_BasicBlock* block)
 		assert(!IsReg64((Sh4RegType)op->reg1));
 		//maby need to calculate 1/sqrt manualy ? -> yes , it seems rcp is not as accurate as needed :)
 		x86e->SSE_SQRTSS_M32_to_XMM(XMM0,GetRegPtr(op->reg1));	//XMM0=sqrt
-		x86e->SSE_MOVSS_M32_to_XMM(XMM1,(u32*)mm_1);					//XMM1=1
+		x86e->SSE_MOVSS_M32_to_XMM(XMM1,(u32*)mm_1);			//XMM1=1
 		x86e->SSE_DIVSS_XMM_to_XMM(XMM1,XMM0);					//XMM1=1/sqrt
 		x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),XMM1);	//fr=XMM1
 	}
@@ -1356,6 +1368,97 @@ void __fastcall shil_compile_fsrra(shil_opcode* op,rec_v1_BasicBlock* block)
 		assert(false);
 	}
 }
+
+#ifdef PROFILE_DYNAREC
+
+u64  dyn_profile_cycles[shil_count];
+u64  dyn_profile_calls[shil_count];
+
+u64  dyn_profile_vc[shil_count];
+
+int prints_count=0;
+void printprofile()
+{
+	prints_count++;
+	if (prints_count==1)
+	{
+
+		u64 max=0;
+		double av=0;
+		u32 im=0;
+		for (int i=0;i<shil_count;i++)
+		{
+
+			if (dyn_profile_calls[i]>0)
+			{
+				double cr=(double)dyn_profile_cycles[i]/(double)dyn_profile_calls[i];
+				if (dyn_profile_cycles[i]>max)
+				{
+					max=dyn_profile_cycles[i];
+					im=i;
+				}
+			//	printf("opcode %s , %Lf cycles/call [%Lf calls , %Lf cycles]\n",GetShilName((shil_opcodes)i)
+			//		,cr
+			//		,(double)dyn_profile_calls[i]
+			//	,(double)dyn_profile_cycles[i]
+			//	);
+			}
+		}
+
+		double cr=(double)dyn_profile_cycles[im]/(double)dyn_profile_calls[im];
+		printf("slower opcode %s , %Lf cycles/call [%Lf calls , %Lf cycles]\n",GetShilName((shil_opcodes)im)
+			,cr
+			,(double)dyn_profile_calls[im]
+		,(double)dyn_profile_cycles[im]
+		);
+
+
+		//print a sorted time ?
+		//clear em
+		for (int i=0;i<shil_count;i++)
+		{
+			dyn_profile_cycles[im]=0;
+			dyn_profile_calls[im]=0;
+		}
+		prints_count=0;
+	}
+}
+union Cmp64
+{
+	struct
+	{
+		u32 l;
+		u32 h;
+	};
+	u64 v;
+};
+
+Cmp64 dyn_last;
+Cmp64 dyn_now;
+void __fastcall dyna_profile_cookie_start()
+{
+	__asm
+	{
+		rdtsc;
+		mov dyn_last.l,eax;
+		mov dyn_last.h,edx;
+	}
+}
+
+void __fastcall dyna_profile_cookie(u32 op)
+{
+	__asm
+	{
+		rdtsc;
+		mov dyn_now.l,eax;
+		mov dyn_now.h,edx;
+	}
+
+	dyn_profile_calls[op]++;
+	dyn_profile_cycles[op]+=dyn_now.v-dyn_last.v;
+	dyn_last.v=dyn_now.v;
+}
+#endif
 
 shil_compileFP* sclt[shil_count]=
 {
@@ -1495,17 +1598,23 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 		inited=true;
 	}
 
+
 	x86e=new emitter<>();
 	block->compiled=new rec_v1_CompiledBlock();
 	
+
+	AllocateRegisters(block);
+	LoadRegisters();
 	s8* start_ptr=x86e->x86Ptr;
 
 	x86e->ADD32ItoM(&rec_cycles,block->cycles);
 	//x86e->MOV32ItoM((u32*)&rec_v1_pCurrentBlock,(u32)block);
 
-	AllocateRegisters(block);
-
-	for (u32 i=0;i<block->ilst.opcodes.size();i++)
+#ifdef PROFILE_DYNAREC
+	x86e->CALLFunc(dyna_profile_cookie_start);
+#endif
+	u32 list_sz=block->ilst.opcodes.size();
+	for (u32 i=0;i<list_sz;i++)
 	{
 		shil_opcode* op=&block->ilst.opcodes[i];
 		if (op->opcode==shil_ifb)
@@ -1518,6 +1627,18 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 			printf("SHIL COMPILER ERROR\n");
 		}
 		sclt[op->opcode](op,block);
+#ifdef PROFILE_DYNAREC
+			x86e->PUSHFD();
+			x86e->PUSH32R(EAX);
+			x86e->PUSH32R(ECX);
+			x86e->PUSH32R(EDX);
+			x86e->MOV32ItoR(ECX,op->opcode);
+			x86e->CALLFunc(dyna_profile_cookie);
+			x86e->POP32R(EDX);
+			x86e->POP32R(ECX);
+			x86e->POP32R(EAX);
+			x86e->POPFD();
+#endif
 	}
 
 	FlushRegCache();//flush reg cache
