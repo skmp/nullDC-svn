@@ -92,7 +92,6 @@ extern u64 ifb_calls;
 #endif
 
 #ifdef PROFILE_DYNAREC_CALL
-typedef void __fastcall RunCode(void * code);
 void __fastcall DoRunCode(void * code)
 {
 	__asm
@@ -110,7 +109,6 @@ void __fastcall DoRunCode(void * code)
 		pop esi;
 	}
 }
-RunCode* RunCodePTR=DoRunCode;
 #endif
 
 u32 rec_cycles=0;
@@ -151,7 +149,11 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 			pop esi;
 		}
 #else	//so we can profile :)
-		DoRunCode(fp);
+		__asm
+		{
+			mov ecx,fp;
+			call DoRunCode;
+		}
 #endif
 
 #ifdef PROFILE_DYNAREC
