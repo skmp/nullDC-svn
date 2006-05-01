@@ -140,7 +140,7 @@ void __fastcall rec_v1_BlockTest(u32 addr)
 					}
 				}
 			}
-			rec_v1_ResetBlockTest(addr);
+			//rec_v1_ResetBlockTest(addr);
 		}
 	}
 	
