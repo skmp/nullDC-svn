@@ -9,6 +9,16 @@ extern OpcodeType OpTyp[0x10000];
 
 typedef void OpDissasmFP(char* out,const char* const FormatString,u32 pc,u16 opcode);
 
+enum sh4_eu
+{
+	MT,
+	EX,
+	BR,
+	LS,
+	FE,
+	CO,
+	MA
+};
 struct sh4_opcodelistentry
 {
 	RecOpCallFP* rec_oph;
@@ -18,6 +28,9 @@ struct sh4_opcodelistentry
 	OpcodeType type;
 	OpDissasmFP* dissasm; 
 	char disasm1[64];
+	u8 IssueCycles;
+	u8 LatencyCycles;
+	sh4_eu unit;
 
 	void Dissasemble(char* strout,u32 pc , u16 params) const
 	{

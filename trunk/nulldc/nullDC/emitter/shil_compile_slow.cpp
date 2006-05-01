@@ -861,23 +861,100 @@ void __fastcall shil_compile_writem(shil_opcode* op,rec_v1_BasicBlock* block)
 
 	readwrteparams(op);
 
+	//ECX is address
+	
+	//so it's sure loaded (if from reg cache)
+	x86IntRegType r1=LoadReg(EDX,op->reg1);
+
+	//eax = ((ecx>>24) & 0xFF)<<2
+
+	//mov eax,ecx
+	x86e->MOV32RtoR(EAX,ECX);
+	//shr eax,24
+	//shl eax,2
+	x86e->SHR32ItoR(EAX,24);
+	x86e->SHL32ItoR(EAX,2);
+
+	//add eax , imm	;//should realy use lea/mov eax,[eax+xx]
+	x86e->ADD32ItoR(EAX,(u32)IsRamAddr);
+	//mov eax,[eax]
+	x86e->MOV32RmtoR(EAX,EAX);
+	//test eax,eax
+	x86e->TEST32RtoR(EAX,EAX);
+	//jz inline;//if !0 , then do normal write
+	u8* inline_label = x86e->JZ8(0);
+
 	if (size==FLAG_8)
 	{	//maby zx ?
-		LoadReg_force(EDX,op->reg1);
+		//LoadReg_force(EDX,op->reg1);
+		if (r1!=EDX)
+			x86e->MOV32RtoR(EDX,r1);
 		x86e->CALLFunc(WriteMem8);
 	}
 	else if (size==FLAG_16)
 	{	//maby zx ?
-		LoadReg_force(EDX,op->reg1);
+		//LoadReg_force(EDX,op->reg1);
+		if (r1!=EDX)
+			x86e->MOV32RtoR(EDX,r1);
 		x86e->CALLFunc(WriteMem16);
 	}
 	else if (size==FLAG_32)
 	{
-		LoadReg_force(EDX,op->reg1);
+		//LoadReg_force(EDX,op->reg1);
+		if (r1!=EDX)
+			x86e->MOV32RtoR(EDX,r1);
 		x86e->CALLFunc(WriteMem32);
 	}
 	else
 		printf("WriteMem error\n");
+	
+	//jmp normal;
+	u8* normal_label = x86e->JMP8(0);
+	//
+	//inline:  //inlined ram write
+	x86e->x86SetJ8(inline_label);
+
+	//push ecx
+	x86e->PUSH32R(ECX);
+
+	//if needed
+	if (r1==EDX)
+		x86e->PUSH32R(r1);
+
+	//call rec_v1_BlockTest
+	x86e->CALLFunc(rec_v1_BlockTest);
+
+	//if needed
+	if (r1==EDX)
+		x86e->POP32R(r1);
+
+	//pop ecx
+	x86e->POP32R(ECX);
+	//and ecx , ram_mask
+	x86e->AND32ItoR(ECX,RAM_MASK);
+	//add ecx, ram_base
+	x86e->ADD32ItoR(ECX,(u32)(&mem_b[0]));
+	//mov/sx eax,[ecx]
+	if (size==0)
+	{
+		//LoadReg_force(EDX,op->reg1);
+		if (r1!=EDX)
+			x86e->MOV32RtoR(EDX,r1);
+		x86e->MOV8RtoRm(ECX,EDX);
+	}
+	else if (size==1)
+	{
+		x86e->MOV16RtoRm(ECX,r1);
+	}
+	else if (size==2)
+	{
+		x86e->MOV32RtoRm(ECX,r1);
+	}
+	else
+		printf("ReadMem error\n");
+	//normal:
+	x86e->x86SetJ8(normal_label);
+
 }
 
 //save-loadT

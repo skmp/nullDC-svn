@@ -8,6 +8,7 @@ using namespace std;
 #define block_cnt (0x1000) 
 #define HASH_BITS 3
 vector<rec_v1_BasicBlock*> BlockLists[block_cnt];
+rec_v1_BasicBlock*		   BlockListsCache[block_cnt];
 
 u8 BitTest[8]={1<<0,1<<1,1<<2,1<<3,1<<4,1<<5,1<<6,1<<7};
 //u8 BitRes[8]={255-(1<<0),255-(1<<1),255-(1<<2),255-(1<<3),255-(1<<4),255-(1<<5),255-(1<<6),255-(1<<7)};
@@ -18,20 +19,39 @@ INLINE vector<rec_v1_BasicBlock*>* GetBlockList(u32 address)
 	return &BlockLists[(address>>3)&(block_cnt-1)];
 }
 
+INLINE rec_v1_BasicBlock* GetBlockListCache(u32 address)
+{
+	return BlockListsCache[(address>>3)&(block_cnt-1)];
+}
+INLINE void SetBlockListCache(u32 address,rec_v1_BasicBlock* nb)
+{
+	BlockListsCache[(address>>3)&(block_cnt-1)]=nb;
+}
+
 rec_v1_BasicBlock* rec_v1_FindBlock(u32 address)
 {
-	vector<rec_v1_BasicBlock*>* blklist = GetBlockList(address);
-
-	u32 listsz=blklist->size();
-	for (u32 i=0;i<listsz;i++)
+	rec_v1_BasicBlock* fast_block=GetBlockListCache(address);
+	
+	if ((fast_block !=0) && (fast_block->start==address)&&( fast_block->cpu_mode_tag==fpscr.PR_SZ))
+		return fast_block;
+	else
 	{
-		if (((*blklist)[i]!=0) && ((*blklist)[i]->start==address))
-		{
-			if ((*blklist)[i]->cpu_mode_tag==fpscr.PR_SZ)
-				return (*blklist)[i];
+
+		vector<rec_v1_BasicBlock*>* blklist = GetBlockList(address);
+
+		u32 listsz=blklist->size();
+		for (u32 i=0;i<listsz;i++)
+		{ 
+			if (((*blklist)[i]!=0) && ((*blklist)[i]->start==address))
+			{
+				if ((*blklist)[i]->cpu_mode_tag==fpscr.PR_SZ)
+				{
+					SetBlockListCache(address,(*blklist)[i]);
+					return (*blklist)[i];
+				}
+			}
 		}
 	}
-
 	return 0;
 }
 
@@ -92,7 +112,7 @@ int rec_v1_GetBlockTest(u32 addr)
 
 
 //Do a block test
-void rec_v1_BlockTest(u32 addr)
+void __fastcall rec_v1_BlockTest(u32 addr)
 {
 	//u32 addr_real=addr;
 	addr&=RAM_MASK;
@@ -113,11 +133,14 @@ void rec_v1_BlockTest(u32 addr)
 					{
 						block->Discard();
 						delete block;
+						if (GetBlockListCache(base)==block)
+							SetBlockListCache(base,0);
 						(*blklist)[j]=0;
+						
 					}
 				}
 			}
-			//rec_v1_ResetBlockTest(addr);
+			rec_v1_ResetBlockTest(addr);
 		}
 	}
 	

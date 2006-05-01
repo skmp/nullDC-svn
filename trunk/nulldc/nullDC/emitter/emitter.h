@@ -564,6 +564,18 @@ public :
 		ModRM( 0, to, 0x4 );
 		SibSB(scale, from2, from );
 	}
+		/* mov r32 to [r32] */
+	void MOV16RtoRm( x86IntRegType to, x86IntRegType from ) {
+		write8( 0x66 );
+		if (to == ESP) {
+			write8( 0x89 );
+			ModRM( 0, from, 0x4 );
+			SibSB( 0, 0x4, 0x4 );
+		} else {
+			write8( 0x89 );
+			ModRM( 0, from, to );
+		}
+	}
 
 	/* mov r8 to m8 */
 	void MOV8RtoM( u8* to, x86IntRegType from ) 
@@ -579,6 +591,11 @@ public :
 		write8( 0x8A );
 		ModRM( 0, to, DISP32 );
 		write32( MEMADDR(from, 4) ); 
+	}
+
+	void MOV8RtoRm( x86IntRegType to, x86IntRegType from ) {
+		write8( 0x88 );
+		ModRM( 0, from, to );
 	}
 
 	/* mov imm8 to m8 */
