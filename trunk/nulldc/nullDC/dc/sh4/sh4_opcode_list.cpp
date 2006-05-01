@@ -803,8 +803,8 @@ sh4_opcodelistentry opcodes[]=
 	{rec_shil_i1111_nnnn_0001_1101	,i1111_nnnn_0001_1101	,Mask_n			,0xF01D,Normal			,d1111_nnnn_0001_1101						,0,1,0,LS},	//flds <FREG_N>,FPUL       
 	{rec_shil_i1111_nnnn_0010_1101	,i1111_nnnn_0010_1101	,Mask_n			,0xF02D,Normal			,d1111_nnnn_0010_1101						,0,1,3,FE},	//float FPUL,<FREG_N>      
 	{rec_shil_i1111_nnnn_0100_1101	,i1111_nnnn_0100_1101	,Mask_n			,0xF04D,Normal			,d1111_nnnn_0100_1101						,0,1,0,LS},	//fneg <FREG_N>            
-	{rec_shil_i1111_1011_1111_1101	,i1111_1011_1111_1101	,Mask_none		,0xFBFD,WritesFPSCR		,OpDissCFS,"frchg"							,0,1,2,FE},	//frchg                    
-	{rec_shil_i1111_0011_1111_1101	,i1111_0011_1111_1101	,Mask_none		,0xF3FD,WritesFPSCR		,OpDissCFS,"fschg"							,0,1,2,FE},	//fschg                    
+	{rec_shil_i1111_1011_1111_1101	,i1111_1011_1111_1101	,Mask_none		,0xFBFD,WritesFPSCR		,OpDissCFS,"frchg"							,1,2,FE},	//frchg                    
+	{rec_shil_i1111_0011_1111_1101	,i1111_0011_1111_1101	,Mask_none		,0xF3FD,WritesFPSCR		,OpDissCFS,"fschg"							,1,2,FE},	//fschg                    
 	{rec_shil_i1111_nnnn_0110_1101	,i1111_nnnn_0110_1101	,Mask_n			,0xF06D,Normal			,d1111_nnnn_0110_1101						,0,1,12,FE},//fsqrt <FREG_N>                
 	{rec_shil_i1111_nnnn_0011_1101	,i1111_nnnn_0011_1101	,Mask_n			,0xF03D,Normal			,d1111_nnnn_0011_1101						,0,1,4,FE},	//ftrc <FREG_N>, FPUL      
 	{rec_shil_i1111_nnnn_0000_1101	,i1111_nnnn_0000_1101	,Mask_n			,0xF00D,Normal			,d1111_nnnn_0000_1101						,0,1,0,LS},	//fsts FPUL,<FREG_N>       

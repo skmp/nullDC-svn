@@ -6,7 +6,7 @@
 extern OpCallFP* OpPtr[0x10000];
 extern RecOpCallFP* RecOpPtr[0x10000];
 extern OpcodeType OpTyp[0x10000];
-extern sh4_opcodelistentry* OpDesc[0x10000];
+
 typedef void OpDissasmFP(char* out,const char* const FormatString,u32 pc,u16 opcode);
 
 enum sh4_eu
@@ -59,6 +59,7 @@ struct sh4_opcodelistentry
 	
 };
 
+extern sh4_opcodelistentry* OpDesc[0x10000];
 #define ExecuteOpcode(op) {OpPtr[op](op);}
 
 void BuildOpcodeTables();
