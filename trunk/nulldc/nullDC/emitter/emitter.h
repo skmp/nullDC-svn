@@ -1,15 +1,17 @@
+#pragma once
 #include "types.h"
 
+/*
 struct RegInfo
 {
 	u32 id;
-};
-
+};*/
+/*
 struct Label
 {
 	char* name;
 	u32*  patch;
-};
+};*/
 
 enum ConditionCode
 {
@@ -120,7 +122,7 @@ private:
 	s8* x86Ptr_end;
 
 	u32 x86Ptr_size;
-	GrowingList<Label> labels;
+//	GrowingList<Label> labels;
 
 	//size is never > 4 GB 
 	void Resizex86Ptr()
@@ -596,6 +598,18 @@ public :
 	void MOV8RtoRm( x86IntRegType to, x86IntRegType from ) {
 		write8( 0x88 );
 		ModRM( 0, from, to );
+	}
+
+	/* mov [r32] to r8 */
+	void MOV8RmtoR( x86IntRegType to, x86IntRegType from ) {
+		if (from == ESP) {
+			write8( 0x8A );
+			ModRM( 0, to, 0x4 );
+			SibSB( 0, 0x4, 0x4 );
+		} else {
+			write8( 0x8A );
+			ModRM( 0, to, from );
+		}
 	}
 
 	/* mov imm8 to m8 */
@@ -2353,6 +2367,13 @@ public :
 		write32( from ); 
 	}
 
+	/* test r8 to r8 */
+	void TEST8RtoR( x86IntRegType to, x86IntRegType from ) 
+	{
+		write8( 0x84 );
+		ModRM( 3, from, to );
+	}
+
 	/* test r32 to r32 */
 	void TEST32RtoR( x86IntRegType to, x86IntRegType from ) 
 	{
@@ -3816,7 +3837,7 @@ public :
 	void SSE2_PADDUSW_M128_to_XMM( x86SSERegType to, u32* from ){ SSEMtoR66( 0xDD0F ); }
 
 
-
+/*
 
 	//basic logical structures
 	void StartIf(RegInfo r1,RegInfo r2,ConditionCode cc)
@@ -3869,5 +3890,5 @@ public :
 	}
 	void JumpCond(ConditionCode cc,Label* label)
 	{
-	}
+	}*/
 };

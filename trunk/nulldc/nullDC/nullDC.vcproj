@@ -766,6 +766,14 @@
 						<File
 							RelativePath=".\dc\sh4\rec_v1\sh4_cpu_shil.cpp"
 							>
+							<FileConfiguration
+								Name="Release-NoTrace|Win32"
+								>
+								<Tool
+									Name="VCCLCompilerTool"
+									Optimization="0"
+								/>
+							</FileConfiguration>
 						</File>
 						<File
 							RelativePath=".\dc\sh4\rec_v1\sh4_cpu_shil.h"
@@ -799,6 +807,22 @@
 								/>
 							</FileConfiguration>
 						</File>
+						<Filter
+							Name="opt"
+							>
+							<File
+								RelativePath=".\dc\sh4\rec_v1\opt\shil_opts.cpp"
+								>
+							</File>
+							<File
+								RelativePath=".\dc\sh4\rec_v1\opt\shil_opts.h"
+								>
+							</File>
+							<File
+								RelativePath=".\dc\sh4\rec_v1\opt\shil_opts_header.h"
+								>
+							</File>
+						</Filter>
 					</Filter>
 				</Filter>
 				<Filter

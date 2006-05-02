@@ -4,6 +4,7 @@
 
 #include "dc\mem\sh4_mem.h"
 #include "dc\sh4\sh4_registers.h"
+#include "opt\shil_opts.h"
 
 //w/ a block size of 256 we can have max 7 levels of basic blocks (heh)
 //w/ a block size of 448 (bad number for inlinings , but good for vsyncs) we can have 13-14
@@ -48,6 +49,21 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 		else*/
 			RecOpPtr[opcode](opcode,pc,to);
 		
+		if (to->flags & BLOCK_SOM_MASK)
+		{
+			switch (to->flags & BLOCK_SOM_MASK)
+			{
+			case BLOCK_SOM_SIZE_128:
+				printf("Syth opcode found at pc 0x%X , bytelen = 128 , skiping 128 bytes\n",pc);
+				break;
+			
+			case BLOCK_SOM_RESERVED1:
+			case BLOCK_SOM_RESERVED2:
+				break;
+			}
+			to->flags&=~BLOCK_SOM_MASK;
+		}
+
 		if (to->flags & BLOCK_ATSC_END)
 		{
 			to->end=pc;
@@ -84,7 +100,7 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 			to->TF_next_addr=pc+2;
 			break;
 		}
-
+ 
 		pc+=2;
 	}
 
@@ -100,6 +116,9 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 	}
 #endif
 	to->cycles=block_size;
+
+	//shil_opt_return srv;
+//	perform_shil_opt(shil_opt_ntc,to,srv);
 
 	//printf("SH4: Analysed block pc:%x , block size : %d. Shil size %d , level = %d\n",to->start,block_size,to->ilst.op_count,nest_level);
 }

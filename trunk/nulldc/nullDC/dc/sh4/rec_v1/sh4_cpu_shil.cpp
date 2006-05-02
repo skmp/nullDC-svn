@@ -471,6 +471,61 @@ sh4op(i0000_nnnn_mmmm_0111)
 	/*macl = (u32)((((s32)r[n]) * ((s32)r[m])));*/
 }
 //************************ Div ! ************************ 
+#define MASK_N_M 0xF00F
+#define MASK_N   0xF0FF
+#define MASK_NONE   0xFFFF
+
+#define DIV0U_KEY 0x0019
+#define DIV0S_KEY 0x2007
+#define DIV1_KEY 0x3004
+#define ROTCL_KEY 0x4024
+u32 MatchDiv(u32 pc , rec_v1_BasicBlock* bb,s32 reg1,s32 reg2 , s32 reg3)
+{
+	u32 v_pc=pc;
+	u32 match=1;
+	for (int i=0;i<32;i++)
+	{
+		u16 opcode=ReadMem16(v_pc);
+		v_pc+=2;
+		if ((opcode&MASK_N)==ROTCL_KEY)
+		{
+			if (reg1==-1)
+				reg1=GetN(opcode);
+			else if (reg1!=GetN(opcode))
+				break;
+			match++;
+		}
+		else
+			break;
+		
+		opcode=ReadMem16(v_pc);
+		v_pc+=2;
+		if ((opcode&MASK_N_M)==DIV1_KEY)
+		{
+			if (reg2==-1)
+				reg2=GetM(opcode);
+			else if (reg2!=GetM(opcode))
+				break;
+			
+			if (reg2==reg1)
+				break;
+
+			if (reg3==-1)
+				reg3=GetN(opcode);
+			else if (reg3!=GetN(opcode))
+				break;
+			
+			if (reg3==reg1)
+				break;
+
+			match++;
+		}
+		else
+			break;
+	}
+	
+	return match;
+}
 //div0u                         
 sh4op(i0000_0000_0001_1001)
 {//ToDo : Check This [26/4/05]
@@ -478,10 +533,15 @@ sh4op(i0000_0000_0001_1001)
 	//sr.Q = 0;
 	//sr.M = 0;
 	//sr.T = 0;
-	//ilst->mov(sr_Q,0);
-	//ilst->mov(sr_M,0);
-	//ilst->mov(sr_T,0);
-	shil_interpret(op);
+
+	u32 match=MatchDiv(pc+2,bb,-1,-1,-1);
+
+	printf("DIV32U matched %d%%\n",match*100/65);
+	if (match==65)
+		//DIV32U was perfectly matched :)
+		bb->flags|=BLOCK_SOM_SIZE_128;
+	//else //<- uncoment when we realy emit em :P
+		shil_interpret(op);
 }
 //div0s <REG_M>,<REG_N>         
 sh4op(i0010_nnnn_mmmm_0111)
@@ -489,11 +549,20 @@ sh4op(i0010_nnnn_mmmm_0111)
 	//iNimp("div0s <REG_M>,<REG_N>");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
-shil_interpret(op);
 	/*//new implementation
 	sr.Q=r[n]>>31;
 	sr.M=r[m]>>31;
 	sr.T=sr.M^sr.Q;*/
+
+	u32 match=MatchDiv(pc+2,bb,-1,GetM(op),GetN(op));
+	printf("DIV32S matched %d%%\n",match*100/65);
+	
+	if (match==65)
+		//DIV32S was perfectly matched :)
+		bb->flags|=BLOCK_SOM_SIZE_128;
+	//else //<- uncoment when we realy emit em :P
+		shil_interpret(op);
+
 	return;
 }
 

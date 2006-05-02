@@ -33,7 +33,10 @@ rec_v1_BasicBlock* rec_v1_FindBlock(u32 address)
 	rec_v1_BasicBlock* fast_block=GetBlockListCache(address);
 	
 	if ((fast_block !=0) && (fast_block->start==address)&&( fast_block->cpu_mode_tag==fpscr.PR_SZ))
+	{
+		fast_block->lookups++;
 		return fast_block;
+	}
 	else
 	{
 
@@ -42,12 +45,15 @@ rec_v1_BasicBlock* rec_v1_FindBlock(u32 address)
 		u32 listsz=blklist->size();
 		for (u32 i=0;i<listsz;i++)
 		{ 
-			if (((*blklist)[i]!=0) && ((*blklist)[i]->start==address))
+			rec_v1_BasicBlock* thisblock=(*blklist)[i];
+			if ((thisblock!=0) && (thisblock->start==address))
 			{
-				if ((*blklist)[i]->cpu_mode_tag==fpscr.PR_SZ)
+				if (thisblock->cpu_mode_tag==fpscr.PR_SZ)
 				{
-					SetBlockListCache(address,(*blklist)[i]);
-					return (*blklist)[i];
+					//thisblock->lookups++;
+					if (fast_block==0 || fast_block->lookups<thisblock->lookups)
+						SetBlockListCache(address,thisblock);
+					return thisblock;
 				}
 			}
 		}
@@ -148,4 +154,19 @@ void __fastcall rec_v1_BlockTest(u32 addr)
 void rec_v1_NotifyMemWrite(u32 start , u32 size)
 {
 
+}
+
+void rec_v1_CompileBlockTest(emitter<>* x86e,x86IntRegType r_addr,x86IntRegType temp)
+{
+	x86e->MOV32RtoR(EDX,r_addr);
+	x86e->SHR32ItoR(EDX,(HASH_BITS+3));		//get correct offset
+	x86e->MOV32ItoR(temp,(u32)&RamTest[0]);	//get base ptr
+	x86e->ADD32RtoR(temp,EDX);			//add offset to it
+	x86e->MOV8RmtoR(temp,temp);				//get hole test byte
+	x86e->TEST8RtoR(temp,temp);				//if test byte is 0 , no need for full test
+	u8* no_test=x86e->JZ8(0);				//jump over full test
+	x86e->PUSH32R(r_addr);					//presrve r_addr ;)
+	x86e->CALLFunc(rec_v1_BlockTest);		//do full test
+	x86e->POP32R(r_addr);					//restore r_addr :D
+	x86e->x86SetJ8(no_test);				//jump here if no test
 }

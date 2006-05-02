@@ -914,24 +914,23 @@ void __fastcall shil_compile_writem(shil_opcode* op,rec_v1_BasicBlock* block)
 	//inline:  //inlined ram write
 	x86e->x86SetJ8(inline_label);
 
-	//push ecx
-	x86e->PUSH32R(ECX);
+	//and ecx , ram_mask
+	x86e->AND32ItoR(ECX,RAM_MASK);
+
 
 	//if needed
 	if (r1==EDX)
 		x86e->PUSH32R(r1);
 
+	
 	//call rec_v1_BlockTest
-	x86e->CALLFunc(rec_v1_BlockTest);
+	//
+	rec_v1_CompileBlockTest(x86e,ECX,EAX);
 
 	//if needed
 	if (r1==EDX)
 		x86e->POP32R(r1);
 
-	//pop ecx
-	x86e->POP32R(ECX);
-	//and ecx , ram_mask
-	x86e->AND32ItoR(ECX,RAM_MASK);
 	//add ecx, ram_base
 	x86e->ADD32ItoR(ECX,(u32)(&mem_b[0]));
 	//mov/sx eax,[ecx]

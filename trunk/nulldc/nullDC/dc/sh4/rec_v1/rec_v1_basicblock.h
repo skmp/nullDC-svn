@@ -27,7 +27,13 @@ public :
 
 #define GET_CURRENT_FPU_MODE() (fpscr.PR_SZ<<2)
 
-#define BLOCK_ATSC_END	0x8000			//end  analyse [analyse olny flag]
+#define BLOCK_SOM_NONE		(0<<12)			//NONE
+#define BLOCK_SOM_SIZE_128	(1<<12)			//DIV32U[Q|R]/DIV32S[Q|R]
+#define BLOCK_SOM_RESERVED1	(2<<12)			//RESERVED
+#define BLOCK_SOM_RESERVED2	(3<<12)			//RESERVED
+
+#define BLOCK_SOM_MASK		(3<<12)			//synthesyssed opcode mask
+#define BLOCK_ATSC_END		(1<<15)			//end  analyse [analyse olny flag]
 
 
 #define BLOCKLIST_MAX_CYCLES (448)
@@ -64,6 +70,7 @@ class rec_v1_BasicBlock
 	//flags
 	u16 flags;	//compiled block flags :)
 	u32 cycles;
+	u32 lookups;	//count of lookups for this block
 
 	shil_stream ilst;
 
