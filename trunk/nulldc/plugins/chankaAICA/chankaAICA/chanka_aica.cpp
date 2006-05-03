@@ -14,7 +14,7 @@ u8*g_pSH4SoundRAM;
 #define SH4AicaMemory_START ( 0x00700000)
 
 #define SH4SoundRAM_START ( 0x00800000)
-#define ARM7BIAS (7)
+#define ARM7BIAS (2)
 
 
 bool g_bArm7Enable=true;
@@ -119,7 +119,7 @@ void WriteMem_ram(u32 addr,u32 data,u32 size)
 void UpdateSystem(u32 Cycles)
 {
 	sh4_cycles+=Cycles;
-	g_pArm7->BlockStepArm7(Cycles/(6*ARM7BIAS));
+	g_pArm7->BlockStepArm7(Cycles/(8*ARM7BIAS));
 	AICARefresh();
 }
 

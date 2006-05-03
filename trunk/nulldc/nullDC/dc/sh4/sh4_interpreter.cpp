@@ -358,11 +358,16 @@ bool ExecuteDelayslot()
 
 //General update
 //u32 gdCnt=0;
+u32 aica_cycl=0;
 int __fastcall UpdateSystem(u32 Cycles)
 {
 	//TODO : Add Update System implementation
-
-	UpdateAica(Cycles);
+	aica_cycl+=Cycles;
+	if (aica_cycl>(200*1000*1000/(44100*3)))
+	{
+		UpdateAica(aica_cycl);
+		aica_cycl=0;
+	}
 	UpdateTMU(Cycles);
 	UpdatePvr(Cycles);
 	return UpdateINTC();
