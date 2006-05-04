@@ -50,19 +50,20 @@ EXPORT void dcGetAICAInfo(aica_plugin_if* info)
 }
 
 
+void * win_handle;
 //called when plugin is used by emu (you should do first time init here)
 void dcInit(void* param,PluginType type)
 {
 	aica_init_params* ip=(aica_init_params*)param;
 	Sh4RaiseInterrupt=ip->RaiseInterrupt;
 	SB_ISTEXT=ip->SB_ISTEXT;
-	InitARM7(ip->WindowHandle);
+	win_handle=ip->WindowHandle;
 }
 
 //called when plugin is unloaded by emu , olny if dcInit is called (eg , not called to enumerate plugins)
 void dcTerm(PluginType type)
 {
-	TerminateARM7();
+
 }
 
 //It's suposed to reset anything 
@@ -73,9 +74,11 @@ void dcReset(bool Manual,PluginType type)
 //called when entering sh4 thread , from the new thread context (for any thread speciacific init)
 void dcThreadInit(PluginType type)
 {
+	InitARM7(win_handle);
 }
 
 //called when exiting from sh4 thread , from the new thread context (for any thread speciacific de init) :P
 void dcThreadTerm(PluginType type)
 {
+	TerminateARM7();
 }

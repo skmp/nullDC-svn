@@ -26,6 +26,7 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 	u32 pc=start;
 
 	u32 block_size=0;
+	u32 block_ops=0;
 
 	shil_DynarecInit();
 
@@ -36,10 +37,11 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 	while (true)
 	{
 		u16 opcode=ReadMem16(pc);
+		block_ops++;
 		if (OpDesc[opcode])
 		{
 			if (OpDesc[opcode]->LatencyCycles!=0)
-				block_size+= OpDesc[opcode]->LatencyCycles*CPU_RATIO;
+				block_size+=OpDesc[opcode]->LatencyCycles*CPU_RATIO;
 			else
 				block_size+=OpDesc[opcode]->IssueCycles*CPU_RATIO;
 		}
@@ -127,5 +129,7 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 	//shil_opt_return srv;
 //	perform_shil_opt(shil_opt_ntc,to,srv);
 
-	//printf("SH4: Analysed block pc:%x , block size : %d. Shil size %d , level = %d\n",to->start,block_size,to->ilst.op_count,nest_level);
+	//printf("Block done %f avg cycl/op\n",(float)block_size/(float)block_ops);
+	//if (((float)block_size/(float)block_ops)<1)
+	//	__asm int 3;
 }

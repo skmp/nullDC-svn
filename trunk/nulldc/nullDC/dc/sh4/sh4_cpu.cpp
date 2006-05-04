@@ -143,10 +143,7 @@ sh4op(i0000_nnnn_1000_0011)
 			for (u32 i = 0; i < 8; i++)
 				WriteMem32((Address + (i << 2)), sq[i]);
 		}
-
 	}
-
-
 }
 
 

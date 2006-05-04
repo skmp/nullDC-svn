@@ -780,37 +780,37 @@ sh4_opcodelistentry opcodes[]=
 	{rec_shil_i1110_nnnn_iiii_iiii	,i1110_nnnn_iiii_iiii	,Mask_n_imm8,0xE000	,Normal				,OpDissCFS,"mov #<simm8hex>,<REG_N>"		,1,1,EX},	// mov #<imm>,<REG_N>
 	
 	//and here are the new ones :D
-	{rec_shil_i1111_nnnn_mmmm_0000	,i1111_nnnn_mmmm_0000	,Mask_n_m		,0xF000,Normal			,d1111_nnnn_mmmm_0000						,0,1,3,FE},	//fadd <FREG_M>,<FREG_N>
-	{rec_shil_i1111_nnnn_mmmm_0001	,i1111_nnnn_mmmm_0001	,Mask_n_m		,0xF001,Normal			,d1111_nnnn_mmmm_0001						,0,1,3,FE},	//fsub <FREG_M>,<FREG_N>   
-	{rec_shil_i1111_nnnn_mmmm_0010	,i1111_nnnn_mmmm_0010	,Mask_n_m		,0xF002,Normal			,d1111_nnnn_mmmm_0010						,0,1,3,FE},	//fmul <FREG_M>,<FREG_N>   
-	{rec_shil_i1111_nnnn_mmmm_0011	,i1111_nnnn_mmmm_0011	,Mask_n_m		,0xF003,Normal			,d1111_nnnn_mmmm_0011						,0,1,12,FE},//fdiv <FREG_M>,<FREG_N>   
-	{rec_shil_i1111_nnnn_mmmm_0100	,i1111_nnnn_mmmm_0100	,Mask_n_m		,0xF004,Normal			,d1111_nnnn_mmmm_0100						,0,1,4,FE},	//fcmp/eq <FREG_M>,<FREG_N>
-	{rec_shil_i1111_nnnn_mmmm_0101	,i1111_nnnn_mmmm_0101	,Mask_n_m		,0xF005,Normal			,d1111_nnnn_mmmm_0101						,0,1,4,FE},	//fcmp/gt <FREG_M>,<FREG_N>
-	{rec_shil_i1111_nnnn_mmmm_0110	,i1111_nnnn_mmmm_0110	,Mask_n_m		,0xF006,Normal			,d1111_nnnn_mmmm_0110						,0,1,2,LS},	//fmov.s @(R0,<REG_M>),<FREG_N>
-	{rec_shil_i1111_nnnn_mmmm_0111	,i1111_nnnn_mmmm_0111	,Mask_n_m		,0xF007,Normal			,d1111_nnnn_mmmm_0111						,0,1,1,LS},	//fmov.s <FREG_M>,@(R0,<REG_N>)
-	{rec_shil_i1111_nnnn_mmmm_1000	,i1111_nnnn_mmmm_1000	,Mask_n_m		,0xF008,Normal			,d1111_nnnn_mmmm_1000						,0,1,2,LS},	//fmov.s @<REG_M>,<FREG_N> 
-	{rec_shil_i1111_nnnn_mmmm_1001	,i1111_nnnn_mmmm_1001	,Mask_n_m		,0xF009,Normal			,d1111_nnnn_mmmm_1001						,0,1,2,LS},	//fmov.s @<REG_M>+,<FREG_N>
-	{rec_shil_i1111_nnnn_mmmm_1010	,i1111_nnnn_mmmm_1010	,Mask_n_m		,0xF00A,Normal			,d1111_nnnn_mmmm_1010						,0,1,1,LS},	//fmov.s <FREG_M>,@<REG_N>
-	{rec_shil_i1111_nnnn_mmmm_1011	,i1111_nnnn_mmmm_1011	,Mask_n_m		,0xF00B,Normal			,d1111_nnnn_mmmm_1011						,0,1,1,LS},	//fmov.s <FREG_M>,@-<REG_N>
-	{rec_shil_i1111_nnnn_mmmm_1100	,i1111_nnnn_mmmm_1100	,Mask_n_m		,0xF00C,Normal			,d1111_nnnn_mmmm_1100						,0,1,0,LS},	//fmov <FREG_M>,<FREG_N>   
-	{rec_shil_i1111_nnnn_0101_1101	,i1111_nnnn_0101_1101	,Mask_n			,0xF05D,Normal			,d1111_nnnn_0101_1101						,0,1,0,LS},	//fabs <FREG_N>            
-	{rec_shil_i1111_nnn0_1111_1101	,i1111_nnn0_1111_1101	,Mask_nh3bit	,0xF0FD,Normal			,OpDissFSCA									,0,1,4,FE},	//FSCA FPUL, DRn//F0FD//1111_nnnn_1111_1101
-	{rec_shil_i1111_nnnn_1011_1101	,i1111_nnnn_1011_1101	,Mask_n			,0xF0BD,Normal			,d1111_nnnn_1011_1101						,0,1,4,FE},	//fcnvds <DR_N>,FPUL       
-	{rec_shil_i1111_nnnn_1010_1101	,i1111_nnnn_1010_1101	,Mask_n			,0xF0AD,Normal			,d1111_nnnn_1010_1101						,0,1,4,FE},	//fcnvsd FPUL,<DR_N>       
-	{rec_shil_i1111_nnmm_1110_1101	,i1111_nnmm_1110_1101	,Mask_n			,0xF0ED,Normal			,OpDissfipr									,0,1,4,FE},	//fipr <FV_M>,<FV_N>            
-	{rec_shil_i1111_nnnn_1000_1101	,i1111_nnnn_1000_1101	,Mask_n			,0xF08D,Normal			,d1111_nnnn_1000_1101						,0,1,0,LS},	//fldi0 <FREG_N>           
-	{rec_shil_i1111_nnnn_1001_1101	,i1111_nnnn_1001_1101	,Mask_n			,0xF09D,Normal			,d1111_nnnn_1001_1101						,0,1,0,LS},	//fldi1 <FREG_N>           
-	{rec_shil_i1111_nnnn_0001_1101	,i1111_nnnn_0001_1101	,Mask_n			,0xF01D,Normal			,d1111_nnnn_0001_1101						,0,1,0,LS},	//flds <FREG_N>,FPUL       
-	{rec_shil_i1111_nnnn_0010_1101	,i1111_nnnn_0010_1101	,Mask_n			,0xF02D,Normal			,d1111_nnnn_0010_1101						,0,1,3,FE},	//float FPUL,<FREG_N>      
-	{rec_shil_i1111_nnnn_0100_1101	,i1111_nnnn_0100_1101	,Mask_n			,0xF04D,Normal			,d1111_nnnn_0100_1101						,0,1,0,LS},	//fneg <FREG_N>            
+	{rec_shil_i1111_nnnn_mmmm_0000	,i1111_nnnn_mmmm_0000	,Mask_n_m		,0xF000,Normal			,d1111_nnnn_mmmm_0000,""					,1,3,FE},	//fadd <FREG_M>,<FREG_N>
+	{rec_shil_i1111_nnnn_mmmm_0001	,i1111_nnnn_mmmm_0001	,Mask_n_m		,0xF001,Normal			,d1111_nnnn_mmmm_0001,""					,1,3,FE},	//fsub <FREG_M>,<FREG_N>   
+	{rec_shil_i1111_nnnn_mmmm_0010	,i1111_nnnn_mmmm_0010	,Mask_n_m		,0xF002,Normal			,d1111_nnnn_mmmm_0010,""					,1,3,FE},	//fmul <FREG_M>,<FREG_N>   
+	{rec_shil_i1111_nnnn_mmmm_0011	,i1111_nnnn_mmmm_0011	,Mask_n_m		,0xF003,Normal			,d1111_nnnn_mmmm_0011,""					,1,12,FE},//fdiv <FREG_M>,<FREG_N>   
+	{rec_shil_i1111_nnnn_mmmm_0100	,i1111_nnnn_mmmm_0100	,Mask_n_m		,0xF004,Normal			,d1111_nnnn_mmmm_0100,""					,1,4,FE},	//fcmp/eq <FREG_M>,<FREG_N>
+	{rec_shil_i1111_nnnn_mmmm_0101	,i1111_nnnn_mmmm_0101	,Mask_n_m		,0xF005,Normal			,d1111_nnnn_mmmm_0101,""					,1,4,FE},	//fcmp/gt <FREG_M>,<FREG_N>
+	{rec_shil_i1111_nnnn_mmmm_0110	,i1111_nnnn_mmmm_0110	,Mask_n_m		,0xF006,Normal			,d1111_nnnn_mmmm_0110,""					,1,2,LS},	//fmov.s @(R0,<REG_M>),<FREG_N>
+	{rec_shil_i1111_nnnn_mmmm_0111	,i1111_nnnn_mmmm_0111	,Mask_n_m		,0xF007,Normal			,d1111_nnnn_mmmm_0111,""					,1,1,LS},	//fmov.s <FREG_M>,@(R0,<REG_N>)
+	{rec_shil_i1111_nnnn_mmmm_1000	,i1111_nnnn_mmmm_1000	,Mask_n_m		,0xF008,Normal			,d1111_nnnn_mmmm_1000,""					,1,2,LS},	//fmov.s @<REG_M>,<FREG_N> 
+	{rec_shil_i1111_nnnn_mmmm_1001	,i1111_nnnn_mmmm_1001	,Mask_n_m		,0xF009,Normal			,d1111_nnnn_mmmm_1001,""					,1,2,LS},	//fmov.s @<REG_M>+,<FREG_N>
+	{rec_shil_i1111_nnnn_mmmm_1010	,i1111_nnnn_mmmm_1010	,Mask_n_m		,0xF00A,Normal			,d1111_nnnn_mmmm_1010,""					,1,1,LS},	//fmov.s <FREG_M>,@<REG_N>
+	{rec_shil_i1111_nnnn_mmmm_1011	,i1111_nnnn_mmmm_1011	,Mask_n_m		,0xF00B,Normal			,d1111_nnnn_mmmm_1011,""					,1,1,LS},	//fmov.s <FREG_M>,@-<REG_N>
+	{rec_shil_i1111_nnnn_mmmm_1100	,i1111_nnnn_mmmm_1100	,Mask_n_m		,0xF00C,Normal			,d1111_nnnn_mmmm_1100,""					,1,0,LS},	//fmov <FREG_M>,<FREG_N>   
+	{rec_shil_i1111_nnnn_0101_1101	,i1111_nnnn_0101_1101	,Mask_n			,0xF05D,Normal			,d1111_nnnn_0101_1101,""					,1,0,LS},	//fabs <FREG_N>            
+	{rec_shil_i1111_nnn0_1111_1101	,i1111_nnn0_1111_1101	,Mask_nh3bit	,0xF0FD,Normal			,OpDissFSCA			 ,""					,1,4,FE},	//FSCA FPUL, DRn//F0FD//1111_nnnn_1111_1101
+	{rec_shil_i1111_nnnn_1011_1101	,i1111_nnnn_1011_1101	,Mask_n			,0xF0BD,Normal			,d1111_nnnn_1011_1101,""					,1,4,FE},	//fcnvds <DR_N>,FPUL       
+	{rec_shil_i1111_nnnn_1010_1101	,i1111_nnnn_1010_1101	,Mask_n			,0xF0AD,Normal			,d1111_nnnn_1010_1101,""					,1,4,FE},	//fcnvsd FPUL,<DR_N>       
+	{rec_shil_i1111_nnmm_1110_1101	,i1111_nnmm_1110_1101	,Mask_n			,0xF0ED,Normal			,OpDissfipr			 ,""					,1,4,FE},	//fipr <FV_M>,<FV_N>            
+	{rec_shil_i1111_nnnn_1000_1101	,i1111_nnnn_1000_1101	,Mask_n			,0xF08D,Normal			,d1111_nnnn_1000_1101,""					,1,0,LS},	//fldi0 <FREG_N>           
+	{rec_shil_i1111_nnnn_1001_1101	,i1111_nnnn_1001_1101	,Mask_n			,0xF09D,Normal			,d1111_nnnn_1001_1101,""					,1,0,LS},	//fldi1 <FREG_N>           
+	{rec_shil_i1111_nnnn_0001_1101	,i1111_nnnn_0001_1101	,Mask_n			,0xF01D,Normal			,d1111_nnnn_0001_1101,""					,1,0,LS},	//flds <FREG_N>,FPUL       
+	{rec_shil_i1111_nnnn_0010_1101	,i1111_nnnn_0010_1101	,Mask_n			,0xF02D,Normal			,d1111_nnnn_0010_1101,""					,1,3,FE},	//float FPUL,<FREG_N>      
+	{rec_shil_i1111_nnnn_0100_1101	,i1111_nnnn_0100_1101	,Mask_n			,0xF04D,Normal			,d1111_nnnn_0100_1101,""					,1,0,LS},	//fneg <FREG_N>            
 	{rec_shil_i1111_1011_1111_1101	,i1111_1011_1111_1101	,Mask_none		,0xFBFD,WritesFPSCR		,OpDissCFS,"frchg"							,1,2,FE},	//frchg                    
 	{rec_shil_i1111_0011_1111_1101	,i1111_0011_1111_1101	,Mask_none		,0xF3FD,WritesFPSCR		,OpDissCFS,"fschg"							,1,2,FE},	//fschg                    
-	{rec_shil_i1111_nnnn_0110_1101	,i1111_nnnn_0110_1101	,Mask_n			,0xF06D,Normal			,d1111_nnnn_0110_1101						,0,1,12,FE},//fsqrt <FREG_N>                
-	{rec_shil_i1111_nnnn_0011_1101	,i1111_nnnn_0011_1101	,Mask_n			,0xF03D,Normal			,d1111_nnnn_0011_1101						,0,1,4,FE},	//ftrc <FREG_N>, FPUL      
-	{rec_shil_i1111_nnnn_0000_1101	,i1111_nnnn_0000_1101	,Mask_n			,0xF00D,Normal			,d1111_nnnn_0000_1101						,0,1,0,LS},	//fsts FPUL,<FREG_N>       
-	{rec_shil_i1111_nn01_1111_1101	,i1111_nn01_1111_1101	,Mask_nh2bit	,0xF1FD,Normal			,OpDissftrv									,0,1,6,FE},	//ftrv xmtrx,<FV_N> 
-	{rec_shil_i1111_nnnn_mmmm_1110	,i1111_nnnn_mmmm_1110	,Mask_n_m		,0xF00E,Normal			,OpDissfmac									,0,1,4,FE},	//fmac <FREG_0>,<FREG_M>,<FREG_N> 
-	{rec_shil_i1111_nnnn_0111_1101	,i1111_nnnn_0111_1101	,Mask_n			,0xF07D,Normal			,d1111_nnnn_0111_1101						,0,1,4,FE},	//FSRRA <FREG_N> (1111nnnn 01111101)
+	{rec_shil_i1111_nnnn_0110_1101	,i1111_nnnn_0110_1101	,Mask_n			,0xF06D,Normal			,d1111_nnnn_0110_1101,""					,1,12,FE},//fsqrt <FREG_N>                
+	{rec_shil_i1111_nnnn_0011_1101	,i1111_nnnn_0011_1101	,Mask_n			,0xF03D,Normal			,d1111_nnnn_0011_1101,""					,1,4,FE},	//ftrc <FREG_N>, FPUL      
+	{rec_shil_i1111_nnnn_0000_1101	,i1111_nnnn_0000_1101	,Mask_n			,0xF00D,Normal			,d1111_nnnn_0000_1101,""					,1,0,LS},	//fsts FPUL,<FREG_N>       
+	{rec_shil_i1111_nn01_1111_1101	,i1111_nn01_1111_1101	,Mask_nh2bit	,0xF1FD,Normal			,OpDissftrv			 ,""					,1,6,FE},	//ftrv xmtrx,<FV_N> 
+	{rec_shil_i1111_nnnn_mmmm_1110	,i1111_nnnn_mmmm_1110	,Mask_n_m		,0xF00E,Normal			,OpDissfmac			 ,""					,1,4,FE},	//fmac <FREG_0>,<FREG_M>,<FREG_N> 
+	{rec_shil_i1111_nnnn_0111_1101	,i1111_nnnn_0111_1101	,Mask_n			,0xF07D,Normal			,d1111_nnnn_0111_1101,""					,1,4,FE},	//FSRRA <FREG_N> (1111nnnn 01111101)
 	
 	//HLE ops
 	{0								,gdrom_hle_op			,Mask_none	,GDROM_OPCODE,ReadWritePC	,dissasm_GDROM},

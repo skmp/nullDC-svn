@@ -86,6 +86,7 @@ extern u64 ifb_calls;
 #ifdef PROFILE_DYNAREC_CALL
 void naked __fastcall DoRunCode(void * code)
 {
+#ifdef X86
 	__asm
 	{
 		push esi;
@@ -101,11 +102,12 @@ void naked __fastcall DoRunCode(void * code)
 		pop esi;
 		ret;
 	}
+#endif
 }
 #endif
 
 u32 rec_cycles=0;
-u32 rec_sh4_int_ThreadEntry(void* ptar)
+u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 {
 	//just cast it
 	ThreadCallbackFP* ptr=(ThreadCallbackFP*) ptar;
@@ -121,6 +123,7 @@ u32 rec_sh4_int_ThreadEntry(void* ptar)
 		//rec_cycles+=currBlock->cycles;
 		rec_v1_BasicBlockEP* fp=currBlock->compiled->Code;
 
+#ifdef X86
 		//call block :)
 #ifndef PROFILE_DYNAREC_CALL
 		__asm
@@ -145,6 +148,7 @@ u32 rec_sh4_int_ThreadEntry(void* ptar)
 			mov ecx,fp;
 			call DoRunCode;
 		}
+#endif
 #endif
 
 #ifdef PROFILE_DYNAREC
@@ -180,14 +184,14 @@ u32 rec_sh4_int_ThreadEntry(void* ptar)
 
 //yep , for profiling :)
 //asm is so that it doesn't get inlined ;P
-u32 THREADCALL rec_sh4_int_ThreadEntry_stub(void* ptar)
+/*u32 THREADCALL rec_sh4_int_ThreadEntry_stub(void* ptar)
 {
 	__asm 
 	{
 		push ptar;
 		call rec_sh4_int_ThreadEntry;
 	}
-}
+}*/
 
 //interface
 void rec_Sh4_int_Run(ThreadCallbackFP* tcb)
@@ -199,7 +203,7 @@ void rec_Sh4_int_Run(ThreadCallbackFP* tcb)
 	else
 	{
 		rec_sh4_int_bCpuRun=true;
-		rec_sh4_int_thr_handle=new cThread(rec_sh4_int_ThreadEntry_stub,tcb);
+		rec_sh4_int_thr_handle=new cThread(rec_sh4_int_ThreadEntry,tcb);
 
 		if (rec_sh4_int_thr_handle==0)
 		{

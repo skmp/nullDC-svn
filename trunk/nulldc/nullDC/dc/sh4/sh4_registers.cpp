@@ -104,11 +104,12 @@ void SetFloatStatusReg()
 
 		if (fpscr.DN)		//denormals are considered 0
 			temp|=(1<<15);
-
+#ifdef X86
 		_asm 
 		{
 			ldmxcsr temp;	//load the float status :)
 		}
+#endif
 	}
 }
 //called when fpscr is changed and we must check for rom banks ect..

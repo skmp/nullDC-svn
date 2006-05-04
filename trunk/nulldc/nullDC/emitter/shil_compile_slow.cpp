@@ -7,6 +7,7 @@
 #include "dc\sh4\sh4_opcode_list.h"
 #include "dc\mem\sh4_mem.h"
 
+
 //TEMP!!!
 emitter<>* x86e;
 shil_scs shil_compile_slow_settings=
@@ -43,6 +44,8 @@ u32 reg_pc_temp_value;
 rec_v1_BasicBlock* rec_v1_pCurrentBlock;
 u32 IsRamAddr[0xFF];
 int block_count=0;
+
+#ifdef X86
 //profiling related things
 #ifdef PROFILE_DYNAREC
 void profile_ifb_call()
@@ -2012,3 +2015,15 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 	}
 	delete x86e;
 }
+
+#else
+void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
+{
+}
+void link_compile_inject_TF_stub(rec_v1_BasicBlock* ptr)
+{
+}
+void link_compile_inject_TT_stub(rec_v1_BasicBlock* ptr)
+{
+}
+#endif

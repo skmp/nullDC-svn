@@ -34,7 +34,11 @@
 #include <stdio.h>
 
 //used for asm-olny functions
+#ifdef X86
 #define naked   __declspec( naked )
+#else
+#define naked
+#endif
 
 
 /*
