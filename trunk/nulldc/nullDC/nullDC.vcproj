@@ -807,22 +807,6 @@
 								/>
 							</FileConfiguration>
 						</File>
-						<Filter
-							Name="opt"
-							>
-							<File
-								RelativePath=".\dc\sh4\rec_v1\opt\shil_opts.cpp"
-								>
-							</File>
-							<File
-								RelativePath=".\dc\sh4\rec_v1\opt\shil_opts.h"
-								>
-							</File>
-							<File
-								RelativePath=".\dc\sh4\rec_v1\opt\shil_opts_header.h"
-								>
-							</File>
-						</Filter>
 					</Filter>
 				</Filter>
 				<Filter

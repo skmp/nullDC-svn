@@ -4,7 +4,6 @@
 
 #include "dc\mem\sh4_mem.h"
 #include "dc\sh4\sh4_registers.h"
-#include "opt\shil_opts.h"
 
 //w/ a block size of 256 we can have max 7 levels of basic blocks (heh)
 //w/ a block size of 448 (bad number for inlinings , but good for vsyncs) we can have 13-14
