@@ -36,11 +36,18 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 	while (true)
 	{
 		u16 opcode=ReadMem16(pc);
-		if (OpDesc[opcode]->LatencyCycles!=0)
-			block_size+= OpDesc[opcode]->LatencyCycles*CPU_RATIO;
+		if (OpDesc[opcode])
+		{
+			if (OpDesc[opcode]->LatencyCycles!=0)
+				block_size+= OpDesc[opcode]->LatencyCycles*CPU_RATIO;
+			else
+				block_size+=OpDesc[opcode]->IssueCycles*CPU_RATIO;
+		}
 		else
-			block_size+=OpDesc[opcode]->IssueCycles*CPU_RATIO;
-
+		{
+			//pc+=2;
+			//continue;
+		}
 		if (((pc>>26)&0x7)==3)
 			rec_v1_SetBlockTest(pc);
 
