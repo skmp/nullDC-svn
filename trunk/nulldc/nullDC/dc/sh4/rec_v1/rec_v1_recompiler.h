@@ -10,7 +10,7 @@
 #define PROFILE_DYNAREC_CALL
 void printprofile();
 //disable register allocation
-//#define REG_ALLOC_DISABLE
+#define DYNAREC_REG_ALLOC (true)
 
 typedef u32 rec_v1_BasicBlockEP();
 

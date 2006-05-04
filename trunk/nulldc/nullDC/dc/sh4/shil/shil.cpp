@@ -656,6 +656,10 @@ void shil_stream::ftrc(Sh4RegType frn)
 {
 	emitReg(shil_opcodes::ftrc,frn,GetFloatFlags(frn,NoReg));
 }
+void shil_stream::div(Sh4RegType r0,Sh4RegType r1,Sh4RegType r2)
+{
+	//emitReg(shil_opcodes::ftrc,frn,GetFloatFlags(frn,NoReg));
+}
 
 void shil_stream::shil_ifb(u32 opcode,u32 pc)
 {
@@ -803,7 +807,8 @@ char* shil_names[]=
 	"ftrc",
 
 	"fsca",
-	"fsrra"
+	"fsrra",
+	"div32"
 };
 char* GetShilName(shil_opcodes ops)
 {

@@ -24,7 +24,6 @@
 #include <float.h>
 
 #define CPU_TIMESLICE	(448)
-#define CPU_RATIO		(2)
 
 //uh uh 
 volatile bool  rec_sh4_int_bCpuRun=false;
@@ -32,12 +31,6 @@ cThread* rec_sh4_int_thr_handle=0;
 
 u32 rec_exec_cycles=0;
 time_t rec_odtime=0;
-
-u32 rec_opcode_fam_cycles[0x10]=
-{
- CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,
- CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,1
-};
 
 u32 avg_rat=0;
 u32 avg_rat_cnt=0;
@@ -88,11 +81,10 @@ rec_v1_BasicBlock* rec_v1_FindOrRecompileCode(u32 pc)
 u64 calls=0;
 u64 total_cycles=0;
 extern u64 ifb_calls;
-
 #endif
 
 #ifdef PROFILE_DYNAREC_CALL
-void __fastcall DoRunCode(void * code)
+void naked __fastcall DoRunCode(void * code)
 {
 	__asm
 	{
@@ -101,18 +93,19 @@ void __fastcall DoRunCode(void * code)
 		push ebx;
 		push ebp;
 
-		call code;
+		call ecx;
 
-		pop  ebp;
-		pop  edi;
+		pop ebp;
 		pop ebx;
+		pop edi;
 		pop esi;
+		ret;
 	}
 }
 #endif
 
 u32 rec_cycles=0;
-u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
+u32 rec_sh4_int_ThreadEntry(void* ptar)
 {
 	//just cast it
 	ThreadCallbackFP* ptr=(ThreadCallbackFP*) ptar;
@@ -139,12 +132,14 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 
 			call fp;
 
-			pop  ebp
-			pop  edi
+			pop ebp
 			pop ebx
+			pop edi
 			pop esi;
 		}
-#else	//so we can profile :)
+#else	
+		//call it using a helper function
+		//so we can profile :)
 		__asm
 		{
 			mov ecx,fp;
@@ -184,6 +179,7 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 }
 
 //yep , for profiling :)
+//asm is so that it doesn't get inlined ;P
 u32 THREADCALL rec_sh4_int_ThreadEntry_stub(void* ptar)
 {
 	__asm 

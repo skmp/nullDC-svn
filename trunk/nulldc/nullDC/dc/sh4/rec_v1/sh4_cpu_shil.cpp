@@ -479,7 +479,7 @@ sh4op(i0000_nnnn_mmmm_0111)
 #define DIV0S_KEY 0x2007
 #define DIV1_KEY 0x3004
 #define ROTCL_KEY 0x4024
-u32 MatchDiv(u32 pc , rec_v1_BasicBlock* bb,s32 reg1,s32 reg2 , s32 reg3)
+u32 MatchDiv32(u32 pc , rec_v1_BasicBlock* bb,s32 reg1,s32 reg2 , s32 reg3)
 {
 	u32 v_pc=pc;
 	u32 match=1;
@@ -534,7 +534,7 @@ sh4op(i0000_0000_0001_1001)
 	//sr.M = 0;
 	//sr.T = 0;
 
-	u32 match=MatchDiv(pc+2,bb,-1,-1,-1);
+	u32 match=MatchDiv32(pc+2,bb,-1,-1,-1);
 
 	printf("DIV32U matched %d%%\n",match*100/65);
 	if (match==65)
@@ -554,12 +554,15 @@ sh4op(i0010_nnnn_mmmm_0111)
 	sr.M=r[m]>>31;
 	sr.T=sr.M^sr.Q;*/
 
-	u32 match=MatchDiv(pc+2,bb,-1,GetM(op),GetN(op));
+	u32 match=MatchDiv32(pc+2,bb,-1,GetM(op),GetN(op));
 	printf("DIV32S matched %d%%\n",match*100/65);
 	
 	if (match==65)
+	{
 		//DIV32S was perfectly matched :)
 		bb->flags|=BLOCK_SOM_SIZE_128;
+		//ilst->div()
+	}
 	//else //<- uncoment when we realy emit em :P
 		shil_interpret(op);
 

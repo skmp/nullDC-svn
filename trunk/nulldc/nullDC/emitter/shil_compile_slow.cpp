@@ -113,7 +113,7 @@ INLINE void FlushRegCache_reg(u8 reg)
 }
 INLINE bool IsRegCached(u8 reg)
 {
-#ifndef REG_ALLOC_DISABLE
+#ifdef DYNAREC_REG_ALLOC
 	return r_alloced[reg].x86reg!=GPR_Error;
 #else
 	return false;
@@ -149,7 +149,7 @@ INLINE x86IntRegType LoadRegCache_reg_nodata(u8 reg)
 }
 INLINE void FlushRegCache()
 {
-	#ifndef REG_ALLOC_DISABLE
+	#ifdef DYNAREC_REG_ALLOC
 	for (int i=0;i<16;i++)
 	{
 		FlushRegCache_reg(i);
@@ -158,7 +158,7 @@ INLINE void FlushRegCache()
 }
 void AllocateRegisters(rec_v1_BasicBlock* block)
 {
-	#ifndef REG_ALLOC_DISABLE
+	#ifdef DYNAREC_REG_ALLOC
 	sort_temp used[16];
 	for (int i=0;i<16;i++)
 	{
@@ -211,12 +211,12 @@ void LoadRegisters()
 //more helpers
 INLINE x86IntRegType LoadReg_force(x86IntRegType to,u8 reg)
 {
-	#ifndef REG_ALLOC_DISABLE
+#ifdef DYNAREC_REG_ALLOC
 	if (reg>r15 || (!IsRegCached(reg)))
 	{
 #endif
 		x86e->MOV32MtoR(to,GetRegPtr(reg));
-#ifndef REG_ALLOC_DISABLE
+#ifdef DYNAREC_REG_ALLOC
 	}
 	else
 	{
@@ -231,13 +231,13 @@ INLINE x86IntRegType LoadReg_force(x86IntRegType to,u8 reg)
 
 INLINE x86IntRegType LoadReg(x86IntRegType to,u8 reg)
 {
-#ifndef REG_ALLOC_DISABLE
+#ifdef DYNAREC_REG_ALLOC
 	if (reg>r15 || (!IsRegCached(reg)))
 	{
 #endif
 		x86e->MOV32MtoR(to,GetRegPtr(reg));
 		return to;
-#ifndef REG_ALLOC_DISABLE
+#ifdef DYNAREC_REG_ALLOC
 	}
 	else
 	{
@@ -248,13 +248,13 @@ INLINE x86IntRegType LoadReg(x86IntRegType to,u8 reg)
 
 INLINE x86IntRegType LoadReg_nodata(x86IntRegType to,u8 reg)
 {
-#ifndef REG_ALLOC_DISABLE
+#ifdef DYNAREC_REG_ALLOC
 	if (reg>r15 || (!IsRegCached(reg)))
 	{
 #endif
 		//x86e->MOV32MtoR(to,GetRegPtr(reg)); -> do nothin :P
 		return to;
-#ifndef REG_ALLOC_DISABLE
+#ifdef DYNAREC_REG_ALLOC
 	}
 	else
 	{
@@ -266,12 +266,12 @@ INLINE x86IntRegType LoadReg_nodata(x86IntRegType to,u8 reg)
 
 INLINE void SaveReg(u8 reg,x86IntRegType from)
 {
-#ifndef REG_ALLOC_DISABLE
+#ifdef DYNAREC_REG_ALLOC
 	if (reg>r15 || (!IsRegCached(reg)))
 	{
 #endif
 		x86e->MOV32RtoM(GetRegPtr(reg),from);
-#ifndef REG_ALLOC_DISABLE
+#ifdef DYNAREC_REG_ALLOC
 	}
 	else
 	{
@@ -284,12 +284,12 @@ INLINE void SaveReg(u8 reg,x86IntRegType from)
 
 INLINE void SaveReg(u8 reg,u32 from)
 {
-#ifndef REG_ALLOC_DISABLE
+#ifdef DYNAREC_REG_ALLOC
 	if (reg>r15 || (!IsRegCached(reg)))
 	{
 #endif
 		x86e->MOV32ItoM(GetRegPtr(reg),from);
-#ifndef REG_ALLOC_DISABLE
+#ifdef DYNAREC_REG_ALLOC
 	}
 	else
 	{
@@ -304,13 +304,13 @@ INLINE void SaveReg(u8 reg,u32 from)
 
 INLINE void SaveReg(u8 reg,u32* from)
 {
-#ifndef REG_ALLOC_DISABLE
+#ifdef DYNAREC_REG_ALLOC
 	if (reg>r15 || (!IsRegCached(reg)))
 	{
 #endif
 		x86e->MOV32MtoR(ECX,from);
 		x86e->MOV32RtoM(GetRegPtr(reg),ECX);
-#ifndef REG_ALLOC_DISABLE
+#ifdef DYNAREC_REG_ALLOC
 	}
 	else
 	{
@@ -322,13 +322,13 @@ INLINE void SaveReg(u8 reg,u32* from)
 
 INLINE void SaveReg(u8 reg,u16* from)
 {
-#ifndef REG_ALLOC_DISABLE
+#ifdef DYNAREC_REG_ALLOC
 	if (reg>r15 || (!IsRegCached(reg)))
 	{
 #endif
 		x86e->MOVSX32M16toR(ECX,from);
 		x86e->MOV32RtoM(GetRegPtr(reg),ECX);
-#ifndef REG_ALLOC_DISABLE
+#ifdef DYNAREC_REG_ALLOC
 	}
 	else
 	{
@@ -340,13 +340,13 @@ INLINE void SaveReg(u8 reg,u16* from)
 
 INLINE void SaveReg(u8 reg,u8* from)
 {
-#ifndef REG_ALLOC_DISABLE
+#ifdef DYNAREC_REG_ALLOC
 	if (reg>r15 || (!IsRegCached(reg)))
 	{
 #endif
 		x86e->MOVSX32M8toR(ECX,from);
 		x86e->MOV32RtoM(GetRegPtr(reg),ECX);
-#ifndef REG_ALLOC_DISABLE
+#ifdef DYNAREC_REG_ALLOC
 	}
 	else
 	{
@@ -1500,6 +1500,11 @@ void __fastcall shil_compile_fsrra(shil_opcode* op,rec_v1_BasicBlock* block)
 	}
 }
 
+void __fastcall shil_compile_div32(shil_opcode* op,rec_v1_BasicBlock* block)
+{
+	assert(false);
+}
+
 #ifdef PROFILE_DYNAREC
 
 u64  dyn_profile_cycles[shil_count];
@@ -1603,7 +1608,7 @@ shil_compileFP* sclt[shil_count]=
 	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,
 	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,
 	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,
-	shil_compile_nimp,shil_compile_nimp
+	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp
 };
 
 void SetH(shil_opcodes op,shil_compileFP* ha)
@@ -1668,6 +1673,8 @@ void Init()
 	SetH(shil_opcodes::ftrc,shil_compile_ftrc);
 	SetH(shil_opcodes::fsca,shil_compile_fsca);
 	SetH(shil_opcodes::fsrra,shil_compile_fsrra);
+	SetH(shil_opcodes::div32,shil_compile_div32);
+	
 
 	
 	u32 shil_nimp=shil_opcodes::shil_count;

@@ -90,8 +90,11 @@ struct TAICA
 #else
   static CAICAMain<float> m_AICA;
 #endif
+ 
   static void End();
 };
+
+CAICASndDriverDSound* pSndDriver;
 
 #define HW_REG_LONG(a) (*((DWORD*)&TAICA::m_aRegisters[(a)]))
 #define HW_REG_WORD(a) (*((WORD*)&TAICA::m_aRegisters[(a)]))
@@ -273,7 +276,7 @@ TError TAICA::Init()
 	HW_REG_LONG(TAICA::ARM_SCIEB_RW_32) = 0x40;
 #ifdef SEMI_AICA
 #ifdef BAKMODE
-	CAICASndDriverDSound* pSndDriver = new CAICASndDriverDSound;
+	pSndDriver = new CAICASndDriverDSound;
 #ifdef XBOX
 	pSndDriver->Init(NULL);
 #else
@@ -287,7 +290,7 @@ TError TAICA::Init()
 #endif
 #else
   //CAICASndDriverWaveOut* pSndDriver = new CAICASndDriverWaveOut;
-  CAICASndDriverDSound* pSndDriver = new CAICASndDriverDSound;
+  pSndDriver = new CAICASndDriverDSound;
 #ifdef XBOX
   pSndDriver->Init(NULL);
 #else
@@ -307,6 +310,7 @@ TError TAICA::Init()
 void TAICA::End()
 {
   m_AICA.End();
+  pSndDriver->End();
 }
 
 TError AicaInit()
@@ -317,6 +321,7 @@ TError AicaInit()
 void AicaEnd()
 {
   TAICA::End();
+  
 }
 
 DWORD AICAReadDword(const DWORD uAddress)

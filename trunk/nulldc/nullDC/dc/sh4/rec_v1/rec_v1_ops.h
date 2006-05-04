@@ -2,7 +2,7 @@
 #include "types.h"
 #include "rec_v1_basicblock.h"
 
-
+#undef sh4op
 #define sh4op(str) void  __fastcall rec_shil_##str (u32 op,u32 pc,rec_v1_BasicBlock* bb)
 
 
