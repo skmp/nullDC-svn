@@ -9,6 +9,24 @@
 
 //TEMP!!!
 emitter<>* x86e;
+shil_scs shil_compile_slow_settings=
+{
+	true	//do Register allocation for x86
+	,4		//on 4 regisers
+	,true	//and on XMM
+	,true	//Inline Const Mem reads
+	,false	//Inline normal mem reads
+	,false	//Inline mem writes
+};
+
+
+#define REG_ALLOC_COUNT			(shil_compile_slow_settings.RegAllocCount)
+#define REG_ALLOC_X86			(shil_compile_slow_settings.RegAllocX86)
+#define REG_ALLOC_XMM			(shil_compile_slow_settings.RegAllocXMM)
+#define INLINE_MEM_READ_CONST   (shil_compile_slow_settings.InlineMemRead_const)
+#define INLINE_MEM_READ			(shil_compile_slow_settings.InlineMemRead)
+#define INLINE_MEM_WRITE		(shil_compile_slow_settings.InlineMemWrite)
+
 
 typedef void __fastcall shil_compileFP(shil_opcode* op,rec_v1_BasicBlock* block);
 
@@ -73,12 +91,9 @@ struct sort_temp
 
 //ebx, ebp, esi, and edi are preserved
 
-#ifdef REG_ALLOC_DISABLE
-#define REG_ALLOC_COUNT 0
-#else
-#define REG_ALLOC_COUNT 4
-#endif
-x86IntRegType reg_to_alloc[REG_ALLOC_COUNT+10]=
+
+
+x86IntRegType reg_to_alloc[4]=
 {
 	EBX,
 	EBP,
@@ -113,11 +128,14 @@ INLINE void FlushRegCache_reg(u8 reg)
 }
 INLINE bool IsRegCached(u8 reg)
 {
-#ifdef DYNAREC_REG_ALLOC
-	return r_alloced[reg].x86reg!=GPR_Error;
-#else
-	return false;
-#endif
+	if (REG_ALLOC_X86)
+	{
+		return r_alloced[reg].x86reg!=GPR_Error;
+	}
+	else
+	{
+		return false;
+	}
 }
 INLINE x86IntRegType LoadRegCache_reg(u8 reg)
 {
@@ -149,211 +167,245 @@ INLINE x86IntRegType LoadRegCache_reg_nodata(u8 reg)
 }
 INLINE void FlushRegCache()
 {
-	#ifdef DYNAREC_REG_ALLOC
-	for (int i=0;i<16;i++)
+	if(REG_ALLOC_X86)
 	{
-		FlushRegCache_reg(i);
+		for (int i=0;i<16;i++)
+		{
+			FlushRegCache_reg(i);
+		}
 	}
-#endif
 }
 void AllocateRegisters(rec_v1_BasicBlock* block)
 {
-	#ifdef DYNAREC_REG_ALLOC
-	sort_temp used[16];
-	for (int i=0;i<16;i++)
+	if(REG_ALLOC_X86)
 	{
-		used[i].cnt=0;
-		used[i].reg=r0+i;
-		r_alloced[i].x86reg=GPR_Error;
-		r_alloced[i].InReg=false;
-	}
-
-	u32 op_count=block->ilst.op_count;
-	shil_opcode* curop;
-	
-	for (int j=0;j<op_count;j++)
-	{
-		curop=&block->ilst.opcodes[j];
-		for (int i = 0;i<16;i++)
+		sort_temp used[16];
+		for (int i=0;i<16;i++)
 		{
-			//both reads and writes , give it one more ;P
-			if ( curop->UpdatesReg((Sh4RegType) (r0+i)) )
-				used[i].cnt+=1;
+			used[i].cnt=0;
+			used[i].reg=r0+i;
+			r_alloced[i].x86reg=GPR_Error;
+			r_alloced[i].InReg=false;
+		}
 
-			if (curop->ReadsReg((Sh4RegType) (r0+i)))
-				used[i].cnt+=1;
+		u32 op_count=block->ilst.op_count;
+		shil_opcode* curop;
 
-			if (curop->WritesReg((Sh4RegType) (r0+i)))
-				used[i].cnt+=1;
+		for (u32 j=0;j<op_count;j++)
+		{
+			curop=&block->ilst.opcodes[j];
+			for (int i = 0;i<16;i++)
+			{
+				//both reads and writes , give it one more ;P
+				if ( curop->UpdatesReg((Sh4RegType) (r0+i)) )
+					used[i].cnt+=1;
+
+				if (curop->ReadsReg((Sh4RegType) (r0+i)))
+					used[i].cnt+=1;
+
+				if (curop->WritesReg((Sh4RegType) (r0+i)))
+					used[i].cnt+=1;
+			}
+		}
+
+		bubble_sort(used,16);
+
+		for (int i=0;i<REG_ALLOC_COUNT;i++)
+		{
+			if (used[i].cnt==0)
+				break;
+			r_alloced[used[i].reg].x86reg=reg_to_alloc[i];
 		}
 	}
-
-	bubble_sort(used,16);
-
-	for (int i=0;i<REG_ALLOC_COUNT;i++)
-	{
-		if (used[i].cnt==0)
-			break;
-		r_alloced[used[i].reg].x86reg=reg_to_alloc[i];
-	}
-#endif
 }
 void LoadRegisters()
 {
-	for (int i=0;i<16;i++)
+	if(REG_ALLOC_X86)
 	{
-		if (IsRegCached(i))
+		for (int i=0;i<16;i++)
 		{
-			LoadRegCache_reg(i);
+			if (IsRegCached(i))
+			{
+				LoadRegCache_reg(i);
+			}
 		}
 	}
 }
 //more helpers
 INLINE x86IntRegType LoadReg_force(x86IntRegType to,u8 reg)
 {
-#ifdef DYNAREC_REG_ALLOC
-	if (reg>r15 || (!IsRegCached(reg)))
+	if(REG_ALLOC_X86)
 	{
-#endif
-		x86e->MOV32MtoR(to,GetRegPtr(reg));
-#ifdef DYNAREC_REG_ALLOC
+		if (reg>r15 || (!IsRegCached(reg)))
+		{
+			x86e->MOV32MtoR(to,GetRegPtr(reg));
+		}
+		else
+		{
+			x86IntRegType x86reg=LoadRegCache_reg(reg);
+			if (!(to==x86reg))
+				x86e->MOV32RtoR(to,x86reg);
+		}
 	}
 	else
 	{
-		x86IntRegType x86reg=LoadRegCache_reg(reg);
-		if (!(to==x86reg))
-			x86e->MOV32RtoR(to,x86reg);
+		x86e->MOV32MtoR(to,GetRegPtr(reg));
 	}
-#endif
 
 	return to;
 }
 
 INLINE x86IntRegType LoadReg(x86IntRegType to,u8 reg)
 {
-#ifdef DYNAREC_REG_ALLOC
-	if (reg>r15 || (!IsRegCached(reg)))
+	if(REG_ALLOC_X86)
 	{
-#endif
-		x86e->MOV32MtoR(to,GetRegPtr(reg));
-		return to;
-#ifdef DYNAREC_REG_ALLOC
+		if (reg>r15 || (!IsRegCached(reg)))
+		{
+			x86e->MOV32MtoR(to,GetRegPtr(reg));
+			return to;
+		}
+		else
+		{
+			return LoadRegCache_reg(reg);
+		}
 	}
 	else
 	{
-		return LoadRegCache_reg(reg);
+		x86e->MOV32MtoR(to,GetRegPtr(reg));
+		return to;
 	}
-#endif
 }
 
 INLINE x86IntRegType LoadReg_nodata(x86IntRegType to,u8 reg)
 {
-#ifdef DYNAREC_REG_ALLOC
-	if (reg>r15 || (!IsRegCached(reg)))
+	if(REG_ALLOC_X86)
 	{
-#endif
-		//x86e->MOV32MtoR(to,GetRegPtr(reg)); -> do nothin :P
-		return to;
-#ifdef DYNAREC_REG_ALLOC
+		if (reg>r15 || (!IsRegCached(reg)))
+		{
+			//x86e->MOV32MtoR(to,GetRegPtr(reg)); -> do nothin :P
+			return to;
+		}
+		else
+		{
+			return LoadRegCache_reg_nodata(reg);
+		}
 	}
 	else
 	{
-		return LoadRegCache_reg_nodata(reg);
+		return to;
 	}
-#endif
 }
 
 
 INLINE void SaveReg(u8 reg,x86IntRegType from)
 {
-#ifdef DYNAREC_REG_ALLOC
-	if (reg>r15 || (!IsRegCached(reg)))
+	if(REG_ALLOC_X86)
 	{
-#endif
-		x86e->MOV32RtoM(GetRegPtr(reg),from);
-#ifdef DYNAREC_REG_ALLOC
+		if (reg>r15 || (!IsRegCached(reg)))
+		{
+			x86e->MOV32RtoM(GetRegPtr(reg),from);
+		}
+		else
+		{
+			x86IntRegType x86reg=LoadRegCache_reg_nodata(reg);
+			if (x86reg!=from)
+				x86e->MOV32RtoR(x86reg,from);
+		}
 	}
 	else
 	{
-		x86IntRegType x86reg=LoadRegCache_reg_nodata(reg);
-		if (x86reg!=from)
-			x86e->MOV32RtoR(x86reg,from);
+		x86e->MOV32RtoM(GetRegPtr(reg),from);
 	}
-#endif	
 }
 
 INLINE void SaveReg(u8 reg,u32 from)
 {
-#ifdef DYNAREC_REG_ALLOC
-	if (reg>r15 || (!IsRegCached(reg)))
+	if(REG_ALLOC_X86)
 	{
-#endif
-		x86e->MOV32ItoM(GetRegPtr(reg),from);
-#ifdef DYNAREC_REG_ALLOC
+		if (reg>r15 || (!IsRegCached(reg)))
+		{
+			x86e->MOV32ItoM(GetRegPtr(reg),from);
+		}
+		else
+		{
+			x86IntRegType x86reg=LoadRegCache_reg_nodata(reg);
+			if (from==0)
+				x86e->XOR32RtoR(x86reg,x86reg);
+			else if (from ==0xFFFFFFFF)
+				x86e->MOV32ItoR(x86reg,from);//xor , dec ?
+			else
+				x86e->MOV32ItoR(x86reg,from);
+		}
 	}
 	else
 	{
-		x86IntRegType x86reg=LoadRegCache_reg_nodata(reg);
-		if (from==0)
-			x86e->XOR32RtoR(x86reg,x86reg);
-		else
-			x86e->MOV32ItoR(x86reg,from);
+		x86e->MOV32ItoM(GetRegPtr(reg),from);
 	}
-#endif
 }
 
 INLINE void SaveReg(u8 reg,u32* from)
 {
-#ifdef DYNAREC_REG_ALLOC
-	if (reg>r15 || (!IsRegCached(reg)))
+	if(REG_ALLOC_X86)
 	{
-#endif
-		x86e->MOV32MtoR(ECX,from);
-		x86e->MOV32RtoM(GetRegPtr(reg),ECX);
-#ifdef DYNAREC_REG_ALLOC
-	}
+		if (reg>r15 || (!IsRegCached(reg)))
+		{
+			x86e->MOV32MtoR(ECX,from);
+			x86e->MOV32RtoM(GetRegPtr(reg),ECX);
+		}
+		else
+		{
+			x86IntRegType x86reg=LoadRegCache_reg_nodata(reg);
+			x86e->MOV32MtoR(x86reg,from);
+		}
 	else
 	{
-		x86IntRegType x86reg=LoadRegCache_reg_nodata(reg);
-		x86e->MOV32MtoR(x86reg,from);
+		x86e->MOV32MtoR(ECX,from);
+		x86e->MOV32RtoM(GetRegPtr(reg),ECX);
 	}
-#endif
-}
+	}
 
 INLINE void SaveReg(u8 reg,u16* from)
 {
-#ifdef DYNAREC_REG_ALLOC
-	if (reg>r15 || (!IsRegCached(reg)))
+	if(REG_ALLOC_X86)
 	{
-#endif
-		x86e->MOVSX32M16toR(ECX,from);
-		x86e->MOV32RtoM(GetRegPtr(reg),ECX);
-#ifdef DYNAREC_REG_ALLOC
+		if (reg>r15 || (!IsRegCached(reg)))
+		{
+			x86e->MOVSX32M16toR(ECX,from);
+			x86e->MOV32RtoM(GetRegPtr(reg),ECX);
+		}
+		else
+		{
+			x86IntRegType x86reg=LoadRegCache_reg_nodata(reg);
+			x86e->MOVSX32M16toR(x86reg,from);
+		}
 	}
 	else
 	{
-		x86IntRegType x86reg=LoadRegCache_reg_nodata(reg);
-		x86e->MOVSX32M16toR(x86reg,from);
+		x86e->MOVSX32M16toR(ECX,from);
+		x86e->MOV32RtoM(GetRegPtr(reg),ECX);
 	}
-#endif
 }
 
 INLINE void SaveReg(u8 reg,u8* from)
 {
-#ifdef DYNAREC_REG_ALLOC
-	if (reg>r15 || (!IsRegCached(reg)))
+	if(REG_ALLOC_X86)
 	{
-#endif
-		x86e->MOVSX32M8toR(ECX,from);
-		x86e->MOV32RtoM(GetRegPtr(reg),ECX);
-#ifdef DYNAREC_REG_ALLOC
+		if (reg>r15 || (!IsRegCached(reg)))
+		{
+			x86e->MOVSX32M8toR(ECX,from);
+			x86e->MOV32RtoM(GetRegPtr(reg),ECX);
+		}
+		else
+		{
+			x86IntRegType x86reg=LoadRegCache_reg_nodata(reg);
+			x86e->MOVSX32M8toR(x86reg,from);
+		}
 	}
 	else
 	{
-		x86IntRegType x86reg=LoadRegCache_reg_nodata(reg);
-		x86e->MOVSX32M8toR(x86reg,from);
+		x86e->MOVSX32M8toR(ECX,from);
+		x86e->MOV32RtoM(GetRegPtr(reg),ECX);
 	}
-#endif
 }
 
 //Original :
@@ -752,57 +804,66 @@ void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	u32 size=op->flags&3;
 
-	if (!(op->flags & (FLAG_R0|FLAG_GBR)))
-	{//[reg2] form
-		assert(op->flags & FLAG_IMM1);
+	if (INLINE_MEM_READ_CONST)
+	{
+		//if constant read , and on ram area , make it a direct mem access
+		//_watch_ mmu
+		if (!(op->flags & (FLAG_R0|FLAG_GBR)))
+		{//[reg2] form
+			assert(op->flags & FLAG_IMM1);
 
-		if (op->flags & FLAG_REG2)
-		{	//[reg2+imm1]
+			if (op->flags & FLAG_REG2)
+			{	//[reg2+imm1]
 
-		}
-		else
-		{	//[imm1]
-			assert(0==(op->flags & FLAG_REG2));
-			if (IsOnRam(op->imm1))
-			{
-				if (size==0)
+			}
+			else
+			{	//[imm1]
+				assert(0==(op->flags & FLAG_REG2));
+				if (IsOnRam(op->imm1))
 				{
-					SaveReg(op->reg1,(u8 *)GetMemPtr(op->imm1,1));
+					if (size==0)
+					{
+						SaveReg(op->reg1,(u8 *)GetMemPtr(op->imm1,1));
+					}
+					else 	if (size==1)
+					{
+						SaveReg(op->reg1,(u16*)GetMemPtr(op->imm1,2));
+					}
+					else 	if (size==2)
+					{
+						SaveReg(op->reg1,(u32*)GetMemPtr(op->imm1,4));
+					}
+					return;
 				}
-				else 	if (size==1)
-				{
-					SaveReg(op->reg1,(u16*)GetMemPtr(op->imm1,2));
-				}
-				else 	if (size==2)
-				{
-					SaveReg(op->reg1,(u32*)GetMemPtr(op->imm1,4));
-				}
-				return;
 			}
 		}
 	}
+
 	readwrteparams(op);
 
-	//ECX is address
-	
-	//eax = ((ecx>>24) & 0xFF)<<2
+	if (INLINE_MEM_READ)
+	{
+		//try to inline all mem reads , by comparing values at runtime :P
+		//ECX is address
 
-	//mov eax,ecx
-	x86e->MOV32RtoR(EAX,ECX);
-	//shr eax,24
-	//shl eax,2
-	x86e->SHR32ItoR(EAX,24);
-	x86e->SHL32ItoR(EAX,2);
+		//eax = ((ecx>>24) & 0xFF)<<2
 
-	//add eax , imm	;//should realy use lea/mov eax,[eax+xx]
-	x86e->ADD32ItoR(EAX,(u32)IsRamAddr);
-	//mov eax,[eax]
-	x86e->MOV32RmtoR(EAX,EAX);
-	//test eax,eax
-	x86e->TEST32RtoR(EAX,EAX);
-	//jz inline;//if !0 , then do normal read
-	u8* inline_label = x86e->JZ8(0);
-	
+		//mov eax,ecx
+		x86e->MOV32RtoR(EAX,ECX);
+		//shr eax,24
+		//shl eax,2
+		x86e->SHR32ItoR(EAX,24);
+		x86e->SHL32ItoR(EAX,2);
+
+		//add eax , imm	;//should realy use lea/mov eax,[eax+xx]
+		x86e->ADD32ItoR(EAX,(u32)IsRamAddr);
+		//mov eax,[eax]
+		x86e->MOV32RmtoR(EAX,EAX);
+		//test eax,eax
+		x86e->TEST32RtoR(EAX,EAX);
+		//jz inline;//if !0 , then do normal read
+		u8* inline_label = x86e->JZ8(0);
+	}
 	//call ReadMem32
 	//movsx [if needed]
 	if (size==0)
@@ -822,35 +883,37 @@ void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
 	else
 		printf("ReadMem error\n");
 
-	//jmp normal;
-	u8* normal_label = x86e->JMP8(0);
-	//
-	//inline:  //inlined ram read
-	x86e->x86SetJ8(inline_label);
-	//and ecx , ram_mask
-	x86e->AND32ItoR(ECX,RAM_MASK);
-	//add ecx, ram_base
-	x86e->ADD32ItoR(ECX,(u32)(&mem_b[0]));
-	//mov/sx eax,[ecx]
-	if (size==0)
+	if (INLINE_MEM_READ)
 	{
-		x86e->MOV32RmtoR(EAX,ECX);		//1 byte read ?
-		x86e->MOVSX32R8toR(EAX,EAX);	//se8
+		//jmp normal;
+		u8* normal_label = x86e->JMP8(0);
+		//
+		//inline:  //inlined ram read
+		x86e->x86SetJ8(inline_label);
+		//and ecx , ram_mask
+		x86e->AND32ItoR(ECX,RAM_MASK);
+		//add ecx, ram_base
+		x86e->ADD32ItoR(ECX,(u32)(&mem_b[0]));
+		//mov/sx eax,[ecx]
+		if (size==0)
+		{
+			x86e->MOV32RmtoR(EAX,ECX);		//1 byte read ?
+			x86e->MOVSX32R8toR(EAX,EAX);	//se8
+		}
+		else if (size==1)
+		{
+			x86e->MOV32RmtoR(EAX,ECX);		//2 bytes read ?
+			x86e->MOVSX32R16toR(EAX,EAX);	//se16
+		}
+		else if (size==2)
+		{
+			x86e->MOV32RmtoR(EAX,ECX);
+		}
+		else
+			printf("ReadMem error\n");
+		//normal:
+		x86e->x86SetJ8(normal_label);
 	}
-	else if (size==1)
-	{
-		x86e->MOV32RmtoR(EAX,ECX);		//2 bytes read ?
-		x86e->MOVSX32R16toR(EAX,EAX);	//se16
-	}
-	else if (size==2)
-	{
-		x86e->MOV32RmtoR(EAX,ECX);
-	}
-	else
-		printf("ReadMem error\n");
-	//normal:
-	x86e->x86SetJ8(normal_label);
-
 	//mov reg,eax
 	SaveReg(op->reg1,EAX);//save return value
 }
@@ -862,97 +925,99 @@ void __fastcall shil_compile_writem(shil_opcode* op,rec_v1_BasicBlock* block)
 	readwrteparams(op);
 
 	//ECX is address
-	
+
 	//so it's sure loaded (if from reg cache)
 	x86IntRegType r1=LoadReg(EDX,op->reg1);
 
-	//eax = ((ecx>>24) & 0xFF)<<2
+	if (INLINE_MEM_WRITE)
+	{	//try to inline all mem reads at runtime :P
+		//eax = ((ecx>>24) & 0xFF)<<2
 
-	//mov eax,ecx
-	x86e->MOV32RtoR(EAX,ECX);
-	//shr eax,24
-	//shl eax,2
-	x86e->SHR32ItoR(EAX,24);
-	x86e->SHL32ItoR(EAX,2);
+		//mov eax,ecx
+		x86e->MOV32RtoR(EAX,ECX);
+		//shr eax,24
+		//shl eax,2
+		x86e->SHR32ItoR(EAX,24);
+		x86e->SHL32ItoR(EAX,2);
 
-	//add eax , imm	;//should realy use lea/mov eax,[eax+xx]
-	x86e->ADD32ItoR(EAX,(u32)IsRamAddr);
-	//mov eax,[eax]
-	x86e->MOV32RmtoR(EAX,EAX);
-	//test eax,eax
-	x86e->TEST32RtoR(EAX,EAX);
-	//jz inline;//if !0 , then do normal write
-	u8* inline_label = x86e->JZ8(0);
-
+		//add eax , imm	;//should realy use lea/mov eax,[eax+xx]
+		x86e->ADD32ItoR(EAX,(u32)IsRamAddr);
+		//mov eax,[eax]
+		x86e->MOV32RmtoR(EAX,EAX);
+		//test eax,eax
+		x86e->TEST32RtoR(EAX,EAX);
+		//jz inline;//if !0 , then do normal write
+		u8* inline_label = x86e->JZ8(0);
+	}
 	if (size==FLAG_8)
 	{	//maby zx ?
-		//LoadReg_force(EDX,op->reg1);
 		if (r1!=EDX)
 			x86e->MOV32RtoR(EDX,r1);
 		x86e->CALLFunc(WriteMem8);
 	}
 	else if (size==FLAG_16)
 	{	//maby zx ?
-		//LoadReg_force(EDX,op->reg1);
 		if (r1!=EDX)
 			x86e->MOV32RtoR(EDX,r1);
 		x86e->CALLFunc(WriteMem16);
 	}
 	else if (size==FLAG_32)
 	{
-		//LoadReg_force(EDX,op->reg1);
 		if (r1!=EDX)
 			x86e->MOV32RtoR(EDX,r1);
 		x86e->CALLFunc(WriteMem32);
 	}
 	else
 		printf("WriteMem error\n");
-	
-	//jmp normal;
-	u8* normal_label = x86e->JMP8(0);
-	//
-	//inline:  //inlined ram write
-	x86e->x86SetJ8(inline_label);
-
-	//and ecx , ram_mask
-	x86e->AND32ItoR(ECX,RAM_MASK);
-
-
-	//if needed
-	if (r1==EDX)
-		x86e->PUSH32R(r1);
 
 	
-	//call rec_v1_BlockTest
-	//
-	rec_v1_CompileBlockTest(x86e,ECX,EAX);
+	if (INLINE_MEM_WRITE)
+	{
+		//jmp normal;
+		u8* normal_label = x86e->JMP8(0);
+		//
+		//inline:  //inlined ram write
+		x86e->x86SetJ8(inline_label);
 
-	//if needed
-	if (r1==EDX)
-		x86e->POP32R(r1);
+		//and ecx , ram_mask
+		x86e->AND32ItoR(ECX,RAM_MASK);
 
-	//add ecx, ram_base
-	x86e->ADD32ItoR(ECX,(u32)(&mem_b[0]));
-	//mov/sx eax,[ecx]
-	if (size==0)
-	{
-		//LoadReg_force(EDX,op->reg1);
-		if (r1!=EDX)
-			x86e->MOV32RtoR(EDX,r1);
-		x86e->MOV8RtoRm(ECX,EDX);
+
+		//if needed
+		if (r1==EDX)
+			x86e->PUSH32R(r1);
+
+
+		//call rec_v1_BlockTest
+		//
+		rec_v1_CompileBlockTest(x86e,ECX,EAX);
+
+		//if needed
+		if (r1==EDX)
+			x86e->POP32R(r1);
+
+		//add ecx, ram_base
+		x86e->ADD32ItoR(ECX,(u32)(&mem_b[0]));
+		//mov/sx eax,[ecx]
+		if (size==0)
+		{
+			if (r1!=EDX)
+				x86e->MOV32RtoR(EDX,r1);
+			x86e->MOV8RtoRm(ECX,EDX);
+		}
+		else if (size==1)
+		{
+			x86e->MOV16RtoRm(ECX,r1);
+		}
+		else if (size==2)
+		{
+			x86e->MOV32RtoRm(ECX,r1);
+		}
+		else
+			printf("ReadMem error\n");
+		//normal:
+		x86e->x86SetJ8(normal_label);
 	}
-	else if (size==1)
-	{
-		x86e->MOV16RtoRm(ECX,r1);
-	}
-	else if (size==2)
-	{
-		x86e->MOV32RtoRm(ECX,r1);
-	}
-	else
-		printf("ReadMem error\n");
-	//normal:
-	x86e->x86SetJ8(normal_label);
 
 }
 

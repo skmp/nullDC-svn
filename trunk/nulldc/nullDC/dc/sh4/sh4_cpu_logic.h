@@ -107,5 +107,6 @@
 sh4op(i0000_0000_0000_1001)
 {
 	//no operation xD XD .. i just love this opcode ..
+	//what ? you expected something fancy or smth ?
 } 
 
