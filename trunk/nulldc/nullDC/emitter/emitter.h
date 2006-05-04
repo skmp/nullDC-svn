@@ -114,7 +114,7 @@ enum x86_8breg
 
 void* EmitAlloc(u32 minsize);
 void EmitAllocSet(void * ptr,u32 usedsize);
-template <int DefSize=12*1024>
+template <int DefSize=32*1024>
 class emitter
 {
 private:

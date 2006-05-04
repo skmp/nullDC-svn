@@ -11,12 +11,12 @@
 emitter<>* x86e;
 shil_scs shil_compile_slow_settings=
 {
-	true	//do Register allocation for x86
-	,4		//on 4 regisers
-	,true	//and on XMM
+	false	//do Register allocation for x86
+	,0		//on 4 regisers
+	,false	//and on XMM
 	,true	//Inline Const Mem reads
-	,false	//Inline normal mem reads
-	,false	//Inline mem writes
+	,true	//Inline normal mem reads
+	,true	//Inline mem writes
 };
 
 
@@ -52,6 +52,14 @@ void profile_ifb_call()
 #endif
 
 //a few helpers
+
+typedef void opMtoR_FP (x86IntRegType to,u32* from);
+typedef void opItoR_FP (x86IntRegType to,u32 from);
+typedef void opRtoR_FP (x86IntRegType to,x86IntRegType from);
+
+typedef void opItoM_FP (u32* to, u32 from);
+typedef void opRtoM_FP (u32* to, x86IntRegType from);
+
 
 void c_Ensure32()
 {
@@ -357,6 +365,7 @@ INLINE void SaveReg(u8 reg,u32* from)
 			x86IntRegType x86reg=LoadRegCache_reg_nodata(reg);
 			x86e->MOV32MtoR(x86reg,from);
 		}
+	}
 	else
 	{
 		x86e->MOV32MtoR(ECX,from);
@@ -463,10 +472,12 @@ INLINE void SaveReg(u8 reg,u8* from)
 				x86e-> _RtR_ (r1,r2);\
 			}\
 			else\
+			{\
 				x86e-> _MtR_ (r1,GetRegPtr(op->reg2));\
+			}\
 			SaveReg(op->reg1,r1);\
 		}\
-	else\
+		else\
 		{\
 			x86IntRegType r2 = LoadReg(EAX,op->reg2);\
 			x86e-> _RtM_(GetRegPtr(op->reg1),r2);\
@@ -841,6 +852,8 @@ void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
 
 	readwrteparams(op);
 
+	u8* inline_label;
+
 	if (INLINE_MEM_READ)
 	{
 		//try to inline all mem reads , by comparing values at runtime :P
@@ -862,7 +875,7 @@ void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
 		//test eax,eax
 		x86e->TEST32RtoR(EAX,EAX);
 		//jz inline;//if !0 , then do normal read
-		u8* inline_label = x86e->JZ8(0);
+		inline_label = x86e->JZ8(0);
 	}
 	//call ReadMem32
 	//movsx [if needed]
@@ -928,6 +941,8 @@ void __fastcall shil_compile_writem(shil_opcode* op,rec_v1_BasicBlock* block)
 
 	//so it's sure loaded (if from reg cache)
 	x86IntRegType r1=LoadReg(EDX,op->reg1);
+	
+	u8* inline_label;
 
 	if (INLINE_MEM_WRITE)
 	{	//try to inline all mem reads at runtime :P
@@ -947,7 +962,7 @@ void __fastcall shil_compile_writem(shil_opcode* op,rec_v1_BasicBlock* block)
 		//test eax,eax
 		x86e->TEST32RtoR(EAX,EAX);
 		//jz inline;//if !0 , then do normal write
-		u8* inline_label = x86e->JZ8(0);
+		inline_label = x86e->JZ8(0);
 	}
 	if (size==FLAG_8)
 	{	//maby zx ?
