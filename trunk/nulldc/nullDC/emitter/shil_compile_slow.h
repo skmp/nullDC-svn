@@ -12,6 +12,7 @@ struct shil_scs
 	bool InlineMemRead_const;
 	bool InlineMemRead;
 	bool InlineMemWrite;
+	bool TBitsperate;
 };
 
 extern shil_scs shil_compile_slow_settings;

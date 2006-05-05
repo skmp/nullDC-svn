@@ -12,18 +12,20 @@
 emitter<>* x86e;
 shil_scs shil_compile_slow_settings=
 {
-	false	//do Register allocation for x86
-	,4		//on 4 regisers
-	,false	//and on XMM
-	,true	//Inline Const Mem reads
-	,true	//Inline normal mem reads
-	,true	//Inline mem writes
+	false,	//do Register allocation for x86
+	4,		//on 4 regisers
+	false,	//and on XMM
+	true,	//Inline Const Mem reads
+	true,	//Inline normal mem reads
+	true,	//Inline mem writes
+	false	//Do _not_ keep tbit seperate ;P , needs bug fixing
 };
 
+#define REG_ALLOC_COUNT			 (shil_compile_slow_settings.RegAllocCount)
+#define REG_ALLOC_T_BIT_SEPERATE (shil_compile_slow_settings.TBitsperate)
+#define REG_ALLOC_X86			 (shil_compile_slow_settings.RegAllocX86)
+#define REG_ALLOC_XMM			 (shil_compile_slow_settings.RegAllocXMM)
 
-#define REG_ALLOC_COUNT			(shil_compile_slow_settings.RegAllocCount)
-#define REG_ALLOC_X86			(shil_compile_slow_settings.RegAllocX86)
-#define REG_ALLOC_XMM			(shil_compile_slow_settings.RegAllocXMM)
 #define INLINE_MEM_READ_CONST   (shil_compile_slow_settings.InlineMemRead_const)
 #define INLINE_MEM_READ			(shil_compile_slow_settings.InlineMemRead)
 #define INLINE_MEM_WRITE		(shil_compile_slow_settings.InlineMemWrite)
@@ -40,6 +42,9 @@ bool inited=false;
 int fallbacks=0;
 int native=0;
 u32 T_jcond_value;
+u32 T_bit_value;
+bool T_Edited;
+
 u32 reg_pc_temp_value;
 rec_v1_BasicBlock* rec_v1_pCurrentBlock;
 u32 IsRamAddr[0xFF];
@@ -129,7 +134,7 @@ void bubble_sort(sort_temp numbers[] , int array_size)
 	}
   }
 }
-INLINE void FlushRegCache_reg(u8 reg)
+INLINE void FlushRegCache_reg(u32 reg)
 {
 	if (r_alloced[reg].InReg)
 	{
@@ -137,7 +142,7 @@ INLINE void FlushRegCache_reg(u8 reg)
 		x86e->MOV32RtoM(GetRegPtr(reg),r_alloced[reg].x86reg);
 	}
 }
-INLINE bool IsRegCached(u8 reg)
+INLINE bool IsRegCached(u32 reg)
 {
 	if (REG_ALLOC_X86)
 	{
@@ -148,7 +153,7 @@ INLINE bool IsRegCached(u8 reg)
 		return false;
 	}
 }
-INLINE x86IntRegType LoadRegCache_reg(u8 reg)
+INLINE x86IntRegType LoadRegCache_reg(u32 reg)
 {
 	if (IsRegCached(reg))
 	{
@@ -163,7 +168,7 @@ INLINE x86IntRegType LoadRegCache_reg(u8 reg)
 	return GPR_Error;
 }
 
-INLINE x86IntRegType LoadRegCache_reg_nodata(u8 reg)
+INLINE x86IntRegType LoadRegCache_reg_nodata(u32 reg)
 {
 	if (IsRegCached(reg))
 	{
@@ -175,16 +180,6 @@ INLINE x86IntRegType LoadRegCache_reg_nodata(u8 reg)
 	}
 
 	return GPR_Error;
-}
-INLINE void FlushRegCache()
-{
-	if(REG_ALLOC_X86)
-	{
-		for (int i=0;i<16;i++)
-		{
-			FlushRegCache_reg(i);
-		}
-	}
 }
 void AllocateRegisters(rec_v1_BasicBlock* block)
 {
@@ -221,7 +216,7 @@ void AllocateRegisters(rec_v1_BasicBlock* block)
 
 		bubble_sort(used,16);
 
-		for (int i=0;i<REG_ALLOC_COUNT;i++)
+		for (u32 i=0;i<REG_ALLOC_COUNT;i++)
 		{
 			if (used[i].cnt==0)
 				break;
@@ -263,6 +258,16 @@ INLINE x86IntRegType LoadReg_force(x86IntRegType to,u8 reg)
 		x86e->MOV32MtoR(to,GetRegPtr(reg));
 	}
 
+	if (REG_ALLOC_T_BIT_SEPERATE)
+	{
+		if (reg==reg_sr)
+		{
+			x86e->AND32ItoR(to,(u32)~1);
+			x86e->OR32MtoR(to,&T_bit_value);
+			x86e->MOV32RtoM(GetRegPtr(reg_sr),to);//save it back to be sure :P
+			T_Edited=false;
+		}
+	}
 	return to;
 }
 
@@ -273,18 +278,30 @@ INLINE x86IntRegType LoadReg(x86IntRegType to,u8 reg)
 		if (reg>r15 || (!IsRegCached(reg)))
 		{
 			x86e->MOV32MtoR(to,GetRegPtr(reg));
-			return to;
+			//return to;
 		}
 		else
 		{
-			return LoadRegCache_reg(reg);
+			to= LoadRegCache_reg(reg);
 		}
 	}
 	else
 	{
 		x86e->MOV32MtoR(to,GetRegPtr(reg));
-		return to;
+		//return to;
 	}
+	
+	if(REG_ALLOC_T_BIT_SEPERATE)
+	{
+		if (reg==reg_sr)
+		{
+			x86e->AND32ItoR(to,(u32)~1);
+			x86e->OR32MtoR(to,&T_bit_value);
+			x86e->MOV32RtoM(GetRegPtr(reg_sr),to);//save it back to be sure :P
+			T_Edited=false;
+		}
+	}
+	return to;
 }
 
 INLINE x86IntRegType LoadReg_nodata(x86IntRegType to,u8 reg)
@@ -327,6 +344,14 @@ INLINE void SaveReg(u8 reg,x86IntRegType from)
 	{
 		x86e->MOV32RtoM(GetRegPtr(reg),from);
 	}
+
+	if (REG_ALLOC_T_BIT_SEPERATE)
+	{
+		if (reg==reg_sr)
+		{
+			T_Edited=false;
+		}
+	}
 }
 
 INLINE void SaveReg(u8 reg,u32 from)
@@ -352,6 +377,14 @@ INLINE void SaveReg(u8 reg,u32 from)
 	{
 		x86e->MOV32ItoM(GetRegPtr(reg),from);
 	}
+
+	if (REG_ALLOC_T_BIT_SEPERATE)
+	{
+		if (reg==reg_sr)
+		{
+			T_Edited=false;
+		}
+	}
 }
 
 INLINE void SaveReg(u8 reg,u32* from)
@@ -374,7 +407,15 @@ INLINE void SaveReg(u8 reg,u32* from)
 		x86e->MOV32MtoR(ECX,from);
 		x86e->MOV32RtoM(GetRegPtr(reg),ECX);
 	}
+
+	if (REG_ALLOC_T_BIT_SEPERATE)
+	{
+		if (reg==reg_sr)
+		{
+			T_Edited=false;
+		}
 	}
+}
 
 INLINE void SaveReg(u8 reg,u16* from)
 {
@@ -420,6 +461,29 @@ INLINE void SaveReg(u8 reg,u8* from)
 	}
 }
 
+INLINE void FlushRegCache()
+{
+	if(REG_ALLOC_X86)
+	{
+		for (int i=0;i<16;i++)
+		{
+			FlushRegCache_reg(i);
+		}
+	}
+	
+	if (REG_ALLOC_T_BIT_SEPERATE)
+	{
+		if (T_Edited)
+		{
+			//save T
+			LoadReg_force(EAX,reg_sr);			//ecx=sr(~1)|T
+			x86e->AND32ItoR(EAX,(u32)~1);
+			x86e->OR32MtoR(EAX,&T_bit_value);
+			SaveReg(reg_sr,EAX);
+			T_Edited=false;
+		}
+	}
+}
 //Original :
 	/*
 	assert(FLAG_32==(op->flags & 3));//32b olny
@@ -575,8 +639,8 @@ void __fastcall shil_compile_mov(shil_opcode* op,rec_v1_BasicBlock* block)
 		assert(size==FLAG_64);//32 or 64 b
 		assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2)));//no imm can be used
 		//printf("mov64 not supported\n");
-		u8 dest=GetSingleFromDouble((Sh4RegType)op->reg1);
-		u8 source=GetSingleFromDouble((Sh4RegType)op->reg2);
+		u8 dest=GetSingleFromDouble(op->reg1);
+		u8 source=GetSingleFromDouble(op->reg2);
 
 		//x86e->MOV32MtoR(EAX,GetRegPtr(source));
 		//x86e->MOV32MtoR(ECX,GetRegPtr(source+1));
@@ -1044,15 +1108,28 @@ void __fastcall shil_compile_SaveT(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	assert(op->flags & FLAG_IMM1);//imm1
 	assert(0==(op->flags & (FLAG_IMM2|FLAG_REG1|FLAG_REG2)));//no imm2/r1/r2
-	x86e->SETcc8R(EAX,op->imm1);//imm1 :P
-	x86e->MOVZX32R8toR(EAX,EAX);//clear rest of eax (to remove partial depency on 32:8)
-	
-	//x86e->AND32ItoR(EAX,1);		//and 1
 
-	LoadReg_force(ECX,reg_sr);			//ecx=sr(~1)|T
-	x86e->AND32ItoR(ECX,(u32)~1);
-	x86e->OR32RtoR(ECX,EAX);
-	SaveReg(reg_sr,ECX);
+	if (REG_ALLOC_T_BIT_SEPERATE)
+	{
+		T_Edited=true;
+
+		//x86e->SETcc8M(&T_bit_value,op->imm1); //imm1 is cond ;)
+
+		x86e->SETcc8R(EAX,op->imm1);//imm1 :P
+		x86e->MOV8RtoM((u8*)&T_bit_value,EAX);
+
+		x86e->INT3();
+	}
+	else
+	{
+		x86e->SETcc8R(EAX,op->imm1);//imm1 :P
+		x86e->MOVZX32R8toR(EAX,EAX);//clear rest of eax (to remove partial depency on 32:8)
+
+		LoadReg_force(ECX,reg_sr);			//ecx=sr(~1)|T
+		x86e->AND32ItoR(ECX,(u32)~1);
+		x86e->OR32RtoR(ECX,EAX);
+		SaveReg(reg_sr,ECX);
+	}
 }
 void __fastcall shil_compile_LoadT(shil_opcode* op,rec_v1_BasicBlock* block)
 {
@@ -1064,13 +1141,29 @@ void __fastcall shil_compile_LoadT(shil_opcode* op,rec_v1_BasicBlock* block)
 
 	if (op->imm1==x86_flags::jcond_flag)
 	{
-		LoadReg_force(EAX,reg_sr);
-		x86e->MOV32RtoM(&T_jcond_value,EAX);//T_jcond_value;
+		if ( (!REG_ALLOC_T_BIT_SEPERATE) || (!T_Edited))
+		{
+			LoadReg_force(EAX,reg_sr);
+			x86e->MOV32RtoM(&T_jcond_value,EAX);//T_jcond_value;
+		}
+		else
+		{
+			x86e->MOV32MtoR(EAX,&T_bit_value);
+			x86e->MOV32RtoM(&T_jcond_value,EAX);//T_jcond_value;
+		}
 	}
 	else
 	{
-		LoadReg_force(EAX,reg_sr);
-		x86e->SHR32ItoR(EAX,1);//heh T bit is there now :P CF
+		if ( (!REG_ALLOC_T_BIT_SEPERATE) || (!T_Edited))
+		{
+			LoadReg_force(EAX,reg_sr);
+			x86e->SHR32ItoR(EAX,1);//heh T bit is there now :P CF
+		}
+		else
+		{
+			x86e->MOV32MtoR(EAX,&T_bit_value);
+			x86e->SHR32ItoR(EAX,1);//heh T bit is there now :P CF
+		}
 	}
 }
 //cmp-test
@@ -1826,6 +1919,13 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 
 
 	x86e=new emitter<>();
+
+	if (REG_ALLOC_T_BIT_SEPERATE)
+	{
+		T_Edited=false;
+		T_bit_value=0;//just to be sure
+	}
+
 	block->compiled=new rec_v1_CompiledBlock();
 	
 

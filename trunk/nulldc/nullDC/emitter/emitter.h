@@ -213,6 +213,14 @@ private:
 		write8( 0xC0 | ( to ) );
 	}
 
+	void SET8M( u8 cc, u32* to )
+	{
+		write8( 0x0F );
+		write8( cc );
+		ModRM( 0, 4, DISP32 );
+		write32( MEMADDR(to, 4) ); 
+	}
+
 
 	u8* J8Rel( u8 cc, u8 to )
 	{
@@ -2385,6 +2393,12 @@ public :
 	void SETcc8R( x86IntRegType to ,u32 cc) 
 	{ 
 		SET8R( (u8)(0x90|cc),(u8) to ); 
+	}
+
+	/* setcc m8 */
+	void SETcc8M( u32* to ,u32 cc) 
+	{ 
+		SET8M( (u8)(0x90|cc), to ); 
 	}
 
 	/* sets r8 */

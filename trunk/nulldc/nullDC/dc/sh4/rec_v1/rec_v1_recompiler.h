@@ -7,7 +7,7 @@
 //count fallbacks and average block size, average execution time , ect :)
 //#define PROFILE_DYNAREC
 //call asm using a second function , so we can profile it using a profiler :)
-#define PROFILE_DYNAREC_CALL
+//#define PROFILE_DYNAREC_CALL
 void printprofile();
 //disable register allocation
 #define DYNAREC_REG_ALLOC (true)
@@ -15,4 +15,4 @@ void printprofile();
 typedef u32 rec_v1_BasicBlockEP();
 
 
-using namespace std;   
+using namespace std;    
