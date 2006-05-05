@@ -13,7 +13,7 @@ emitter<>* x86e;
 shil_scs shil_compile_slow_settings=
 {
 	false	//do Register allocation for x86
-	,0		//on 4 regisers
+	,4		//on 4 regisers
 	,false	//and on XMM
 	,true	//Inline Const Mem reads
 	,true	//Inline normal mem reads

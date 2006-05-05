@@ -24,7 +24,7 @@ void rec_v1_BasicBlock::AddRef(rec_v1_BasicBlock* bb)
 
 void rec_v1_BasicBlock::Discard()
 {
-	printf("Discard block %x\n",start);
+	//printf("Discard block %x\n",start);
 	u32 ref_count=callers.size();
 	for (u32 i=0;i<ref_count;i++)
 	{
