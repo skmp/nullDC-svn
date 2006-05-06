@@ -507,6 +507,28 @@ sh4op(i0011_nnnn_mmmm_0100)
 	}
 	}
 	sr.T = (sr.Q==sr.M);
+
+
+	/*
+	u32 op1=r[m];
+	u32 op2=(u32)(s32)r[n];
+	u32 oldq=sr.Q;
+	sr.Q=(r[n]>>31)&1;
+	op2=(op2<<1)| (sr.T);
+
+	if (oldq==sr.M)
+	{
+		op2=op2-op1;
+	}
+	else	
+	{
+		op2=op2+op1;
+	}
+
+	sr.Q=(sr.Q^sr.M)^((op2>>31)&1);
+	sr.T=1-(sr.Q ^ sr.M);
+	r[n]=(u32)op2;*/
+	//printf("Q %d , S %d , T %d , r[n] %d, r[m] %d\n",sr.Q,sr.S,sr.T,r[n],r[m]);
 }
 
 

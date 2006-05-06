@@ -479,7 +479,7 @@ sh4op(i0000_nnnn_mmmm_0111)
 #define DIV0S_KEY 0x2007
 #define DIV1_KEY 0x3004
 #define ROTCL_KEY 0x4024
-u32 MatchDiv32(u32 pc , rec_v1_BasicBlock* bb,s32 reg1,s32 reg2 , s32 reg3)
+u32 MatchDiv32(u32 pc , rec_v1_BasicBlock* bb,Sh4RegType &reg1,Sh4RegType &reg2 , Sh4RegType &reg3)
 {
 	u32 v_pc=pc;
 	u32 match=1;
@@ -489,9 +489,9 @@ u32 MatchDiv32(u32 pc , rec_v1_BasicBlock* bb,s32 reg1,s32 reg2 , s32 reg3)
 		v_pc+=2;
 		if ((opcode&MASK_N)==ROTCL_KEY)
 		{
-			if (reg1==-1)
-				reg1=GetN(opcode);
-			else if (reg1!=GetN(opcode))
+			if (reg1==NoReg)
+				reg1=(Sh4RegType)GetN(opcode);
+			else if (reg1!=(Sh4RegType)GetN(opcode))
 				break;
 			match++;
 		}
@@ -502,17 +502,17 @@ u32 MatchDiv32(u32 pc , rec_v1_BasicBlock* bb,s32 reg1,s32 reg2 , s32 reg3)
 		v_pc+=2;
 		if ((opcode&MASK_N_M)==DIV1_KEY)
 		{
-			if (reg2==-1)
-				reg2=GetM(opcode);
-			else if (reg2!=GetM(opcode))
+			if (reg2==NoReg)
+				reg2=(Sh4RegType)GetM(opcode);
+			else if (reg2!=(Sh4RegType)GetM(opcode))
 				break;
 			
 			if (reg2==reg1)
 				break;
 
-			if (reg3==-1)
-				reg3=GetN(opcode);
-			else if (reg3!=GetN(opcode))
+			if (reg3==NoReg)
+				reg3=(Sh4RegType)GetN(opcode);
+			else if (reg3!=(Sh4RegType)GetN(opcode))
 				break;
 			
 			if (reg3==reg1)
@@ -533,15 +533,23 @@ sh4op(i0000_0000_0001_1001)
 	//sr.Q = 0;
 	//sr.M = 0;
 	//sr.T = 0;
+	Sh4RegType reg1=Sh4RegType::NoReg;
+	Sh4RegType reg2=Sh4RegType::NoReg;
+	Sh4RegType reg3=Sh4RegType::NoReg;
 
-	u32 match=MatchDiv32(pc+2,bb,-1,-1,-1);
+	u32 match=MatchDiv32(pc+2,bb,reg1,reg2,reg3);
+
 
 	printf("DIV32U matched %d%%\n",match*100/65);
 	if (match==65)
+	{
 		//DIV32U was perfectly matched :)
 		bb->flags|=BLOCK_SOM_SIZE_128;
+	//	ilst->div(reg1,reg2,reg3,FLAG_ZX|FLAG_32);
+	}
 	//else //<- uncoment when we realy emit em :P
 		shil_interpret(op);
+
 }
 //div0s <REG_M>,<REG_N>         
 sh4op(i0010_nnnn_mmmm_0111)
@@ -554,14 +562,18 @@ sh4op(i0010_nnnn_mmmm_0111)
 	sr.M=r[m]>>31;
 	sr.T=sr.M^sr.Q;*/
 
-	u32 match=MatchDiv32(pc+2,bb,-1,GetM(op),GetN(op));
+	Sh4RegType reg1=Sh4RegType::NoReg;
+	Sh4RegType reg2=(Sh4RegType)GetM(op);
+	Sh4RegType reg3=(Sh4RegType)GetN(op);
+
+	u32 match=MatchDiv32(pc+2,bb,reg1,reg2,reg3);
 	printf("DIV32S matched %d%%\n",match*100/65);
 	
 	if (match==65)
 	{
 		//DIV32S was perfectly matched :)
 		bb->flags|=BLOCK_SOM_SIZE_128;
-		//ilst->div()
+	//	ilst->div(reg1,reg2,reg3,FLAG_SX|FLAG_32);
 	}
 	//else //<- uncoment when we realy emit em :P
 		shil_interpret(op);

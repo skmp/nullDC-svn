@@ -433,7 +433,7 @@ public :
 	void shil_stream::ftrc(Sh4RegType frn);
 	void shil_stream::fsca(Sh4RegType frn);
 	void shil_stream::fsrra(Sh4RegType frn);
-	void shil_stream::div(Sh4RegType r0,Sh4RegType r1,Sh4RegType r2);
+	void shil_stream::div(Sh4RegType r0,Sh4RegType r1,Sh4RegType r2,u32 flags);
 
 	//misc
 	void shil_ifb(u32 opcode,u32 pc);

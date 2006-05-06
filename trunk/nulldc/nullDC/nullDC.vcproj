@@ -417,6 +417,14 @@
 						<File
 							RelativePath=".\dc\sh4\sh4_cpu.cpp"
 							>
+							<FileConfiguration
+								Name="Release-NoTrace|Win32"
+								>
+								<Tool
+									Name="VCCLCompilerTool"
+									Optimization="0"
+								/>
+							</FileConfiguration>
 						</File>
 						<File
 							RelativePath=".\dc\sh4\sh4_cpu.h"

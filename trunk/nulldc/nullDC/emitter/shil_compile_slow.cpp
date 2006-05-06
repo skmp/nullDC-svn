@@ -47,7 +47,7 @@ bool T_Edited;
 
 u32 reg_pc_temp_value;
 rec_v1_BasicBlock* rec_v1_pCurrentBlock;
-u32 IsRamAddr[0xFF];
+u32 IsRamAddr[0x100];
 int block_count=0;
 
 #ifdef X86
@@ -95,6 +95,7 @@ struct RegAllocInfo
 {
 	x86IntRegType x86reg;
 	bool InReg;
+	bool Dirty;
 };
  RegAllocInfo r_alloced[16];
 //compile a basicblock
@@ -139,6 +140,7 @@ INLINE void FlushRegCache_reg(u32 reg)
 	if (r_alloced[reg].InReg)
 	{
 		r_alloced[reg].InReg=false;
+		r_alloced[reg].Dirty=false;
 		x86e->MOV32RtoM(GetRegPtr(reg),r_alloced[reg].x86reg);
 	}
 }
@@ -151,6 +153,13 @@ INLINE bool IsRegCached(u32 reg)
 	else
 	{
 		return false;
+	}
+}
+INLINE void MarkDirty(u32 reg)
+{
+	if (IsRegCached(reg))
+	{
+		r_alloced[reg].Dirty=true;
 	}
 }
 INLINE x86IntRegType LoadRegCache_reg(u32 reg)
@@ -192,6 +201,7 @@ void AllocateRegisters(rec_v1_BasicBlock* block)
 			used[i].reg=r0+i;
 			r_alloced[i].x86reg=GPR_Error;
 			r_alloced[i].InReg=false;
+			r_alloced[i].Dirty=false;
 		}
 
 		u32 op_count=block->ilst.op_count;
@@ -327,6 +337,7 @@ INLINE x86IntRegType LoadReg_nodata(x86IntRegType to,u8 reg)
 
 INLINE void SaveReg(u8 reg,x86IntRegType from)
 {
+	MarkDirty(reg);
 	if(REG_ALLOC_X86)
 	{
 		if (reg>r15 || (!IsRegCached(reg)))
@@ -356,6 +367,7 @@ INLINE void SaveReg(u8 reg,x86IntRegType from)
 
 INLINE void SaveReg(u8 reg,u32 from)
 {
+	MarkDirty(reg);
 	if(REG_ALLOC_X86)
 	{
 		if (reg>r15 || (!IsRegCached(reg)))
@@ -389,6 +401,7 @@ INLINE void SaveReg(u8 reg,u32 from)
 
 INLINE void SaveReg(u8 reg,u32* from)
 {
+	MarkDirty(reg);
 	if(REG_ALLOC_X86)
 	{
 		if (reg>r15 || (!IsRegCached(reg)))
@@ -419,6 +432,7 @@ INLINE void SaveReg(u8 reg,u32* from)
 
 INLINE void SaveReg(u8 reg,u16* from)
 {
+	MarkDirty(reg);
 	if(REG_ALLOC_X86)
 	{
 		if (reg>r15 || (!IsRegCached(reg)))
@@ -441,6 +455,7 @@ INLINE void SaveReg(u8 reg,u16* from)
 
 INLINE void SaveReg(u8 reg,u8* from)
 {
+	MarkDirty(reg);
 	if(REG_ALLOC_X86)
 	{
 		if (reg>r15 || (!IsRegCached(reg)))
@@ -616,14 +631,17 @@ void __fastcall shil_compile_mov(shil_opcode* op,rec_v1_BasicBlock* block)
 	
 	if (size==FLAG_32)
 	{
+		OP_RegToReg_simple(MOV32);
+		return;
 		if (op->flags & FLAG_REG2)
 		{
 			assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2)));//no imm can be used
 			//printf("mov [r]%d=[r]%d , sz==%d\n",op->reg1,op->reg2,size);
 
 		 	//LoadReg(EAX,op->reg2);
-			x86IntRegType r2=LoadReg(EAX,op->reg2);
-			SaveReg(op->reg1,r2);
+			
+			//x86IntRegType r2=LoadReg(EAX,op->reg2);
+			//SaveReg(op->reg1,r2);
 		}
 		else
 		{
@@ -764,62 +782,75 @@ void __fastcall shil_compile_swap(shil_opcode* op,rec_v1_BasicBlock* block)
 		x86e->ROR32ItoR(r1,16);
 		SaveReg(op->reg1,r1);
 	}
+	MarkDirty(op->reg1);
 }
 
 void __fastcall shil_compile_shl(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_ItMoR(SHL32ItoM,SHL32ItoR,(u8)op->imm1);
+	MarkDirty(op->reg1);
 }
 
 void __fastcall shil_compile_shr(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_ItMoR(SHR32ItoM,SHR32ItoR,(u8)op->imm1);
+	MarkDirty(op->reg1);
 }
 
 void __fastcall shil_compile_sar(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_ItMoR(SAR32ItoM,SAR32ItoR,(u8)op->imm1);
+	MarkDirty(op->reg1);
 }
 
 //rotates
 void __fastcall shil_compile_rcl(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_NtMoR_noimm(RCL321toM,RCL321toR);
+	MarkDirty(op->reg1);
 }
 void __fastcall shil_compile_rcr(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_NtR_noimm(RCR321toR);
+	MarkDirty(op->reg1);
 }
 void __fastcall shil_compile_ror(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_NtR_noimm(ROR321toR);
+	MarkDirty(op->reg1);
 }
 void __fastcall shil_compile_rol(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_NtR_noimm(ROL321toR);
+	MarkDirty(op->reg1);
 }
 //neg
 void __fastcall shil_compile_neg(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_NtR_noimm(NEG32R);
+	MarkDirty(op->reg1);
 }
 //not
 void __fastcall shil_compile_not(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_NtR_noimm(NOT32R);
+	MarkDirty(op->reg1);
 }
 //or xor and
 void __fastcall shil_compile_xor(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_RegToReg_simple(XOR32);
+	MarkDirty(op->reg1);
 }
 void __fastcall shil_compile_or(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_RegToReg_simple(OR32);
+	MarkDirty(op->reg1);
 }
 void __fastcall shil_compile_and(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_RegToReg_simple(AND32);
+	MarkDirty(op->reg1);
 }
 //read-write
 void readwrteparams(shil_opcode* op)
@@ -911,6 +942,7 @@ void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
 					{
 						SaveReg(op->reg1,(u32*)GetMemPtr(op->imm1,4));
 					}
+					MarkDirty(op->reg1);
 					return;
 				}
 			}
@@ -996,6 +1028,7 @@ void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
 	}
 	//mov reg,eax
 	SaveReg(op->reg1,EAX);//save return value
+	MarkDirty(op->reg1);
 }
 void __fastcall shil_compile_writem(shil_opcode* op,rec_v1_BasicBlock* block)
 {
@@ -1214,14 +1247,17 @@ void __fastcall shil_compile_test(shil_opcode* op,rec_v1_BasicBlock* block)
 void __fastcall shil_compile_add(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_RegToReg_simple(ADD32);
+	MarkDirty(op->reg1);
 }
 void __fastcall shil_compile_adc(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_RegToReg_simple(ADC32);
+	MarkDirty(op->reg1);
 }
 void __fastcall shil_compile_sub(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_RegToReg_simple(SUB32);
+	MarkDirty(op->reg1);
 }
 
 //**
@@ -1354,6 +1390,7 @@ void __fastcall shil_compile_mul(shil_opcode* op,rec_v1_BasicBlock* block)
 			x86e->MUL32R(ECX);
 		
 		SaveReg((u8)reg_macl,EAX);
+		MarkDirty(reg_macl);
 	}
 	else
 	{
@@ -1371,6 +1408,8 @@ void __fastcall shil_compile_mul(shil_opcode* op,rec_v1_BasicBlock* block)
 
 		SaveReg((u8)reg_macl,EAX);
 		SaveReg((u8)reg_mach,EDX);
+		MarkDirty(reg_macl);
+		MarkDirty(reg_mach);
 	}
 }
 
@@ -1678,7 +1717,18 @@ void __fastcall shil_compile_fsrra(shil_opcode* op,rec_v1_BasicBlock* block)
 
 void __fastcall shil_compile_div32(shil_opcode* op,rec_v1_BasicBlock* block)
 {
-	assert(false);
+	assert(0==(op->flags & (FLAG_IMM2)));
+	u8 rQuotient=op->reg1;
+	u8 rDivisor=op->reg2;
+	u8 rDividend=op->imm1;
+
+	if (op->flags & FLAG_SX)
+	{
+		//signed divide :P
+	}
+	else
+	{
+	}
 }
 
 #ifdef PROFILE_DYNAREC

@@ -656,9 +656,9 @@ void shil_stream::ftrc(Sh4RegType frn)
 {
 	emitReg(shil_opcodes::ftrc,frn,GetFloatFlags(frn,NoReg));
 }
-void shil_stream::div(Sh4RegType r0,Sh4RegType r1,Sh4RegType r2)
+void shil_stream::div(Sh4RegType r0,Sh4RegType r1,Sh4RegType r2,u32 flags)
 {
-	//emitReg(shil_opcodes::ftrc,frn,GetFloatFlags(frn,NoReg));
+	emit(shil_opcodes::div32,r0,r1,r2,0,FLAG_IMM1|FLAG_REG1|FLAG_REG2|flags);	//WARNING !! NEEDS FIXUP for 3rd reg type
 }
 
 void shil_stream::shil_ifb(u32 opcode,u32 pc)
