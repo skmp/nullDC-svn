@@ -12,7 +12,7 @@
 emitter<>* x86e;
 shil_scs shil_compile_slow_settings=
 {
-	false,	//do Register allocation for x86
+	true,	//do Register allocation for x86
 	4,		//on 4 regisers
 	false,	//and on XMM
 	true,	//Inline Const Mem reads
@@ -135,26 +135,35 @@ void bubble_sort(sort_temp numbers[] , int array_size)
 	}
   }
 }
-INLINE void FlushRegCache_reg(u32 reg)
-{
-	if (r_alloced[reg].InReg)
-	{
-		r_alloced[reg].InReg=false;
-		r_alloced[reg].Dirty=false;
-		x86e->MOV32RtoM(GetRegPtr(reg),r_alloced[reg].x86reg);
-	}
-}
 INLINE bool IsRegCached(u32 reg)
 {
-	if (REG_ALLOC_X86)
+	if (reg<=r15)
 	{
-		return r_alloced[reg].x86reg!=GPR_Error;
+		if (REG_ALLOC_X86)
+		{
+			return r_alloced[reg].x86reg!=GPR_Error;
+		}
+		else
+		{
+			return false;
+		}
 	}
 	else
-	{
 		return false;
+}
+INLINE void FlushRegCache_reg(u32 reg)
+{
+	if (IsRegCached(reg) && r_alloced[reg].InReg)
+	{
+		if (r_alloced[reg].Dirty)
+			x86e->MOV32RtoM(GetRegPtr(reg),r_alloced[reg].x86reg);
+		/*else
+			printf("red r%d not dirty ;)\n",reg);*/
+		r_alloced[reg].InReg=false;
+		r_alloced[reg].Dirty=false;
 	}
 }
+
 INLINE void MarkDirty(u32 reg)
 {
 	if (IsRegCached(reg))
@@ -533,6 +542,7 @@ INLINE void FlushRegCache()
 		if (IsRegCached(op->reg1))\
 		{\
 			x86IntRegType r1 = LoadReg(EAX,op->reg1);\
+			assert(r1!=EAX);\
 			x86e-> _ItR_ (r1,op->imm1);\
 			SaveReg(op->reg1,r1);\
 		}\
@@ -547,6 +557,7 @@ INLINE void FlushRegCache()
 		if (IsRegCached(op->reg1))\
 		{\
 			x86IntRegType r1 = LoadReg(EAX,op->reg1);\
+			assert(r1!=EAX);\
 			if (IsRegCached(op->reg2))\
 			{\
 				x86IntRegType r2 = LoadReg(EAX,op->reg2);\
