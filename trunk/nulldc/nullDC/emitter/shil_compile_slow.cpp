@@ -79,7 +79,7 @@ bool Ensure32()
 	return true;
 }
 
-INLINE u32* GetRegPtr(u8 reg)
+INLINE u32* GetRegPtr(u32 reg)
 {
 	if (reg==Sh4RegType::reg_pc_temp)
 		return &reg_pc_temp_value;
@@ -87,6 +87,10 @@ INLINE u32* GetRegPtr(u8 reg)
 	u32* rv=Sh4_int_GetRegisterPtr((Sh4RegType)reg);
 	assert(rv!=0);
 	return rv;
+}
+INLINE u32* GetRegPtr(Sh4RegType reg)
+{
+	return GetRegPtr((u8)reg);
 }
 
 //REGISTER ALLOCATION
@@ -670,7 +674,7 @@ void __fastcall shil_compile_mov(shil_opcode* op,rec_v1_BasicBlock* block)
 	if (size==FLAG_32)
 	{
 		OP_RegToReg_simple(MOV32);
-		return;
+		/*return;
 		if (op->flags & FLAG_REG2)
 		{
 			assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2)));//no imm can be used
@@ -688,7 +692,7 @@ void __fastcall shil_compile_mov(shil_opcode* op,rec_v1_BasicBlock* block)
 
 			//x86e->MOV32ItoR(EAX,);
 			SaveReg(op->reg1,op->imm1);
-		}
+		}*/
 	}
 	else
 	{
@@ -989,7 +993,7 @@ void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
 
 	readwrteparams(op);
 
-	u8* inline_label;
+	u8* inline_label=0;
 
 	if (INLINE_MEM_READ)
 	{
@@ -1080,7 +1084,7 @@ void __fastcall shil_compile_writem(shil_opcode* op,rec_v1_BasicBlock* block)
 	//so it's sure loaded (if from reg cache)
 	x86IntRegType r1=LoadReg(EDX,op->reg1);
 	
-	u8* inline_label;
+	u8* inline_label=0;
 
 	if (INLINE_MEM_WRITE)
 	{	//try to inline all mem reads at runtime :P
@@ -1756,9 +1760,10 @@ void __fastcall shil_compile_fsrra(shil_opcode* op,rec_v1_BasicBlock* block)
 void __fastcall shil_compile_div32(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	assert(0==(op->flags & (FLAG_IMM2)));
+	/*
 	u8 rQuotient=op->reg1;
 	u8 rDivisor=op->reg2;
-	u8 rDividend=op->imm1;
+	u8 rDividend=(u8)op->imm1;
 
 	if (op->flags & FLAG_SX)
 	{
@@ -1767,6 +1772,7 @@ void __fastcall shil_compile_div32(shil_opcode* op,rec_v1_BasicBlock* block)
 	else
 	{
 	}
+	*/
 }
 
 #ifdef PROFILE_DYNAREC
@@ -2027,7 +2033,7 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 #ifdef PROFILE_DYNAREC
 	x86e->CALLFunc(dyna_profile_cookie_start);
 #endif
-	u32 list_sz=block->ilst.opcodes.size();
+	u32 list_sz=(u32)block->ilst.opcodes.size();
 	for (u32 i=0;i<list_sz;i++)
 	{
 		shil_opcode* op=&block->ilst.opcodes[i];

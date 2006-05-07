@@ -14,9 +14,9 @@ void* EmitAlloc(u32 minsize)
 	void * rv=malloc(minsize);
 	
 	return rv;
-	if (alloced_free>=(int)minsize)
+	/*if (alloced_free>=(int)minsize)
 	{
-		printf("0x%X\n",alloced_ptr);
+		printf("0x%P\n",alloced_ptr);
 		return alloced_ptr;
 	}
 	else
@@ -27,14 +27,14 @@ void* EmitAlloc(u32 minsize)
 		printf("Dynarec Stats : Generated %d kb of code , allocating more\n",gen_8_mb*128); 
 		gen_8_mb++;
 		return alloced_ptr; 
-	}
+	}*/
 }
 
 void EmitAllocSet(void * ptr,u32 usedsize)
 {
 	realloc(ptr,usedsize);
-	alloced_free-=usedsize;
+	/*alloced_free-=usedsize;
 	alloced_ptr+=usedsize;
 	if (alloced_free<0)
-		alloced_free=0;
+		alloced_free=0;*/
 }

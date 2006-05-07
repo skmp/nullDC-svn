@@ -128,7 +128,7 @@ private:
 	void Resizex86Ptr()
 	{ 
 		printf("\t\n WARNING *Resizex86Ptr* *Resizex86Ptr* \n *Resizex86Ptr*\n");
-		u32 offset=x86Ptr-x86Ptr_base;
+		u32 offset=(u32)(x86Ptr-x86Ptr_base);
 
 		//x86Ptr_base=(s8*)realloc(x86Ptr_base,x86Ptr_size*3/2);
 
@@ -259,7 +259,7 @@ private:
 public :
 	bool CanJ8(void* to)
 	{
-		u32 jump = ( x86Ptr - (s8*)to );
+		u32 jump = (u32)( x86Ptr - (s8*)to );
 		if ((jump&0x7f)>0x70)
 			return false;
 
@@ -287,7 +287,7 @@ public :
 	////////////////////////////////////////////////////
 	void x86SetJ8( void* j8 )
 	{
-		u32 jump = ( x86Ptr - (s8*)j8 ) - 1;
+		u32 jump = (u32)( x86Ptr - (s8*)j8 ) - 1;
 
 		if ( jump > 0x7f )
 		{
@@ -341,7 +341,7 @@ public :
 	void GenCode()
 	{
 		if (DefSize!=0)
-			EmitAllocSet(x86e->x86Ptr_base,x86Ptr-x86Ptr_base+1);
+			EmitAllocSet(x86e->x86Ptr_base,(u32)(x86Ptr-x86Ptr_base+1));
 	}
 
 	/********************/
@@ -2002,7 +2002,7 @@ public :
 
 	/* je rel8 */
 	u8* JE8( void* to ) {
-		return J8Rel( 0x74, (u8*)to - ( (u8*)x86Ptr + 2 )  );
+		return J8Rel( 0x74, (u8)((u8*)to - ( (u8*)x86Ptr + 2 ) ) );
 	}
 
 	/* jz rel8 */
@@ -2073,7 +2073,7 @@ public :
 	/* jne rel8 */
 	u8* JNE8( void* to ) 
 	{ 
-		return J8Rel( 0x75, (u8*)to - ( (u8*)x86Ptr + 2 )  ); 
+		return J8Rel( 0x75, (u8)((u8*)to - ( (u8*)x86Ptr + 2 ) ) ); 
 	}
 
 	/* jnz rel8 */
@@ -2121,7 +2121,7 @@ public :
 	/* je rel32 */
 	u32* JE32( void* to ) 
 	{
-		return J32Rel( 0x84,   (u8*)to - ( (u8*)x86Ptr + 6 )   );
+		return J32Rel( 0x84,   (u32)((u8*)to - ( (u8*)x86Ptr + 6 ))   );
 	}
 
 	/* jz rel32 */
@@ -2157,7 +2157,7 @@ public :
 	/* jne rel32 */
 	u32* JNE32( void* to ) 
 	{ 
-		return J32Rel( 0x85,  (u8*)to - ( (u8*)x86Ptr + 6 )  ); 
+		return J32Rel( 0x85,  (u32)((u8*)to - ( (u8*)x86Ptr + 6 ) ) ); 
 	}
 
 	//void CALLFunc( void* func ) 
@@ -2211,7 +2211,7 @@ public :
 	/* call func */
 	void CALLFunc( void* func ) 
 	{
-		CALL32( (u8*)func - ( (u8*)x86Ptr + 5 ) );
+		CALL32( (u32)((u8*)func - ( (u8*)x86Ptr + 5 )) );
 	}
 
 	/* call rel32 */
