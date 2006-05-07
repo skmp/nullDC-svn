@@ -3,7 +3,7 @@
 #include "sh4_if.h"
 #include "intc.h"
 
-
+#undef sh4op
 #define sh4op(str) void  __fastcall str (u32 op)
 typedef void (__fastcall OpCallFP) (u32 op);
 

@@ -9,7 +9,7 @@ void rec_v1_BasicBlock::AddRef(rec_v1_BasicBlock* bb)
 {
 	//printf("AddRef block %x\n",bb->start);
 
-	u32 ref_count=callers.size();
+	u32 ref_count=(u32)callers.size();
 	for (u32 i=0;i<ref_count;i++)
 	{
 		if (callers[i]==0)
@@ -25,7 +25,7 @@ void rec_v1_BasicBlock::AddRef(rec_v1_BasicBlock* bb)
 void rec_v1_BasicBlock::Discard()
 {
 	//printf("Discard block %x\n",start);
-	u32 ref_count=callers.size();
+	u32 ref_count=(u32)callers.size();
 	for (u32 i=0;i<ref_count;i++)
 	{
 		if (callers[i]!=0)
@@ -46,7 +46,7 @@ void rec_v1_BasicBlock::Discard()
 	}
 	if (TT_block)
 	{
-		u32 cal_ls=TT_block->callers.size();
+		u32 cal_ls=(u32)TT_block->callers.size();
 		for (u32 j=0;j<cal_ls;j++)
 		{
 			if (TT_block->callers[j]==this)
@@ -56,7 +56,7 @@ void rec_v1_BasicBlock::Discard()
 
 	if (TF_block)
 	{
-		u32 cal_ls=TF_block->callers.size();
+		u32 cal_ls=(u32)TF_block->callers.size();
 		for (u32 j=0;j<cal_ls;j++)
 		{
 			if (TF_block->callers[j]==this)

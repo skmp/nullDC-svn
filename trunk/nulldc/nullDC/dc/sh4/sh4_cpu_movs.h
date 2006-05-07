@@ -204,7 +204,7 @@
 		printf("Mov.b !!!m==n\n");
 		//return;
 		//
-		WriteMemBOU8(r[n],-1,r[m]);
+		WriteMemBOU8(r[n],(u32)-1,r[m]);
 		r[n]--;
 	}
 	else
@@ -229,7 +229,7 @@
 	{
 		printf("Mov.w !!!m==n\n");
 		//return;
-		WriteMemBOU16(r[n],-2,r[m]);
+		WriteMemBOU16(r[n],(u32)-2,r[m]);
 		r[n] -= 2;
 	}
 	{
@@ -249,7 +249,7 @@
 		//iNimp(op,"Mov.l !!!m==n");
 		printf("mov.l <REG_M>,@-<REG_N> !!!m==n\n");
 		//return;	
-		WriteMemBOU32(r[n],-4,r[m]);
+		WriteMemBOU32(r[n],(u32)-4,r[m]);
 		r[n] -= 4;
 	}
 	else

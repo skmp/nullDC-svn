@@ -192,7 +192,9 @@ sh4op(i0000_nnnn_0010_1001)
 {
 	//iNimp("movt <REG_N>");
 	u32 n = GetN(op);
-	shil_interpret(op);
+	//shil_interpret(op);
+	ilst->mov(r[n],reg_sr);
+	ilst->and(r[n],1);
 	//ilst->mov(r[n],Sh4RegType::sr_T);
 } 
 //************************ Reg Compares ************************

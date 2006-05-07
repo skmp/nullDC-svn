@@ -42,7 +42,7 @@ rec_v1_BasicBlock* rec_v1_FindBlock(u32 address)
 
 		vector<rec_v1_BasicBlock*>* blklist = GetBlockList(address);
 
-		u32 listsz=blklist->size();
+		u32 listsz=(u32)blklist->size();
 		for (u32 i=0;i<listsz;i++)
 		{ 
 			rec_v1_BasicBlock* thisblock=(*blklist)[i];
@@ -77,7 +77,7 @@ rec_v1_BasicBlock* rec_v1_AddBlock(u32 address)
 
 	vector<rec_v1_BasicBlock*>* blklist = GetBlockList(address);
 
-	u32 listsz=blklist->size();
+	u32 listsz=(u32)blklist->size();
 	for (u32 i=0;i<listsz;i++)
 	{
 		if ((*blklist)[i]==0)
@@ -129,7 +129,7 @@ void __fastcall rec_v1_BlockTest(u32 addr)
 		{
 			vector<rec_v1_BasicBlock*>* blklist=GetBlockList(base);
 
-			u32 listsz=blklist->size();
+			u32 listsz=(u32)blklist->size();
 			if (listsz)
 			{ 
 				for (u32 j=0;j<listsz;j++)
