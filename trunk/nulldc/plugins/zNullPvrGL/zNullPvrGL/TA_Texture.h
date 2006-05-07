@@ -15,7 +15,7 @@ struct TexEntry
 	TexID texID;
 	u32 Start, End;
 	u32 Width, Height;
-
+	vram_block* lock_block;
 	//Flags, Priority, Residence, ...
 };
 
@@ -30,11 +30,7 @@ public:
 
 	vector<TexEntry> TexList;
 
-	void ClearTCache()	{
-		for(size_t i=0; i<TexList.size(); i++)
-			glDeleteTextures(1,&TexList[i].texID);
-	}
-
+	void ClearTCache();
 };
 
 

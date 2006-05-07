@@ -1022,7 +1022,7 @@ TexID TextureCache::GetTexture(PolyParam *pp)
 
 	}
 
-	emuIf.vramLock64(tex.Start, tex.End, NULL);
+	tex.lock_block=emuIf.vramLock64(tex.Start, tex.End, NULL);
 
 	TexList.push_back(tex);
 	return tex.texID;
@@ -1031,13 +1031,6 @@ unhandled_fmt:
 	printf("GetTexture, Addr: %08X, Ctrl: %X  Unhandled!\n", TexAddr, tctrl);
 	return 0;
 }
-
-
-
-
-
-
-
 
 void vramLockCB(vram_block *bl, u32 addr)
 {
@@ -1050,12 +1043,26 @@ void vramLockCB(vram_block *bl, u32 addr)
 			//temp.texID--free t
 			PvrIf.TexList.erase(PvrIf.TexList.begin()+t);
 			glDeleteTextures(1,&temp.texID);
-			printf("\n\t~TexInvalidate!\nvramLockCB @ %08X \n\n", addr);
+			printf("~TexInvalidate @ %08X \n", addr);
 		}
 	}
 
 	emuIf.vramUnlock(bl);
 }
+
+void TextureCache::ClearTCache()
+{
+	//WARN : removing list items while enumerating could be fatal .. seems to work , needs check
+	for(size_t t=0; t<PvrIf.TexList.size(); t++)
+	{
+		TexEntry temp=PvrIf.TexList[t];
+		emuIf.vramUnlock(temp.lock_block);
+		PvrIf.TexList.erase(PvrIf.TexList.begin()+t);
+		glDeleteTextures(1,&temp.texID);
+	}
+	TexList.clear();
+}
+
 
 
 
