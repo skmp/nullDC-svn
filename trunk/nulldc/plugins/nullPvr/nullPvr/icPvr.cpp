@@ -152,7 +152,7 @@ void icUpdatePvr (u32 cycles)
 			cur_icpl->PvrUpdate(1);
 
 			// didn't look at read i guess this is not needed 
-		*(u32*)&pvr_regs[0x5F810C &0x7fff] |= 0x2000;	// SPG_STATUS
+		//*(u32*)&pvr_regs[0x5F810C &0x7fff] |= 0x2000;	// SPG_STATUS
 //		u32 maple_vblnk_mode=ReadMem(SB_MDTSEL,4);
 	//	if (maple_vblnk_mode&0x1)
 	//	{
@@ -197,7 +197,7 @@ void icUpdatePvr (u32 cycles)
 		if (((data >> 16) & 0x3FFF) == prv_cur_scanline)
 			RaiseInterrupt(holly_SCANINT2);
 		
-		clc_pvr_scanline -= (3495253 / pvr_numscanlines);
+		clc_pvr_scanline -= ((DCclock/60) / pvr_numscanlines);
 	}
 }
 #define Is_64_Bit(addr) ((Address &0x1000000)==0)
