@@ -152,13 +152,14 @@ void vblank_done()
 		double spd_cpu=(double)vblCount/(double)((double)(timeGetTime()-(double)last_fps)/1000);
 		spd_cpu*=VSYNC_WRAP;
 		spd_cpu/=1000000;	//mrhz kthx
+		double fullfps=(spd_fps/spd_cpu)*200;
 
 		last_fps=timeGetTime();
 		PvrIf.FrameCount=0;
 		vblCount=0;
 
 		char fpsStr[256];
-		sprintf_s(fpsStr," FPS: %f  -  Sh4: %f mhz  - nullDC v0.0.1", spd_fps, spd_cpu);
+		sprintf(fpsStr," FPS: %4.2f(%4.2f)  -  Sh4: %4.2f mhz (%4.2f%%) - nullDC v0.0.1", spd_fps,fullfps, spd_cpu,spd_cpu*100/200);
 		SetWindowText((HWND)emuIf.handle, fpsStr);
 
 	}

@@ -168,8 +168,10 @@ void icUpdatePvr (u32 cycles)
 			lasft_fps=timeGetTime();
 			fps=0;
 
+			double fullfps=(spd_fps/spd_cpu)*200;
+
 			char fpsStr[256];
-			sprintf(fpsStr," FPS: %f  -  Sh4: %f mhz  - nullDC v0.0.1", spd_fps, spd_cpu);
+			sprintf(fpsStr," FPS: %4.2f(%4.2f)  -  Sh4: %4.2f mhz (%4.2f%%) - nullDC v0.0.1", spd_fps,fullfps, spd_cpu,spd_cpu*100/200);
 			SetWindowText((HWND)Hwnd, fpsStr);
 			vblk_cnt=0;
 		}
