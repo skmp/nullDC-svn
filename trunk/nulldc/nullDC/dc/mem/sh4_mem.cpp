@@ -57,6 +57,11 @@ void mem_Term()
 	//Free allocated mem for memory/bios/flash
 	mem_b.Free();
 	bios_b.Free();
+	//write back flash ?
+	char* temp_path=GetEmuPath("data\\");
+	strcat(temp_path,"dc_flash_wb.bin");
+	SaveSh4FlashromToFile(temp_path);
+	free(temp_path);
 	flash_b.Free();
 
 	sh4_internal_reg_Term();

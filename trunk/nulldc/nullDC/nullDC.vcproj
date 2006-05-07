@@ -892,6 +892,14 @@
 				<File
 					RelativePath=".\dc\aica\aica_if.cpp"
 					>
+					<FileConfiguration
+						Name="Release-NoTrace|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="3"
+						/>
+					</FileConfiguration>
 				</File>
 				<File
 					RelativePath=".\dc\aica\aica_if.h"

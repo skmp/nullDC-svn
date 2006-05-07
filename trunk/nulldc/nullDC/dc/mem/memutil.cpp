@@ -113,6 +113,25 @@ bool LoadFileToSh4Flashrom(char *szFile)
 	return true;
 }
 
+bool SaveSh4FlashromToFile(char *szFile)
+{
+	FILE * fd = fopen(szFile, "wb");
+	if (fd==NULL) {
+		printf("SaveSh4FlashromToFile: can't open file \"%s\" \n", szFile);
+		return false;
+	}
+	
+	fseek(fd, 0, SEEK_SET);	// to beginning of file
+
+	char buf = 'Z';
+	for( int i=0; i<128*1024; i++ )	{
+		fwrite(&flash_b[i], 1,1, fd);
+	}
+	printf("SaveSh4FlashromToFile: Saved flash file \"%s\"\n",szFile);
+	fclose(fd);
+	return true;
+}
+
 void AddHook(u32 Addr, u16 Opcode)
 {
 	if (Addr==0)

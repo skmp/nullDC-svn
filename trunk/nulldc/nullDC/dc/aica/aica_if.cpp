@@ -11,14 +11,41 @@
 
 u32 ReadMem_aica_rtc(u32 addr,u32 sz)
 {
-	u32 RTC=0x5bfc8900;//somehow it does not work ....
+	//this somehow works :P
+
+	time_t rawtime;
+	tm  timeinfo;
+	
+	//int tm_sec;     /* seconds after the minute - [0,59] */
+    //int tm_min;     /* minutes after the hour - [0,59] */
+    //int tm_hour;    /* hours since midnight - [0,23] */
+    //int tm_mday;    /* day of the month - [1,31] */
+    //int tm_mon;     /* months since January - [0,11] */
+
+	timeinfo.tm_year=1998-1900;
+	timeinfo.tm_mon=11-1;
+	timeinfo.tm_mday=27;
+	timeinfo.tm_hour=0;
+	timeinfo.tm_min=0;
+	timeinfo.tm_sec=0;
+
+	rawtime=mktime( &timeinfo );
+	
+	rawtime=time (0)-rawtime;//get delta of time since the known dc date
+	
+	time_t temp=time(0);
+	timeinfo=*localtime(&temp);
+	if (timeinfo.tm_isdst)
+		rawtime+=24*3600;//add an hour if dst (maby rtc has a reg for that ? *watch* and add it if yes :)
+
+
+	u32 RTC=0x5bfc8900 + rawtime;// add delta to known dc time
+
 	switch( addr & 0xFF )
 	{
 	case 0:	
-		//RTC=0x5bfc8900;//(u32)time(NULL)+220752000;
 		return RTC>>16;
 	case 4:	
-		//RTC=0x5bfc8900;//(u32)time(NULL)+220752000;
 		return RTC &0xFFFF;
 	case 8:	
 		return 0;

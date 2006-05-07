@@ -18,4 +18,6 @@ u32 LoadFileToSh4Mem(u32 offset,char*file);
 bool LoadFileToSh4Bootrom(char *szFile);
 u32 LoadBinfileToSh4Mem(u32 offset,char*file);
 bool LoadFileToSh4Flashrom(char *szFile);
+bool SaveSh4FlashromToFile(char *szFile);
+
 void LoadSyscallHooks();

@@ -112,8 +112,15 @@ void LoadBiosFiles()
 	LoadFileToSh4Bootrom(temp_path);
 
 	temp_path[pl]=0;
-	strcat(temp_path,"dc_flash.bin");
-	LoadFileToSh4Flashrom(temp_path);
+	//try to load saved flash
+	strcat(temp_path,"dc_flash_wb.bin");
+	if (!LoadFileToSh4Flashrom(temp_path))
+	{
+		//not found , load default :)
+		temp_path[pl]=0;
+		strcat(temp_path,"dc_flash.bin");
+		LoadFileToSh4Flashrom(temp_path);
+	}
 	
 
 	temp_path[pl]=0;
@@ -126,6 +133,12 @@ void LoadBiosFiles()
 	temp_path[pl]=0;
 	
 	free(temp_path);
+}
+
+void SaveFlash()
+{
+	char* temp_path=GetEmuPath("data\\");
+	u32 pl=(u32)strlen(temp_path);
 }
 void Start_DC()
 {
