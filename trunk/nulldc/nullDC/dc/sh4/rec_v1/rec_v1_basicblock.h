@@ -25,12 +25,15 @@ public :
 #define BLOCK_TYPE_FPU32_S64	(2<<2)	//32 bit math , 64 bit read/writes
 #define BLOCK_TYPE_FPU_INVALID	(3<<2)	//this mode is invalid
 
+#define BLOCK_TYPE_VECTOR		(1<<11)	//this block contains vector opcodes (fipr/ftrv)
+
 #define GET_CURRENT_FPU_MODE() (fpscr.PR_SZ<<2)
 
 #define BLOCK_SOM_NONE		(0<<12)			//NONE
 #define BLOCK_SOM_SIZE_128	(1<<12)			//DIV32U[Q|R]/DIV32S[Q|R]
 #define BLOCK_SOM_RESERVED1	(2<<12)			//RESERVED
 #define BLOCK_SOM_RESERVED2	(3<<12)			//RESERVED
+
 
 #define BLOCK_SOM_MASK		(3<<12)			//synthesyssed opcode mask
 #define BLOCK_ATSC_END		(1<<15)			//end  analyse [analyse olny flag]

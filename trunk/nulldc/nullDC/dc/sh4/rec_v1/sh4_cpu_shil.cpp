@@ -1585,6 +1585,7 @@ sh4op(i1111_nnmm_1110_1101)
 	int n=GetN(op)&0xC;
 	int m=(GetN(op)&0x3)<<2;
 	ilst->fipr(fr[n],fr[m]);
+	bb->flags|=BLOCK_TYPE_VECTOR;
 }
 
 
@@ -1778,6 +1779,7 @@ sh4op(i1111_nn01_1111_1101)
 {
 	u32 n=GetN(op)&0xC;
 	ilst->ftrv(fr[n]);
+	bb->flags|=BLOCK_TYPE_VECTOR;
 }																				  
 
 

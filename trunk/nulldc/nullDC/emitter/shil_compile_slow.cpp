@@ -118,6 +118,33 @@ x86IntRegType reg_to_alloc[4]=
 	EDI
 };
 
+//xmm0 is reserved for math/temp
+x86SSERegType reg_to_alloc_xmm[7]=
+{
+	XMM1,
+	XMM2,
+	XMM3,
+	XMM4,
+	XMM5,
+	XMM6,//-> reserved for cycle counts : no more :)
+	XMM7,
+};
+
+//implement register allocators on a class , so we can swap em around?
+//methods needed
+//
+//DoAllocation		: do allocation on the block
+//BeforeEmit		: generate any code needed before the main emittion begins (other register allocators may have emited code tho)
+//BeforeTrail		: generate any code needed after the main emittion has ended (other register allocators may emit code after that tho)
+//AfterTrail		: generate code after the native block end (after the ret) , can be used to emit helper functions (other register allocators may emit code after that tho)
+//IsRegAllocated	: *couh* yea .. :P
+//GetRegister		: Get the register , needs flag if it's read or write. Carefull w/ register state , we may need to implement state push/pop
+//PushRegister		: push register to stack (if allocated)
+//PopRegister		: pop register from stack (if allocated)
+//FlushRegister		: write reg to reg location , and dealloc it
+//WriteBackRegister	: write reg to reg location
+//ReloadRegister	: read reg from reg location , discard old result
+
 void bubble_sort(sort_temp numbers[] , int array_size)
 {
   int i, j;
