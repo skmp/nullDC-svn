@@ -23,7 +23,7 @@
 #include <time.h>
 #include <float.h>
 
-#define CPU_TIMESLICE	(448)
+#define CPU_TIMESLICE	(BLOCKLIST_MAX_CYCLES)
 
 //uh uh 
 volatile bool  rec_sh4_int_bCpuRun=false;
