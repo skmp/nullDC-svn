@@ -405,6 +405,68 @@ void MEMCALL WriteMem16(u32 addr,u16 data)
 	EMUERROR3("Write to Mem not implemented , addr=%x,data=%x",addr,data);
 }
 
+void MEMCALL WriteMemBlock(u32 addr,u32* data,u32 size)
+{
+#ifdef TRACE
+	if (addr&0x3)
+	{
+		EMUERROR4("Missaligned Block write , addr=%x,pc=%x,data=%x",addr,pc,data);
+		TRACE_DO_BREAK;
+	}
+#endif
+	//if P4
+	if (((addr>>29) &0x7)==7)
+		goto fallback;
+	
+
+	//switch area
+	switch((addr>>26)&0x7)
+	{
+	//Area 0 : Bios/FlashRom/DC registers
+	case 0:
+		goto fallback;
+
+	//Area 1 : Vram 8 mb , {{64b,32b}x2}x2
+	case 1:
+		pvr_write_area1_block(addr,data,size);
+		return;
+
+	//area 2 : not mapped
+	case 2:
+		goto fallback;
+
+	//area 3 : System Ram 16 mb, {64b}x4
+	case 3:
+		rec_v1_NotifyMemWrite(addr,size);
+		//*WATCH* , mem has to be copied forwards. i duno if that's what memcpy does :)
+		memcpy(GetMemPtr(addr,size),data,size);
+		return;
+
+	//area 4 : TA -> needs work
+	case 4:
+		goto fallback;
+
+	//area 5 : Expantion Port
+	case 5:
+		goto fallback;
+
+	//area 6 : not mapped
+	case 6:
+		goto fallback;
+
+	//area 7 - internal registers
+	case 7:
+		goto fallback;
+	}
+
+	return;
+
+fallback:
+	for (int i=0;i<size;i+=4)
+	{
+		WriteMem32(addr+i,data[i>>2]);
+	}
+}
 void MEMCALL WriteMem32(u32 addr,u32 data)
 {
 	//WriteTest(addr,data);

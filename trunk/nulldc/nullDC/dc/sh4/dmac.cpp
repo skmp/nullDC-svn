@@ -53,7 +53,7 @@ void DMAC_Ch2St()
 	if( (dst >= 0x10000000) && (dst <= 0x10FFFFFF) )
 	{
 		//GetMemPtr perhaps ? it's not good to use teh mem arrays directly 
-		u32 *sys_buf=(u32 *)(&mem_b[src&RAM_MASK]);
+		u32 *sys_buf=(u32 *)GetMemPtr(src,len);//(&mem_b[src&RAM_MASK]);
 
 		TAWrite(dst,sys_buf,(len/32));
 		//libPvr->pvr_info.TADma(dst,sys_buf,(len/32));
@@ -63,13 +63,15 @@ void DMAC_Ch2St()
 	{
 		//printf(">>\tDMAC: TEX LNMODE0 Ch2 DMA SRC=%X DST=%X LEN=%X | LN(%X::%X)\n", src, dst, len, *pSB_LMMODE0, *pSB_LMMODE1 );
 
-		u32 *sys_buf=(u32 *)(&mem_b[src&RAM_MASK]);
-		u32 dst_ptr=(dst&0xFFFFFF) |0xa4000000;//
+		u32 dst_ptr=(dst&0xFFFFFF) |0xa4000000;
+		WriteMemBlock(dst_ptr,(u32*)GetMemPtr(src,len),len);
+		/*u32 *sys_buf=(u32 *)(&mem_b[src&RAM_MASK]);
+		//
 
 		for (u32 i_c=0;i_c<len;i_c+=4)
 		{
 			WriteMem32(dst_ptr+i_c,*sys_buf++);
-		}
+		}*/
 
 	//	*pSB_LMMODE0 = 1;			// this prob was done by system already
 	//	WriteMem(SB_LMMODE1, 0, 4);	// should this be done ?

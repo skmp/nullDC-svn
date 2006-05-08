@@ -27,6 +27,7 @@ u32 MEMCALL ReadMem32(u32 addr);
 void MEMCALL WriteMem8(u32 addr,u8 data);
 void MEMCALL WriteMem16(u32 addr,u16 data);
 void MEMCALL WriteMem32(u32 addr,u32 data);
+void MEMCALL WriteMemBlock(u32 addr,u32* data,u32 size);
 
 //Init/Res/Term
 void mem_Init();

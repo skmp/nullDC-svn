@@ -166,24 +166,27 @@ void YUV_data(u32* data , u32 count)
 	u32 TA_YUV_TEX_CTRL=pvr_readreg_TA(0x5F814C,4);
 
 	printf("Yuv Converter : size %d\n",count);
-	printf("Yuv Format : %s , texture type %d ,  %d x %d [0x%X]\n",
+	printf("Yuv Format : %s , texture type %d ,  %d x %d [0x%X];",
 		(TA_YUV_TEX_CTRL & (1<<24))==0?"YUV420":"YUV422",
 		(TA_YUV_TEX_CTRL>>16 )&1,
 		(((TA_YUV_TEX_CTRL>>0)&0x3F)+1)*16,
 		(((TA_YUV_TEX_CTRL>>8)&0x3F)+1)*16,
 		TA_YUV_TEX_CTRL);
+	
 	if ((TA_YUV_TEX_CTRL & (1<<24))==0)
 	{
-		printf("%d blocks\n",count*32/384);
+		printf("%d blocks;",count*32/384);
 	}
 	else
-		printf("%d blocks\n",count*32/512);
+		printf("%d blocks;",count*32/512);
+
 	printf("Destination : 0x%X\n",TA_YUV_TEX_BASE);
 
 
 	//YUV420 is 384 bytes , YUV422 is 512 bytes
 	u32 block_size=(TA_YUV_TEX_CTRL & (1<<24))==0?384:512;
 
+	/*
 	for (u32 i=0;i<count*32;i+=4)
 	{
 		if (YUV_index==block_size)
@@ -194,7 +197,26 @@ void YUV_data(u32* data , u32 count)
 		YUV_index+=4;
 	}
 	if (YUV_index==block_size)
-			YUV_ConvertMacroBlock();
+			YUV_ConvertMacroBlock();*/
+	
+	count*=32;
+	while(count>0)
+	{
+		if ((YUV_index+count)>=block_size)
+		{	//more or exactly one block remaining
+			u32 dr=block_size-YUV_index;				//remaining byts til block end
+			memcpy(&YUV_tempdata[YUV_index>>2],data,dr);	//copy em
+			data+=dr>>2;								//count em
+			count-=dr;
+			YUV_ConvertMacroBlock();					//convert block
+		}
+		else
+		{	//less that a hole block remaining
+			memcpy(&YUV_tempdata[YUV_index>>2],data,count);	//append it
+			YUV_index+=count;
+			count=0;
+		}
+	}
 }
 
 //Regs
@@ -263,6 +285,13 @@ void pvr_write_area1_32(u32 addr,u32 data)
 	{
 		vramlock_Test(Address2,0,0);
 		*vptr=data;
+	}
+}
+void pvr_write_area1_block(u32 addr,u32* data,u32 size)
+{
+	for (int i=0;i<size;i+=4)
+	{
+		pvr_write_area1_32(addr+i,data[i>>2]);
 	}
 }
 
@@ -513,15 +542,7 @@ void TAWrite(u32 address,u32* data,u32 count)
 	u32 address_w=address&0x1FFFFFF;//correct ?
 	if (address_w<0x800000)//TA poly
 	{
-		//printf("call\n");
-		//fflush(stdout);
-		//try
-		//{
-			libPvr->pvr_info.TADma(address,data,count);
-		//}
-		//printf("end call\n");
-		//fflush(stdout);
-		//catch(...){}
+		libPvr->pvr_info.TADma(address,data,count);
 	}
 	else if(address_w<0x1000000) //Yuv Converter
 	{
@@ -529,6 +550,7 @@ void TAWrite(u32 address,u32* data,u32 count)
 	}
 	else //Vram Write
 	{
+		//shoudn't realy get here (?)
 		printf("Vram Write 0x%X , size %d",address,count);
 	}
 }

@@ -20,6 +20,7 @@ u32 pvr_read_area1_32(u32 addr);
 void pvr_write_area1_8(u32 addr,u8 data);
 void pvr_write_area1_16(u32 addr,u16 data);
 void pvr_write_area1_32(u32 addr,u32 data);
+void pvr_write_area1_block(u32 addr,u32* data,u32 size);
 
 void pvr_Update(u32 cycles);
 

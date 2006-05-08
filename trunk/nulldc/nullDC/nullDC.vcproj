@@ -205,7 +205,6 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="3"
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
@@ -1073,6 +1072,14 @@
 				<File
 					RelativePath=".\dc\gdrom\zGDROM.cpp"
 					>
+					<FileConfiguration
+						Name="Release-NoTrace|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="3"
+						/>
+					</FileConfiguration>
 				</File>
 				<File
 					RelativePath=".\dc\gdrom\zGDROM.h"

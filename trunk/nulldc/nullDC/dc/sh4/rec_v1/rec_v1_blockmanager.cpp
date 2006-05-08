@@ -7,6 +7,8 @@ using namespace std;
 
 #define block_cnt (0x1000) 
 #define HASH_BITS 3
+#define HASH_P_SIZE (1<<(HASH_BITS+3))
+
 vector<rec_v1_BasicBlock*> BlockLists[block_cnt];
 rec_v1_BasicBlock*		   BlockListsCache[block_cnt];
 
@@ -151,9 +153,28 @@ void __fastcall rec_v1_BlockTest(u32 addr)
 	}
 	
 }
-void rec_v1_NotifyMemWrite(u32 start , u32 size)
+void __fastcall rec_v1_NotifyMemWrite(u32 start , u32 size)
 {
+	start&=RAM_MASK;
 
+	/*
+	for (int i=0;i<size;i+=2)
+	{
+		rec_v1_BlockTest(start+i);
+	}*/
+	
+	size=size>>(HASH_BITS+3);
+	start=start>>(HASH_BITS+3);
+
+	for (int curr=start;curr<(start+size);)
+	{
+		if (RamTest[curr])
+		{
+			for (int u=0;u<HASH_P_SIZE;u++)
+				rec_v1_BlockTest(curr+u);
+		}
+		curr+=1;
+	}
 }
 
 void rec_v1_CompileBlockTest(emitter<>* x86e,x86IntRegType r_addr,x86IntRegType temp)
