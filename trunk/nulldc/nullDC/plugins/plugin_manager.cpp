@@ -14,10 +14,12 @@
 //o.O plugins! :D
 
 //Currently used plugins
-nullDC_PowerVR_plugin* libPvr;
-nullDC_GDRom_plugin*   libGDR;
-nullDC_AICA_plugin*    libAICA;
-sh4_if*				   sh4_cpu;
+nullDC_PowerVR_plugin*		libPvr;
+nullDC_GDRom_plugin*		libGDR;
+nullDC_AICA_plugin*			libAICA;
+nullDC_MapleMain_plugin*    libMapleMain[4];
+nullDC_MapleSub_plugin*		libMapleSub[4][5];
+sh4_if*						sh4_cpu;
 //more to come
 
 char plugins_path[1000]="";
@@ -205,6 +207,63 @@ nullDC_AICA_plugin::~nullDC_AICA_plugin()
 }
 //End nullDC_AICA_plugin
 
+//Class nullDC_MapleMain_plugin
+PluginLoadError nullDC_MapleMain_plugin::PluginExLoad()
+{
+	dcGetMapleMainInfo=(dcGetMapleMainInfoFP*)lib.GetProcAddress("dcGetMapleMainInfo");
+
+	if (!dcGetMapleMainInfo)
+		return PluginLoadError::PluginInterfaceExMissing;
+
+	dcGetMapleMainInfo(&maple_info,maple_info.Address);
+
+	if (maple_info.InterfaceVersion.full!=MAPLE_PLUGIN_I_F_VERSION)
+		return PluginLoadError::PluginInterfaceExVersionError;
+	
+	//All ok !
+	Loaded=true;
+	return PluginLoadError::NoError;
+}
+
+
+nullDC_MapleMain_plugin::nullDC_MapleMain_plugin():nullDC_plugin()
+{
+	dcGetMapleMainInfo=0;
+}
+nullDC_MapleMain_plugin::~nullDC_MapleMain_plugin()
+{
+}
+//End nullDC_MapleMain_plugin
+
+
+//Class nullDC_MapleSub_plugin
+PluginLoadError nullDC_MapleSub_plugin::PluginExLoad()
+{
+	dcGetMapleSubInfo=(dcGetMapleSubInfoFP*)lib.GetProcAddress("dcGetMapleSubInfo");
+
+	if (!dcGetMapleSubInfo)
+		return PluginLoadError::PluginInterfaceExMissing;
+
+	dcGetMapleSubInfo(&maple_info,maple_info.Address);
+
+	if (maple_info.InterfaceVersion.full!=MAPLE_PLUGIN_I_F_VERSION)
+		return PluginLoadError::PluginInterfaceExVersionError;
+	
+	//All ok !
+	Loaded=true;
+	return PluginLoadError::NoError;
+}
+
+
+nullDC_MapleSub_plugin::nullDC_MapleSub_plugin():nullDC_plugin()
+{
+	dcGetMapleSubInfo=0;
+}
+nullDC_MapleSub_plugin::~nullDC_MapleSub_plugin()
+{
+}
+//End nullDC_MapleSub_plugin
+
 //Plguin loading shit
 //temp struct
 struct temp_123__2_23{GrowingList<PluginLoadInfo>* l;u32 typemask;};
@@ -281,23 +340,19 @@ bool SetPlugin(nullDC_plugin* plugin,PluginType type)
 
 		case PluginType::AICA:
 			libAICA=(nullDC_AICA_plugin*)plugin;
-			break;
+			return true;
 
 		case PluginType::GDRom:
 			libGDR=(nullDC_GDRom_plugin*)plugin;
 			return true;
-			break;
 
 		case PluginType::MapleDeviceMain:
 			return false;
-			break;
 
 		case PluginType::MapleDeviceSub:
 			return false;
-			break;
 
 		case PluginType::PowerVR:
-			//if previus exists
 			libPvr=((nullDC_PowerVR_plugin*)plugin);
 			break;
 

@@ -1,7 +1,6 @@
 #pragma once
 #include "types.h"
 
-
 #define key_CONT_C  (1 << 0);
 #define key_CONT_B  (1 << 1);
 #define key_CONT_A  (1 << 2);

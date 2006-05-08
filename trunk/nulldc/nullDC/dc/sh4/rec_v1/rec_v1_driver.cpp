@@ -174,7 +174,7 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 
 			UpdateSystem(rec_cycles);
 			rec_cycles=0;
-			SetFloatStatusReg();
+			//SetFloatStatusReg();
 		}
 	}
 	ptr(false);//call the callback

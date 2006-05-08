@@ -84,6 +84,33 @@ public:
 	~nullDC_AICA_plugin();
 };
 
+//Maple (main)
+class nullDC_MapleMain_plugin: public nullDC_plugin
+{
+public :
+	maple_plugin_if maple_info;
+private:
+	dcGetMapleMainInfoFP* dcGetMapleMainInfo;
+
+	PluginLoadError PluginExLoad();
+public:
+	nullDC_MapleMain_plugin();
+	~nullDC_MapleMain_plugin();
+};
+//and sub ;)
+class nullDC_MapleSub_plugin: public nullDC_plugin
+{
+public :
+	maple_plugin_if maple_info;
+private:
+	dcGetMapleSubInfoFP* dcGetMapleSubInfo;
+
+	PluginLoadError PluginExLoad();
+public:
+	nullDC_MapleSub_plugin();
+	~nullDC_MapleSub_plugin();
+};
+
 //Struct to hold plugin info
 struct PluginLoadInfo
 {
