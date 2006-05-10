@@ -86,9 +86,9 @@ char testJoy_strName[64] = "Emulated Dreamcast Controler\0";
 char testJoy_strBrand[64] = "Faked by drkIIRaziel && ZeZu , made for nullDC\0";
 u8 GetBtFromSgn(s8 val);
 
-#define w32(data) *(u32*)buffer_out_b=(data);buffer_out+=4;buffer_out_len+=4
-#define w16(data) *(u16*)buffer_out_b=(data);buffer_out+=2;buffer_out_len+=2
-#define w8(data) *(u8*)buffer_out_b=(data);buffer_out+=1;buffer_out_len+=1
+#define w32(data) *(u32*)buffer_out_b=(data);buffer_out_b+=4;buffer_out_len+=4
+#define w16(data) *(u16*)buffer_out_b=(data);buffer_out_b+=2;buffer_out_len+=2
+#define w8(data) *(u8*)buffer_out_b=(data);buffer_out_b+=1;buffer_out_len+=1
 
 void ControllerDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
 {
@@ -166,44 +166,44 @@ void ControllerDMA(maple_device_instance* device_instance,u32 Command,u32* buffe
 		u8 joy2y;			///* second joystick Y 		/1
 		} cont_cond_t;*/
 		case 9:
-			/*
-			ptr_out = header2;
+
 
 			//header
-			WriteMem32(ptr_out, (u32)(0x08 | // data transfer (response)
-						(((u16)sendadr << 8) & 0xFF00) |
-						((((recadr == 0x20) ? 0x20 : 1) << 16) & 0xFF0000) |
-						(((12 / 4 ) << 24) & 0xFF000000))); ptr_out += 4;
+			//WriteMem32(ptr_out, (u32)(0x08 | // data transfer (response)
+			//			(((u16)sendadr << 8) & 0xFF00) |
+			//			((((recadr == 0x20) ? 0x20 : 1) << 16) & 0xFF0000) |
+			//			(((12 / 4 ) << 24) & 0xFF000000))); ptr_out += 4;
+			responce=0x08;
 			//caps
 			//4
-			WriteMem32(ptr_out, (1 << 24)); ptr_out += 4;
-
+			//WriteMem32(ptr_out, (1 << 24)); ptr_out += 4;
+			w32((1 << 24));
 			//struct data
 			//2
-			WriteMem16(ptr_out, kcode); ptr_out += 2;
+			w16(kcode); 
 			
 			//triger
 			//1 R
-			WriteMem8(ptr_out, rt); ptr_out += 1;
+			w8(rt);
 			//1 L
-			WriteMem8(ptr_out, lt); ptr_out += 1;
+			w8(lt); 
 			//joyx
 			//1
-			WriteMem8(ptr_out, GetBtFromSgn(joyx)); ptr_out += 1;
+			w8(GetBtFromSgn(joyx));
 			//joyy
 			//1
-			WriteMem8(ptr_out, GetBtFromSgn(joyy)); ptr_out += 1;
+			w8(GetBtFromSgn(joyy));
 
 			//1
-			WriteMem8(ptr_out, GetBtFromSgn(joy2x)); ptr_out += 1;
+			w8(GetBtFromSgn(joy2x)); 
 			//1
-			WriteMem8(ptr_out, GetBtFromSgn(joy2y)); ptr_out += 1;
+			w8(GetBtFromSgn(joy2y)); 
 			//are these needed ?
 			//1
 			//WriteMem8(ptr_out, 10); ptr_out += 1;
 			//1
 			//WriteMem8(ptr_out, 10); ptr_out += 1;
-*/
+
 			break;
 
 		default:
