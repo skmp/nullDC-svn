@@ -291,6 +291,8 @@ u32 GetMapleAddress(u32 port,u32 device)
 	else
 		device-=1;
 	rv|=1<<device;
+
+	return rv;
 }
 //after plugin init
 void maple_plugins_Init()
@@ -308,8 +310,8 @@ void maple_plugins_Init()
 			if (strcmp(plugin,"NULL")!=0)
 			{
 				maple_device* plugin_dev=FindMapleDevice(plugin);
-				plugin_dev->CreateInstance(plugin_dev,MapleDevices[i][j],(i<<6)|(1<<j));
-				MapleDevices[i][j].port=(i<<6)|(1<<j);
+				plugin_dev->CreateInstance(plugin_dev,MapleDevices[i][j],GetMapleAddress(i,j));
+				MapleDevices[i][j].port=GetMapleAddress(i,j);
 				MapleDevices[i][j].Connected=true;
 			}
 			else

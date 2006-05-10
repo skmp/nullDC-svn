@@ -964,22 +964,19 @@ void UpdateMapleSelections(HWND hw,HWND hWnd)
 	int cs=ComboBox_GetCurSel(hw);
 	int new_port=ComboBox_GetItemData(hw,cs);
 	char temp[512];
-
-	if (current_maple_port!=new_port)
+	
+	//save selected ones
+	if (current_maple_port!=-1)
 	{
-		//save selected ones
-		if (current_maple_port!=-1)
-		{
-			for (int j=0;j<6;j++)
-			{
-				GetCurrent(GetDlgItem(hWnd,IDC_maple[j]),SelectedPlugin_maple[current_maple_port][j]);
-			}
-		}
-		//load new ones
 		for (int j=0;j<6;j++)
 		{
-			SetSelected(GetDlgItem(hWnd,IDC_maple[j]),SelectedPlugin_maple[new_port][j]);
+			GetCurrent(GetDlgItem(hWnd,IDC_maple[j]),SelectedPlugin_maple[current_maple_port][j]);
 		}
+	}
+	//load new ones
+	for (int j=0;j<6;j++)
+	{
+		SetSelected(GetDlgItem(hWnd,IDC_maple[j]),SelectedPlugin_maple[new_port][j]);
 	}
 	current_maple_port=new_port;
 	//cfgSaveStr("ASD","Asd","asd");
@@ -1082,6 +1079,7 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			cfgSaveStr("nullDC_plugins","Current_PVR",SelectedPlugin_Pvr);
 			cfgSaveStr("nullDC_plugins","Current_GDR",SelectedPlugin_Gdr);
 			cfgSaveStr("nullDC_plugins","Current_AICA",SelectedPlugin_Aica);
+			UpdateMapleSelections(GetDlgItem(hWnd,IDC_MAPLEPORT),hWnd);
 			SaveMaple();
 		case IDCANCEL://close plugin
 			EndDialog(hWnd,0);
