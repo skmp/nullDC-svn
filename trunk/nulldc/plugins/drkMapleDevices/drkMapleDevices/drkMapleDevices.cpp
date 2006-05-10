@@ -13,6 +13,175 @@
 
 #include <string.h>
 
+u16 kcode=0xFFFF;
+s8 joyx=0,joyy=0;
+s8 joy2x=0,joy2y=0;
+u8 rt=0,lt=0;
+
+char testJoy_strName[64] = "Emulated Dreamcast Controler\0";
+char testJoy_strBrand[64] = "Faked by drkIIRaziel && ZeZu , made for nullDC\0";
+
+#define key_CONT_C  (1 << 0);
+#define key_CONT_B  (1 << 1);
+#define key_CONT_A  (1 << 2);
+#define key_CONT_START  (1 << 3);
+#define key_CONT_DPAD_UP  (1 << 4);
+#define key_CONT_DPAD_DOWN  (1 << 5);
+#define key_CONT_DPAD_LEFT  (1 << 6);
+#define key_CONT_DPAD_RIGHT  (1 << 7);
+#define key_CONT_Z  (1 << 8);
+#define key_CONT_Y  (1 << 9);
+#define key_CONT_X  (1 << 10);
+#define key_CONT_D  (1 << 11);
+#define key_CONT_DPAD2_UP  (1 << 12);
+#define key_CONT_DPAD2_DOWN  (1 << 13);
+#define key_CONT_DPAD2_LEFT  (1 << 14);
+#define key_CONT_DPAD2_RIGHT  (1 << 15);	
+
+typedef INT_PTR CALLBACK dlgp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
+dlgp* oldptr;
+INT_PTR CALLBACK sch( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
+{
+	switch(uMsg)
+	{
+	case WM_KEYDOWN:
+		switch(wParam)
+		{
+		case 'Z':
+			kcode &= 0xFFFF - key_CONT_A;
+			break;
+		case 'X':
+			kcode &= 0xFFFF - key_CONT_B;
+			break;
+		case 'C':
+			kcode &= 0xFFFF - key_CONT_C;
+			break;
+		case 'V':
+			kcode &= 0xFFFF - key_CONT_D;
+			break;
+		
+		case 'B':
+			kcode &= 0xFFFF - key_CONT_Z;
+			break;
+		
+		case 'N':
+			kcode &= 0xFFFF - key_CONT_Y;
+			break;
+		
+		case 'M':
+			kcode &= 0xFFFF - key_CONT_X;
+			break;
+
+		case VK_SHIFT:
+			kcode &= 0xFFFF - key_CONT_START;
+			break;
+
+		case VK_UP:
+			kcode &= 0xFFFF - key_CONT_DPAD_UP;
+			break;
+		case VK_DOWN:
+			kcode &= 0xFFFF - key_CONT_DPAD_DOWN;
+			break;
+		case VK_LEFT:
+			kcode &= 0xFFFF - key_CONT_DPAD_LEFT;
+			break;
+		case VK_RIGHT:
+			kcode &= 0xFFFF - key_CONT_DPAD_RIGHT;
+			break;
+
+		case 'K'://analog right
+			joyx= +126;
+			break;
+		case 'H'://alalog left
+			joyx= -126;
+			break;
+
+		case 'U'://analog up
+			joyy= -126;
+			break;
+		case 'J'://analog down
+			joyy= +126;
+			break;
+
+		case 'A'://ltriger
+			lt=255;
+			break;
+		case 'S'://rtriger
+			rt=255;
+			break;
+		}
+		break;
+
+	case WM_KEYUP:
+		switch(wParam)
+		{
+		case 'Z':
+			kcode |= key_CONT_A;
+			break;
+		case 'X':
+			kcode |= key_CONT_B;
+			break;
+		case 'C':
+			kcode |= key_CONT_C;
+			break;
+		case 'V':
+			kcode |= key_CONT_D;
+			break;
+
+		case 'B':
+			kcode |= key_CONT_Z;
+			break;
+		
+		case 'N':
+			kcode |= key_CONT_Y;
+			break;
+		
+		case 'M':
+			kcode |= key_CONT_X;
+			break;
+
+		case VK_SHIFT:
+			kcode |= key_CONT_START;
+			break;
+
+		case VK_UP:
+			kcode |= key_CONT_DPAD_UP;
+			break;
+		case VK_DOWN:
+			kcode |= key_CONT_DPAD_DOWN;
+			break;
+		case VK_LEFT:
+			kcode |= key_CONT_DPAD_LEFT;
+			break;
+		case VK_RIGHT:
+			kcode |= key_CONT_DPAD_RIGHT;
+			break;
+
+		case 'K'://analog right
+			joyx=0;
+			break;
+		case 'H'://alalog left
+			joyx=0;
+			break;
+
+		case 'U'://analog up
+			joyy=0;
+			break;
+		case 'J'://analog down
+			joyy=0;
+			break;
+
+		case 'A'://ltriger
+			lt=0;
+			break;
+		case 'S'://rtriger
+			rt=0;
+			break;
+		}
+		break;
+	}
+	return oldptr(hWnd,uMsg,wParam,lParam);
+}
 
 void cfgdlg(PluginType type,void* window)
 {
@@ -20,15 +189,18 @@ void cfgdlg(PluginType type,void* window)
 	//if (cur_icpl->PvrDllConfig)
 		//cur_icpl->PvrDllConfig((HWND)window);
 }//called when plugin is used by emu (you should do first time init here)
+void* handle;
 void dcInitPvr(void* aparam,PluginType type)
 {
-
+	maple_init_params* mpi=(maple_init_params*)aparam;
+	handle=mpi->WindowHandle;
+	oldptr = (dlgp*)SetWindowLongPtr((HWND)handle,GWL_WNDPROC,(LONG)sch);
 }
 
 //called when plugin is unloaded by emu , olny if dcInitPvr is called (eg , not called to enumerate plugins)
 void dcTermPvr(PluginType type)
 {
-
+	SetWindowLongPtr((HWND)handle,GWL_WNDPROC,(LONG)oldptr);
 }
 
 //It's suposed to reset anything but vram (vram is set to 0 by emu)
@@ -77,18 +249,13 @@ EXPORT void dcGetPluginInfo(plugin_info* info)
 }
 
 
-u16 kcode=0xFFFF;
-s8 joyx=0,joyy=0;
-s8 joy2x=0,joy2y=0;
-u8 rt=0,lt=0;
 
-char testJoy_strName[64] = "Emulated Dreamcast Controler\0";
-char testJoy_strBrand[64] = "Faked by drkIIRaziel && ZeZu , made for nullDC\0";
 u8 GetBtFromSgn(s8 val);
 
 #define w32(data) *(u32*)buffer_out_b=(data);buffer_out_b+=4;buffer_out_len+=4
 #define w16(data) *(u16*)buffer_out_b=(data);buffer_out_b+=2;buffer_out_len+=2
 #define w8(data) *(u8*)buffer_out_b=(data);buffer_out_b+=1;buffer_out_len+=1
+
 
 void ControllerDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
 {

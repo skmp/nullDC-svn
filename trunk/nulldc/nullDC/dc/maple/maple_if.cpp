@@ -282,6 +282,16 @@ maple_device* FindMapleDevice(char* device)
 	}
 	return 0;
 }
+
+u32 GetMapleAddress(u32 port,u32 device)
+{
+	u32 rv=port<<6;
+	if (device==0)
+		device=5;
+	else
+		device-=1;
+	rv|=1<<device;
+}
 //after plugin init
 void maple_plugins_Init()
 {
