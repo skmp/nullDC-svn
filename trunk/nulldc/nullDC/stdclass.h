@@ -542,6 +542,23 @@ struct Fifo_List
 	}
 };
 
+
+template<class T>
+class List : public std::vector<T>
+{
+public:
+	u32 itemcount;
+	List()
+	{
+		itemcount=0;
+	}
+	INLINE T* Add(T& item)
+	{
+		push_back(item);
+		itemcount++;
+		return &(*this)[this->size()-1];
+	}
+};
 //Windoze code
 //Threads
 #define THREADCALL __stdcall

@@ -3,7 +3,6 @@
 #include "plugin_types.h"
 #include "dc/sh4/sh4_if.h"
 
-
 //Plugin loading functions
 
 //Basic plugin interface
@@ -25,6 +24,7 @@ class nullDC_plugin
 public:
 	plugin_info info;
 	bool Loaded;
+	char dll[512];
 protected:
 	cDllHandler lib;
 	dcGetPluginInfoFP* dcGetPluginInfo;
@@ -84,31 +84,22 @@ public:
 	~nullDC_AICA_plugin();
 };
 
-//Maple (main)
-class nullDC_MapleMain_plugin: public nullDC_plugin
+//Maple 
+class nullDC_Maple_plugin: public nullDC_plugin
 {
 public :
 	maple_plugin_if maple_info;
+	/*void SendFrame(u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+	{
+		//maple_info.MapleDeviceDMA(&maple_info,Command,buffer_in,buffer_in_len,buffer_out,buffer_out_len,responce);
+	}*/
 private:
-	dcGetMapleMainInfoFP* dcGetMapleMainInfo;
+	dcGetMapleInfoFP* dcGetMapleInfo;
 
 	PluginLoadError PluginExLoad();
 public:
-	nullDC_MapleMain_plugin();
-	~nullDC_MapleMain_plugin();
-};
-//and sub ;)
-class nullDC_MapleSub_plugin: public nullDC_plugin
-{
-public :
-	maple_plugin_if maple_info;
-private:
-	dcGetMapleSubInfoFP* dcGetMapleSubInfo;
-
-	PluginLoadError PluginExLoad();
-public:
-	nullDC_MapleSub_plugin();
-	~nullDC_MapleSub_plugin();
+	nullDC_Maple_plugin();
+	~nullDC_Maple_plugin();
 };
 
 //Struct to hold plugin info
@@ -118,8 +109,9 @@ struct PluginLoadInfo
 	char		dll[500];
 };
 
-GrowingList<PluginLoadInfo>* EnumeratePlugins(u32 Typemask);
+List<PluginLoadInfo>* EnumeratePlugins(u32 Typemask);
 
+//This is not used for maple
 bool SetPlugin(nullDC_plugin* plugin,PluginType type);
 void SetPluginPath(char* path);
 
@@ -128,6 +120,7 @@ extern sh4_if*				  sh4_cpu;
 extern nullDC_PowerVR_plugin* libPvr;
 extern nullDC_GDRom_plugin*   libGDR;
 extern nullDC_AICA_plugin*    libAICA;
+extern List<nullDC_Maple_plugin*>libMaple;
 //more to come
 
 void plugins_Init();

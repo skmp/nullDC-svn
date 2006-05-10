@@ -1,10 +1,11 @@
 //dc.cpp
 //emulation driver - interface
-#include "mem\sh4_mem.h"
-#include "sh4\sh4_opcode_list.h"
-#include "pvr\pvr_if.h"
-#include "mem\sh4_internal_reg.h"
-#include "aica\aica_if.h"
+#include "mem/sh4_mem.h"
+#include "sh4/sh4_opcode_list.h"
+#include "pvr/pvr_if.h"
+#include "mem/sh4_internal_reg.h"
+#include "aica/aica_if.h"
+#include "maple/maple_if.h"
 #include "dc.h"
 #include "config/config.h"
 
@@ -71,6 +72,7 @@ bool Init_DC()
 	pvr_Init();
 	aica_Init();
 	plugins_Init();
+	maple_plugins_Init();
 
 	dc_inited=true;
 	return true;
@@ -95,11 +97,15 @@ bool Reset_DC(bool Manual)
 
 void Term_DC()
 {
-	sh4_cpu->Term();
-	plugins_Term();
-	aica_Term();
-	pvr_Term();
-	mem_Term();
+	if (dc_inited)
+	{
+		sh4_cpu->Term();
+		maple_plugins_Term();
+		plugins_Term();
+		aica_Term();
+		pvr_Term();
+		mem_Term();
+	}
 }
 
 void LoadBiosFiles()

@@ -990,18 +990,95 @@ INT_PTR CALLBACK ArmDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam 
 char SelectedPlugin_Aica[512]={0};
 char SelectedPlugin_Pvr[512]={0};
 char SelectedPlugin_Gdr[512]={0};
+char SelectedPlugin_maple[4][6][512]={0};
 
-void AddItemsToCB(GrowingList<PluginLoadInfo>* list,HWND hw,char* selected)
+int IDC_maple[6]=
+{
+	IDC_MAPLEMAIN,
+	IDC_MAPLESUB0,
+	IDC_MAPLESUB1,
+	IDC_MAPLESUB2,
+	IDC_MAPLESUB3,
+	IDC_MAPLESUB4
+};
+
+int current_maple_port=0;
+void InitMaplePorts(HWND hw)
+{
+	int idef=0;
+	int i2 = ComboBox_AddString(hw,"A"); 
+	ComboBox_SetItemData(hw, i2, 0); 
+	idef=i2;
+
+	i2 = ComboBox_AddString(hw,"B"); 
+	ComboBox_SetItemData(hw, i2, 1); 
+
+	i2 = ComboBox_AddString(hw,"C"); 
+	ComboBox_SetItemData(hw, i2, 2); 
+
+	i2 = ComboBox_AddString(hw,"D"); 
+	ComboBox_SetItemData(hw, i2, 3); 
+	
+	ComboBox_SetCurSel(hw,idef);
+}
+void SetSelected(HWND hw,char* selected)
+{
+	int item_count=ComboBox_GetCount(hw);
+	for (int i=0;i<item_count;i++)
+	{
+		char * it=(char*)ComboBox_GetItemData(hw,i);
+		if (strcmp(it,selected)==0)
+		{
+			ComboBox_SetCurSel(hw,i);
+			return;
+		}
+	}
+	ComboBox_SetCurSel(hw,0);
+}
+
+void AddMapleItemsToCB(List<MapleDeviceLoadInfo>* list,HWND hw,char* selected)
+{
+		char temp[512]="None";
+		char dll[512]="NULL";
+
+		char* lp = (char * )malloc(5); 
+		strcpy(lp,dll);
+		
+		int i2 = ComboBox_AddString(hw, temp); 
+		ComboBox_SetItemData(hw, i2, lp); 
+
+		for (u32 i=0;i<list->itemcount;i++)
+		{
+
+			GetFileNameFromPath((*list)[i].dll,dll);
+			sprintf(temp,"%s v%d.%d.%d (%s:%d)",(*list)[i].name
+				,(*list)[i].PluginVersion.major
+				,(*list)[i].PluginVersion.minnor
+				,(*list)[i].PluginVersion.build
+				,dll,(*list)[i].id);
+			
+			int dll_len=strlen(dll);
+			lp = (char * )malloc(dll_len+1+2); 
+			//strcpy(lp,dll);
+			sprintf(lp,"%s:%d",dll,(*list)[i].id);
+			i2 = ComboBox_AddString(hw, temp); 
+			ComboBox_SetItemData(hw, i2, lp); 
+		}
+
+		ComboBox_SetCurSel(hw,0);
+}
+
+void AddItemsToCB(List<PluginLoadInfo>* list,HWND hw,char* selected)
 {
 		for (u32 i=0;i<list->itemcount;i++)
 		{
 			char temp[512];
 			char dll[512];
-			GetFileNameFromPath(list->items[i].item.dll,dll);
-			sprintf(temp,"%s v%d.%d.%d (%s)",list->items[i].item.plugin_info.Name
-				,list->items[i].item.plugin_info.PluginVersion.major
-				,list->items[i].item.plugin_info.PluginVersion.minnor
-				,list->items[i].item.plugin_info.PluginVersion.build
+			GetFileNameFromPath((*list)[i].dll,dll);
+			sprintf(temp,"%s v%d.%d.%d (%s)",(*list)[i].plugin_info.Name
+				,(*list)[i].plugin_info.PluginVersion.major
+				,(*list)[i].plugin_info.PluginVersion.minnor
+				,(*list)[i].plugin_info.PluginVersion.build
 				,dll);
 			
 			int dll_len=strlen(dll);
@@ -1010,18 +1087,7 @@ void AddItemsToCB(GrowingList<PluginLoadInfo>* list,HWND hw,char* selected)
 			int i2 = ComboBox_AddString(hw, temp); 
 			ComboBox_SetItemData(hw, i2, lp); 
 		}
-
-		int item_count=ComboBox_GetCount(hw);
-		for (int i=0;i<item_count;i++)
-		{
-			char * it=(char*)ComboBox_GetItemData(hw,i);
-			if (strcmp(it,selected)==0)
-			{
-				ComboBox_SetCurSel(hw,i);
-				return;
-			}
-		}
-		ComboBox_SetCurSel(hw,0);
+		SetSelected(hw,selected);
 }
 
 void GetCurrent(HWND hw,char* dest)
@@ -1029,15 +1095,69 @@ void GetCurrent(HWND hw,char* dest)
 	int sel=ComboBox_GetCurSel(hw);
 	strcpy(dest,(char*)ComboBox_GetItemData(hw,sel));
 }
+void UpdateMapleSelections(HWND hw,HWND hWnd)
+{
+	int cs=ComboBox_GetCurSel(hw);
+	int new_port=ComboBox_GetItemData(hw,cs);
+	char temp[512];
+
+	if (current_maple_port!=new_port)
+	{
+		//save selected ones
+		if (current_maple_port!=-1)
+		{
+			for (int j=0;j<6;j++)
+			{
+				GetCurrent(GetDlgItem(hWnd,IDC_maple[j]),SelectedPlugin_maple[current_maple_port][j]);
+			}
+		}
+		//load new ones
+		for (int j=0;j<6;j++)
+		{
+			SetSelected(GetDlgItem(hWnd,IDC_maple[j]),SelectedPlugin_maple[new_port][j]);
+		}
+	}
+	current_maple_port=new_port;
+	//cfgSaveStr("ASD","Asd","asd");
+}
+void SaveMaple()
+{
+	for (int i=0;i<4;i++)
+	{
+		for (int j=0;j<6;j++)
+		{
+			char temp[512];
+			char plugin[512];
+			sprintf(temp,"Current_maple%d_%d",i,j);
+			cfgSaveStr("nullDC_plugins",temp,SelectedPlugin_maple[i][j]);
+		}
+	}
+}
+
+void LoadMaple()
+{
+	for (int i=0;i<4;i++)
+	{
+		for (int j=0;j<6;j++)
+		{
+			char temp[512];
+			char plugin[512];
+			sprintf(temp,"Current_maple%d_%d",i,j);
+			cfgLoadStr("nullDC_plugins",temp,SelectedPlugin_maple[i][j]);
+		}
+	}
+}
 INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	switch( uMsg )
 	{
 	case WM_INITDIALOG:
 		{
-		GrowingList<PluginLoadInfo>* pvr= EnumeratePlugins(PluginType::PowerVR);	
-		GrowingList<PluginLoadInfo>* gdrom= EnumeratePlugins(PluginType::GDRom);
-		GrowingList<PluginLoadInfo>* aica= EnumeratePlugins(PluginType::AICA);
+
+		current_maple_port=-1;
+		List<PluginLoadInfo>* pvr= EnumeratePlugins(PluginType::PowerVR);	
+		List<PluginLoadInfo>* gdrom= EnumeratePlugins(PluginType::GDRom);
+		List<PluginLoadInfo>* aica= EnumeratePlugins(PluginType::AICA);
 
 		char temp[512];
 
@@ -1054,7 +1174,21 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		AddItemsToCB(aica,GetDlgItem(hWnd,IDC_C_AICA),temp);
 		GetCurrent(GetDlgItem(hWnd,IDC_C_AICA),SelectedPlugin_Aica);
 
+		
 		delete gdrom,pvr,aica;
+
+		List<MapleDeviceLoadInfo>* MapleMain=GetMapleMainDevices();
+		List<MapleDeviceLoadInfo>* MapleSub=GetMapleSubDevices();
+		AddMapleItemsToCB(MapleMain,GetDlgItem(hWnd,IDC_MAPLEMAIN),"NONE");
+
+		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB0),"NONE");
+		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB1),"NONE");
+		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB2),"NONE");
+		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB3),"NONE");
+		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB4),"NONE");
+		LoadMaple();
+		InitMaplePorts(GetDlgItem(hWnd,IDC_MAPLEPORT));
+		UpdateMapleSelections(GetDlgItem(hWnd,IDC_MAPLEPORT),hWnd);
 		}
 		return true;
 		
@@ -1074,12 +1208,17 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			if (HIWORD(wParam)==CBN_SELCHANGE)
 				GetCurrent(GetDlgItem(hWnd,IDC_C_PVR),SelectedPlugin_Pvr);
 			break;
+		case IDC_MAPLEPORT:
+			if (HIWORD(wParam)==CBN_SELCHANGE)
+				UpdateMapleSelections(GetDlgItem(hWnd,IDC_MAPLEPORT),hWnd);
+			break;
 
 		case IDOK:
 			//save settings
 			cfgSaveStr("nullDC_plugins","Current_PVR",SelectedPlugin_Pvr);
 			cfgSaveStr("nullDC_plugins","Current_GDR",SelectedPlugin_Gdr);
 			cfgSaveStr("nullDC_plugins","Current_AICA",SelectedPlugin_Aica);
+			SaveMaple();
 		case IDCANCEL://close plugin
 			EndDialog(hWnd,0);
 			return true;

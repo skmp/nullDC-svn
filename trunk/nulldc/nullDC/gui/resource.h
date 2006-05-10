@@ -107,6 +107,7 @@
 #define IDB_START2                      1088
 #define IDC_CHECK3                      1090
 #define IDC_EDIT1                       1091
+#define IDC_MAPLESUB1                   1091
 #define IDC_XF                          1092
 #define IDS_CallStack                   1093
 #define IDC_ARM7INFO                    1094
@@ -123,6 +124,13 @@
 #define IDC_GDR_CONF                    1101
 #define IDC_BUTTON3                     1102
 #define IDC_AICA_CONF                   1102
+#define IDC_COMBO6                      1107
+#define IDC_MAPLEPORT                   1107
+#define IDC_MAPLEMAIN                   1108
+#define IDC_MAPLESUB0                   1109
+#define IDC_MAPLESUB2                   1111
+#define IDC_MAPLESUB3                   1112
+#define IDC_MAPLESUB4                   1113
 #define ID_FILE_EXIT                    40001
 #define ID_SYSTEM_START                 40003
 #define ID_SYSTEM_STOP                  40004
@@ -151,7 +159,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        120
 #define _APS_NEXT_COMMAND_VALUE         40028
-#define _APS_NEXT_CONTROL_VALUE         1101
+#define _APS_NEXT_CONTROL_VALUE         1110
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

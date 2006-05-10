@@ -289,7 +289,7 @@ void pvr_write_area1_32(u32 addr,u32 data)
 }
 void pvr_write_area1_block(u32 addr,u32* data,u32 size)
 {
-	for (int i=0;i<size;i+=4)
+	for (u32 i=0;i<size;i+=4)
 	{
 		pvr_write_area1_32(addr+i,data[i>>2]);
 	}

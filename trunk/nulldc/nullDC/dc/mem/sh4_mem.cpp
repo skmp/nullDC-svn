@@ -462,7 +462,7 @@ void MEMCALL WriteMemBlock(u32 addr,u32* data,u32 size)
 	return;
 
 fallback:
-	for (int i=0;i<size;i+=4)
+	for (u32 i=0;i<size;i+=4)
 	{
 		WriteMem32(addr+i,data[i>>2]);
 	}

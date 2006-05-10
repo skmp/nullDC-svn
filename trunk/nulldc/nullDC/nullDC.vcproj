@@ -1108,7 +1108,7 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							Optimization="3"
+							Optimization="0"
 						/>
 					</FileConfiguration>
 				</File>
@@ -1156,6 +1156,14 @@
 			<File
 				RelativePath=".\gui\emuWinUI.cpp"
 				>
+				<FileConfiguration
+					Name="Release-NoTrace|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\gui\emuWinUI.h"

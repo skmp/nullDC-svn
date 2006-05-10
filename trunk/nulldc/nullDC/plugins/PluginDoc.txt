@@ -10,6 +10,8 @@ Posibble plugin types :
 PowerVR
 GDrom
 AICA(contains and arm7)
+MapleMain(Maple main devices , like joystick)
+MapleSub (Maple sub devices , like VMU)
 
 A Plugin has to implement the common interface , and has to implement one or more plugin type interfaces.
 When a plugin implements many plugin type interfaces , the common init/reset/term is called once for 

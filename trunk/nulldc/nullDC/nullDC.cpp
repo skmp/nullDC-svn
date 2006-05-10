@@ -44,62 +44,58 @@ void PrintHeader()
 
 void EnumPlugins()
 {
-	GrowingList<PluginLoadInfo>* pvr= EnumeratePlugins(PluginType::PowerVR);
-	GrowingList<PluginLoadInfo>* gdrom= EnumeratePlugins(PluginType::GDRom);
-	GrowingList<PluginLoadInfo>* aica= EnumeratePlugins(PluginType::AICA);
-	GrowingList<PluginLoadInfo>* mdm= EnumeratePlugins(PluginType::MapleDeviceMain);
-	GrowingList<PluginLoadInfo>* mds= EnumeratePlugins(PluginType::MapleDeviceSub);
+	List<PluginLoadInfo>* pvr= EnumeratePlugins(PluginType::PowerVR);
+	List<PluginLoadInfo>* gdrom= EnumeratePlugins(PluginType::GDRom);
+	List<PluginLoadInfo>* aica= EnumeratePlugins(PluginType::AICA);
+	List<PluginLoadInfo>* maple= EnumeratePlugins(PluginType::MapleDevice);
 
 	printf("PowerVR plugins :\n");
 	for (u32 i=0;i<pvr->itemcount;i++)
 	{
-		printf("*\tFound %s v%d.%d.%d\n" ,pvr->items[i].item.plugin_info.Name,
-			pvr->items[i].item.plugin_info.PluginVersion.major,
-			pvr->items[i].item.plugin_info.PluginVersion.minnor,
-			pvr->items[i].item.plugin_info.PluginVersion.build);
+		printf("*\tFound %s v%d.%d.%d\n" ,(*pvr)[i].plugin_info.Name,
+			(*pvr)[i].plugin_info.PluginVersion.major,
+			(*pvr)[i].plugin_info.PluginVersion.minnor,
+			(*pvr)[i].plugin_info.PluginVersion.build);
 	}
 
 	printf("\nGDRom plugins :\n");
 	for (u32 i=0;i<gdrom->itemcount;i++)
 	{
-		printf("*\tFound %s v%d.%d.%d\n" ,gdrom->items[i].item.plugin_info.Name,
-			gdrom->items[i].item.plugin_info.PluginVersion.major,
-			gdrom->items[i].item.plugin_info.PluginVersion.minnor,
-			gdrom->items[i].item.plugin_info.PluginVersion.build);
+		printf("*\tFound %s v%d.%d.%d\n" ,(*gdrom)[i].plugin_info.Name,
+			(*gdrom)[i].plugin_info.PluginVersion.major,
+			(*gdrom)[i].plugin_info.PluginVersion.minnor,
+			(*gdrom)[i].plugin_info.PluginVersion.build);
 	}
 
+	
 	printf("\nAica plugins :\n");
 	for (u32 i=0;i<aica->itemcount;i++)
 	{
-		printf("*\tFound %s v%d.%d.%d\n" ,aica->items[i].item.plugin_info.Name,
-			aica->items[i].item.plugin_info.PluginVersion.major,
-			aica->items[i].item.plugin_info.PluginVersion.minnor,
-			aica->items[i].item.plugin_info.PluginVersion.build);
+		printf("*\tFound %s v%d.%d.%d\n" ,(*aica)[i].plugin_info.Name,
+			(*aica)[i].plugin_info.PluginVersion.major,
+			(*aica)[i].plugin_info.PluginVersion.minnor,
+			(*aica)[i].plugin_info.PluginVersion.build);
 	}
 
 	printf("\nMaple plugins :\n");
-	for (u32 i=0;i<mdm->itemcount;i++)
+	for (u32 i=0;i<maple->itemcount;i++)
 	{
-		printf("*\tFound %s v%d.%d.%d\n" ,mdm->items[i].item.plugin_info.Name,
-			mdm->items[i].item.plugin_info.PluginVersion.major,
-			mdm->items[i].item.plugin_info.PluginVersion.minnor,
-			mdm->items[i].item.plugin_info.PluginVersion.build);
-	}
-
-	printf("\nMaple subdevice plugins :\n");
-	for (u32 i=0;i<mds->itemcount;i++)
-	{
-		printf("*\tFound %s v%d.%d.%d\n" ,mds->items[i].item.plugin_info.Name,
-			mds->items[i].item.plugin_info.PluginVersion.major,
-			mds->items[i].item.plugin_info.PluginVersion.minnor,
-			mds->items[i].item.plugin_info.PluginVersion.build);
+		nullDC_Maple_plugin mpl;
+		mpl.LoadnullDCPlugin((*maple)[i].dll);
+		printf("*\tFound %s v%d.%d.%d [devices : " ,(*maple)[i].plugin_info.Name,
+			(*maple)[i].plugin_info.PluginVersion.major,
+			(*maple)[i].plugin_info.PluginVersion.minnor,
+			(*maple)[i].plugin_info.PluginVersion.build);
+		for (int j=0;mpl.maple_info.Devices[j].CreateInstance;j++)
+		{
+			printf("%s%s",mpl.maple_info.Devices[j].name,mpl.maple_info.Devices[j+1].CreateInstance==0?"]\n":";");
+		}
 	}
 	
 	delete pvr;
 	delete gdrom;
 	delete aica;
-	delete mdm;
-	delete mds;
+	delete maple;
 
 	//getc(stdin);
 }

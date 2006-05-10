@@ -3,9 +3,11 @@
 #include "dc/pvr/pvr_if.h"
 #include "dc/gdrom/gdrom_if.h"
 #include "gui/base.h"
+#include "dc/maple/maple_if.h"
 #include "config/config.h"
 
 #include <string.h>
+
 
 //Change log [kept since 23/3/2006]
 //Added support for AICA plugin Load/Init/Reset/Termination
@@ -17,8 +19,8 @@
 nullDC_PowerVR_plugin*		libPvr;
 nullDC_GDRom_plugin*		libGDR;
 nullDC_AICA_plugin*			libAICA;
-nullDC_MapleMain_plugin*    libMapleMain[4];
-nullDC_MapleSub_plugin*		libMapleSub[4][5];
+List<nullDC_Maple_plugin*>libMaple;
+
 sh4_if*						sh4_cpu;
 //more to come
 
@@ -72,7 +74,7 @@ PluginLoadError nullDC_plugin::LoadnullDCPlugin(char* plugin)
 		strcat(temp,plugin);
 
 		if (!lib.Load(temp))
-			return PluginLoadError::DllLoadError;;
+			return PluginLoadError::DllLoadError;
 	}
 
 	dcGetPluginInfo=(dcGetPluginInfoFP*)lib.GetProcAddress("dcGetPluginInfo");
@@ -103,6 +105,7 @@ PluginLoadError nullDC_plugin::LoadnullDCPlugin(char* plugin)
 	if (rv!=PluginLoadError::NoError)
 		lib.Unload();
 
+	strcpy(dll,plugin);
 	return rv;
 }
 void nullDC_plugin::Unload()
@@ -207,15 +210,15 @@ nullDC_AICA_plugin::~nullDC_AICA_plugin()
 }
 //End nullDC_AICA_plugin
 
-//Class nullDC_MapleMain_plugin
-PluginLoadError nullDC_MapleMain_plugin::PluginExLoad()
+//Class nullDC_Maple_plugin
+PluginLoadError nullDC_Maple_plugin::PluginExLoad()
 {
-	dcGetMapleMainInfo=(dcGetMapleMainInfoFP*)lib.GetProcAddress("dcGetMapleMainInfo");
+	dcGetMapleInfo=(dcGetMapleInfoFP*)lib.GetProcAddress("dcGetMapleInfo");
 
-	if (!dcGetMapleMainInfo)
+	if (!dcGetMapleInfo)
 		return PluginLoadError::PluginInterfaceExMissing;
 
-	dcGetMapleMainInfo(&maple_info,maple_info.Address);
+	dcGetMapleInfo(&maple_info);
 
 	if (maple_info.InterfaceVersion.full!=MAPLE_PLUGIN_I_F_VERSION)
 		return PluginLoadError::PluginInterfaceExVersionError;
@@ -226,47 +229,18 @@ PluginLoadError nullDC_MapleMain_plugin::PluginExLoad()
 }
 
 
-nullDC_MapleMain_plugin::nullDC_MapleMain_plugin():nullDC_plugin()
+nullDC_Maple_plugin::nullDC_Maple_plugin():nullDC_plugin()
 {
-	dcGetMapleMainInfo=0;
+	dcGetMapleInfo=0;
 }
-nullDC_MapleMain_plugin::~nullDC_MapleMain_plugin()
-{
-}
-//End nullDC_MapleMain_plugin
-
-
-//Class nullDC_MapleSub_plugin
-PluginLoadError nullDC_MapleSub_plugin::PluginExLoad()
-{
-	dcGetMapleSubInfo=(dcGetMapleSubInfoFP*)lib.GetProcAddress("dcGetMapleSubInfo");
-
-	if (!dcGetMapleSubInfo)
-		return PluginLoadError::PluginInterfaceExMissing;
-
-	dcGetMapleSubInfo(&maple_info,maple_info.Address);
-
-	if (maple_info.InterfaceVersion.full!=MAPLE_PLUGIN_I_F_VERSION)
-		return PluginLoadError::PluginInterfaceExVersionError;
-	
-	//All ok !
-	Loaded=true;
-	return PluginLoadError::NoError;
-}
-
-
-nullDC_MapleSub_plugin::nullDC_MapleSub_plugin():nullDC_plugin()
-{
-	dcGetMapleSubInfo=0;
-}
-nullDC_MapleSub_plugin::~nullDC_MapleSub_plugin()
+nullDC_Maple_plugin::~nullDC_Maple_plugin()
 {
 }
-//End nullDC_MapleSub_plugin
+//End nullDC_Maple_plugin
 
 //Plguin loading shit
 //temp struct
-struct temp_123__2_23{GrowingList<PluginLoadInfo>* l;u32 typemask;};
+struct temp_123__2_23{List<PluginLoadInfo>* l;u32 typemask;};
 
 void plugin_FileIsFound(char* file,void* param)
 {
@@ -295,18 +269,18 @@ void plugin_FileIsFound(char* file,void* param)
 	}
 }
 
-GrowingList<PluginLoadInfo>* PluginList_cached;
+List<PluginLoadInfo>* PluginList_cached;
 //Nos this function will cache the plugin list instead of loading dll's over and over :)
 //Get a list of all plugins that exist on plugin directory and can be loaded , and plguin_type & typemask !=0
-GrowingList<PluginLoadInfo>* EnumeratePlugins(u32 Typemask)
+List<PluginLoadInfo>* EnumeratePlugins(u32 Typemask)
 {
 	if (strlen(plugins_path)==0)
 		strcpy(plugins_path,"plugins\\");
 
-	GrowingList<PluginLoadInfo>* rv=new GrowingList<PluginLoadInfo>();
+	List<PluginLoadInfo>* rv=new List<PluginLoadInfo>();
 	if (PluginList_cached==0)
 	{
-		PluginList_cached = new GrowingList<PluginLoadInfo>();
+		PluginList_cached = new List<PluginLoadInfo>();
 		temp_123__2_23 fag;
 		fag.l=PluginList_cached;
 		fag.typemask=0xFFFFFFFF;
@@ -314,13 +288,14 @@ GrowingList<PluginLoadInfo>* EnumeratePlugins(u32 Typemask)
 		strcat(dllfile,plugins_path);
 		strcat(dllfile,"*.dll");
 		FindAllFiles(plugin_FileIsFound,dllfile,&fag);
+		maple_plugins_enum_devices();
 	}
 
 	for (u32 i=0;i<PluginList_cached->itemcount;i++)
 	{
 		PluginLoadInfo* t=&(*PluginList_cached)[i];
 		if (t->plugin_info.Type & Typemask) 
-			rv->Add(t);
+			rv->Add(*t);
 	}
 
 	return rv;
@@ -346,11 +321,9 @@ bool SetPlugin(nullDC_plugin* plugin,PluginType type)
 			libGDR=(nullDC_GDRom_plugin*)plugin;
 			return true;
 
-		case PluginType::MapleDeviceMain:
+		case PluginType::MapleDevice:
 			return false;
 
-		case PluginType::MapleDeviceSub:
-			return false;
 
 		case PluginType::PowerVR:
 			libPvr=((nullDC_PowerVR_plugin*)plugin);
@@ -419,11 +392,22 @@ void plugins_Init()
 	{
 		EMUERROR("Error , AICA/arm7 plugin is not loaded");
 	}
+
+	maple_init_params maple_info;
+	maple_info.WindowHandle=GetRenderTargetHandle();
+	for (u32 i=0;i<libMaple.size();i++)
+	{
+		libMaple[i]->info.Init(&maple_info,PluginType::MapleDevice);
+	}
 }
 
 void plugins_Term()
 {
-	
+	for (int i=libMaple.size()-1;i>=0;i--)
+	{
+		libMaple[i]->info.Term(PluginType::MapleDevice);
+	}
+
 	if (libAICA)
 	{
 		libAICA->info.Term(PluginType::AICA);
@@ -450,6 +434,8 @@ void plugins_Term()
 	{
 		//EMUERROR("Error , PowerVR plugin is not loaded");
 	}
+	
+	//Maple is deleted by maple rooter ;)
 
 	delete libAICA;
 	libAICA=0;
@@ -461,6 +447,7 @@ void plugins_Term()
 	if (PluginList_cached)
 	{
 		delete PluginList_cached;
+		PluginList_cached=0;
 	}
 }
 
@@ -522,10 +509,21 @@ void plugins_ThreadInit()
 	{
 		EMUERROR("Error , AICA/arm7 plugin is not loaded");
 	}
+
+	for (u32 i=0;i<libMaple.size();i++)
+	{
+		libMaple[i]->info.ThreadInit(PluginType::MapleDevice);
+	}
 }
 
 void plugins_ThreadTerm()
 {
+	for (int i=libMaple.size()-1;i>=0;i--)
+	{
+		libMaple[i]->info.ThreadTerm(PluginType::MapleDevice);
+	}
+
+
 	if (libAICA)
 	{
 		libAICA->info.ThreadTerm(PluginType::AICA);

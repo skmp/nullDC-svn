@@ -1,5 +1,6 @@
 #pragma once
 #include "types.h"
+#include "plugins/plugin_types.h"
 
 #define key_CONT_C  (1 << 0);
 #define key_CONT_B  (1 << 1);
@@ -25,6 +26,20 @@ extern s8 joy2x,joy2y;
 extern u8 rt,lt;
 //ok ?
 
+struct MapleDeviceLoadInfo
+{
+	char dll[512];
+	VersionNumber	PluginVersion;
+	char name[512];
+	u8 id;
+	u8 type;
+};
+List<MapleDeviceLoadInfo>* GetMapleMainDevices();
+List<MapleDeviceLoadInfo>* GetMapleSubDevices();
+
 void maple_Init();
 void maple_Reset(bool Manual);
 void maple_Term();
+void maple_plugins_Term();
+void maple_plugins_Init();
+void maple_plugins_enum_devices();

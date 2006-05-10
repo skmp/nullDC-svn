@@ -15,7 +15,7 @@
 
 //Basic types :)
 #include "basic_types.h"
-
+#include <vector>
 
 #define No_gdb_stub
 //#define DEBUG_DLL
