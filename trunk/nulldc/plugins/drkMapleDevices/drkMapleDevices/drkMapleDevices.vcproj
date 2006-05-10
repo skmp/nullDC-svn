@@ -179,6 +179,14 @@
 			<File
 				RelativePath=".\drkMapleDevices.cpp"
 				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="3"
+					/>
+				</FileConfiguration>
 			</File>
 		</Filter>
 		<File

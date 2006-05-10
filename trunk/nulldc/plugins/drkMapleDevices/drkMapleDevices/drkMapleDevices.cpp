@@ -2,6 +2,7 @@
 //
 
 #include "..\..\..\nullDC\plugins\plugin_header.h"
+#include <memory.h>
 
 #ifdef UNICODE
 #undef UNICODE
@@ -39,6 +40,11 @@ char testJoy_strBrand[64] = "Faked by drkIIRaziel && ZeZu , made for nullDC\0";
 #define key_CONT_DPAD2_LEFT  (1 << 14);
 #define key_CONT_DPAD2_RIGHT  (1 << 15);	
 
+struct VMU_info
+{
+	u8* data[512*1024];
+	char file[512];
+};
 typedef INT_PTR CALLBACK dlgp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
 dlgp* oldptr;
 INT_PTR CALLBACK sch( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
@@ -260,7 +266,7 @@ u8 GetBtFromSgn(s8 val);
 
 void ControllerDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
 {
-	printf("ControllerDMA Called 0x%X;Command %d\n",device_instance->port,Command);
+	//printf("ControllerDMA Called 0x%X;Command %d\n",device_instance->port,Command);
 //void testJoy_GotData(u32 header1,u32 header2,u32*data,u32 datalen)
 	u8*buffer_out_b=(u8*)buffer_out;
 
@@ -384,7 +390,26 @@ u8 GetBtFromSgn(s8 val)
 {
 	return val+128;
 }
+typedef struct {
+	u16 total_size;
+	u16 partition_number;
+	u16 system_area_block;
+	u16 fat_area_block;
+	u16 number_fat_areas_block;
+	u16 file_info_block;
+	u16 number_info_blocks;
+	u8 volume_icon;
+	u8 reserved1;
+	u16 save_area_block;
+	u16 number_of_save_blocks;
+	u16 reserverd0;  
+}maple_getvmuinfo_t;
 
+#define SWAP32(val) ((u32) ( \
+	(((u32) (val) & (u32) 0x000000ffU) << 24) | \
+	(((u32) (val) & (u32) 0x0000ff00U) <<  8) | \
+	(((u32) (val) & (u32) 0x00ff0000U) >>  8) | \
+	(((u32) (val) & (u32) 0xff000000U) >> 24)))
 void VmuDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
 {
 	u8*buffer_out_b=(u8*)buffer_out;
@@ -448,6 +473,71 @@ void VmuDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u3
 			w16(0x8200); 
 			break;
 
+				//in[0] is function used ?
+				//out[0] is function used ?
+		case 10:
+			if (buffer_in[0]& (2<<24))
+			{
+				buffer_out[0] = (2<<24);//is that ok ?
+				maple_getvmuinfo_t* vmui = (maple_getvmuinfo_t*)(&buffer_out[1]);
+				//ZeroMemory(pMediaInfo,sizeof(TMAPLE_MEDIAINFO));
+				memset(vmui,0,sizeof(maple_getvmuinfo_t));
+				vmui->total_size = 0xff;
+				vmui->system_area_block = 0xff;
+				vmui->fat_area_block = 0xfe;
+				vmui->number_fat_areas_block = 1;
+				vmui->volume_icon = 0x0;
+				vmui->save_area_block = 0xc8;
+				vmui->number_of_save_blocks = 0x1f;
+				//pMediaInfo->volume_icon = 0x0;
+				vmui->file_info_block = 0xfd;
+				vmui->number_info_blocks = 0xd;
+				vmui->reserverd0 = 0x0000;
+				buffer_out_len=1+(sizeof(maple_getvmuinfo_t)>>2);
+				responce=8;//data transfer
+			}
+			else
+				responce=-2;//bad function
+			break;
+
+		case 11:
+			if(buffer_in[0]&(2<<24))
+			{
+				buffer_out[0] = (2<<24);
+				u32 Block = (SWAP32(buffer_in[1]))&0xffff;
+				buffer_out[1] = buffer_in[1];
+				if (Block>255)
+				{
+					printf("BLOCK READ ERROR\n");
+					Block&=256;
+				}
+				memcpy(&buffer_out[2],((VMU_info*)device_instance->DevData)->data+Block*512,512);
+				buffer_out_len=(512+8)/4;
+				responce=8;//data transfer
+			}
+			else
+				responce=-2;//bad function
+			break;
+		case 12:
+			if(buffer_in[0]&(2<<24))
+			{
+				u32 Block = (SWAP32(buffer_in[1]))&0xffff;
+				u32 Phase = ((SWAP32(buffer_in[1]))>>16)&0xff; 
+				memcpy(((VMU_info*)device_instance->DevData)->data+Block*512+Phase*(512/4),&buffer_in[2],(buffer_in_len-2)*4);
+				buffer_out_len=0;
+				FILE* f=fopen(((VMU_info*)device_instance->DevData)->file,"wb");
+				fwrite(((VMU_info*)device_instance->DevData)->data,1,512*1024,f);
+				fclose(f);
+				responce=7;//just ko
+			}
+			else
+				responce=-2;//bad function
+			break;
+
+		case 13:
+			responce=7;//just ko
+			break;
+
 		default:
 			printf("UNKOWN MAPLE COMMAND \n");
 			break;
@@ -458,15 +548,30 @@ void VmuDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u3
 void CreateInstance(maple_device*dev,maple_device_instance& inst,u8 port)
 {
 	if (dev->id==0)
+	{
 		inst.MapleDeviceDMA=ControllerDMA;
+		inst.DevData=0;
+	}
 	else
-			inst.MapleDeviceDMA=VmuDMA;
+	{
+		inst.DevData=malloc(sizeof(VMU_info));
+		sprintf(((VMU_info*)inst.DevData)->file,"vmu_data_port%x.bin",port);
+		FILE* f=fopen(((VMU_info*)inst.DevData)->file,"rb");
+		if (f)
+		{
+			fread(((VMU_info*)inst.DevData)->data,1,512*1024,f);
+			fclose(f);
+		}
+		inst.MapleDeviceDMA=VmuDMA;
+	}
 	printf("Created instance of device %s on port 0x%x\n",dev->name,port);
 }
 
 
 void DestroyInstance(maple_device*dev,maple_device_instance& inst)
 {
+	if (inst.DevData)
+		free(inst.DevData);
 	printf("Deleted instance of device %s \n",dev->name);
 }
 //Give a list of the devices to teh emu

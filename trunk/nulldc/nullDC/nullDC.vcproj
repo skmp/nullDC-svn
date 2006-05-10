@@ -421,7 +421,7 @@
 								>
 								<Tool
 									Name="VCCLCompilerTool"
-									Optimization="0"
+									Optimization="3"
 								/>
 							</FileConfiguration>
 						</File>
@@ -1108,7 +1108,7 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							Optimization="0"
+							Optimization="3"
 						/>
 					</FileConfiguration>
 				</File>
@@ -1157,7 +1157,7 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="0"
+						Optimization="3"
 					/>
 				</FileConfiguration>
 			</File>
