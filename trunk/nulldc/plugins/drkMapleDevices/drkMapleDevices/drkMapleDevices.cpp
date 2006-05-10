@@ -19,6 +19,7 @@ s8 joy2x=0,joy2y=0;
 u8 rt=0,lt=0;
 
 char testJoy_strName[64] = "Emulated Dreamcast Controler\0";
+char testJoy_strName_vmu[64] = "Emulated VMU\0";
 char testJoy_strBrand[64] = "Faked by drkIIRaziel && ZeZu , made for nullDC\0";
 
 #define key_CONT_C  (1 << 0);
@@ -386,7 +387,71 @@ u8 GetBtFromSgn(s8 val)
 
 void VmuDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
 {
+	u8*buffer_out_b=(u8*)buffer_out;
 	printf("VmuDMA Called for port 0x%X, Command %d\n",device_instance->port,Command);
+	switch (Command)
+	{
+		/*typedef struct {
+			DWORD		func;//4
+			DWORD		function_data[3];//3*4
+			u8		area_code;//1
+			u8		connector_direction;//1
+			char		product_name[30];//30*1
+			char		product_license[60];//60*1
+			WORD		standby_power;//2
+			WORD		max_power;//2
+		} maple_devinfo_t;*/
+		case 1:
+			//header
+			//WriteMem32(ptr_out,(u32)(0x05 | //response
+			//			(((u16)sendadr << 8) & 0xFF00) |
+			//			((((recadr == 0x20) ? 0x20 : 0) << 16) & 0xFF0000) |
+			//			(((112/4) << 24) & 0xFF000000))); ptr_out += 4;
+
+			responce=5;
+
+			//caps
+			//4
+			w32(2 << 24);
+
+			//struct data
+			//3*4
+			w32( 0x00410f00); 
+			w32( 0);
+			w32( 0);
+			//1	area code
+			w8(0xFF);
+			//1	direction
+			w8(0);
+			//30
+			for (u32 i = 0; i < 30; i++)
+			{
+				w8((u8)testJoy_strName_vmu[i]);
+				//if (!testJoy_strName[i])
+				//	break;
+			}
+			//ptr_out += 30;
+
+			//60
+			for (u32 i = 0; i < 60; i++)
+			{
+				w8((u8)testJoy_strBrand[i]);
+				//if (!testJoy_strBrand[i])
+				//	break;
+			}
+			//ptr_out += 60;
+
+			//2
+			w16(0x7c00); 
+
+			//2
+			w16(0x8200); 
+			break;
+
+		default:
+			printf("UNKOWN MAPLE COMMAND \n");
+			break;
+	}
 }
 
 

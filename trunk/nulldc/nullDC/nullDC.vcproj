@@ -1116,10 +1116,6 @@
 					RelativePath=".\dc\maple\maple_if.h"
 					>
 				</File>
-				<File
-					RelativePath=".\dc\maple\testJoy.cpp"
-					>
-				</File>
 			</Filter>
 			<Filter
 				Name="asic"

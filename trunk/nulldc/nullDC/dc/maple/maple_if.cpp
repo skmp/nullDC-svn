@@ -347,7 +347,6 @@ void maple_plugins_Term()
 		}
 	}
 }
-	
 
 void maple_plugins_create_list()
 {
