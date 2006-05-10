@@ -126,6 +126,7 @@ u32 GetConnectedDevices(u32 Port)
 		rv|=0x10;
 	return rv;
 }
+u32 dmacount=0;
 void DoMapleDma()
 {
 #if debug_maple
@@ -135,65 +136,75 @@ void DoMapleDma()
 	bool last = false;
 	while (last != true)
 	{
+		dmacount++;
 		u32 header_1 = ReadMem32(addr);
 		u32 header_2 = ReadMem32(addr + 4) &0x1FFFFFE0;
 
 		last = (header_1 >> 31) == 1;//is last transfer ?
 		u32 plen = (header_1 & 0xFF )+1;//transfer lenght
 		u32 device = (header_1 >> 16) & 0x3;
+		u32 maple_op=(header_1>>8)&7;
 
-		if (!IsOnSh4Ram(header_2))
+		if (maple_op==0)
 		{
-			printf("MAPLE ERROR : DESTINATION NOT ON SH4 RAM\n");
-			return;//a baaddd error
-		}
-		u32* p_out=(u32*)GetMemPtr(header_2,4);
-		u32 outlen=0;
+			if (!IsOnSh4Ram(header_2))
+			{
+				printf("MAPLE ERROR : DESTINATION NOT ON SH4 RAM\n");
+				goto dma_end;//a baaddd error
+			}
+			u32* p_out=(u32*)GetMemPtr(header_2,4);
+			u32 outlen=0;
 
-		u32* p_data =(u32*) GetMemPtr(addr + 8,(plen)*sizeof(u32));
-		//Command / Response code 
-		//Recipient address 
-		//Sender address 
-		//Number of additional words in frame 
-		u32 command=p_data[0] &0xFF;
-		u32 reci=(p_data[0] >> 8) & 0xFF;//0-5;
-		u32 subport=GetMaplePort(reci);
-		u32 send=(p_data[0] >> 16) & 0xFF;
-		u32 inlen=(p_data[0]>>24) & 0xFF;
-		u32 resp=0;
-		inlen*=4;
+			u32* p_data =(u32*) GetMemPtr(addr + 8,(plen)*sizeof(u32));
+			//Command / Response code 
+			//Recipient address 
+			//Sender address 
+			//Number of additional words in frame 
+			u32 command=p_data[0] &0xFF;
+			u32 reci=(p_data[0] >> 8) & 0xFF;//0-5;
+			u32 subport=GetMaplePort(reci);
+			u32 send=(p_data[0] >> 16) & 0xFF;
+			u32 inlen=(p_data[0]>>24) & 0xFF;
+			u32 resp=0;
+			inlen*=4;
 
-		if (MapleDevices[device][0].Connected && MapleDevices[device][subport].Connected)
-		{
-			//MaplePlugin[device][0].GotDataCB(header_1,header_2,p_data,plen);
-			//libMapleMain[device]->SendFrame(command,&p_data[0],inlen,&p_out[1],outlen,retv);
-			//(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce);
-			MapleDevices[device][subport].MapleDeviceDMA(
-				&MapleDevices[device][subport],
-				command,
-				&p_data[1],
-				inlen-4,
-				&p_out[1],
-				outlen,
-				resp);
-			
-			
-			if(reci&0x20)
-				reci|=GetConnectedDevices((reci>>6)&3);
+			if (MapleDevices[device][0].Connected && MapleDevices[device][subport].Connected)
+			{
+				//MaplePlugin[device][0].GotDataCB(header_1,header_2,p_data,plen);
+				//libMapleMain[device]->SendFrame(command,&p_data[0],inlen,&p_out[1],outlen,retv);
+				//(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce);
+				MapleDevices[device][subport].MapleDeviceDMA(
+					&MapleDevices[device][subport],
+					command,
+					&p_data[1],
+					inlen-4,
+					&p_out[1],
+					outlen,
+					resp);
 
-			p_out[0]=(resp<<0)|(send<<8)|(reci<<16)|((outlen/4)<<24);
-			outlen+=4;
+
+				if(reci&0x20)
+					reci|=GetConnectedDevices((reci>>6)&3);
+
+				p_out[0]=(resp<<0)|(send<<8)|(reci<<16)|((outlen/4)<<24);
+				outlen+=4;
+			}
+			else
+			{
+				outlen=4;
+				p_out[0]=0xFFFFFFFF;
+			}
+			rec_v1_NotifyMemWrite(header_2,outlen);
+
+			//goto next command
+			addr += 2 * 4 + plen * 4;
 		}
 		else
 		{
-			outlen=4;
-			p_out[0]=0xFFFFFFFF;
+			addr += 1 * 4;
 		}
-		rec_v1_NotifyMemWrite(header_2,outlen);
-
-		//goto next command
-		addr += 2 * 4 + plen * 4;
 	}
+dma_end:
 	SB_MDST = 0;	//MAPLE_STATE = 0;//finished :P
 	RaiseInterrupt(holly_MAPLE_DMA);
 }
