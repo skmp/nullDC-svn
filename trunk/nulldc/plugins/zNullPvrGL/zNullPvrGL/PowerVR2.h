@@ -10,7 +10,8 @@
 #include <GL/glu.h>
 #include <GL/glext.h>
 
-#include "zNullPvrGL.h"
+#include "zNullPvr.h"
+
 #include "TA_Regs.h"
 #include "TA_Param.h"
 #include "TA_Texture.h"

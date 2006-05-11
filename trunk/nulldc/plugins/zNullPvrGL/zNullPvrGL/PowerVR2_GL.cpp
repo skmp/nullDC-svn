@@ -16,6 +16,8 @@ void PowerVR2::SetRenderMode(u32 ParamID, u32 TexID)
 	glDepthFunc(DepthModeGL[gp->isp.DepthMode]);
 	glDepthMask(gp->isp.ZWriteDis ? GL_FALSE : GL_TRUE);
 
+//	glEnable(GL_DEPTH_TEST);
+
 	if(gp->isp.Texture || gp->pcw.Texture)
 	{
 		glEnable(GL_TEXTURE_2D);
@@ -94,7 +96,8 @@ void PowerVR2::SetRenderMode(u32 ParamID, u32 TexID)
 		else
 			glDisable(GL_BLEND);
 
-		glDepthMask(GL_TRUE);		// no zbuffering for transparencies
+	//	glDisable(GL_DEPTH_TEST);
+	//	glDepthMask(GL_TRUE);		// no zbuffering for transparencies
 
 		if(!gp->param0.tsp.IgnoreTexA)
 		{
@@ -228,7 +231,7 @@ void PowerVR2::RenderStripListRev(vector<Vertex> &vl)
 		SetRenderMode(vl[p].ParamID, vl[p].TexID);
 
 		glBegin(GL_TRIANGLE_STRIP);
-		for(s32 v=vl[p].List.size()-1; v>=0; v--)
+		for(size_t v=vl[p].List.size()-1; v>=0; v--)
 		{
 			glColor4ubv((u8*)&vl[p].List[v].col);
 			glTexCoord4fv(vl[p].List[v].uv);
@@ -291,7 +294,7 @@ void PowerVR2::Render()
 		B=((dwValue>>0x00)&0xFF)/255.f;
 
 	glClearColor( R,G,B, 1.f );
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	////////////////////////////////////////////////////
 
 #ifdef USE_VERTEX_ARRAYS
@@ -391,6 +394,8 @@ bool PowerVR2::Init()
 	glDisable(GL_TEXTURE_2D);
 
 	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+
 	glShadeModel(GL_SMOOTH);
 	glAlphaFunc(GL_GREATER, 0.f);
 

@@ -511,7 +511,7 @@ void DumpFifo(u32 address, u32* data, u32 size)
 	sprintf_s(filename, "Fifo[%06X].txt", ++n);
 	fopen_s(&f, filename, "wt");
 
-	fprintf(f, "\nDumpFifo %08X - addr: %08X, ptr: %08X, size: 0x%X\n\n", n, address, (u32)data, size);
+	fprintf(f, "\nDumpFifo %08X - addr: %08X, size: 0x%X\n\n", n, address, size);
 
 	for(u32 i=0; i<size; i++) {
 		switch( ((ParamBase*)data)[i].Base.pcw.ParaType ) {

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="zNullPvrGL"
 	ProjectGUID="{96D32B6C-E11C-4FD7-A4CD-B296415D2560}"
 	RootNamespace="zNullPvrGL"
@@ -117,7 +117,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;ZNULLPVRGL_EXPORTS"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;ZNULLPVRGL_EXPORTS;_CRT_SECURE_NO_DEPRECATE"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -195,7 +195,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\zNullPvrGL.cpp"
+				RelativePath=".\zNullPvr.cpp"
 				>
 			</File>
 		</Filter>
@@ -225,7 +225,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\zNullPvrGL.h"
+				RelativePath=".\zNullPvr.h"
 				>
 			</File>
 		</Filter>

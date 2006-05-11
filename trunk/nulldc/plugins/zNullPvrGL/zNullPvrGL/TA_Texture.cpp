@@ -404,9 +404,9 @@ void TexDecPAL4(PolyParam *pp, TexEntry *te)
 	switch(*pPAL_RAM_CTRL &3)
 	{
 	case 0:	// argb155
-		for(int y=0; y<te->Height; y+=2)
+		for(u32 y=0; y<te->Height; y+=2)
 		{
-			for(int x=0; x<te->Width; x+=2) 
+			for(u32 x=0; x<te->Width; x+=2) 
 			{
 				u16 iColor = *(u16*)(emuIf.vram + te->Start + (twop(((y>>1)*te->Width+(x>>1)),texU)<<1));
 
@@ -419,9 +419,9 @@ void TexDecPAL4(PolyParam *pp, TexEntry *te)
 		break;
 
 	case 1:	// rgb565
-		for(int y=0; y<te->Height; y+=2)
+		for(u32 y=0; y<te->Height; y+=2)
 		{
-			for(int x=0; x<te->Width; x+=2) 
+			for(u32 x=0; x<te->Width; x+=2) 
 			{
 				u16 iColor = *(u16*)(emuIf.vram + te->Start + (twop(((y>>1)*te->Width+(x>>1)),texU)<<1));
 
@@ -435,9 +435,9 @@ void TexDecPAL4(PolyParam *pp, TexEntry *te)
 
 	case 2:	// argb4444
 		{
-			for(int y=0; y<te->Height; y+=2)
+			for(u32 y=0; y<te->Height; y+=2)
 			{
-				for(int x=0; x<te->Width; x+=2) 
+				for(u32 x=0; x<te->Width; x+=2) 
 				{
 					u16 iColor = *(u16*)(emuIf.vram + te->Start + (twop(((y>>1)*te->Width+(x>>1)),texU)<<1));
 
@@ -452,9 +452,9 @@ void TexDecPAL4(PolyParam *pp, TexEntry *te)
 		break;
 
 	case 3:	// argb8888
-		for(int y=0; y<te->Height; y+=2)
+		for(u32 y=0; y<te->Height; y+=2)
 		{
-			for(int x=0; x<te->Width; x+=2) 
+			for(u32 x=0; x<te->Width; x+=2) 
 			{
 				u16 iColor = *(u16*)(emuIf.vram + te->Start + (twop(((y>>1)*te->Width+(x>>1)),texU)<<1));
 
@@ -1029,7 +1029,16 @@ TexID TextureCache::GetTexture(PolyParam *pp)
 
 unhandled_fmt:
 	printf("GetTexture, Addr: %08X, Ctrl: %X  Unhandled!\n", TexAddr, tctrl);
-	return 0;
+
+	for(u32 p=0; p<(tex.Width * tex.Height); p++)
+		pTempTex[p] = 0xFF00FF00;
+
+	glGenTextures(1, &tex.texID);
+	glBindTexture(GL_TEXTURE_2D, tex.texID);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex.Width, tex.Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pTempTex);
+
+	TexList.push_back(tex);
+	return tex.texID;
 }
 
 void vramLockCB(vram_block *bl, u32 addr)
