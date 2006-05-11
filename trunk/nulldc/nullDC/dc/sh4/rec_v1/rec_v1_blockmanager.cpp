@@ -16,32 +16,27 @@ u8 BitTest[8]={1<<0,1<<1,1<<2,1<<3,1<<4,1<<5,1<<6,1<<7};
 //u8 BitRes[8]={255-(1<<0),255-(1<<1),255-(1<<2),255-(1<<3),255-(1<<4),255-(1<<5),255-(1<<6),255-(1<<7)};
 u8 RamTest[RAM_SIZE>>(HASH_BITS+3)];
 
+#define DoHash /*(fpscr.PR_SZ*0x1000) |*/ (address>>3)&(block_cnt-1)
 INLINE vector<rec_v1_BasicBlock*>* GetBlockList(u32 address)
 {
-	return &BlockLists[(address>>3)&(block_cnt-1)];
+	return &BlockLists[DoHash];
 }
 
 INLINE rec_v1_BasicBlock* GetBlockListCache(u32 address)
 {
-	return BlockListsCache[(address>>3)&(block_cnt-1)];
+	return BlockListsCache[DoHash];
 }
 INLINE void SetBlockListCache(u32 address,rec_v1_BasicBlock* nb)
 {
-	BlockListsCache[(address>>3)&(block_cnt-1)]=nb;
+	BlockListsCache[DoHash]=nb;
 }
 
 rec_v1_BasicBlock* rec_v1_FindBlock(u32 address)
 {
 	rec_v1_BasicBlock* fast_block=GetBlockListCache(address);
 	
-	if ((fast_block !=0) && (fast_block->start==address)&&( fast_block->cpu_mode_tag==fpscr.PR_SZ))
+	if (!((fast_block !=0) && (fast_block->start==address)&&( fast_block->cpu_mode_tag==fpscr.PR_SZ)))
 	{
-		fast_block->lookups++;
-		return fast_block;
-	}
-	else
-	{
-
 		vector<rec_v1_BasicBlock*>* blklist = GetBlockList(address);
 
 		u32 listsz=(u32)blklist->size();
@@ -59,6 +54,11 @@ rec_v1_BasicBlock* rec_v1_FindBlock(u32 address)
 				}
 			}
 		}
+	}
+	else
+	{
+		fast_block->lookups++;
+		return fast_block;
 	}
 	return 0;
 }
