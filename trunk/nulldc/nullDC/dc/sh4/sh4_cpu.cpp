@@ -692,7 +692,7 @@ sh4op(i0100_nnnn_mmmm_1100)
 	u32 m = GetM(op);
 	u32 sgn = r[m] & 0x80000000;
 	if (sgn == 0)
-		r[n] <<= (s32)(r[m] & 0x1F);
+		r[n] <<= (r[m] & 0x1F);
 	else if ((r[m] & 0x1F) == 0)
 	{
 		if ((r[n] & 0x80000000) == 0)
@@ -701,7 +701,7 @@ sh4op(i0100_nnnn_mmmm_1100)
 			r[n] = 0xFFFFFFFF;
 	}
 	else
-		r[n] = ((s32)r[n]) >> (s32)((~r[m] & 0x1F) + 1);
+		r[n] = ((s32)r[n]) >> ((~r[m] & 0x1F) + 1);
 }
 
 
