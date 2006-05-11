@@ -101,9 +101,17 @@ void OpDissCFS(char* text,const char* tx1,u32 pc,u16 opcode)
 				else
 					text+=sprintf(text,"DR%d",t>>1);
 			}
+			else if (strcmp2(tx1,"disp4b>"))
+			{
+				text+=sprintf(text,"0x%X",GetImm4(opcode)*1);
+			}
+			else if (strcmp2(tx1,"disp4w>"))
+			{
+				text+=sprintf(text,"0x%X",GetImm4(opcode)*2);
+			}
 			else if (strcmp2(tx1,"disp4dw>"))
 			{
-				text+=sprintf(text,"0x%X",GetImm4(opcode)*4);
+				text+=sprintf(text,"0x%X",GetImm4(opcode)*4); 
 			}
 			else if (strcmp2(tx1,"PCdisp8>"))
 			{
@@ -643,7 +651,7 @@ sh4_opcodelistentry opcodes[]=
 	{rec_shil_i0000_nnnn_mmmm_1101	,i0000_nnnn_mmmm_1101	,Mask_n_m	,0x000D	,Normal				,OpDissCFS,"mov.w @(R0,<REG_M>),<REG_N>"	,1,2,LS},	//mov.w @(R0,<REG_M>),<REG_N>   
 	{rec_shil_i0000_nnnn_mmmm_1110	,i0000_nnnn_mmmm_1110	,Mask_n_m	,0x000E	,Normal				,OpDissCFS,"mov.l @(R0,<REG_M>),<REG_N>"	,1,2,LS},	//mov.l @(R0,<REG_M>),<REG_N>   
 	{rec_shil_i0000_nnnn_mmmm_1111	,i0000_nnnn_mmmm_1111	,Mask_n_m	,0x000F	,Normal				,OpDissCFS,"mac.l @<REG_M>+,@<REG_N>+"		,2,3,CO},	//mac.l @<REG_M>+,@<REG_N>+     
-	{rec_shil_i0001_nnnn_mmmm_iiii	,i0001_nnnn_mmmm_iiii	,Mask_n_imm8,0x1000	,Normal				,OpDissCFS,"mov.l <REG_M>,@(<disp8dw>,<REG_N>)",1,1,LS},	//mov.l <REG_M>,@(<disp>,<REG_N>)
+	{rec_shil_i0001_nnnn_mmmm_iiii	,i0001_nnnn_mmmm_iiii	,Mask_n_imm8,0x1000	,Normal				,OpDissCFS,"mov.l <REG_M>,@(<disp4dw>,<REG_N>)",1,1,LS},	//mov.l <REG_M>,@(<disp>,<REG_N>)
 	{rec_shil_i0010_nnnn_mmmm_0000	,i0010_nnnn_mmmm_0000	,Mask_n_m	,0x2000	,Normal				,OpDissCFS,"mov.b <REG_M>,@<REG_N>"			,1,1,LS},	//mov.b <REG_M>,@<REG_N>        
 	{rec_shil_i0010_nnnn_mmmm_0001	,i0010_nnnn_mmmm_0001	,Mask_n_m	,0x2001	,Normal				,OpDissCFS,"mov.w <REG_M>,@<REG_N>"			,1,1,LS},	// mov.w <REG_M>,@<REG_N>        
 	{rec_shil_i0010_nnnn_mmmm_0010	,i0010_nnnn_mmmm_0010	,Mask_n_m	,0x2002	,Normal				,OpDissCFS,"mov.l <REG_M>,@<REG_N>"			,1,1,LS},	// mov.l <REG_M>,@<REG_N>        
@@ -753,10 +761,10 @@ sh4_opcodelistentry opcodes[]=
 	{rec_shil_i1000_1001_iiii_iiii	,i1000_1001_iiii_iiii	,Mask_imm8	,0x8900	,Branch_rel			,OpDissCFS,"bt <bdisp8>"					,1,1,BR},	// bt <bdisp8>                   
 	{rec_shil_i1000_1101_iiii_iiii	,i1000_1101_iiii_iiii	,Mask_imm8	,0x8D00	,Branch_rel_d		,OpDissCFS,"bt.s <bdisp8>"					,1,1,BR},	// bt.s <bdisp8>                 
 	{rec_shil_i1000_1000_iiii_iiii	,i1000_1000_iiii_iiii	,Mask_imm8	,0x8800	,Normal				,OpDissCFS,"cmp/eq #<simm8hex>,R0"			,1,1,MT},	// cmp/eq #<imm>,R0              
-	{rec_shil_i1000_0000_mmmm_iiii	,i1000_0000_mmmm_iiii	,Mask_imm8	,0x8000	,Normal				,OpDissCFS,"mov.b R0,@(<disp8b>,<REG_M>)"	,1,1,LS},	// mov.b R0,@(<disp>,<REG_M>)    
-	{rec_shil_i1000_0001_mmmm_iiii	,i1000_0001_mmmm_iiii	,Mask_imm8	,0x8100	,Normal				,OpDissCFS,"mov.w R0,@(<disp8w>,<REG_M>)"	,1,1,LS},	// mov.w R0,@(<disp>,<REG_M>)    
-	{rec_shil_i1000_0100_mmmm_iiii	,i1000_0100_mmmm_iiii	,Mask_imm8	,0x8400	,Normal				,OpDissCFS,"mov.b @(<disp8b>,<REG_M>),R0"	,1,2,LS},	// mov.b @(<disp>,<REG_M>),R0    
-	{rec_shil_i1000_0101_mmmm_iiii	,i1000_0101_mmmm_iiii	,Mask_imm8	,0x8500	,Normal				,OpDissCFS,"mov.w @(<disp8w>,<REG_M>),R0"	,1,2,LS},	// mov.w @(<disp>,<REG_M>),R0    
+	{rec_shil_i1000_0000_mmmm_iiii	,i1000_0000_mmmm_iiii	,Mask_imm8	,0x8000	,Normal				,OpDissCFS,"mov.b R0,@(<disp4b>,<REG_M>)"	,1,1,LS},	// mov.b R0,@(<disp>,<REG_M>)    
+	{rec_shil_i1000_0001_mmmm_iiii	,i1000_0001_mmmm_iiii	,Mask_imm8	,0x8100	,Normal				,OpDissCFS,"mov.w R0,@(<disp4w>,<REG_M>)"	,1,1,LS},	// mov.w R0,@(<disp>,<REG_M>)    
+	{rec_shil_i1000_0100_mmmm_iiii	,i1000_0100_mmmm_iiii	,Mask_imm8	,0x8400	,Normal				,OpDissCFS,"mov.b @(<disp4b>,<REG_M>),R0"	,1,2,LS},	// mov.b @(<disp>,<REG_M>),R0    
+	{rec_shil_i1000_0101_mmmm_iiii	,i1000_0101_mmmm_iiii	,Mask_imm8	,0x8500	,Normal				,OpDissCFS,"mov.w @(<disp4w>,<REG_M>),R0"	,1,2,LS},	// mov.w @(<disp>,<REG_M>),R0    
 	{rec_shil_i1001_nnnn_iiii_iiii	,i1001_nnnn_iiii_iiii	,Mask_n_imm8,0x9000	,ReadsPC			,OpDissCFS,"mov.w @(<PCdisp8>),<REG_N>"		,1,2,LS},	//mov.w @(<disp>,PC),<REG_N>   
 	{rec_shil_i1010_iiii_iiii_iiii	,i1010_iiii_iiii_iiii	,Mask_n_imm8,0xA000	,Branch_rel_d		,OpDissCFS,"bra <bdisp12>"					,1,2,BR},	// bra <bdisp12>
 	{rec_shil_i1011_iiii_iiii_iiii	,i1011_iiii_iiii_iiii	,Mask_n_imm8,0xB000	,Branch_rel_d		,OpDissCFS,"bsr <bdisp12>"					,1,2,BR},	// bsr <bdisp12>
