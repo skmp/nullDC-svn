@@ -19,6 +19,7 @@ s8 joyx=0,joyy=0;
 s8 joy2x=0,joy2y=0;
 u8 rt=0,lt=0;
 
+#pragma pack(1)
 char testJoy_strName[64] = "Emulated Dreamcast Controler\0";
 char testJoy_strName_nul[64] = "Null Dreamcast Controler\0";
 char testJoy_strName_vmu[64] = "Emulated VMU\0";
@@ -43,7 +44,7 @@ char testJoy_strBrand[64] = "Faked by drkIIRaziel && ZeZu , made for nullDC\0";
 
 struct VMU_info
 {
-	u8* data[512*1024];
+	u8 data[512*1024];
 	char file[512];
 };
 typedef INT_PTR CALLBACK dlgp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
@@ -513,6 +514,7 @@ u8 GetBtFromSgn(s8 val)
 {
 	return val+128;
 }
+
 typedef struct {
 	u16 total_size;
 	u16 partition_number;
@@ -536,7 +538,7 @@ typedef struct {
 void VmuDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
 {
 	u8*buffer_out_b=(u8*)buffer_out;
-	printf("VmuDMA Called for port 0x%X, Command %d\n",device_instance->port,Command);
+	//printf("VmuDMA Called for port 0x%X, Command %d\n",device_instance->port,Command);
 	switch (Command)
 	{
 		/*typedef struct {
@@ -616,7 +618,7 @@ void VmuDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u3
 				vmui->file_info_block = 0xfd;
 				vmui->number_info_blocks = 0xd;
 				vmui->reserverd0 = 0x0000;
-				buffer_out_len=1+(sizeof(maple_getvmuinfo_t)>>2);
+				buffer_out_len=4+(sizeof(maple_getvmuinfo_t));
 				responce=8;//data transfer
 			}
 			else
@@ -626,16 +628,19 @@ void VmuDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u3
 		case 11:
 			if(buffer_in[0]&(2<<24))
 			{
+				VMU_info* dev=(VMU_info*)((*device_instance).DevData);
+
 				buffer_out[0] = (2<<24);
 				u32 Block = (SWAP32(buffer_in[1]))&0xffff;
 				buffer_out[1] = buffer_in[1];
+				printf("Block read : %d\n",Block);
 				if (Block>255)
 				{
 					printf("BLOCK READ ERROR\n");
 					Block&=256;
 				}
-				memcpy(&buffer_out[2],((VMU_info*)device_instance->DevData)->data+Block*512,512);
-				buffer_out_len=(512+8)/4;
+				memcpy(&buffer_out[2],(dev->data)+Block*512,512);
+				buffer_out_len=(512+8);
 				responce=8;//data transfer
 			}
 			else
@@ -644,12 +649,14 @@ void VmuDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u3
 		case 12:
 			if(buffer_in[0]&(2<<24))
 			{
+				VMU_info* dev=(VMU_info*)((*device_instance).DevData);
+
 				u32 Block = (SWAP32(buffer_in[1]))&0xffff;
 				u32 Phase = ((SWAP32(buffer_in[1]))>>16)&0xff; 
-				memcpy(((VMU_info*)device_instance->DevData)->data+Block*512+Phase*(512/4),&buffer_in[2],(buffer_in_len-2)*4);
+				memcpy(&dev->data[Block*512+Phase*(512/4)],&buffer_in[2],(buffer_in_len-2));
 				buffer_out_len=0;
 				FILE* f=fopen(((VMU_info*)device_instance->DevData)->file,"wb");
-				fwrite(((VMU_info*)device_instance->DevData)->data,1,512*1024,f);
+				fwrite(dev->data,1,512*1024,f);
 				fclose(f);
 				responce=7;//just ko
 			}
