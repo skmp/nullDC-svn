@@ -1028,7 +1028,7 @@ TexID TextureCache::GetTexture(PolyParam *pp)
 	return tex.texID;
 
 unhandled_fmt:
-	//printf("GetTexture, Addr: %08X, Ctrl: %X  Unhandled!\n", TexAddr, tctrl);
+	printf("GetTexture, Addr: %08X, Ctrl: %X  Unhandled!\n", TexAddr, tctrl);
 	return 0;
 }
 
