@@ -83,17 +83,40 @@ static u32 pTempTex[1024*1024];
  
 void TexGen(PolyParam *pp, TexEntry *te)
 {
-	glGenTextures(1,&te->texID);
-	glBindTexture(GL_TEXTURE_2D, te->texID);
+	if(R_OPENGL==pvrOpts.GfxApi)
+	{
+		glGenTextures(1,&te->texID);
+		glBindTexture(GL_TEXTURE_2D, te->texID);
 
-	if( pp->param0.tsp.FilterMode > 0 ) {
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-	} else {
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+		if( pp->param0.tsp.FilterMode > 0 ) {
+			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+		} else {
+			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+		}
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, te->Width, te->Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pTempTex);
 	}
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, te->Width, te->Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pTempTex);
+	else
+	{
+		LPDIRECT3DTEXTURE9 tex;
+		
+		if(g_pDev->CreateTexture(te->Width, te->Height, 0, 0/*D3DUSAGE_DYNAMIC*/, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, &tex, NULL) != D3D_OK)
+			printf("@@ ERROR: D3D Tex. Couldnt Create !\n" );
+
+		D3DLOCKED_RECT lrect;
+		if(tex->LockRect(0, &lrect, NULL, D3DLOCK_DISCARD) != D3D_OK)
+			printf("@@ ERROR: D3D Tex. Couldnt lock rect !\n" );
+
+		if(lrect.Pitch != (te->Width<<2))	// texW<<2 = nbytes per line
+			printf("@@ ERROR: D3D Tex. Pitch Doesn't match width\n" );
+
+		for(int t=0; t<(te->Width * te->Height); t++)
+			((u32*)lrect.pBits)[t] = (pTempTex[t]&0xFF00FF00) | ((pTempTex[t]>>16)&0xFF) | ((pTempTex[t]&0xFF)<<16);
+
+		tex->UnlockRect(0);
+		te->texID = (u32)tex;
+	}
 
 	printf("TexParams=%X @ %08x texID: %X, %dx%d  Ctrl: %X\n",
 		(*((u32*)&pp->param0.tcw) >> 25 & 0x7F),(pp->param0.tcw.TexAddr << 3 &0x7FFFFF),
@@ -1033,12 +1056,23 @@ unhandled_fmt:
 	for(u32 p=0; p<(tex.Width * tex.Height); p++)
 		pTempTex[p] = 0xFF00FF00;
 
-	glGenTextures(1, &tex.texID);
-	glBindTexture(GL_TEXTURE_2D, tex.texID);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex.Width, tex.Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pTempTex);
+	tex.End = tex.Start + tex.Width * tex.Height;	// This might cause trouble but its an error anyways !
+	TexGen(pp,&tex);
 
 	TexList.push_back(tex);
 	return tex.texID;
+}
+
+
+void DeleteTexture(u32 Texture)
+{
+	if(R_OPENGL==pvrOpts.GfxApi)
+		glDeleteTextures(1,&Texture);
+	else
+	{
+		;
+
+	}
 }
 
 void vramLockCB(vram_block *bl, u32 addr)
@@ -1051,13 +1085,15 @@ void vramLockCB(vram_block *bl, u32 addr)
 			TexEntry temp=PvrIf->TexList[t];
 			//temp.texID--free t
 			PvrIf->TexList.erase(PvrIf->TexList.begin()+t);
-			glDeleteTextures(1,&temp.texID);
+			DeleteTexture(temp.texID);
 			printf("~TexInvalidate @ %08X \n", addr);
 		}
 	}
 
 	emuIf.vramUnlock(bl);
 }
+
+
 
 void TextureCache::ClearTCache()
 {
@@ -1067,7 +1103,7 @@ void TextureCache::ClearTCache()
 		TexEntry temp=PvrIf->TexList[t];
 		emuIf.vramUnlock(temp.lock_block);
 		PvrIf->TexList.erase(PvrIf->TexList.begin()+t);
-		glDeleteTextures(1,&temp.texID);
+		DeleteTexture(temp.texID);
 	}
 	TexList.clear();
 }

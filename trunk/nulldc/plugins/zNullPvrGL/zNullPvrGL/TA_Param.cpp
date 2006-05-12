@@ -379,9 +379,15 @@ ParamSize PrimConverter::AppendVert(VertexParam *vp)
 	vertex.xyz[2] = vp->vtx0.xyz[2];
 
 	vertex.uv[2] = 0.f;
-	vertex.uv[3] =  vertex.xyz[2];
-	vertex.uv[0] *= vertex.xyz[2];
-	vertex.uv[1] *= vertex.xyz[2];
+	vertex.uv[3] = (R_OPENGL==pvrOpts.GfxApi) ? vertex.xyz[2] : 1.f;
+
+	if(R_OPENGL==pvrOpts.GfxApi) {		// transform the coords, opengl/d3d differ here
+		vertex.uv[0] *= vertex.xyz[2];
+		vertex.uv[1] *= vertex.xyz[2];
+	}
+
+		// *FIXME*
+	if(R_D3D==pvrOpts.GfxApi) vertex.xyz[2] = 1.f-vertex.xyz[2];
 
 
 	// the hacks

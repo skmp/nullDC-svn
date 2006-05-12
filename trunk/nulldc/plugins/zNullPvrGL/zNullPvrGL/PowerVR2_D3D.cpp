@@ -121,7 +121,7 @@ void PowerVR2_D3D::SetRenderMode(u32 ParamID, u32 TexID)
 		}
 
 	//	D3DTTFF_DISABLE, D3DTTFF_COUNT1|2|3|4  D3DTTFF_PROJECTED 
-		g_pDev->SetTextureStageState( 0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_DISABLE );
+	//	g_pDev->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_DISABLE);
 	}
 
 
@@ -151,7 +151,7 @@ void PowerVR2_D3D::RenderStripList(vector<Vertex> &vl)
 	{
 		SetRenderMode(vl[p].ParamID, vl[p].TexID);
 
-		g_pDev->SetTexture( 0, 0 );
+		g_pDev->SetTexture(0, (IDirect3DTexture9*)vl[p].TexID);
 		g_pDev->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, vl[p].List.size()-2, &vl[p].List[0].xyz, sizeof(Vert));
 	}
 }

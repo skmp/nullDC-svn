@@ -230,7 +230,13 @@ struct PvrOpts
 
 } pvrOpts;
 
-
+enum RendAPI
+{
+	R_OPENGL=0,
+	R_DIRECTX=1,
+	R_D3D=1,
+	R_OTHER=2,
+};
 
 
 

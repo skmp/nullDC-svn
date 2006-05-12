@@ -9,6 +9,17 @@
 #include <d3dx9.h>
 #include <d3d9.h>
 
+
+
+extern float fMaxW;
+extern D3DCAPS9 d3dcaps;
+
+extern IDirect3D9 *g_pD3D;					// D3D Object Pointer
+extern IDirect3DDevice9 *g_pDev;			// D3D Device
+extern IDirect3DVertexBuffer9 *g_pVB;		// Vertex Buffer
+extern IDirect3DVertexDeclaration9 *g_pVD;	// Vertex Decl.
+
+
 #include "zNullPvr.h"
 
 #include "TA_Regs.h"
@@ -35,16 +46,15 @@ private:
 	void SetRenderMode(u32 ParamID, u32 TexID);
 	void SetRenderModeSpr(u32 ParamID, u32 TexID);
 
-
 } PvrIfD3D;
 
 
 const static D3DVERTEXELEMENT9 vertel[] =
 {
-	{ 0,  0, D3DDECLTYPE_FLOAT3,	D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },	// f32 xyz[3];
-	{ 0, 12, D3DDECLTYPE_D3DCOLOR,	D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR,	  0 },	// u32 col;
-	{ 0, 16, D3DDECLTYPE_FLOAT4,	D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },	// f32 uv[4];
-	{ 0xFF,0,D3DDECLTYPE_UNUSED,	0,0,0 }	// D3DDECL_END
+	{ 0,  0, D3DDECLTYPE_FLOAT3,	D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITIONT, 0 },	// f32 xyz[3];
+	{ 0, 12, D3DDECLTYPE_D3DCOLOR,	D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR,	   0 },	// u32 col;
+	{ 0, 16, D3DDECLTYPE_FLOAT4,	D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD,  0 },	// f32 uv[4];
+	D3DDECL_END()
 };
 
 
