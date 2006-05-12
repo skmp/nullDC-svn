@@ -3,9 +3,10 @@
 */
 #include "PowerVR2.h"
 
+PowerVR2_GL PvrIfGl;
 
 __inline 
-void PowerVR2::SetRenderMode(u32 ParamID, u32 TexID)
+void PowerVR2_GL::SetRenderMode(u32 ParamID, u32 TexID)
 {
 	GlobalParam * gp = &GlobalParams[ParamID];
 
@@ -144,7 +145,7 @@ void PowerVR2::SetRenderMode(u32 ParamID, u32 TexID)
 
 
 __inline 
-void PowerVR2::SetRenderModeSpr(u32 ParamID, u32 TexID)
+void PowerVR2_GL::SetRenderModeSpr(u32 ParamID, u32 TexID)
 {
 	GlobalParam * gp = &GlobalParams[ParamID];
 
@@ -207,7 +208,7 @@ void PowerVR2::SetRenderModeSpr(u32 ParamID, u32 TexID)
 
 
 __inline 
-void PowerVR2::RenderStripList(vector<Vertex> &vl)
+void PowerVR2_GL::RenderStripList(vector<Vertex> &vl)
 {
 	for(u32 p=0; p<vl.size(); p++)
 	{
@@ -224,14 +225,14 @@ void PowerVR2::RenderStripList(vector<Vertex> &vl)
 	}
 }
 __inline 
-void PowerVR2::RenderStripListRev(vector<Vertex> &vl)
+void PowerVR2_GL::RenderStripListRev(vector<Vertex> &vl)
 {
 	for(u32 p=0; p<vl.size(); p++)
 	{
 		SetRenderMode(vl[p].ParamID, vl[p].TexID);
 
 		glBegin(GL_TRIANGLE_STRIP);
-		for(size_t v=vl[p].List.size()-1; v>=0; v--)
+		for(s32 v=vl[p].List.size()-1; v>=0; v--)
 		{
 			glColor4ubv((u8*)&vl[p].List[v].col);
 			glTexCoord4fv(vl[p].List[v].uv);
@@ -242,7 +243,7 @@ void PowerVR2::RenderStripListRev(vector<Vertex> &vl)
 }
 
 __inline 
-void PowerVR2::RenderStripListArray(vector<Vertex> &vl)
+void PowerVR2_GL::RenderStripListArray(vector<Vertex> &vl)
 {
 /*	glEnableClientState(GL_COLOR_ARRAY);
 	glEnableClientState(GL_VERTEX_ARRAY);
@@ -264,7 +265,7 @@ void PowerVR2::RenderStripListArray(vector<Vertex> &vl)
 }
 
 __inline 
-void PowerVR2::RenderSprites(vector<Vertex> &vl)
+void PowerVR2_GL::RenderSprites(vector<Vertex> &vl)
 {
 	for(u32 p=0; p<vl.size(); p++)
 	{
@@ -282,7 +283,7 @@ void PowerVR2::RenderSprites(vector<Vertex> &vl)
 }
 
 
-void PowerVR2::Render()
+void PowerVR2_GL::Render()
 {
 	FrameCount++;
 	glFlush();
@@ -324,7 +325,7 @@ void PowerVR2::Render()
 
 
 
-void PowerVR2::Resize()
+void PowerVR2_GL::Resize()
 {
 	RECT rClient;
 	GetClientRect((HWND)emuIf.handle,&rClient);
@@ -342,7 +343,7 @@ void PowerVR2::Resize()
 }
 
 
-bool PowerVR2::Init()
+bool PowerVR2_GL::Init()
 {
 	GLuint	PixelFormat;
 
@@ -407,7 +408,7 @@ bool PowerVR2::Init()
 	return true;
 }
 
-void PowerVR2::Term()
+void PowerVR2_GL::Term()
 {
 	ClearTCache();		// Textures
 	ClearDCache();
@@ -424,7 +425,7 @@ void PowerVR2::Term()
 
 
 
-GLvoid PowerVR2::CheckErrorsGL( char *szFunc )
+GLvoid PowerVR2_GL::CheckErrorsGL( char *szFunc )
 {
 	GLenum err;
 	const GLubyte *pszErrStr;

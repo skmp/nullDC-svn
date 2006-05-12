@@ -117,6 +117,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalIncludeDirectories="C:\Program Files\Microsoft DirectX SDK (February 2006)\Include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;ZNULLPVRGL_EXPORTS;_CRT_SECURE_NO_DEPRECATE"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
@@ -135,9 +136,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib  winmm.lib"
+				AdditionalDependencies="opengl32.lib glu32.lib  winmm.lib d3d9.lib d3dx9.lib"
 				OutputFile="$(SolutionDir)\WorkDir\Plugins\$(ProjectName)_$(PlatformName).dll"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="C:\Program Files\Microsoft DirectX SDK (February 2006)\Lib\x86"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -179,6 +181,10 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\PowerVR2_D3D.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\PowerVR2_GL.cpp"
 				>
 			</File>
@@ -213,6 +219,18 @@
 				>
 			</File>
 			<File
+				RelativePath=".\PowerVR2_D3D.h"
+				>
+			</File>
+			<File
+				RelativePath=".\PowerVR2_GL.h"
+				>
+			</File>
+			<File
+				RelativePath=".\resource.h"
+				>
+			</File>
+			<File
 				RelativePath=".\TA_Param.h"
 				>
 			</File>
@@ -234,6 +252,10 @@
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
+			<File
+				RelativePath=".\zNullPvrGL.rc"
+				>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>

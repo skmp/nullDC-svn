@@ -2,8 +2,12 @@
 **	zNullPvr.cpp	David Miller (2006) - PowerVR CLX2 Emulation Plugin -
 */
 #include <windows.h>
+#include <windowsx.h>
+#include <commctrl.h>
 #include "PowerVR2.h"
+#include "resource.h"
 
+PvrOpts pvrOpts;
 pvrInitParams emuIf;
 
 ConfigLoadStrFP	* ConfigLoadStr;
@@ -85,6 +89,11 @@ void pvrInit(void *params, u32 PluginType)
 {
 	emuIf = *(pvrInitParams *)params;
 
+	char RenderStr[512];
+	ConfigLoadStr("zNullPvr","RenderAPI", RenderStr);
+	pvrOpts.GfxApi = (0==strcmp("D3D",RenderStr)) ? 1 : 0 ;
+	PvrIf = (0==pvrOpts.GfxApi) ? ((PowerVR2*)&PvrIfGl) : ((PowerVR2*)&PvrIfD3D);
+
 	InitTA_Regs();
 
 	printf("pvrInit()\n");
@@ -100,28 +109,25 @@ void pvrThreadInit(u32 PluginType)
 {
 	printf("pvrThreadInit()\n");
 
-	PvrIf.Init();
+	PvrIf->Init();
 }
 
 void pvrThreadTerm(u32 PluginType)
 {
 	printf("pvrThreadTerm()\n");
 
-	PvrIf.Term();
+	PvrIf->Term();
 }
 
 
 
 
 
-
+BOOL CALLBACK cfgProc(HWND, UINT, WPARAM, LPARAM);
 
 void pvrConfig(u32 PluginType, void* whoknows)
 {
-	printf("no config~\n");
-
-
-	//PvrIf.Config();
+	DialogBox(hInst, MAKEINTRESOURCE(IDD_CONFIG), (HWND)emuIf.handle, cfgProc);
 }
 
 
@@ -144,14 +150,14 @@ void vblank_done()
 	vblCount++;
 	if ((timeGetTime()-(double)last_fps)>800)
 	{
-		double spd_fps=(double)PvrIf.FrameCount/(double)((double)(timeGetTime()-(double)last_fps)/1000);
+		double spd_fps=(double)PvrIf->FrameCount/(double)((double)(timeGetTime()-(double)last_fps)/1000);
 		double spd_cpu=(double)vblCount/(double)((double)(timeGetTime()-(double)last_fps)/1000);
 		spd_cpu*=VSYNC_WRAP;
 		spd_cpu/=1000000;	//mrhz kthx
 		double fullfps=(spd_fps/spd_cpu)*200;
 
 		last_fps=timeGetTime();
-		PvrIf.FrameCount=0;
+		PvrIf->FrameCount=0;
 		vblCount=0;
 
 		char fpsStr[256];
@@ -229,6 +235,44 @@ void pvrUpdate(u32 cycles)
 }
 
 
+BOOL CALLBACK cfgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	static HWND hSel=NULL;
+	switch(uMsg)
+	{
+	case WM_INITDIALOG:
+	{
+		// Process Options From .Cfg
+
+		hSel=GetDlgItem(hDlg, IDC_APISEL); 
+		ComboBox_AddString(hSel, "OpenGL 1.2+   ");
+		ComboBox_AddString(hSel, "DirectX / D3D9"); 
+		ComboBox_SetCurSel(hSel,0);
+
+		return TRUE;
+	}
+
+	case WM_COMMAND:
+		switch( LOWORD(wParam) )
+		{
+		case IDOK:
+			ConfigSaveStr("zNullPvr","RenderAPI", (0==ComboBox_GetCurSel(hSel))?"OpenGL":"D3D");
+			EndDialog(hDlg,0);
+			return TRUE;
+
+		default: break;
+		}
+	break;
+
+	case WM_CLOSE:
+	case WM_DESTROY:
+		EndDialog(hDlg,0);
+		return TRUE;
+
+	default: break;
+	}
+	return FALSE;
+}
 
 
 

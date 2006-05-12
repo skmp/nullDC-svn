@@ -3,7 +3,7 @@
 */
 #include "PowerVR2.h"
 
-PowerVR2 PvrIf;
+PowerVR2 * PvrIf;
 
 AllocCtrl * ac;
 u32 lists_complete=0;
@@ -25,10 +25,10 @@ u32 ProcessParam(ParamBase *pb)
 	{
 	case PT_EndOfList:		// Control: End Object List
 		PolyMode = PM_None;
-		ASSERT_T((0==PvrIf.GlobalParams.size()),"EndOfList, GlobalParamSize==0 \n");
-		ASSERT_T((LT_Reserved<=PvrIf.GlobalParams[PvrIf.GlobalParams.size()-1].pcw.ListType),"<PVR> EndOfList: Reserved List Type !");
+		ASSERT_T((0==PvrIf->GlobalParams.size()),"EndOfList, GlobalParamSize==0 \n");
+		ASSERT_T((LT_Reserved<=PvrIf->GlobalParams[PvrIf->GlobalParams.size()-1].pcw.ListType),"<PVR> EndOfList: Reserved List Type !");
 
-		emuIf.RaiseInterrupt(PvrInts[PvrIf.GlobalParams[PvrIf.GlobalParams.size()-1].pcw.ListType]);
+		emuIf.RaiseInterrupt(PvrInts[PvrIf->GlobalParams[PvrIf->GlobalParams.size()-1].pcw.ListType]);
 		return 1;
 
 
@@ -39,14 +39,14 @@ u32 ProcessParam(ParamBase *pb)
 //		ASSERT_T((PM_Vertex == PolyMode && isPoly64Byte(pcw)), "<PVR> 64By Global Polygon Param !");
 
 		if(PM_Vertex == PolyMode)
-			return PvrIf.AppendParam((GlobalParam*)pcw);
+			return PvrIf->AppendParam((GlobalParam*)pcw);
 		else
 			return isPoly64Byte(pcw) ? PS64 : PS32;
 
 
 	case PT_Sprite:			// Global: Sprite
 		PolyMode = PM_Sprite;
-		return PvrIf.AppendParam((GlobalParam*)pcw);
+		return PvrIf->AppendParam((GlobalParam*)pcw);
 
 
 	case PT_Vertex:			// Vertex Parameter
@@ -54,10 +54,10 @@ u32 ProcessParam(ParamBase *pb)
 		ASSERT_T((PM_None==PolyMode),		"<PVR> Vertex Recieved After Object List Ended !");
 
 		if(PM_Vertex == PolyMode) {
-			return PvrIf.AppendVert((VertexParam*)pcw);
+			return PvrIf->AppendVert((VertexParam*)pcw);
 		}
 		if(PM_Sprite == PolyMode) {
-			return PvrIf.AppendSprite((VertexParam*)pcw);
+			return PvrIf->AppendSprite((VertexParam*)pcw);
 		}
 		if(PM_Modifier == PolyMode) {	// Not Handled Yet *FIXME*
 			return PS64;
@@ -405,7 +405,7 @@ ParamSize PrimConverter::AppendVert(VertexParam *vp)
 
 	if(vp->pcw.EndOfStrip)
 	{
-		tmpVert.TexID	= (u32)PvrIf.GetTexture(pp);
+		tmpVert.TexID	= (u32)PvrIf->GetTexture(pp);
 		tmpVert.ParamID	= (u32)(GlobalParams.size()-1);
 
 		switch(pp->pcw.ListType)
@@ -477,7 +477,7 @@ ParamSize PrimConverter::AppendSprite(VertexParam *vp)
 	vertex.col	  = RGBA(pp->sprite.BaseCol);
 	tmpVert.List.push_back(vertex);
 
-	tmpVert.TexID	= (u32)PvrIf.GetTexture(pp);
+	tmpVert.TexID	= (u32)PvrIf->GetTexture(pp);
 	tmpVert.ParamID	= (u32)(GlobalParams.size()-1);
 	Sprites.push_back(tmpVert);
 	tmpVert.List.clear();

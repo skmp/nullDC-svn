@@ -217,4 +217,21 @@ static const InterruptID PvrInts[] =	// *FIXME* move back later ?
 
 
 
+
+
+
+
+extern
+struct PvrOpts
+{
+	u8  GfxApi;		// 0=OpenGL, 1=D3D9, 2=Other, 23=Software
+	u16 GfXOps;		// We'll See
+	u8  Reserved;	// 
+
+} pvrOpts;
+
+
+
+
+
 #endif //__ZNULLPVR_H__
