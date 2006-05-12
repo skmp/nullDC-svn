@@ -171,7 +171,7 @@ void __fastcall rec_v1_NotifyMemWrite(u32 start , u32 size)
 		if (RamTest[curr])
 		{
 			for (int u=0;u<HASH_P_SIZE;u++)
-				rec_v1_BlockTest(curr+u);
+				rec_v1_BlockTest((curr<<(HASH_BITS+3))+u);
 		}
 		curr+=1;
 	}
