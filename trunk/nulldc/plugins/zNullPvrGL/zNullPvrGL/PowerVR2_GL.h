@@ -24,8 +24,6 @@ class PowerVR2_GL : public PowerVR2
 	void Term();
 	void Render();
 	void Resize();
-	u32 FrameCount;
-
 private:
 
 	void RenderSprites(vector<Vertex> &vl);

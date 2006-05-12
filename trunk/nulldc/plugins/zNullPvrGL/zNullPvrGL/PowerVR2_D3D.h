@@ -34,7 +34,6 @@ class PowerVR2_D3D : public PowerVR2
 	void Term();
 	void Render();
 	void Resize();
-	u32 FrameCount;
 
 private:
 
