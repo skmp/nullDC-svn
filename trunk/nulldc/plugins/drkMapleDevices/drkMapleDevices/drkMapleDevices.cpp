@@ -44,7 +44,7 @@ char testJoy_strBrand[64] = "Faked by drkIIRaziel && ZeZu , made for nullDC\0";
 
 struct VMU_info
 {
-	u8 data[512*1024];
+	u8 data[128*1024];
 	char file[512];
 };
 typedef INT_PTR CALLBACK dlgp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
@@ -657,7 +657,7 @@ void VmuDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u3
 				memcpy(&dev->data[Block*512+Phase*(512/4)],&buffer_in[2],(buffer_in_len-2*4));
 				buffer_out_len=0;
 				FILE* f=fopen(((VMU_info*)device_instance->DevData)->file,"wb");
-				fwrite(dev->data,1,512*1024,f);
+				fwrite(dev->data,1,128*1024,f);
 				fclose(f);
 				responce=7;//just ko
 			}
@@ -690,7 +690,7 @@ void CreateInstance(maple_device*dev,maple_device_instance& inst,u8 port)
 		FILE* f=fopen(((VMU_info*)inst.DevData)->file,"rb");
 		if (f)
 		{
-			fread(((VMU_info*)inst.DevData)->data,1,512*1024,f);
+			fread(((VMU_info*)inst.DevData)->data,1,128*1024,f);
 			fclose(f);
 		}
 		inst.MapleDeviceDMA=VmuDMA;
