@@ -12,7 +12,7 @@
 //#include "sh4_asic.h"
 //#include "SH4Memory.h"
 
-//#define SEMI_AICA
+#define SEMI_AICA
 
 #ifdef SEMI_AICA
 #include "AicaSemi/CAica.h"
