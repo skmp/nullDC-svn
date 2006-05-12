@@ -653,7 +653,8 @@ void VmuDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u3
 
 				u32 Block = (SWAP32(buffer_in[1]))&0xffff;
 				u32 Phase = ((SWAP32(buffer_in[1]))>>16)&0xff; 
-				memcpy(&dev->data[Block*512+Phase*(512/4)],&buffer_in[2],(buffer_in_len-2));
+				printf("Block wirte : %d , %d bytes\n",Block,(buffer_in_len-2*4));
+				memcpy(&dev->data[Block*512+Phase*(512/4)],&buffer_in[2],(buffer_in_len-2*4));
 				buffer_out_len=0;
 				FILE* f=fopen(((VMU_info*)device_instance->DevData)->file,"wb");
 				fwrite(dev->data,1,512*1024,f);
