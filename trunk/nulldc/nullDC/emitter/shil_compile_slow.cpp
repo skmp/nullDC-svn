@@ -2094,8 +2094,12 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 				//cmp pr,guess
 				x86e->MOV32MtoR(EAX,GetRegPtr(reg_pr));
 				x86e->CMP32MtoR(EAX,&call_ret_address);
-				//jne not_ok
-				u8* not_ok=x86e->JNE8(0);
+				//je ok
+				u8* ok=x86e->JE8(0);
+				//ret
+				x86e->RET();
+				//ok:
+				x86e->x86SetJ8(ok);
 				//mov ecx , pcall_ret_address
 				x86e->MOV32MtoR(ECX,(u32*)&pcall_ret_address);
 				//mov eax,[pcall_ret_address+codeoffset]
@@ -2104,10 +2108,10 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 				x86e->MOV32RmtoR(EAX,EAX);//get ptr to compiled block/link stub
 				//jmp eax
 				x86e->JMP32R(EAX);	//jump to it
-				//not_ok:
-				x86e->x86SetJ8(not_ok);
+				
 			}
-			x86e->RET();
+			else
+				x86e->RET();
 			break;
 		}
 
