@@ -1362,24 +1362,30 @@ sh4op(i1111_nnnn_mmmm_1001)
 	}
 	else 
 	{
-		shil_interpret(op);
-		return;
-		/*u32 n = (op >> 8) & 0x0E;
+		//shil_interpret(op);
+		//return;
+		u32 n = (op >> 8) & 0x0E;
 		u32 m = GetM(op);
 		if (((op >> 8) & 0x1) == 0)
 		{
 			//fr_hex[n] = ReadMem32(r[m]);
 			//fr_hex[n + 1] = ReadMem32(r[m]+ 4);
-			ilst->readm64(dr[n>>1],r[m]);
+			ilst->readm32(fr[n],r[m]);
+			ilst->add(r[m],4);
+			ilst->readm32(fr[n+1],r[m]);
+			ilst->add(r[m],4);
 		}
 		else
 		{
 			//xf_hex[n] = ReadMem32(r[m] );
 			//xf_hex[n + 1] = ReadMem32(r[m]+ 4);
-			ilst->readm64(xd[n>>1],r[m]);
+			ilst->readm32(xf[n],r[m]);
+			ilst->add(r[m],4);
+			ilst->readm32(xf[n+1],r[m]);
+			ilst->add(r[m],4);
 		}
-		ilst->add(r[m],8);
-		//r[m] += 8;*/
+		//ilst->add(r[m],8);
+		//r[m] += 8;
 	}
 }
 
@@ -1433,26 +1439,31 @@ sh4op(i1111_nnnn_mmmm_1011)
 	}
 	else
 	{
-		shil_interpret(op);
-		return;
-	/*
+		//shil_interpret(op);
+		//return;
+	
 		u32 n = GetN(op);
 		u32 m = (op >> 4) & 0x0E;
 
 		//r[n] -= 8;
-		ilst->sub(r[m],8);
 		if (((op >> 4) & 0x1) == 0)
-		{
+		{ 
 			//WriteMem32(r[n] , fr_hex[m]);
 			//WriteMem32(r[n]+ 4, fr_hex[m + 1]);
-			ilst->writem64(dr[m>>1],r[n]);
+			ilst->sub(r[n],4);
+			ilst->writem32(fr[m+1],r[n]);
+			ilst->sub(r[n],4);
+			ilst->writem32(fr[m],r[n]);
 		}
 		else
 		{
 			//WriteMem32(r[n] , xf_hex[m]);
 			//WriteMem32(r[n]+ 4, xf_hex[m + 1]);
-			ilst->writem64(xd[m>>1],r[n]);
-		}*/
+			ilst->sub(r[n],4);
+			ilst->writem32(xf[m+1],r[n]);
+			ilst->sub(r[n],4);
+			ilst->writem32(xf[m],r[n]);
+		}
 	}
 }
 
