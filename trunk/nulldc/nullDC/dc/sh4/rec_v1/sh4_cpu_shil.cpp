@@ -1839,12 +1839,13 @@ sh4op(i0000_nnnn_0010_0011)
 	//ilst->add(reg_pc,2);
 	//return;
 
-	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_DYNAMIC;
+	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_DYNAMIC_CALL;
 	ilst->mov(reg_pr,pc+4);
 	ilst->mov(reg_pc_temp,r[n]);
 	ilst->add(reg_pc_temp,pc+4);
 	DoDslot(pc,bb);
 	ilst->mov(reg_pc,reg_pc_temp);
+	bb->TT_next_addr=pc+4;
 } 
 
 
@@ -1879,7 +1880,7 @@ sh4op(i0000_nnnn_0010_0011)
 	//shil_interpret(op);
 	//ilst->add(reg_pc,2);
 	//return;
-	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_DYNAMIC;
+	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_RET;
 	ilst->mov(reg_pc_temp,reg_pr);
 	DoDslot(pc,bb);
 	ilst->mov(reg_pc,reg_pc_temp);
@@ -2009,11 +2010,11 @@ sh4op(i1011_iiii_iiii_iiii)
 	pc=newpc-2;*/
 
 	bb->TF_next_addr=(u32) ((  ((s16)((GetImm12(op))<<4)) >>3)  + pc + 4);
-	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_FIXED;
+	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_FIXED_CALL;
 
 	ilst->mov(reg_pr,pc+4);
 	DoDslot(pc,bb);
-
+	bb->TT_next_addr=pc+4;
 }
 
 // trapa #<imm>                  
@@ -2064,11 +2065,12 @@ sh4op(i1100_0011_iiii_iiii)
 	//shil_interpret(op);	
 	//ilst->add(reg_pc,2);
 	//return;
-	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_DYNAMIC;
+	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_DYNAMIC_CALL;
 	ilst->mov(reg_pr,pc+4);
 	ilst->mov(reg_pc_temp,r[n]);
 	DoDslot(pc,bb);
 	ilst->mov(reg_pc,reg_pc_temp);
+	bb->TT_next_addr=pc+4;
 }
 
 

@@ -4,6 +4,8 @@
 #include "emitter/emitter.h"
 
 extern rec_v1_BasicBlock* rec_v1_pCurrentBlock;
+extern u32 call_ret_address;//holds teh return address of the previus call ;)
+extern rec_v1_BasicBlock* pcall_ret_address;//holds teh return address of the previus call ;)
 
 void rec_v1_BasicBlock::AddRef(rec_v1_BasicBlock* bb)
 {
@@ -25,6 +27,12 @@ void rec_v1_BasicBlock::AddRef(rec_v1_BasicBlock* bb)
 void rec_v1_BasicBlock::Discard()
 {
 	//printf("Discard block %x\n",start);
+	if (pcall_ret_address==this)
+	{
+		pcall_ret_address=0;
+		call_ret_address=0xFFFFFFFF;
+	}
+
 	u32 ref_count=(u32)callers.size();
 	for (u32 i=0;i<ref_count;i++)
 	{
