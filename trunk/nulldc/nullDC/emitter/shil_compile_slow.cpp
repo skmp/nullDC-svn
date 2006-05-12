@@ -18,7 +18,8 @@ shil_scs shil_compile_slow_settings=
 	true,	//Inline Const Mem reads
 	true,	//Inline normal mem reads
 	true,	//Inline mem writes
-	false	//Do _not_ keep tbit seperate ;P , needs bug fixing
+	false,	//Do _not_ keep tbit seperate ;P , needs bug fixing
+	true	//Predict returns (needs a bit debuggin)	
 };
 
 #define REG_ALLOC_COUNT			 (shil_compile_slow_settings.RegAllocCount)
@@ -30,7 +31,8 @@ shil_scs shil_compile_slow_settings=
 #define INLINE_MEM_READ			(shil_compile_slow_settings.InlineMemRead)
 #define INLINE_MEM_WRITE		(shil_compile_slow_settings.InlineMemWrite)
 
-
+#define RET_PREDICTION			(shil_compile_slow_settings.RetPrediction)
+		
 typedef void __fastcall shil_compileFP(shil_opcode* op,rec_v1_BasicBlock* block);
 
 #ifdef PROFILE_DYNAREC
@@ -1982,6 +1984,7 @@ void* __fastcall link_compile_inject_TT(rec_v1_BasicBlock* ptr)
 	return ptr->pTT_next_addr=target->compiled->Code;
 } 
 
+
 //call link_compile_inject_TF , and jump to code
 void naked link_compile_inject_TF_stub(rec_v1_BasicBlock* ptr)
 {
@@ -2003,6 +2006,9 @@ void naked link_compile_inject_TT_stub(rec_v1_BasicBlock* ptr)
 }
 
 extern u32 rec_cycles;
+u32 call_ret_address=0;//holds teh return address of the previus call ;)
+rec_v1_BasicBlock* pcall_ret_address=0;//holds teh return address of the previus call ;)
+
 void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 {
 	if (!inited)
@@ -2066,8 +2072,41 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 	//end block acording to block type :)
 	switch(block->flags & BLOCK_TYPE_MASK)
 	{
-		case BLOCK_TYPE_DYNAMIC:
+	
+	case BLOCK_TYPE_DYNAMIC_CALL:
+		if (RET_PREDICTION)
 		{
+			//mov guess,pr
+			x86e->MOV32ItoM(&call_ret_address,block->TT_next_addr);
+			//mov pguess,this
+			x86e->MOV32ItoM((u32*)&pcall_ret_address,(u32)(block));
+		}
+	case BLOCK_TYPE_DYNAMIC:
+		{
+			x86e->RET();
+			break;
+		}
+
+	case BLOCK_TYPE_RET:
+		{
+			if (RET_PREDICTION)
+			{
+				//cmp pr,guess
+				x86e->MOV32MtoR(EAX,GetRegPtr(reg_pr));
+				x86e->CMP32MtoR(EAX,&call_ret_address);
+				//jne not_ok
+				u8* not_ok=x86e->JNE8(0);
+				//mov ecx , pcall_ret_address
+				x86e->MOV32MtoR(ECX,(u32*)&pcall_ret_address);
+				//mov eax,[pcall_ret_address+codeoffset]
+				x86e->MOV32RtoR(EAX,ECX);
+				x86e->ADD32ItoR(EAX,offsetof(rec_v1_BasicBlock,pTT_next_addr));
+				x86e->MOV32RmtoR(EAX,EAX);//get ptr to compiled block/link stub
+				//jmp eax
+				x86e->JMP32R(EAX);	//jump to it
+				//not_ok:
+				x86e->x86SetJ8(not_ok);
+			}
 			x86e->RET();
 			break;
 		}
@@ -2153,6 +2192,15 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 			}
 		}
 		break;
+
+	case BLOCK_TYPE_FIXED_CALL:
+		//mov guess,pr
+		if (RET_PREDICTION)
+		{
+			x86e->MOV32ItoM(&call_ret_address,block->TT_next_addr);
+			//mov pguess,this
+			x86e->MOV32ItoM((u32*)&pcall_ret_address,(u32)(block));
+		}
 	case BLOCK_TYPE_FIXED:
 		{
 			x86e->CMP32ItoM(&rec_cycles,BLOCKLIST_MAX_CYCLES);

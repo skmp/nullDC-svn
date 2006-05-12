@@ -2310,7 +2310,7 @@ public :
 	}
 
 	/* cmp m32 to r32 */
-	void CMP32MtoR( x86IntRegType to, u32 from ) 
+	void CMP32MtoR( x86IntRegType to, u32* from ) 
 	{
 		write8( 0x3B );
 		ModRM( 0, to, DISP32 );
