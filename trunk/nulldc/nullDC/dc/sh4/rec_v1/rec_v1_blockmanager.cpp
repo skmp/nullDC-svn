@@ -157,16 +157,16 @@ void __fastcall rec_v1_NotifyMemWrite(u32 start , u32 size)
 {
 	start&=RAM_MASK;
 
-	/*
-	for (int i=0;i<size;i+=2)
+	
+	/*for (int i=0;i<size;i+=2)
 	{
 		rec_v1_BlockTest(start+i);
 	}*/
 	
-	size=size>>(HASH_BITS+3);
+	size=(size>>(HASH_BITS+3))+1;
 	start=start>>(HASH_BITS+3);
 
-	for (int curr=start;curr<(start+size);)
+	for (int curr=start;curr<=(start+size);)
 	{
 		if (RamTest[curr])
 		{
@@ -179,10 +179,10 @@ void __fastcall rec_v1_NotifyMemWrite(u32 start , u32 size)
 
 void rec_v1_CompileBlockTest(emitter<>* x86e,x86IntRegType r_addr,x86IntRegType temp)
 {
+	x86e->MOV32ItoR(temp,(u32)&RamTest[0]);	//get base ptr
 	x86e->MOV32RtoR(EDX,r_addr);
 	x86e->SHR32ItoR(EDX,(HASH_BITS+3));		//get correct offset
-	x86e->MOV32ItoR(temp,(u32)&RamTest[0]);	//get base ptr
-	x86e->ADD32RtoR(temp,EDX);			//add offset to it
+	x86e->ADD32RtoR(temp,EDX);				//add offset to it
 	x86e->MOV8RmtoR(temp,temp);				//get hole test byte
 	x86e->TEST8RtoR(temp,temp);				//if test byte is 0 , no need for full test
 	u8* no_test=x86e->JZ8(0);				//jump over full test
