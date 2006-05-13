@@ -387,22 +387,9 @@ ParamSize PrimConverter::AppendVert(VertexParam *vp)
 	}
 
 
-	// the hacks
-
 	// *FIXME* HACK
-//	if(R_OPENGL==pvrOpts.GfxApi)
-		if(vertex.xyz[2] > 1.f)
-			vertex.xyz[2] /= 256.f;
-	//if(vertex.xyz[2] > 1.f)	vertex.xyz[2] /= 10000.f;
-
-/*	u16 t = ~0;
-	if(vertex.xyz[2] > 1.f) {
-		vertex.xyz[2] /= (float)t;
-		vertex.xyz[2] *= 0.5f;
-		vertex.xyz[2] += 0.5f;
-	}*/
-
-
+	if(vertex.xyz[2] > 1.f)
+		vertex.xyz[2] /= (vertex.xyz[2] > 512.f) ? 10000.f : 256.f;
 
 
 	// Push it on list

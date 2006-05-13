@@ -1046,7 +1046,6 @@ TexID TextureCache::GetTexture(PolyParam *pp)
 	}
 
 	tex.lock_block=emuIf.vramLock64(tex.Start, tex.End, NULL);
-
 	TexList.push_back(tex);
 	return tex.texID;
 
@@ -1059,6 +1058,7 @@ unhandled_fmt:
 	tex.End = tex.Start + tex.Width * tex.Height;	// This might cause trouble but its an error anyways !
 	TexGen(pp,&tex);
 
+	tex.lock_block=emuIf.vramLock64(tex.Start, tex.End, NULL);
 	TexList.push_back(tex);
 	return tex.texID;
 }
