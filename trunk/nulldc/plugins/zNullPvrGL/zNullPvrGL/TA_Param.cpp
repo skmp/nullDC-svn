@@ -386,14 +386,13 @@ ParamSize PrimConverter::AppendVert(VertexParam *vp)
 		vertex.uv[1] *= vertex.xyz[2];
 	}
 
-		// *FIXME*
-	if(R_D3D==pvrOpts.GfxApi) vertex.xyz[2] = 1.f-vertex.xyz[2];
-
 
 	// the hacks
 
 	// *FIXME* HACK
-	if(vertex.xyz[2] > 1.f)	vertex.xyz[2] /= 256.f;
+//	if(R_OPENGL==pvrOpts.GfxApi)
+		if(vertex.xyz[2] > 1.f)
+			vertex.xyz[2] /= 256.f;
 	//if(vertex.xyz[2] > 1.f)	vertex.xyz[2] /= 10000.f;
 
 /*	u16 t = ~0;

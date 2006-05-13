@@ -98,7 +98,7 @@ void PowerVR2_GL::SetRenderMode(u32 ParamID, u32 TexID)
 			glDisable(GL_BLEND);
 
 	//	glDisable(GL_DEPTH_TEST);
-	//	glDepthMask(GL_TRUE);		// no zbuffering for transparencies
+		glDepthMask(GL_TRUE);		// no zbuffering for transparencies
 
 		if(!gp->param0.tsp.IgnoreTexA)
 		{
@@ -361,7 +361,7 @@ bool PowerVR2_GL::Init()
 		0,											// Shift Bit Ignored
 		0,											// No Accumulation Buffer
 		0, 0, 0, 0,									// Accumulation Bits Ignored
-		16,											// 16Bit Z-Buffer (Depth Buffer)  
+		24,											// 16Bit Z-Buffer (Depth Buffer)  
 		0,											// No Stencil Buffer
 		0,											// No Auxiliary Buffer
 		PFD_MAIN_PLANE,								// Main Drawing Layer

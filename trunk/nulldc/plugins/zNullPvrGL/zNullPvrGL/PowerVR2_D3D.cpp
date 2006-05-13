@@ -242,18 +242,18 @@ bool PowerVR2_D3D::Init()
 	else
 	{
 		D3DXMATRIX mat;
-		
-		D3DXMatrixOrthoOffCenterRH(&mat, 0,640, 480,0, -20,20);
+
+		D3DXMatrixOrthoOffCenterRH(&mat, 0,640, 480,0, 1.f, -1.f);
 		g_pDev->SetTransform(D3DTS_PROJECTION, &(D3DMATRIX)mat);
-		
+
 		D3DXMatrixIdentity(&mat);
 		g_pDev->SetTransform(D3DTS_WORLD, &(D3DMATRIX)mat);
-		
+
 		D3DXMatrixTranslation(&mat, 0, 0, 0);
 		g_pDev->SetTransform(D3DTS_VIEW, &(D3DMATRIX)mat);
-		
-		g_pDev->SetRenderState( D3DRS_LIGHTING, FALSE );
-		g_pDev->SetRenderState( D3DRS_ZENABLE, D3DZB_TRUE ); // D3DZB_USEW
+
+		g_pDev->SetRenderState(D3DRS_LIGHTING, FALSE);
+		g_pDev->SetRenderState(D3DRS_ZENABLE, D3DZB_USEW ); // D3DZB_TRUE
 
 	}
 
