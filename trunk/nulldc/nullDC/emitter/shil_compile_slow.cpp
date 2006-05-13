@@ -6,8 +6,9 @@
 #include "dc\sh4\rec_v1\rec_v1_blockmanager.h"
 #include "dc\sh4\sh4_opcode_list.h"
 #include "dc\mem\sh4_mem.h"
+#include "regalloc\x86_sseregalloc.h"
 
-
+FloatRegAllocator* falloc;
 //TEMP!!!
 emitter<>* x86e;
 shil_scs shil_compile_slow_settings=
@@ -1232,38 +1233,67 @@ void __fastcall shil_compile_cmp(shil_opcode* op,rec_v1_BasicBlock* block)
 	if (op->flags & FLAG_IMM1)
 	{
 		assert(0==(op->flags & (FLAG_REG2|FLAG_IMM2)));
-		x86IntRegType r1 = LoadReg(EAX,op->reg1);
-		x86e->CMP32ItoR(r1,op->imm1);
+		if (IsRegCached(op->reg1))
+		{
+			x86IntRegType r1 = LoadReg(EAX,op->reg1);
+			x86e->CMP32ItoR(r1,op->imm1);
+		}
+		else
+		{
+			x86e->CMP32ItoM(GetRegPtr(op->reg1),op->imm1);
+		}
 		//eflags is used w/ combination of SaveT
 	}
 	else
 	{
 		assert(0==(op->flags & FLAG_IMM2));
 		assert(op->flags & FLAG_REG2);
+
 		x86IntRegType r1 = LoadReg(EAX,op->reg1);
-		x86IntRegType r2 = LoadReg(ECX,op->reg2);
-		x86e->CMP32RtoR(r1,r2);//rm,rn
+		if (IsRegCached(op->reg2))
+		{
+			x86IntRegType r2 = LoadReg(ECX,op->reg2);
+			x86e->CMP32RtoR(r1,r2);//rm,rn
+		}
+		else
+		{
+			x86e->CMP32MtoR(r1,GetRegPtr(op->reg2));//rm,rn
+		}
 		//eflags is used w/ combination of SaveT
 	}
 }
 void __fastcall shil_compile_test(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	assert(FLAG_32==(op->flags & 3));
-
 	if (op->flags & FLAG_IMM1)
 	{
 		assert(0==(op->flags & (FLAG_REG2|FLAG_IMM2)));
-		x86IntRegType r1 = LoadReg(EAX,op->reg1);
-		x86e->TEST32ItoR(r1,op->imm1);
+		if (IsRegCached(op->reg1))
+		{
+			x86IntRegType r1 = LoadReg(EAX,op->reg1);
+			x86e->TEST32ItoR(r1,op->imm1);
+		}
+		else
+		{
+			x86e->TEST32ItoM(GetRegPtr(op->reg1),op->imm1);
+		}
 		//eflags is used w/ combination of SaveT
 	}
 	else
 	{
 		assert(0==(op->flags & FLAG_IMM2));
 		assert(op->flags & FLAG_REG2);
+
 		x86IntRegType r1 = LoadReg(EAX,op->reg1);
-		x86IntRegType r2 = LoadReg(ECX,op->reg2);
-		x86e->TEST32RtoR(r1,r2);
+		if (IsRegCached(op->reg2))
+		{
+			x86IntRegType r2 = LoadReg(ECX,op->reg2);
+			x86e->TEST32RtoR(r1,r2);//rm,rn
+		}
+		else
+		{
+			x86e->TEST32MtoR(r1,GetRegPtr(op->reg2));//rm,rn
+		}
 		//eflags is used w/ combination of SaveT
 	}
 }
@@ -1438,14 +1468,29 @@ void __fastcall shil_compile_mul(shil_opcode* op,rec_v1_BasicBlock* block)
 	}
 }
 
+#define SSE_ItoRoM(_ItR_,_ItM_,reg,flags,imm1,imm2) \
+	if (falloc->IsRegAllocated(reg))\
+{\
+	x86SSERegType reg=falloc->GetRegister(reg,flags);\
+	x86e->_ItR_(reg,imm1);\
+}\
+	else\
+	{\
+		x86e->_ItM_(GetRegPtr(reg),imm2);\
+	}
+
 //FPU !!! YESH
 void __fastcall shil_compile_fneg(shil_opcode* op,rec_v1_BasicBlock* block)
 {
+
+	
+
 	assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2|FLAG_REG2)));
 	u32 sz=op->flags & 3;
 	if (sz==FLAG_32)
 	{
 		assert(!IsReg64 ((Sh4RegType)op->reg1));
+		//SSE_ItoRoM(SSE_XORPS_M128_to_XMM,XOR32ItoM,op->reg1,RALLOC_RW,ps_not_data,0x80000000);
 		x86e->XOR32ItoM(GetRegPtr(op->reg1),0x80000000);
 	}
 	else
@@ -1465,6 +1510,7 @@ void __fastcall shil_compile_fabs(shil_opcode* op,rec_v1_BasicBlock* block)
 	{
 		assert(!IsReg64((Sh4RegType)op->reg1));
 		x86e->AND32ItoM(GetRegPtr(op->reg1),0x7FFFFFFF);
+		//SSE_ItoRoM(SSE_ANDPS_M128_to_XMM,AND32ItoM,op->reg1,RALLOC_RW,ps_and_data,0x7FFFFFFF);
 	}
 	else
 	{
@@ -1475,6 +1521,32 @@ void __fastcall shil_compile_fabs(shil_opcode* op,rec_v1_BasicBlock* block)
 	}
 }
 
+x86SSERegType LoadSSEReg(u8 reg,u8 mode)
+{
+	if (falloc->IsRegAllocated(reg))
+	{
+		return falloc->GetRegister(reg,mode);
+	}
+	else
+	{
+		x86e->SSE_MOVSS_M32_to_XMM(XMM0,GetRegPtr(reg));
+		return XMM0;
+	}
+}
+
+void SaveSSEReg(u8 reg,x86SSERegType from)
+{
+	if (falloc->IsRegAllocated(reg))
+	{
+		x86SSERegType ar= falloc->GetRegister(reg,RALLOC_W);
+		if (ar!=from)
+			x86e->SSE_MOVSS_XMM_to_XMM(ar,from);
+	}
+	else
+	{
+		x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(reg),from);
+	}
+}
 
 void __fastcall shil_compile_fadd(shil_opcode* op,rec_v1_BasicBlock* block)
 {
@@ -1484,7 +1556,18 @@ void __fastcall shil_compile_fadd(shil_opcode* op,rec_v1_BasicBlock* block)
 	{
 		assert(!IsReg64((Sh4RegType)op->reg1));
 		assert(Ensure32());
-		//x86e->AND32ItoM(GetRegPtr(op->reg1),0x7FFFFFFF);
+/*		
+		x86SSERegType sse1=LoadSSEReg(reg1,mode);
+		if(falloc->IsRegAllocated(reg2))
+		{
+			x86SSERegType sse2=LoadSSEReg(reg2,RALLOC_R);
+			x86e->SSE_ADDSS_XMM_to_XMM(sse1,GetRegPtr(reg2));
+		}
+		else
+		{
+			x86e->SSE_ADDSS_M32_to_XMM(sse1,GetRegPtr(reg2));
+		}
+*/
 		x86e->SSE_MOVSS_M32_to_XMM(XMM0,GetRegPtr(op->reg1));
 		x86e->SSE_ADDSS_M32_to_XMM(XMM0,GetRegPtr(op->reg2));
 		x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),XMM0);

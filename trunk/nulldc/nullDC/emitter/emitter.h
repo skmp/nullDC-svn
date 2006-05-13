@@ -2360,6 +2360,19 @@ public :
 		write32( MEMADDR(from, 4) ); 
 	}
 
+
+
+
+
+	/* test imm32 to m32 */
+	void TEST32ItoM( u32* to, u32 from ) 
+	{
+		write8( 0xF7  ); 
+		ModRM( 0, 0, DISP32 );
+		write32( MEMADDR(to, 8) ); 
+		write32( from ); 
+	}
+
 	/* test imm32 to r32 */
 	void TEST32ItoR( x86IntRegType to, u32 from ) 
 	{
@@ -2387,6 +2400,13 @@ public :
 	{
 		write8( 0x85 );
 		ModRM( 3, from, to );
+	}
+	/* test m32 to r32 */
+	void TEST32MtoR( x86IntRegType to, u32* from ) 
+	{
+		write8( 0x85  );
+		ModRM( 0, to, DISP32 );
+		write32( MEMADDR(from, 4) ); 
 	}
 
 	/* setcc r8 */
