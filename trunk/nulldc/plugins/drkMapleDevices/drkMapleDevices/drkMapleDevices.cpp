@@ -724,19 +724,19 @@ EXPORT void dcGetMapleInfo(maple_plugin_if* info)
 	info->Devices[0].DestroyInstance=DestroyInstance;
 	info->Devices[0].type=0;//Controller
 	info->Devices[0].id=0;
-	strcpy(info->Devices[0].name,"teh l33t DC controller");
+	strcpy(info->Devices[0].name,"teh l33t DC controller (" __DATE__ ")");
  
 	info->Devices[1].CreateInstance=CreateInstance;
 	info->Devices[1].DestroyInstance=DestroyInstance;
 	info->Devices[1].type=1;//Vmu
 	info->Devices[1].id=1;
-	strcpy(info->Devices[1].name,"teh l33t VMU");
+	strcpy(info->Devices[1].name,"teh l33t VMU(" __DATE__ ")");
 
 	info->Devices[2].CreateInstance=CreateInstance;
 	info->Devices[2].DestroyInstance=DestroyInstance;
 	info->Devices[2].type=0;//Controller
 	info->Devices[2].id=0;
-	strcpy(info->Devices[2].name,"teh null DC controller [no input]");
+	strcpy(info->Devices[2].name,"teh null DC controller [no input](" __DATE__ ")");
 
 	info->Devices[3].CreateInstance=0;
 	info->Devices[3].DestroyInstance=0;

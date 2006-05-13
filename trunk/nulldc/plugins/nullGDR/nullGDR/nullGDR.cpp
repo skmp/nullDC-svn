@@ -30,7 +30,7 @@ void GetSessionInfo(u8* out,u8 ses);
 EXPORT void dcGetPluginInfo(plugin_info* info)
 {
 	info->InterfaceVersion.full=PLUGIN_I_F_VERSION;
-	strcpy(info->Name,"drkIIRaziel's nullGDR plugin");
+	strcpy(info->Name,"drkIIRaziel's nullGDR plugin [" __DATE__ "]");
 	info->PluginVersion.full=NDC_MakeVersion(MAJOR,MINOR,BUILD);
 	
 	info->Init=dcInitGDR;

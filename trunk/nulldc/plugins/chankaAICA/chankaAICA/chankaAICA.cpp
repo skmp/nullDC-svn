@@ -22,7 +22,7 @@ void cfgdlg(PluginType type,void* window)
 EXPORT void dcGetPluginInfo(plugin_info* info)
 {
 	info->InterfaceVersion.full=PLUGIN_I_F_VERSION;
-	strcpy(info->Name,"Chanka's AICA port [drkIIRaziel]");
+	strcpy(info->Name,"Chanka's AICA port [drkIIRaziel](" __DATE__ ")");
 	info->PluginVersion.full=NDC_MakeVersion(MAJOR,MINOR,BUILD);
 	
 

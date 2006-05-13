@@ -44,7 +44,7 @@ void dcGetPluginInfo(ndcPluginIf* If)
 	If->dwIfVersion	= 0x00010000;	// double check with nullgdr
 	If->dwLibVersion= 0x01;			// 
 	If->dwPluginType= 0x02;			// 2=GDROM
-	strcpy_s(If->szName, "zNullGD, SCSI Passthru GDROM Plugin By _ZeZu_");
+	strcpy_s(If->szName, "zNullGD, SCSI Passthru GDROM Plugin By _ZeZu_ [" __DATE__ "]");
 
 	If->Init		= gdInit;
 	If->Term		= gdTerm;

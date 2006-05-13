@@ -23,7 +23,7 @@ void cfgdlg(PluginType type,void* window)
 EXPORT void dcGetPluginInfo(plugin_info* info)
 {
 	info->InterfaceVersion.full=PLUGIN_I_F_VERSION;
-	strcpy(info->Name,"null AICA plugin [h4x0rs olny kthx]");
+	strcpy(info->Name,"null AICA plugin [h4x0rs olny kthx] (" __DATE__ ")");
 	info->PluginVersion.full=NDC_MakeVersion(MAJOR,MINOR,BUILD);
 	
 
