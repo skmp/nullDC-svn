@@ -19,7 +19,7 @@
  
 //to test if the address is in a block
 //keep it small for possibility of l2 cache
-u8 VramTestHash[VramTestSize]={0};
+u8 VramTestHash[VramTestSize*2]={0};
 vram_lock_list vram_locks[VRAM_LOCK_HASH_SIZE]={0};
  
 //using pre calculated tables for speed
