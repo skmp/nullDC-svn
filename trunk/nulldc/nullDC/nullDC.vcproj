@@ -205,6 +205,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				Optimization="2"
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
@@ -416,14 +417,6 @@
 						<File
 							RelativePath=".\dc\sh4\sh4_cpu.cpp"
 							>
-							<FileConfiguration
-								Name="Release-NoTrace|Win32"
-								>
-								<Tool
-									Name="VCCLCompilerTool"
-									Optimization="3"
-								/>
-							</FileConfiguration>
 						</File>
 						<File
 							RelativePath=".\dc\sh4\sh4_cpu.h"
@@ -452,15 +445,6 @@
 						<File
 							RelativePath=".\dc\sh4\sh4_fpu.cpp"
 							>
-							<FileConfiguration
-								Name="Release-NoTrace|Win32"
-								>
-								<Tool
-									Name="VCCLCompilerTool"
-									AssemblerOutput="0"
-									AssemblerListingLocation=""
-								/>
-							</FileConfiguration>
 						</File>
 						<File
 							RelativePath=".\dc\sh4\sh4_fpu.h"
@@ -773,46 +757,10 @@
 						<File
 							RelativePath=".\dc\sh4\rec_v1\sh4_cpu_shil.cpp"
 							>
-							<FileConfiguration
-								Name="Release-NoTrace|Win32"
-								>
-								<Tool
-									Name="VCCLCompilerTool"
-									Optimization="3"
-								/>
-							</FileConfiguration>
 						</File>
 						<File
 							RelativePath=".\dc\sh4\rec_v1\sh4_cpu_shil.h"
 							>
-							<FileConfiguration
-								Name="Debug|Win32"
-								>
-								<Tool
-									Name="VCCustomBuildTool"
-								/>
-							</FileConfiguration>
-							<FileConfiguration
-								Name="Release|Win32"
-								>
-								<Tool
-									Name="VCCustomBuildTool"
-								/>
-							</FileConfiguration>
-							<FileConfiguration
-								Name="Release-NoTrace|Win32"
-								>
-								<Tool
-									Name="VCCustomBuildTool"
-								/>
-							</FileConfiguration>
-							<FileConfiguration
-								Name="Debug_R|Win32"
-								>
-								<Tool
-									Name="VCCustomBuildTool"
-								/>
-							</FileConfiguration>
 						</File>
 					</Filter>
 				</Filter>
@@ -826,34 +774,6 @@
 					<File
 						RelativePath=".\dc\sh4\shil\shil.h"
 						>
-						<FileConfiguration
-							Name="Debug|Win32"
-							>
-							<Tool
-								Name="VCCustomBuildTool"
-							/>
-						</FileConfiguration>
-						<FileConfiguration
-							Name="Release|Win32"
-							>
-							<Tool
-								Name="VCCustomBuildTool"
-							/>
-						</FileConfiguration>
-						<FileConfiguration
-							Name="Release-NoTrace|Win32"
-							>
-							<Tool
-								Name="VCCustomBuildTool"
-							/>
-						</FileConfiguration>
-						<FileConfiguration
-							Name="Debug_R|Win32"
-							>
-							<Tool
-								Name="VCCustomBuildTool"
-							/>
-						</FileConfiguration>
 					</File>
 				</Filter>
 			</Filter>
@@ -891,14 +811,6 @@
 				<File
 					RelativePath=".\dc\aica\aica_if.cpp"
 					>
-					<FileConfiguration
-						Name="Release-NoTrace|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="3"
-						/>
-					</FileConfiguration>
 				</File>
 				<File
 					RelativePath=".\dc\aica\aica_if.h"
@@ -1072,14 +984,6 @@
 				<File
 					RelativePath=".\dc\gdrom\zGDROM.cpp"
 					>
-					<FileConfiguration
-						Name="Release-NoTrace|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="3"
-						/>
-					</FileConfiguration>
 				</File>
 				<File
 					RelativePath=".\dc\gdrom\zGDROM.h"
@@ -1103,14 +1007,6 @@
 				<File
 					RelativePath=".\dc\maple\maple_if.cpp"
 					>
-					<FileConfiguration
-						Name="Release-NoTrace|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="3"
-						/>
-					</FileConfiguration>
 				</File>
 				<File
 					RelativePath=".\dc\maple\maple_if.h"
@@ -1152,14 +1048,6 @@
 			<File
 				RelativePath=".\gui\emuWinUI.cpp"
 				>
-				<FileConfiguration
-					Name="Release-NoTrace|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="3"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\gui\emuWinUI.h"

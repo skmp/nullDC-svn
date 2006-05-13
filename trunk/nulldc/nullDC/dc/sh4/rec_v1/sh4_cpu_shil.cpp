@@ -1192,15 +1192,13 @@ sh4op(i1111_nnnn_mmmm_0011)
 //fcmp/eq <FREG_M>,<FREG_N>
 sh4op(i1111_nnnn_mmmm_0100)
 {
-	shil_interpret(op);
-	return;
 	if (fpscr.PR == 0)
 	{
 		u32 n = GetN(op);
 		u32 m = GetM(op);
 
 		//sr.T = (fr[m] == fr[n]) ? 1 : 0;
-		ilst->cmp(fr[n],fr[m]);
+		ilst->fcmp(fr[n],fr[m]);
 		ilst->SaveT(cmd_cond::CC_E);
 	}
 	else
@@ -1218,8 +1216,6 @@ sh4op(i1111_nnnn_mmmm_0100)
 //fcmp/gt <FREG_M>,<FREG_N>
 sh4op(i1111_nnnn_mmmm_0101)
 {
-	shil_interpret(op);
-	return;
 	if (fpscr.PR == 0)
 	{
 		u32 n = GetN(op);
@@ -1229,8 +1225,8 @@ sh4op(i1111_nnnn_mmmm_0101)
 			sr.T = 1;
 		else
 			sr.T = 0;*/
-		ilst->cmp(fr[n],fr[m]);
-		ilst->SaveT(cmd_cond::CC_G);
+		ilst->fcmp(fr[n],fr[m]);
+		ilst->SaveT(cmd_cond::CC_NBE);
 	}
 	else
 	{

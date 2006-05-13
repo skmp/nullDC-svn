@@ -357,6 +357,7 @@ void shil_stream::cmp(Sh4RegType to,Sh4RegType from)
 {
 	emit32(shil_opcodes::cmp,to,from);
 }
+
 void shil_stream::cmp(Sh4RegType to,s8 from)
 {
 	emit32(shil_opcodes::cmp,to,from);
@@ -656,6 +657,10 @@ void shil_stream::ftrc(Sh4RegType frn)
 {
 	emitReg(shil_opcodes::ftrc,frn,GetFloatFlags(frn,NoReg));
 }
+void shil_stream::fcmp(Sh4RegType to,Sh4RegType from)
+{
+	emit32(shil_opcodes::fcmp,to,from);
+}
 void shil_stream::div(Sh4RegType r0,Sh4RegType r1,Sh4RegType r2,u32 flags)
 {
 	emit(shil_opcodes::div32,r0,r1,r2,0,FLAG_IMM1|FLAG_REG1|FLAG_REG2|flags);	//WARNING !! NEEDS FIXUP for 3rd reg type
@@ -808,7 +813,8 @@ char* shil_names[]=
 
 	"fsca",
 	"fsrra",
-	"div32"
+	"div32",
+	"fcmp"
 };
 char* GetShilName(shil_opcodes ops)
 {

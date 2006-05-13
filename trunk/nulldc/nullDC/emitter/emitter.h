@@ -3442,6 +3442,12 @@ public :
 	void SSE_CMPORDSS_XMM_to_XMM( x86SSERegType to, x86SSERegType from )   { CMPSSRtoR( 7 ); }
 	//////////////////////////////////////////////////////////////////////////////////////////
 	//**********************************************************************************/
+	//UCOMISS : Packed Single-Precision FP Compare , x86 falgs are set                 *
+	//**********************************************************************************
+	void SSE_UCOMISS_M32_to_XMM( x86SSERegType to, u32* from )          { SSEMtoR( 0x2e0f, 0 ); }
+	void SSE_UCOMISS_XMM_to_XMM( x86SSERegType to, x86SSERegType from ){ SSERtoR( 0x2e0f ); }
+	//////////////////////////////////////////////////////////////////////////////////////////
+	//**********************************************************************************/
 	//RSQRTPS : Packed Single-Precision FP Square Root Reciprocal                      *
 	//**********************************************************************************
 	void SSE_RSQRTPS_M128_to_XMM( x86SSERegType to, u32* from )          { SSEMtoR( 0x520f, 0 ); }

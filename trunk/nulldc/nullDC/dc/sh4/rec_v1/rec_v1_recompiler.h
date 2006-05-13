@@ -9,8 +9,6 @@
 //call asm using a second function , so we can profile it using a profiler :)
 //#define PROFILE_DYNAREC_CALL
 void printprofile();
-//disable register allocation
-#define DYNAREC_REG_ALLOC (true)
 
 typedef u32 rec_v1_BasicBlockEP();
 

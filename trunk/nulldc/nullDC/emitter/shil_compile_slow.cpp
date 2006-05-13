@@ -1513,6 +1513,22 @@ void __fastcall shil_compile_fadd(shil_opcode* op,rec_v1_BasicBlock* block)
 		assert(false);
 	}
 }
+void __fastcall shil_compile_fcmp(shil_opcode* op,rec_v1_BasicBlock* block)
+{
+	assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2)));
+	u32 sz=op->flags & 3;
+	if (sz==FLAG_32)
+	{
+		assert(!IsReg64((Sh4RegType)op->reg1));
+		assert(Ensure32());
+		x86e->SSE_MOVSS_M32_to_XMM(XMM0,GetRegPtr(op->reg1));
+		x86e->SSE_UCOMISS_M32_to_XMM(XMM0,GetRegPtr(op->reg2));
+	}
+	else
+	{
+		assert(false);
+	}
+}
 
 void __fastcall shil_compile_fsub(shil_opcode* op,rec_v1_BasicBlock* block)
 {
@@ -1880,7 +1896,7 @@ shil_compileFP* sclt[shil_count]=
 	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,
 	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,
 	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,
-	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp
+	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp
 };
 
 void SetH(shil_opcodes op,shil_compileFP* ha)
@@ -1946,6 +1962,7 @@ void Init()
 	SetH(shil_opcodes::fsca,shil_compile_fsca);
 	SetH(shil_opcodes::fsrra,shil_compile_fsrra);
 	SetH(shil_opcodes::div32,shil_compile_div32);
+	SetH(shil_opcodes::fcmp,shil_compile_fcmp);
 	
 
 	

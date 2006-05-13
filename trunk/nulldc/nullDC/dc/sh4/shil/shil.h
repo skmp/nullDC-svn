@@ -225,6 +225,7 @@ enum shil_opcodes
 	fsca,
 	fsrra,
 	div32,
+	fcmp,
 
 	shil_count,
 };
@@ -434,6 +435,7 @@ public :
 	void shil_stream::fsca(Sh4RegType frn);
 	void shil_stream::fsrra(Sh4RegType frn);
 	void shil_stream::div(Sh4RegType r0,Sh4RegType r1,Sh4RegType r2,u32 flags);
+	void shil_stream::fcmp(Sh4RegType to,Sh4RegType from);
 
 	//misc
 	void shil_ifb(u32 opcode,u32 pc);
