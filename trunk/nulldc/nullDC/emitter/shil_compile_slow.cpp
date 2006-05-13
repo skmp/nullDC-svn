@@ -676,25 +676,6 @@ void __fastcall shil_compile_mov(shil_opcode* op,rec_v1_BasicBlock* block)
 	if (size==FLAG_32)
 	{
 		OP_RegToReg_simple(MOV32);
-		/*return;
-		if (op->flags & FLAG_REG2)
-		{
-			assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2)));//no imm can be used
-			//printf("mov [r]%d=[r]%d , sz==%d\n",op->reg1,op->reg2,size);
-
-		 	//LoadReg(EAX,op->reg2);
-			
-			//x86IntRegType r2=LoadReg(EAX,op->reg2);
-			//SaveReg(op->reg1,r2);
-		}
-		else
-		{
-			assert(0==(op->flags & (FLAG_IMM2)));//no imm2 can be used
-			//printf("mov [r]%d=[imm]%d , sz==%d\n",op->reg1,op->imm1,size);
-
-			//x86e->MOV32ItoR(EAX,);
-			SaveReg(op->reg1,op->imm1);
-		}*/
 	}
 	else
 	{

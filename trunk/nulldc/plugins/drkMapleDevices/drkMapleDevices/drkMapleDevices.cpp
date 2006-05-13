@@ -44,7 +44,7 @@ char testJoy_strBrand[64] = "Faked by drkIIRaziel && ZeZu , made for nullDC\0";
 
 struct VMU_info
 {
-	u8 data[128*1024];
+	u8 data[256*1024];
 	char file[512];
 };
 typedef INT_PTR CALLBACK dlgp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
@@ -653,12 +653,17 @@ void VmuDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u3
 
 				u32 Block = (SWAP32(buffer_in[1]))&0xffff;
 				u32 Phase = ((SWAP32(buffer_in[1]))>>16)&0xff; 
-				printf("Block wirte : %d , %d bytes\n",Block,(buffer_in_len-2*4));
-				memcpy(&dev->data[Block*512+Phase*(512/4)],&buffer_in[2],(buffer_in_len-2*4));
+				printf("Block wirte : %d:%d , %d bytes\n",Block,Phase,(buffer_in_len-4));
+				memcpy(&dev->data[Block*512+Phase*(512/4)],&buffer_in[2],(buffer_in_len-4));
 				buffer_out_len=0;
-				FILE* f=fopen(((VMU_info*)device_instance->DevData)->file,"wb");
-				fwrite(dev->data,1,128*1024,f);
-				fclose(f);
+				FILE* f=fopen(dev->file,"wb");
+				if (f)
+				{
+					fwrite(dev->data,1,128*1024,f);
+					fclose(f);
+				}
+				else
+					printf("Failed to open %s for saving vmu data\n",dev->file);
 				responce=7;//just ko
 			}
 			else

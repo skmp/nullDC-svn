@@ -994,6 +994,7 @@ sh4op(i0010_nnnn_mmmm_1101)
 	u32 m = GetM(op);
 
 	shil_interpret(op);
+	//r[n] =  wswap(r[n]&0xFFFF0000 | r[m]&0xFFFF)
 	//r[n] = ((r[n] >> 16) & 0xFFFF) | ((r[m] << 16) & 0xFFFF0000);
 }
 
