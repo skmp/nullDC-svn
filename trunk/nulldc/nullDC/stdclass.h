@@ -1,6 +1,7 @@
 #pragma once
 #include "types.h"
 #include <memory.h>
+#include <vector>
 
 extern u32 Array_T_id_count;
 char* GetNullDCSoruceFileName(char* full);
@@ -618,3 +619,17 @@ typedef void FileFoundCB(char* file,void* param);
 void FindAllFiles(FileFoundCB* callback,char* dir,void* param);
 void GetApplicationPath(char* path,u32 size);
 char* GetEmuPath(char* subpath);
+
+
+
+class VArray
+{
+public:
+
+	u8* data;
+	u32 size;
+	void Init(u32 sz);
+	void Term();
+	void LockRegion(u32 offset,u32 size);
+	void UnLockRegion(u32 offset,u32 size);
+};

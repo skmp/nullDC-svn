@@ -267,3 +267,25 @@ void FindAllFiles(FileFoundCB* callback,char* dir,void* param)
 	}
 	return ;
 }
+
+
+
+void VArray::Init(u32 sz)
+{
+	size=sz;
+	data=(u8*)VirtualAlloc(0 , size,MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+}
+void VArray::Term()
+{
+	VirtualFree(data,size,MEM_RELEASE);
+}
+void VArray::LockRegion(u32 offset,u32 size)
+{
+	DWORD old;
+	VirtualProtect(((u8*)data)+offset , size, PAGE_READONLY,&old);
+}
+void VArray::UnLockRegion(u32 offset,u32 size)
+{
+	DWORD old;
+	VirtualProtect(((u8*)data)+offset , size, PAGE_READWRITE,&old);
+}
