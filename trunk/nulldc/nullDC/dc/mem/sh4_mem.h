@@ -11,7 +11,7 @@
 #define FLASH_MASK (FLASH_SIZE-1)
 
 //main system mem
-extern Array<u8> mem_b;
+extern VArray mem_b;
 
 //bios rom
 extern Array<u8> bios_b;

@@ -1124,6 +1124,8 @@ void __fastcall shil_compile_writem(shil_opcode* op,rec_v1_BasicBlock* block)
 		x86e->AND32ItoR(ECX,RAM_MASK);
 
 
+		//no more block tests
+		/*
 		//if needed
 		if (r1==EDX)
 			x86e->PUSH32R(r1);
@@ -1131,11 +1133,11 @@ void __fastcall shil_compile_writem(shil_opcode* op,rec_v1_BasicBlock* block)
 
 		//call rec_v1_BlockTest
 		//
-		rec_v1_CompileBlockTest(x86e,ECX,EAX);
+//		rec_v1_CompileBlockTest(x86e,ECX,EAX);
 
 		//if needed
 		if (r1==EDX)
-			x86e->POP32R(r1);
+			x86e->POP32R(r1);*/
 
 		//add ecx, ram_base
 		x86e->ADD32ItoR(ECX,(u32)(&mem_b[0]));

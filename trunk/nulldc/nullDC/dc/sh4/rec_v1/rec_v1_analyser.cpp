@@ -49,8 +49,8 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 			//pc+=2;
 			//continue;
 		}
-		if (((pc>>26)&0x7)==3)
-			rec_v1_SetBlockTest(pc);
+		/*if (((pc>>26)&0x7)==3)
+			rec_v1_SetBlockTest(pc);*/
 
 		/*if ((opcode&0xF000)==0xF000)
 			ilst->shil_ifb(opcode,pc);

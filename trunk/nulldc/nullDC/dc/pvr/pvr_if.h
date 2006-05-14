@@ -11,7 +11,7 @@ u32 pvr_readreg_TA(u32 addr,u32 sz);
 void pvr_writereg_TA(u32 addr,u32 data,u32 sz);
 
 //vram 32-64b
-extern Array<u8> vram;
+extern VArray vram;
 //read
 u8 pvr_read_area1_8(u32 addr);
 u16 pvr_read_area1_16(u32 addr);

@@ -1,84 +1,13 @@
-
 #include "plugins/plugin_manager.h"
 #include "pvrLock.h"
  
+using namespace std;
+
+vector<vram_block*> VramLocks[VRAM_SIZE/PAGE_SIZE];
+//vram 32-64b
+VArray vram;
  
-#define VRAM_LOCK_HASH_SIZE (256)
-#define VRAM_LOCK_HASH_MASK (VRAM_LOCK_HASH_SIZE-1)
-#define VRAM_LOCK_HASH_RANGE (VRAM_SIZE/VRAM_LOCK_HASH_SIZE)
- 
-#define GetHash(offset_64) (((offset_64)>>15)&VRAM_LOCK_HASH_MASK)
- 
- 
-#define VramTestMinWriteBits 5
-#define VramTestMinWrite (1<<VramTestMinWriteBits)
- 
- 
-#define VramTestMask (VRAM_MASK>>(VramTestMinWriteBits+2))//>> + 2 b/c we can store 4 addr per byte
-#define VramTestSize (VramTestMask+1)
- 
-//to test if the address is in a block
-//keep it small for possibility of l2 cache
-u8 VramTestHash[VramTestSize*2]={0};
-vram_lock_list vram_locks[VRAM_LOCK_HASH_SIZE]={0};
- 
-//using pre calculated tables for speed
-//For all
-u8 Test_Bit_All[4]={(u8)(1<<(0))|(u8)(1<<(1)),(u8)(1<<(2))|(u8)(1<<(3)),(u8)(1<<(4))|(u8)(1<<(5)),(u8)(1<<(6))|(u8)(1<<(7))};
-//0's for 32b
-u8 Set_Bit_32[4]={(u8)(1<<(0)),(u8)(1<<(2)),(u8)(1<<(4)),(u8)(1<<(6))};
-u8 Reset_Bit_32[4]={(u8)~(1<<(0)),(u8)~(1<<(2)),(u8)~(1<<(4)),(u8)~(1<<(6))};
-//1's for 64b
-u8 Set_Bit_64[4]={(u8)(1<<(1)),(u8)(1<<(3)),(u8)(1<<(5)),(u8)(1<<(7))};
-u8 Reset_Bit_64[4]={(u8)~(1<<(1)),(u8)~(1<<(3)),(u8)~(1<<(5)),(u8)~(1<<(7))};
- 
-//32/64b test
-inline bool GetVramTest_All(u32 offset_64)
-{
-	offset_64>>=VramTestMinWriteBits;								//32B words
-	return (VramTestHash[offset_64>>2]&Test_Bit_All[offset_64&0x3])!=0;
-}
- 
-//32 bit
-//NOTE: *99% bug notice* it does not accept a 32b offset but an 64b !!
-inline void SetVramTest_32(u32 offset_64)
-{
-	offset_64>>=VramTestMinWriteBits;								//32B words
-	VramTestHash[offset_64>>2]|=Set_Bit_32[offset_64&0x3];
-}
- 
-inline void ResetVramTest_32(u32 offset_64)
-{
-	offset_64>>=VramTestMinWriteBits;								//32B words
-	VramTestHash[offset_64>>2]&=Reset_Bit_32[offset_64&0x3];
-}
- 
-inline bool GetVramTest_32(u32 offset_64)
-{
-	offset_64>>=VramTestMinWriteBits;								//32B words
-	return (VramTestHash[offset_64>>2]&Set_Bit_32[offset_64&0x3])!=0;
-}
- 
-//64 bit
-//
-inline void SetVramTest_64(u32 offset_64)
-{
-	offset_64>>=VramTestMinWriteBits;								//32B words
-	VramTestHash[offset_64>>2]|=Set_Bit_64[offset_64&0x3];
-}
- 
-inline void ResetVramTest_64(u32 offset_64)
-{
-	offset_64>>=VramTestMinWriteBits;								//32B words
-	VramTestHash[offset_64>>2]&=Reset_Bit_64[offset_64&0x3];
-}
- 
-inline bool GetVramTest_64(u32 offset_64)
-{
-	offset_64>>=VramTestMinWriteBits;								//32B words
-	return (VramTestHash[offset_64>>2]&Set_Bit_64[offset_64&0x3])!=0;
-}
- 
+
 //Address space convertion functions
 void vramlock_Read32b(u32* pdst,u32 offset,u32 len)
 {
@@ -179,70 +108,46 @@ u32 vramlock_ConvOffset32toOffset64(u32 offset32)
  
 //List functions
 //
-bool vramlock_list_remove(vram_block* block,vram_lock_list* list)
+void vramlock_list_remove(vram_block* block)
 {
-	vram_block** blk=list->list;
-	for (u32 i=0;i<list->len;i++)
+	u32 base = block->start/PAGE_SIZE;
+	u32 end = block->end/PAGE_SIZE;//((block->end+PAGE_SIZE-1)&(~(PAGE_SIZE-1)))/PAGE_SIZE;
+
+	for (u32 i=base;i<=end;i++)
 	{
-		if (blk[i])
+		vector<vram_block*>* list=&VramLocks[i];
+		for (int j=0;j<list->size();j++)
 		{
-			if (blk[i]==block)
+			if ((*list)[j]==block)
 			{
-				blk[i]=0;
-				return true;
+				(*list)[j]=0;
 			}
 		}
 	}
-	return false;
 }
  
-u32 vramlock_list_add(vram_block* block,vram_lock_list* list)
+void vramlock_list_add(vram_block* block)
 {
-	vram_block** blk=list->list;
-	for (u32 i=0;i<list->len;i++)
+	u32 base = block->start/PAGE_SIZE;
+	u32 end = block->end/PAGE_SIZE;
+
+
+	for (u32 i=base;i<=end;i++)
 	{
-		if (blk[i]==0)
+		vector<vram_block*>* list=&VramLocks[i];
+		for (int j=0;j<list->size();j++)
 		{
-			blk[i]=block;
-			return i;
+			if ((*list)[j]==0)
+			{
+				(*list)[j]=block;
+				goto added_it;
+			}
 		}
-		else if (block==blk[i])
-			return i;
+
+		list->push_back(block);
+added_it:
+		__noop;
 	}
-	if ((list->len >= (list->alloced-1)) || (list->len==0))
-	{
-		
-		if(blk)
-		{
-			blk=list->list=(vram_block**)realloc( list->list, (list->alloced+10)*sizeof(vram_block**) );
-			list->alloced+=10;
-		}
-		else
-		{
-			blk=(vram_block**)malloc(10*sizeof(vram_block**));
-			
-			list->list=blk;
-			
-			list->alloced=10;
-			//return 0;
-		}
-		//printf("list->len = %d\n" ,list->len);
-		fflush(stdout);
-		
-		for (u32 i=list->len;i<list->alloced;i++)
-		{
-			//printf(" %x ,blk[%d]=0; \n" ,blk,i);
-			fflush(stdout);
-			blk[i]=0; 
-		}
-		
-	
-		//return 0;
-	}
-	//return 0;
-	blk[list->len]=block;
-	u32 rv=list->len++;
-	return rv;
 }
  
 //simple IsInRange test
@@ -257,7 +162,7 @@ inline bool IsInRange(vram_block* block,u32 offset)
 void vramlock_Test(u32 addr,u32 value,u32 size)
 {
 	addr=vramlock_ConvAddrtoOffset64(addr);
-	if (GetVramTest_All(addr))
+	/*if (GetVramTest_All(addr))
 	{
 		//shit
 		//no code to handle it
@@ -278,7 +183,7 @@ void vramlock_Test(u32 addr,u32 value,u32 size)
 			}
 		}
  
-	}
+	}*/
 }
  
 //returns block handle
@@ -292,7 +197,7 @@ vram_block* vramlock_Lock_32(u32 start_offset32,u32 end_offset32,void* userdata)
 	block->userdata=userdata;
 	block->type=32;
  
-	for (u32 base=start_offset32;base<end_offset32;base+=4)
+	/*for (u32 base=start_offset32;base<end_offset32;base+=4)
 	{
 		SetVramTest_32(vramlock_ConvOffset32toOffset64(base));
 	}
@@ -300,7 +205,7 @@ vram_block* vramlock_Lock_32(u32 start_offset32,u32 end_offset32,void* userdata)
 	for (u32 base=block->start;base<block->end;base+=4)
 	{
 		vramlock_list_add(block,&vram_locks[GetHash(vramlock_ConvOffset32toOffset64(base))]);
-	}
+	}*/
  
 	return block;
 }
@@ -310,12 +215,31 @@ vram_block* vramlock_Lock_64(u32 start_offset64,u32 end_offset64,void* userdata)
 {
 	vram_block* block=(vram_block* )malloc(sizeof(vram_block));
  
+
+	if (end_offset64>(VRAM_SIZE-1))
+	{
+		printf("vramlock_Lock_64: end_offset64>(VRAM_SIZE-1) , Tried to lock area out of vram , possibly bug on the pvr plugin\n");
+		end_offset64=(VRAM_SIZE-1);
+	}
+
+	if (start_offset64>end_offset64)
+	{
+		printf("vramlock_Lock_64: start_offset64>end_offset64 , Tried to lock negative block , possibly bug on the pvr plugin\n");
+		start_offset64=0;
+	}
+
+	
+
 	block->end=end_offset64;
 	block->start=start_offset64;
 	block->len=end_offset64-start_offset64+1;
 	block->userdata=userdata;
 	block->type=64;
- 
+
+	vram.LockRegion(block->start,block->len);
+	vramlock_list_add(block);
+
+ /*
 	for (u32 base=start_offset64;base<end_offset64;base+=VramTestMinWrite)
 	{
 		SetVramTest_64(base);
@@ -325,18 +249,47 @@ vram_block* vramlock_Lock_64(u32 start_offset64,u32 end_offset64,void* userdata)
 	for (u32 hash_base = GetHash(block->start);hash_base<=hash_end;hash_base+=1)
 	{
 		vramlock_list_add(block,&vram_locks[hash_base]);
-	}
+	}*/
  
 	return block;
 }
  
- 
- 
+bool VramLockedWrite(u8* address)
+{
+	size_t offset=address-vram.data;
+
+	if (offset<VRAM_SIZE)
+	{
+		u32 found=0;
+		size_t addr_hash = offset/PAGE_SIZE;
+		vector<vram_block*>* list=&VramLocks[addr_hash];
+			
+		for (size_t i=0;i<list->size();i++)
+		{
+			if ((*list)[i])
+			{
+				libPvr->pvr_info.LockedBlockWrite((*list)[i],offset);
+				found++;
+				if ((*list)[i])
+					vramlock_list_remove((*list)[i]);
+			}
+		}
+		list->clear();
+		vram.UnLockRegion(offset&(~(PAGE_SIZE-1)),PAGE_SIZE);
+		
+		printf("Vram lock write @ 0x%x [0x%x]  , contains %d locks\n",address,offset,found);
+
+		return true;
+	}
+	else
+		return false;
+}
+
 void vramlock_ClearBlock(vram_block* block)
 {
 	if (block->type==32)
 	{
-		for (u32 base=block->start;base<block->end;base+=4)
+		/*for (u32 base=block->start;base<block->end;base+=4)
 		{
 			ResetVramTest_32(vramlock_ConvOffset32toOffset64(base));
 		}
@@ -344,11 +297,11 @@ void vramlock_ClearBlock(vram_block* block)
 		for (u32 base=block->start;base<block->end;base+=4)
 		{
 			vramlock_list_remove(block,&vram_locks[GetHash(vramlock_ConvOffset32toOffset64(base))]);
-		}
+		}*/
 	}
 	else
 	{
-		for (u32 base=block->start;base<block->end;base+=VramTestMinWrite)
+		/*for (u32 base=block->start;base<block->end;base+=VramTestMinWrite)
 		{
 			ResetVramTest_64(base);
 		}
@@ -357,7 +310,7 @@ void vramlock_ClearBlock(vram_block* block)
 		for (u32 hash_base = GetHash(block->start);hash_base<=hash_end;hash_base+=1)
 		{
 			vramlock_list_remove(block,&vram_locks[hash_base]);
-		}
+		}*/
 	}
  
 }
@@ -367,7 +320,7 @@ void vramlock_ClearBlock(vram_block* block)
 //also frees the handle
 void vramlock_Unlock_block(vram_block* block)
 {
-	vramlock_ClearBlock(block);
+	vramlock_list_remove(block);
 	//more work needed
 	free(block);
 }

@@ -106,6 +106,7 @@ void naked __fastcall DoRunCode(void * code)
 }
 #endif
 
+
 u32 rec_cycles=0;
 u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 {
@@ -182,16 +183,19 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 	return 0;
 }
 
-//yep , for profiling :)
-//asm is so that it doesn't get inlined ;P
-/*u32 THREADCALL rec_sh4_int_ThreadEntry_stub(void* ptar)
+
+//setup the SEH handler here so it doesnt fuq us (vc realy likes not to optimise SEH enabled functions)
+u32 THREADCALL rec_sh4_int_ThreadEntry_stub(void* ptar)
 {
-	__asm 
+	__try
 	{
-		push ptar;
-		call rec_sh4_int_ThreadEntry;
+		return rec_sh4_int_ThreadEntry(ptar);
 	}
-}*/
+	__except( ExeptionHandler( GetExceptionCode(), (GetExceptionInformation())->ExceptionRecord ) )
+	{
+
+	}
+}
 
 //interface
 void rec_Sh4_int_Run(ThreadCallbackFP* tcb)
@@ -203,7 +207,7 @@ void rec_Sh4_int_Run(ThreadCallbackFP* tcb)
 	else
 	{
 		rec_sh4_int_bCpuRun=true;
-		rec_sh4_int_thr_handle=new cThread(rec_sh4_int_ThreadEntry,tcb);
+		rec_sh4_int_thr_handle=new cThread(rec_sh4_int_ThreadEntry_stub,tcb);
 
 		if (rec_sh4_int_thr_handle==0)
 		{

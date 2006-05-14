@@ -3,6 +3,8 @@
 #include <memory.h>
 #include <vector>
 
+#define PAGE_SIZE 4096
+
 extern u32 Array_T_id_count;
 char* GetNullDCSoruceFileName(char* full);
 void GetPathFromFileName(char* full);
@@ -632,4 +634,24 @@ public:
 	void Term();
 	void LockRegion(u32 offset,u32 size);
 	void UnLockRegion(u32 offset,u32 size);
+
+	void Zero()
+	{
+		UnLockRegion(0,size);
+		memset(data,0,size);
+	}
+
+	INLINE u8& operator [](const u32 i)
+    {
+#ifdef MEM_BOUND_CHECK
+        if (i>=size)
+		{
+			printf("Error: VArray , index out of range (%d>%d)\n",i,size-1);
+			MEM_DO_BREAK;
+		}
+#endif
+		return data[i];
+    }
 };
+
+int ExeptionHandler(u32 dwCode, void* pExceptionRecord);

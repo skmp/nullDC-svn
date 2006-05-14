@@ -194,7 +194,7 @@ void DoMapleDma()
 				outlen=4;
 				p_out[0]=0xFFFFFFFF;
 			}
-			rec_v1_NotifyMemWrite(header_2,outlen);
+//			rec_v1_NotifyMemWrite(header_2,outlen);
 
 			//goto next command
 			addr += 2 * 4 + plen * 4;

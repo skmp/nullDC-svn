@@ -8,7 +8,7 @@
 //TODO : Fix registers arrays , they must be smaller now doe to the way SB registers are handled
 #include "plugins/plugin_manager.h"
 
-Array<u8> vram;
+
  
 
 //
@@ -271,7 +271,6 @@ void pvr_write_area1_16(u32 addr,u16 data)
 	u16* vptr=(u16*)&vram[addr ];
 	if (*vptr != data)
 	{
-		vramlock_Test(Address2,0,0);
 		*vptr=data;
 	}
 }
@@ -283,7 +282,6 @@ void pvr_write_area1_32(u32 addr,u32 data)
 	u32* vptr=(u32*)&vram[addr];
 	if (*vptr != data)
 	{
-		vramlock_Test(Address2,0,0);
 		*vptr=data;
 	}
 }
@@ -559,11 +557,11 @@ void TAWrite(u32 address,u32* data,u32 count)
 //Init/Term , global
 void pvr_Init()
 {
-	vram.Resize(VRAM_SIZE,false);
+	vram.Init(VRAM_SIZE);
 }
 void pvr_Term()
 {
-	vram.Free();
+	vram.Term();
 }
 //Reset -> Reset - Initialise to defualt values
 void pvr_Reset(bool Manual)

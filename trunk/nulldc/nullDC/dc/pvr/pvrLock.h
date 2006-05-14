@@ -18,13 +18,6 @@ struct vram_block
 	void* userdata;
 };
  
-struct vram_lock_list
-{
-	u32 len;
-	u32 alloced;
-	vram_block** list;
-};
- 
 typedef void vramLockCBFP (vram_block* block,u32 addr);
  
 u32 vramlock_ConvAddrtoOffset64(u32 Address);
@@ -32,4 +25,5 @@ u32 vramlock_ConvAddrtoOffset64(u32 Address);
 void vramlock_Unlock_block(vram_block* block);
 vram_block* vramlock_Lock_32(u32 start_offset32,u32 end_offset32,void* userdata);
 vram_block* vramlock_Lock_64(u32 start_offset64,u32 end_offset64,void* userdata);
-void vramlock_Test(u32 addr,u32 value,u32 size);
+
+void vram_LockedWrite(u32 offset64);
