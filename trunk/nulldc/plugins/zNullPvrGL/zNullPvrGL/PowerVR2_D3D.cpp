@@ -25,6 +25,13 @@ void PowerVR2_D3D::SetRenderMode(u32 ParamID, u32 TexID)
 {
 	GlobalParam * gp = &GlobalParams[ParamID];
 
+    g_pDev->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+	g_pDev->SetRenderState(D3DRS_SHADEMODE, gp->pcw.Gouraud ? D3DSHADE_GOURAUD : D3DSHADE_FLAT);
+//	g_pDev->SetRenderState(D3DRS_VERTEXBLEND, D3DVBF_1WEIGHTS);
+
+	g_pDev->SetRenderState(D3DRS_ZWRITEENABLE, !gp->isp.ZWriteDis);
+	g_pDev->SetRenderState(D3DRS_ZFUNC, DepthModeDX[gp->isp.DepthMode]);
+
 	switch( gp->pcw.ListType )
 	{
 	case LT_Opaque:
@@ -33,30 +40,31 @@ void PowerVR2_D3D::SetRenderMode(u32 ParamID, u32 TexID)
 		break;
 
 	case LT_Translucent:
+		g_pDev->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
 		
 		if(!gp->param0.tsp.IgnoreTexA)	// in trs type ? alpharef ?
 		{
-			g_pDev->SetRenderState( D3DRS_ALPHATESTENABLE, TRUE );
-			g_pDev->SetRenderState( D3DRS_ALPHAREF, 0x00 );
-			g_pDev->SetRenderState( D3DRS_ALPHAFUNC, D3DCMP_GREATER );
+			g_pDev->SetRenderState(D3DRS_ALPHATESTENABLE, TRUE);
+			g_pDev->SetRenderState(D3DRS_ALPHAREF, 0x00);
+			g_pDev->SetRenderState(D3DRS_ALPHAFUNC, D3DCMP_GREATER);
 	
-		} else { g_pDev->SetRenderState( D3DRS_ALPHATESTENABLE, FALSE ); }
+		} else { g_pDev->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE); }
 
 		if(!gp->param0.tsp.UseAlpha)
-			g_pDev->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
+			g_pDev->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
 		else {
-			g_pDev->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
-			g_pDev->SetRenderState( D3DRS_SRCBLEND,  SrcBlendDX[gp->param0.tsp.SrcInstr] );
-			g_pDev->SetRenderState( D3DRS_DESTBLEND, DstBlendDX[gp->param0.tsp.DstInstr] );
+			g_pDev->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+			g_pDev->SetRenderState(D3DRS_SRCBLEND,  SrcBlendDX[gp->param0.tsp.SrcInstr]);
+			g_pDev->SetRenderState(D3DRS_DESTBLEND, DstBlendDX[gp->param0.tsp.DstInstr]);
 		}
 		break;
 
 	case LT_PunchThrough:
-		g_pDev->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
+		g_pDev->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
 
-		g_pDev->SetRenderState( D3DRS_ALPHATESTENABLE, TRUE );
-		g_pDev->SetRenderState( D3DRS_ALPHAFUNC, D3DCMP_GREATER );
-		g_pDev->SetRenderState( D3DRS_ALPHAREF, (*pPT_ALPHA_REF &0xFF) );
+		g_pDev->SetRenderState(D3DRS_ALPHATESTENABLE, TRUE);
+		g_pDev->SetRenderState(D3DRS_ALPHAFUNC, D3DCMP_GREATEREQUAL);
+		g_pDev->SetRenderState(D3DRS_ALPHAREF, (*pPT_ALPHA_REF &0xFF));
 		break;
 
 	case LT_OpaqueMod:return;		// don't care yet
@@ -71,32 +79,32 @@ void PowerVR2_D3D::SetRenderMode(u32 ParamID, u32 TexID)
 		switch(gp->param0.tsp.ShadInstr)
 		{
 		case 0:	// Decal
-			g_pDev->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
-			g_pDev->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
-			g_pDev->SetTextureStageState( 0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1 );
-			g_pDev->SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE );
+			g_pDev->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1);
+			g_pDev->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+			g_pDev->SetTextureStageState( 0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
+			g_pDev->SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
 			break;
 		case 1:	// Modulate
-			g_pDev->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_MODULATE );
-			g_pDev->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
-			g_pDev->SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE );
-			g_pDev->SetTextureStageState( 0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1 );
-			g_pDev->SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE );
+			g_pDev->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_MODULATE);
+			g_pDev->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+			g_pDev->SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+			g_pDev->SetTextureStageState( 0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
+			g_pDev->SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
 			break;
 		case 2:	// Decal Alpha
-			g_pDev->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_BLENDTEXTUREALPHA );
-			g_pDev->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
-			g_pDev->SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE );
-			g_pDev->SetTextureStageState( 0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1 );
-			g_pDev->SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE );
+			g_pDev->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_BLENDTEXTUREALPHA);
+			g_pDev->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+			g_pDev->SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+			g_pDev->SetTextureStageState( 0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
+			g_pDev->SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
 			break;
 		case 3:	// Modulate Alpha
-			g_pDev->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_MODULATE );
-			g_pDev->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
-			g_pDev->SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE );
-			g_pDev->SetTextureStageState( 0, D3DTSS_ALPHAOP,   D3DTOP_MODULATE );
-			g_pDev->SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE );
-			g_pDev->SetTextureStageState( 0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE );
+			g_pDev->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_MODULATE);
+			g_pDev->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+			g_pDev->SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+			g_pDev->SetTextureStageState( 0, D3DTSS_ALPHAOP,   D3DTOP_MODULATE);
+			g_pDev->SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+			g_pDev->SetTextureStageState( 0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
 			break;
 		default: ASSERT_T((1),"SetRenderMode->TSP.ShadInstr is INVALID !!"); return;
 		}
@@ -104,33 +112,26 @@ void PowerVR2_D3D::SetRenderMode(u32 ParamID, u32 TexID)
 		switch(gp->param0.tsp.FilterMode)
 		{
 		case 0:	// point sampled
-	//		g_pDev->SetTextureStageState( 0, D3DTSS_MINFILTER, D3DTEXF_POINT );
-	//		g_pDev->SetTextureStageState( 0, D3DTSS_MAGFILTER, D3DTEXF_POINT );
+	//		g_pDev->SetTextureStageState( 0, D3DTSS_MINFILTER, D3DTEXF_POINT);
+	//		g_pDev->SetTextureStageState( 0, D3DTSS_MAGFILTER, D3DTEXF_POINT);
 			break;
 		case 1:	// bi-linear
-	//		g_pDev->SetTextureStageState( 0, D3DTSS_MINFILTER, D3DTEXF_LINEAR );
-	//		g_pDev->SetTextureStageState( 0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR );
+	//		g_pDev->SetTextureStageState( 0, D3DTSS_MINFILTER, D3DTEXF_LINEAR);
+	//		g_pDev->SetTextureStageState( 0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR);
 			break;
 		case 2:	// pass a
 		case 3:	// pass b
-		//	g_pDev->SetTextureStageState( 0, D3DTSS_MIPFILTER, D3DTEXF_NONE );
-	//		g_pDev->SetTextureStageState( 0, D3DTSS_MINFILTER, D3DTEXF_LINEAR );
-	//		g_pDev->SetTextureStageState( 0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR );
+		//	g_pDev->SetTextureStageState( 0, D3DTSS_MIPFILTER, D3DTEXF_NONE);
+	//		g_pDev->SetTextureStageState( 0, D3DTSS_MINFILTER, D3DTEXF_LINEAR);
+	//		g_pDev->SetTextureStageState( 0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR);
 			break;
 		default: ASSERT_T((1),"Unknown Tex Filter Type in SetRenderMode() !!"); break;
 		}
 
 	//	D3DTTFF_DISABLE, D3DTTFF_COUNT1|2|3|4  D3DTTFF_PROJECTED 
-	//	g_pDev->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_DISABLE);
+		g_pDev->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS,
+										D3DTTFF_COUNT4 | D3DTTFF_PROJECTED);
 	}
-
-
-    g_pDev->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE );
-	g_pDev->SetRenderState(D3DRS_SHADEMODE, gp->pcw.Gouraud ? D3DSHADE_GOURAUD : D3DSHADE_FLAT);
-//	g_pDev->SetRenderState(D3DRS_VERTEXBLEND, D3DVBF_1WEIGHTS);
-
-//	g_pDev->SetRenderState(D3DRS_ZWRITEENABLE, !gp->isp.ZWriteDis );
-	g_pDev->SetRenderState(D3DRS_ZFUNC, DepthModeDX[gp->isp.DepthMode]);
 }
 
 
@@ -180,13 +181,9 @@ void PowerVR2_D3D::Render()
 
 
 	RenderStripList(OpaqueVerts);
-	RenderStripList(TranspVerts);	//Sprites
+	RenderStripList(TranspVerts);
 	RenderStripList(PunchtVerts);
-
-
 //	RenderSprites(Sprites);
-
-
 
 
 
@@ -209,35 +206,30 @@ void PowerVR2_D3D::Resize()
 
 bool PowerVR2_D3D::Init()
 {
-	if( FAILED(g_pD3D = Direct3DCreate9(D3D_SDK_VERSION)) )
+	if(FAILED(g_pD3D = Direct3DCreate9(D3D_SDK_VERSION)))
 		goto fail;
 
 	D3DDISPLAYMODE d3ddm;
-	if( FAILED(g_pD3D->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &d3ddm)) )
+	if(FAILED(g_pD3D->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &d3ddm)))
 		goto fail;
 	
 	D3DPRESENT_PARAMETERS d3dpp; 
-	ZeroMemory( &d3dpp, sizeof(d3dpp) );
+	ZeroMemory(&d3dpp, sizeof(d3dpp));
 	d3dpp.Windowed   = TRUE;
 	d3dpp.SwapEffect = D3DSWAPEFFECT_COPY;	// D3DSWAPEFFECT_COPY_VSYNC;
 	d3dpp.BackBufferFormat = d3ddm.Format;
     d3dpp.EnableAutoDepthStencil = TRUE;
     d3dpp.AutoDepthStencilFormat = D3DFMT_D16;
 	
-	if( FAILED( g_pD3D->CreateDevice(
+	if( FAILED(g_pD3D->CreateDevice(
 		D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, (HWND)emuIf.handle,
 		D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_FPU_PRESERVE,	// *FIXME* fucking use hardware 
 		&d3dpp, &g_pDev ) ) )
 		goto fail;
 
-//	if( FAILED( g_pDev->CreateDepthStencilSurface( 640,480, D3DFMT_D16, D3DMULTISAMPLE_NONE, &g_pZSurface ) ))
-//		goto fail;
 
-//	g_pDev->SetRenderTarget(NULL,g_pZSurface);
-
-
-	if( FAILED( g_pDev->CreateVertexBuffer(MAX_VB_SIZE*sizeof(Vertex),
-		D3DUSAGE_WRITEONLY|D3DUSAGE_DYNAMIC, D3DFVF_VERTEX, D3DPOOL_DEFAULT, &g_pVB, NULL ) ) )
+	if( FAILED(g_pDev->CreateVertexBuffer(MAX_VB_SIZE*sizeof(Vertex),
+		D3DUSAGE_WRITEONLY|D3DUSAGE_DYNAMIC, D3DFVF_VERTEX, D3DPOOL_DEFAULT, &g_pVB, NULL)))
 	   goto fail;
 	else
 	{
@@ -253,8 +245,7 @@ bool PowerVR2_D3D::Init()
 		g_pDev->SetTransform(D3DTS_VIEW, &(D3DMATRIX)mat);
 
 		g_pDev->SetRenderState(D3DRS_LIGHTING, FALSE);
-		g_pDev->SetRenderState(D3DRS_ZENABLE, D3DZB_USEW ); // D3DZB_TRUE
-
+		g_pDev->SetRenderState(D3DRS_ZENABLE, D3DZB_TRUE); // D3DZB_USEW
 	}
 
 	if(g_pDev->CreateVertexDeclaration(vertel, &g_pVD) != D3D_OK)
@@ -282,7 +273,6 @@ void PowerVR2_D3D::Term()
 
 	ClearTCache();		// Textures
 	ClearDCache();
-
 }
 
 

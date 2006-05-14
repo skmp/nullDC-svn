@@ -890,43 +890,21 @@ TexID TextureCache::GetTexture(PolyParam *pp)
 
 	switch(tctrl)
 	{
-	case 0x00:		// 1555 + Twiddled
-		TexDec1555_TW(pp,&tex);		break;
+	case 0x00:	TexDec1555_TW(pp,&tex);		break;	// 1555 + Twiddled
+	case 0x02:	TexDec1555(pp,&tex);		break;	// 1555
+	case 0x03:	TexDec1555_SR(pp,&tex);		break;	// 1555 + StrideRect
 
-	case 0x02:		// 1555
-		TexDec1555(pp,&tex);		break;
+	case 0x04:	TexDec565_TW(pp,&tex);		break;	// 565 + Twiddled
+	case 0x06:	TexDec565(pp,&tex);			break;	// 565
+	case 0x07:	TexDec565_SR(pp,&tex);		break;	// 565 + StrideRect
 
-	case 0x03:		// 1555 + StrideRect
-		TexDec1555_SR(pp,&tex);		break;
+	case 0x08:	TexDec4444_TW(pp,&tex);		break;	// 4444 + Twiddled
+	case 0x0A:	TexDec4444(pp,&tex);		break;	// 4444
+	case 0x0B:	TexDec4444_SR(pp,&tex);		break;	// 4444 + StrideRect
 
-	case 0x04:		// 565 + Twiddled
-		TexDec565_TW(pp,&tex);		break;
-
-	case 0x06:		// 565
-		TexDec565(pp,&tex);			break;
-
-	case 0x07:		// 565 + StrideRect
-		TexDec565_SR(pp,&tex);		break;
-
-	case 0x08:		// 4444 + Twiddled
-		TexDec4444_TW(pp,&tex);		break;
-
-	case 0x0A:		// 4444
-		TexDec4444(pp,&tex);		break;
-
-	case 0x0B:		// 4444 + StrideRect
-		TexDec4444_SR(pp,&tex);		break;
-
-
-
-	case 0x0C:		// YUV422 + Twiddled
-		TexDecYUV_TW(pp,&tex);		break;
-
-	case 0x0E:		// YUV422
-		TexDecYUV(pp,&tex);			break;
-
-	case 0x0F:		// YUV422 + StrideRect
-		TexDecYUV_SR(pp,&tex);			break;
+	case 0x0C:	TexDecYUV_TW(pp,&tex);		break;	// YUV422 + Twiddled
+	case 0x0E:	TexDecYUV(pp,&tex);			break;	// YUV422
+	case 0x0F:	TexDecYUV_SR(pp,&tex);		break;	// YUV422 + StrideRect
 
 
 
@@ -938,39 +916,30 @@ TexID TextureCache::GetTexture(PolyParam *pp)
 
 
 
-	case 0x14:		// PAL4
-	case 0x15:		// PAL4
-	case 0x16:		// PAL4
-	case 0x17:		// PAL4
+	case 0x14:	case 0x15:		// PAL4
+	case 0x16:	case 0x17:		// PAL4
 		TexDecPAL4(pp,&tex);	break;
 
-	case 0x18:		// PAL8
-	case 0x19:		// PAL8
-	case 0x1A:		// PAL8
-	case 0x1B:		// PAL8
+	case 0x18:	case 0x19:		// PAL8
+	case 0x1A:	case 0x1B:		// PAL8
 		TexDecPAL8(pp,&tex);	break;
 
 
 
 
 		// Start VQ //
-	case 0x20:		// 1555 + VQ + Twiddled
-		TexDec1555_TW_VQ(pp,&tex);		break;
 
+	case 0x20:	TexDec1555_TW_VQ(pp,&tex);		break;	// 1555 + VQ + Twiddled
 	case 0x22:		// 1555 + VQ
 	case 0x23:		// 1555 + VQ + StrideRect
 		goto unhandled_fmt;
 
-	case 0x24:		// 565 + VQ + Twiddled
-		TexDec565_TW_VQ(pp,&tex);		break;
-
+	case 0x24:	TexDec565_TW_VQ(pp,&tex);		break;	// 565 + VQ + Twiddled
 	case 0x26:		// 565 + VQ
 	case 0x27:		// 565 + VQ + StrideRect
 		goto unhandled_fmt;
 
-	case 0x28:		// 4444 + VQ + Twiddled
-		TexDec4444_TW_VQ(pp,&tex);		break;
-
+	case 0x28:	TexDec4444_TW_VQ(pp,&tex);		break;	// 4444 + VQ + Twiddled
 	case 0x2A:		// 4444 + VQ
 	case 0x2B:		// 4444 + VQ + StrideRect
 		goto unhandled_fmt;
@@ -979,47 +948,34 @@ TexID TextureCache::GetTexture(PolyParam *pp)
 
 
 
-
-
 		// Start MipMaps //
-	case 0x40:		// 1555 + MipMap + Twiddled
-		TexDec1555_TW_MM(pp,&tex);		break;
 
+	case 0x40:	TexDec1555_TW_MM(pp,&tex);		break;	// 1555 + MipMap + Twiddled
 	case 0x42:		// 1555 + MipMap
 	case 0x43:		// 1555 + MipMap + StrideRect
 		goto unhandled_fmt;
 
-	case 0x44:		// 565 + MipMap + Twiddled
-		TexDec565_TW_MM(pp,&tex);		break;
-
+	case 0x44:	TexDec565_TW_MM(pp,&tex);		break;	// 565 + MipMap + Twiddled
 	case 0x46:		// 565 + MipMap
 	case 0x47:		// 565 + MipMap + StrideRect
 		goto unhandled_fmt;
 
-	case 0x48:		// 4444 + MipMap + Twiddled
-		TexDec4444_TW_MM(pp,&tex);		break;
-
+	case 0x48:	TexDec4444_TW_MM(pp,&tex);		break;	// 4444 + MipMap + Twiddled
 	case 0x4A:		// 4444 + MipMap
 	case 0x4B:		// 4444 + MipMap + StrideRect
 		goto unhandled_fmt;
 
 
-	case 0x4C:		// YUV422 + MipMap + Twiddled
-		TexDecYUV_TW_MM(pp,&tex);		break;
-
+	case 0x4C:	TexDecYUV_TW_MM(pp,&tex);		break;	// YUV422 + MipMap + Twiddled
 
 
 
 
 		// Start VQ+MipMaps //
-	case 0x60:		// 1555 + Twiddled
-		TexDec1555_TW_MM_VQ(pp,&tex);		break;
 
-	case 0x64:		// 565 + Twiddled
-		TexDec565_TW_MM_VQ(pp,&tex);		break;
-
-	case 0x68:		// 4444 + Twiddled
-		TexDec4444_TW_MM_VQ(pp,&tex);		break;
+	case 0x60:	TexDec1555_TW_MM_VQ(pp,&tex);		break;	// 1555 + Twiddled
+	case 0x64:	TexDec565_TW_MM_VQ(pp,&tex);		break;	// 565 + Twiddled
+	case 0x68:	TexDec4444_TW_MM_VQ(pp,&tex);		break;	// 4444 + Twiddled
 
 
 
@@ -1042,7 +998,6 @@ TexID TextureCache::GetTexture(PolyParam *pp)
 	case 0x49:		// 4444 + MipMap (Illegal Twiddle/Stride)
 	default:
 		goto unhandled_fmt;
-
 	}
 
 	tex.lock_block=emuIf.vramLock64(tex.Start, tex.End, NULL);
@@ -1069,10 +1024,8 @@ void DeleteTexture(u32 Texture)
 	if(R_OPENGL==pvrOpts.GfxApi)
 		glDeleteTextures(1,&Texture);
 	else
-	{
-		;
-
-	}
+		((IDirect3DTexture9*)Texture)->Release();
+	Texture = 0;
 }
 
 void vramLockCB(vram_block *bl, u32 addr)

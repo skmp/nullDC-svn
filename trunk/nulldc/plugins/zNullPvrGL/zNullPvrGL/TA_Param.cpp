@@ -378,18 +378,18 @@ ParamSize PrimConverter::AppendVert(VertexParam *vp)
 	vertex.xyz[1] = vp->vtx0.xyz[1];
 	vertex.xyz[2] = vp->vtx0.xyz[2];
 
-	vertex.uv[2] = 0.f;
-	vertex.uv[3] = (R_OPENGL==pvrOpts.GfxApi) ? vertex.xyz[2] : 1.f;
-
-	if(R_OPENGL==pvrOpts.GfxApi) {		// transform the coords, opengl/d3d differ here
-		vertex.uv[0] *= vertex.xyz[2];
-		vertex.uv[1] *= vertex.xyz[2];
-	}
-
-
-	// *FIXME* HACK
+	// *FIXME* HACK - test, does this device before persp correction make text/menus screwd up?
 	if(vertex.xyz[2] > 1.f)
 		vertex.xyz[2] /= (vertex.xyz[2] > 512.f) ? 10000.f : 256.f;
+
+	// thought i got rid of most of these hacks, i guess d3d in the same plugin is a hack in itself
+	if(R_D3D==pvrOpts.GfxApi)
+		vertex.col = (vertex.col &0xFF00FF00) | ((vertex.col&255)<<16) | ((vertex.col>>16)&255);
+
+	vertex.uv[2] = 0.f;
+	vertex.uv[3] = vertex.xyz[2];
+	vertex.uv[0] *= vertex.xyz[2];
+	vertex.uv[1] *= vertex.xyz[2];
 
 
 	// Push it on list
@@ -415,8 +415,6 @@ ParamSize PrimConverter::AppendVert(VertexParam *vp)
 		tmpVert.ParamID = 0;
 		tmpVert.List.clear();
 	}
-
-
 	return VSize;
 }
 
