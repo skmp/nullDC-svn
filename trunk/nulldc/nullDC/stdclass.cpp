@@ -292,7 +292,7 @@ void VArray::UnLockRegion(u32 offset,u32 size)
 
 
 bool VramLockedWrite(u8* address);
-bool RamLockedWrite(u8* address);
+
 int ExeptionHandler(u32 dwCode, void* pExceptionRecord_v)
 {
 	EXCEPTION_RECORD* pExceptionRecord=(EXCEPTION_RECORD*)pExceptionRecord_v;
@@ -303,7 +303,7 @@ int ExeptionHandler(u32 dwCode, void* pExceptionRecord_v)
 	u8* address=(u8*)pExceptionRecord->ExceptionInformation[1];
 
 	
-	if (!(VramLockedWrite(address) || RamLockedWrite(address)))
+	if (!(VramLockedWrite(address) /*|| RamLockedWrite(address))*/))
 		printf("Unhandled write to : 0x%X\n",address);
 	else
 		return EXCEPTION_CONTINUE_EXECUTION;

@@ -4,6 +4,7 @@
 #include <vector>
 
 #define PAGE_SIZE 4096
+#define PAGE_MASK (PAGE_SIZE-1)
 
 extern u32 Array_T_id_count;
 char* GetNullDCSoruceFileName(char* full);

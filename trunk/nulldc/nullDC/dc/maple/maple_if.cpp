@@ -110,10 +110,12 @@ u32 GetMaplePort(u32 addr)
 		if ((1<<i)&addr)
 			return i==5?0:1+i;
 	}
+	return 0;
 }
 u32 GetConnectedDevices(u32 Port)
 {
 	u32 rv=0;
+	
 	if(MapleDevices[Port][1].Connected)
 		rv|=0x01;
 	if(MapleDevices[Port][2].Connected)
@@ -124,6 +126,7 @@ u32 GetConnectedDevices(u32 Port)
 		rv|=0x08;
 	if(MapleDevices[Port][5].Connected)
 		rv|=0x10;
+
 	return rv;
 }
 u32 dmacount=0;
@@ -194,7 +197,7 @@ void DoMapleDma()
 				outlen=4;
 				p_out[0]=0xFFFFFFFF;
 			}
-//			rec_v1_NotifyMemWrite(header_2,outlen);
+			rec_v1_NotifyMemWrite(header_2,outlen);
 
 			//goto next command
 			addr += 2 * 4 + plen * 4;
@@ -286,7 +289,7 @@ maple_device* FindMapleDevice(char* device)
 	char dll[512];
 	int id;
 	Split(device,dll,id);
-	for (int i=0;i<libMaple.size();i++)
+	for (u32 i=0;i<libMaple.size();i++)
 	{
 		if (strcmp(libMaple[i]->dll,dll)==0)
 			return &(libMaple[i]->maple_info.Devices[id]);

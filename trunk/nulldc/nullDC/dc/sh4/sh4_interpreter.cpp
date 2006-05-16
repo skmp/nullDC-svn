@@ -359,6 +359,7 @@ bool ExecuteDelayslot()
 //General update
 //u32 gdCnt=0;
 u32 aica_cycl=0;
+void FreeSuspendedBlocks();;
 int __fastcall UpdateSystem(u32 Cycles)
 {
 	//TODO : Add Update System implementation
@@ -366,6 +367,7 @@ int __fastcall UpdateSystem(u32 Cycles)
 	if (aica_cycl>(200*1000*1000/(44100*3)))
 	{
 		UpdateAica(aica_cycl);
+		FreeSuspendedBlocks();
 		aica_cycl=0;
 	}
 	UpdateTMU(Cycles);

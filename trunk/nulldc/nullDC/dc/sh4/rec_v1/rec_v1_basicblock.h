@@ -42,6 +42,22 @@ public :
 
 
 #define BLOCKLIST_MAX_CYCLES (448)
+class rec_v1_BasicBlock;
+
+class rec_v1_BasicBlock_bmngdata
+{
+	rec_v1_BasicBlock* pParent;
+	vector<rec_v1_BasicBlock_bmngdata*> callees;
+
+	/*void SuspendBlock()
+	{
+		for (int i=0;i<callees.size();i++)
+		{
+			callees[i].
+		}
+	}*/
+};
+
 class rec_v1_BasicBlock
 {
 	vector<rec_v1_BasicBlock*> callers;
@@ -49,6 +65,7 @@ class rec_v1_BasicBlock
 
 	rec_v1_BasicBlock* TF_block;
 	rec_v1_BasicBlock* TT_block;
+
 	rec_v1_BasicBlock()
 	{
 		start=0;
@@ -59,12 +76,21 @@ class rec_v1_BasicBlock
 		TF_next_addr=0xFFFFFFFF;
 		TT_next_addr=0xFFFFFFFF;
 		TF_block=TT_block=0;
+		Discarded=false;
 	}	
 
-	void Discard();
+	void rec_v1_BasicBlock::RemoveCaller(rec_v1_BasicBlock* bb);
+		void rec_v1_BasicBlock::RemoveCallee(rec_v1_BasicBlock* bb);
+
+	void Free();
+	void Suspend();
 	bool Contains(u32 pc);
 	//we get called by bb
-	void AddRef(rec_v1_BasicBlock* bb);
+	void AddCaller(rec_v1_BasicBlock* bb);
+	//we call bb
+	void AddCallee(rec_v1_BasicBlock* bb);
+	//Find a calle
+	rec_v1_BasicBlock* FindCallee(u32 address);
 
 	//start pc
 	u32 start;
@@ -87,6 +113,10 @@ class rec_v1_BasicBlock
 	//pointers to blocks
 	void* pTF_next_addr;//tfalse or jmp
 	void* pTT_next_addr;//ttrue  or rts guess
+
+	vector<rec_v1_BasicBlock*> callees;
+	bool Discarded;
 };
+
 
 typedef void (__fastcall RecOpCallFP) (u32 op,u32 pc,rec_v1_BasicBlock* bb);

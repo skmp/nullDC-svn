@@ -46,16 +46,17 @@ INLINE rec_v1_BasicBlock* __fastcall GetRecompiledCode(u32 pc)
 		return block;
 	else
 	{
-		block=rec_v1_AddBlock(pc);
+		block=rec_v1_NewBlock(pc);
 		//analyse code
 		rec_v1_AnalyseCode(pc,block);
+		rec_v1_RegisterBlock(block);
 		CompileBasicBlock_slow(block);
 		//compile code
 		//return pointer
 		return block;
 	}
 }
-
+/*
 rec_v1_BasicBlock* rec_v1_FindOrAnalyse(u32 pc)
 {
 	rec_v1_BasicBlock* block=rec_v1_FindBlock(pc);
@@ -71,7 +72,7 @@ rec_v1_BasicBlock* rec_v1_FindOrAnalyse(u32 pc)
 		//return pointer
 		return block;
 	}
-}
+}*/
 rec_v1_BasicBlock* rec_v1_FindOrRecompileCode(u32 pc)
 {
 	return GetRecompiledCode(pc);
@@ -116,6 +117,7 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 	ptr(true);//call the callback to init
 	
 	
+//	pExitBlock=0;
 	rec_cycles=0;
 	SetFloatStatusReg();
 	while(rec_sh4_int_bCpuRun)
@@ -173,7 +175,12 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 				printf("rec_cycles=%d\n",rec_cycles);
 			}
 
-			UpdateSystem(rec_cycles);
+//			if (pExitBlock->Discarded)
+			//	pExitBlock=0;
+			if (UpdateSystem(rec_cycles))
+			{
+				//pExitBlock=0;
+			}
 			rec_cycles=0;
 			//SetFloatStatusReg();
 		}
@@ -195,6 +202,8 @@ u32 THREADCALL rec_sh4_int_ThreadEntry_stub(void* ptar)
 	{
 
 	}
+
+	return 0;
 }
 
 //interface

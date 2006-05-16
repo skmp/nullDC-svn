@@ -1125,7 +1125,7 @@ void __fastcall shil_compile_writem(shil_opcode* op,rec_v1_BasicBlock* block)
 
 
 		//no more block tests
-		/*
+		
 		//if needed
 		if (r1==EDX)
 			x86e->PUSH32R(r1);
@@ -1133,11 +1133,11 @@ void __fastcall shil_compile_writem(shil_opcode* op,rec_v1_BasicBlock* block)
 
 		//call rec_v1_BlockTest
 		//
-//		rec_v1_CompileBlockTest(x86e,ECX,EAX);
+		rec_v1_CompileBlockTest(x86e,ECX,EAX);
 
 		//if needed
 		if (r1==EDX)
-			x86e->POP32R(r1);*/
+			x86e->POP32R(r1);
 
 		//add ecx, ram_base
 		x86e->ADD32ItoR(ECX,(u32)(&mem_b[0]));
@@ -2052,7 +2052,7 @@ void* __fastcall link_compile_inject_TF(rec_v1_BasicBlock* ptr)
 	rec_v1_BasicBlock* target= rec_v1_FindOrRecompileCode(ptr->TF_next_addr);
 	
 	//Add reference so we can undo the chain later
-	target->AddRef(ptr);
+	target->AddCaller(ptr);
 	ptr->TF_block=target;
 	return ptr->pTF_next_addr=target->compiled->Code;
 }
@@ -2062,7 +2062,7 @@ void* __fastcall link_compile_inject_TT(rec_v1_BasicBlock* ptr)
 	rec_v1_BasicBlock* target= rec_v1_FindOrRecompileCode(ptr->TT_next_addr);
 
 	//Add reference
-	target->AddRef(ptr);
+	target->AddCaller(ptr);
 	ptr->TT_block=target;
 	return ptr->pTT_next_addr=target->compiled->Code;
 } 
@@ -2166,6 +2166,7 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 		}
 	case BLOCK_TYPE_DYNAMIC:
 		{
+//			x86e->MOV32ItoM((u32*)&pExitBlock,(u32)block);
 			x86e->RET();
 			break;
 		}
@@ -2179,6 +2180,8 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 				x86e->CMP32MtoR(EAX,&call_ret_address);
 				//je ok
 				u8* ok=x86e->JE8(0);
+				//save exit block 
+//				x86e->MOV32ItoM((u32*)&pExitBlock,(u32)block);
 				//ret
 				x86e->RET();
 				//ok:
@@ -2194,7 +2197,11 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 				
 			}
 			else
+			{
+				//save exit block 
+//				x86e->MOV32ItoM((u32*)&pExitBlock,(u32)block);
 				x86e->RET();
+			}
 			break;
 		}
 
@@ -2233,6 +2240,9 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 				//!=
 				x86e->CMOVNE32MtoR(EAX,TT_a);//!=
 				x86e->MOV32RtoM(GetRegPtr(reg_pc),EAX);
+
+				//save exit block 
+//				x86e->MOV32ItoM((u32*)&pExitBlock,(u32)block);
 				x86e->RET();//return to caller to check for interrupts
 			}
 			//Link:
@@ -2295,6 +2305,8 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 
 			//If our cycle count is expired
 			x86e->MOV32ItoM(GetRegPtr(reg_pc),block->TF_next_addr);
+			//save exit block 
+//			x86e->MOV32ItoM((u32*)&pExitBlock,(u32)block);
 			x86e->RET();//return to caller to check for interrupts
 
 
