@@ -1,5 +1,10 @@
 #pragma once
 
+
+//this looks like the main header ? -Z
+//#define BUILD_NAOMI (1)
+
+
 //SHUT UP M$ COMPILER !@#!@$#
 #ifdef _CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES
 #undef _CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES

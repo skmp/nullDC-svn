@@ -13,7 +13,7 @@ using namespace std;
 #include "dc/sh4/rec_v1/rec_v1_blockmanager.h"
 
 #ifdef ZGDROM
-
+#ifndef BUILD_NAOMI
 
 
 // A few vectors or lists for our shitt
@@ -212,7 +212,6 @@ u32  ReadMem_gdrom(u32 Addr, u32 sz)
 	printf("!(GD)\tERROR: Read to GDROM Reg %X Unhandled!\n", Addr);
 	return 0;
 }
-
 
 
 void WriteMem_gdrom(u32 Addr, u32 data, u32 sz)
@@ -819,4 +818,65 @@ void gdop(u32 opcode)
 	printf("(GD-HLE) UNIMPLEMENTED !\n\n");
 }
 
-#endif
+#else	// BUILD_NAOMI TRUE
+
+
+void gdop(u32 opcode) { printf("ERROR - (GD-HLE) OP IN NAOMI SECTION - !\n\n"); }
+void gdBootHLE(void) { printf("ERROR - (GD-HLE) BOOT IN NAOMI SECTION - !\n\n"); }
+
+void NotifyEvent_gdrom(DriveEvent info, void* param) { 
+	printf("ERROR - NotifyEvent_gdrom() IN NAOMI SECTION - !\n\n");
+}
+
+
+void gdrom_reg_Init(void)
+{
+}
+void gdrom_reg_Reset(bool)
+{
+}
+void gdrom_reg_Term(void)
+{
+}
+
+
+
+
+
+u32  ReadMem_gdrom(u32 Addr, u32 sz)
+{
+	switch((Addr&255))
+	{
+
+	case 0x4C:		// no clue, status?
+		return 1;
+
+	case 0:
+	default:
+		break;
+	}
+
+	printf("ReadMem_gdrom(%08X, %d) Unhandled\n",Addr,sz);
+	return 0;
+}
+
+void WriteMem_gdrom(u32 Addr, u32 data, u32 sz)
+{
+	printf("WriteMem_gdrom(%08X, %08X, %d)\n",Addr,data,sz);
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+#endif	// BUILD_NAOMI
+
+#endif	// ZGDROM

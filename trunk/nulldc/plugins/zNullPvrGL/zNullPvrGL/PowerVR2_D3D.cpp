@@ -40,7 +40,8 @@ void PowerVR2_D3D::SetRenderMode(u32 ParamID, u32 TexID)
 		break;
 
 	case LT_Translucent:
-		g_pDev->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+	//	g_pDev->SetRenderState(D3DRS_ZENABLE, D3DZB_FALSE);
+		g_pDev->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
 		
 		if(!gp->param0.tsp.IgnoreTexA)	// in trs type ? alpharef ?
 		{
@@ -72,39 +73,37 @@ void PowerVR2_D3D::SetRenderMode(u32 ParamID, u32 TexID)
 	case LT_Reserved: ASSERT_T((1),"BOGUS LIST TYPE IN SetRenderMode()");	return;
 	}
 
-
 	if(gp->isp.Texture || gp->pcw.Texture)
 	{
-		// these might be correct now except for offset color 
-		switch(gp->param0.tsp.ShadInstr)
+		switch(gp->param0.tsp.ShadInstr)	// these should be correct, except offset
 		{
 		case 0:	// Decal
-			g_pDev->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1);
-			g_pDev->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
-			g_pDev->SetTextureStageState( 0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
-			g_pDev->SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+			g_pDev->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1);
+			g_pDev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+			g_pDev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
+			g_pDev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
 			break;
 		case 1:	// Modulate
-			g_pDev->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_MODULATE);
-			g_pDev->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
-			g_pDev->SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
-			g_pDev->SetTextureStageState( 0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
-			g_pDev->SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+			g_pDev->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_MODULATE);
+			g_pDev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+			g_pDev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+			g_pDev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
+			g_pDev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
 			break;
 		case 2:	// Decal Alpha
-			g_pDev->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_BLENDTEXTUREALPHA);
-			g_pDev->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
-			g_pDev->SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
-			g_pDev->SetTextureStageState( 0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
-			g_pDev->SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
+			g_pDev->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_BLENDTEXTUREALPHA);
+			g_pDev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+			g_pDev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+			g_pDev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
+			g_pDev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
 			break;
 		case 3:	// Modulate Alpha
-			g_pDev->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_MODULATE);
-			g_pDev->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
-			g_pDev->SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
-			g_pDev->SetTextureStageState( 0, D3DTSS_ALPHAOP,   D3DTOP_MODULATE);
-			g_pDev->SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
-			g_pDev->SetTextureStageState( 0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
+			g_pDev->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_MODULATE);
+			g_pDev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+			g_pDev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+			g_pDev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_MODULATE);
+			g_pDev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+			g_pDev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
 			break;
 		default: ASSERT_T((1),"SetRenderMode->TSP.ShadInstr is INVALID !!"); return;
 		}
@@ -112,18 +111,110 @@ void PowerVR2_D3D::SetRenderMode(u32 ParamID, u32 TexID)
 		switch(gp->param0.tsp.FilterMode)
 		{
 		case 0:	// point sampled
-	//		g_pDev->SetTextureStageState( 0, D3DTSS_MINFILTER, D3DTEXF_POINT);
-	//		g_pDev->SetTextureStageState( 0, D3DTSS_MAGFILTER, D3DTEXF_POINT);
+			g_pDev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+			g_pDev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
 			break;
 		case 1:	// bi-linear
-	//		g_pDev->SetTextureStageState( 0, D3DTSS_MINFILTER, D3DTEXF_LINEAR);
-	//		g_pDev->SetTextureStageState( 0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR);
+			g_pDev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+			g_pDev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 			break;
 		case 2:	// pass a
 		case 3:	// pass b
-		//	g_pDev->SetTextureStageState( 0, D3DTSS_MIPFILTER, D3DTEXF_NONE);
-	//		g_pDev->SetTextureStageState( 0, D3DTSS_MINFILTER, D3DTEXF_LINEAR);
-	//		g_pDev->SetTextureStageState( 0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR);
+		//	g_pDev->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
+			g_pDev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+			g_pDev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+			break;
+		default: ASSERT_T((1),"Unknown Tex Filter Type in SetRenderMode() !!"); break;
+		}
+
+	//	D3DTTFF_DISABLE, D3DTTFF_COUNT1|2|3|4  D3DTTFF_PROJECTED 
+		g_pDev->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS,
+										D3DTTFF_COUNT4 | D3DTTFF_PROJECTED);
+	}
+/*
+	// test 
+	g_pDev->SetRenderState(D3DRS_FOGENABLE, TRUE);
+	g_pDev->SetRenderState(D3DRS_FOGCOLOR, D3DCOLOR_XRGB(0xF0,0x0C, 0xC0)); 
+	
+	float Density = 0.8f;
+	g_pDev->SetRenderState(D3DRS_FOGVERTEXMODE, Mode);
+    g_pDev->SetRenderState(D3DRS_FOGDENSITY, *(DWORD *)(&Density));
+*/
+}
+
+
+__inline 
+void PowerVR2_D3D::SetRenderModeSpr(u32 ParamID, u32 TexID)
+{
+	GlobalParam * gp = &GlobalParams[ParamID];
+
+    g_pDev->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+	g_pDev->SetRenderState(D3DRS_SHADEMODE, D3DSHADE_FLAT);
+
+	//g_pDev->SetRenderState(D3DRS_ZWRITEENABLE, !gp->isp.ZWriteDis);
+	g_pDev->SetRenderState(D3DRS_ZFUNC, DepthModeDX[gp->isp.DepthMode]);
+
+
+	if(LT_Opaque == gp->pcw.ListType)
+	{
+		g_pDev->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
+		g_pDev->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+	} else {
+		g_pDev->SetRenderState(D3DRS_ALPHATESTENABLE, TRUE);
+		g_pDev->SetRenderState(D3DRS_ALPHAREF, 0x00);
+		g_pDev->SetRenderState(D3DRS_ALPHAFUNC, D3DCMP_GREATER);
+	}
+
+	if(gp->isp.Texture || gp->pcw.Texture)
+	{
+		switch(gp->param0.tsp.ShadInstr)	// these should be correct, except offset
+		{
+		case 0:	// Decal
+			g_pDev->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1);
+			g_pDev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+			g_pDev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
+			g_pDev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+			break;
+		case 1:	// Modulate
+			g_pDev->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_MODULATE);
+			g_pDev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+			g_pDev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+			g_pDev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
+			g_pDev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+			break;
+		case 2:	// Decal Alpha
+			g_pDev->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_BLENDTEXTUREALPHA);
+			g_pDev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+			g_pDev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+			g_pDev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
+			g_pDev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
+			break;
+		case 3:	// Modulate Alpha
+			g_pDev->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_MODULATE);
+			g_pDev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+			g_pDev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+			g_pDev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_MODULATE);
+			g_pDev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+			g_pDev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
+			break;
+		default: ASSERT_T((1),"SetRenderMode->TSP.ShadInstr is INVALID !!"); return;
+		}
+
+		switch(gp->param0.tsp.FilterMode)
+		{
+		case 0:	// point sampled
+			g_pDev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+			g_pDev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+			break;
+		case 1:	// bi-linear
+			g_pDev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+			g_pDev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+			break;
+		case 2:	// pass a
+		case 3:	// pass b
+		//	g_pDev->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
+			g_pDev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+			g_pDev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 			break;
 		default: ASSERT_T((1),"Unknown Tex Filter Type in SetRenderMode() !!"); break;
 		}
@@ -135,23 +226,13 @@ void PowerVR2_D3D::SetRenderMode(u32 ParamID, u32 TexID)
 }
 
 
-__inline 
-void PowerVR2_D3D::SetRenderModeSpr(u32 ParamID, u32 TexID)
-{
-	GlobalParam * gp = &GlobalParams[ParamID];
-
-}
-
-
 
 
 __inline 
 void PowerVR2_D3D::RenderStripList(vector<Vertex> &vl)
 {
-	for(u32 p=0; p<vl.size(); p++)
-	{
+	for(u32 p=0; p<vl.size(); p++) {
 		SetRenderMode(vl[p].ParamID, vl[p].TexID);
-
 		g_pDev->SetTexture(0, (IDirect3DTexture9*)vl[p].TexID);
 		g_pDev->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, vl[p].List.size()-2, &vl[p].List[0].xyz, sizeof(Vert));
 	}
@@ -159,10 +240,10 @@ void PowerVR2_D3D::RenderStripList(vector<Vertex> &vl)
 __inline 
 void PowerVR2_D3D::RenderSprites(vector<Vertex> &vl)
 {
-	for(u32 p=0; p<vl.size(); p++)
-	{
+	for(u32 p=0; p<vl.size(); p++) {
 		SetRenderModeSpr(vl[p].ParamID, vl[p].TexID);
-
+		g_pDev->SetTexture(0, (IDirect3DTexture9*)vl[p].TexID);
+		g_pDev->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, vl[p].List.size()-2, &vl[p].List[0].xyz, sizeof(Vert));
 	}
 }
 
@@ -170,22 +251,23 @@ void PowerVR2_D3D::RenderSprites(vector<Vertex> &vl)
 void PowerVR2_D3D::Render()
 {
 	FrameCount++;
-	float fZClear = 0.f;
-    g_pDev->Clear(0, NULL, D3DCLEAR_TARGET|D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(95,125,255), fZClear, 0);
+
+	u32 dwValue = *pVO_BORDER_COL;
+	u32	R=((dwValue>>0x10)&0xFF),
+		G=((dwValue>>0x08)&0xFF),
+		B=((dwValue>>0x00)&0xFF);
+
+    g_pDev->Clear(0, NULL, D3DCLEAR_TARGET|D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(R,G,B), 0.f, 0);
 
 	g_pDev->BeginScene();
-	g_pDev->SetVertexShader( NULL );
+	g_pDev->SetVertexShader(NULL);
 	g_pDev->SetVertexDeclaration(g_pVD);
-//	g_pDev->SetFVF(D3DFVF_VERTEX);
 //	g_pDev->SetStreamSource(0, g_pVB, 0, sizeof(Vertex));
-
 
 	RenderStripList(OpaqueVerts);
 	RenderStripList(TranspVerts);
 	RenderStripList(PunchtVerts);
-//	RenderSprites(Sprites);
-
-
+	RenderSprites(Sprites);
 
 	g_pDev->EndScene();
 	g_pDev->Present(NULL,NULL,NULL,NULL);
@@ -219,7 +301,7 @@ bool PowerVR2_D3D::Init()
 	d3dpp.SwapEffect = D3DSWAPEFFECT_COPY;	// D3DSWAPEFFECT_COPY_VSYNC;
 	d3dpp.BackBufferFormat = d3ddm.Format;
     d3dpp.EnableAutoDepthStencil = TRUE;
-    d3dpp.AutoDepthStencilFormat = D3DFMT_D16;
+    d3dpp.AutoDepthStencilFormat = D3DFMT_D24S8;
 	
 	if( FAILED(g_pD3D->CreateDevice(
 		D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, (HWND)emuIf.handle,

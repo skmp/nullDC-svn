@@ -50,7 +50,6 @@ u32 ProcessParam(ParamBase *pb)
 
 
 	case PT_Vertex:			// Vertex Parameter
-		ASSERT_T((PM_Modifier==PolyMode),	"<PVR> Modifier Volumes being used !");
 		ASSERT_T((PM_None==PolyMode),		"<PVR> Vertex Recieved After Object List Ended !");
 
 		if(PM_Vertex == PolyMode) {
@@ -122,10 +121,12 @@ void TaFifo(u32 address, u32* data, u32 size)
 			ParamFifo.clear();
 
 			// This is a good hack, saves sword of the berserks ass, but where is the real bug?
-			if(size != (i+1)) {
+#ifdef DEBUG_LIB
+		/*	if(size != (i+1)) {
 				printf("<PVR> ParamFifo, EndOfList and i+1(%X) != size(%X) !\n", (i+1), size);
 			//	return;	// hack?
-			}
+			}*/
+#endif
 		}
 	}
 }
@@ -378,10 +379,6 @@ ParamSize PrimConverter::AppendVert(VertexParam *vp)
 	vertex.xyz[1] = vp->vtx0.xyz[1];
 	vertex.xyz[2] = vp->vtx0.xyz[2];
 
-	// *FIXME* HACK - test, does this device before persp correction make text/menus screwd up?
-	if(vertex.xyz[2] > 1.f)
-		vertex.xyz[2] /= (vertex.xyz[2] > 512.f) ? 10000.f : 256.f;
-
 	// thought i got rid of most of these hacks, i guess d3d in the same plugin is a hack in itself
 	if(R_D3D==pvrOpts.GfxApi)
 		vertex.col = (vertex.col &0xFF00FF00) | ((vertex.col&255)<<16) | ((vertex.col>>16)&255);
@@ -391,6 +388,10 @@ ParamSize PrimConverter::AppendVert(VertexParam *vp)
 	vertex.uv[0] *= vertex.xyz[2];
 	vertex.uv[1] *= vertex.xyz[2];
 
+
+	// *FIXME* HACK - test, does this device before persp correction make text/menus screwd up?
+	if(vertex.xyz[2] > 1.f)
+		vertex.xyz[2] /= (vertex.xyz[2] > 512.f) ? 10000.f : 256.f;
 
 	// Push it on list
 	tmpVert.List.push_back(vertex);

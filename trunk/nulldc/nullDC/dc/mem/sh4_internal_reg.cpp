@@ -629,35 +629,16 @@ void sh4_internal_reg_Init()
 
 	for (u32 i=0;i<30;i++)
 	{
-	if (i<CCN.Size)	//(16,true);		//CCN  : 14 registers
-		CCN[i].flags=REG_NOT_IMPL;
-
-	if (i<UBC.Size)	//(9,true);			//UBC  : 9 registers
-		UBC[i].flags=REG_NOT_IMPL;
-
-	if (i<BSC.Size)	//(19,true);		//BSC  : 18 registers
-		BSC[i].flags=REG_NOT_IMPL;
-
-	if (i<DMAC.Size)	//(17,true);	//DMAC : 17 registers
-		DMAC[i].flags=REG_NOT_IMPL;
-
-	if (i<CPG.Size)	//(5,true);			//CPG  : 5 registers
-		CPG[i].flags=REG_NOT_IMPL;
-
-	if (i<RTC.Size)	//(16,true);		//RTC  : 16 registers
-		RTC[i].flags=REG_NOT_IMPL;
-
-	if (i<INTC.Size)	//(4,true);		//INTC : 4 registers
-		INTC[i].flags=REG_NOT_IMPL;
-
-	if (i<TMU.Size)	//(12,true);		//TMU  : 12 registers
-		TMU[i].flags=REG_NOT_IMPL;
-
-	if (i<SCI.Size)	//(8,true);			//SCI  : 8 registers
-		SCI[i].flags=REG_NOT_IMPL;
-
-	if (i<SCIF.Size)	//(10,true);		//SCIF : 10 registers
-		SCIF[i].flags=REG_NOT_IMPL;
+	if (i<CCN.Size)	CCN[i].flags=REG_NOT_IMPL;	//(16,true);	//CCN  : 14 registers
+	if (i<UBC.Size)	UBC[i].flags=REG_NOT_IMPL;	//(9,true);		//UBC  : 9 registers
+	if (i<BSC.Size)	BSC[i].flags=REG_NOT_IMPL;	//(19,true);	//BSC  : 18 registers
+	if (i<DMAC.Size)DMAC[i].flags=REG_NOT_IMPL;	//(17,true);	//DMAC : 17 registers
+	if (i<CPG.Size)	CPG[i].flags=REG_NOT_IMPL;	//(5,true);		//CPG  : 5 registers
+	if (i<RTC.Size)	RTC[i].flags=REG_NOT_IMPL;	//(16,true);	//RTC  : 16 registers
+	if (i<INTC.Size)INTC[i].flags=REG_NOT_IMPL;	//(4,true);		//INTC : 4 registers
+	if (i<TMU.Size)	TMU[i].flags=REG_NOT_IMPL;	//(12,true);	//TMU  : 12 registers
+	if (i<SCI.Size)	SCI[i].flags=REG_NOT_IMPL;	//(8,true);		//SCI  : 8 registers
+	if (i<SCIF.Size)SCIF[i].flags=REG_NOT_IMPL;	//(10,true);	//SCIF : 10 registers
 	}
 
 	//initialise Register structs

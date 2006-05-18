@@ -114,6 +114,7 @@ void LoadBiosFiles()
 	u32 pl=(u32)strlen(temp_path);
 
 	//mwhahaha
+#ifndef BUILD_NAOMI
 	strcat(temp_path,"dc_boot.bin");
 	LoadFileToSh4Bootrom(temp_path);
 
@@ -137,7 +138,11 @@ void LoadBiosFiles()
 	strcat(temp_path,"IP.bin");
 	LoadFileToSh4Mem(0x08000, temp_path);
 	temp_path[pl]=0;
-	
+
+#else
+	strcat(temp_path,"naomi_boot.bin");
+	LoadFileToSh4Bootrom(temp_path);
+#endif	
 	free(temp_path);
 }
 

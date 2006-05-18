@@ -1,8 +1,16 @@
 #pragma once
 #include "types.h"
 
+
+#ifndef BUILD_NAOMI
 #define RAM_SIZE (16*1024*1024)
+#else
+#define RAM_SIZE (32*1024*1024)
+#endif
+
+
 #define RAM_MASK (RAM_SIZE-1)
+
 
 #define BIOS_SIZE (2*1024*1024)
 #define BIOS_MASK (BIOS_SIZE-1)

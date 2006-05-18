@@ -298,7 +298,12 @@ void PowerVR2_GL::Render()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	////////////////////////////////////////////////////
 
-#ifdef USE_VERTEX_ARRAYS
+#define USE_VERTEX_ARRAYS
+#ifndef USE_VERTEX_ARRAYS
+	RenderStripList(OpaqueVerts);
+	RenderStripListRev(TranspVerts);	//Sprites
+	RenderStripList(PunchtVerts);
+#else
 	glPushClientAttrib(GL_CLIENT_VERTEX_ARRAY_BIT);
 	glEnableClientState(GL_COLOR_ARRAY);
 	glEnableClientState(GL_VERTEX_ARRAY);
@@ -309,10 +314,6 @@ void PowerVR2_GL::Render()
 	RenderStripListArray(PunchtVerts);
 
 	glPopClientAttrib();
-#else
-	RenderStripList(OpaqueVerts);
-	RenderStripListRev(TranspVerts);	//Sprites
-	RenderStripList(PunchtVerts);
 #endif
 
 	RenderSprites(Sprites);

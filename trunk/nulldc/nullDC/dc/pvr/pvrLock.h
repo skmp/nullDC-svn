@@ -3,7 +3,12 @@
 #include "types.h"
 
 //16 mb for naomi.. so be carefull not to hardcode it anywhere
-#define VRAM_SIZE (0x800000)	//0x1000000 for 16 mb :)
+#ifndef BUILD_NAOMI
+#define VRAM_SIZE (0x00800000)
+#else
+#define VRAM_SIZE (0x01000000)
+#endif
+
 #define VRAM_MASK (VRAM_SIZE-1)
 
 #define Is_64_Bit(addr) ((addr &0x1000000)==0)
