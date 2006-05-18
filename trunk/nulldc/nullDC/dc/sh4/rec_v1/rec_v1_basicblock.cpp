@@ -88,6 +88,18 @@ void rec_v1_BasicBlock::RemoveCallee(rec_v1_BasicBlock* bb)
 		if (callees[i]==bb)
 			callees[i]=0;
 	}
+
+	if (TF_block==bb)
+	{
+		TF_block=0;
+		pTF_next_addr= link_compile_inject_TF_stub;
+	}
+
+	if (TT_block==bb)
+	{
+		TT_block=0;
+		pTT_next_addr= link_compile_inject_TT_stub;
+	}
 }
 void rec_v1_BasicBlock::Suspend()
 {

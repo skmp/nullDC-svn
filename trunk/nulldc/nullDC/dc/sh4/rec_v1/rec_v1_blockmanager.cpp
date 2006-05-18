@@ -198,7 +198,8 @@ void FreeSuspendedBlocks()
 void __fastcall rec_v1_BlockTest(u32 addrf)
 {
 	//u32 addr_real=addr;
-	u32 addr=addrf/PAGE_SIZE_SW;
+	//addrf&=;
+	u32 addr=(addrf&RAM_MASK)/PAGE_SIZE_SW;
 	if (WriteTest[addr])
 	{
 		WriteTest_Hit(addrf);
