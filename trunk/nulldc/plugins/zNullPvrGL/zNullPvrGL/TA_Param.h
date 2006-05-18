@@ -5,8 +5,12 @@
 #ifndef __TAPARAM_H__
 #define __TAPARAM_H__
 
+#define USE_STD_VECTOR
+
+#ifdef USE_STD_VECTOR
 #include <vector>
 using namespace std;
+#endif
 
 typedef struct ParameterControlWord
 {
@@ -627,6 +631,66 @@ struct ParamBase
 };
 
 
+
+
+
+
+
+
+
+
+template <class T>
+class zector
+{
+	T* data;
+	int msize, idx;
+
+public:
+
+	zector()
+	{
+		msize=0;
+		data=NULL;
+	}
+	~zector()
+	{
+		if(data)
+			free(data);
+		msize=0;
+		data=NULL;
+	}
+
+	void clear() {
+		idx = 0;
+	}
+	int size() {
+		return idx;
+	}
+
+	void push_back(T& item)
+	{
+		if(0 == msize) {
+			msize = 256;
+			data  = (T*)malloc(msize*sizeof(T));
+		}
+		if(idx >= msize) {
+			msize *= 4;
+			data  = (T*)realloc(data,msize*sizeof(T));
+		}
+		data[idx++] = item;
+	}
+
+	T& operator [](const int i)
+    {
+		ASSERT_T((i>=idx),"zector::operator [], i >= idx!");
+		return data[i];
+    }
+
+};
+
+
+
+
 struct Vert
 {
 	f32 xyz[3];
@@ -634,13 +698,26 @@ struct Vert
 	f32 uv[4];
 };
 
+
 struct Vertex
 {
 	u32 TexID;
 	u32 ParamID;
 
+#ifndef USE_STD_VECTOR
+	zector<Vert> List;
+#else
 	vector<Vert> List;
+#endif
 };
+
+
+
+
+
+
+
+
 
 
 
@@ -657,13 +734,23 @@ public:
 	 PrimConverter() { ClearDCache(); }
 	~PrimConverter() { ClearDCache(); }
 
-	ParamSize AppendVert(VertexParam *vp);
-	ParamSize AppendParam(GlobalParam *gp);
-	ParamSize AppendSprite(VertexParam *vp);
+	int AppendVert(VertexParam *vp);
+	int AppendParam(GlobalParam *gp);
+	int AppendSprite(VertexParam *vp);
 
 
 //private:	// i dont like inheritance rules like this ...
 
+#ifndef USE_STD_VECTOR
+	zector<Vertex> Sprites;
+	zector<Vertex> OpaqueMods;
+	zector<Vertex> TranspMods;
+	zector<Vertex> OpaqueVerts;
+	zector<Vertex> TranspVerts;
+	zector<Vertex> PunchtVerts;
+
+	zector<GlobalParam> GlobalParams;
+#else
 	vector<Vertex> Sprites;
 	vector<Vertex> OpaqueMods;
 	vector<Vertex> TranspMods;
@@ -672,6 +759,7 @@ public:
 	vector<Vertex> PunchtVerts;
 
 	vector<GlobalParam> GlobalParams;
+#endif
 
 	void ClearDCache() {
 		Sprites.clear();

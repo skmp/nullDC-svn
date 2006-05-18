@@ -26,10 +26,17 @@ class PowerVR2_GL : public PowerVR2
 	void Resize();
 private:
 
+#ifndef USE_STD_VECTOR
+	void RenderSprites(zector<Vertex> &vl);
+	void RenderStripList(zector<Vertex> &vl);
+	void RenderStripListRev(zector<Vertex> &vl);
+	void RenderStripListArray(zector<Vertex> &vl);
+#else
 	void RenderSprites(vector<Vertex> &vl);
 	void RenderStripList(vector<Vertex> &vl);
 	void RenderStripListRev(vector<Vertex> &vl);
 	void RenderStripListArray(vector<Vertex> &vl);
+#endif
 
 	void SetRenderMode(u32 ParamID, u32 TexID);
 	void SetRenderModeSpr(u32 ParamID, u32 TexID);

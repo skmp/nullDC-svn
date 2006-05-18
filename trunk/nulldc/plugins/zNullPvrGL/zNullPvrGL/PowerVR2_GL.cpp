@@ -208,7 +208,11 @@ void PowerVR2_GL::SetRenderModeSpr(u32 ParamID, u32 TexID)
 
 
 __inline 
+#ifndef USE_STD_VECTOR
+void PowerVR2_GL::RenderStripList(zector<Vertex> &vl)
+#else
 void PowerVR2_GL::RenderStripList(vector<Vertex> &vl)
+#endif
 {
 	for(u32 p=0; p<vl.size(); p++)
 	{
@@ -225,7 +229,11 @@ void PowerVR2_GL::RenderStripList(vector<Vertex> &vl)
 	}
 }
 __inline 
+#ifndef USE_STD_VECTOR
+void PowerVR2_GL::RenderStripListRev(zector<Vertex> &vl)
+#else
 void PowerVR2_GL::RenderStripListRev(vector<Vertex> &vl)
+#endif
 {
 	for(u32 p=0; p<vl.size(); p++)
 	{
@@ -243,7 +251,11 @@ void PowerVR2_GL::RenderStripListRev(vector<Vertex> &vl)
 }
 
 __inline 
+#ifndef USE_STD_VECTOR
+void PowerVR2_GL::RenderStripListArray(zector<Vertex> &vl)
+#else
 void PowerVR2_GL::RenderStripListArray(vector<Vertex> &vl)
+#endif
 {
 /*	glEnableClientState(GL_COLOR_ARRAY);
 	glEnableClientState(GL_VERTEX_ARRAY);
@@ -265,7 +277,11 @@ void PowerVR2_GL::RenderStripListArray(vector<Vertex> &vl)
 }
 
 __inline 
+#ifndef USE_STD_VECTOR
+void PowerVR2_GL::RenderSprites(zector<Vertex> &vl)
+#else
 void PowerVR2_GL::RenderSprites(vector<Vertex> &vl)
+#endif
 {
 	for(u32 p=0; p<vl.size(); p++)
 	{

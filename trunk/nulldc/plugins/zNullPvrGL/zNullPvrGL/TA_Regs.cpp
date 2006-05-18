@@ -61,7 +61,7 @@ void pvrWriteReg(u32 addr,u32 data,u32 size)
 
 		case TA_LIST_INIT:
 			combine_ac();
-			lprintf("\n**************** TA_LIST_INIT ****************\n\n");
+		//	lprintf("\n**************** TA_LIST_INIT ****************\n\n");
 			break;
 
 		case STARTRENDER:

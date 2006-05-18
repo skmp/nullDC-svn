@@ -37,10 +37,15 @@ class PowerVR2_D3D : public PowerVR2
 
 private:
 
+#ifndef USE_STD_VECTOR
+	void RenderSprites(zector<Vertex> &vl);
+	void RenderStripList(zector<Vertex> &vl);
+#else
 	void RenderSprites(vector<Vertex> &vl);
 	void RenderStripList(vector<Vertex> &vl);
 //	void RenderStripListRev(vector<Vertex> &vl);
 //	void RenderStripListArray(vector<Vertex> &vl);
+#endif
 
 	void SetRenderMode(u32 ParamID, u32 TexID);
 	void SetRenderModeSpr(u32 ParamID, u32 TexID);

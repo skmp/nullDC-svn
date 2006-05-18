@@ -229,7 +229,11 @@ void PowerVR2_D3D::SetRenderModeSpr(u32 ParamID, u32 TexID)
 
 
 __inline 
+#ifndef USE_STD_VECTOR
+void PowerVR2_D3D::RenderStripList(zector<Vertex> &vl)
+#else
 void PowerVR2_D3D::RenderStripList(vector<Vertex> &vl)
+#endif
 {
 	for(u32 p=0; p<vl.size(); p++) {
 		SetRenderMode(vl[p].ParamID, vl[p].TexID);
@@ -238,7 +242,11 @@ void PowerVR2_D3D::RenderStripList(vector<Vertex> &vl)
 	}
 }
 __inline 
+#ifndef USE_STD_VECTOR
+void PowerVR2_D3D::RenderSprites(zector<Vertex> &vl)
+#else
 void PowerVR2_D3D::RenderSprites(vector<Vertex> &vl)
+#endif
 {
 	for(u32 p=0; p<vl.size(); p++) {
 		SetRenderModeSpr(vl[p].ParamID, vl[p].TexID);

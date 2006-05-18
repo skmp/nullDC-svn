@@ -98,18 +98,18 @@ void TaFifo(u32 address, u32* data, u32 size)
 		if(PT_EndOfList == ((ParamBase*)data)[i].Base.pcw.ParaType)
 		{
 			bp = true;
-		//	lprintf("<PVR> Processing EndOfList, ParamFifo size: %d\n", ParamFifo.size());
+			//lprintf("<PVR> Processing EndOfList, ParamFifo size: %d\n", ParamFifo.size());
 
 			size_t tmp=0;
 			for(size_t p=0; p<ParamFifo.size(); )
 			{
-			//	p += ProcessParam(&ParamFifo[p]);
-				tmp = ProcessParam(&ParamFifo[p]);
+				p += ProcessParam(&ParamFifo[p]);
+			/*	tmp = ProcessParam(&ParamFifo[p]);
 
-			//	lprintf("--\t [%06x] + %d: pointero: %X | ParaType: %d \n",
-			//		p, tmp*32, (u32)&ParamFifo[p], ((ParamBase*)&ParamFifo[p])->Base.pcw.ParaType);
+				lprintf("--\t [%06x] + %d: pointero: %X | ParaType: %d \n",
+					p, tmp*32, (u32)&ParamFifo[p], ((ParamBase*)&ParamFifo[p])->Base.pcw.ParaType);
 
-				p += tmp;
+				p += tmp;*/
 #ifdef DEBUG_LIB
 				if(DebugOptions&1 && !bd) {
 					DumpFifo(address,data,size);
@@ -223,7 +223,7 @@ __inline float f16(u32 x)
 
 
 
-ParamSize PrimConverter::AppendParam(GlobalParam *gp)
+int PrimConverter::AppendParam(GlobalParam *gp)
 {
 	GlobalParams.push_back(*(GlobalParam*)gp);
 	return isPoly64Byte((PCW*)&gp->pcw)?(PS64):(PS32);
@@ -239,7 +239,9 @@ __forceinline static u8 NFloat2UB(float NCF)
 #endif
 }
 
-ParamSize PrimConverter::AppendVert(VertexParam *vp)
+#define FULL_LIST	// process all verts at once, should be faster
+
+int PrimConverter::AppendVert(VertexParam *vp)
 {
 	static u32 LastType=420;
 	static Vertex tmpVert;
@@ -252,10 +254,21 @@ ParamSize PrimConverter::AppendVert(VertexParam *vp)
 
 	ParamSize VSize = isVert64Byte((PCW*)&pp->pcw) ? (PS64) : (PS32);
 
+#ifdef FULL_LIST
+	// should be best looping here..
+	int retsize=0;
+	VertexParam* ovp=vp;
+
+	do
+	{
+	vp = (VertexParam*)((int)ovp + retsize*32);
+#endif
 	u8 tcol = 0;
 	Vert vertex;
 	vertex.uv[0]  = vertex.uv[1] = 
 	vertex.uv[2]  = vertex.uv[3] = 0.f;	// Stop runtime check failure!
+
+
 
 	//lprintf("PType: %X (PCW: %02X)\n", PType, *(u8*)&pp->pcw);
 
@@ -396,6 +409,7 @@ ParamSize PrimConverter::AppendVert(VertexParam *vp)
 	// Push it on list
 	tmpVert.List.push_back(vertex);
 
+#ifndef FULL_LIST
 	if(vp->pcw.EndOfStrip)
 	{
 		tmpVert.TexID	= (u32)PvrIf->GetTexture(pp);
@@ -416,13 +430,38 @@ ParamSize PrimConverter::AppendVert(VertexParam *vp)
 		tmpVert.ParamID = 0;
 		tmpVert.List.clear();
 	}
+#else
+		retsize += VSize;
+
+	} while(!vp->pcw.EndOfStrip);
+
+	tmpVert.TexID	= (u32)PvrIf->GetTexture(pp);
+	tmpVert.ParamID	= (u32)(GlobalParams.size()-1);
+
+	switch(pp->pcw.ListType)
+	{
+		case LT_Opaque:			OpaqueVerts.push_back(tmpVert);	break;
+		case LT_OpaqueMod:		OpaqueMods.push_back(tmpVert);	break;
+		case LT_Translucent:	TranspVerts.push_back(tmpVert);	break;
+		case LT_TransMod:		TranspMods.push_back(tmpVert);	break;
+		case LT_PunchThrough:	PunchtVerts.push_back(tmpVert);	break;
+		case LT_Reserved:
+			break;
+	}
+	LastType = 420;
+	tmpVert.TexID =
+	tmpVert.ParamID = 0;
+	tmpVert.List.clear();
+
+	return retsize;	//VSize;
+#endif
 	return VSize;
 }
 
 
 /*	Todo, make sure on calcs, and create new spr and add directly to it, ie: get rid of tmpVert
 **/
-ParamSize PrimConverter::AppendSprite(VertexParam *vp)
+int PrimConverter::AppendSprite(VertexParam *vp)
 {
 	static Vertex tmpVert;
 	PolyParam * pp = &GlobalParams[GlobalParams.size()-1];
