@@ -710,7 +710,7 @@ sh4op(i0100_nnnn_mmmm_1101)
 {//ToDo : Check This [26/4/05] x2
 	//iNimp("shld <REG_M>,<REG_N>");
 	//HACK : CHECKME
-	u32 n = GetN(op);
+	/*u32 n = GetN(op);
 	u32 m = GetM(op);
 	s32 s;
 
@@ -720,7 +720,19 @@ sh4op(i0100_nnnn_mmmm_1101)
 	else if ((r[m] & 0x1f) == 0)
 		r[n] = 0;
 	else
-		r[n] = (u32)r[n] >> (32-r[m]);
+		r[n] = (u32)r[n] >> (32-r[m]);*/
+
+	u32 n = GetN(op);
+	u32 m = GetM(op);
+	u32 sgn = r[m] & 0x80000000;
+	if (sgn == 0)
+		r[n] <<= (r[m] & 0x1F);
+	else if ((r[m] & 0x1F) == 0)
+	{
+		r[n] = 0;
+	}
+	else
+		r[n] = ((u32)r[n]) >> ((~r[m] & 0x1F) + 1);
 }
 
 

@@ -78,6 +78,7 @@ rec_v1_BasicBlock* rec_v1_FindOrRecompileCode(u32 pc)
 	return GetRecompiledCode(pc);
 }
 
+#define PROFILE_DYNAREC
 #ifdef PROFILE_DYNAREC
 u64 calls=0;
 u64 total_cycles=0;
@@ -156,14 +157,15 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 
 #ifdef PROFILE_DYNAREC
 		calls++;
-		total_cycles+=rec_cycles;
-		if ((calls & (0x8000-1))==(0x8000-1))//more ?
+		if ((calls & (0x80000-1))==(0x80000-1))//more ?
 		{
-			printf("Dynarec Stats : average link cycles : %d , ifb opcodes : %d%% [%d]\n",(u32)(total_cycles/calls),(u32)(ifb_calls*100/total_cycles),ifb_calls);
-			calls=total_cycles=ifb_calls=0;
-			printprofile();
+			printf("Dynarec Stats : average link cycles : %d \n",(u32)(total_cycles/calls));
+			//printf("Dynarec Stats : average link cycles : %d , ifb opcodes : %d%% [%d]\n",(u32)(total_cycles/calls),(u32)(ifb_calls*100/total_cycles),ifb_calls);
+			calls=total_cycles=0;//ifb_calls
+			//printprofile();
 		}
 #endif
+
 
 		if (rec_cycles>(CPU_TIMESLICE*0.9f))
 		{
@@ -181,6 +183,9 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 			{
 				//pExitBlock=0;
 			}
+#ifdef PROFILE_DYNAREC
+			total_cycles+=rec_cycles;
+#endif
 			rec_cycles=0;
 			//SetFloatStatusReg();
 		}
