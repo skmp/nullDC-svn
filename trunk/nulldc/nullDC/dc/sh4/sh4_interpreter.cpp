@@ -34,7 +34,7 @@ u32 opcode_fam_cycles[0x10]=
  CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,1
 };
 
-u32 THREADCALL sh4_int_ThreadEntry(void* ptar)
+u32 THREADCALL sh4_int_ThreadEntry_code(void* ptar)
 {
 
 	//just cast it
@@ -77,7 +77,20 @@ u32 THREADCALL sh4_int_ThreadEntry(void* ptar)
 
 	return 0;
 }
+//setup the SEH handler here so it doesnt fuq us (vc realy likes not to optimise SEH enabled functions)
+u32 THREADCALL sh4_int_ThreadEntry(void* ptar)
+{
+	__try
+	{
+		return sh4_int_ThreadEntry_code(ptar);
+	}
+	__except( ExeptionHandler( GetExceptionCode(), (GetExceptionInformation())->ExceptionRecord ) )
+	{
 
+	}
+
+	return 0;
+}
 
 //interface
 void Sh4_int_Run(ThreadCallbackFP* tcb)
