@@ -1075,14 +1075,3 @@ void TextureCache::ClearTInvalids()
 
 
 
-
-/*
-**
-**		*** To Be Replaced ***
-**
-**	Its a shame to add this crap after all the work I've done on the rest.
-**
-*/
-
-
-
