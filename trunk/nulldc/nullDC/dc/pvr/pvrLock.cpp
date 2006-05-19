@@ -277,7 +277,7 @@ bool VramLockedWrite(u8* address)
 		list->clear();
 		vram.UnLockRegion(offset&(~(PAGE_SIZE-1)),PAGE_SIZE);
 		
-		printf("Vram lock write @ 0x%x [0x%x]  , contains %d locks\n",address,offset,found);
+//		printf("Vram lock write @ 0x%x [0x%x]  , contains %d locks\n",address,offset,found);
 
 		return true;
 	}

@@ -89,13 +89,22 @@ void TexGen(PolyParam *pp, TexEntry *te)
 		glBindTexture(GL_TEXTURE_2D, te->texID);
 
 		if( pp->param0.tsp.FilterMode > 0 ) {
-			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		} else {
-			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		}
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, te->Width, te->Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pTempTex);
+
+#ifdef DEBUG_LIB
+		int tw=0,th=0;
+		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH,  &tw);
+		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &th);
+		ASSERT_T((!glIsTexture(te->texID)),"OpenGL New Texture ID Invalid!");
+		ASSERT_T((tw!=te->Width), "OpenGL TexWidth  Mismatch!");
+		ASSERT_T((th!=te->Height),"OpenGL TexHeight Mismatch!");
+#endif
 	}
 	else
 	{
@@ -1019,30 +1028,26 @@ unhandled_fmt:
 }
 
 
-void DeleteTexture(u32 Texture)
+void DeleteTexture(u32 * Texture)
 {
 	if(R_OPENGL==pvrOpts.GfxApi)
-		glDeleteTextures(1,&Texture);
+		glDeleteTextures(1,Texture);
 	else
-		((IDirect3DTexture9*)Texture)->Release();
-	Texture = 0;
+		((IDirect3DTexture9*)*(u32*)Texture)->Release();
+	*(u32*)Texture = 0;
 }
 
 void vramLockCB(vram_block *bl, u32 addr)
 {
 	//WARN : removing list items while enumerating could be fatal .. seems to work , needs check
-	for(size_t t=0; t<PvrIf->TexList.size(); t++)
-	{
-		if(addr >= PvrIf->TexList[t].Start && addr < PvrIf->TexList[t].End)
-		{
-			TexEntry temp=PvrIf->TexList[t];
-			//temp.texID--free t
+	for(size_t t=0; t<PvrIf->TexList.size(); t++) {
+		if(addr >= PvrIf->TexList[t].Start && addr < PvrIf->TexList[t].End)	{
+		//	printf("~TexInvalidate @ %08X - TexID: %X \n", addr, PvrIf->TexList[t].texID);
+			PvrIf->InvList.push_back(PvrIf->TexList[t].texID);
 			PvrIf->TexList.erase(PvrIf->TexList.begin()+t);
-			DeleteTexture(temp.texID);
-			printf("~TexInvalidate @ %08X \n", addr);
+			--t;
 		}
 	}
-
 	emuIf.vramUnlock(bl);
 }
 
@@ -1056,11 +1061,17 @@ void TextureCache::ClearTCache()
 		TexEntry temp=PvrIf->TexList[t];
 		emuIf.vramUnlock(temp.lock_block);
 		PvrIf->TexList.erase(PvrIf->TexList.begin()+t);
-		DeleteTexture(temp.texID);
+		DeleteTexture(&temp.texID);
 	}
 	TexList.clear();
 }
 
+void TextureCache::ClearTInvalids()
+{
+	for(size_t tidx=0; tidx<InvList.size(); tidx++)
+		DeleteTexture(&InvList[tidx]);
+	InvList.clear();
+}
 
 
 

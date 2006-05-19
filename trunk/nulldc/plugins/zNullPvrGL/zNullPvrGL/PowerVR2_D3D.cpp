@@ -281,6 +281,7 @@ void PowerVR2_D3D::Render()
 	g_pDev->Present(NULL,NULL,NULL,NULL);
 
 	ClearDCache();
+	ClearTInvalids();
 }
 
 

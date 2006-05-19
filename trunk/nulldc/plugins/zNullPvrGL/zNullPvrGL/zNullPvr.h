@@ -27,7 +27,7 @@ typedef double f64;
 
 
 //#ifdef _DEBUG
-#define DEBUG_LIB
+#define DEBUG_LIB (1)
 //#endif
 
 #ifdef DEBUG_LIB

@@ -33,6 +33,16 @@ void PowerVR2_GL::SetRenderMode(u32 ParamID, u32 TexID)
 			glBindTexture(GL_TEXTURE_2D, TexID);
 	//	}
 
+
+#ifdef DEBUG_LIB
+		int tw=0,th=0;
+		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH,  &tw);
+		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &th);
+		ASSERT_F(glIsTexture(TexID),"Textures Enabled, and Texture is Invalid!\n");
+		ASSERT_T((0==tw), "OpenGL TexWidth  is Zero!");
+		ASSERT_T((0==th), "OpenGL TexHeight is Zero!");
+		printf("wtfhtexid: %X\n", TexID);
+#endif
 		//printf("params: %08X\n", *(u32*)&gp->pcw);
 
 		// TSP Settings
@@ -178,6 +188,7 @@ void PowerVR2_GL::SetRenderModeSpr(u32 ParamID, u32 TexID)
 	//		glDisable(GL_TEXTURE_RECTANGLE_ARB);	// needed?
 			glBindTexture(GL_TEXTURE_2D, TexID);
 	//	}
+
 		// TSP Settings - these should be correct now except for offset color 
 		switch( gp->param0.tsp.ShadInstr ) {
 		case 1:	DC_TexEnv_Modulate();	break;
@@ -335,8 +346,11 @@ void PowerVR2_GL::Render()
 	RenderSprites(Sprites);
 
 	ClearDCache();
+	ClearTInvalids();
 	SwapBuffers(hDC);
 	CheckErrorsGL("RenderSceneGL()");
+
+	printf(" ----- End Render -------\n");
 }
 
 

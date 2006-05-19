@@ -401,7 +401,6 @@ int PrimConverter::AppendVert(VertexParam *vp)
 	vertex.uv[0] *= vertex.xyz[2];
 	vertex.uv[1] *= vertex.xyz[2];
 
-
 	// *FIXME* HACK - test, does this device before persp correction make text/menus screwd up?
 	if(vertex.xyz[2] > 1.f)
 		vertex.xyz[2] /= (vertex.xyz[2] > 512.f) ? 10000.f : 256.f;

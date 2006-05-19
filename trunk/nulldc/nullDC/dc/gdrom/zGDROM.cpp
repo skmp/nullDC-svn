@@ -840,7 +840,25 @@ void gdrom_reg_Term(void)
 }
 
 
+// DIMM_ might be bad naming, and some goto IO, all these regs are handled
+// by the asic, so oh well?
 
+enum
+{
+	DIMM_ROM_OFFSHI	= 0x00,
+	DIMM_ROM_OFFSLO	= 0x04,
+	DIMM_ROM_DATA	= 0x08,
+
+	DIMM_DMA_OFFSHI	= 0x0C,
+	DIMM_DMA_OFFSLO	= 0x10,
+	DIMM_DMA_COUNT	= 0x14,
+
+	DIMM_COMM_OFFS	= 0x50,
+	DIMM_COMM_DATA	= 0x54,
+
+	DIMM_ID_WRITE	= 0x78,
+	DIMM_ID_READ	= 0x7C,
+};
 
 
 u32  ReadMem_gdrom(u32 Addr, u32 sz)
@@ -856,13 +874,13 @@ u32  ReadMem_gdrom(u32 Addr, u32 sz)
 		break;
 	}
 
-	printf("ReadMem_gdrom(%08X, %d) Unhandled\n",Addr,sz);
+	printf("(N) ReadMem_gdrom(%08X, %d) Unhandled\n",Addr,sz);
 	return 0;
 }
 
 void WriteMem_gdrom(u32 Addr, u32 data, u32 sz)
 {
-	printf("WriteMem_gdrom(%08X, %08X, %d)\n",Addr,data,sz);
+	printf("(N) WriteMem_gdrom(%08X, %08X, %d)\n",Addr,data,sz);
 
 }
 

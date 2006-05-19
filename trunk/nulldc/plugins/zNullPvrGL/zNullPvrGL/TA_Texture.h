@@ -29,8 +29,10 @@ public:
 	TexID GetTexture(PolyParam *pp);
 
 	vector<TexEntry> TexList;
+	vector<TexID> InvList;
 
 	void ClearTCache();
+	void ClearTInvalids();
 };
 
 
