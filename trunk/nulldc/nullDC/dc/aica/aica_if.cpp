@@ -11,6 +11,7 @@
 
 u32 ReadMem_aica_rtc(u32 addr,u32 sz)
 {
+	/*
 	//this somehow works :P
 
 	time_t rawtime;
@@ -21,7 +22,7 @@ u32 ReadMem_aica_rtc(u32 addr,u32 sz)
     //int tm_hour;    /* hours since midnight - [0,23] */
     //int tm_mday;    /* day of the month - [1,31] */
     //int tm_mon;     /* months since January - [0,11] */
-
+/*
 	timeinfo.tm_year=1998-1900;
 	timeinfo.tm_mon=11-1;
 	timeinfo.tm_mday=27;
@@ -38,8 +39,8 @@ u32 ReadMem_aica_rtc(u32 addr,u32 sz)
 	if (timeinfo.tm_isdst)
 		rawtime+=24*3600;//add an hour if dst (maby rtc has a reg for that ? *watch* and add it if yes :)
 
-
-	u32 RTC=0x5bfc8900 + (u32)rawtime;// add delta to known dc time
+*/
+	u32 RTC=0x5bfc8900 ;//+ (u32)rawtime;// add delta to known dc time
 
 	switch( addr & 0xFF )
 	{
