@@ -1844,19 +1844,91 @@ void __fastcall shil_compile_fsrra(shil_opcode* op,rec_v1_BasicBlock* block)
 void __fastcall shil_compile_div32(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	assert(0==(op->flags & (FLAG_IMM2)));
-	/*
+
 	u8 rQuotient=op->reg1;
 	u8 rDivisor=op->reg2;
 	u8 rDividend=(u8)op->imm1;
 
-	if (op->flags & FLAG_SX)
+
+	x86IntRegType Quotient=LoadReg_force(EAX,rQuotient);
+
+
+
+	x86IntRegType Dividend=LoadReg_force(EDX,rDividend);
+
+
+	if (IsRegCached(rDivisor))
 	{
-		//signed divide :P
+		x86IntRegType Divisor=LoadReg(EAX,rDivisor);
+		if (op->flags & FLAG_SX)
+		{
+			x86e->IDIV32R(Divisor);
+		}
+		else
+		{
+			x86e->DIV32R(Divisor);
+		}
 	}
 	else
 	{
+		if (op->flags & FLAG_SX)
+		{
+			x86e->IDIV32M((s32*)GetRegPtr(rDivisor));
+		}
+		else
+		{
+			x86e->DIV32M(GetRegPtr(rDivisor));
+		}
 	}
-	*/
+
+	if (op->flags & FLAG_SX)
+	{
+		x86e->SAR32ItoR(EAX,1);
+	}
+	else
+	{
+		x86e->SHR32ItoR(EAX,1);
+	}
+
+	//set T
+	x86e->SETcc8R(ECX,(u8)CC_B);
+	x86e->AND32ItoM(GetRegPtr(reg_sr),~1);
+	x86e->MOVZX32R8toR(ECX,ECX);
+	x86e->OR32RtoM(GetRegPtr(reg_sr),ECX);
+
+
+	SaveReg(rQuotient,Quotient);
+
+	//WARNING--JUMP--
+	//thanks to teh way i save sr , test has to be re-done here
+	x86e->TEST32RtoR(ECX,ECX);
+	u8* j1=x86e->JNZ8(0);
+
+	if (IsRegCached(rDivisor))
+	{	//safe to do here b/c rDivisor was loaded to reg above (if reg cached)
+		x86IntRegType t=LoadReg(EAX,rDivisor);
+		x86e->SUB32RtoR(EDX,t);
+	}
+	else
+	{
+		x86e->SUB32MtoR(EDX,GetRegPtr(rDivisor));
+	}
+
+	SaveReg(rDividend,Dividend);
+
+	//WARNING--JUMP--
+
+	u8* j2=x86e->JMP8(0);
+
+	x86e->x86SetJ8(j1);
+
+	SaveReg(rDividend,Dividend);
+
+	//WARNING--JUMP--
+	x86e->x86SetJ8(j2);
+
+	MarkDirty(rDividend);
+	MarkDirty(rQuotient);
 }
 
 #ifdef PROFILE_DYNAREC

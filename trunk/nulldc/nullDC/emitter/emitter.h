@@ -205,6 +205,7 @@ private:
 	{
 		write8( ( ss << 6 ) | ( rm << 3 ) | ( index ) );
 	}
+	
 
 	void SET8R( u8 cc, u8 to )
 	{
@@ -237,7 +238,7 @@ private:
 		return (u32*)( x86Ptr - 4 );
 	}
 
-
+public :
 	////////////////////////////////////////////////////
 	void x86Align( int bytes ) 
 	{
@@ -256,7 +257,7 @@ private:
 			return	(u32)((s8*)ptr-ptr_zero);
 		#endif
 	}
-public :
+
 	bool CanJ8(void* to)
 	{
 		u32 jump = (u32)( x86Ptr - (s8*)to );
