@@ -547,9 +547,9 @@ sh4op(i0000_0000_0001_1001)
 	{
 		//DIV32U was perfectly matched :)
 		bb->flags|=BLOCK_SOM_SIZE_128;
-	//	ilst->div(reg1,reg2,reg3,FLAG_ZX|FLAG_32);
+		ilst->div(reg1,reg2,reg3,FLAG_ZX|FLAG_32);
 	}
-	//else //<- uncoment when we realy emit em :P
+	else //<- uncoment when we realy emit em :P
 		shil_interpret(op);
 
 }
@@ -575,9 +575,9 @@ sh4op(i0010_nnnn_mmmm_0111)
 	{
 		//DIV32S was perfectly matched :)
 		bb->flags|=BLOCK_SOM_SIZE_128;
-	//	ilst->div(reg1,reg2,reg3,FLAG_SX|FLAG_32);
+		ilst->div(reg1,reg2,reg3,FLAG_SX|FLAG_32);
 	}
-	//else //<- uncoment when we realy emit em :P
+	else //<- uncoment when we realy emit em :P
 		shil_interpret(op);
 
 	return;

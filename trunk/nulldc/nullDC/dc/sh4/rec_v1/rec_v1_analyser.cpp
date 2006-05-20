@@ -62,7 +62,9 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 			switch (to->flags & BLOCK_SOM_MASK)
 			{
 			case BLOCK_SOM_SIZE_128:
-				printf("Syth opcode found at pc 0x%X , bytelen = 128 , skiping 128 bytes\n",pc);
+				printf("Syth opcode found at pc 0x%X , bytelen = 128+2 , skiping 130 bytes\n",pc);
+				pc+=128;
+				block_ops+=128;
 				break;
 			
 			case BLOCK_SOM_RESERVED1:
