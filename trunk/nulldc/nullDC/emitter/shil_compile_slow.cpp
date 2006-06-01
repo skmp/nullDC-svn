@@ -4,6 +4,7 @@
 
 #include "dc\sh4\sh4_registers.h"
 #include "dc\sh4\rec_v1\rec_v1_blockmanager.h"
+#include "dc\sh4\rec_v1\nullprof.h"
 #include "dc\sh4\sh4_opcode_list.h"
 #include "dc\mem\sh4_mem.h"
 #include "regalloc\x86_sseregalloc.h"
@@ -17,11 +18,13 @@ shil_scs shil_compile_slow_settings=
 	4,		//on 4 regisers
 	false,	//and on XMM
 	true,	//Inline Const Mem reads
-	true,	//Inline normal mem reads
-	true,	//Inline mem writes
+	false,	//Inline normal mem reads
+	false,	//Inline mem writes
 	false,	//Do _not_ keep tbit seperate ;P , needs bug fixing
 	true	//Predict returns (needs a bit debuggin)	
 };
+
+cDllHandler profiler_dll;
 
 #define REG_ALLOC_COUNT			 (shil_compile_slow_settings.RegAllocCount)
 #define REG_ALLOC_T_BIT_SEPERATE (shil_compile_slow_settings.TBitsperate)
@@ -33,7 +36,10 @@ shil_scs shil_compile_slow_settings=
 #define INLINE_MEM_WRITE		(shil_compile_slow_settings.InlineMemWrite)
 
 #define RET_PREDICTION			(shil_compile_slow_settings.RetPrediction)
-		
+
+bool nullprof_enabled=false;
+
+#define PROFILE_BLOCK_CYCLES (nullprof_enabled)
 typedef void __fastcall shil_compileFP(shil_opcode* op,rec_v1_BasicBlock* block);
 
 #ifdef PROFILE_DYNAREC
@@ -62,6 +68,43 @@ void profile_ifb_call()
 }
 #endif
 
+//#define PROFILE_SLOW_BLOCK
+//#ifdef PROFILE_SLOW_BLOCK
+union _Cmp64
+{
+	struct
+	{
+		u32 l;
+		u32 h;
+	};
+	u64 v;
+};
+
+_Cmp64 dyn_last_block;
+_Cmp64 dyn_now_block;
+void __fastcall dyna_profile_block_enter()
+{
+	__asm
+	{
+		rdtsc;
+		mov dyn_last_block.l,eax;
+		mov dyn_last_block.h,edx;
+	}
+}
+
+void __fastcall dyna_profile_block_exit(rec_v1_BasicBlock* bb)
+{
+	__asm
+	{
+		rdtsc;
+		mov dyn_now_block.l,eax;
+		mov dyn_now_block.h,edx;
+	}
+
+	bb->profile_time+=dyn_now_block.v-dyn_last_block.v;
+	bb->profile_calls++;
+}
+//#endif
 //a few helpers
 
 typedef void opMtoR_FP (x86IntRegType to,u32* from);
@@ -1183,13 +1226,16 @@ void __fastcall shil_compile_SaveT(shil_opcode* op,rec_v1_BasicBlock* block)
 	}
 	else
 	{
+		//x86e->XOR32RtoR(EAX,EAX);
+		
 		x86e->SETcc8R(EAX,op->imm1);//imm1 :P
+		x86e->AND32ItoM(GetRegPtr(reg_sr),(u32)~1);
 		x86e->MOVZX32R8toR(EAX,EAX);//clear rest of eax (to remove partial depency on 32:8)
-
-		LoadReg_force(ECX,reg_sr);			//ecx=sr(~1)|T
-		x86e->AND32ItoR(ECX,(u32)~1);
-		x86e->OR32RtoR(ECX,EAX);
-		SaveReg(reg_sr,ECX);
+		x86e->OR32RtoM(GetRegPtr(reg_sr),EAX);
+		//LoadReg_force(ECX,reg_sr);			//ecx=sr(~1)|T
+		//x86e->AND32ItoR(ECX,(u32)~1);
+		//x86e->OR32RtoR(ECX,EAX);
+		//SaveReg(reg_sr,ECX);
 	}
 }
 void __fastcall shil_compile_LoadT(shil_opcode* op,rec_v1_BasicBlock* block)
@@ -2117,6 +2163,17 @@ void Init()
 	}
 
 	printf("lazy shil compiler stats : %d%% opcodes done\n",shil_nimp*100/shil_opcodes::shil_count);
+	if(profiler_dll.Load("nullprof_server.dll"))
+	{
+		void* temp;
+		if (temp=profiler_dll.GetProcAddress("InitProfiller"))
+		{
+			nullprof_enabled=true;
+			printf("nullprof_server.dll found , enabling profiling\n"); 
+			((InitProfillerFP*)temp)(&null_prof_pointers);
+		}
+	}
+
 }
 //Compile block and return pointer to it's code
 void* __fastcall link_compile_inject_TF(rec_v1_BasicBlock* ptr)
@@ -2164,8 +2221,10 @@ extern u32 rec_cycles;
 u32 call_ret_address=0;//holds teh return address of the previus call ;)
 rec_v1_BasicBlock* pcall_ret_address=0;//holds teh return address of the previus call ;)
 
+
 void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 {
+	//CompileBasicBlock_slow_c(block);
 	if (!inited)
 	{
 		Init();
@@ -2184,6 +2243,10 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 	block->compiled=new rec_v1_CompiledBlock();
 	
 
+	if (PROFILE_BLOCK_CYCLES){
+		x86e->CALLFunc(dyna_profile_block_enter);
+	}
+
 	AllocateRegisters(block);
 	LoadRegisters();
 	s8* start_ptr=x86e->x86Ptr;
@@ -2194,6 +2257,8 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 #ifdef PROFILE_DYNAREC
 	x86e->CALLFunc(dyna_profile_cookie_start);
 #endif
+	
+
 	u32 list_sz=(u32)block->ilst.opcodes.size();
 	for (u32 i=0;i<list_sz;i++)
 	{
@@ -2223,6 +2288,11 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 	}
 
 	FlushRegCache();//flush reg cache
+
+	if (PROFILE_BLOCK_CYCLES){
+			x86e->MOV32ItoR(ECX,(u32)(block));
+			x86e->CALLFunc(dyna_profile_block_exit);
+	}
 
 	//end block acording to block type :)
 	switch(block->flags & BLOCK_TYPE_MASK)
@@ -2355,11 +2425,16 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 				}
 				else
 				{
-					x86e->CMOVNE32MtoR(EAX,pTT_f);	//overwrite the "other" pointer if needed
+					if (*TF_a==block->start)
+					{
+						x86e->MOV32MtoR(EAX,pTT_f);// ;)
+					}
+					else
+						x86e->CMOVNE32MtoR(EAX,pTT_f);	//overwrite the "other" pointer if needed
 				}
 				x86e->JMP32R(EAX);		 //!=
 			}
-		}
+		} 
 		break;
 
 	case BLOCK_TYPE_FIXED_CALL:
@@ -2412,7 +2487,7 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 	block->pTT_next_addr=link_compile_inject_TT_stub;
 
 
-	block->ilst.opcodes.clear();
+	//block->ilst.opcodes.clear();
 
 
 	block_count++;
