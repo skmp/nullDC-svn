@@ -1,6 +1,7 @@
 #include "dc\sh4\sh4_registers.h"
 #include "dc\mem\sh4_mem.h"
 #include "rec_v1_blockmanager.h"
+#include "nullprof.h"
 
 #include <vector>
 using namespace std;
@@ -109,16 +110,21 @@ rec_v1_BasicBlock* rec_v1_FindBlock(u32 address)
 
 	return 0;
 }
+#include <algorithm>
 
 
+
+vector<rec_v1_BasicBlock*> all_block_list;
 rec_v1_BasicBlock* rec_v1_NewBlock(u32 address)
 {
 	rec_v1_BasicBlock* rv=new rec_v1_BasicBlock();
 	rv->start=address;
 	rv->cpu_mode_tag=fpscr.PR_SZ;
-
+	all_block_list.push_back(rv);
+	
 	return rv;
 }
+
 
 
 void rec_v1_RegisterBlock(rec_v1_BasicBlock* block)
@@ -187,10 +193,10 @@ bool WriteTest_Hit(u32 address)
 
 void FreeSuspendedBlocks()
 {
-	for (int i=0;i<SuspendedBlocks.size();i++)
+	//for (int i=0;i<SuspendedBlocks.size();i++)
 	{
-		SuspendedBlocks[i]->Free();
-		delete SuspendedBlocks[i];
+		//SuspendedBlocks[i]->Free();
+		//delete SuspendedBlocks[i];
 	}
 	SuspendedBlocks.clear();
 }
@@ -248,3 +254,134 @@ void rec_v1_CompileBlockTest(emitter<>* x86e,x86IntRegType r_addr,x86IntRegType 
 	x86e->POP32R(r_addr);					//restore r_addr :D
 	x86e->x86SetJ8(no_test);				//jump here if no test*/
 }
+
+void ConvBlockInfo(nullprof_block_info* to,rec_v1_BasicBlock* pblk)
+{
+	if (pblk==0)
+	{
+		to->addr=0xFFFFFFFF;
+		return;
+	}
+
+	to->addr=pblk->start;
+	to->sh4_code=GetMemPtr(pblk->start,4);
+	to->x86_code=pblk->compiled->Code;
+	to->sh4_bytes=pblk->end-pblk->start+2;
+	to->x86_bytes=pblk->compiled->size;
+	to->sh4_cycles=pblk->cycles;
+	to->time=pblk->profile_time;
+	to->calls=pblk->profile_calls;
+}
+void nullprof_GetBlock(nullprof_block_info* to,u32 type,u32 address)
+{
+	if (type!=0)
+	{
+		printf("Olny adress based method workies");
+		to->addr=0xFFFFFFFF;
+		return;
+	}
+
+	rec_v1_BasicBlock* pblk=rec_v1_FindBlock(address);
+
+
+	ConvBlockInfo(to,pblk);
+}
+
+int compare_usage (const void * a, const void * b)
+{
+	rec_v1_BasicBlock* ba=*(rec_v1_BasicBlock**)a;
+	rec_v1_BasicBlock* bb=*(rec_v1_BasicBlock**)b;
+
+	double ava=(double)ba->profile_time;//(double)ba->profile_calls;
+	double avb=(double)bb->profile_time;//(double)bb->profile_calls;
+
+	
+	return ( avb>ava?1:-1);
+}
+
+int compare_time (const void * a, const void * b)
+{
+	rec_v1_BasicBlock* ba=*(rec_v1_BasicBlock**)a;
+	rec_v1_BasicBlock* bb=*(rec_v1_BasicBlock**)b;
+
+	double ava=(double)ba->profile_time/(double)ba->profile_calls;
+	double avb=(double)bb->profile_time/(double)bb->profile_calls;
+
+	
+	return ( avb>ava?1:-1);
+}
+int compare_calls (const void * a, const void * b)
+{
+	rec_v1_BasicBlock* ba=*(rec_v1_BasicBlock**)a;
+	rec_v1_BasicBlock* bb=*(rec_v1_BasicBlock**)b;
+
+	double ava=(double)ba->profile_calls;
+	double avb=(double)bb->profile_calls;
+
+	
+	return ( avb>ava?1:-1);
+}
+
+void nullprof_GetBlocks(nullprof_blocklist* to, u32 type,u32 count)
+{
+	if (type!=ALL_BLOCKS)
+	{
+		if (count==0 || count>all_block_list.size())
+			count=all_block_list.size();
+
+		to->count=count;
+		to->blocks=(nullprof_block_info*)malloc(count*sizeof(nullprof_block_info));
+
+		if (type==PSLOW_BLOCKS)
+			qsort(&(all_block_list[0]), all_block_list.size(), sizeof(rec_v1_BasicBlock*), compare_usage);
+		else if (type==PTIME_BLOCKS)
+			qsort(&(all_block_list[0]), all_block_list.size(), sizeof(rec_v1_BasicBlock*), compare_time);
+		else if (type==PCALL_BLOCKS)
+			qsort(&(all_block_list[0]), all_block_list.size(), sizeof(rec_v1_BasicBlock*), compare_calls);
+
+
+		for (int i=0;i<count;i++)
+		{
+			//double cpb=(double)all_block_list[i]->profile_time/(double)all_block_list[i]->profile_calls;
+			//fprintf(to,"Block 0x%X , size %d[%d cycles] , %f cycles/call , %f cycles/emucycle,%f consumed Mhrz\n",
+			//	all_block_list[i]->start,
+			//	(all_block_list[i]->end-all_block_list[i]->start+2)>>1,
+			//	all_block_list[i]->cycles,
+			//	cpb,
+			//	cpb/all_block_list[i]->cycles,
+			//	all_block_list[i]->profile_time/(1000.0f*1000.0f));
+			ConvBlockInfo(&to->blocks[i],all_block_list[i]);
+			void CompileBasicBlock_slow_c(rec_v1_BasicBlock* block);;
+			CompileBasicBlock_slow_c(all_block_list[i]);
+		}
+	}
+	else
+	{
+		count=all_block_list.size();
+		to->count=count;
+		to->blocks=(nullprof_block_info*)malloc(count*sizeof(nullprof_block_info));
+		for (int i=0;i<all_block_list.size();i++)
+		{
+			ConvBlockInfo(&to->blocks[i],all_block_list[i]);
+		}
+	}
+}
+void nullprof_ClearBlockPdata()
+{
+	for (int i=0;i<all_block_list.size();i++)
+	{
+		all_block_list[i]->profile_calls=0;
+		all_block_list[i]->profile_time=0;
+	}
+}
+
+//nullprof_GetBlockFP* GetBlockInfo;
+	//nullprof_GetBlocksFP* GetBlocks;
+	//nullprof_ClearBlockPdataFP* ClearPdata;
+nullprof_prof_pointers null_prof_pointers=
+{
+	"nullDC v0.0.1; rec_v1",
+	nullprof_GetBlock,
+	nullprof_GetBlocks,
+	nullprof_ClearBlockPdata
+};

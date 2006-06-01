@@ -78,7 +78,7 @@ rec_v1_BasicBlock* rec_v1_FindOrRecompileCode(u32 pc)
 	return GetRecompiledCode(pc);
 }
 
-#define PROFILE_DYNAREC
+//#define PROFILE_DYNAREC
 #ifdef PROFILE_DYNAREC
 u64 calls=0;
 u64 total_cycles=0;
@@ -159,7 +159,9 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 		calls++;
 		if ((calls & (0x80000-1))==(0x80000-1))//more ?
 		{
+			//void PrintSortedBlocks(FILE* to,u32 count);
 			printf("Dynarec Stats : average link cycles : %d \n",(u32)(total_cycles/calls));
+			//PrintSortedBlocks(stdout,40);
 			//printf("Dynarec Stats : average link cycles : %d , ifb opcodes : %d%% [%d]\n",(u32)(total_cycles/calls),(u32)(ifb_calls*100/total_cycles),ifb_calls);
 			calls=total_cycles=0;//ifb_calls
 			//printprofile();

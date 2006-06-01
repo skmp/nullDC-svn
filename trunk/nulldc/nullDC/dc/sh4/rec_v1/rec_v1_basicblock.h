@@ -76,6 +76,8 @@ class rec_v1_BasicBlock
 		TF_next_addr=0xFFFFFFFF;
 		TT_next_addr=0xFFFFFFFF;
 		TF_block=TT_block=0;
+		profile_time=0;
+		profile_calls=0;
 		Discarded=false;
 	}	
 
@@ -116,6 +118,8 @@ class rec_v1_BasicBlock
 
 	vector<rec_v1_BasicBlock*> callees;
 	bool Discarded;
+	u64 profile_time;
+	u32 profile_calls;
 };
 
 

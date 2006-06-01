@@ -55,8 +55,12 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 		/*if ((opcode&0xF000)==0xF000)
 			ilst->shil_ifb(opcode,pc);
 		else*/
+		//u32 nop=ilst->opcodes.size();
 			RecOpPtr[opcode](opcode,pc,to);
-		
+
+		/*if (ilst->opcodes.size()>nop)
+			ilst->opcodes[nop]|=FLAG_NEXT_OP;*/
+
 		if (to->flags & BLOCK_SOM_MASK)
 		{
 			switch (to->flags & BLOCK_SOM_MASK)
@@ -64,7 +68,8 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 			case BLOCK_SOM_SIZE_128:
 				printf("Syth opcode found at pc 0x%X , bytelen = 128+2 , skiping 130 bytes\n",pc);
 				pc+=128;
-				block_ops+=128;
+				block_ops+=128>>1;
+				block_size+=128>>1;
 				break;
 			
 			case BLOCK_SOM_RESERVED1:
