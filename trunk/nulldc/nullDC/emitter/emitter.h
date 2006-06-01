@@ -2518,7 +2518,7 @@ public :
 	/* ret */
 	void RET( void ) 
 	{
-		/*	write8( 0xF3 );*/ write8( 0xC3 );
+			write8( 0xF3 ); write8( 0xC3 );
 	}
 
 	void BT32ItoR( x86IntRegType to, x86IntRegType from ) 
