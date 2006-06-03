@@ -18,7 +18,7 @@ shil_scs shil_compile_slow_settings=
 	4,		//on 4 regisers
 	false,	//and on XMM
 	true,	//Inline Const Mem reads
-	false,	//Inline normal mem reads
+	true,	//Inline normal mem reads
 	false,	//Inline mem writes
 	false,	//Do _not_ keep tbit seperate ;P , needs bug fixing
 	true	//Predict returns (needs a bit debuggin)	
@@ -300,13 +300,13 @@ void AllocateRegisters(rec_v1_BasicBlock* block)
 			{
 				//both reads and writes , give it one more ;P
 				if ( curop->UpdatesReg((Sh4RegType) (r0+i)) )
-					used[i].cnt+=1;
+					used[i].cnt+=12;
 
 				if (curop->ReadsReg((Sh4RegType) (r0+i)))
-					used[i].cnt+=1;
+					used[i].cnt+=6;
 
 				if (curop->WritesReg((Sh4RegType) (r0+i)))
-					used[i].cnt+=1;
+					used[i].cnt+=9;
 			}
 		}
 
@@ -314,7 +314,7 @@ void AllocateRegisters(rec_v1_BasicBlock* block)
 
 		for (u32 i=0;i<REG_ALLOC_COUNT;i++)
 		{
-			if (used[i].cnt==0)
+			if (used[i].cnt<14)
 				break;
 			r_alloced[used[i].reg].x86reg=reg_to_alloc[i];
 		}
