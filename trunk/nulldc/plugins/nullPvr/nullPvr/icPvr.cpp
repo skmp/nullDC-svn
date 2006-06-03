@@ -82,6 +82,9 @@ typedef void GetDllInfoFP ( PLUGIN_INFO * PluginInfo );
 }
 #endif
 
+#define SPG_LOAD_addr			0x005F80D8		//RW	HV counter load value
+#define SPG_VBLANK			0x000000DC	/*	RW	V-blank control	*/
+
 struct icPluginfo
 {
 	PLUGIN_INFO plinfo;
@@ -118,9 +121,10 @@ u8 HblankInfo()
 
 u8 VblankInfo()
 {
-	u32 data = *(u32*)&pvr_regs[0xa05f80cc & 0x7FFF];
-	u32 down=(data & 0x3FFF);
-	u32 top=(data >> 16) & 0x3FFF;
+	u32 data = *(u32*)&pvr_regs[SPG_VBLANK & 0x7FFF];
+	
+	u32 top=(data >> 16) & 0x3FFF;		// VSync Start
+	u32 down=(data >> 0) & 0x3FFF;		// VSync End
 
 	if (data==0)
 		return 0;
@@ -128,6 +132,10 @@ u8 VblankInfo()
 		return 1;
 	else
 		return 0;
+
+	
+	
+
 }
 //end helper
 u32 ints=0;
@@ -166,7 +174,7 @@ void vblank_done()
 void hblank_done(int scanline)
 {
 	prv_cur_scanline=scanline;
-	//RaiseInterrupt(holly_HBLank);//that is bad , its not allways raised , needs fixin
+	RaiseInterrupt(holly_HBLank);//that is bad , its not allways raised , needs fixin
 
 	u32 data=*(u32*)&pvr_regs[0xa05f80cc & 0x7FFF];
 	if ((data & 0x3FFF) == prv_cur_scanline)
@@ -176,12 +184,12 @@ void hblank_done(int scanline)
 }
 
 int last_scanline=-6789;
-#define SPG_LOAD_addr			0x005F80D8		//RW	HV counter load value
+
 void icUpdatePvr (u32 cycles)
 {
 	clcount+=cycles;
 	int pixel_clock=((*(int*)&pvr_regs[SPG_LOAD_addr & 0x7FFF]) & 0x3FF) +1;
-	int scanline=clcount/(pixel_clock*16);
+	int scanline=clcount/(pixel_clock*7);
 
 	if (clcount > (DCclock/60))//60 ~herz = 200 mhz / 60=3333333.333 cycles per screen refresh
 	{
