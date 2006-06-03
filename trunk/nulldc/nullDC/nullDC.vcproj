@@ -715,6 +715,10 @@
 						Name="rec_v1"
 						>
 						<File
+							RelativePath=".\dc\sh4\rec_v1\nullprof.h"
+							>
+						</File>
+						<File
 							RelativePath=".\dc\sh4\rec_v1\rec_v1_analyser.cpp"
 							>
 						</File>
@@ -1298,6 +1302,10 @@
 				</File>
 				<File
 					RelativePath=".\emitter\shil_compile_slow.h"
+					>
+				</File>
+				<File
+					RelativePath=".\emitter\shil_to_text.cpp"
 					>
 				</File>
 				<Filter
