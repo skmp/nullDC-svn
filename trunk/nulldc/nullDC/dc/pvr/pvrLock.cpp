@@ -96,7 +96,7 @@ u32 vramlock_ConvOffset32toOffset64(u32 offset32)
 		//64b wide bus is archevied by interleaving the banks every 32 bits
 		//so bank is Address<<3
 		//bits <4 are <<1 to create space for bank num
-		//bank 0 is mapped at 400000 (32b offset) and after
+		//bank 1 is mapped at 400000 (32b offset) and after
 		u32 bank=((offset32>>22)&0x1)<<2;//bank will be used ass uper offset too
 		u32 lv=offset32&0x3; //these will survive
 		offset32<<=1;
@@ -111,7 +111,7 @@ u32 vramlock_ConvOffset32toOffset64(u32 offset32)
 void vramlock_list_remove(vram_block* block)
 {
 	u32 base = block->start/PAGE_SIZE;
-	u32 end = block->end/PAGE_SIZE;//((block->end+PAGE_SIZE-1)&(~(PAGE_SIZE-1)))/PAGE_SIZE;
+	u32 end = block->end/PAGE_SIZE;
 
 	for (u32 i=base;i<=end;i++)
 	{
@@ -155,37 +155,7 @@ inline bool IsInRange(vram_block* block,u32 offset)
 {
 	return (block->start<=offset) && (block->end>=offset);
 }
-//
-//32 byte size min test
-//addr can be a full dc mem address , tests both 32b and 64b
-//size must be 1,2,4 or 0 (0= do not care)
-void vramlock_Test(u32 addr,u32 value,u32 size)
-{
-	addr=vramlock_ConvAddrtoOffset64(addr);
-	/*if (GetVramTest_All(addr))
-	{
-		//shit
-		//no code to handle it
-		//lmao
-		//OPT -> see if value actually changed
-		vram_lock_list* hash=&vram_locks[GetHash(addr)];
-		vram_block** blk_list=hash->list;
-		if (blk_list==0)
-			return;
-		for (u32 cnt=0;cnt<hash->len;cnt++)
-		{
-			if (blk_list[cnt] && IsInRange(blk_list[cnt],addr))
-			{
-				//bah , we HIT at blk_list[cnt] :)
-				//TODO:send note to the pvr plugin
-				//PvrLib.lib.Update(PVRU_TCACHE_INVALIDATE, blk_list[cnt]);
-				libPvr->pvr_info.LockedBlockWrite(blk_list[cnt],addr);
-			}
-		}
- 
-	}*/
-}
- 
+
 //returns block handle
 vram_block* vramlock_Lock_32(u32 start_offset32,u32 end_offset32,void* userdata)
 {
@@ -197,6 +167,14 @@ vram_block* vramlock_Lock_32(u32 start_offset32,u32 end_offset32,void* userdata)
 	block->userdata=userdata;
 	block->type=32;
  
+	//okz , new idea
+	//asuming locks are 4 byte alligned (textures have to be 4 byte aligned too , dont they ? 
+	//									 anyhow , fb is 32b alligned and locks are 4kb aligned 
+	//									 so it doesnt matter)
+	//32b to 64b maping goes 2:1
+	//so we can do
+	//lock(bank1,size>>1);lock(bank2,size>>1);
+
 	/*for (u32 base=start_offset32;base<end_offset32;base+=4)
 	{
 		SetVramTest_32(vramlock_ConvOffset32toOffset64(base));
@@ -209,8 +187,7 @@ vram_block* vramlock_Lock_32(u32 start_offset32,u32 end_offset32,void* userdata)
  
 	return block;
 }
- 
- 
+
 vram_block* vramlock_Lock_64(u32 start_offset64,u32 end_offset64,void* userdata)
 {
 	vram_block* block=(vram_block* )malloc(sizeof(vram_block));
@@ -219,6 +196,7 @@ vram_block* vramlock_Lock_64(u32 start_offset64,u32 end_offset64,void* userdata)
 	if (end_offset64>(VRAM_SIZE-1))
 	{
 		printf("vramlock_Lock_64: end_offset64>(VRAM_SIZE-1) , Tried to lock area out of vram , possibly bug on the pvr plugin\n");
+		//__asm int 3;
 		end_offset64=(VRAM_SIZE-1);
 	}
 
@@ -239,18 +217,6 @@ vram_block* vramlock_Lock_64(u32 start_offset64,u32 end_offset64,void* userdata)
 	vram.LockRegion(block->start,block->len);
 	vramlock_list_add(block);
 
- /*
-	for (u32 base=start_offset64;base<end_offset64;base+=VramTestMinWrite)
-	{
-		SetVramTest_64(base);
-	}
- 
-	u32 hash_end=GetHash(block->end);
-	for (u32 hash_base = GetHash(block->start);hash_base<=hash_end;hash_base+=1)
-	{
-		vramlock_list_add(block,&vram_locks[hash_base]);
-	}*/
- 
 	return block;
 }
  
@@ -269,15 +235,17 @@ bool VramLockedWrite(u8* address)
 			if ((*list)[i])
 			{
 				libPvr->pvr_info.LockedBlockWrite((*list)[i],offset);
-				found++;
+				//found++;
 				if ((*list)[i])
-					vramlock_list_remove((*list)[i]);
+				{
+					printf("Error , pvr is suposed to remove lock \n");
+					__asm int 3;
+				}
+					//vramlock_list_remove((*list)[i]);
 			}
 		}
 		list->clear();
 		vram.UnLockRegion(offset&(~(PAGE_SIZE-1)),PAGE_SIZE);
-		
-//		printf("Vram lock write @ 0x%x [0x%x]  , contains %d locks\n",address,offset,found);
 
 		return true;
 	}
@@ -285,42 +253,17 @@ bool VramLockedWrite(u8* address)
 		return false;
 }
 
-void vramlock_ClearBlock(vram_block* block)
-{
-	if (block->type==32)
-	{
-		/*for (u32 base=block->start;base<block->end;base+=4)
-		{
-			ResetVramTest_32(vramlock_ConvOffset32toOffset64(base));
-		}
-		//To be done better
-		for (u32 base=block->start;base<block->end;base+=4)
-		{
-			vramlock_list_remove(block,&vram_locks[GetHash(vramlock_ConvOffset32toOffset64(base))]);
-		}*/
-	}
-	else
-	{
-		/*for (u32 base=block->start;base<block->end;base+=VramTestMinWrite)
-		{
-			ResetVramTest_64(base);
-		}
- 
-		u32 hash_end=GetHash(block->end);
-		for (u32 hash_base = GetHash(block->start);hash_base<=hash_end;hash_base+=1)
-		{
-			vramlock_list_remove(block,&vram_locks[hash_base]);
-		}*/
-	}
- 
-}
- 
- 
 //unlocks mem
 //also frees the handle
 void vramlock_Unlock_block(vram_block* block)
 {
-	vramlock_list_remove(block);
-	//more work needed
-	free(block);
+	//VRAM_SIZE/PAGE_SIZE;
+	if (block->end>VRAM_SIZE)
+		printf("Error : block end is after vram , skiping unlock\n");
+	else
+	{
+		vramlock_list_remove(block);
+		//more work needed
+		free(block);
+	}
 }
