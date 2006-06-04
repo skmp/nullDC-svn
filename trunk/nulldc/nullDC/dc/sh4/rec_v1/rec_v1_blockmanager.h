@@ -7,8 +7,7 @@
 rec_v1_BasicBlock* rec_v1_FindBlock(u32 address);
 void rec_v1_RegisterBlock(rec_v1_BasicBlock* block);
 void rec_v1_UnRegisterBlock(rec_v1_BasicBlock* block);
-void __fastcall rec_v1_BlockTest(u32 addrf);
-void __fastcall rec_v1_NotifyMemWrite(u32 start , u32 size);
+
 void rec_v1_CompileBlockTest(emitter<>* x86e,x86IntRegType r_addr,x86IntRegType temp);
 
 void FreeSuspendedBlocks();

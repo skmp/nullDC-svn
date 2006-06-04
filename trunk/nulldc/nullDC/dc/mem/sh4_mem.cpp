@@ -437,7 +437,7 @@ void MEMCALL WriteMemBlock(u32 addr,u32* data,u32 size)
 
 	//area 3 : System Ram 16 mb, {64b}x4
 	case 3:
-		rec_v1_NotifyMemWrite(addr,size);
+		//rec_v1_NotifyMemWrite(addr,size);
 		//*WATCH* , mem has to be copied forwards. i duno if that's what memcpy does :)
 		memcpy(GetMemPtr(addr,size),data,size);
 		return;

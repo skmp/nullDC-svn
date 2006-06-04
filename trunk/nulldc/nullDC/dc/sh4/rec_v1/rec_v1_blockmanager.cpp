@@ -3,27 +3,145 @@
 #include "rec_v1_blockmanager.h"
 #include "nullprof.h"
 
+//block manager : new implementation 
+//ideas :
+//use native locks for code overwrites
+//fix the never ending crash problems
+//make code simpler , so future optimisation of code lookups is possible
+
+//Using mmu pages to lock areas on mem is the best way to keep track of writes , fully done by h/w.
+//the problem w/ sh4 is that its usual to have data close to code (same page), witch makes it had..
+//i decided to use a mixed model :
+//
+//Pages are locked , and if a page is invalidated too much (like 10 times)
+//the dynarec will switch to manual invalidation for blocks that are on
+//that page.Code that modifies its next bytes wont work , its not
+//possible to exit from a block due to an invalidation.
+//
+//When in fallback mode , the block's code should check if the block is still valid , propably some cheap
+//trick , like comparing the first 4 bytes of the block (cmp m32,i32) or rep cmp.
+//
+//The blocks are allways on the page block list no matter their mode.
+//hybrid blocks (eg , they are half on a lockable page and half on a non lockable one) are considered 
+//non lockable.they can be eiter manualy invalidated , either from lock code :).
+
+//There is a global list of blocks , mailny used by the profiler and the shutdown functions.
+//
+//There is a block list per page , that contains all the blocks that are within that page (that counts
+// those "partialy in" too).This list is used to discard blocks in case of a page write.
+//
+//Now , an array of lists is used to keep the block start addresses.It is indexed by a hash made from the
+//address (to keep the list size small so fast lookups).Also there is a cache list that holds a pointer
+//to the most commonly used block for that hash range.
+
 #include <vector>
+#include <algorithm>
 using namespace std;
 
-//#define block_cnt (0x1000) 
-#define PAGE_SIZE_SW 64
-#define PAGE_MASK_SW (PAGE_SIZE_SW-1)
+//
+//helper list class
+class BlockList:public vector<rec_v1_BasicBlock*>
+{
+public :
+	u32 Add(rec_v1_BasicBlock* block)
+	{
+		for (u32 i=0;i<size();i++)
+		{
+			if (_Myfirst[i]==0)
+			{
+				_Myfirst[i]=block;
+				return i;
+			}
+		}
 
-#define LOOKUP_HASH_SIZE 0x1000
-#define LOOKUP_HASH_MASK (LOOKUP_HASH_SIZE-1)
+		push_back(block);
+		return size();
+	}
+	void Remove(rec_v1_BasicBlock* block)
+	{
+		for (u32 i=0;i<size();i++)
+		{
+			if (_Myfirst[i]==block)
+			{
+				_Myfirst[i]=0;
+				return;
+			}
+		}
+	}
+	rec_v1_BasicBlock* Find(u32 address,u32 cpu_mode)
+	{
+		for (u32 i=0;i<size();i++)
+		{
+			if (
+				(_Myfirst[i]!=0) && 
+				(_Myfirst[i]->start == address) &&
+				(_Myfirst[i]->cpu_mode_tag == cpu_mode)
+				)
+			{
+				return _Myfirst[i];
+			}
+		}
+	}
+}
+//
+//page info
+//bit 0 :1-> manual check , 0 -> locked check
+//bit 1-7: reserved
+u8 PageInfo[RAM_SIZE/PAGE_SIZE];
 
-#define GetHash(addr) ((addr>>2)&LOOKUP_HASH_MASK)
+//block managment
+BlockList all_block_list;
 
-vector<rec_v1_BasicBlock*> BlockLists[RAM_SIZE/PAGE_SIZE_SW];
+//block discard related vars
+BlockList BlockPageLists[RAM_SIZE/PAGE_SIZE];
+BlockList SuspendedBlocks;
 
-vector<rec_v1_BasicBlock*> BlockLookupLists[LOOKUP_HASH_SIZE];
-rec_v1_BasicBlock*		   BlockLookupGuess[LOOKUP_HASH_SIZE];
+//block lookup vars
+#define LOOKUP_HASH_SIZE	0x1000
+#define LOOKUP_HASH_MASK	(LOOKUP_HASH_SIZE-1)
+#define GetLookupHash(addr) ((addr>>2)&LOOKUP_HASH_MASK)
+BlockList					BlockLookupLists[LOOKUP_HASH_SIZE];
+rec_v1_BasicBlock*			BlockLookupGuess[LOOKUP_HASH_SIZE];
 
-vector<rec_v1_BasicBlock*> SuspendedBlocks;
+//misc code & helper functions
+//Free a list of blocks
+void FreeBlocks(BlockList* blocks)
+{
+	for (u32 i=0;i<blocks->size();i++)
+	{
+		if ((*blocks)[i])
+		{
+			((*blocks)[i])->Free();
+		}
+	}
+	blocks->clear();
+}
+//this should not be called from a running block , or it will crash
+//Fully resets block hash/list , clears all entrys and free's any prevusly allocated blocks
+void ResetBlocks()
+{
+	for (u32 i=0;i<LOOKUP_HASH_SIZE;i++)
+	{
+		BlockLookupLists[i].clear();
+		BlockLookupGuess[i]=0;
+	}
 
-u8 WriteTest[RAM_SIZE/PAGE_SIZE_SW];
+	for (u32 i=0;i<(RAM_SIZE/PAGE_SIZE);i++)
+	{
+		BlockPageLists[i].clear();
+	}
 
+	FreeBlocks(SuspendedBlocks);
+	FreeBlocks(all_block_list);
+	memset(PageInfo,0,sizeof(PageInfo));
+}
+//
+void FreeSuspendedBlocks()
+{
+	FreeBlocks(SuspendedBlocks);
+}
+
+//block lookup code
 void AddToBlockList(vector<rec_v1_BasicBlock*>* list ,rec_v1_BasicBlock* block)
 {
 	u32 size=list->size();
@@ -98,7 +216,7 @@ rec_v1_BasicBlock* rec_v1_FindBlock(u32 address)
 		{
 			if (thisblock->cpu_mode_tag==fpscr.PR_SZ)
 			{
-				if (fastblock==0 || fastblock->lookups==thisblock->lookups)
+				if (fastblock==0 || fastblock->lookups<=thisblock->lookups)
 				{
 					BlockLookupGuess[GetHash(address)]=thisblock;
 				}
@@ -110,18 +228,18 @@ rec_v1_BasicBlock* rec_v1_FindBlock(u32 address)
 
 	return 0;
 }
-#include <algorithm>
 
 
 
-vector<rec_v1_BasicBlock*> all_block_list;
+
+
 rec_v1_BasicBlock* rec_v1_NewBlock(u32 address)
 {
 	rec_v1_BasicBlock* rv=new rec_v1_BasicBlock();
 	rv->start=address;
 	rv->cpu_mode_tag=fpscr.PR_SZ;
 	all_block_list.push_back(rv);
-	
+
 	return rv;
 }
 
@@ -153,7 +271,7 @@ void rec_v1_UnRegisterBlock(rec_v1_BasicBlock* block)
 
 	if (BlockLookupGuess[GetHash(block->start)]==block)
 		BlockLookupGuess[GetHash(block->start)]=0;
-		
+
 	for (int i=start;i<=end;i++)
 	{
 		RemoveFromBlockList(&BlockLists[i],block);
@@ -191,56 +309,26 @@ bool WriteTest_Hit(u32 address)
 }
 
 
-void FreeSuspendedBlocks()
+//suspend/ free related ;)
+void SuspendBlock_internal(rec_v1_BasicBlock* block)
 {
-	//for (int i=0;i<SuspendedBlocks.size();i++)
-	{
-		//SuspendedBlocks[i]->Free();
-		//delete SuspendedBlocks[i];
-	}
-	SuspendedBlocks.clear();
+	//remove the block from :
+	//
+	//full block list
+	//page block list
+	//look up block list
+	//Look up guess block list
 }
 
-void __fastcall rec_v1_BlockTest(u32 addrf)
-{
-	//u32 addr_real=addr;
-	//addrf&=;
-	u32 addr=(addrf&RAM_MASK)/PAGE_SIZE_SW;
-	if (WriteTest[addr])
-	{
-		WriteTest_Hit(addrf);
-	}
-	
-}
-void __fastcall rec_v1_NotifyMemWrite(u32 start , u32 size)
-{
-	start&=RAM_MASK;
 
-	
-	for (int i=0;i<size;i+=2)
-	{
-		rec_v1_BlockTest(start+i);
-	}
-	
-	/*size=(size>>(HASH_BITS+3))+1;
-	start=start>>(HASH_BITS+3);
 
-	for (int curr=start;curr<=(start+size);)
-	{
-		if (RamTest[curr])
-		{
-			for (int u=0;u<HASH_P_SIZE;u++)
-				rec_v1_BlockTest((curr<<(HASH_BITS+3))+u);
-		}
-		curr+=1;
-	}*/
-}
 
-void rec_v1_CompileBlockTest(emitter<>* x86e,x86IntRegType r_addr,x86IntRegType temp)
-{
-	x86e->PUSH32R(r_addr);					//presrve r_addr ;)
-	x86e->CALLFunc(rec_v1_BlockTest);		//do full test
-	x86e->POP32R(r_addr);					//restore r_addr :D
+
+//void rec_v1_CompileBlockTest(emitter<>* x86e,x86IntRegType r_addr,x86IntRegType temp)
+//{
+	//x86e->PUSH32R(r_addr);					//presrve r_addr ;)
+//	x86e->CALLFunc(rec_v1_BlockTest);		//do full test
+//	x86e->POP32R(r_addr);					//restore r_addr :D
 
 	/*x86e->MOV32ItoR(temp,(u32)&RamTest[0]);	//get base ptr
 	x86e->MOV32RtoR(EDX,r_addr);
@@ -253,8 +341,10 @@ void rec_v1_CompileBlockTest(emitter<>* x86e,x86IntRegType r_addr,x86IntRegType 
 	x86e->CALLFunc(rec_v1_BlockTest);		//do full test
 	x86e->POP32R(r_addr);					//restore r_addr :D
 	x86e->x86SetJ8(no_test);				//jump here if no test*/
-}
+//}
 
+
+//nullProf implementation
 void ConvBlockInfo(nullprof_block_info* to,rec_v1_BasicBlock* pblk)
 {
 	if (pblk==0)
@@ -295,7 +385,7 @@ int compare_usage (const void * a, const void * b)
 	double ava=(double)ba->profile_time;//(double)ba->profile_calls;
 	double avb=(double)bb->profile_time;//(double)bb->profile_calls;
 
-	
+
 	return ( avb>ava?1:-1);
 }
 
@@ -307,7 +397,7 @@ int compare_time (const void * a, const void * b)
 	double ava=(double)ba->profile_time/(double)ba->profile_calls;
 	double avb=(double)bb->profile_time/(double)bb->profile_calls;
 
-	
+
 	return ( avb>ava?1:-1);
 }
 int compare_calls (const void * a, const void * b)
@@ -318,7 +408,7 @@ int compare_calls (const void * a, const void * b)
 	double ava=(double)ba->profile_calls;
 	double avb=(double)bb->profile_calls;
 
-	
+
 	return ( avb>ava?1:-1);
 }
 
@@ -376,8 +466,8 @@ void nullprof_ClearBlockPdata()
 }
 
 //nullprof_GetBlockFP* GetBlockInfo;
-	//nullprof_GetBlocksFP* GetBlocks;
-	//nullprof_ClearBlockPdataFP* ClearPdata;
+//nullprof_GetBlocksFP* GetBlocks;
+//nullprof_ClearBlockPdataFP* ClearPdata;
 nullprof_prof_pointers null_prof_pointers=
 {
 	"nullDC v0.0.1; rec_v1",
