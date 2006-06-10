@@ -8,8 +8,6 @@ rec_v1_BasicBlock* rec_v1_FindBlock(u32 address);
 void rec_v1_RegisterBlock(rec_v1_BasicBlock* block);
 void rec_v1_UnRegisterBlock(rec_v1_BasicBlock* block);
 
-void rec_v1_CompileBlockTest(emitter<>* x86e,x86IntRegType r_addr,x86IntRegType temp);
-
 void FreeSuspendedBlocks();
 rec_v1_BasicBlock* rec_v1_NewBlock(u32 address);
 rec_v1_BasicBlock* rec_v1_FindOrRecompileCode(u32 pc);

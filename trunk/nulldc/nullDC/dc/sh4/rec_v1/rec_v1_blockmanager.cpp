@@ -40,6 +40,24 @@ using namespace std;
 
 //
 //helper list class
+int compare_BlockLookups(const void * a, const void * b)
+{
+	rec_v1_BasicBlock* ba=*(rec_v1_BasicBlock**)a;
+	rec_v1_BasicBlock* bb=*(rec_v1_BasicBlock**)b;
+
+	return bb->lookups-ba->lookups;
+
+	/*
+	if ( ba->lookups > bb->lookups)
+		return -1;
+	else if ( ba->lookups < bb->lookups)
+		return 1;
+	else
+		return 0;
+	*/
+}
+
+
 class BlockList:public vector<rec_v1_BasicBlock*>
 {
 public :
@@ -82,7 +100,22 @@ public :
 			}
 		}
 	}
-}
+	//optimise blocklist for best lookup times
+	void Optimise()
+	{
+		if (size())
+		{
+			//using a specialised routine is gona be faster .. bah
+			qsort(_Myfirst, size(), sizeof(rec_v1_BasicBlock*), compare_BlockLookups);
+			//sort(begin(), end());
+			u32 max=_Myfirst[0]->lookups/100;
+			//if (max==0)
+			max++;
+			for (u32 i=0;i<size();i++)
+				_Myfirst[i]->lookups/=max;
+		}
+	}
+};
 //
 //page info
 //bit 0 :1-> manual check , 0 -> locked check
@@ -104,6 +137,7 @@ BlockList					BlockLookupLists[LOOKUP_HASH_SIZE];
 rec_v1_BasicBlock*			BlockLookupGuess[LOOKUP_HASH_SIZE];
 
 //misc code & helper functions
+//this should not be called from a running block , or it cloud crash
 //Free a list of blocks
 void FreeBlocks(BlockList* blocks)
 {
@@ -131,21 +165,22 @@ void ResetBlocks()
 		BlockPageLists[i].clear();
 	}
 
-	FreeBlocks(SuspendedBlocks);
-	FreeBlocks(all_block_list);
+	FreeBlocks(&SuspendedBlocks);
+	FreeBlocks(&all_block_list);
 	memset(PageInfo,0,sizeof(PageInfo));
 }
-//
+//this should not be called from a running block , or it cloud crash
+//free's suspended blocks
 void FreeSuspendedBlocks()
 {
-	FreeBlocks(SuspendedBlocks);
+	FreeBlocks(&SuspendedBlocks);
 }
 
 //block lookup code
 void AddToBlockList(vector<rec_v1_BasicBlock*>* list ,rec_v1_BasicBlock* block)
 {
 	u32 size=list->size();
-	for (int i=0;i<size;i++)
+	for (u32 i=0;i<size;i++)
 	{
 		if ((*list)[i]==0)
 		{
@@ -159,7 +194,7 @@ void AddToBlockList(vector<rec_v1_BasicBlock*>* list ,rec_v1_BasicBlock* block)
 void CheckEmptyList(vector<rec_v1_BasicBlock*>* list)
 {
 	u32 size=list->size();
-	for (int i=0;i<size;i++)
+	for (u32 i=0;i<size;i++)
 	{
 		if ((*list)[i]!=0)
 		{
@@ -171,7 +206,7 @@ void CheckEmptyList(vector<rec_v1_BasicBlock*>* list)
 void RemoveFromBlockList(vector<rec_v1_BasicBlock*>* list ,rec_v1_BasicBlock* block)
 {
 	u32 size=list->size();
-	for (int i=0;i<size;i++)
+	for (u32 i=0;i<size;i++)
 	{
 		if ((*list)[i]==block)
 		{
@@ -182,19 +217,27 @@ void RemoveFromBlockList(vector<rec_v1_BasicBlock*>* list ,rec_v1_BasicBlock* bl
 	CheckEmptyList(list);
 }
 
-INLINE vector<rec_v1_BasicBlock*>* GetLookupBlockList(u32 address)
+INLINE BlockList* GetLookupBlockList(u32 address)
 {
 	address&=RAM_MASK;
-	return &BlockLookupLists[GetHash(address)];
+	return &BlockLookupLists[GetLookupHash(address)];
 }
 
-
+u32 luk=0;
+u32 r_value=0;
+u32 f_rand_seed=0xFEDC;
+u32 f_rand_last=0;
+u32 frand()
+{ 
+	f_rand_seed=(f_rand_seed<<3) ^ f_rand_last;
+	return f_rand_last=(f_rand_seed^(f_rand_seed>>11));
+}
 rec_v1_BasicBlock* rec_v1_FindBlock(u32 address)
 {
 	rec_v1_BasicBlock* thisblock;
 	rec_v1_BasicBlock* fastblock;
 
-	fastblock=BlockLookupGuess[GetHash(address)];
+	fastblock=BlockLookupGuess[GetLookupHash(address)];
 
 	if (
 		(fastblock!=0) && 
@@ -206,9 +249,16 @@ rec_v1_BasicBlock* rec_v1_FindBlock(u32 address)
 		return fastblock;
 	}
 
-	vector<rec_v1_BasicBlock*>* blklist = GetLookupBlockList(address);
+	BlockList* blklist = GetLookupBlockList(address);
 
 	u32 listsz=(u32)blklist->size();
+	luk++;
+	if (luk==r_value)
+	{
+		luk=0;
+		r_value=(frand() & 0x7FF) + 0x1000;
+		blklist->Optimise();
+	}
 	for (u32 i=0;i<listsz;i++)
 	{ 
 		thisblock=(*blklist)[i];
@@ -218,7 +268,7 @@ rec_v1_BasicBlock* rec_v1_FindBlock(u32 address)
 			{
 				if (fastblock==0 || fastblock->lookups<=thisblock->lookups)
 				{
-					BlockLookupGuess[GetHash(address)]=thisblock;
+					BlockLookupGuess[GetLookupHash(address)]=thisblock;
 				}
 				thisblock->lookups++;
 				return thisblock;
@@ -247,45 +297,45 @@ rec_v1_BasicBlock* rec_v1_NewBlock(u32 address)
 
 void rec_v1_RegisterBlock(rec_v1_BasicBlock* block)
 {
-	u32 start=(block->start&RAM_MASK)/PAGE_SIZE_SW;
-	u32 end=(block->end&RAM_MASK)/PAGE_SIZE_SW;
+	u32 start=(block->start&RAM_MASK)/PAGE_SIZE;
+	u32 end=(block->end&RAM_MASK)/PAGE_SIZE;
 
 	AddToBlockList(GetLookupBlockList(block->start),block);
 	if (((block->start >>26)&0x7)==3)
 	{
-		for (int i=start;i<=end;i++)
+		for (u32 i=start;i<=end;i++)
 		{
 			//mem_b.LockRegion(start*PAGE_SIZE_SW,PAGE_SIZE_SW);
-			AddToBlockList(&BlockLists[i],block);
-			WriteTest[i]=0xFF;
+			//AddToBlockList(&BlockLists[i],block);
+			//WriteTest[i]=0xFF;
 		}
 	}
 }
 
 void rec_v1_UnRegisterBlock(rec_v1_BasicBlock* block)
 {
-	u32 start=(block->start&RAM_MASK)/PAGE_SIZE_SW;
-	u32 end=(block->end&RAM_MASK)/PAGE_SIZE_SW;
+	u32 start=(block->start&RAM_MASK)/PAGE_SIZE;
+	u32 end=(block->end&RAM_MASK)/PAGE_SIZE;
 
 	RemoveFromBlockList(GetLookupBlockList(block->start),block);
 
-	if (BlockLookupGuess[GetHash(block->start)]==block)
-		BlockLookupGuess[GetHash(block->start)]=0;
+	if (BlockLookupGuess[GetLookupHash(block->start)]==block)
+		BlockLookupGuess[GetLookupHash(block->start)]=0;
 
-	for (int i=start;i<=end;i++)
+	for (u32 i=start;i<=end;i++)
 	{
-		RemoveFromBlockList(&BlockLists[i],block);
-		if (BlockLists[i].size()==0)
-			WriteTest[i]=0x00;
+		//RemoveFromBlockList(&BlockLists[i],block);
+		//if (BlockLists[i].size()==0)
+		//	WriteTest[i]=0x00;
 	}
 }
 
 
 bool WriteTest_Hit(u32 address)
 {
-	u32 offset=address;
+	/*u32 offset=address;
 
-	u32 page=offset/PAGE_SIZE_SW;
+	u32 page=offset/PAGE_SIZE;
 	vector<rec_v1_BasicBlock*>* list=&BlockLists[page];
 
 	for (int i=0;i<list->size();i++)
@@ -297,7 +347,7 @@ bool WriteTest_Hit(u32 address)
 			bblock->Suspend();
 			SuspendedBlocks.push_back(bblock);
 		}
-	}
+	}*/
 
 	//list->clear();
 	//if (list->size()!=0)
@@ -430,7 +480,7 @@ void nullprof_GetBlocks(nullprof_blocklist* to, u32 type,u32 count)
 			qsort(&(all_block_list[0]), all_block_list.size(), sizeof(rec_v1_BasicBlock*), compare_calls);
 
 
-		for (int i=0;i<count;i++)
+		for (u32 i=0;i<count;i++)
 		{
 			//double cpb=(double)all_block_list[i]->profile_time/(double)all_block_list[i]->profile_calls;
 			//fprintf(to,"Block 0x%X , size %d[%d cycles] , %f cycles/call , %f cycles/emucycle,%f consumed Mhrz\n",
@@ -450,7 +500,7 @@ void nullprof_GetBlocks(nullprof_blocklist* to, u32 type,u32 count)
 		count=all_block_list.size();
 		to->count=count;
 		to->blocks=(nullprof_block_info*)malloc(count*sizeof(nullprof_block_info));
-		for (int i=0;i<all_block_list.size();i++)
+		for (u32 i=0;i<all_block_list.size();i++)
 		{
 			ConvBlockInfo(&to->blocks[i],all_block_list[i]);
 		}
@@ -458,7 +508,7 @@ void nullprof_GetBlocks(nullprof_blocklist* to, u32 type,u32 count)
 }
 void nullprof_ClearBlockPdata()
 {
-	for (int i=0;i<all_block_list.size();i++)
+	for (u32 i=0;i<all_block_list.size();i++)
 	{
 		all_block_list[i]->profile_calls=0;
 		all_block_list[i]->profile_time=0;

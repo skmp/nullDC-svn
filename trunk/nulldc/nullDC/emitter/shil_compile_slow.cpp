@@ -625,7 +625,9 @@ INLINE void FlushRegCache()
 		}\
 		else\
 		{\
-			x86e-> _ItM_ (GetRegPtr(op->reg1),op->imm1);\
+			/*x86e-> _ItM_ (GetRegPtr(op->reg1),op->imm1);*/\
+			x86e->MOV32ItoR(EAX,op->imm1);\
+			x86e->_RtM_(GetRegPtr(op->reg1),EAX);\
 		}\
 	}\
 	else\
@@ -1033,8 +1035,9 @@ void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
 		x86e->MOV32RtoR(EAX,ECX);
 		//shr eax,24
 		//shl eax,2
-		x86e->SHR32ItoR(EAX,24);
-		x86e->SHL32ItoR(EAX,2);
+		x86e->SHR32ItoR(EAX,24-2);
+		x86e->AND32ItoR(EAX,0xFF<<2);
+		//x86e->SHL32ItoR(EAX,2);
 
 		//add eax , imm	;//should realy use lea/mov eax,[eax+xx]
 		x86e->ADD32ItoR(EAX,(u32)IsRamAddr);
@@ -1121,8 +1124,8 @@ void __fastcall shil_compile_writem(shil_opcode* op,rec_v1_BasicBlock* block)
 		x86e->MOV32RtoR(EAX,ECX);
 		//shr eax,24
 		//shl eax,2
-		x86e->SHR32ItoR(EAX,24);
-		x86e->SHL32ItoR(EAX,2);
+		x86e->SHR32ItoR(EAX,24-2);
+		x86e->AND32ItoR(EAX,0xFF<<2);
 
 		//add eax , imm	;//should realy use lea/mov eax,[eax+xx]
 		x86e->ADD32ItoR(EAX,(u32)IsRamAddr);
@@ -1170,17 +1173,17 @@ void __fastcall shil_compile_writem(shil_opcode* op,rec_v1_BasicBlock* block)
 		//no more block tests
 		
 		//if needed
-		if (r1==EDX)
-			x86e->PUSH32R(r1);
+		//if (r1==EDX)
+		//	x86e->PUSH32R(r1);
 
 
 		//call rec_v1_BlockTest
 		//
-		rec_v1_CompileBlockTest(x86e,ECX,EAX);
+		//rec_v1_CompileBlockTest(x86e,ECX,EAX);
 
 		//if needed
-		if (r1==EDX)
-			x86e->POP32R(r1);
+		//if (r1==EDX)
+		//	x86e->POP32R(r1);
 
 		//add ecx, ram_base
 		x86e->ADD32ItoR(ECX,(u32)(&mem_b[0]));
