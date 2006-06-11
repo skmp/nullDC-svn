@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="C:\Program Files\Microsoft DirectX SDK (February 2006)\Include"
+				AdditionalIncludeDirectories="C:\Program Files\Microsoft DirectX SDK (April 2006)\Include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;ZNULLPVRGL_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -64,7 +64,7 @@
 				AdditionalDependencies="opengl32.lib glu32.lib  winmm.lib d3d9.lib d3dx9.lib"
 				OutputFile="$(SolutionDir)\WorkDir\Plugins\$(ProjectName)_$(PlatformName).dll"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="C:\Program Files\Microsoft DirectX SDK (February 2006)\Lib\x86"
+				AdditionalLibraryDirectories="C:\Program Files\Microsoft DirectX SDK (April 2006)\Lib\x86"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
@@ -119,7 +119,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="C:\Program Files\Microsoft DirectX SDK (February 2006)\Include"
+				AdditionalIncludeDirectories="C:\Program Files\Microsoft DirectX SDK (April 2006)\Include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;ZNULLPVRGL_EXPORTS;_CRT_SECURE_NO_DEPRECATE"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
@@ -141,7 +141,7 @@
 				AdditionalDependencies="opengl32.lib glu32.lib  winmm.lib d3d9.lib d3dx9.lib"
 				OutputFile="$(SolutionDir)\WorkDir\Plugins\$(ProjectName)_$(PlatformName).dll"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="C:\Program Files\Microsoft DirectX SDK (February 2006)\Lib\x86"
+				AdditionalLibraryDirectories="C:\Program Files\Microsoft DirectX SDK (April 2006)\Lib\x86"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"

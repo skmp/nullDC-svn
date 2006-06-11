@@ -8,6 +8,15 @@ PowerVR2_GL PvrIfGl;
 __inline 
 void PowerVR2_GL::SetRenderMode(u32 ParamID, u32 TexID)
 {
+/*#ifndef DEBUG_LIB
+	static u32 lParam = ~0;
+
+	if(ParamID == lParam)
+		return;
+	else
+		lParam = ParamID;
+#endif*/
+
 	GlobalParam * gp = &GlobalParams[ParamID];
 
 	// PCW Settings
@@ -41,7 +50,6 @@ void PowerVR2_GL::SetRenderMode(u32 ParamID, u32 TexID)
 		ASSERT_F(glIsTexture(TexID),"Textures Enabled, and Texture is Invalid!\n");
 		ASSERT_T((0==tw), "OpenGL TexWidth  is Zero!");
 		ASSERT_T((0==th), "OpenGL TexHeight is Zero!");
-		printf("wtfhtexid: %X\n", TexID);
 #endif
 		//printf("params: %08X\n", *(u32*)&gp->pcw);
 
@@ -350,7 +358,7 @@ void PowerVR2_GL::Render()
 	SwapBuffers(hDC);
 	CheckErrorsGL("RenderSceneGL()");
 
-	printf(" ----- End Render -------\n");
+	//printf(" ----- End Render -------\n");
 }
 
 

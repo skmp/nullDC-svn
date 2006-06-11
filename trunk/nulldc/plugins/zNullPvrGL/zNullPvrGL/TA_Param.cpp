@@ -25,12 +25,21 @@ u32 ProcessParam(ParamBase *pb)
 	{
 	case PT_EndOfList:		// Control: End Object List
 		PolyMode = PM_None;
-		ASSERT_T((0==PvrIf->GlobalParams.size()),"EndOfList, GlobalParamSize==0 \n");
-		ASSERT_T((LT_Reserved<=PvrIf->GlobalParams[PvrIf->GlobalParams.size()-1].pcw.ListType),"<PVR> EndOfList: Reserved List Type !");
 
-		emuIf.RaiseInterrupt(PvrInts[PvrIf->GlobalParams[PvrIf->GlobalParams.size()-1].pcw.ListType]);
-		return 1;
+		if(PvrIf->GlobalParams.size() > 0)
+		{
+			ASSERT_T((LT_Reserved<=PvrIf->GlobalParams[PvrIf->GlobalParams.size()-1].pcw.ListType),"<PVR> EndOfList: Reserved List Type !");
 
+			emuIf.RaiseInterrupt(PvrInts[PvrIf->GlobalParams[PvrIf->GlobalParams.size()-1].pcw.ListType]);
+		}
+		else
+		{
+			ASSERT_T((1),"EndOfList, GlobalParamSize==0 \n");
+
+			emuIf.RaiseInterrupt(PvrInts[pcw->ListType]);		// not exactly correct but it'll have to do
+		}
+
+	return 1;
 
 	case PT_Polygon:		// Global: Polygon 
 //	case PT_Modifier=4,		// Global: Modfifier Volume

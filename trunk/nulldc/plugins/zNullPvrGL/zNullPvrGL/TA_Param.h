@@ -635,9 +635,59 @@ struct ParamBase
 
 
 
+#define USE_ALT_VECTOR
 
 
+#ifndef USE_ALT_VECTOR
+template <class T>
+class zector
+{
+	T* data;
+	int msize, idx;
 
+public:
+
+	zector()
+	{
+		msize=0;
+		data=NULL;
+	}
+	~zector()
+	{
+		if(data)
+			free(data);
+		msize=0;
+		data=NULL;
+	}
+
+	void clear() {
+		idx = 0;
+	}
+	int size() {
+		return idx;
+	}
+
+	void push_back(T& item)
+	{
+		if(0 == msize) {
+			msize = 256;
+			data  = (T*)malloc(msize*sizeof(T));
+		}
+		if(idx >= msize) {
+			msize *= 4;
+			data  = (T*)realloc(data,msize*sizeof(T));
+		}
+		data[idx++] = item;
+	}
+
+	T& operator [](const int i)
+    {
+		ASSERT_T((i>=idx),"zector::operator [], i >= idx!");
+		return data[i];
+    }
+
+};
+#else
 
 template <class T>
 class zector
@@ -687,6 +737,8 @@ public:
     }
 
 };
+
+#endif
 
 
 
