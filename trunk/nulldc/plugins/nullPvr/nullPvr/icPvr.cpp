@@ -149,6 +149,8 @@ void vblank_done()
 {
 	vblk_cnt++;
 
+	RaiseInterrupt(holly_HBLank);//that is bad , its not allways raised , needs fixin
+
 	//redraw screenie
 	if (cur_icpl->PvrUpdate)
 		cur_icpl->PvrUpdate(1);
@@ -174,12 +176,12 @@ void vblank_done()
 void hblank_done(int scanline)
 {
 	prv_cur_scanline=scanline;
-	RaiseInterrupt(holly_HBLank);//that is bad , its not allways raised , needs fixin
+	//RaiseInterrupt(holly_HBLank);//that is bad , its not allways raised , needs fixin
 
 	u32 data=*(u32*)&pvr_regs[0xa05f80cc & 0x7FFF];
-	if ((data & 0x3FFF) == prv_cur_scanline)
+	if ((data & 0x3FFF) == scanline)
 		RaiseInterrupt(holly_SCANINT1);
-	if (((data >> 16) & 0x3FFF) == prv_cur_scanline)
+	if (((data >> 16) & 0x3FFF) == scanline)
 		RaiseInterrupt(holly_SCANINT2);
 }
 
@@ -359,7 +361,7 @@ void icEnqueue_IRQ	(u32 type)
 }
 void icDebug_Printf	(u32 dwDebugFlags, char* szFormat, ... )
 {
-	 char szErr[1024];
+	char szErr[1024];
 	va_list va;
 	va_start(va, szFormat);
 	vsprintf(szErr,szFormat,va);
