@@ -21,7 +21,10 @@ mvSPTI_Bus::mvSPTI_Bus(BYTE busNumber)
 : busHandle_(busNumber) {
 	DWORD bytesReturnedIO = 0;
 	IO_SCSI_CAPABILITIES capabilities = {0};
-	if(!DeviceIoControl(busHandle_, IOCTL_SCSI_GET_CAPABILITIES, NULL, 0, &capabilities, sizeof(IO_SCSI_CAPABILITIES), &bytesReturnedIO, NULL)) { throw mvSPTI_Error(); }
+	if(!DeviceIoControl(busHandle_, IOCTL_SCSI_GET_CAPABILITIES, NULL, 0, &capabilities, sizeof(IO_SCSI_CAPABILITIES), &bytesReturnedIO, NULL)) 
+	{ 
+		throw mvSPTI_InvalidHandle(); 
+	}
 
 	busInfo_.busNumber      = busNumber;
 	busInfo_.busMaxTransfer = min(

@@ -609,6 +609,7 @@ INLINE void FlushRegCache()
 		SaveReg(op->reg1,EAX);
 	}*/
 
+//intel sugest not to use the ItoM forms for some reason .. speed diference isnt big .. < 1%
 //Macro :
 #define OP_MoRtR_ItR(_MtR_,_RtR_,_ItR_,_ItM_,_RtM_)	assert(FLAG_32==(op->flags & 3));\
 	assert(0==(op->flags & (FLAG_IMM2)));\

@@ -20,8 +20,17 @@ DWORD mvSCSI_Init(VOID) {
 	if(!mvSPTI_GlobalBusList) {
 		try {
 			mvSPTI_GlobalBusList = LPmvSPTI_BusList(new mvSPTI_BusList);
-			for(BYTE busNumber = 0; busNumber < mvSCSI_MAX_BUS; ++busNumber) {
-				mvSPTI_GlobalBusList->push_back(LPmvSPTI_Bus(new mvSPTI_Bus(busNumber)));
+			for(BYTE busNumber = 0; busNumber < mvSCSI_MAX_BUS; ++busNumber) 
+			{
+				try 
+				{
+					mvSPTI_GlobalBusList->push_back(LPmvSPTI_Bus(new mvSPTI_Bus(busNumber)));
+				}
+				catch(...) 
+				{
+					//LPmvSPTI_BusList* s;
+					mvSPTI_GlobalBusList->push_back(LPmvSPTI_Bus());
+				}
 			}
 		} catch(mvSPTI_InvalidHandle&) {
 		} catch(...) {

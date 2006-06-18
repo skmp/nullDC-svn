@@ -118,6 +118,8 @@
 				Name="VCCLCompilerTool"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;DRKMAPLEDEVICES_EXPORTS"
 				RuntimeLibrary="2"
+				EnableEnhancedInstructionSet="1"
+				FloatingPointModel="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"

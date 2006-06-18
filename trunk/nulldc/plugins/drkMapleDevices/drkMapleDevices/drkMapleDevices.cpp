@@ -607,16 +607,16 @@ void VmuDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u3
 				maple_getvmuinfo_t* vmui = (maple_getvmuinfo_t*)(&buffer_out[1]);
 				//ZeroMemory(pMediaInfo,sizeof(TMAPLE_MEDIAINFO));
 				memset(vmui,0,sizeof(maple_getvmuinfo_t));
-				vmui->total_size = 0xff;
-				vmui->system_area_block = 0xff;
-				vmui->fat_area_block = 0xfe;
-				vmui->number_fat_areas_block = 1;
-				vmui->volume_icon = 0x0;
-				vmui->save_area_block = 0xc8;
+				vmui->total_size = 0xFF;//0x7FFF;//0xFF
+				vmui->system_area_block = 0xFF;//0x7FFF;//0xff
+				vmui->fat_area_block = 0xfe;//0x7F00;	//0xfe
+				vmui->number_fat_areas_block = 1;//256;//1
+				vmui->volume_icon = 0x0;//0
+				vmui->save_area_block = 0xc8;//?
 				vmui->number_of_save_blocks = 0x1f;
 				//pMediaInfo->volume_icon = 0x0;
-				vmui->file_info_block = 0xfd;
-				vmui->number_info_blocks = 0xd;
+				vmui->file_info_block = 0xfd;//0x7E00;//0xfd
+				vmui->number_info_blocks = 0xd;//0x100;//0xd
 				vmui->reserverd0 = 0x0000;
 				buffer_out_len=4+(sizeof(maple_getvmuinfo_t));
 				responce=8;//data transfer

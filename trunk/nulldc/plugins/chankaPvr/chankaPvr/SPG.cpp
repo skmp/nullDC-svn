@@ -22,6 +22,35 @@ u8 VblankInfo()
 		return 0;
 }
 
+int frame_count=0;
+u32 lasft_fps;
+double spd_fps=0;
+double spd_cpu=0;
+
+//u32 vblLine	= (pvrCycles / (vblCount * 7));	// Current Line
+void vblank_done()
+{
+	//vblk_cnt++;
+
+	if ((timeGetTime()-(double)lasft_fps)>800)
+	{
+		spd_fps=(double)frame_count/(double)((double)(timeGetTime()-(double)lasft_fps)/1000);
+		spd_cpu=(double)vblk_cnt/(double)((double)(timeGetTime()-(double)lasft_fps)/1000);
+		spd_cpu*=(DCclock/1000000)/60;
+
+		//ints=0;
+		lasft_fps=timeGetTime();
+		frame_count=0;
+
+		double fullfps=(spd_fps/spd_cpu)*200;
+
+		char fpsStr[256];
+		sprintf(fpsStr," FPS: %4.2f(%4.2f)  -  Sh4: %4.2f mhz (%4.2f%%) - nullDC v0.0.1", spd_fps,fullfps, spd_cpu,spd_cpu*100/200);
+		SetWindowText((HWND)Hwnd, fpsStr);
+		vblk_cnt=0;
+	}
+}
+
 //called from sh4 context , should update pvr/ta state and evereything else
 void spgUpdatePvr(u32 cycles)
 {
@@ -81,6 +110,7 @@ void spgUpdatePvr(u32 cycles)
 			vblk_cnt++;
 			RaiseInterrupt(InterruptID::holly_HBLank);
 			TAStartVBlank();
+			vblank_done();
 			//TODO : Renderer->PresentFB();
 //			renderer->PresentFB();//present FB data
 		}

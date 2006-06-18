@@ -274,6 +274,7 @@ DWORD g_dwFrames  = 0;
 // Descripcion  : 
 // Retorno      : void
 // --------------------------------------------------------------------------------
+extern int frame_count;
 void CDisplayDevice::EndScene()
 {
   //FillTexturaBlt();
@@ -292,11 +293,11 @@ void CDisplayDevice::EndScene()
 
   if (g_bShowStats)
   {  
-    DrawText(0,400,0xff00ff00,"Chankast: %.2f/%d",fFPS,60/g_framesLatency);
+    DrawText(0,400,0xff00ff00,"%.2f fps",fFPS);
 //    DrawText(0,410,0xff00ff00,"CPU: %3d",g_uCPUUsage);
   }
 
-
+	frame_count++;
   g_framesLatency = 0;
 
   {
