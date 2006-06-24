@@ -2,7 +2,7 @@
 /// @file  cacheTextures.cpp
 /// @brief 
 ////////////////////////////////////////////////////////////////////////////////////////
-//#include "stdafx.h"
+#include "stdafx.h"
 
 DWORD SH4HWRegistersGetValue(DWORD uAddress,DWORD uMask,DWORD uShift)
 {

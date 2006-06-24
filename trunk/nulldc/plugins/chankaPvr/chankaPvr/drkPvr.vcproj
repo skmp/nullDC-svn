@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1253"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="8,00"
 	Name="chankaPvr"
 	ProjectGUID="{0520BA33-1A98-4DDE-8B36-99F25EDC5BD6}"
 	RootNamespace="drkPvr"
@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;C:\Documents and Settings\Administrator\Desktop\ChankaPvr\drkPvr&quot;;&quot;C:\Documents and Settings\Administrator\Desktop\ChankaPvr\drkPvr\chanka&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)\chanka\&quot;;&quot;$(ProjectDir)&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;DRKPVR_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
