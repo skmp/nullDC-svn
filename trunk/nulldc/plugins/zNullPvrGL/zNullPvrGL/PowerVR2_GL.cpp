@@ -28,30 +28,34 @@ void PowerVR2_GL::SetRenderMode(u32 ParamID, u32 TexID)
 
 //	glEnable(GL_DEPTH_TEST);
 
-	if(gp->isp.Texture || gp->pcw.Texture)
+
+	ASSERT_T(gp->param0.tsp.DstSelect && gp->param0.tsp.SrcSelect, "Src/Dst Select Both Selected !");
+
+	if(gp->param0.tsp.DstSelect)
+	{
+		glClear(GL_ACCUM_BUFFER_BIT);
+		glAccum(GL_ACCUM, 1.f);
+	}
+	if(gp->param0.tsp.SrcSelect)
+	{
+		ASSERT_T((gp->isp.Texture || gp->pcw.Texture),"SrcSelect on Textured Poly!");
+		glAccum(GL_RETURN, 1.f);
+	}
+	if((gp->isp.Texture || gp->pcw.Texture) && !gp->param0.tsp.SrcSelect)
 	{
 		glEnable(GL_TEXTURE_2D);
-	/*	if(gp->param0.tcw.ScanOrder && gp->param0.tcw.StrideSel)
-		{
-			glEnable(GL_TEXTURE_RECTANGLE_ARB);
-			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, TexID);
-		}
-		else
-		{	*/
-	//		glDisable(GL_TEXTURE_RECTANGLE_ARB);	// needed?
-			glBindTexture(GL_TEXTURE_2D, TexID);
-	//	}
+		glBindTexture(GL_TEXTURE_2D, TexID);
 
 
 #ifdef DEBUG_LIB
 		int tw=0,th=0;
 		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH,  &tw);
 		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &th);
-		ASSERT_F(glIsTexture(TexID),"Textures Enabled, and Texture is Invalid!\n");
+		ASSERT_F(glIsTexture(TexID),"Textures Enabled, and Texture is Invalid!");
+		ASSERT_T(gp->param0.tsp.SrcSelect,"SrcSelect in Texture Settings!");
 		ASSERT_T((0==tw), "OpenGL TexWidth  is Zero!");
 		ASSERT_T((0==th), "OpenGL TexHeight is Zero!");
 #endif
-		//printf("params: %08X\n", *(u32*)&gp->pcw);
 
 		// TSP Settings
 		// these should be correct now except for offset color 
@@ -330,7 +334,7 @@ void PowerVR2_GL::Render()
 		B=((dwValue>>0x00)&0xFF)/255.f;
 
 	glClearColor( R,G,B, 1.f );
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // | GL_ACCUM_BUFFER_BIT);
 	////////////////////////////////////////////////////
 
 #define USE_VERTEX_ARRAYS

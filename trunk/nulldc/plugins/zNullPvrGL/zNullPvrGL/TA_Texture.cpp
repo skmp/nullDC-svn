@@ -865,6 +865,10 @@ void TexDec4444_TW_MM_VQ(PolyParam *pp, TexEntry *te)
 }
 
 
+void TexDecBump(PolyParam *pp, TexEntry *te)
+{
+	printf(" -------- BUMP MAP -------- ");
+}
 
 
 
@@ -917,8 +921,8 @@ TexID TextureCache::GetTexture(PolyParam *pp)
 
 
 
+	case 0x12:	TexDecBump(pp,&tex);		break;	// Bump
 	case 0x10:		// Bump + Twiddled
-	case 0x12:		// Bump
 	case 0x13:		// Bump + StrideRect
 		goto unhandled_fmt;
 
