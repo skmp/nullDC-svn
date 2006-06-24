@@ -6,7 +6,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 //-----------------------------------------------------------------------------
 #define STRICT
-#include "stdafx.h"
+//#include "stdafx.h"
 #ifndef XBOX
 
 

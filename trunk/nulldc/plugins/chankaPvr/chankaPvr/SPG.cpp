@@ -2,7 +2,7 @@
 //#include "renderer_if.h"
 #include "regs.h"
 //#include "pvr.h"
-#include "tavideo.h"
+//#include "tavideo.h"
 
 //SPG emulation; Scanline/Raster beam registers & interrupts
 
