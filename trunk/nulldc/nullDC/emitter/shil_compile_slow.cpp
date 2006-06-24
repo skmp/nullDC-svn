@@ -981,6 +981,19 @@ INLINE bool IsOnRam(u32 addr)
 
 	return false;
 }
+u32 const_hit=0;
+u32 non_const_hit=0;
+bool IsOnSamePage(rec_v1_BasicBlock* bb,u32 adr)
+{
+	if (IsOnRam(adr)==false)
+		return false;
+	
+	u32 start=(bb->start & RAM_MASK)/PAGE_SIZE;
+	u32 end=(bb->start & RAM_MASK)/PAGE_SIZE;
+	u32 adrP=(adr & RAM_MASK)/PAGE_SIZE;
+
+	return (start>=adrP) && (end<=adrP);
+}
 void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	u32 size=op->flags&3;
@@ -1002,6 +1015,11 @@ void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
 				assert(0==(op->flags & FLAG_REG2));
 				if (IsOnRam(op->imm1))
 				{
+					if (IsOnSamePage(block,op->imm1))
+						const_hit++;
+					else
+						non_const_hit++;
+
 					if (size==0)
 					{
 						SaveReg(op->reg1,(u8 *)GetMemPtr(op->imm1,1));
@@ -2495,6 +2513,7 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 
 
 	block_count++;
+	
 	if ((block_count%512)==128)
 	{
 		printf("Recompiled %d blocks\n",block_count);
@@ -2503,7 +2522,8 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 			printf("Native/Fallback ratio : %d:%d [%d:%d]\n",native,fallbacks,native/rat,fallbacks/rat);
 		else
 			printf("Native/Fallback ratio : %d:%d [%d:%d]\n",native,fallbacks,native,fallbacks);
-		printf("Average block size : %d opcodes\n",(fallbacks+native)/block_count);
+		printf("Average block size : %d opcodes ; ",(fallbacks+native)/block_count);
+		printf("%d const hits and %d const misses\n",const_hit,non_const_hit);
 	}
 	delete x86e;
 }
