@@ -120,6 +120,8 @@ class rec_v1_BasicBlock
 	bool Discarded;
 	u64 profile_time;
 	u32 profile_calls;
+	
+	u32 BlockType;
 };
 
 

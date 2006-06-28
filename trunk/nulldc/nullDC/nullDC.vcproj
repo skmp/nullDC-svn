@@ -1074,6 +1074,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\gui\screenshot.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\gui\screenshot.h"
+				>
+			</File>
+			<File
 				RelativePath=".\gui\Script1.rc"
 				>
 			</File>

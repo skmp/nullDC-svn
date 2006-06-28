@@ -116,11 +116,17 @@ public :
 		}
 	}
 };
-//
 //page info
-//bit 0 :1-> manual check , 0 -> locked check
-//bit 1-7: reserved
-u8 PageInfo[RAM_SIZE/PAGE_SIZE];
+#define PAGE_MANUALCHECK 1
+struct pginfo
+{
+	u32 invalidates;
+	u32 flags;
+	//bit 0 :1-> manual check , 0 -> locked check
+	//bit 1-31: reserved
+};
+
+pginfo PageInfo[RAM_SIZE/PAGE_SIZE];
 
 //block managment
 BlockList all_block_list;
@@ -256,7 +262,7 @@ rec_v1_BasicBlock* rec_v1_FindBlock(u32 address)
 	if (luk==r_value)
 	{
 		luk=0;
-		r_value=(frand() & 0x7FF) + 0x1000;
+		r_value=(frand() & 0x7FFF) + 0x10000;
 		blklist->Optimise();
 	}
 	for (u32 i=0;i<listsz;i++)
@@ -307,7 +313,6 @@ void rec_v1_RegisterBlock(rec_v1_BasicBlock* block)
 		{
 			//mem_b.LockRegion(start*PAGE_SIZE_SW,PAGE_SIZE_SW);
 			//AddToBlockList(&BlockLists[i],block);
-			//WriteTest[i]=0xFF;
 		}
 	}
 }
@@ -326,36 +331,7 @@ void rec_v1_UnRegisterBlock(rec_v1_BasicBlock* block)
 	{
 		//RemoveFromBlockList(&BlockLists[i],block);
 		//if (BlockLists[i].size()==0)
-		//	WriteTest[i]=0x00;
 	}
-}
-
-
-bool WriteTest_Hit(u32 address)
-{
-	/*u32 offset=address;
-
-	u32 page=offset/PAGE_SIZE;
-	vector<rec_v1_BasicBlock*>* list=&BlockLists[page];
-
-	for (int i=0;i<list->size();i++)
-	{
-		rec_v1_BasicBlock* bblock =(*list)[i];
-		if (bblock && bblock->Contains(offset))
-		{
-			rec_v1_UnRegisterBlock(bblock);
-			bblock->Suspend();
-			SuspendedBlocks.push_back(bblock);
-		}
-	}*/
-
-	//list->clear();
-	//if (list->size()!=0)
-	//	printf("list->size()!=0 !! WTFH ?\n");
-	//printf("Ram lock write xD xD w000tt , page %d\n",page);
-	//mem_b.UnLockRegion(offset&(~PAGE_MASK_SW),PAGE_SIZE_SW);
-	return true;
-
 }
 
 
@@ -370,31 +346,37 @@ void SuspendBlock_internal(rec_v1_BasicBlock* block)
 	//Look up guess block list
 }
 
+bool RamLockedWrite(u8* address)
+{
+	size_t offset=address-mem_b.data;
 
+	if (offset<RAM_SIZE)
+	{
+		size_t addr_hash = offset/PAGE_SIZE;
+		BlockList* list=&BlockPageLists[addr_hash];
+		PageInfo[addr_hash].invalidates++;
+		if (PageInfo[addr_hash].invalidates>20)
+			PageInfo[addr_hash].flags|=PAGE_MANUALCHECK;
+			
+		for (size_t i=0;i<list->size();i++)
+		{
+			if ((*list)[i])
+			{
+				SuspendBlock_internal((*list)[i]);
+			}
+		}
+		list->clear();
+		mem_b.UnLockRegion(offset&(~(PAGE_SIZE-1)),PAGE_SIZE);
 
+		return true;
+	}
+	else
+		return false;
+}
 
-
-//void rec_v1_CompileBlockTest(emitter<>* x86e,x86IntRegType r_addr,x86IntRegType temp)
-//{
-	//x86e->PUSH32R(r_addr);					//presrve r_addr ;)
-//	x86e->CALLFunc(rec_v1_BlockTest);		//do full test
-//	x86e->POP32R(r_addr);					//restore r_addr :D
-
-	/*x86e->MOV32ItoR(temp,(u32)&RamTest[0]);	//get base ptr
-	x86e->MOV32RtoR(EDX,r_addr);
-	x86e->SHR32ItoR(EDX,(HASH_BITS+3));		//get correct offset
-	x86e->ADD32RtoR(temp,EDX);				//add offset to it
-	x86e->MOV8RmtoR(temp,temp);				//get hole test byte
-	x86e->TEST8RtoR(temp,temp);				//if test byte is 0 , no need for full test
-	u8* no_test=x86e->JZ8(0);				//jump over full test
-	x86e->PUSH32R(r_addr);					//presrve r_addr ;)
-	x86e->CALLFunc(rec_v1_BlockTest);		//do full test
-	x86e->POP32R(r_addr);					//restore r_addr :D
-	x86e->x86SetJ8(no_test);				//jump here if no test*/
-//}
-
-
-//nullProf implementation
+///////////////////////////////////////////////
+//			nullProf implementation			 //
+///////////////////////////////////////////////
 void ConvBlockInfo(nullprof_block_info* to,rec_v1_BasicBlock* pblk)
 {
 	if (pblk==0)

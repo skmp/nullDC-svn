@@ -22,10 +22,13 @@
 #include "dc/dc.h"
 #include "config/config.h"
 
+
 /////////////////////////////
 #include "DBG\\CtrlMemView.h"
 #include "DBG\\CtrlDisAsmView.h"
 //////////////////////////////////
+
+#include "screenshot.h"
 
 /// i dont like it but ....
 CtrlMemView *cMemView;
@@ -126,10 +129,6 @@ void SetWindowPtr( HWND hWnd,int nIndex,void* dwNewLong)
     return total;
  }
  
- 
-
-
-
 u32 uiInit(void)
 {
 	WNDCLASS wc;
@@ -360,6 +359,40 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 //		PvrPlugin.UpdatePvr(0);
 		//TODO : Fix that
 	//	PvrUpdate(0);
+	case WM_KEYDOWN:
+		{
+			int val = (int)wParam;
+			switch(val)
+			{
+			case VK_F8:
+				{
+					char fn[100];
+					
+					int i;
+					i=0;
+					char* fn2=0;
+
+					while( i >=0)
+					{
+						sprintf(fn,"screenshot_%d.bmp",i);
+						fn2 = GetEmuPath(fn);
+						FILE* tf=fopen(fn,"rb");
+						if (tf)
+							fclose(tf);
+						else
+							break;
+						//fseek(tf,0,SEEK_END);
+						//size_t ft=ftell();
+						i++;
+					}
+					if (Screenshot(fn2,g_hWnd))
+						printf("Screenshot saved to %s\n",fn2);
+					else
+						printf("failed to save screenshot to %s\n",fn2);
+				}
+				break;
+			}
+		}
 		break;
 	default: break;
 	}
