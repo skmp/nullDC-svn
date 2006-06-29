@@ -1123,6 +1123,7 @@ void TextureCache::ClearTCache()
 		TexCacheList::TexCacheEntry* tce=TexList.pfirst;
 		TexList.Remove(TexList.pfirst);
 		DeleteTexture(&tce->text.texID);
+		emuIf.vramUnlock(tce->text.lock_block);
 		delete tce;
 	}
 }
@@ -1132,17 +1133,20 @@ void TextureCache::ClearTInvalids()
 	for(size_t tidx=0; tidx<InvList.size(); tidx++)
 		DeleteTexture(&InvList[tidx]);
 	InvList.clear();
-	//if (TexList.textures>200)
-	//{
-	//	int trm=TexList.textures-200;
-	//	for (int i=0;i<trm;i++)
-	//	{
-	//		TexCacheList::TexCacheEntry* tce=TexList.plast;
-	//		TexList.Remove(tce);
-	//		DeleteTexture(&tce->text.texID);
-	//		delete tce;
-	//	}
-	//}
+	//check for texture age too , we want olny old textures wiped out ;) (30 frames +)
+	/*
+	if (TexList.textures>400)
+	{
+		int trm=TexList.textures-300;
+		for (int i=0;i<trm;i++)
+		{
+			TexCacheList::TexCacheEntry* tce=TexList.plast;
+			TexList.Remove(tce);
+			DeleteTexture(&tce->text.texID);
+			emuIf.vramUnlock(tce->text.lock_block);
+			delete tce;
+		}
+	}*/
 }
 
 
