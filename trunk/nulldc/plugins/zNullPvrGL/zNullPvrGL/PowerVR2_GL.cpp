@@ -281,10 +281,6 @@ void PowerVR2_GL::RenderStripListArray(zector<Vertex> &vl)
 void PowerVR2_GL::RenderStripListArray(vector<Vertex> &vl)
 #endif
 {
-/*	glEnableClientState(GL_COLOR_ARRAY);
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-*/
 	for(u32 p=0; p<vl.size(); p++)
 	{
 		SetRenderMode(vl[p].ParamID, vl[p].TexID);
@@ -292,18 +288,25 @@ void PowerVR2_GL::RenderStripListArray(vector<Vertex> &vl)
 #ifdef USE_VERTEX_PROGRAMS
 		glColorPointer(4, GL_FLOAT, sizeof(Vert), vl[p].List[0].col);
 		glTexCoordPointer(2, GL_FLOAT, sizeof(Vert), vl[p].List[0].uv);
+
+		glEnableVertexAttribArray(2);
+	//	glBindAttribLocation(cgVProgram, 2, "Offset");
+		glVertexAttribPointer(2, 4, GL_FLOAT, true, sizeof(Vert), vl[p].List[0].offset);
+
 #else
 		glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(Vert), &vl[p].List[0].col);
 		glTexCoordPointer(4, GL_FLOAT, sizeof(Vert), vl[p].List[0].uv);
 #endif
-		glVertexPointer(3, GL_FLOAT, sizeof(Vert), vl[p].List[0].xyz);
 
+		glVertexPointer(3, GL_FLOAT, sizeof(Vert), vl[p].List[0].xyz);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, (GLsizei)vl[p].List.size());
+
+#ifdef USE_VERTEX_PROGRAMS
+		glDisableVertexAttribArray(2);
+#endif
 	}
-/*	glDisableClientState(GL_COLOR_ARRAY);
-	glDisableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_TEXTURE_COORD_ARRAY);*/
 }
+
 
 __inline 
 #ifndef USE_STD_VECTOR

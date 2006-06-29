@@ -291,9 +291,9 @@ int PrimConverter::AppendVert(VertexParam *vp)
 #ifndef USE_VERTEX_PROGRAMS
 		vertex.col		= RGBA(vp->vtx0.BaseCol);
 #else
-		vertex.col[0]	= (255 & (vp->vtx0.BaseCol >> 0))  / 255.f;
+		vertex.col[0]	= (255 & (vp->vtx0.BaseCol >> 16)) / 255.f;
 		vertex.col[1]	= (255 & (vp->vtx0.BaseCol >> 8))  / 255.f;
-		vertex.col[2]	= (255 & (vp->vtx0.BaseCol >> 16)) / 255.f;
+		vertex.col[2]	= (255 & (vp->vtx0.BaseCol >> 0))  / 255.f;
 		vertex.col[3]	= (255 & (vp->vtx0.BaseCol >> 24)) / 255.f;
 #endif
 		break;
@@ -329,9 +329,9 @@ int PrimConverter::AppendVert(VertexParam *vp)
 #ifndef USE_VERTEX_PROGRAMS
 		vertex.col		= RGBA(vp->vtx3.BaseCol);
 #else
-		vertex.col[0]	= (255 & (vp->vtx3.BaseCol >> 0))  / 255.f;
+		vertex.col[0]	= (255 & (vp->vtx3.BaseCol >> 16)) / 255.f;
 		vertex.col[1]	= (255 & (vp->vtx3.BaseCol >> 8))  / 255.f;
-		vertex.col[2]	= (255 & (vp->vtx3.BaseCol >> 16)) / 255.f;
+		vertex.col[2]	= (255 & (vp->vtx3.BaseCol >> 0))  / 255.f;
 		vertex.col[3]	= (255 & (vp->vtx3.BaseCol >> 24)) / 255.f;
 #endif
 
@@ -343,9 +343,9 @@ int PrimConverter::AppendVert(VertexParam *vp)
 #ifndef USE_VERTEX_PROGRAMS
 		vertex.col		= RGBA(vp->vtx4.BaseCol);
 #else
-		vertex.col[0]	= (255 & (vp->vtx4.BaseCol >> 0))  / 255.f;
+		vertex.col[0]	= (255 & (vp->vtx4.BaseCol >> 16)) / 255.f;
 		vertex.col[1]	= (255 & (vp->vtx4.BaseCol >> 8))  / 255.f;
-		vertex.col[2]	= (255 & (vp->vtx4.BaseCol >> 16)) / 255.f;
+		vertex.col[2]	= (255 & (vp->vtx4.BaseCol >> 0))  / 255.f;
 		vertex.col[3]	= (255 & (vp->vtx4.BaseCol >> 24)) / 255.f;
 #endif
 
@@ -421,9 +421,9 @@ int PrimConverter::AppendVert(VertexParam *vp)
 #ifndef USE_VERTEX_PROGRAMS
 		vertex.col		= RGBA(vp->vtx9.BaseCol0);
 #else
-		vertex.col[0]	= (255 & (vp->vtx9.BaseCol0 >> 0))  / 255.f;
+		vertex.col[0]	= (255 & (vp->vtx9.BaseCol0 >> 16)) / 255.f;
 		vertex.col[1]	= (255 & (vp->vtx9.BaseCol0 >> 8))  / 255.f;
-		vertex.col[2]	= (255 & (vp->vtx9.BaseCol0 >> 16)) / 255.f;
+		vertex.col[2]	= (255 & (vp->vtx9.BaseCol0 >> 0))  / 255.f;
 		vertex.col[3]	= (255 & (vp->vtx9.BaseCol0 >> 24)) / 255.f;
 #endif
 		break;
@@ -444,9 +444,9 @@ int PrimConverter::AppendVert(VertexParam *vp)
 #ifndef USE_VERTEX_PROGRAMS
 		vertex.col		= RGBA(vp->vtx11.BaseCol0);
 #else
-		vertex.col[0]	= (255 & (vp->vtx11.BaseCol0 >> 0))  / 255.f;
+		vertex.col[0]	= (255 & (vp->vtx11.BaseCol0 >> 16)) / 255.f;
 		vertex.col[1]	= (255 & (vp->vtx11.BaseCol0 >> 8))  / 255.f;
-		vertex.col[2]	= (255 & (vp->vtx11.BaseCol0 >> 16)) / 255.f;
+		vertex.col[2]	= (255 & (vp->vtx11.BaseCol0 >> 0))  / 255.f;
 		vertex.col[3]	= (255 & (vp->vtx11.BaseCol0 >> 24)) / 255.f;
 #endif
 
@@ -458,9 +458,9 @@ int PrimConverter::AppendVert(VertexParam *vp)
 #ifndef USE_VERTEX_PROGRAMS
 		vertex.col		= RGBA(vp->vtx12.BaseCol0);
 #else
-		vertex.col[0]	= (255 & (vp->vtx12.BaseCol0 >> 0))  / 255.f;
+		vertex.col[0]	= (255 & (vp->vtx12.BaseCol0 >> 16)) / 255.f;
 		vertex.col[1]	= (255 & (vp->vtx12.BaseCol0 >> 8))  / 255.f;
-		vertex.col[2]	= (255 & (vp->vtx12.BaseCol0 >> 16)) / 255.f;
+		vertex.col[2]	= (255 & (vp->vtx12.BaseCol0 >> 0))  / 255.f;
 		vertex.col[3]	= (255 & (vp->vtx12.BaseCol0 >> 24)) / 255.f;
 #endif
 
@@ -515,11 +515,11 @@ int PrimConverter::AppendVert(VertexParam *vp)
 	vertex.uv[3] = vertex.xyz[2];
 	vertex.uv[0] *= vertex.xyz[2];
 	vertex.uv[1] *= vertex.xyz[2];
-#endif
 
 	// *FIXME* HACK - test, does this device before persp correction make text/menus screwd up?
 	if(vertex.xyz[2] > 1.f)
 		vertex.xyz[2] /= (vertex.xyz[2] > 512.f) ? -10000.f : -256.f;
+#endif
 
 	// Push it on list
 	tmpVert.List.push_back(vertex);
