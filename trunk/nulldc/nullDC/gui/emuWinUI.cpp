@@ -388,7 +388,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 					if (Screenshot(fn2,g_hWnd))
 						printf("Screenshot saved to %s\n",fn2);
 					else
-						printf("failed to save screenshot to %s\n",fn2);
+						printf("failed to save screenshot to \"%s\"\n",fn2);
 				}
 				break;
 			}
