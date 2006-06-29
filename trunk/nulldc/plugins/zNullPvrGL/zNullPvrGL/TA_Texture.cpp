@@ -865,11 +865,50 @@ void TexDec4444_TW_MM_VQ(PolyParam *pp, TexEntry *te)
 }
 
 
+
+/// [K1,K2,K3,Q] are Poly Offs Color Bytes: [3,2,1,0] - [S,R] are Texel Bytes: [1,0]
+/*
+*	
+*
+*
+*/
+
+inline static float someshit(u8 S, u8 R, u8 T, u8 Q)
+{
+	float s = 3.14/2.f * (float)S/256.f;
+	float r = 3.14*2.f * (float)R/256.f;
+/*
+	float Xs = cos(s)*cos(r);
+	float Ys = sin(s);
+	float Zs = cos(s)*sin(r);
+*/
+	float t = 3.14/2.f * (float)T/256.f;	// Where the fuck does T come from ?
+	float q = 3.14*2.f * (float)Q/256.f;
+/*
+	float Xl = cos(t)*cos(q);
+	float Yl = sin(t);
+	float Zl = cos(t)*sin(q);
+
+	float I = Xs*Xl + Ys*Yl + Zs*Zl;
+*/
+
+	// Ok, two simplifications :
+	//float I = cos(s)*cos(r)*cos(t)*cos(q) + sin(s)*sin(t) + cos(s)*sin(r)*cos(t)*sin(q) ;
+
+	// Even Better
+
+	float I = sin(s)*sin(t) + cos(s)*cos(t)*cos(r-q) ;
+}
+
 void TexDecBump(PolyParam *pp, TexEntry *te)
 {
 	printf(" -------- BUMP MAP -------- ");
 }
 
+void TexDecBump_TW(PolyParam *pp, TexEntry *te)
+{
+	printf(" -------- BUMP MAP TW -------- ");
+}
 
 
 
@@ -922,7 +961,7 @@ TexID TextureCache::GetTexture(PolyParam *pp)
 
 
 	case 0x12:	TexDecBump(pp,&tex);		break;	// Bump
-	case 0x10:		// Bump + Twiddled
+	case 0x10:	TexDecBump_TW(pp,&tex);		break;	// Bump + Twiddled
 	case 0x13:		// Bump + StrideRect
 		goto unhandled_fmt;
 

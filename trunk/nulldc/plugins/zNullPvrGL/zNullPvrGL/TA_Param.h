@@ -746,8 +746,15 @@ public:
 struct Vert
 {
 	f32 xyz[3];
+
+#ifndef USE_VERTEX_PROGRAMS
 	u32 col;
 	f32 uv[4];
+#else
+	f32 col[4];
+	f32 uv[2];
+	f32 offset[4];
+#endif
 };
 
 

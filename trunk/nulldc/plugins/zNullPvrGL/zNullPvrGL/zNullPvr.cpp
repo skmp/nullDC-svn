@@ -7,11 +7,18 @@
 #include "PowerVR2.h"
 #include "resource.h"
 
+
 PvrOpts pvrOpts;
 pvrInitParams emuIf;
 
 ConfigLoadStrFP	* ConfigLoadStr;
 ConfigSaveStrFP	* ConfigSaveStr;
+
+CGcontext PowerVR2::cgContext;
+CGprofile PowerVR2::cgVProfile;
+CGprogram PowerVR2::cgVProgram;
+CGprofile PowerVR2::cgFProfile;
+CGprogram PowerVR2::cgFProgram;
 
 
 HINSTANCE hInst=NULL;
@@ -89,11 +96,13 @@ void pvrInit(void *params, u32 PluginType)
 {
 	emuIf = *(pvrInitParams *)params;
 
-	char RenderStr[512];
-	ConfigLoadStr("zNullPvr","RenderAPI", RenderStr);
-	pvrOpts.GfxApi = (0==strcmp("D3D",RenderStr)) ? 1 : 0 ;
+	char ConfigStr[512];
+	ConfigLoadStr("zNullPvr","RenderAPI", ConfigStr);
+	pvrOpts.GfxApi = (0==strcmp("D3D",ConfigStr)) ? 1 : 0 ;
 	PvrIf = (0==pvrOpts.GfxApi) ? ((PowerVR2*)&PvrIfGl) : ((PowerVR2*)&PvrIfD3D);
 
+//	ConfigLoadStr("zNullPvr","VShader", ConfigStr);
+//	ConfigLoadStr("zNullPvr","PShader", ConfigStr);
 	InitTA_Regs();
 
 	printf("pvrInit()\n");

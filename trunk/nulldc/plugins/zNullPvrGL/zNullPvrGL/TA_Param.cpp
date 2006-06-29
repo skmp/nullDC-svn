@@ -288,106 +288,211 @@ int PrimConverter::AppendVert(VertexParam *vp)
 	switch(PType&0xFFFF)
 	{
 	case 0:
+#ifndef USE_VERTEX_PROGRAMS
 		vertex.col		= RGBA(vp->vtx0.BaseCol);
+#else
+		vertex.col[0]	= (255 & (vp->vtx0.BaseCol >> 0))  / 255.f;
+		vertex.col[1]	= (255 & (vp->vtx0.BaseCol >> 8))  / 255.f;
+		vertex.col[2]	= (255 & (vp->vtx0.BaseCol >> 16)) / 255.f;
+		vertex.col[3]	= (255 & (vp->vtx0.BaseCol >> 24)) / 255.f;
+#endif
 		break;
 
 	case 1:
+#ifndef USE_VERTEX_PROGRAMS
 		vertex.col		=	NFloat2UB(vp->vtx1.BaseA) << 24;
 		vertex.col		|=	NFloat2UB(vp->vtx1.BaseR) << 0;
 		vertex.col		|=	NFloat2UB(vp->vtx1.BaseG) << 8;
 		vertex.col		|=	NFloat2UB(vp->vtx1.BaseB) << 16;
+#else
+		vertex.col[0]	= vp->vtx1.BaseR;
+		vertex.col[1]	= vp->vtx1.BaseG;
+		vertex.col[2]	= vp->vtx1.BaseB;
+		vertex.col[3]	= vp->vtx1.BaseA;
+#endif
 		break;
 
 	case 2:
+#ifndef USE_VERTEX_PROGRAMS
 		tcol			= NFloat2UB(vp->vtx2.BaseInt);
 		vertex.col		= tcol | tcol<<8 | tcol<<16 | tcol<<24 ;
+#else
+		vertex.col[0]	= vp->vtx2.BaseInt;
+		vertex.col[1]	= vp->vtx2.BaseInt;
+		vertex.col[2]	= vp->vtx2.BaseInt;
+		vertex.col[3]	= vp->vtx2.BaseInt;
+#endif
 		break;
 
 		// kmflight, uses this and gouraud changes it !
 	case 3:
+#ifndef USE_VERTEX_PROGRAMS
 		vertex.col		= RGBA(vp->vtx3.BaseCol);
+#else
+		vertex.col[0]	= (255 & (vp->vtx3.BaseCol >> 0))  / 255.f;
+		vertex.col[1]	= (255 & (vp->vtx3.BaseCol >> 8))  / 255.f;
+		vertex.col[2]	= (255 & (vp->vtx3.BaseCol >> 16)) / 255.f;
+		vertex.col[3]	= (255 & (vp->vtx3.BaseCol >> 24)) / 255.f;
+#endif
 
 		vertex.uv[0]	= vp->vtx3.u;
 		vertex.uv[1]	= vp->vtx3.v;
 		break;
 
 	case 4:
+#ifndef USE_VERTEX_PROGRAMS
 		vertex.col		= RGBA(vp->vtx4.BaseCol);
+#else
+		vertex.col[0]	= (255 & (vp->vtx4.BaseCol >> 0))  / 255.f;
+		vertex.col[1]	= (255 & (vp->vtx4.BaseCol >> 8))  / 255.f;
+		vertex.col[2]	= (255 & (vp->vtx4.BaseCol >> 16)) / 255.f;
+		vertex.col[3]	= (255 & (vp->vtx4.BaseCol >> 24)) / 255.f;
+#endif
 
 		vertex.uv[0]	= f16(vp->vtx4.u);
 		vertex.uv[1]	= f16(vp->vtx4.v);
 		break;
 
 	case 5:
+#ifndef USE_VERTEX_PROGRAMS
 		vertex.col		=	NFloat2UB(vp->vtx5.BaseA) << 24;
 		vertex.col		|=	NFloat2UB(vp->vtx5.BaseR) << 0;
 		vertex.col		|=	NFloat2UB(vp->vtx5.BaseG) << 8;
 		vertex.col		|=	NFloat2UB(vp->vtx5.BaseB) << 16;
+#else
+		vertex.col[0]	= vp->vtx5.BaseR;
+		vertex.col[1]	= vp->vtx5.BaseG;
+		vertex.col[2]	= vp->vtx5.BaseB;
+		vertex.col[3]	= vp->vtx5.BaseA;
+#endif
 
 		vertex.uv[0]	= vp->vtx5.u;
 		vertex.uv[1]	= vp->vtx5.v;
 		break;
 
 	case 6:
+#ifndef USE_VERTEX_PROGRAMS
 		vertex.col		=	NFloat2UB(vp->vtx6.BaseA) << 24;
 		vertex.col		|=	NFloat2UB(vp->vtx6.BaseR) << 0;
 		vertex.col		|=	NFloat2UB(vp->vtx6.BaseG) << 8;
 		vertex.col		|=	NFloat2UB(vp->vtx6.BaseB) << 16;
+#else
+		vertex.col[0]	= vp->vtx6.BaseR;
+		vertex.col[1]	= vp->vtx6.BaseG;
+		vertex.col[2]	= vp->vtx6.BaseB;
+		vertex.col[3]	= vp->vtx6.BaseA;
+#endif
 
 		vertex.uv[0]	= f16(vp->vtx6.u);
 		vertex.uv[1]	= f16(vp->vtx6.v);
 		break;
 
 	case 7:
+#ifndef USE_VERTEX_PROGRAMS
 		tcol			= NFloat2UB(vp->vtx7.BaseInt);
 		vertex.col		= tcol | tcol<<8 | tcol<<16 | tcol<<24 ;
+#else
+		vertex.col[0]	= vp->vtx7.BaseInt;
+		vertex.col[1]	= vp->vtx7.BaseInt;
+		vertex.col[2]	= vp->vtx7.BaseInt;
+		vertex.col[3]	= vp->vtx7.BaseInt;
+#endif
 
 		vertex.uv[0]	= vp->vtx7.u;
 		vertex.uv[1]	= vp->vtx7.v;
 		break;
 
 	case 8:
+#ifndef USE_VERTEX_PROGRAMS
 		tcol			= NFloat2UB(vp->vtx8.BaseInt);
 		vertex.col		= tcol | tcol<<8 | tcol<<16 | tcol<<24 ;
+#else
+		vertex.col[0]	= vp->vtx8.BaseInt;
+		vertex.col[1]	= vp->vtx8.BaseInt;
+		vertex.col[2]	= vp->vtx8.BaseInt;
+		vertex.col[3]	= vp->vtx8.BaseInt;
+#endif
 
 		vertex.uv[0]	= f16(vp->vtx8.u);
 		vertex.uv[1]	= f16(vp->vtx8.v);
 		break;
 
 	case 9:
+#ifndef USE_VERTEX_PROGRAMS
 		vertex.col		= RGBA(vp->vtx9.BaseCol0);
+#else
+		vertex.col[0]	= (255 & (vp->vtx9.BaseCol0 >> 0))  / 255.f;
+		vertex.col[1]	= (255 & (vp->vtx9.BaseCol0 >> 8))  / 255.f;
+		vertex.col[2]	= (255 & (vp->vtx9.BaseCol0 >> 16)) / 255.f;
+		vertex.col[3]	= (255 & (vp->vtx9.BaseCol0 >> 24)) / 255.f;
+#endif
 		break;
 
 	case 10:
+#ifndef USE_VERTEX_PROGRAMS
 		tcol			= NFloat2UB(vp->vtx10.BaseInt0);
 		vertex.col		= tcol | tcol<<8 | tcol<<16 | tcol<<24 ;
+#else
+		vertex.col[0]	= vp->vtx10.BaseInt0;
+		vertex.col[1]	= vp->vtx10.BaseInt0;
+		vertex.col[2]	= vp->vtx10.BaseInt0;
+		vertex.col[3]	= vp->vtx10.BaseInt0;
+#endif
 		break;
 
 	case 11:
+#ifndef USE_VERTEX_PROGRAMS
 		vertex.col		= RGBA(vp->vtx11.BaseCol0);
+#else
+		vertex.col[0]	= (255 & (vp->vtx11.BaseCol0 >> 0))  / 255.f;
+		vertex.col[1]	= (255 & (vp->vtx11.BaseCol0 >> 8))  / 255.f;
+		vertex.col[2]	= (255 & (vp->vtx11.BaseCol0 >> 16)) / 255.f;
+		vertex.col[3]	= (255 & (vp->vtx11.BaseCol0 >> 24)) / 255.f;
+#endif
 
 		vertex.uv[0]	= vp->vtx11.u0;
 		vertex.uv[1]	= vp->vtx11.v0;
 		break;
 
 	case 12:
+#ifndef USE_VERTEX_PROGRAMS
 		vertex.col		= RGBA(vp->vtx12.BaseCol0);
+#else
+		vertex.col[0]	= (255 & (vp->vtx12.BaseCol0 >> 0))  / 255.f;
+		vertex.col[1]	= (255 & (vp->vtx12.BaseCol0 >> 8))  / 255.f;
+		vertex.col[2]	= (255 & (vp->vtx12.BaseCol0 >> 16)) / 255.f;
+		vertex.col[3]	= (255 & (vp->vtx12.BaseCol0 >> 24)) / 255.f;
+#endif
 
 		vertex.uv[0]	= f16(vp->vtx12.u0);
 		vertex.uv[1]	= f16(vp->vtx12.v0);
 		break;
 
 	case 13:
+#ifndef USE_VERTEX_PROGRAMS
 		tcol			= NFloat2UB(vp->vtx13.BaseInt0);
 		vertex.col		= tcol | tcol<<8 | tcol<<16 | tcol<<24 ;
+#else
+		vertex.col[0]	= vp->vtx13.BaseInt0;
+		vertex.col[1]	= vp->vtx13.BaseInt0;
+		vertex.col[2]	= vp->vtx13.BaseInt0;
+		vertex.col[3]	= vp->vtx13.BaseInt0;
+#endif
 
 		vertex.uv[0]	= vp->vtx13.u0;
 		vertex.uv[1]	= vp->vtx13.v0;
 		break;
 
 	case 14:
+#ifndef USE_VERTEX_PROGRAMS
 		tcol			= NFloat2UB(vp->vtx14.BaseInt0);
 		vertex.col		= tcol | tcol<<8 | tcol<<16 | tcol<<24 ;
+#else
+		vertex.col[0]	= vp->vtx14.BaseInt0;
+		vertex.col[1]	= vp->vtx14.BaseInt0;
+		vertex.col[2]	= vp->vtx14.BaseInt0;
+		vertex.col[3]	= vp->vtx14.BaseInt0;
+#endif
 
 		vertex.uv[0]	= f16(vp->vtx14.u0);
 		vertex.uv[1]	= f16(vp->vtx14.v0);
@@ -401,6 +506,7 @@ int PrimConverter::AppendVert(VertexParam *vp)
 	vertex.xyz[1] = vp->vtx0.xyz[1];
 	vertex.xyz[2] = vp->vtx0.xyz[2];
 
+#ifndef USE_VERTEX_PROGRAMS
 	// thought i got rid of most of these hacks, i guess d3d in the same plugin is a hack in itself
 	if(R_D3D==pvrOpts.GfxApi)
 		vertex.col = (vertex.col &0xFF00FF00) | ((vertex.col&255)<<16) | ((vertex.col>>16)&255);
@@ -409,10 +515,11 @@ int PrimConverter::AppendVert(VertexParam *vp)
 	vertex.uv[3] = vertex.xyz[2];
 	vertex.uv[0] *= vertex.xyz[2];
 	vertex.uv[1] *= vertex.xyz[2];
+#endif
 
 	// *FIXME* HACK - test, does this device before persp correction make text/menus screwd up?
 	if(vertex.xyz[2] > 1.f)
-		vertex.xyz[2] /= (vertex.xyz[2] > 512.f) ? 10000.f : 256.f;
+		vertex.xyz[2] /= (vertex.xyz[2] > 512.f) ? -10000.f : -256.f;
 
 	// Push it on list
 	tmpVert.List.push_back(vertex);
@@ -482,7 +589,11 @@ int PrimConverter::AppendSprite(VertexParam *vp)
 	vertex.uv[3]  =	vertex.xyz[2];
 	vertex.uv[0]  =	f16(vp->spr1.u0) * vertex.xyz[2];
 	vertex.uv[1]  =	f16(vp->spr1.v0) * vertex.xyz[2];
+#ifndef USE_VERTEX_PROGRAMS
 	vertex.col	  = RGBA(pp->sprite.BaseCol);
+#else
+	vertex.col[0] = vertex.col[1] = vertex.col[2] = vertex.col[3] = 0;
+#endif
 	tmpVert.List.push_back(vertex);
 
 	vertex.xyz[0] = vp->spr1.x1;
@@ -492,7 +603,11 @@ int PrimConverter::AppendSprite(VertexParam *vp)
 	vertex.uv[3]  =	vertex.xyz[2];
 	vertex.uv[0]  =	f16(vp->spr1.u1) * vertex.xyz[2];
 	vertex.uv[1]  =	f16(vp->spr1.v1) * vertex.xyz[2];
+#ifndef USE_VERTEX_PROGRAMS
 	vertex.col	  = RGBA(pp->sprite.BaseCol);
+#else
+	vertex.col[0] = vertex.col[1] = vertex.col[2] = vertex.col[3] = 0;
+#endif
 	tmpVert.List.push_back(vertex);
 
 	vertex.xyz[0] = vp->spr1.x2;
@@ -502,7 +617,11 @@ int PrimConverter::AppendSprite(VertexParam *vp)
 	vertex.uv[3]  =	vertex.xyz[2];
 	vertex.uv[0]  =	f16(vp->spr1.u2) * vertex.xyz[2];
 	vertex.uv[1]  =	f16(vp->spr1.v2) * vertex.xyz[2];
+#ifndef USE_VERTEX_PROGRAMS
 	vertex.col	  = RGBA(pp->sprite.BaseCol);
+#else
+	vertex.col[0] = vertex.col[1] = vertex.col[2] = vertex.col[3] = 0;
+#endif
 	tmpVert.List.push_back(vertex);
 
 	vertex.xyz[0] =  vp->spr1.x3;
@@ -512,7 +631,11 @@ int PrimConverter::AppendSprite(VertexParam *vp)
 	vertex.uv[3]  =	vertex.xyz[2];
 	vertex.uv[0]  =	f16(vp->spr1.u0) * vertex.xyz[2];	// *FIXME* 
 	vertex.uv[1]  =	f16(vp->spr1.v2) * vertex.xyz[2];	// *FIXME* how does it calc the UVs ?
+#ifndef USE_VERTEX_PROGRAMS
 	vertex.col	  = RGBA(pp->sprite.BaseCol);
+#else
+	vertex.col[0] = vertex.col[1] = vertex.col[2] = vertex.col[3] = 0;
+#endif
 	tmpVert.List.push_back(vertex);
 
 	tmpVert.TexID	= (u32)PvrIf->GetTexture(pp);

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="zNullPvrGL"
 	ProjectGUID="{96D32B6C-E11C-4FD7-A4CD-B296415D2560}"
 	RootNamespace="zNullPvrGL"
@@ -119,7 +119,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="C:\Program Files\Microsoft DirectX SDK (April 2006)\Include"
+				AdditionalIncludeDirectories="&quot;C:\Program Files\NVIDIA Corporation\Cg\include&quot;;&quot;C:\Program Files\Microsoft DirectX SDK (April 2006)\Include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;ZNULLPVRGL_EXPORTS;_CRT_SECURE_NO_DEPRECATE"
 				RuntimeLibrary="2"
 				EnableEnhancedInstructionSet="1"
@@ -140,10 +140,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib  winmm.lib d3d9.lib d3dx9.lib"
+				AdditionalDependencies="opengl32.lib glu32.lib glew32.lib Cg.lib cggl.lib winmm.lib d3d9.lib d3dx9.lib"
 				OutputFile="$(SolutionDir)\WorkDir\Plugins\$(ProjectName)_$(PlatformName).dll"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="C:\Program Files\Microsoft DirectX SDK (April 2006)\Lib\x86"
+				AdditionalLibraryDirectories="&quot;C:\Program Files\NVIDIA Corporation\Cg\lib&quot;;&quot;C:\Program Files\Microsoft DirectX SDK (April 2006)\Lib\x86&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -258,6 +258,18 @@
 			>
 			<File
 				RelativePath=".\zNullPvrGL.rc"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="Shaders"
+			>
+			<File
+				RelativePath="..\..\..\workdir\FProgram.cg"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\workdir\VProgram.cg"
 				>
 			</File>
 		</Filter>

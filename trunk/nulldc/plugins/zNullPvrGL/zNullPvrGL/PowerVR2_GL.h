@@ -6,9 +6,10 @@
 #define __POWERVR2_GL_H__
 
 #include <windows.h>
+#include <GL/glew.h>
 #include <GL/gl.h>
 #include <GL/glu.h>
-#include <GL/glext.h>
+#include <cg/cggl.h>													// NEW: Cg OpenGL Specific Header
 
 #include "zNullPvr.h"
 
@@ -40,6 +41,34 @@ private:
 
 	void SetRenderMode(u32 ParamID, u32 TexID);
 	void SetRenderModeSpr(u32 ParamID, u32 TexID);
+
+	static void LoadVProgram(char *filename, char *prgname)
+	{
+		cgVProfile = cgGLGetLatestProfile(CG_GL_VERTEX);
+		cgGLSetOptimalOptions(cgVProfile);
+		checkForCgError("selecting vertex profile");
+
+		cgVProgram =
+			cgCreateProgramFromFile(cgContext, CG_SOURCE, filename, cgVProfile, prgname, NULL);
+		checkForCgError("creating vertex program from file");
+
+		cgGLLoadProgram(cgVProgram);
+		checkForCgError("loading vertex program");
+	}
+
+	static void LoadFProgram(char *filename, char *prgname)
+	{
+		cgFProfile = cgGLGetLatestProfile(CG_GL_FRAGMENT);
+		cgGLSetOptimalOptions(cgFProfile);
+		checkForCgError("selecting fragment profile");
+
+		cgFProgram =
+			cgCreateProgramFromFile(cgContext, CG_SOURCE, filename, cgFProfile, prgname, NULL);
+		checkForCgError("creating fragment program from file");
+
+		cgGLLoadProgram(cgFProgram);
+		checkForCgError("loading fragment program");
+	}
 
 	HDC hDC;
 	HGLRC hRC;

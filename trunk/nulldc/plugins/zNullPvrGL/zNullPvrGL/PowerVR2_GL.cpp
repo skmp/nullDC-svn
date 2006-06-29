@@ -5,6 +5,7 @@
 
 PowerVR2_GL PvrIfGl;
 
+
 __inline 
 void PowerVR2_GL::SetRenderMode(u32 ParamID, u32 TexID)
 {
@@ -282,14 +283,19 @@ void PowerVR2_GL::RenderStripListArray(vector<Vertex> &vl)
 {
 /*	glEnableClientState(GL_COLOR_ARRAY);
 	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);*/
-
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+*/
 	for(u32 p=0; p<vl.size(); p++)
 	{
 		SetRenderMode(vl[p].ParamID, vl[p].TexID);
 
+#ifdef USE_VERTEX_PROGRAMS
+		glColorPointer(4, GL_FLOAT, sizeof(Vert), vl[p].List[0].col);
+		glTexCoordPointer(2, GL_FLOAT, sizeof(Vert), vl[p].List[0].uv);
+#else
 		glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(Vert), &vl[p].List[0].col);
 		glTexCoordPointer(4, GL_FLOAT, sizeof(Vert), vl[p].List[0].uv);
+#endif
 		glVertexPointer(3, GL_FLOAT, sizeof(Vert), vl[p].List[0].xyz);
 
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, (GLsizei)vl[p].List.size());
@@ -337,10 +343,11 @@ void PowerVR2_GL::Render()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // | GL_ACCUM_BUFFER_BIT);
 	////////////////////////////////////////////////////
 
+
 #define USE_VERTEX_ARRAYS
 #ifndef USE_VERTEX_ARRAYS
 	RenderStripList(OpaqueVerts);
-	RenderStripListRev(TranspVerts);	//Sprites
+	RenderStripList(TranspVerts);
 	RenderStripList(PunchtVerts);
 #else
 	glPushClientAttrib(GL_CLIENT_VERTEX_ARRAY_BIT);
@@ -348,14 +355,60 @@ void PowerVR2_GL::Render()
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
+
+#ifdef  USE_VERTEX_PROGRAMS
+	cgGLBindProgram(cgVProgram);
+	checkForCgError("binding v program");
+
+	cgGLEnableProfile(cgVProfile);
+	checkForCgError("enabling v profile");
+#endif
+
 	RenderStripListArray(OpaqueVerts);
 	RenderStripListArray(TranspVerts);	//Sprites
 	RenderStripListArray(PunchtVerts);
+
+#ifdef  USE_VERTEX_PROGRAMS
+	cgGLDisableProfile(cgVProfile);
+	checkForCgError("disabling v profile");
+#endif
+
+
+
 
 	glPopClientAttrib();
 #endif
 
 	RenderSprites(Sprites);
+
+
+
+
+	///////////// TEST
+/*
+	cgGLBindProgram(cgVProgram);
+	checkForCgError("binding v program");
+
+	cgGLEnableProfile(cgVProfile);
+	checkForCgError("enabling v profile");
+
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_TEXTURE_2D);
+
+	glBegin(GL_TRIANGLES);
+		glColor3f(1.f, 0.f, 0.5f);
+		glVertex3f(50,280,0.5f);
+		glVertex3f(70,150,0.5f);
+		glVertex3f(90,280,0.5f);
+	glEnd();
+
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_TEXTURE_2D);
+
+	cgGLDisableProfile(cgVProfile);
+	checkForCgError("disabling v profile");
+*/
+
 
 	ClearDCache();
 	ClearTInvalids();
@@ -428,6 +481,14 @@ bool PowerVR2_GL::Init()
 		MessageBox((HWND)emuIf.handle,"Can't Activate The GL Rendering Context.","ERROR",MB_OK|MB_ICONEXCLAMATION);
 		Term();	return false;
 	}
+	if (GLEW_OK != glewInit())
+	{
+		MessageBox((HWND)emuIf.handle,"Couldn't Initialize GLEW.","ERROR",MB_OK|MB_ICONEXCLAMATION);
+		Term();	return false;
+	}
+
+	ASSERT_F(GLEW_ARB_vertex_program, "No Vertex Shaders!");
+	ASSERT_F(GLEW_ARB_fragment_program, "No Fragment Shaders!");
 
 	//	if( gfx_opts.wireframe == TRUE )
 	//	{	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);	}
@@ -444,10 +505,16 @@ bool PowerVR2_GL::Init()
 	glAlphaFunc(GL_GREATER, 0.f);
 
 	glClearDepth(0.f);	// 0 ? wtf .. thX F|RES
-	glClearColor(1.f, 1.f, 256.f, 0.f);
+	glClearColor(1.f, 1.f, 1.f, 0.f);
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
+	InitCg();
+	LoadVProgram("VProgram.cg","PVR_VertexInput");
+	LoadFProgram("FProgram.cg","PVR_FragmentInput");
+
 	Resize();
+	Render();
+
 	return true;
 }
 
@@ -479,3 +546,22 @@ GLvoid PowerVR2_GL::CheckErrorsGL( char *szFunc )
 		printf("OpenGL Error in %s\n\t %s\n", szFunc, pszErrStr );
 	}
 }
+
+
+//	glEnable(GL_FRAGMENT_PROGRAM_ARB);
+//	glGenProgramsARB(1, &shader_num);
+//	glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, shader_num);
+//	glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB, strlen(program_string), program_string);
+//	glDisable(GL_FRAGMENT_PROGRAM_ARB);
+
+
+/*
+	cgGLBindProgram(cgVProgram);
+	checkForCgError("binding vertex program");
+
+	cgGLEnableProfile(cgVProfile);
+	checkForCgError("enabling vertex profile");
+
+	cgGLDisableProfile(cgVProfile);
+	checkForCgError("disabling vertex profile");
+*/
