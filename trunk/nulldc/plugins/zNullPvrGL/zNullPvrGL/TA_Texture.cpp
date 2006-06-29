@@ -925,11 +925,15 @@ TexID TextureCache::GetTexture(PolyParam *pp)
 	if(0==TexAddr)
 		return 0;
 
-	for(size_t t=0; t<TexList.size(); t++)
-	{
-		if(TexAddr == TexList[t].Start)
-			return TexList[t].texID;
-	}
+	//for(size_t t=0; t<TexList.size(); t++)
+	//{
+	//	if(TexAddr == TexList[t].Start)
+	//		return TexList[t].texID;
+	//}
+
+	TexEntry* tad=TexList.Find(TexAddr);
+	if (tad)
+		return tad->texID;
 
 	TexEntry tex;
 	tex.texID	= 0;
@@ -1052,8 +1056,10 @@ TexID TextureCache::GetTexture(PolyParam *pp)
 		goto unhandled_fmt;
 	}
 
-	tex.lock_block=emuIf.vramLock64(tex.Start, tex.End, NULL);
-	TexList.push_back(tex);
+	TexCacheList::TexCacheEntry* tce= TexList.Add(&tex);
+	
+	tce->text.lock_block=emuIf.vramLock64(tce->text.Start, tce->text.End, tce);
+	
 	return tex.texID;
 
 unhandled_fmt:
@@ -1065,8 +1071,9 @@ unhandled_fmt:
 	tex.End = tex.Start + tex.Width * tex.Height;	// This might cause trouble but its an error anyways !
 	TexGen(pp,&tex);
 
-	tex.lock_block=emuIf.vramLock64(tex.Start, tex.End, NULL);
-	TexList.push_back(tex);
+	tce= TexList.Add(&tex);
+
+	tce->text.lock_block=emuIf.vramLock64(tce->text.Start, tce->text.End, tce);
 	return tex.texID;
 }
 
@@ -1083,30 +1090,41 @@ void DeleteTexture(u32 * Texture)
 void vramLockCB(vram_block *bl, u32 addr)
 {
 	//WARN : removing list items while enumerating could be fatal .. seems to work , needs check
-	for(size_t t=0; t<PvrIf->TexList.size(); t++) {
-		if(addr >= PvrIf->TexList[t].Start && addr < PvrIf->TexList[t].End)	{
-		//	printf("~TexInvalidate @ %08X - TexID: %X \n", addr, PvrIf->TexList[t].texID);
-			PvrIf->InvList.push_back(PvrIf->TexList[t].texID);
-			PvrIf->TexList.erase(PvrIf->TexList.begin()+t);
-			--t;
+	/*for(size_t t=0; t<TexList.size(); t++) 
+	{
+		if(addr >= TexList[t].Start && addr < TexList[t].End)	
+		{
+			PvrIf->InvList.push_back(TexList[t].texID);
+			PvrIf->TexList.erase(TexList.begin()+t);
+			--t;//removed one
 		}
-	}
+	}*/
+	TexCacheList::TexCacheEntry* tce=(TexCacheList::TexCacheEntry*)bl->userdata;
+
+	PvrIf->InvList.push_back(tce->text.texID);
+	PvrIf->TexList.Remove(tce);
+	delete tce;
 	emuIf.vramUnlock(bl);
 }
-
 
 
 void TextureCache::ClearTCache()
 {
 	//WARN : removing list items while enumerating could be fatal .. seems to work , needs check
-	for(size_t t=0; t<PvrIf->TexList.size(); t++)
+	/*for(size_t t=0; t<TexList.size(); t++)
 	{
-		TexEntry temp=PvrIf->TexList[t];
+		TexEntry temp=TexList[t];
 		emuIf.vramUnlock(temp.lock_block);
-		PvrIf->TexList.erase(PvrIf->TexList.begin()+t);
 		DeleteTexture(&temp.texID);
 	}
-	TexList.clear();
+	TexList.clear();*/
+	while(TexList.pfirst)
+	{
+		TexCacheList::TexCacheEntry* tce=TexList.pfirst;
+		TexList.Remove(TexList.pfirst);
+		DeleteTexture(&tce->text.texID);
+		delete tce;
+	}
 }
 
 void TextureCache::ClearTInvalids()
@@ -1114,6 +1132,17 @@ void TextureCache::ClearTInvalids()
 	for(size_t tidx=0; tidx<InvList.size(); tidx++)
 		DeleteTexture(&InvList[tidx]);
 	InvList.clear();
+	//if (TexList.textures>200)
+	//{
+	//	int trm=TexList.textures-200;
+	//	for (int i=0;i<trm;i++)
+	//	{
+	//		TexCacheList::TexCacheEntry* tce=TexList.plast;
+	//		TexList.Remove(tce);
+	//		DeleteTexture(&tce->text.texID);
+	//		delete tce;
+	//	}
+	//}
 }
 
 
