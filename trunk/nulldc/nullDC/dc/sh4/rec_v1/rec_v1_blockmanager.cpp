@@ -38,6 +38,8 @@
 #include <algorithm>
 using namespace std;
 
+#define BLOCK_LUT_GUESS
+
 //
 //helper list class
 int compare_BlockLookups(const void * a, const void * b)
@@ -61,8 +63,14 @@ int compare_BlockLookups(const void * a, const void * b)
 class BlockList:public vector<rec_v1_BasicBlock*>
 {
 public :
+	size_t ItemCount;
+	BlockList():vector<rec_v1_BasicBlock*>()
+	{
+		ItemCount=0;
+	}
 	u32 Add(rec_v1_BasicBlock* block)
 	{
+		ItemCount++;
 		for (u32 i=0;i<size();i++)
 		{
 			if (_Myfirst[i]==0)
@@ -77,6 +85,7 @@ public :
 	}
 	void Remove(rec_v1_BasicBlock* block)
 	{
+		ItemCount--;
 		for (u32 i=0;i<size();i++)
 		{
 			if (_Myfirst[i]==block)
@@ -100,9 +109,29 @@ public :
 			}
 		}
 	}
+	
+	//check if the list is empty (full of 0's) , if so , clear it
+	void CheckEmpty()
+	{
+		if (ItemCount!=0)
+			return;
+		u32 sz=size();
+		for (u32 i=0;i<sz;i++)
+		{
+			if (_Myfirst[i]!=0)
+			{
+				printf("BlockList::CheckEmptyList fatal error , ItemCount!=RealItemCount\n");
+				__asm int 3;
+				return;
+			}
+		}
+		clear();
+	}
+
 	//optimise blocklist for best lookup times
 	void Optimise()
 	{
+		CheckEmpty();
 		if (size())
 		{
 			//using a specialised routine is gona be faster .. bah
@@ -117,13 +146,20 @@ public :
 	}
 };
 //page info
+
 #define PAGE_MANUALCHECK 1
 struct pginfo
 {
 	u32 invalidates;
-	u32 flags;
-	//bit 0 :1-> manual check , 0 -> locked check
-	//bit 1-31: reserved
+	union
+	{
+		struct
+		{
+			u32 ManualCheck:1;	//bit 0 :1-> manual check , 0 -> locked check
+			u32 reserved:31;	//bit 1-31: reserved
+		};
+		u32 full;
+	} flags;
 };
 
 pginfo PageInfo[RAM_SIZE/PAGE_SIZE];
@@ -140,18 +176,26 @@ BlockList SuspendedBlocks;
 #define LOOKUP_HASH_MASK	(LOOKUP_HASH_SIZE-1)
 #define GetLookupHash(addr) ((addr>>2)&LOOKUP_HASH_MASK)
 BlockList					BlockLookupLists[LOOKUP_HASH_SIZE];
+
+#ifdef BLOCK_LUT_GUESS
+//even after optimising blocks , guesses give a good speedup :)
 rec_v1_BasicBlock*			BlockLookupGuess[LOOKUP_HASH_SIZE];
+#endif
+//implemented later
+void FreeBlock(rec_v1_BasicBlock* block);
+void SuspendBlock(rec_v1_BasicBlock* block);
 
 //misc code & helper functions
-//this should not be called from a running block , or it cloud crash
+//this should not be called from a running block , or it could crash
 //Free a list of blocks
+//will also clear the list
 void FreeBlocks(BlockList* blocks)
 {
 	for (u32 i=0;i<blocks->size();i++)
 	{
 		if ((*blocks)[i])
 		{
-			((*blocks)[i])->Free();
+			FreeBlock((*blocks)[i]);
 		}
 	}
 	blocks->clear();
@@ -163,7 +207,9 @@ void ResetBlocks()
 	for (u32 i=0;i<LOOKUP_HASH_SIZE;i++)
 	{
 		BlockLookupLists[i].clear();
+		#ifdef BLOCK_LUT_GUESS
 		BlockLookupGuess[i]=0;
+		#endif
 	}
 
 	for (u32 i=0;i<(RAM_SIZE/PAGE_SIZE);i++)
@@ -182,55 +228,8 @@ void FreeSuspendedBlocks()
 	FreeBlocks(&SuspendedBlocks);
 }
 
-//block lookup code
-void AddToBlockList(vector<rec_v1_BasicBlock*>* list ,rec_v1_BasicBlock* block)
-{
-	u32 size=list->size();
-	for (u32 i=0;i<size;i++)
-	{
-		if ((*list)[i]==0)
-		{
-			(*list)[i]=block;
-			return;
-		}
-	}
 
-	list->push_back(block);
-}
-void CheckEmptyList(vector<rec_v1_BasicBlock*>* list)
-{
-	u32 size=list->size();
-	for (u32 i=0;i<size;i++)
-	{
-		if ((*list)[i]!=0)
-		{
-			return;
-		}
-	}
-	list->clear();
-}
-void RemoveFromBlockList(vector<rec_v1_BasicBlock*>* list ,rec_v1_BasicBlock* block)
-{
-	u32 size=list->size();
-	for (u32 i=0;i<size;i++)
-	{
-		if ((*list)[i]==block)
-		{
-			(*list)[i]=0;
-			return;
-		}
-	}
-	CheckEmptyList(list);
-}
-
-INLINE BlockList* GetLookupBlockList(u32 address)
-{
-	address&=RAM_MASK;
-	return &BlockLookupLists[GetLookupHash(address)];
-}
-
-u32 luk=0;
-u32 r_value=0;
+//fast rand function (gota check that too)
 u32 f_rand_seed=0xFEDC;
 u32 f_rand_last=0;
 u32 frand()
@@ -238,9 +237,24 @@ u32 frand()
 	f_rand_seed=(f_rand_seed<<3) ^ f_rand_last;
 	return f_rand_last=(f_rand_seed^(f_rand_seed>>11));
 }
+
+//block lookup code
+INLINE BlockList* GetLookupBlockList(u32 address)
+{
+	address&=RAM_MASK;
+	return &BlockLookupLists[GetLookupHash(address)];
+}
+
+
+
+u32 luk=0;
+u32 r_value=0;
+
 rec_v1_BasicBlock* rec_v1_FindBlock(u32 address)
 {
 	rec_v1_BasicBlock* thisblock;
+
+	#ifdef BLOCK_LUT_GUESS
 	rec_v1_BasicBlock* fastblock;
 
 	fastblock=BlockLookupGuess[GetLookupHash(address)];
@@ -254,6 +268,7 @@ rec_v1_BasicBlock* rec_v1_FindBlock(u32 address)
 		fastblock->lookups++;
 		return fastblock;
 	}
+	#endif
 
 	BlockList* blklist = GetLookupBlockList(address);
 
@@ -272,10 +287,12 @@ rec_v1_BasicBlock* rec_v1_FindBlock(u32 address)
 		{
 			if (thisblock->cpu_mode_tag==fpscr.PR_SZ)
 			{
+#ifdef BLOCK_LUT_GUESS
 				if (fastblock==0 || fastblock->lookups<=thisblock->lookups)
 				{
 					BlockLookupGuess[GetLookupHash(address)]=thisblock;
 				}
+#endif
 				thisblock->lookups++;
 				return thisblock;
 			}
@@ -306,13 +323,19 @@ void rec_v1_RegisterBlock(rec_v1_BasicBlock* block)
 	u32 start=(block->start&RAM_MASK)/PAGE_SIZE;
 	u32 end=(block->end&RAM_MASK)/PAGE_SIZE;
 
-	AddToBlockList(GetLookupBlockList(block->start),block);
+	//AddToBlockList(GetLookupBlockList(block->start),block);
+	GetLookupBlockList(block->start)->Add(block);
+
+	
 	if (((block->start >>26)&0x7)==3)
-	{
+	{	//Care about invalidates olny if on ram
 		for (u32 i=start;i<=end;i++)
 		{
-			//mem_b.LockRegion(start*PAGE_SIZE_SW,PAGE_SIZE_SW);
-			//AddToBlockList(&BlockLists[i],block);
+			if (PageInfo[i].flags.ManualCheck==0)
+			{	//if manual checks , we must not lock
+				mem_b.LockRegion(i*PAGE_SIZE,PAGE_SIZE);
+				BlockPageLists[i].Add(block);
+			}
 		}
 	}
 }
@@ -322,28 +345,56 @@ void rec_v1_UnRegisterBlock(rec_v1_BasicBlock* block)
 	u32 start=(block->start&RAM_MASK)/PAGE_SIZE;
 	u32 end=(block->end&RAM_MASK)/PAGE_SIZE;
 
-	RemoveFromBlockList(GetLookupBlockList(block->start),block);
+	GetLookupBlockList(block->start)->Remove(block);
 
+	#ifdef BLOCK_LUT_GUESS
 	if (BlockLookupGuess[GetLookupHash(block->start)]==block)
 		BlockLookupGuess[GetLookupHash(block->start)]=0;
+	#endif
 
-	for (u32 i=start;i<=end;i++)
-	{
-		//RemoveFromBlockList(&BlockLists[i],block);
-		//if (BlockLists[i].size()==0)
+	if (((block->start >>26)&0x7)==3)
+	{	//Care about invalidates olny if on ram
+		for (u32 i=start;i<=end;i++)
+		{
+			if (PageInfo[i].flags.ManualCheck==0)
+			{	//if manual checks , we don't need to unlock (its not locked to start with :p)
+				BlockPageLists[i].Remove(block);
+				BlockPageLists[i].CheckEmpty();
+				if (BlockPageLists[i].size()==0)
+				{
+					mem_b.UnLockRegion(i*PAGE_SIZE,PAGE_SIZE);
+				}
+			}
+		}
 	}
 }
 
 
 //suspend/ free related ;)
-void SuspendBlock_internal(rec_v1_BasicBlock* block)
+//called to suspend a block
+void SuspendBlock(rec_v1_BasicBlock* block)
 {
 	//remove the block from :
 	//
-	//full block list
+	//not full block list , its removed from here olny when deleted (thats why its "full block" list ..)
 	//page block list
 	//look up block list
 	//Look up guess block list
+	//unregisting a block does exactly all that :)
+	rec_v1_UnRegisterBlock(block);
+	block->Suspend();
+
+	//
+	//add it to the "to be suspended" list
+	SuspendedBlocks.Add(block);
+}
+//called to free a suspended block
+void FreeBlock(rec_v1_BasicBlock* block)
+{
+	//free the block
+	all_block_list.Remove(block);
+	//block->Free();
+	//delete block;
 }
 
 bool RamLockedWrite(u8* address)
@@ -355,18 +406,19 @@ bool RamLockedWrite(u8* address)
 		size_t addr_hash = offset/PAGE_SIZE;
 		BlockList* list=&BlockPageLists[addr_hash];
 		PageInfo[addr_hash].invalidates++;
-		if (PageInfo[addr_hash].invalidates>20)
-			PageInfo[addr_hash].flags|=PAGE_MANUALCHECK;
-			
+					
 		for (size_t i=0;i<list->size();i++)
 		{
 			if ((*list)[i])
 			{
-				SuspendBlock_internal((*list)[i]);
+				SuspendBlock((*list)[i]);
 			}
 		}
 		list->clear();
 		mem_b.UnLockRegion(offset&(~(PAGE_SIZE-1)),PAGE_SIZE);
+
+		if (PageInfo[addr_hash].invalidates>20)
+			PageInfo[addr_hash].flags.ManualCheck=1;
 
 		return true;
 	}
