@@ -173,10 +173,10 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 		{
 			if (rec_cycles>CPU_TIMESLICE*2)
 			{
-				printf("rec_cycles>CPU_TIMESLICE*2 !!!\n");
-				if (rec_cycles>CPU_TIMESLICE*3)
-					printf("rec_cycles>CPU_TIMESLICE*3 !!!\n");
-				printf("rec_cycles=%d\n",rec_cycles);
+			//	printf("rec_cycles>CPU_TIMESLICE*2 !!!\n");
+				//if (rec_cycles>CPU_TIMESLICE*3)
+				//	printf("rec_cycles>CPU_TIMESLICE*3 !!!\n");
+				//printf("rec_cycles=%d\n",rec_cycles);
 			}
 
 //			if (pExitBlock->Discarded)

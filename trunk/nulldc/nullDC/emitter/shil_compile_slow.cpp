@@ -981,6 +981,9 @@ u32 const_hit=0;
 u32 non_const_hit=0;
 bool IsOnSamePage(rec_v1_BasicBlock* bb,u32 adr)
 {
+	if (bb->flags.ProtectionType==BLOCK_PROTECTIONTYPE_MANUAL)
+		return false;
+
 	if (IsOnRam(adr)==false)
 		return false;
 	
@@ -2186,7 +2189,7 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 		sz/=4;
 
 		int i=0;
-		//for (i=0;i<sz;i++)
+		for (i=0;i<sz;i++)
 		{
 			x86e->CMP32ItoM((u32*)GetMemPtr(block->start+i*4,4),ReadMem32(block->start+i*4));
 			u8* patch=x86e->JE8(0);

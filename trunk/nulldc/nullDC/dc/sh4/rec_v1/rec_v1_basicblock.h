@@ -15,7 +15,7 @@ public :
 //helpers
 #define GET_CURRENT_FPU_MODE() (fpscr.PR_SZ)
 
-#define BLOCKLIST_MAX_CYCLES (448)
+#define BLOCKLIST_MAX_CYCLES (1)
 class rec_v1_BasicBlock;
 
 class rec_v1_BasicBlock
