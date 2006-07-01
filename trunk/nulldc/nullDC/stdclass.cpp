@@ -277,7 +277,7 @@ void VArray::Init(u32 sz)
 }
 void VArray::Term()
 {
-	VirtualFree(data,size,MEM_RELEASE);
+	VirtualFree(data,0,MEM_RELEASE);
 }
 void VArray::LockRegion(u32 offset,u32 size)
 {

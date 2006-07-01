@@ -108,7 +108,9 @@ void gdrom_reg_Init(void)
 	gdRS.Status = 2;	// Standby
 	gdRS.Repeat = 8;	//
 	gdRS.Format = (gdSR.iDevType >> 4) & 15;
-	gdRS.FAD[3] = 0x96;	// home
+	gdRS.FAD[0] = 0;	// home
+	gdRS.FAD[1] = 0;	// home
+	gdRS.FAD[2] = 0x96;	// home
 	gdRS.ReadRetry = 15;
 /*
 	Cylinder Low = 14h,
