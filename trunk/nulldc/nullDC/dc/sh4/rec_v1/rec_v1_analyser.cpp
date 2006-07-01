@@ -30,7 +30,7 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 	shil_DynarecInit();
 
 	ilst=&to->ilst;
-	to->flags|=GET_CURRENT_FPU_MODE();
+	to->flags.FpuMode = GET_CURRENT_FPU_MODE();
 
 
 	while (true)
@@ -61,9 +61,9 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 		/*if (ilst->opcodes.size()>nop)
 			ilst->opcodes[nop]|=FLAG_NEXT_OP;*/
 
-		if (to->flags & BLOCK_SOM_MASK)
+		if (to->flags.SynthOpcode)
 		{
-			switch (to->flags & BLOCK_SOM_MASK)
+			switch (to->flags.SynthOpcode )
 			{
 			case BLOCK_SOM_SIZE_128:
 				printf("Syth opcode found at pc 0x%X , bytelen = 128+2 , skiping 130 bytes\n",pc);
@@ -76,10 +76,10 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 			case BLOCK_SOM_RESERVED2:
 				break;
 			}
-			to->flags&=~BLOCK_SOM_MASK;
+			to->flags.SynthOpcode=BLOCK_SOM_NONE;
 		}
 
-		if (to->flags & BLOCK_ATSC_END)
+		if (to->flags.EndAnalyse)
 		{
 			to->end=pc;
 			break;
@@ -89,7 +89,7 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 		if (OpTyp[opcode]&WritesPC)
 		{
 			to->end=pc;
-			to->flags |=BLOCK_TYPE_DYNAMIC;
+			to->flags.ExitType =BLOCK_EXITTYPE_DYNAMIC;
 			break;
 		}
 
@@ -101,7 +101,7 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 			//opcode is interpreter so pc is set , if update shit() is called , pc must remain
 
 			to->end=pc;
-			to->flags |=BLOCK_TYPE_DYNAMIC;
+			to->flags.ExitType =BLOCK_EXITTYPE_DYNAMIC;
 			ilst->add(reg_pc,2);
 			break;
 		}
@@ -110,7 +110,7 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 		{
 			ilst->mov(reg_pc,pc);//save next opcode pc-2 , pc+2 is done after execution
 			
-			to->flags |=BLOCK_TYPE_FIXED;
+			to->flags.ExitType=BLOCK_EXITTYPE_FIXED;
 			to->end=pc;
 			to->TF_next_addr=pc+2;
 			break;
@@ -120,7 +120,7 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 	}
 
 	//clear flags that are used olny for analysis
-	to->flags &= ~BLOCK_ATSC_END;
+	to->flags.EndAnalyse = false;
 
 #ifdef PROFILE_DYNAREC
 	if( (to->flags & BLOCK_TYPE_MASK)==BLOCK_TYPE_DYNAMIC)

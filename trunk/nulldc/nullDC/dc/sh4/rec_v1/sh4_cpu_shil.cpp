@@ -546,7 +546,7 @@ sh4op(i0000_0000_0001_1001)
 	if (match==65)
 	{
 		//DIV32U was perfectly matched :)
-		bb->flags|=BLOCK_SOM_SIZE_128;
+		bb->flags.SynthOpcode=BLOCK_SOM_SIZE_128;
 		ilst->div(reg1,reg2,reg3,FLAG_ZX|FLAG_32);
 	}
 	else //<- uncoment when we realy emit em :P
@@ -574,7 +574,7 @@ sh4op(i0010_nnnn_mmmm_0111)
 	if (match==65)
 	{
 		//DIV32S was perfectly matched :)
-		bb->flags|=BLOCK_SOM_SIZE_128;
+		bb->flags.SynthOpcode=BLOCK_SOM_SIZE_128;
 		ilst->div(reg1,reg2,reg3,FLAG_SX|FLAG_32);
 	}
 	else //<- uncoment when we realy emit em :P
@@ -1595,7 +1595,7 @@ sh4op(i1111_nnmm_1110_1101)
 	int n=GetN(op)&0xC;
 	int m=(GetN(op)&0x3)<<2;
 	ilst->fipr(fr[n],fr[m]);
-	bb->flags|=BLOCK_TYPE_VECTOR;
+	bb->flags.FpuIsVector=true;
 }
 
 
@@ -1789,7 +1789,7 @@ sh4op(i1111_nn01_1111_1101)
 {
 	u32 n=GetN(op)&0xC;
 	ilst->ftrv(fr[n]);
-	bb->flags|=BLOCK_TYPE_VECTOR;
+	bb->flags.FpuIsVector=true;
 }																				  
 
 
@@ -1824,7 +1824,8 @@ sh4op(i0000_nnnn_0010_0011)
 	//shil_interpret(op);
 	//ilst->add(reg_pc,2);
 	//return;
-	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_DYNAMIC;
+	bb->flags.ExitType = BLOCK_EXITTYPE_DYNAMIC;
+	bb->flags.EndAnalyse=true;
 	ilst->mov(reg_pc_temp,r[n]);
 	ilst->add(reg_pc_temp,pc+4);
 	DoDslot(pc,bb);
@@ -1847,7 +1848,8 @@ sh4op(i0000_nnnn_0010_0011)
 	//ilst->add(reg_pc,2);
 	//return;
 
-	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_DYNAMIC_CALL;
+	bb->flags.EndAnalyse=true;
+	bb->flags.ExitType=BLOCK_EXITTYPE_DYNAMIC_CALL;
 	ilst->mov(reg_pr,pc+4);
 	ilst->mov(reg_pc_temp,r[n]);
 	ilst->add(reg_pc_temp,pc+4);
@@ -1888,7 +1890,8 @@ sh4op(i0000_nnnn_0010_0011)
 	//shil_interpret(op);
 	//ilst->add(reg_pc,2);
 	//return;
-	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_RET;
+	bb->flags.EndAnalyse = true;
+	bb->flags.ExitType= BLOCK_EXITTYPE_RET;
 	ilst->mov(reg_pc_temp,reg_pr);
 	DoDslot(pc,bb);
 	ilst->mov(reg_pc,reg_pc_temp);
@@ -1912,7 +1915,8 @@ sh4op(i0000_nnnn_0010_0011)
 
 	ilst->LoadT(jcond_flag);
 	
-	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_COND_0;
+	bb->flags.EndAnalyse=true;
+	bb->flags.ExitType=BLOCK_EXITTYPE_COND_0;
 }
 
 
@@ -1939,7 +1943,8 @@ sh4op(i0000_nnnn_0010_0011)
 
 	ilst->LoadT(jcond_flag);
 	DoDslot(pc,bb);
-	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_COND_0;
+	bb->flags.EndAnalyse = true;
+	bb->flags.ExitType = BLOCK_EXITTYPE_COND_0;
 }
 
 
@@ -1960,7 +1965,8 @@ sh4op(i0000_nnnn_0010_0011)
 
 	ilst->LoadT(jcond_flag);
 	
-	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_COND_1;
+	bb->flags.EndAnalyse=true;
+	bb->flags.ExitType=BLOCK_EXITTYPE_COND_1;
 }
 
 
@@ -1985,7 +1991,9 @@ sh4op(i0000_nnnn_0010_0011)
 
 	ilst->LoadT(jcond_flag);
 	DoDslot(pc,bb);
-	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_COND_1;
+	
+	bb->flags.EndAnalyse=true;
+	bb->flags.ExitType=BLOCK_EXITTYPE_COND_1;
 }
 
 
@@ -2001,7 +2009,8 @@ sh4op(i1010_iiii_iiii_iiii)
 	*/
 
 	bb->TF_next_addr=(u32) ((  ((s16)((GetImm12(op))<<4)) >>3)  + pc + 4);
-	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_FIXED;
+	bb->flags.EndAnalyse=true;
+	bb->flags.ExitType=BLOCK_EXITTYPE_FIXED;
 	DoDslot(pc,bb);
 }
 // bsr <bdisp12>
@@ -2018,7 +2027,8 @@ sh4op(i1011_iiii_iiii_iiii)
 	pc=newpc-2;*/
 
 	bb->TF_next_addr=(u32) ((  ((s16)((GetImm12(op))<<4)) >>3)  + pc + 4);
-	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_FIXED_CALL;
+	bb->flags.EndAnalyse=true;
+	bb->flags.ExitType=BLOCK_EXITTYPE_FIXED_CALL;
 
 	ilst->mov(reg_pr,pc+4);
 	DoDslot(pc,bb);
@@ -2050,7 +2060,8 @@ sh4op(i1100_0011_iiii_iiii)
 	//shil_interpret(op);	
 	//ilst->add(reg_pc,2);
 	//return;
-	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_DYNAMIC;
+	bb->flags.EndAnalyse=true;
+	bb->flags.ExitType=BLOCK_EXITTYPE_DYNAMIC;
 	ilst->mov(reg_pc_temp,r[n]);
 	DoDslot(pc,bb);
 	ilst->mov(reg_pc,reg_pc_temp);
@@ -2073,7 +2084,8 @@ sh4op(i1100_0011_iiii_iiii)
 	//shil_interpret(op);	
 	//ilst->add(reg_pc,2);
 	//return;
-	bb->flags|=BLOCK_ATSC_END|BLOCK_TYPE_DYNAMIC_CALL;
+	bb->flags.EndAnalyse=true;
+	bb->flags.ExitType=BLOCK_EXITTYPE_DYNAMIC_CALL;
 	ilst->mov(reg_pr,pc+4);
 	ilst->mov(reg_pc_temp,r[n]);
 	DoDslot(pc,bb);

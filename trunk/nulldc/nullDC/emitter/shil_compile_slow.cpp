@@ -42,10 +42,6 @@ bool nullprof_enabled=false;
 #define PROFILE_BLOCK_CYCLES (nullprof_enabled)
 typedef void __fastcall shil_compileFP(shil_opcode* op,rec_v1_BasicBlock* block);
 
-#ifdef PROFILE_DYNAREC
-u64 ifb_calls;
-#endif
-
 bool inited=false;
 
 int fallbacks=0;
@@ -61,12 +57,12 @@ int block_count=0;
 
 #ifdef X86
 //profiling related things
-#ifdef PROFILE_DYNAREC
+u64 ifb_calls=0;
 void profile_ifb_call()
 {
 	ifb_calls++;
 }
-#endif
+
 
 //#define PROFILE_SLOW_BLOCK
 //#ifdef PROFILE_SLOW_BLOCK
@@ -824,9 +820,9 @@ void __fastcall shil_compile_shil_ifb(shil_opcode* op,rec_v1_BasicBlock* block)
 
 	x86e->MOV32ItoR(ECX,op->imm1);
 	x86e->CALLFunc(OpPtr[op->imm1]);
-#ifdef PROFILE_DYNAREC
-	x86e->CALLFunc(profile_ifb_call);
-#endif
+
+	//x86e->CALLFunc(profile_ifb_call);
+
 }
 
 //shift
@@ -1999,96 +1995,6 @@ void __fastcall shil_compile_div32(shil_opcode* op,rec_v1_BasicBlock* block)
 	MarkDirty(rQuotient);
 }
 
-#ifdef PROFILE_DYNAREC
-
-u64  dyn_profile_cycles[shil_count];
-u64  dyn_profile_calls[shil_count];
-
-u64  dyn_profile_vc[shil_count];
-
-int prints_count=0;
-void printprofile()
-{
-	prints_count++;
-	if (prints_count==1)
-	{
-
-		u64 max=0;
-		double av=0;
-		u32 im=0;
-		for (int i=0;i<shil_count;i++)
-		{
-
-			if (dyn_profile_calls[i]>0)
-			{
-				double cr=(double)dyn_profile_cycles[i]/(double)dyn_profile_calls[i];
-				if (dyn_profile_cycles[i]>max)
-				{
-					max=dyn_profile_cycles[i];
-					im=i;
-				}
-			//	printf("opcode %s , %Lf cycles/call [%Lf calls , %Lf cycles]\n",GetShilName((shil_opcodes)i)
-			//		,cr
-			//		,(double)dyn_profile_calls[i]
-			//	,(double)dyn_profile_cycles[i]
-			//	);
-			}
-		}
-
-		double cr=(double)dyn_profile_cycles[im]/(double)dyn_profile_calls[im];
-		printf("slower opcode %s , %Lf cycles/call [%Lf calls , %Lf cycles]\n",GetShilName((shil_opcodes)im)
-			,cr
-			,(double)dyn_profile_calls[im]
-		,(double)dyn_profile_cycles[im]
-		);
-
-
-		//print a sorted time ?
-		//clear em
-		for (int i=0;i<shil_count;i++)
-		{
-			dyn_profile_cycles[im]=0;
-			dyn_profile_calls[im]=0;
-		}
-		prints_count=0;
-	}
-}
-union Cmp64
-{
-	struct
-	{
-		u32 l;
-		u32 h;
-	};
-	u64 v;
-};
-
-Cmp64 dyn_last;
-Cmp64 dyn_now;
-void __fastcall dyna_profile_cookie_start()
-{
-	__asm
-	{
-		rdtsc;
-		mov dyn_last.l,eax;
-		mov dyn_last.h,edx;
-	}
-}
-
-void __fastcall dyna_profile_cookie(u32 op)
-{
-	__asm
-	{
-		rdtsc;
-		mov dyn_now.l,eax;
-		mov dyn_now.h,edx;
-	}
-
-	dyn_profile_calls[op]++;
-	dyn_profile_cycles[op]+=dyn_now.v-dyn_last.v;
-	dyn_last.v=dyn_now.v;
-}
-#endif
 
 shil_compileFP* sclt[shil_count]=
 {
@@ -2239,11 +2145,20 @@ void naked link_compile_inject_TT_stub(rec_v1_BasicBlock* ptr)
 	}
 }
 
+
 extern u32 rec_cycles;
-u32 call_ret_address=0;//holds teh return address of the previus call ;)
+
+u32 call_ret_address=0xFFFFFFFF;//holds teh return address of the previus call ;)
 rec_v1_BasicBlock* pcall_ret_address=0;//holds teh return address of the previus call ;)
 
-
+void CBBs_BlockSuspended(rec_v1_BasicBlock* block)
+{
+	if (pcall_ret_address == block)
+	{
+		call_ret_address=0xFFFFFFFF;
+		pcall_ret_address=0;
+	}
+}
 void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 {
 	//CompileBasicBlock_slow_c(block);
@@ -2265,6 +2180,22 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 	block->compiled=new rec_v1_CompiledBlock();
 	
 
+	if (block->flags.ProtectionType==BLOCK_PROTECTIONTYPE_MANUAL)
+	{
+		int sz=block->end-block->start;
+		sz/=4;
+
+		int i=0;
+		//for (i=0;i<sz;i++)
+		{
+			x86e->CMP32ItoM((u32*)GetMemPtr(block->start+i*4,4),ReadMem32(block->start+i*4));
+			u8* patch=x86e->JE8(0);
+			x86e->MOV32ItoR(ECX,(u32)block);
+			x86e->JMP(SuspendBlock);
+			x86e->x86SetJ8(patch);
+		}
+	}
+
 	if (PROFILE_BLOCK_CYCLES){
 		x86e->CALLFunc(dyna_profile_block_enter);
 	}
@@ -2275,11 +2206,6 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 
 	x86e->ADD32ItoM(&rec_cycles,block->cycles);
 	//x86e->MOV32ItoM((u32*)&rec_v1_pCurrentBlock,(u32)block);
-
-#ifdef PROFILE_DYNAREC
-	x86e->CALLFunc(dyna_profile_cookie_start);
-#endif
-	
 
 	u32 list_sz=(u32)block->ilst.opcodes.size();
 	for (u32 i=0;i<list_sz;i++)
@@ -2295,18 +2221,6 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 			printf("SHIL COMPILER ERROR\n");
 		}
 		sclt[op->opcode](op,block);
-#ifdef PROFILE_DYNAREC
-			x86e->PUSHFD();
-			x86e->PUSH32R(EAX);
-			x86e->PUSH32R(ECX);
-			x86e->PUSH32R(EDX);
-			x86e->MOV32ItoR(ECX,op->opcode);
-			x86e->CALLFunc(dyna_profile_cookie);
-			x86e->POP32R(EDX);
-			x86e->POP32R(ECX);
-			x86e->POP32R(EAX);
-			x86e->POPFD();
-#endif
 	}
 
 	FlushRegCache();//flush reg cache
@@ -2317,10 +2231,10 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 	}
 
 	//end block acording to block type :)
-	switch(block->flags & BLOCK_TYPE_MASK)
+	switch(block->flags.ExitType)
 	{
 	
-	case BLOCK_TYPE_DYNAMIC_CALL:
+	case BLOCK_EXITTYPE_DYNAMIC_CALL:
 		if (RET_PREDICTION)
 		{
 			//mov guess,pr
@@ -2328,14 +2242,14 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 			//mov pguess,this
 			x86e->MOV32ItoM((u32*)&pcall_ret_address,(u32)(block));
 		}
-	case BLOCK_TYPE_DYNAMIC:
+	case BLOCK_EXITTYPE_DYNAMIC:
 		{
 //			x86e->MOV32ItoM((u32*)&pExitBlock,(u32)block);
 			x86e->RET();
 			break;
 		}
 
-	case BLOCK_TYPE_RET:
+	case BLOCK_EXITTYPE_RET:
 		{
 			if (RET_PREDICTION)
 			{
@@ -2369,8 +2283,8 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 			break;
 		}
 
-	case BLOCK_TYPE_COND_0:
-	case BLOCK_TYPE_COND_1:
+	case BLOCK_EXITTYPE_COND_0:
+	case BLOCK_EXITTYPE_COND_1:
 		{
 			//ok , handle COND_0/COND_1 here :)
 			//mem address
@@ -2380,7 +2294,7 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 			u32* pTF_f=(u32*)&(block->pTF_next_addr);
 			u32* pTT_f=(u32*)&(block->pTT_next_addr);
 			
-			if ((block->flags & BLOCK_TYPE_MASK)==BLOCK_TYPE_COND_0)
+			if (block->flags.ExitType==BLOCK_EXITTYPE_COND_0)
 			{
 				TT_a=&block->TF_next_addr;
 				TF_a=&block->TT_next_addr;
@@ -2459,7 +2373,7 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 		} 
 		break;
 
-	case BLOCK_TYPE_FIXED_CALL:
+	case BLOCK_EXITTYPE_FIXED_CALL:
 		//mov guess,pr
 		if (RET_PREDICTION)
 		{
@@ -2467,7 +2381,7 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 			//mov pguess,this
 			x86e->MOV32ItoM((u32*)&pcall_ret_address,(u32)(block));
 		}
-	case BLOCK_TYPE_FIXED:
+	case BLOCK_EXITTYPE_FIXED:
 		{
 			x86e->CMP32ItoM(&rec_cycles,BLOCKLIST_MAX_CYCLES);
 			u8* Link=x86e->JB8(0);
@@ -2528,6 +2442,7 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 	delete x86e;
 }
 
+//non x86 , no dynarec
 #else
 void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 {

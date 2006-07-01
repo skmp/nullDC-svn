@@ -12,51 +12,11 @@ public :
 	u32 count;						//compiled code opcode count
 };
 
-//flags
-#define BLOCK_TYPE_MASK				(7<<0)
-#define BLOCK_TYPE_DYNAMIC			(0<<0)		//link end
-#define BLOCK_TYPE_FIXED			(1<<0)		//call TF_next_addr
-#define BLOCK_TYPE_COND_0			(2<<0)		//T==0
-#define BLOCK_TYPE_COND_1			(3<<0)		//T==1
-#define BLOCK_TYPE_FIXED_CALL		(4<<0)		//Set rv to known for rts handling
-#define BLOCK_TYPE_DYNAMIC_CALL		(5<<0)		//Set rv to known for rts handling
-#define BLOCK_TYPE_RET				(6<<0)		//Ends w/ ret ;)
-#define BLOCK_TYPE_RES_2			(7<<0)		//Reserved
-
-#define GET_CURRENT_FPU_MODE() (fpscr.PR_SZ<<10)
-#define BLOCK_TYPE_FPU_MASK		(3<<10)
-#define BLOCK_TYPE_FPU32_S32	(0<<10)	//32 bit math , 32 bit reads/writes
-#define BLOCK_TYPE_FPU64_S32	(1<<10)	//64 bit math , 32 bit reads/writes 
-#define BLOCK_TYPE_FPU32_S64	(2<<10)	//32 bit math , 64 bit read/writes
-#define BLOCK_TYPE_FPU_INVALID	(3<<10)	//this mode is invalid
-
-#define BLOCK_TYPE_VECTOR		(1<<12)	//this block contains vector opcodes (fipr/ftrv)
-
-#define BLOCK_SOM_MASK		(3<<13)			//synthesyssed opcode mask
-#define BLOCK_SOM_NONE		(0<<13)			//NONE
-#define BLOCK_SOM_SIZE_128	(1<<13)			//DIV32U[Q|R]/DIV32S[Q|R]
-#define BLOCK_SOM_RESERVED1	(2<<13)			//RESERVED
-#define BLOCK_SOM_RESERVED2	(3<<13)			//RESERVED
-
-#define BLOCK_ATSC_END		(1<<15)			//end  analyse [analyse olny flag]
-
+//helpers
+#define GET_CURRENT_FPU_MODE() (fpscr.PR_SZ)
 
 #define BLOCKLIST_MAX_CYCLES (448)
 class rec_v1_BasicBlock;
-
-class rec_v1_BasicBlock_bmngdata
-{
-	rec_v1_BasicBlock* pParent;
-	vector<rec_v1_BasicBlock_bmngdata*> callees;
-
-	/*void SuspendBlock()
-	{
-		for (int i=0;i<callees.size();i++)
-		{
-			callees[i].
-		}
-	}*/
-};
 
 class rec_v1_BasicBlock
 {
@@ -70,7 +30,7 @@ class rec_v1_BasicBlock
 	{
 		start=0;
 		end=0;
-		flags=0;
+		flags.full=0;
 		cycles=0;
 		compiled=0;
 		TF_next_addr=0xFFFFFFFF;
@@ -82,7 +42,7 @@ class rec_v1_BasicBlock
 	}	
 
 	void rec_v1_BasicBlock::RemoveCaller(rec_v1_BasicBlock* bb);
-		void rec_v1_BasicBlock::RemoveCallee(rec_v1_BasicBlock* bb);
+	void rec_v1_BasicBlock::RemoveCallee(rec_v1_BasicBlock* bb);
 
 	void Free();
 	void Suspend();
@@ -101,7 +61,47 @@ class rec_v1_BasicBlock
 	u16 cpu_mode_tag;
 
 	//flags
-	u16 flags;	//compiled block flags :)
+	union
+	{
+		u32 full;
+		struct 
+		{
+			#define BLOCK_EXITTYPE_DYNAMIC			(0)		//link end
+			#define BLOCK_EXITTYPE_FIXED			(1)		//call TF_next_addr
+			#define BLOCK_EXITTYPE_COND_0			(2)		//T==0
+			#define BLOCK_EXITTYPE_COND_1			(3)		//T==1
+			#define BLOCK_EXITTYPE_FIXED_CALL		(4)		//Set rv to known for rts handling
+			#define BLOCK_EXITTYPE_DYNAMIC_CALL		(5)		//Set rv to known for rts handling
+			#define BLOCK_EXITTYPE_RET				(6)		//Ends w/ ret ;)
+			#define BLOCK_EXITTYPE_RES_2			(7)		//Reserved
+			u32 ExitType:3;
+			//flags
+			//#define BLOCK_TYPE_FPU_MASK		(3<<10)
+
+			#define BLOCK_FPUMODE_32_S32	(0)	//32 bit math , 32 bit reads/writes
+			#define BLOCK_FPUMODE_64_S32	(1)	//64 bit math , 32 bit reads/writes 
+			#define BLOCK_FPUMODE_32_S64	(2)	//32 bit math , 64 bit read/writes
+			#define BLOCK_FPUMODE_INVALID	(3)	//this mode is invalid
+			u32 FpuMode:2;
+
+			u32 FpuIsVector:1;
+
+
+			#define BLOCK_SOM_NONE		(0)			//NONE
+			#define BLOCK_SOM_SIZE_128	(1)			//DIV32U[Q|R]/DIV32S[Q|R]
+			#define BLOCK_SOM_RESERVED1	(2)			//RESERVED
+			#define BLOCK_SOM_RESERVED2	(3)			//RESERVED
+			u32 SynthOpcode:2;
+
+			u32 EndAnalyse:1;
+
+
+			#define BLOCK_PROTECTIONTYPE_LOCK	(0)	//block checks are done my locking memory (no extra code needed)
+			#define BLOCK_PROTECTIONTYPE_MANUAL	(1)	//block checks if it's valid itself
+			u32 ProtectionType:1;
+		};
+	}flags;	//compiled block flags :)
+
 	u32 cycles;
 	u32 lookups;	//count of lookups for this block
 
@@ -120,8 +120,6 @@ class rec_v1_BasicBlock
 	bool Discarded;
 	u64 profile_time;
 	u32 profile_calls;
-	
-	u32 BlockType;
 };
 
 

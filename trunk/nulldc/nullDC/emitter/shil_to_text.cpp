@@ -75,26 +75,26 @@ u32 list_sz=(u32)block->ilst.opcodes.size();
 	}
 
 	//end block acording to block type :)
-	switch(block->flags & BLOCK_TYPE_MASK)
+	switch(block->flags.ExitType)
 	{
 	
-	case BLOCK_TYPE_DYNAMIC_CALL:
-	case BLOCK_TYPE_DYNAMIC:
+	case BLOCK_EXITTYPE_DYNAMIC_CALL:
+	case BLOCK_EXITTYPE_DYNAMIC:
 		{
 			fprintf(to,"//BLOCK_TYPE_DYNAMIC[CALL] \n");
 			//x86e->RET();
 			break;
 		}
 
-	case BLOCK_TYPE_RET:
+	case BLOCK_EXITTYPE_RET:
 		{
 			fprintf(to,"//BLOCK_TYPE_RET \n");
 			
 			break;
 		}
 
-	case BLOCK_TYPE_COND_0:
-	case BLOCK_TYPE_COND_1:
+	case BLOCK_EXITTYPE_COND_0:
+	case BLOCK_EXITTYPE_COND_1:
 		{
 			//ok , handle COND_0/COND_1 here :)
 			//mem address
@@ -104,7 +104,7 @@ u32 list_sz=(u32)block->ilst.opcodes.size();
 			u32* pTF_f=(u32*)&(block->pTF_next_addr);
 			u32* pTT_f=(u32*)&(block->pTT_next_addr);
 			
-			if ((block->flags & BLOCK_TYPE_MASK)==BLOCK_TYPE_COND_0)
+			if (block->flags.ExitType==BLOCK_EXITTYPE_COND_0)
 			{
 				TT_a=&block->TF_next_addr;
 				TF_a=&block->TT_next_addr;
@@ -135,9 +135,9 @@ u32 list_sz=(u32)block->ilst.opcodes.size();
 		} 
 		break;
 
-	case BLOCK_TYPE_FIXED_CALL:
+	case BLOCK_EXITTYPE_FIXED_CALL:
 		//mov guess,pr
-	case BLOCK_TYPE_FIXED:
+	case BLOCK_EXITTYPE_FIXED:
 		{
 
 			//If our cycle count is expired

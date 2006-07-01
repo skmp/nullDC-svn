@@ -12,3 +12,4 @@ void FreeSuspendedBlocks();
 rec_v1_BasicBlock* rec_v1_NewBlock(u32 address);
 rec_v1_BasicBlock* rec_v1_FindOrRecompileCode(u32 pc);
 rec_v1_BasicBlock* rec_v1_FindOrAnalyse(u32 pc);
+void __fastcall SuspendBlock(rec_v1_BasicBlock* block);

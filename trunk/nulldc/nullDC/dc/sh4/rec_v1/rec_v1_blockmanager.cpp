@@ -183,7 +183,7 @@ rec_v1_BasicBlock*			BlockLookupGuess[LOOKUP_HASH_SIZE];
 #endif
 //implemented later
 void FreeBlock(rec_v1_BasicBlock* block);
-void SuspendBlock(rec_v1_BasicBlock* block);
+//void __fastcall SuspendBlock(rec_v1_BasicBlock* block);
 
 //misc code & helper functions
 //this should not be called from a running block , or it could crash
@@ -323,6 +323,17 @@ void rec_v1_RegisterBlock(rec_v1_BasicBlock* block)
 	u32 start=(block->start&RAM_MASK)/PAGE_SIZE;
 	u32 end=(block->end&RAM_MASK)/PAGE_SIZE;
 
+	bool ManualCheck=false;
+	for (int i=start;i<=end;i++)
+	{
+		ManualCheck|=PageInfo[i].flags.ManualCheck;
+	}
+
+	if (ManualCheck)
+		block->flags.ProtectionType=BLOCK_PROTECTIONTYPE_MANUAL;
+	else
+		block->flags.ProtectionType=BLOCK_PROTECTIONTYPE_LOCK;
+
 	//AddToBlockList(GetLookupBlockList(block->start),block);
 	GetLookupBlockList(block->start)->Add(block);
 
@@ -372,7 +383,7 @@ void rec_v1_UnRegisterBlock(rec_v1_BasicBlock* block)
 
 //suspend/ free related ;)
 //called to suspend a block
-void SuspendBlock(rec_v1_BasicBlock* block)
+void __fastcall SuspendBlock(rec_v1_BasicBlock* block)
 {
 	//remove the block from :
 	//
