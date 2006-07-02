@@ -1111,14 +1111,14 @@ static void FillBltTexture()
     for (j=0;j<uNumLines;j++)
     {
       unsigned char* pBufferDest = (unsigned char*)lockedRect.pBits + j*lockedRect.Pitch;
-      DWORD offset = (j*(uModulo*uBytesPerPixel + uNumBytesPerLine));
+      DWORD offset = (j*(/*uModulo*uBytesPerPixel +*/ uNumBytesPerLine));
 
 	  /*const char* pBank1 = SH4GetVideoRAMPtr(0xa5000000 + (uDispAddr>>1));
 	  const char* pBank2 = SH4GetVideoRAMPtr(0xa5400000 + (uDispAddr>>1));
       //memcpy(pBufferDest,pBufferSrc,uNumBytesPerLine);
 	  DWORD bpp=uNumBytesPerLine>>1;
 	  bpp>>=2;
-	  for (int i=0;i<bpp;i++)
+	  for (int i=0;i<bpp;i++) 
 	  {
 		  memcpy(pBufferDest,pBank1+offset,4);pBufferDest+=4;
 		  memcpy(pBufferDest,pBank2+offset,4);pBufferDest+=4;
