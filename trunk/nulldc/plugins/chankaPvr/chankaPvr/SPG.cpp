@@ -27,11 +27,14 @@ u32 lasft_fps;
 double spd_fps=0;
 double spd_cpu=0;
 
+
+extern int CurrentFrame;
 //u32 vblLine	= (pvrCycles / (vblCount * 7));	// Current Line
 void vblank_done()
 {
 	//vblk_cnt++;
 
+	CurrentFrame++;
 	if ((timeGetTime()-(double)lasft_fps)>800)
 	{
 		spd_fps=(double)frame_count/(double)((double)(timeGetTime()-(double)lasft_fps)/1000);

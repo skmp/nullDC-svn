@@ -21,7 +21,7 @@ shil_scs shil_compile_slow_settings=
 	true,	//Inline normal mem reads
 	false,	//Inline mem writes
 	false,	//Do _not_ keep tbit seperate ;P , needs bug fixing
-	true	//Predict returns (needs a bit debuggin)	
+	false	//Predict returns (needs a bit debuggin)	
 };
 
 cDllHandler profiler_dll;
@@ -2186,12 +2186,16 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 	if (block->flags.ProtectionType==BLOCK_PROTECTIONTYPE_MANUAL)
 	{
 		int sz=block->end-block->start;
-		sz/=4;
-
+		if (sz<4)
+			sz=1;
+		else
+			sz/=4;
+		sz++;
 		int i=0;
 		for (i=0;i<sz;i++)
 		{
-			x86e->CMP32ItoM((u32*)GetMemPtr(block->start+i*4,4),ReadMem32(block->start+i*4));
+			u32* pmem=(u32*)GetMemPtr(block->start+i*4,4);
+			x86e->CMP32ItoM((u32*)GetMemPtr(block->start+i*4,4),*pmem);
 			u8* patch=x86e->JE8(0);
 			x86e->MOV32ItoR(ECX,(u32)block);
 			x86e->JMP(SuspendBlock);

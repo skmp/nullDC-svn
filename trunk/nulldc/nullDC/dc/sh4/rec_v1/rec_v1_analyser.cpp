@@ -46,6 +46,7 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 		}
 		else
 		{
+			block_size+=10;
 			//pc+=2;
 			//continue;
 		}
