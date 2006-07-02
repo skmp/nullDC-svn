@@ -1026,6 +1026,23 @@ void TASendPackedData(DWORD* pBuffer, DWORD uLength)
 static int m_aFrameBufferColBytes[] = {2,2,3,4};
 
 
+#define VRAM_MASK (8*1024*1024-1)
+
+//Convert offset32 to offset64
+u32 vramlock_ConvOffset32toOffset64(u32 offset32)
+{
+		//64b wide bus is archevied by interleaving the banks every 32 bits
+		//so bank is Address<<3
+		//bits <4 are <<1 to create space for bank num
+		//bank 1 is mapped at 400000 (32b offset) and after
+		u32 bank=((offset32>>22)&0x1)<<2;//bank will be used ass uper offset too
+		u32 lv=offset32&0x3; //these will survive
+		offset32<<=1;
+		//       |inbank offset    |       bank id        | lower 2 bits (not changed)
+		u32 rv=  (offset32&(VRAM_MASK-7))|bank                  | lv;
+ 
+		return rv;
+}
 static void FillBltTexture()
 {
   if(!m_DisplayDevice.BeginScene() || !m_pTextureBlt32 || !m_pTextureBlt16)
@@ -1094,9 +1111,27 @@ static void FillBltTexture()
     for (j=0;j<uNumLines;j++)
     {
       unsigned char* pBufferDest = (unsigned char*)lockedRect.pBits + j*lockedRect.Pitch;
-      const unsigned char* pBufferSrc = (const unsigned char*)pSrc + j*(uModulo*uBytesPerPixel + uNumBytesPerLine);
+      DWORD offset = (j*(uModulo*uBytesPerPixel + uNumBytesPerLine));
 
-      memcpy(pBufferDest,pBufferSrc,uNumBytesPerLine);
+	  /*const char* pBank1 = SH4GetVideoRAMPtr(0xa5000000 + (uDispAddr>>1));
+	  const char* pBank2 = SH4GetVideoRAMPtr(0xa5400000 + (uDispAddr>>1));
+      //memcpy(pBufferDest,pBufferSrc,uNumBytesPerLine);
+	  DWORD bpp=uNumBytesPerLine>>1;
+	  bpp>>=2;
+	  for (int i=0;i<bpp;i++)
+	  {
+		  memcpy(pBufferDest,pBank1+offset,4);pBufferDest+=4;
+		  memcpy(pBufferDest,pBank2+offset,4);pBufferDest+=4;
+		  offset+=4;
+	  }*/
+  for (int i=0;i<uNumBytesPerLine;i+=1)
+	  {
+		  u32 new_offset= vramlock_ConvOffset32toOffset64(uDispAddr + offset);
+		  char* nof=SH4GetVideoRAMPtr(new_offset);
+		  *pBufferDest=*nof;
+		   pBufferDest++;
+		   offset++;
+	  }
 
     }
     pTextureD3D->UnlockRect(0);
