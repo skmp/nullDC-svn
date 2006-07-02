@@ -99,6 +99,7 @@ class rec_v1_BasicBlock
 			#define BLOCK_PROTECTIONTYPE_LOCK	(0)	//block checks are done my locking memory (no extra code needed)
 			#define BLOCK_PROTECTIONTYPE_MANUAL	(1)	//block checks if it's valid itself
 			u32 ProtectionType:1;
+			u32 HasDelaySlot:1;
 		};
 	}flags;	//compiled block flags :)
 

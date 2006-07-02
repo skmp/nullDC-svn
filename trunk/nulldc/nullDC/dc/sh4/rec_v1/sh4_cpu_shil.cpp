@@ -1809,6 +1809,7 @@ void DoDslot(u32 pc,rec_v1_BasicBlock* bb)
 		ilst->shil_ifb(opcode,pc+2);
 	else*/
 		RecOpPtr[opcode](opcode,pc+2,bb);
+		bb->flags.HasDelaySlot=true;
 }
 
 //braf <REG_N>                  

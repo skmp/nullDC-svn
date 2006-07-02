@@ -2186,12 +2186,14 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 	if (block->flags.ProtectionType==BLOCK_PROTECTIONTYPE_MANUAL)
 	{
 		int sz=block->end-block->start;
+		//check at least 4 bytes
 		if (sz<4)
 			sz=1;
 		else
 			sz/=4;
-		sz++;
+		//sz++;
 		int i=0;
+		//that can be optimised a lota :p
 		for (i=0;i<sz;i++)
 		{
 			u32* pmem=(u32*)GetMemPtr(block->start+i*4,4);

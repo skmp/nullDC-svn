@@ -122,6 +122,10 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 
 	//clear flags that are used olny for analysis
 	to->flags.EndAnalyse = false;
+	
+	//add delayslot opcode :)
+	if (to->flags.HasDelaySlot)
+		to->end+=2;
 
 #ifdef PROFILE_DYNAREC
 	if( (to->flags & BLOCK_TYPE_MASK)==BLOCK_TYPE_DYNAMIC)
