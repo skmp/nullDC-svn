@@ -5,7 +5,7 @@
 #include "emitter/emitter.h"
 
 #include <memory.h>
-
+extern u32 rec_cycles;
 void rec_v1_BasicBlock::ClearBlock(rec_v1_BasicBlock* block)
 {
 	if (block->TF_block==this)
@@ -60,6 +60,7 @@ void rec_v1_BasicBlock::Suspend()
 		TT_block->BlockWasSuspended(this);
 
 	//if we jump to another block , we have to re compile it :)
+	//rec_cycles=BLOCKLIST_MAX_CYCLES;
 	Discarded=true;
 }
 

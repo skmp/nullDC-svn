@@ -18,7 +18,7 @@
 //to the compiler
 
 #define CPU_RATIO 1
-#define CPU_BASIC_BLOCK_SIZE (448/2)
+#define CPU_BASIC_BLOCK_SIZE (BLOCKLIST_MAX_CYCLES/2)
 void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 {
 

@@ -36,6 +36,8 @@ cDllHandler profiler_dll;
 #define INLINE_MEM_WRITE		(shil_compile_slow_settings.InlineMemWrite)
 
 #define RET_PREDICTION			(shil_compile_slow_settings.RetPrediction)
+#define BC_LINKING				(true)		//link conditional branches
+#define BF_LINKING				(true)		//link fixed branches
 
 bool nullprof_enabled=false;
 
@@ -101,15 +103,6 @@ void __fastcall dyna_profile_block_exit(rec_v1_BasicBlock* bb)
 	bb->profile_calls++;
 }
 //#endif
-//a few helpers
-
-typedef void opMtoR_FP (x86IntRegType to,u32* from);
-typedef void opItoR_FP (x86IntRegType to,u32 from);
-typedef void opRtoR_FP (x86IntRegType to,x86IntRegType from);
-
-typedef void opItoM_FP (u32* to, u32 from);
-typedef void opRtoM_FP (u32* to, x86IntRegType from);
-
 
 void c_Ensure32()
 {
@@ -2173,6 +2166,14 @@ void CBBs_BlockSuspended(rec_v1_BasicBlock* block)
 		pcall_ret_address=0;
 	}
 }
+void __fastcall CheckBlock(rec_v1_BasicBlock* block)
+{
+	if (block->Discarded)
+	{
+		printf("Called a discarded block\n");
+		__asm int 3;
+	}
+}
 void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 {
 	//CompileBasicBlock_slow_c(block);
@@ -2211,10 +2212,14 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 			x86e->CMP32ItoM((u32*)GetMemPtr(block->start+i*4,4),*pmem);
 			u8* patch=x86e->JE8(0);
 			x86e->MOV32ItoR(ECX,(u32)block);
+			x86e->MOV32ItoM(GetRegPtr(reg_pc),block->start);
 			x86e->JMP(SuspendBlock);
 			x86e->x86SetJ8(patch);
 		}
 	}
+
+	//x86e->MOV32ItoR(ECX,(u32)block);
+	//x86e->CALLFunc(CheckBlock);
 
 	if (PROFILE_BLOCK_CYCLES){
 		x86e->CALLFunc(dyna_profile_block_enter);
@@ -2274,7 +2279,7 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 			if (RET_PREDICTION)
 			{
 				//cmp pr,guess
-				x86e->MOV32MtoR(EAX,GetRegPtr(reg_pr));
+				x86e->MOV32MtoR(EAX,GetRegPtr(reg_pc));
 				x86e->CMP32MtoR(EAX,&call_ret_address);
 				//je ok
 				u8* ok=x86e->JE8(0);
@@ -2325,7 +2330,13 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 
 			x86e->CMP32ItoM(&rec_cycles,BLOCKLIST_MAX_CYCLES);
 			
-			u8* Link=x86e->JB8(0);
+			u8* Link;
+
+			if (BC_LINKING)
+			{
+				Link=x86e->JB8(0);
+			}
+
 			{
 				//If our cycle count is expired
 				//save the dest address to pc
@@ -2339,56 +2350,56 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 				x86e->CMOVNE32MtoR(EAX,TT_a);//!=
 				x86e->MOV32RtoM(GetRegPtr(reg_pc),EAX);
 
-				//save exit block 
-//				x86e->MOV32ItoM((u32*)&pExitBlock,(u32)block);
 				x86e->RET();//return to caller to check for interrupts
 			}
-			//Link:
-			//if we can execute more blocks
-			x86e->x86SetJ8(Link);
+
+			if (BC_LINKING)
 			{
-				//for dynamic link!
-				x86e->MOV32ItoR(ECX,(u32)block);					//mov ecx , block
-				x86e->MOV32MtoR(EAX,&T_jcond_value);
-				x86e->TEST32ItoR(EAX,1);//test for T
+				//Link:
+				//if we can execute more blocks
+				x86e->x86SetJ8(Link);
+				{
+					//for dynamic link!
+					x86e->MOV32ItoR(ECX,(u32)block);					//mov ecx , block
+					x86e->MOV32MtoR(EAX,&T_jcond_value);
+					x86e->TEST32ItoR(EAX,1);//test for T
 
 
-				//link to next block :
-				if (*TF_a==block->start)
-				{
-					//fast link (direct jmp to block start)
-					//x86e->MOV32ItoR(EAX,(u32)start_ptr);		//assume it's this condition , unless CMOV overwrites
-					if (x86e->CanJ8(start_ptr))
-						x86e->JE8(start_ptr);
-					else
-						x86e->JE32(start_ptr);
-				}
-				else
-				{
-					x86e->MOV32MtoR(EAX,pTF_f);		//assume it's this condition , unless CMOV overwrites
-				}
-				//!=
-
-				if (*TT_a==block->start)
-				{
-					//fast link (direct jmp to block start)
-					//x86e->MOV32ItoR(EDX,(u32)start_ptr);
-					//x86e->CMOVNE32RtoR(EAX,EDX);	//overwrite the "other" pointer if needed
-					if (x86e->CanJ8(start_ptr))
-						x86e->JNE8(start_ptr);
-					else
-						x86e->JNE32(start_ptr);
-				}
-				else
-				{
+					/*
+					//link to next block :
 					if (*TF_a==block->start)
 					{
-						x86e->MOV32MtoR(EAX,pTT_f);// ;)
+						//fast link (direct jmp to block start)
+						if (x86e->CanJ8(start_ptr))
+							x86e->JE8(start_ptr);
+						else
+							x86e->JE32(start_ptr);
 					}
 					else
-						x86e->CMOVNE32MtoR(EAX,pTT_f);	//overwrite the "other" pointer if needed
+					{*/
+						x86e->MOV32MtoR(EAX,pTF_f);		//assume it's this condition , unless CMOV overwrites
+					/*}
+					//!=
+
+					if (*TT_a==block->start)
+					{
+						//fast link (direct jmp to block start)
+						if (x86e->CanJ8(start_ptr))
+							x86e->JNE8(start_ptr);
+						else
+							x86e->JNE32(start_ptr);
+					}
+					else
+					{
+						if (*TF_a==block->start)
+						{
+							x86e->MOV32MtoR(EAX,pTT_f);// ;)
+						}
+						else*/
+							x86e->CMOVNE32MtoR(EAX,pTT_f);	//overwrite the "other" pointer if needed
+					//}
+					x86e->JMP32R(EAX);		 //!=
 				}
-				x86e->JMP32R(EAX);		 //!=
 			}
 		} 
 		break;
@@ -2404,28 +2415,35 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 	case BLOCK_EXITTYPE_FIXED:
 		{
 			x86e->CMP32ItoM(&rec_cycles,BLOCKLIST_MAX_CYCLES);
-			u8* Link=x86e->JB8(0);
+
+			u8* Link;
+
+			if (BF_LINKING)
+			{
+				Link=x86e->JB8(0);
+			}
 
 			//If our cycle count is expired
 			x86e->MOV32ItoM(GetRegPtr(reg_pc),block->TF_next_addr);
-			//save exit block 
-//			x86e->MOV32ItoM((u32*)&pExitBlock,(u32)block);
 			x86e->RET();//return to caller to check for interrupts
 
 
-			//Link:
-			//if we can execute more blocks
-			x86e->x86SetJ8(Link);
-			if (block->TF_next_addr==block->start)
+			if (BF_LINKING)
 			{
-				//__asm int 03;
-				printf("Fast Link possible\n");
-			}
+				//Link:
+				//if we can execute more blocks
+				x86e->x86SetJ8(Link);
+				if (block->TF_next_addr==block->start)
+				{
+					//__asm int 03;
+					printf("Fast Link possible\n");
+				}
 
-			//link to next block :
-			x86e->MOV32ItoR(ECX,(u32)block);					//mov ecx , block
-			x86e->MOV32MtoR(EAX,(u32*)&(block->pTF_next_addr));	//mov eax , [pTF_next_addr]
-			x86e->JMP32R(EAX);									//jmp eax
+				//link to next block :
+				x86e->MOV32ItoR(ECX,(u32)block);					//mov ecx , block
+				x86e->MOV32MtoR(EAX,(u32*)&(block->pTF_next_addr));	//mov eax , [pTF_next_addr]
+				x86e->JMP32R(EAX);									//jmp eax
+			}
 			break;
 		}
 	}
