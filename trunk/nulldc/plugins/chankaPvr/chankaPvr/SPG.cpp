@@ -32,14 +32,14 @@ extern int CurrentFrame;
 //u32 vblLine	= (pvrCycles / (vblCount * 7));	// Current Line
 void vblank_done()
 {
-	//vblk_cnt++;
-
 	CurrentFrame++;
 	if ((timeGetTime()-(double)lasft_fps)>800)
 	{
-		spd_fps=(double)frame_count/(double)((double)(timeGetTime()-(double)lasft_fps)/1000);
-		spd_cpu=(double)vblk_cnt/(double)((double)(timeGetTime()-(double)lasft_fps)/1000);
-		spd_cpu*=(DCclock/1000000)/60;
+		u32 ctime=timeGetTime();
+		spd_fps=(double)frame_count/(double)((double)(ctime-(double)lasft_fps)/1000);
+		spd_cpu=(double)vblk_cnt/(double)((double)(ctime-(double)lasft_fps)/1000);
+		spd_cpu*=Frame_Cycles;
+		spd_cpu/=1000000;
 
 		//ints=0;
 		lasft_fps=timeGetTime();
@@ -57,38 +57,6 @@ void vblank_done()
 //called from sh4 context , should update pvr/ta state and evereything else
 void spgUpdatePvr(u32 cycles)
 {
-	/*
-	clcount+=cycles;
-	if (clcount>dc)
-	{
-		
-		clcount-=(DCclock)/60;//faked
-		//ok .. here , after much effort , we reached a full screen redraw :P
-		//now , we will copy everything onto the screen (meh) and raise a vblank interupt
-		RaiseInterrupt(holly_VBLank);//weeeee
-		if (cur_icpl->PvrUpdate)
-			cur_icpl->PvrUpdate(1);
-
-			// didn't look at read i guess this is not needed 
-		*(u32*)&pvr_regs[0x5F810C &0x7fff] |= 0x2000;	// SPG_STATUS
-
-		if ((timeGetTime()-(double)lasft_fps)>800)
-		{
-			spd_fps=(double)fps/(double)((double)(timeGetTime()-(double)lasft_fps)/1000);
-			//printf("FPS : %f ; list type : %x\n",_spd_fps,ints);
-			ints=0;
-			lasft_fps=timeGetTime();
-			fps=0;
-
-			char fpsStr[256];
-			extern HWND g_hWnd;
-			//sprintf(fpsStr," FPS: %f  -  Sh4: %f mhz  - Rx: %d kb/s - Tx %d kb/s  DCtest0r v0.0.0 ", spd_fps, 0,0,0);
-			//SetWindowText(g_hWnd, fpsStr);
-			vblk_cnt=0;
-		}
-		
-	}*/
-
 	clc_pvr_scanline += cycles;
 	if (clc_pvr_scanline >  Line_Cycles)//60 ~herz = 200 mhz / 60=3333333.333 cycles per screen refresh
 	{
@@ -114,8 +82,6 @@ void spgUpdatePvr(u32 cycles)
 			RaiseInterrupt(InterruptID::holly_HBLank);
 			TAStartVBlank();
 			vblank_done();
-			//TODO : Renderer->PresentFB();
-//			renderer->PresentFB();//present FB data
 		}
 	}
 }
