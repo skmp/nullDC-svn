@@ -157,11 +157,13 @@ void vblank_done()
 
 	if ((timeGetTime()-(double)lasft_fps)>800)
 	{
-		spd_fps=(double)fps/(double)((double)(timeGetTime()-(double)lasft_fps)/1000);
-		spd_cpu=(double)vblk_cnt/(double)((double)(timeGetTime()-(double)lasft_fps)/1000);
-		spd_cpu*=(DCclock/1000000)/60;
+		u32 ctime=timeGetTime();
+		spd_fps=(double)fps/(double)((double)(ctime-(double)lasft_fps)/1000);
+		spd_cpu=(double)vblk_cnt/(double)((double)(ctime-(double)lasft_fps)/1000);
+		spd_cpu*=((double)DCclock)/60;
+		spd_cpu/=1000000.0f;
 
-		ints=0;
+		//ints=0;
 		lasft_fps=timeGetTime();
 		fps=0;
 
@@ -173,6 +175,7 @@ void vblank_done()
 		vblk_cnt=0;
 	}
 }
+
 void hblank_done(int scanline)
 {
 	prv_cur_scanline=scanline;
