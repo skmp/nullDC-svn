@@ -383,6 +383,8 @@ void rec_v1_UnRegisterBlock(rec_v1_BasicBlock* block)
 
 //suspend/ free related ;)
 //called to suspend a block
+//can be called from a mem invalidation , or directly from a manualy invalidated block
+void CBBs_BlockSuspended(rec_v1_BasicBlock* block);
 void __fastcall SuspendBlock(rec_v1_BasicBlock* block)
 {
 	//remove the block from :
@@ -394,6 +396,7 @@ void __fastcall SuspendBlock(rec_v1_BasicBlock* block)
 	//unregisting a block does exactly all that :)
 	rec_v1_UnRegisterBlock(block);
 	block->Suspend();
+	CBBs_BlockSuspended(block);
 
 	//
 	//add it to the "to be suspended" list

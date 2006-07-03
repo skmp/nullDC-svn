@@ -6,133 +6,65 @@
 
 #include <memory.h>
 
-extern rec_v1_BasicBlock* rec_v1_pCurrentBlock;
-extern u32 call_ret_address;//holds teh return address of the previus call ;)
-extern rec_v1_BasicBlock* pcall_ret_address;//holds teh return address of the previus call ;)
-
-void rec_v1_BasicBlock::AddCaller(rec_v1_BasicBlock* bb)
+void rec_v1_BasicBlock::ClearBlock(rec_v1_BasicBlock* block)
 {
-	//printf("AddRef block %x\n",bb->start);
-
-	u32 ref_count=(u32)callers.size();
-	for (u32 i=0;i<ref_count;i++)
+	if (block->TF_block==this)
 	{
-		if (callers[i]==0)
+		block->TF_block=0;
+		block->pTF_next_addr=link_compile_inject_TF_stub;
+	}
+
+	if (block->TT_block==this)
+	{
+		block->TT_block=0;
+		block->pTT_next_addr=link_compile_inject_TT_stub;
+	}
+}
+void rec_v1_BasicBlock::BlockWasSuspended(rec_v1_BasicBlock* block)
+{
+	for (int i=0;i<blocks_to_clear.size();i++)
+	{
+		if (blocks_to_clear[i]==block)
 		{
-			callers[i]=bb;
-			return ;
+			blocks_to_clear[i]=0;
 		}
 	}
-
-	callers.push_back(bb);
 }
 
-rec_v1_BasicBlock* rec_v1_BasicBlock::FindCallee(u32 address)
+void rec_v1_BasicBlock::AddRef(rec_v1_BasicBlock* block)
 {
-	u32 size=(u32)callees.size();
-	for (u32 i=0;i<size;i++)
+	if (!Discarded)
 	{
-		if (this->callees[i]!=0 &&
-			this->callees[i]->start == address && 
-			this->callees[i]->cpu_mode_tag==fpscr.PR_SZ)
-		{			
-			return this->callees[i];
-		}
+		//if we reference ourselfs we dont care ;) were suspended anyhow
+		if (block !=this)
+			blocks_to_clear.push_back(block);
 	}
-	return 0;
-}
-void rec_v1_BasicBlock::AddCallee(rec_v1_BasicBlock* bb)
-{
-	u32 callees_count=(u32)callees.size();
-	for (u32 i=0;i<callees_count;i++)
-	{
-		if (callees[i]==0)
-		{
-			callees[i]=bb;
-			return ;
-		}
-	}
-
-	callees.push_back(bb);
-	bb->AddCaller(this);
-}
-
-void rec_v1_BasicBlock::RemoveCaller(rec_v1_BasicBlock* bb)
-{
-	u32 ref_count=(u32)callers.size();
-	for (u32 i=0;i<ref_count;i++)
-	{
-		if (callers[i]==bb)
-			callers[i]=0;
-	}
-
-	if (TF_block==bb)
-	{
-		TF_block=0;
-		pTF_next_addr= link_compile_inject_TF_stub;
-	}
-
-	if (TT_block==bb)
-	{
-		TT_block=0;
-		pTT_next_addr= link_compile_inject_TT_stub;
-	}
-}
-void rec_v1_BasicBlock::RemoveCallee(rec_v1_BasicBlock* bb)
-{
-	bb->RemoveCaller(this);
-	u32 callee_count=callees.size();
-	
-	for (u32 i=0;i<callee_count;i++)
-	{
-		if (callees[i]==bb)
-			callees[i]=0;
-	}
-
-	if (TF_block==bb)
-	{
-		TF_block=0;
-		pTF_next_addr= link_compile_inject_TF_stub;
-	}
-
-	if (TT_block==bb)
-	{
-		TT_block=0;
-		pTT_next_addr= link_compile_inject_TT_stub;
-	}
+	else
+		printf("Warning : Discarded, AddRef call\n");
 }
 void rec_v1_BasicBlock::Suspend()
 {
-	//printf("Discard block %x\n",start);
-	if (pcall_ret_address==this)
+	for (int i=0;i<blocks_to_clear.size();i++)
 	{
-		pcall_ret_address=0;
-		call_ret_address=0xFFFFFFFF;
+		if (blocks_to_clear[i])
+		{
+			ClearBlock(blocks_to_clear[i]);
+		}
 	}
+	blocks_to_clear.clear();
 
-	u32 callers_count=callers.size();
-	for (u32 i=0;i<callers_count;i++)
-	{
-		RemoveCaller(callers[i]);
-	}
+	if (TF_block)
+		TF_block->BlockWasSuspended(this);
 
-	u32 callee_count=callees.size();
-	for (u32 i=0;i<callee_count;i++)
-	{
-		RemoveCallee(callees[i]);
-	}
+	if (TT_block)
+		TT_block->BlockWasSuspended(this);
+
+	//if we jump to another block , we have to re compile it :)
 	Discarded=true;
 }
 
 void rec_v1_BasicBlock::Free()
 {
-	//memset(this,0xFF,sizeof(rec_v1_BasicBlock));
-	//return;
-	if (rec_v1_pCurrentBlock==this)
-	{
-		printf("FUCK!!!!\n");
-		return;
-	}
 	if (compiled)
 	{
 		free(compiled->Code);

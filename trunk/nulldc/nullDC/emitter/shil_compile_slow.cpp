@@ -21,7 +21,7 @@ shil_scs shil_compile_slow_settings=
 	true,	//Inline normal mem reads
 	false,	//Inline mem writes
 	false,	//Do _not_ keep tbit seperate ;P , needs bug fixing
-	false	//Predict returns (needs a bit debuggin)	
+	true	//Predict returns (needs a bit debuggin)	
 };
 
 cDllHandler profiler_dll;
@@ -2111,20 +2111,31 @@ void* __fastcall link_compile_inject_TF(rec_v1_BasicBlock* ptr)
 {
 	rec_v1_BasicBlock* target= rec_v1_FindOrRecompileCode(ptr->TF_next_addr);
 	
-	//Add reference so we can undo the chain later
-	target->AddCaller(ptr);
-	ptr->TF_block=target;
-	return ptr->pTF_next_addr=target->compiled->Code;
+	
+	//if current block is Discared , we must not add any chain info , just jump to the new one :)
+	if (ptr->Discarded==false)
+	{
+		//Add reference so we can undo the chain later
+		target->AddRef(ptr);
+		ptr->TF_block=target;
+		ptr->pTF_next_addr=target->compiled->Code;
+	}
+	return target->compiled->Code;
 }
 
 void* __fastcall link_compile_inject_TT(rec_v1_BasicBlock* ptr)
 {
 	rec_v1_BasicBlock* target= rec_v1_FindOrRecompileCode(ptr->TT_next_addr);
 
-	//Add reference
-	target->AddCaller(ptr);
-	ptr->TT_block=target;
-	return ptr->pTT_next_addr=target->compiled->Code;
+	//if current block is Discared , we must not add any chain info , just jump to the new one :)
+	if (ptr->Discarded==false)
+	{
+		//Add reference so we can undo the chain later
+		target->AddRef(ptr);
+		ptr->TT_block=target;
+		ptr->pTT_next_addr=target->compiled->Code;
+	}
+	return target->compiled->Code;
 } 
 
 

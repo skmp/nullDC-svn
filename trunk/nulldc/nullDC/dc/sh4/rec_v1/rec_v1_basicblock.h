@@ -15,12 +15,12 @@ public :
 //helpers
 #define GET_CURRENT_FPU_MODE() (fpscr.PR_SZ)
 
-#define BLOCKLIST_MAX_CYCLES (1)
+#define BLOCKLIST_MAX_CYCLES (448)
 class rec_v1_BasicBlock;
 
 class rec_v1_BasicBlock
 {
-	vector<rec_v1_BasicBlock*> callers;
+	vector<rec_v1_BasicBlock*> blocks_to_clear;
 	public :
 
 	rec_v1_BasicBlock* TF_block;
@@ -39,26 +39,21 @@ class rec_v1_BasicBlock
 		profile_time=0;
 		profile_calls=0;
 		Discarded=false;
-	}	
+	}
 
-	void rec_v1_BasicBlock::RemoveCaller(rec_v1_BasicBlock* bb);
-	void rec_v1_BasicBlock::RemoveCallee(rec_v1_BasicBlock* bb);
 
 	void Free();
 	void Suspend();
 	bool Contains(u32 pc);
-	//we get called by bb
-	void AddCaller(rec_v1_BasicBlock* bb);
-	//we call bb
-	void AddCallee(rec_v1_BasicBlock* bb);
-	//Find a calle
-	rec_v1_BasicBlock* FindCallee(u32 address);
-
+	void BlockWasSuspended(rec_v1_BasicBlock* block);
+	void AddRef(rec_v1_BasicBlock* block);
+	void ClearBlock(rec_v1_BasicBlock* block);
 	//start pc
 	u32 start;
 	//end pc
 	u32 end;
-	u16 cpu_mode_tag;
+	//duplicates  flags.FpuMode , so that we can check it fast on block lookups
+	u32 cpu_mode_tag;
 
 	//flags
 	union
@@ -117,7 +112,6 @@ class rec_v1_BasicBlock
 	void* pTF_next_addr;//tfalse or jmp
 	void* pTT_next_addr;//ttrue  or rts guess
 
-	vector<rec_v1_BasicBlock*> callees;
 	bool Discarded;
 	u64 profile_time;
 	u32 profile_calls;
