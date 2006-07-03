@@ -404,8 +404,8 @@ void FreeBlock(rec_v1_BasicBlock* block)
 {
 	//free the block
 	all_block_list.Remove(block);
-	//block->Free();
-	//delete block;
+	block->Free();
+	delete block;
 }
 
 bool RamLockedWrite(u8* address)

@@ -50,7 +50,6 @@ void UpdateTMU(u32 Cycles)
 //Update internal counter registers
 void UpdateTMUCounts(u32 reg)
 {
-	tmu_cnt[reg]=0;
 	switch(tmu_regs_CR[reg] & 0x7)
 	{
 		case 0:	//4
@@ -88,6 +87,9 @@ void UpdateTMUCounts(u32 reg)
 	}
 	tmu_cnt_max[reg]*=4;// because we count in Iö cycles (cpu core cycles) and the tmu is provided w/
 					  // the Pö (perhipal clock).. This may or may not be ok , but seems to work well
+
+	if (tmu_cnt[reg]>tmu_cnt_max[reg])
+		tmu_cnt[reg]=tmu_cnt_max[reg];
 }
 
 //A.M.A.N
@@ -218,9 +220,9 @@ void tmu_Reset(bool Manual)
 	tmu_cnt[1]=0;
 	tmu_cnt[2]=0;
 
-	tmu_cnt_max[0]=45;
-	tmu_cnt_max[1]=45;
-	tmu_cnt_max[2]=45;
+	tmu_cnt_max[0]=16;
+	tmu_cnt_max[1]=16;
+	tmu_cnt_max[2]=16;
 }
 
 void tmu_Term()
