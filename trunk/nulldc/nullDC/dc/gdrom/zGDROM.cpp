@@ -37,7 +37,7 @@ static gdIReasonReg	rIREASON;
 static s32 dmaCount=0;
 static u32 dmaOffset=0;
 
-static u8 gdReadBuffer[1024*1024*8];		// TEMP *FIXME*
+static u8 gdReadBuffer[1024*1024*16];		// TEMP *FIXME* -- star gladiator dma's 9515008 bytes
 
 
 // Going to K.I.S.S. It ;) hehe
