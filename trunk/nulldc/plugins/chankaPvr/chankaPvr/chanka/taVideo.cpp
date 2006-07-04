@@ -34,6 +34,11 @@ namespace Unai
 CCacheTextures  m_CacheTextures;
 CDisplayDevice  m_DisplayDevice;
 
+void InvTexture(void* ptex)
+{
+	m_CacheTextures.InvalidateTexture(ptex,&m_CacheTextures);
+}
+
 DWORD m_uNumVerticesRegistered = 0;
 DWORD m_uNumPrimitivesRegistered = 0;
 float m_fXCoorRatio = 1.0f;

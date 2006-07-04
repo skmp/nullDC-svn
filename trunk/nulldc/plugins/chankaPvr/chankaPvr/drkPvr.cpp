@@ -8,6 +8,8 @@
 #include "taVideo.h"
 #include "regs.h"
 
+pvr_init_params param;
+
 RaiseInterruptFP* RaiseInterrupt;
 
 int CurrentFrame=0;
@@ -85,7 +87,18 @@ EXPORT void dcGetPluginInfo(plugin_info* info)
 
 */
 
+void vramLockCB(vram_block *bl, u32 addr)
+{
+	InvTexture(bl->userdata);
 
+	param.vram_unlock(bl);
+}
+
+void lock_vmem(void* pMem,unsigned __int32 bytes,void* puser)
+{
+	size_t offset=((u8*)pMem)-param.vram;
+	vram_block* pblock =  param.vram_lock_64((u32)offset,(u32)offset + bytes -1,puser);
+}
 void TaFIFO(u32 address,u32* data,u32 size)
 {
 	size*=8;
@@ -101,21 +114,21 @@ EXPORT void dcGetPvrInfo(pvr_plugin_if* info)
 	info->TaFIFO=TaFIFO;
 	info->ReadReg=ReadPvrRegister;
 	info->WriteReg=WritePvrRegister;
-	//into->LockedBlockWrite -- needs to be added
+	info->LockedBlockWrite = vramLockCB;
 }
 
 
 //called when plugin is used by emu (you should do first time init here)
 void dcInitPvr(void* aparam,PluginType type)
 {
-	pvr_init_params* param=(pvr_init_params*)aparam;
+	param=*(pvr_init_params*)aparam;
 
-	vram_64=param->vram;
+	vram_64=param.vram;
 	g_pSH4TextureMemory=(char*)vram_64;
-	Hwnd=param->WindowHandle;
+	Hwnd=param.WindowHandle;
 	g_hWnd=(HWND)Hwnd;
-	RaiseInterrupt=param->RaiseInterrupt;
-	
+	RaiseInterrupt=param.RaiseInterrupt;
+	//param->vram_lock_64
 	//g_bChangeDisplayEnable = true;
 	//g_bDraw = true;
 }
@@ -176,3 +189,4 @@ char* GetNullDCSoruceFileName(char* full)
 	strcpy(temp,full);
 	return &temp[0];
 }
+

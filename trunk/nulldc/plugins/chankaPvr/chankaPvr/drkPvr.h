@@ -41,3 +41,5 @@ extern void* Hwnd;
 extern RaiseInterruptFP* RaiseInterrupt;
 
 float GetSeconds();
+
+extern pvr_init_params param;

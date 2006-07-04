@@ -60,6 +60,7 @@ namespace Unai
   extern  DWORD m_uNumPrimitivesRegistered;
   extern  bool  g_bDraw;
   extern  bool  g_bChangeDisplayEnable;
+  void InvTexture(void* ptex);
 }
 
 namespace Wip

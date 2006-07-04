@@ -2,6 +2,7 @@
 /// @file  cacheTextures.cpp
 /// @brief 
 ////////////////////////////////////////////////////////////////////////////////////////
+void lock_vmem(void* pMem,unsigned __int32 bytes,void* puser);
 #include "stdafx.h"
 
 DWORD SH4HWRegistersGetValue(DWORD uAddress,DWORD uMask,DWORD uShift)
@@ -450,6 +451,8 @@ IDirect3DTexture9* CCacheTextures::GetTexture(const TTextureInfo* pTexInfo, void
     {      
       //FIXME
 			//g_pTextureMemoryMemHandler->ProtectMem(pBuffer,uBytes,InvalidateTexture,pTextureAux,this,NULL,true);
+
+		lock_vmem(pBuffer,uBytes,pTextureAux);
     }
 	
 
