@@ -2,7 +2,9 @@
 /// @file  cacheTextures.cpp
 /// @brief 
 ////////////////////////////////////////////////////////////////////////////////////////
-void lock_vmem(void* pMem,unsigned __int32 bytes,void* puser);
+void* lock_vmem(void* pMem,unsigned __int32 bytes,void* puser);
+void  unlock_vmem(void* block);
+
 #include "stdafx.h"
 
 DWORD SH4HWRegistersGetValue(DWORD uAddress,DWORD uMask,DWORD uShift)
@@ -92,7 +94,8 @@ void CCacheTextures::End()
 		for (it=m_hashTextures.begin();it!=m_hashTextures.end();++it)
 		{
 			IDirect3DTexture9* pTexture = it->second.pTextureD3D;
-
+			if (it->second.plock)
+				unlock_vmem(it->second.plock);
 			if (pTexture)
 				pTexture->Release();
 		}
@@ -110,6 +113,7 @@ void CCacheTextures::InvalidateTexture(void* pData, void* pAux)
 	CCacheTextures::TTexture* pTexture = (CCacheTextures::TTexture*) pData;
 	CCacheTextures* pCacheTextures = (CCacheTextures*) pAux;
 
+	pTexture->plock=0;
 	pTexture->uFlags = CCacheTextures::TTexture::F_DIRTY;
 
 	pCacheTextures->m_listTexturesDirty.push_front(pTexture);
@@ -452,7 +456,7 @@ IDirect3DTexture9* CCacheTextures::GetTexture(const TTextureInfo* pTexInfo, void
       //FIXME
 			//g_pTextureMemoryMemHandler->ProtectMem(pBuffer,uBytes,InvalidateTexture,pTextureAux,this,NULL,true);
 
-		lock_vmem(pBuffer,uBytes,pTextureAux);
+		pTextureAux->plock = lock_vmem(pBuffer,uBytes,pTextureAux);
     }
 	
 

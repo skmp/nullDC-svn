@@ -59,6 +59,7 @@ public:
     DWORD aData[4];
     DWORD aOldData[4];
     void* pBuffer;
+	void* plock;
 	};
 
 	static void InvalidateTexture(void* pData, void* pAux);

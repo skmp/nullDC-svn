@@ -94,10 +94,15 @@ void vramLockCB(vram_block *bl, u32 addr)
 	param.vram_unlock(bl);
 }
 
-void lock_vmem(void* pMem,unsigned __int32 bytes,void* puser)
+void  unlock_vmem(void* block)
+{
+	param.vram_unlock((vram_block*)block);
+}
+void* lock_vmem(void* pMem,unsigned __int32 bytes,void* puser)
 {
 	size_t offset=((u8*)pMem)-param.vram;
 	vram_block* pblock =  param.vram_lock_64((u32)offset,(u32)offset + bytes -1,puser);
+	return pblock;
 }
 void TaFIFO(u32 address,u32* data,u32 size)
 {
