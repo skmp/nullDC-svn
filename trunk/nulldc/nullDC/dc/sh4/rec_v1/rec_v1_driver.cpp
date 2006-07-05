@@ -121,7 +121,7 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 //	pExitBlock=0;
 	rec_cycles=0;
 	SetFloatStatusReg();
-	while(rec_sh4_int_bCpuRun)
+	while(true)
 	{
 		rec_v1_BasicBlock* currBlock=GetRecompiledCode(pc);
 		//rec_cycles+=currBlock->cycles;
@@ -169,7 +169,7 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 #endif
 
 
-		if (rec_cycles>(CPU_TIMESLICE*0.9f))
+		if (rec_cycles>(CPU_TIMESLICE*9/10))
 		{
 			/*
 			if (rec_cycles>CPU_TIMESLICE*2)
@@ -183,13 +183,12 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 
 //			if (pExitBlock->Discarded)
 			//	pExitBlock=0;
-			if (UpdateSystem(rec_cycles))
-			{
-				//pExitBlock=0;
-			}
+			UpdateSystem(rec_cycles);
 #ifdef PROFILE_DYNAREC
 			total_cycles+=rec_cycles;
 #endif
+			if (rec_sh4_int_bCpuRun==false)
+				break;
 			rec_cycles=0;
 			//SetFloatStatusReg();
 		}
