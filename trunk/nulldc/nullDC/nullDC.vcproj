@@ -825,6 +825,14 @@
 				Name="mem"
 				>
 				<File
+					RelativePath=".\dc\mem\_vmem.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\dc\mem\_vmem.h"
+					>
+				</File>
+				<File
 					RelativePath=".\dc\mem\sh4_mem.cpp"
 					>
 				</File>

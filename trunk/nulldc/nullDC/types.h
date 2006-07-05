@@ -144,6 +144,9 @@
 
 #define VER_STRING "pre release alpha"
 
+#define verify(x) if((x)==false){ printf("Verify Failed  : " #x "\n in %s : %d \n",__FILE__,__LINE__);}
+
+//will be removed sometime soon
 //This shit needs to be moved to proper headers
 typedef u32  RegReadFP();
 typedef void RegWriteFP(u32 data);

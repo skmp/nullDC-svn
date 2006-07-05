@@ -202,6 +202,21 @@ u32 ReadMem_P4(u32 addr,u32 sz)
 	
 }
 
+
+void __fastcall WriteMem_sq_32(u32 addr,u32 data)
+{
+	u32 offset = (addr >> 2) & 7; // 3 bits
+
+	if ((addr & 0x20)) // 0: SQ0, 1: SQ1
+	{
+		sq1_dw[offset] = data;
+	}
+	else
+	{
+		sq0_dw[offset] = data;
+	}
+	return;
+}
 void WriteMem_P4(u32 addr,u32 data,u32 sz)
 {
 	if (((addr>>26)&0x7)==7)
@@ -217,21 +232,7 @@ void WriteMem_P4(u32 addr,u32 data,u32 sz)
 	case 0xE1:
 	case 0xE2:
 	case 0xE3:
-		if (sz==4)
-		{
-			u32 offset = (addr >> 2) & 7; // 3 bits
-
-			if ((addr & 0x20)) // 0: SQ0, 1: SQ1
-			{
-				sq1_dw[offset] = data;
-			}
-			else
-			{
-				sq0_dw[offset] = data;
-			}
-			return;
-		}
-		//printf("Unhandled p4 Write [Store queue] 0x%x",addr);
+		printf("Unhandled p4 Write [Store queue] 0x%x",addr);
 		break;
 
 	case 0xF0:

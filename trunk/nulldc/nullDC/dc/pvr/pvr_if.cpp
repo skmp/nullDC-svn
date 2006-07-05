@@ -3,6 +3,7 @@
 #include "pvrLock.h"
 #include "gui/base.h"
 #include "dc/sh4/intc.h"
+#include "dc/mem/_vmem.h"
 
 //TODO : move code later to a plugin
 //TODO : Fix registers arrays , they must be smaller now doe to the way SB registers are handled
@@ -241,29 +242,29 @@ void pvr_writereg_TA(u32 addr,u32 data,u32 sz)
 //vram 32-64b
 #ifdef vram_64b
 //read
-u8 pvr_read_area1_8(u32 addr)
+u8 __fastcall pvr_read_area1_8(u32 addr)
 {
 	printf("8 bit vram writes are not possible\n");
 	return 0;
 }
 
-u16 pvr_read_area1_16(u32 addr)
+u16 __fastcall pvr_read_area1_16(u32 addr)
 {
 	addr =vramlock_ConvAddrtoOffset64(addr);
 	return *(u16*)&vram[addr];
 }
-u32 pvr_read_area1_32(u32 addr)
+u32 __fastcall pvr_read_area1_32(u32 addr)
 {
 	addr =vramlock_ConvAddrtoOffset64(addr);
 	return *(u32*)&vram[addr ];
 }
 
 //write
-void pvr_write_area1_8(u32 addr,u8 data)
+void __fastcall pvr_write_area1_8(u32 addr,u8 data)
 {
 	printf("8 bit vram writes are not possible\n");
 }
-void pvr_write_area1_16(u32 addr,u16 data)
+void __fastcall pvr_write_area1_16(u32 addr,u16 data)
 {
 	u32 Address2=addr;
 	addr=vramlock_ConvAddrtoOffset64(addr);
@@ -274,7 +275,7 @@ void pvr_write_area1_16(u32 addr,u16 data)
 		*vptr=data;
 	}
 }
-void pvr_write_area1_32(u32 addr,u32 data)
+void __fastcall pvr_write_area1_32(u32 addr,u32 data)
 {
 	u32 Address2=addr;
 	addr=vramlock_ConvAddrtoOffset64(addr);
@@ -558,6 +559,33 @@ void TAWrite(u32 address,u32* data,u32 count)
 void pvr_Init()
 {
 	vram.Init(VRAM_SIZE);
+
+	_vmem_handler area1_32b = _vmem_register_handler(
+		pvr_read_area1_8,pvr_read_area1_16,pvr_read_area1_32,
+		pvr_write_area1_8,pvr_write_area1_16,pvr_write_area1_32);
+
+	//map ram
+	for (u32 i=0;i<0xDFFFFFFF;i+=0x20000000)
+	{		    
+		u32 start= 0x04000000 | i;
+		u32 end  =start+(VRAM_MASK);
+		start>>=16;
+		end>>=16;
+		
+		for (int j=0;j<2;j++)
+		{
+			printf("Mapping 0x%X to 0x%X to 64b pvr\n",start,end);
+			_vmem_map_block(vram.data,start,end);
+			start+=(0x01000000)>>16;
+			end+=(0x1000000)>>16;
+
+			printf("Mapping 0x%X to 0x%X to 32b pvr\n",start,end);
+			_vmem_map_handler(area1_32b,start,end);
+			start+=(0x1000000)>>16;
+			end+=(0x1000000)>>16;
+		}
+		
+	}
 }
 void pvr_Term()
 {

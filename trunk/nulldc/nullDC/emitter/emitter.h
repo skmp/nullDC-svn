@@ -117,7 +117,7 @@ void EmitAllocSet(void * ptr,u32 usedsize);
 template <int DefSize=64*1024>
 class emitter
 {
-private:
+public :
 	s8* x86Ptr_base;
 	s8* x86Ptr_end;
 
@@ -238,7 +238,7 @@ private:
 		return (u32*)( x86Ptr - 4 );
 	}
 
-public :
+
 	////////////////////////////////////////////////////
 	void x86Align( int bytes ) 
 	{

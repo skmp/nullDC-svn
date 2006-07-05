@@ -1,7 +1,6 @@
 #pragma once
 #include "types.h"
 
-
 #ifndef BUILD_NAOMI
 #define RAM_SIZE (16*1024*1024)
 #else
@@ -29,12 +28,22 @@ extern Array<u8> flash_b;
 
 #define MEMCALL __fastcall
 
-u8 MEMCALL ReadMem8(u32 addr);
-u16 MEMCALL ReadMem16(u32 addr);
-u32 MEMCALL ReadMem32(u32 addr);
-void MEMCALL WriteMem8(u32 addr,u8 data);
-void MEMCALL WriteMem16(u32 addr,u16 data);
-void MEMCALL WriteMem32(u32 addr,u32 data);
+#include "_vmem.h"
+
+//u8 MEMCALL ReadMem8(u32 addr);
+#define ReadMem8 _vmem_ReadMem8
+//u16 MEMCALL ReadMem16(u32 addr);
+#define ReadMem16 _vmem_ReadMem16
+//u32 MEMCALL ReadMem32(u32 addr);
+#define ReadMem32 _vmem_ReadMem32
+
+//void MEMCALL WriteMem8(u32 addr,u8 data);
+#define WriteMem8 _vmem_WriteMem8
+//void MEMCALL WriteMem16(u32 addr,u16 data);
+#define WriteMem16 _vmem_WriteMem16
+//void MEMCALL WriteMem32(u32 addr,u32 data);
+#define WriteMem32 _vmem_WriteMem32
+
 void MEMCALL WriteMemBlock(u32 addr,u32* data,u32 size);
 
 //Init/Res/Term

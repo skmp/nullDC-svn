@@ -9,6 +9,9 @@
 #include "dc/sh4/sh4_registers.h"
 #include "dc/dc.h"
 #include "dc/sh4/rec_v1/rec_v1_blockmanager.h"
+#include "_vmem.h"
+
+
 
 //main system mem
 VArray mem_b;
@@ -20,6 +23,110 @@ Array<u8> bios_b;
 Array<u8> flash_b;
 
 
+
+u8 MEMCALL ReadMem8_i(u32 addr);
+u16 MEMCALL ReadMem16_i(u32 addr);
+u32 MEMCALL ReadMem32_i(u32 addr);
+
+void MEMCALL WriteMem8_i(u32 addr,u8 data);
+void MEMCALL WriteMem16_i(u32 addr,u16 data);
+void MEMCALL WriteMem32_i(u32 addr,u32 data);
+
+void _vmem_init();
+void _vmem_reset();
+void _vmem_term();
+bool IsOnRamt(u32 addr)
+{
+	if (((addr>>26)&0x7)==3)
+	{
+		if ((((addr>>29) &0x7)!=7))
+		{
+			return true;
+		}
+	}
+
+	return false;
+
+}
+
+u8 MEMCALL ReadMem8_area7(u32 addr)
+{
+	return ReadMem_area7(addr,1);
+}
+u16 MEMCALL ReadMem16_area7(u32 addr)
+{
+	return ReadMem_area7(addr,2);
+}
+u32 MEMCALL ReadMem32_area7(u32 addr)
+{
+	return ReadMem_area7(addr,4);
+}
+
+void MEMCALL WriteMem8_area7(u32 addr,u8 data)
+{
+	WriteMem_area7(addr,data,1);
+}
+void MEMCALL WriteMem16_area7(u32 addr,u16 data)
+{
+	WriteMem_area7(addr,data,2);
+}
+void MEMCALL WriteMem32_area7(u32 addr,u32 data)
+{
+	WriteMem_area7(addr,data,4);
+}
+
+u8 MEMCALL ReadMem8_P4(u32 addr)
+{
+	return ReadMem_P4(addr,1);
+}
+u16 MEMCALL ReadMem16_P4(u32 addr)
+{
+	return ReadMem_P4(addr,2);
+}
+u32 MEMCALL ReadMem32_P4(u32 addr)
+{
+	return ReadMem_P4(addr,4);
+}
+
+void MEMCALL WriteMem8_P4(u32 addr,u8 data)
+{
+	WriteMem_P4(addr,data,1);
+}
+void MEMCALL WriteMem16_P4(u32 addr,u16 data)
+{
+	WriteMem_P4(addr,data,2);
+}
+void MEMCALL WriteMem32_P4(u32 addr,u32 data)
+{
+	WriteMem_P4(addr,data,4);
+}
+
+u8 MEMCALL ReadMem8_area0(u32 addr)
+{
+	return ReadMem_area0(addr,1);
+}
+u16 MEMCALL ReadMem16_area0(u32 addr)
+{
+	return ReadMem_area0(addr,2);
+}
+u32 MEMCALL ReadMem32_area0(u32 addr)
+{
+	return ReadMem_area0(addr,4);
+}
+
+void MEMCALL WriteMem8_area0(u32 addr,u8 data)
+{
+	WriteMem_area0(addr,data,1);
+}
+void MEMCALL WriteMem16_area0(u32 addr,u16 data)
+{
+	WriteMem_area0(addr,data,2);
+}
+void MEMCALL WriteMem32_area0(u32 addr,u32 data)
+{
+	WriteMem_area0(addr,data,4);
+}
+
 void mem_Init()
 {
 	//Allocate mem for memory/bios/flash
@@ -29,7 +136,60 @@ void mem_Init()
 
 	sh4_area0_Init();
 	sh4_internal_reg_Init();
+	//vmem
+	_vmem_init();
+	_vmem_handler def_handler =
+		_vmem_register_handler(ReadMem8_i,ReadMem16_i,ReadMem32_i,WriteMem8_i,WriteMem16_i,WriteMem32_i);
 
+	_vmem_map_handler(def_handler,0,0xFFFF);
+
+	//map ram
+	for (u32 i=0;i<0xDFFFFFFF;i+=0x20000000)
+	{
+		u32 start=0x0C000000 | i;
+		u32 end  =start+RAM_MASK;
+		start>>=16;
+		end>>=16;
+		for (u32 j=0;j<0x3FFFFFF;j+=RAM_SIZE)
+		{
+			_vmem_map_block(mem_b.data,start,end);
+			start+=(RAM_SIZE)>>16;
+			end+=(RAM_SIZE)>>16;
+		}
+	}
+
+	_vmem_handler p4_handler =
+		_vmem_register_handler(ReadMem8_P4,ReadMem16_P4,ReadMem32_P4,WriteMem8_P4,WriteMem16_P4,WriteMem32_P4);
+
+	//register this before area7 and SQ , so they overwrite it :)
+	//0xE0000000-0xFFFFFFFF
+	_vmem_map_handler(p4_handler,0xE000,0xFFFF);
+
+
+	_vmem_handler area0_handler =
+		_vmem_register_handler(ReadMem8_area0,ReadMem16_area0,ReadMem32_area0,WriteMem8_area0,WriteMem16_area0,WriteMem32_area0);
+	_vmem_handler area7_handler =
+		_vmem_register_handler(ReadMem8_area7,ReadMem16_area7,ReadMem32_area7,WriteMem8_area7,WriteMem16_area7,WriteMem32_area7);
+
+
+	for (u32 i=0;i<0xFFFF;i+=0x2000)
+	{			  
+		u32 start=0x1C00 | i;
+		u32 end  =start+0x3FF;
+
+		_vmem_map_handler(area7_handler,start,end);
+
+		if (i<0xE000)
+		{
+			start=0x0000 | i;
+			end  =start+0x3FF;
+			_vmem_map_handler(area0_handler,start,end);
+		}
+	}
+
+	_vmem_handler sq_handler =
+		_vmem_register_handler(0,0,0,0,0,WriteMem_sq_32);
+	_vmem_map_handler(sq_handler,0xE000,0xE3FF);
 }
 
 //Reset Sysmem/Regs -- Pvr is not changed , bios/flash are not zero'd out
@@ -49,7 +209,7 @@ void mem_Reset(bool Manual)
 
 	//Reset registers
 	sh4_area0_Reset(Manual);
-	sh4_internal_reg_Reset(Manual);
+	sh4_internal_reg_Reset(Manual);;
 }
 
 void mem_Term()
@@ -66,40 +226,14 @@ void mem_Term()
 
 	sh4_internal_reg_Term();
 	sh4_area0_Term();
+	//vmem
+	_vmem_term();
 }
 
 FILE* F_OUT;
 FILE* F_IN;
 #include "dc\sh4\sh4_interpreter.h"
-void WriteTest(u32 dddd)
-{
-	if (!F_OUT)
-	{
-		if ((sh4_cpu->Run==Sh4_int_Run))
-		{
-			F_IN=fopen("f:/reg_rec.log","rb");
-			F_OUT=fopen("f:/reg_int.log","wb");
-		}
-		else
-		{
-			F_IN=fopen("f:/reg_int.log","rb");
-			F_OUT=fopen("f:/reg_rec.log","wb");
-		}
-	}
-
-	fwrite(&dddd,1,4,F_OUT);
-	u32 t_dddd;
-	if (F_IN)
-	{
-		fread(&t_dddd,1,4,F_IN);
-
-		if (t_dddd!=dddd)
-		{
-			MEM_DO_BREAK;
-		}
-	}
-}
-u8 MEMCALL ReadMem8(u32 addr)
+u8 MEMCALL ReadMem8_i(u32 addr)
 {
 	//if P4
 	if (((addr>>29) &0x7)==7)
@@ -153,7 +287,7 @@ u8 MEMCALL ReadMem8(u32 addr)
 	return 0;
 }
 
-u16 MEMCALL ReadMem16(u32 addr)
+u16 MEMCALL ReadMem16_i(u32 addr)
 {
 #ifdef TRACE
 	if (addr&0x1)
@@ -214,7 +348,7 @@ u16 MEMCALL ReadMem16(u32 addr)
 	return 0;
 }
 
-u32 MEMCALL ReadMem32(u32 addr)
+u32 MEMCALL ReadMem32_i(u32 addr)
 {
 #ifdef TRACE
 	if (addr&0x3)
@@ -276,7 +410,7 @@ u32 MEMCALL ReadMem32(u32 addr)
 }
 
 
-void MEMCALL WriteMem8(u32 addr,u8 data)
+void MEMCALL WriteMem8_i(u32 addr,u8 data)
 {
 	//WriteTest(addr,data);
 	//if P4
@@ -337,7 +471,7 @@ void MEMCALL WriteMem8(u32 addr,u8 data)
 	EMUERROR3("Write to Mem not implemented , addr=%x,data=%x",addr,data);
 }
 
-void MEMCALL WriteMem16(u32 addr,u16 data)
+void MEMCALL WriteMem16_i(u32 addr,u16 data)
 {
 	//WriteTest(addr,data);
 #ifdef TRACE
@@ -467,7 +601,7 @@ fallback:
 		WriteMem32(addr+i,data[i>>2]);
 	}
 }
-void MEMCALL WriteMem32(u32 addr,u32 data)
+void MEMCALL WriteMem32_i(u32 addr,u32 data)
 {
 	//WriteTest(addr,data);
 #ifdef TRACE
@@ -572,7 +706,6 @@ u8* GetMemPtr(u32 Addr,u32 size)
 			printf("Get MemPtr not suported area ; addr=0x%X",Addr);
 			return &bios_b[0];
 	}
-			
 }
 
 //Get infomation about an area , eg ram /size /anything
