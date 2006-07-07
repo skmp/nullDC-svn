@@ -1,4 +1,3 @@
-
 #include "types.h"
 #include <windows.h>
 
@@ -56,23 +55,7 @@ INLINE rec_v1_BasicBlock* __fastcall GetRecompiledCode(u32 pc)
 		return block;
 	}
 }
-/*
-rec_v1_BasicBlock* rec_v1_FindOrAnalyse(u32 pc)
-{
-	rec_v1_BasicBlock* block=rec_v1_FindBlock(pc);
-	
-	if (block)
-		return block;
-	else
-	{
-		block=rec_v1_AddBlock(pc);
-		//analyse code
-		rec_v1_AnalyseCode(pc,block);
-		//compile code
-		//return pointer
-		return block;
-	}
-}*/
+
 rec_v1_BasicBlock* rec_v1_FindOrRecompileCode(u32 pc)
 {
 	return GetRecompiledCode(pc);
@@ -168,21 +151,8 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 		}
 #endif
 
-
 		if (rec_cycles>(CPU_TIMESLICE*9/10))
 		{
-			/*
-			if (rec_cycles>CPU_TIMESLICE*2)
-			{
-				printf("rec_cycles>CPU_TIMESLICE*2 !!!\n");
-				if (rec_cycles>CPU_TIMESLICE*3)
-					printf("rec_cycles>CPU_TIMESLICE*3 !!!\n");
-				printf("rec_cycles=%d\n",rec_cycles);
-			}
-			*/
-
-//			if (pExitBlock->Discarded)
-			//	pExitBlock=0;
 			UpdateSystem(rec_cycles);
 #ifdef PROFILE_DYNAREC
 			total_cycles+=rec_cycles;
@@ -190,7 +160,6 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 			if (rec_sh4_int_bCpuRun==false)
 				break;
 			rec_cycles=0;
-			//SetFloatStatusReg();
 		}
 	}
 	ptr(false);//call the callback

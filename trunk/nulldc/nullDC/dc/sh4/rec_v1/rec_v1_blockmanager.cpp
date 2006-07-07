@@ -40,6 +40,7 @@ using namespace std;
 
 #define BLOCK_LUT_GUESS
 
+//rec_v1_BasicBlock* Blockz[RAM_SIZE>>1];
 //
 //helper list class
 int compare_BlockLookups(const void * a, const void * b)
@@ -254,6 +255,9 @@ rec_v1_BasicBlock* rec_v1_FindBlock(u32 address)
 {
 	rec_v1_BasicBlock* thisblock;
 
+	//if (((address>>26)&0x7)==3)
+	//	return Blockz[((address&RAM_MASK)>>1)];
+
 	#ifdef BLOCK_LUT_GUESS
 	rec_v1_BasicBlock* fastblock;
 
@@ -324,7 +328,7 @@ void rec_v1_RegisterBlock(rec_v1_BasicBlock* block)
 	u32 end=(block->end&RAM_MASK)/PAGE_SIZE;
 
 	bool ManualCheck=false;
-	for (int i=start;i<=end;i++)
+	for (u32 i=start;i<=end;i++)
 	{
 		ManualCheck|=PageInfo[i].flags.ManualCheck;
 	}
@@ -340,6 +344,7 @@ void rec_v1_RegisterBlock(rec_v1_BasicBlock* block)
 	
 	if (((block->start >>26)&0x7)==3)
 	{	//Care about invalidates olny if on ram
+		//Blockz[((block->start&RAM_MASK)>>1)]=block;
 		for (u32 i=start;i<=end;i++)
 		{
 			if (PageInfo[i].flags.ManualCheck==0)
@@ -365,6 +370,7 @@ void rec_v1_UnRegisterBlock(rec_v1_BasicBlock* block)
 
 	if (((block->start >>26)&0x7)==3)
 	{	//Care about invalidates olny if on ram
+		//Blockz[((block->start&RAM_MASK)>>1)]=0;
 		for (u32 i=start;i<=end;i++)
 		{
 			if (PageInfo[i].flags.ManualCheck==0)

@@ -117,12 +117,12 @@ sh4op(i0000_nnnn_1000_0011)
 		u32 Address, QACR;
 		if (((Dest >> 5) & 0x1) == 0)
 		{
-			sq = sq0_dw;
+			sq = (u32*)&sq_both[0];
 			QACR = CCN_QACR0.Area;
 		}
 		else
 		{
-			sq = sq1_dw;
+			sq = (u32*)&sq_both[32];
 			QACR = CCN_QACR1.Area;
 		}
 
