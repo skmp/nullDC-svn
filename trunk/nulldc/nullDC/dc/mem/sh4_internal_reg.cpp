@@ -11,9 +11,14 @@
 #include "dc/sh4/scif.h"
 #include "dc/sh4/tmu.h"
 #include "dc/sh4/ubc.h"
+#include "_vmem.h"
 
-u32 sq0_dw[8];
-u32 sq1_dw[8];
+//64bytes of sq
+__declspec(align(32)) u8 sq_both[64];
+
+//i know , its because of templates :)
+#pragma warning( disable : 4127 /*4244*/)
+
 Array<u8> OnChipRAM;
 
 //All registers are 4 byte alligned
@@ -31,7 +36,8 @@ Array<RegisterStruct> SCIF(10,true);		//SCIF : 10 registers
 
 
 //helper functions
-INLINE u32 RegSRead(Array<RegisterStruct>& reg,u32 offset,u32 size)
+template <u32 size>
+INLINE u32 RegSRead(Array<RegisterStruct>& reg,u32 offset)
 {
 #ifdef TRACE
 	if (offset & 3/*(size-1)*/) //4 is min allign size
@@ -77,8 +83,8 @@ INLINE u32 RegSRead(Array<RegisterStruct>& reg,u32 offset,u32 size)
 		EMUERROR2("Read from internal Regs , not  implemented , offset=%x",offset);
 	return 0;
 }
-
-INLINE void RegSWrite(Array<RegisterStruct>& reg,u32 offset,u32 data,u32 size)
+template <u32 size>
+INLINE void RegSWrite(Array<RegisterStruct>& reg,u32 offset,u32 data)
 {
 #ifdef TRACE
 	if (offset & 3/*(size-1)*/) //4 is min allign size
@@ -133,12 +139,14 @@ offset>>=2;
 }
 
 //Region P4
-u32 ReadMem_P4(u32 addr,u32 sz)
+//Read P4
+template <u32 sz,class T>
+T __fastcall ReadMem_P4(u32 addr)
 {
-	if (((addr>>26)&0x7)==7)
+	/*if (((addr>>26)&0x7)==7)
 	{
 		return ReadMem_area7(addr,sz);	
-	}
+	}*/
 
 	switch((addr>>24)&0xFF)
 	{
@@ -190,7 +198,8 @@ u32 ReadMem_P4(u32 addr,u32 sz)
 		break;
 
 	case 0xFF:
-		return ReadMem_area7(addr,sz);
+		printf("Unhandled p4 read [area7] 0x%x\n",addr);
+		break;
 
 	default:
 		printf("Unhandled p4 read [Reserved] 0x%x\n",addr);
@@ -201,29 +210,15 @@ u32 ReadMem_P4(u32 addr,u32 sz)
 	return 0;
 	
 }
-
-
-void __fastcall WriteMem_sq_32(u32 addr,u32 data)
+//Write P4
+template <u32 sz,class T>
+void __fastcall WriteMem_P4(u32 addr,T data)
 {
-	u32 offset = (addr >> 2) & 7; // 3 bits
-
-	if ((addr & 0x20)) // 0: SQ0, 1: SQ1
-	{
-		sq1_dw[offset] = data;
-	}
-	else
-	{
-		sq0_dw[offset] = data;
-	}
-	return;
-}
-void WriteMem_P4(u32 addr,u32 data,u32 sz)
-{
-	if (((addr>>26)&0x7)==7)
+	/*if (((addr>>26)&0x7)==7)
 	{
 		WriteMem_area7(addr,data,sz);	
 		return;
-	}
+	}*/
 
 	switch((addr>>24)&0xFF)
 	{
@@ -275,7 +270,7 @@ void WriteMem_P4(u32 addr,u32 data,u32 sz)
 		break;
 
 	case 0xFF:
-		WriteMem_area7(addr,data,sz);
+		printf("Unhandled p4 Write [area7] 0x%x = %x\n",addr,data);
 		break;
 
 	default:
@@ -287,31 +282,74 @@ void WriteMem_P4(u32 addr,u32 data,u32 sz)
 }
 
 
-//Area 7
-u32 ReadMem_area7(u32 addr,u32 sz)
+//***********
+//Store Queue
+//***********
+//TODO : replace w/ mem mapped array
+//Read SQ
+template <u32 sz,class T>
+T __fastcall ReadMem_sq(u32 addr)
 {
-	if (CCN_CCR.ORA)
+	//isnt all this the same as
+	//sq_byteptr[addr&0x3F] 
+	//?
+	if (sz!=4)
 	{
-		if ((addr>=0x7c000000) && (addr<=0x7FFFFFFF))
-		{
-			if (sz==1)
-				return OnChipRAM[addr&OnChipRAM_MASK];
-			else if (sz==2)
-				return *(u16*)&OnChipRAM[addr&OnChipRAM_MASK];
-			else if (sz==4)
-				return *(u32*)&OnChipRAM[addr&OnChipRAM_MASK];
-
-			return 0;
-		}
+		printf("Store Queue Error , olny 4 byte read are possible[x%X]\n",addr);
+		return 0xDE;
 	}
+	//u32 offset = (addr >> 2) & 7; // 3 bits
+	u32 united_offset=addr & 0x3C;
 
+	//if ((addr & 0x20)) // 0: SQ0, 1: SQ1
+	//{
+	//	return sq1_dw[offset];
+	//}
+	//else
+	//{
+	//	return sq0_dw[offset];
+	//}	
+	return (T)*(u32*)&sq_both[united_offset];
+}
+
+
+//Write SQ
+template <u32 sz,class T>
+void __fastcall WriteMem_sq(u32 addr,T data)
+{
+	if (sz!=4)
+		printf("Store Queue Error , olny 4 byte writes are possible[x%X=0x%X]\n",addr,data);
+	//u32 offset = (addr >> 2) & 7; // 3 bits
+	u32 united_offset=addr & 0x3C;
+
+	/*if ((addr & 0x20)) // 0: SQ0, 1: SQ1
+	{
+		sq1_dw[offset] = data;
+	}
+	else
+	{
+		sq0_dw[offset] = data;
+	}
+	return;*/
+
+	*(u32*)&sq_both[united_offset]=data;
+}
+
+
+//***********
+//**Area  7**
+//***********
+//Read Area7
+template <u32 sz,class T,u32 map_base>
+T __fastcall ReadMem_area7(u32 addr)
+{
 	addr&=0x1FFFFFFF;
-	switch (A7_REG_HASH(addr))
+	switch (map_base & 0x1FFF)
 	{
 	case A7_REG_HASH(CCN_BASE_addr):
 		if (addr<=0x1F00003C)
 		{
-			return RegSRead(CCN,addr & 0xFF,sz);
+			return (T)RegSRead<sz>(CCN,addr & 0xFF);
 		}
 		else
 		{
@@ -322,7 +360,7 @@ u32 ReadMem_area7(u32 addr,u32 sz)
 	case A7_REG_HASH(UBC_BASE_addr):
 		if (addr<=0x1F200020)
 		{
-			return RegSRead(UBC,addr & 0xFF,sz);
+			return (T)RegSRead<sz>(UBC,addr & 0xFF);
 		}
 		else
 		{
@@ -333,7 +371,7 @@ u32 ReadMem_area7(u32 addr,u32 sz)
 	case A7_REG_HASH(BSC_BASE_addr):
 		if (addr<=0x1F800048)
 		{
-			return RegSRead(BSC,addr & 0xFF,sz);
+			return (T)RegSRead<sz>(BSC,addr & 0xFF);
 		}
 		else if ((addr>=BSC_SDMR2_addr) && (addr<= 0x1F90FFFF))
 		{
@@ -356,7 +394,7 @@ u32 ReadMem_area7(u32 addr,u32 sz)
 	case A7_REG_HASH(DMAC_BASE_addr):
 		if (addr<=0x1FA00040)
 		{
-			return RegSRead(DMAC,addr & 0xFF,sz);
+			return (T)RegSRead<sz>(DMAC,addr & 0xFF);
 		}
 		else
 		{
@@ -367,7 +405,7 @@ u32 ReadMem_area7(u32 addr,u32 sz)
 	case A7_REG_HASH(CPG_BASE_addr):
 		if (addr<=0x1FC00010)
 		{
-			return RegSRead(CPG,addr & 0xFF,sz);
+			return (T)RegSRead<sz>(CPG,addr & 0xFF);
 		}
 		else
 		{
@@ -378,7 +416,7 @@ u32 ReadMem_area7(u32 addr,u32 sz)
 	case A7_REG_HASH(RTC_BASE_addr):
 		if (addr<=0x1FC8003C)
 		{
-			return RegSRead(RTC,addr & 0xFF,sz);
+			return (T)RegSRead<sz>(RTC,addr & 0xFF);
 		}
 		else
 		{
@@ -389,7 +427,7 @@ u32 ReadMem_area7(u32 addr,u32 sz)
 	case A7_REG_HASH(INTC_BASE_addr):
 		if (addr<=0x1FD0000C)
 		{
-			return RegSRead(INTC,addr & 0xFF,sz);
+			return (T)RegSRead<sz>(INTC,addr & 0xFF);
 		}
 		else
 		{
@@ -400,7 +438,7 @@ u32 ReadMem_area7(u32 addr,u32 sz)
 	case A7_REG_HASH(TMU_BASE_addr):
 		if (addr<=0x1FD8002C)
 		{
-			return RegSRead(TMU,addr & 0xFF,sz);
+			return (T)RegSRead<sz>(TMU,addr & 0xFF);
 		}
 		else
 		{
@@ -411,7 +449,7 @@ u32 ReadMem_area7(u32 addr,u32 sz)
 	case A7_REG_HASH(SCI_BASE_addr):
 		if (addr<=0x1FE0001C)
 		{
-			return RegSRead(SCI,addr & 0xFF,sz);
+			return (T)RegSRead<sz>(SCI,addr & 0xFF);
 		}
 		else
 		{
@@ -422,7 +460,7 @@ u32 ReadMem_area7(u32 addr,u32 sz)
 	case A7_REG_HASH(SCIF_BASE_addr):
 		if (addr<=0x1FE80024)
 		{
-			return RegSRead(SCIF,addr & 0xFF,sz);
+			return (T)RegSRead<sz>(SCIF,addr & 0xFF);
 		}
 		else
 		{
@@ -451,31 +489,18 @@ u32 ReadMem_area7(u32 addr,u32 sz)
 	return 0;
 }
 
-void WriteMem_area7(u32 addr,u32 data,u32 sz)
+//Write Area7
+template <u32 sz,class T,u32 map_base>
+void __fastcall WriteMem_area7(u32 addr,T data)
 {
-	if (CCN_CCR.ORA)
-	{
-		if ((addr>=0x7c000000) && (addr<=0x7FFFFFFF))
-		{
-			//ReadMemFromPtrRet(OnChipRAM,(adr&0x1FFF),sz);
-			if (sz==1)
-				OnChipRAM[addr&OnChipRAM_MASK]=(u8)data;
-			else if (sz==2)
-				*(u16*)&OnChipRAM[addr&OnChipRAM_MASK]=(u16)data;
-			else if (sz==4)
-				*(u32*)&OnChipRAM[addr&OnChipRAM_MASK]=data;
-
-			return;
-		}
-	}
 	addr&=0x1FFFFFFF;
-	switch (A7_REG_HASH(addr))
+	switch (map_base & 0x1FFF)
 	{
 
 	case A7_REG_HASH(CCN_BASE_addr):
 		if (addr<=0x1F00003C)
 		{
-			RegSWrite(CCN,addr & 0xFF,data,sz);
+			RegSWrite<sz>(CCN,addr & 0xFF,data);
 			return;
 		}
 		else
@@ -487,7 +512,7 @@ void WriteMem_area7(u32 addr,u32 data,u32 sz)
 	case A7_REG_HASH(UBC_BASE_addr):
 		if (addr<=0x1F200020)
 		{
-			RegSWrite(UBC,addr & 0xFF,data,sz);
+			RegSWrite<sz>(UBC,addr & 0xFF,data);
 			return;
 		}
 		else
@@ -499,7 +524,7 @@ void WriteMem_area7(u32 addr,u32 data,u32 sz)
 	case A7_REG_HASH(BSC_BASE_addr):
 		if (addr<=0x1F800048)
 		{
-			RegSWrite(BSC,addr & 0xFF,data,sz);
+			RegSWrite<sz>(BSC,addr & 0xFF,data);
 			return;
 		}
 		else if ((addr>=BSC_SDMR2_addr) && (addr<= 0x1F90FFFF))
@@ -523,7 +548,7 @@ void WriteMem_area7(u32 addr,u32 data,u32 sz)
 	case A7_REG_HASH(DMAC_BASE_addr):
 		if (addr<=0x1FA00040)
 		{
-			RegSWrite(DMAC,addr & 0xFF,data,sz);
+			RegSWrite<sz>(DMAC,addr & 0xFF,data);
 			return;
 		}
 		else
@@ -535,7 +560,7 @@ void WriteMem_area7(u32 addr,u32 data,u32 sz)
 	case A7_REG_HASH(CPG_BASE_addr):
 		if (addr<=0x1FC00010)
 		{
-			RegSWrite(CPG,addr & 0xFF,data,sz);
+			RegSWrite<sz>(CPG,addr & 0xFF,data);
 			return;
 		}
 		else
@@ -547,7 +572,7 @@ void WriteMem_area7(u32 addr,u32 data,u32 sz)
 	case A7_REG_HASH(RTC_BASE_addr):
 		if (addr<=0x1FC8003C)
 		{
-			RegSWrite(RTC,addr & 0xFF,data,sz);
+			RegSWrite<sz>(RTC,addr & 0xFF,data);
 			return;
 		}
 		else
@@ -559,7 +584,7 @@ void WriteMem_area7(u32 addr,u32 data,u32 sz)
 	case A7_REG_HASH(INTC_BASE_addr):
 		if (addr<=0x1FD0000C)
 		{
-			RegSWrite(INTC,addr & 0xFF,data,sz);
+			RegSWrite<sz>(INTC,addr & 0xFF,data);
 			return;
 		}
 		else
@@ -571,7 +596,7 @@ void WriteMem_area7(u32 addr,u32 data,u32 sz)
 	case A7_REG_HASH(TMU_BASE_addr):
 		if (addr<=0x1FD8002C)
 		{
-			RegSWrite(TMU,addr & 0xFF,data,sz);
+			RegSWrite<sz>(TMU,addr & 0xFF,data);
 			return;
 		}
 		else
@@ -583,7 +608,7 @@ void WriteMem_area7(u32 addr,u32 data,u32 sz)
 	case A7_REG_HASH(SCI_BASE_addr):
 		if (addr<=0x1FE0001C)
 		{
-			RegSWrite(SCI,addr & 0xFF,data,sz);
+			RegSWrite<sz>(SCI,addr & 0xFF,data);
 			return;
 		}
 		else
@@ -595,7 +620,7 @@ void WriteMem_area7(u32 addr,u32 data,u32 sz)
 	case A7_REG_HASH(SCIF_BASE_addr):
 		if (addr<=0x1FE80024)
 		{
-			RegSWrite(SCIF,addr & 0xFF,data,sz);
+			RegSWrite<sz>(SCIF,addr & 0xFF,data);
 			return;
 		}
 		else
@@ -621,6 +646,58 @@ void WriteMem_area7(u32 addr,u32 data,u32 sz)
 	}
 
 	EMUERROR3("Write to Area7 not implemented , addr=%x,data=%x",addr,data);
+}
+
+
+//***********
+//On Chip Ram
+//***********
+//Read OCR
+template <u32 sz,class T>
+T __fastcall ReadMem_area7_OCR_T(u32 addr)
+{
+	if (CCN_CCR.ORA)
+	{
+		if (sz==1)
+			return (T)OnChipRAM[addr&OnChipRAM_MASK];
+		else if (sz==2)
+			return (T)*(u16*)&OnChipRAM[addr&OnChipRAM_MASK];
+		else if (sz==4)
+			return (T)*(u32*)&OnChipRAM[addr&OnChipRAM_MASK];
+		else
+		{
+			printf("ReadMem_area7_OCR_T: template SZ is wrong = %d\n",sz);
+			return 0xDE;
+		}
+	}
+	else
+	{
+		printf("On Chip Ram Read ; but OCR is disabled\n");
+		return 0xDE;
+	}
+}
+
+//Write OCR
+template <u32 sz,class T>
+void __fastcall WriteMem_area7_OCR_T(u32 addr,T data)
+{
+	if (CCN_CCR.ORA)
+	{
+		if (sz==1)
+			OnChipRAM[addr&OnChipRAM_MASK]=(u8)data;
+		else if (sz==2)
+			*(u16*)&OnChipRAM[addr&OnChipRAM_MASK]=(u16)data;
+		else if (sz==4)
+			*(u32*)&OnChipRAM[addr&OnChipRAM_MASK]=data;
+		else
+		{
+			printf("WriteMem_area7_OCR_T: template SZ is wrong = %d\n",sz);
+		}
+	}
+	else
+	{
+		printf("On Chip Ram Write ; but OCR is disabled\n");
+	}
 }
 
 //Init/Res/Term
@@ -685,4 +762,87 @@ void sh4_internal_reg_Term()
 	ccn_Term();
 	bsc_Term();
 	OnChipRAM.Free();
+}
+//Mem map :)
+
+//AREA 7	--	Sh4 Regs
+_vmem_handler area7_handler;
+_vmem_handler area7_handler_1F00;
+_vmem_handler area7_handler_1F20;
+_vmem_handler area7_handler_1F80;
+_vmem_handler area7_handler_1FA0;
+_vmem_handler area7_handler_1FC0;
+_vmem_handler area7_handler_1FC8;
+_vmem_handler area7_handler_1FD0;
+_vmem_handler area7_handler_1FD8;
+_vmem_handler area7_handler_1FE0;
+_vmem_handler area7_handler_1FE8;
+_vmem_handler area7_handler_1FF0;
+
+_vmem_handler area7_orc_handler;
+
+void map_area7_init()
+{
+	//=_vmem_register_handler(ReadMem8_area7,ReadMem16_area7,ReadMem32_area7,
+	//									WriteMem8_area7,WriteMem16_area7,WriteMem32_area7);
+
+	//default area7 handler
+	area7_handler= _vmem_register_handler_Template1(ReadMem_area7,WriteMem_area7,0);
+	
+#define Make_a7_handler(base) area7_handler_##base=_vmem_register_handler_Template1(ReadMem_area7,WriteMem_area7,0x##base);
+	Make_a7_handler(1F00);
+	Make_a7_handler(1F20);
+	Make_a7_handler(1F80);
+	Make_a7_handler(1FA0);
+	Make_a7_handler(1FC0);
+	Make_a7_handler(1FC8);
+	Make_a7_handler(1FD0);
+	Make_a7_handler(1FD8);
+	Make_a7_handler(1FE0);
+	Make_a7_handler(1FE8);
+	Make_a7_handler(1FF0);
+
+	area7_orc_handler= _vmem_register_handler_Template(ReadMem_area7_OCR_T,WriteMem_area7_OCR_T);
+}
+void map_area7(u32 base)
+{
+	//OCR @
+	//((addr>=0x7C000000) && (addr<=0x7FFFFFFF))
+	if (base==0x6000)
+		_vmem_map_handler(area7_orc_handler,0x1C00 | base , 0x1FFF| base);
+	else
+	{
+		_vmem_map_handler(area7_handler,0x1C00 | base , 0x1FFF| base);
+
+#define mmap_a7_handler(mbase) _vmem_map_handler(area7_handler_##mbase,0x##mbase | base , 0x##mbase| base);
+
+		mmap_a7_handler(1F00);
+		mmap_a7_handler(1F20);
+		mmap_a7_handler(1F80);
+		mmap_a7_handler(1FA0);
+		mmap_a7_handler(1FC0);
+		mmap_a7_handler(1FC8);
+		mmap_a7_handler(1FD0);
+		mmap_a7_handler(1FD8);
+		mmap_a7_handler(1FE0);
+		mmap_a7_handler(1FE8);
+		mmap_a7_handler(1FF0);
+	}
+}
+
+//P4
+void map_p4()
+{
+	//P4 Region :
+	_vmem_handler p4_handler =	_vmem_register_handler_Template(ReadMem_P4,WriteMem_P4);
+
+	//register this before area7 and SQ , so they overwrite it and handle em :)
+	//Defualt P4 handler
+	//0xE0000000-0xFFFFFFFF
+	_vmem_map_handler(p4_handler,0xE000,0xFFFF);
+
+	//Store Queues	--	Write olny 32bit (well , they can be readed too btw)
+	_vmem_handler sq_handler =_vmem_register_handler_Template(ReadMem_sq,WriteMem_sq);
+	_vmem_map_handler(sq_handler,0xE000,0xE3FF);
+	map_area7(0xE000);
 }

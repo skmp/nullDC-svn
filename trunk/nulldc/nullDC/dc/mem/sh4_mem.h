@@ -50,6 +50,7 @@ void MEMCALL WriteMemBlock(u32 addr,u32* data,u32 size);
 void mem_Init();
 void mem_Term();
 void mem_Reset(bool Manual);
+void mem_map_defualt();
 
 //Generic read/write functions for debugger
 bool ReadMem_DB(u32 addr,u32& data,u32 size );

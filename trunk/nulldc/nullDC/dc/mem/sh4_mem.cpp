@@ -35,98 +35,164 @@ void MEMCALL WriteMem32_i(u32 addr,u32 data);
 void _vmem_init();
 void _vmem_reset();
 void _vmem_term();
-bool IsOnRamt(u32 addr)
+
+//MEM MAPPINNGG
+
+//AREA 1
+_vmem_handler area1_32b;
+void map_area1_init()
 {
-	if (((addr>>26)&0x7)==3)
+	area1_32b = _vmem_register_handler(pvr_read_area1_8,pvr_read_area1_16,pvr_read_area1_32,
+									pvr_write_area1_8,pvr_write_area1_16,pvr_write_area1_32);
+}
+
+void map_area1(u32 base)
+{
+	//map vram
+	
+	//if vram is 8 mb , it mirrors ?
+
+	//64b interface
+	u32 start= 0x0400 | base;
+	u32 end  = start+(VRAM_MASK>>16);
+	_vmem_map_block(vram.data,start,end);
+	
+	//32b interface
+	start= 0x0500 | base;
+	end  = start+(VRAM_MASK>>16);
+	_vmem_map_handler(area1_32b,start,end);
+
+	//upper 32mb mirror lower 32 mb
+	//0x0600 to 0x07FF
+	_vmem_mirror_mapping(0x0600|base,0x0400|base,0x0200);
+}
+
+//AREA 2
+void map_area2_init()
+{
+	//nothing to map :p
+}
+
+void map_area2(u32 base)
+{
+	//nothing to map :p
+}
+
+
+//AREA 3
+void map_area3_init()
+{
+}
+
+void map_area3(u32 base)
+{
+	u32 start = 0x0C00 | base;
+	u32 end   = start+(RAM_MASK>>16);
+	//Map top 32 mb (16 mb mirrored , or 32mb , depending on naomi/dc)
+	for (u32 j=0;j<0x1FFFFFF;j+=RAM_SIZE)
 	{
-		if ((((addr>>29) &0x7)!=7))
-		{
-			return true;
-		}
+		_vmem_map_block(mem_b.data,start,end);
+		start+=(RAM_SIZE)>>16;
+		end+=(RAM_SIZE)>>16;
 	}
 
-	return false;
-
+	//upper 32mb mirror lower 32 mb
+	_vmem_mirror_mapping(0x0E00|base,0x0C00|base,0x0200);
 }
 
-u8 MEMCALL ReadMem8_area7(u32 addr)
+//AREA 4
+void map_area4_init()
 {
-	return ReadMem_area7(addr,1);
-}
-u16 MEMCALL ReadMem16_area7(u32 addr)
-{
-	return ReadMem_area7(addr,2);
-}
-u32 MEMCALL ReadMem32_area7(u32 addr)
-{
-	return ReadMem_area7(addr,4);
+	
 }
 
-void MEMCALL WriteMem8_area7(u32 addr,u8 data)
+void map_area4(u32 base)
 {
-	WriteMem_area7(addr,data,1);
+	//TODO : map later
+
+	//upper 32mb mirror lower 32 mb
+	_vmem_mirror_mapping(0x1200|base,0x1000|base,0x0200);
 }
-void MEMCALL WriteMem16_area7(u32 addr,u16 data)
+//AREA 5	--	Ext. Device
+void map_area5_init()
 {
-	WriteMem_area7(addr,data,2);
-}
-void MEMCALL WriteMem32_area7(u32 addr,u32 data)
-{
-	WriteMem_area7(addr,data,4);
+	
 }
 
-u8 MEMCALL ReadMem8_P4(u32 addr)
+void map_area5(u32 base)
 {
-	return ReadMem_P4(addr,1);
-}
-u16 MEMCALL ReadMem16_P4(u32 addr)
-{
-	return ReadMem_P4(addr,2);
-}
-u32 MEMCALL ReadMem32_P4(u32 addr)
-{
-	return ReadMem_P4(addr,4);
+	//TODO : map later
 }
 
-void MEMCALL WriteMem8_P4(u32 addr,u8 data)
+//AREA 6	--	Unassigned 
+void map_area6_init()
 {
-	WriteMem_P4(addr,data,1);
+	//nothing to map :p
 }
-void MEMCALL WriteMem16_P4(u32 addr,u16 data)
+void map_area6(u32 base)
 {
-	WriteMem_P4(addr,data,2);
-}
-void MEMCALL WriteMem32_P4(u32 addr,u32 data)
-{
-	WriteMem_P4(addr,data,4);
+	//nothing to map :p
 }
 
-u8 MEMCALL ReadMem8_area0(u32 addr)
-{
-	return ReadMem_area0(addr,1);
-}
-u16 MEMCALL ReadMem16_area0(u32 addr)
-{
-	return ReadMem_area0(addr,2);
-}
-u32 MEMCALL ReadMem32_area0(u32 addr)
-{
-	return ReadMem_area0(addr,4);
-}
 
-void MEMCALL WriteMem8_area0(u32 addr,u8 data)
+//set vmem to defualt values
+void mem_map_defualt()
 {
-	WriteMem_area0(addr,data,1);
-}
-void MEMCALL WriteMem16_area0(u32 addr,u16 data)
-{
-	WriteMem_area0(addr,data,2);
-}
-void MEMCALL WriteMem32_area0(u32 addr,u32 data)
-{
-	WriteMem_area0(addr,data,4);
-}
+	//vmem - init/reset :)
+	_vmem_init();
 
+	
+	//*TEMP*
+	//setup a fallback handler , that calls old code :)
+	//_vmem_handler def_handler =
+	//	_vmem_register_handler(ReadMem8_i,ReadMem16_i,ReadMem32_i,WriteMem8_i,WriteMem16_i,WriteMem32_i);
+	//_vmem_map_handler(def_handler,0,0xFFFF);
+
+	//U0/P0
+	//0x0xxx xxxx	-> normal memmap
+	//0x2xxx xxxx	-> normal memmap
+	//0x4xxx xxxx	-> normal memmap
+	//0x6xxx xxxx	-> normal memmap
+	//-----------
+	//P1
+	//0x8xxx xxxx	-> normal memmap
+	//-----------
+	//P2
+	//0xAxxx xxxx	-> normal memmap
+	//-----------
+	//P3
+	//0xCxxx xxxx	-> normal memmap
+	//-----------
+	//P4
+	//0xExxx xxxx	-> internal area
+
+	//Init Memmaps (register handlers)
+	map_area0_init();
+	map_area1_init();
+	map_area2_init();
+	map_area3_init();
+	map_area4_init();
+	map_area5_init();
+	map_area6_init();
+	map_area7_init();
+
+	//0x0-0xD : 7 times the normal memmap mirrors :)
+	//some areas can be customised :)
+	for (int i=0x0;i<0xE;i+=0x2)
+	{
+		map_area0(i<<12);	//Bios,Flahsrom,i/f regs,Ext. Device,Sound Ram
+		map_area1(i<<12);	//Vram
+		map_area2(i<<12);	//Unassigned
+		map_area3(i<<12);	//Ram
+		map_area4(i<<12);	//TA
+		map_area5(i<<12);	//Ext. Device
+		map_area6(i<<12);	//Unassigned
+		map_area7(i<<12);	//Sh4 Regs
+	}
+
+	//map p4 region :)
+	map_p4();
+}
 void mem_Init()
 {
 	//Allocate mem for memory/bios/flash
@@ -136,60 +202,6 @@ void mem_Init()
 
 	sh4_area0_Init();
 	sh4_internal_reg_Init();
-	//vmem
-	_vmem_init();
-	_vmem_handler def_handler =
-		_vmem_register_handler(ReadMem8_i,ReadMem16_i,ReadMem32_i,WriteMem8_i,WriteMem16_i,WriteMem32_i);
-
-	_vmem_map_handler(def_handler,0,0xFFFF);
-
-	//map ram
-	for (u32 i=0;i<0xDFFFFFFF;i+=0x20000000)
-	{
-		u32 start=0x0C000000 | i;
-		u32 end  =start+RAM_MASK;
-		start>>=16;
-		end>>=16;
-		for (u32 j=0;j<0x3FFFFFF;j+=RAM_SIZE)
-		{
-			_vmem_map_block(mem_b.data,start,end);
-			start+=(RAM_SIZE)>>16;
-			end+=(RAM_SIZE)>>16;
-		}
-	}
-
-	_vmem_handler p4_handler =
-		_vmem_register_handler(ReadMem8_P4,ReadMem16_P4,ReadMem32_P4,WriteMem8_P4,WriteMem16_P4,WriteMem32_P4);
-
-	//register this before area7 and SQ , so they overwrite it :)
-	//0xE0000000-0xFFFFFFFF
-	_vmem_map_handler(p4_handler,0xE000,0xFFFF);
-
-
-	_vmem_handler area0_handler =
-		_vmem_register_handler(ReadMem8_area0,ReadMem16_area0,ReadMem32_area0,WriteMem8_area0,WriteMem16_area0,WriteMem32_area0);
-	_vmem_handler area7_handler =
-		_vmem_register_handler(ReadMem8_area7,ReadMem16_area7,ReadMem32_area7,WriteMem8_area7,WriteMem16_area7,WriteMem32_area7);
-
-
-	for (u32 i=0;i<0xFFFF;i+=0x2000)
-	{			  
-		u32 start=0x1C00 | i;
-		u32 end  =start+0x3FF;
-
-		_vmem_map_handler(area7_handler,start,end);
-
-		if (i<0xE000)
-		{
-			start=0x0000 | i;
-			end  =start+0x3FF;
-			_vmem_map_handler(area0_handler,start,end);
-		}
-	}
-
-	_vmem_handler sq_handler =
-		_vmem_register_handler(0,0,0,0,0,WriteMem_sq_32);
-	_vmem_map_handler(sq_handler,0xE000,0xE3FF);
 }
 
 //Reset Sysmem/Regs -- Pvr is not changed , bios/flash are not zero'd out
@@ -236,17 +248,17 @@ FILE* F_IN;
 u8 MEMCALL ReadMem8_i(u32 addr)
 {
 	//if P4
-	if (((addr>>29) &0x7)==7)
+	/*if (((addr>>29) &0x7)==7)
 	{
 		return (u8)ReadMem_P4(addr,1);
-	}
+	}*/
 
 	//switch area
 	switch((addr>>26)&0x7)
 	{
 	//Area 0 : Bios/FlashRom/DC registers
 	case 0:
-		return (u8)ReadMem_area0(addr,1);
+//		return (u8)ReadMem_area0(addr,1);
 		break;
 
 	//Area 1 : Vram 8 mb , {{64b,32b}x2}x2
@@ -280,7 +292,7 @@ u8 MEMCALL ReadMem8_i(u32 addr)
 	//area 7 - internal registers
 	case 7:
 		//EMUERROR2("Area 7 read , addr=%x , not form P4",addr);
-		return (u8)ReadMem_area7(addr,1);
+//		return (u8)ReadMem_area7(addr,1);
 		break;
 	}
 	EMUERROR2("Mem Read not mapped , addr=%x",addr);
@@ -299,7 +311,7 @@ u16 MEMCALL ReadMem16_i(u32 addr)
 	//if P4
 	if (((addr>>29) &0x7)==7)
 	{
-		return (u16)ReadMem_P4(addr,2);
+//		return (u16)ReadMem_P4(addr,2);
 	}
 
 	//switch area
@@ -307,7 +319,7 @@ u16 MEMCALL ReadMem16_i(u32 addr)
 	{
 	//Area 0 : Bios/FlashRom/DC registers
 	case 0:
-		return (u16)ReadMem_area0(addr,2);
+//		return (u16)ReadMem_area0(addr,2);
 		break;
 
 	//Area 1 : Vram 8 mb , {{64b,32b}x2}x2
@@ -341,7 +353,7 @@ u16 MEMCALL ReadMem16_i(u32 addr)
 	//area 7 - internal registers
 	case 7:
 		//EMUERROR2("Area 7 read , addr=%x , not form P4",addr);
-		return (u16)ReadMem_area7(addr,2);
+//		return (u16)ReadMem_area7(addr,2);
 		break;
 	}
 	EMUERROR2("Mem Read not mapped , addr=%x",addr);
@@ -360,7 +372,7 @@ u32 MEMCALL ReadMem32_i(u32 addr)
 	//if P4
 	if (((addr>>29) &0x7)==7)
 	{
-		return ReadMem_P4(addr,4);
+//		return ReadMem_P4(addr,4);
 	}
 
 	//switch area
@@ -368,7 +380,7 @@ u32 MEMCALL ReadMem32_i(u32 addr)
 	{
 	//Area 0 : Bios/FlashRom/DC registers
 	case 0:
-		return ReadMem_area0(addr,4);
+//		return ReadMem_area0(addr,4);
 		break;
 
 	//Area 1 : Vram 8 mb , {{64b,32b}x2}x2
@@ -402,7 +414,7 @@ u32 MEMCALL ReadMem32_i(u32 addr)
 	//area 7 - internal registers
 	case 7:
 		//EMUERROR2("Area 7 read , addr=%x , not form P4",addr);
-		return ReadMem_area7(addr,4);
+//		return ReadMem_area7(addr,4);
 		break;
 	}
 	EMUERROR2("Mem Read not mapped , addr=%x",addr);
@@ -416,7 +428,7 @@ void MEMCALL WriteMem8_i(u32 addr,u8 data)
 	//if P4
 	if (((addr>>29) &0x7)==7)
 	{
-		WriteMem_P4(addr,data,1);
+//		WriteMem_P4(addr,data,1);
 		return;
 	}
 
@@ -425,7 +437,7 @@ void MEMCALL WriteMem8_i(u32 addr,u8 data)
 	{
 	//Area 0 : Bios/FlashRom/DC registers
 	case 0:
-		WriteMem_area0(addr,data,1);
+//		WriteMem_area0(addr,data,1);
 		return;
 		break;
 
@@ -463,7 +475,7 @@ void MEMCALL WriteMem8_i(u32 addr,u8 data)
 	//area 7 - internal registers
 	case 7:
 		//EMUERROR2("Area 7 write , not from P4, addr=%x",addr);
-		WriteMem_area7(addr,data,1);
+//		WriteMem_area7(addr,data,1);
 		return;
 		break;
 	}
@@ -484,7 +496,7 @@ void MEMCALL WriteMem16_i(u32 addr,u16 data)
 	//if P4
 	if (((addr>>29) &0x7)==7)
 	{
-		WriteMem_P4(addr,data,2);
+//		WriteMem_P4(addr,data,2);
 		return;
 	}
 
@@ -493,7 +505,7 @@ void MEMCALL WriteMem16_i(u32 addr,u16 data)
 	{
 	//Area 0 : Bios/FlashRom/DC registers
 	case 0:
-		WriteMem_area0(addr,data,2);
+//		WriteMem_area0(addr,data,2);
 		return;
 		break;
 
@@ -531,7 +543,7 @@ void MEMCALL WriteMem16_i(u32 addr,u16 data)
 	//area 7 - internal registers
 	case 7:
 		//EMUERROR2("Area 7 write , not from P4, addr=%x",addr);
-		WriteMem_area7(addr,data,2);
+//		WriteMem_area7(addr,data,2);
 		return;
 		break;
 	}
@@ -541,6 +553,9 @@ void MEMCALL WriteMem16_i(u32 addr,u16 data)
 
 void MEMCALL WriteMemBlock(u32 addr,u32* data,u32 size)
 {
+	//not worth the trouble to decode :p
+	//vmem is faster
+	/*
 #ifdef TRACE
 	if (addr&0x3)
 	{
@@ -595,7 +610,7 @@ void MEMCALL WriteMemBlock(u32 addr,u32* data,u32 size)
 
 	return;
 
-fallback:
+fallback:*/
 	for (u32 i=0;i<size;i+=4)
 	{
 		WriteMem32(addr+i,data[i>>2]);
@@ -614,7 +629,7 @@ void MEMCALL WriteMem32_i(u32 addr,u32 data)
 	//if P4
 	if (((addr>>29) &0x7)==7)
 	{
-		WriteMem_P4(addr,data,4);
+//		WriteMem_P4(addr,data,4);
 		return;
 	}
 
@@ -623,7 +638,7 @@ void MEMCALL WriteMem32_i(u32 addr,u32 data)
 	{
 	//Area 0 : Bios/FlashRom/DC registers
 	case 0:
-		WriteMem_area0(addr,data,4);
+//		WriteMem_area0(addr,data,4);
 		return;
 		break;
 
@@ -661,7 +676,7 @@ void MEMCALL WriteMem32_i(u32 addr,u32 data)
 	//area 7 - internal registers
 	case 7:
 		//EMUERROR2("Area 7 write , not from P4, addr=%x",addr);
-		WriteMem_area7(addr,data,4);
+//		WriteMem_area7(addr,data,4);
 		return;
 		break;
 	}

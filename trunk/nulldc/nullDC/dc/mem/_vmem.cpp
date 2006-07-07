@@ -21,6 +21,7 @@ _vmem_WriteMem32FP*		_vmem_WF32[0x1000];
 //upper 16b of the address
 void* _vmem_MemInfo[0x10000];
 
+
 //reading from misc mem areas
 
 //eax=function index
@@ -215,6 +216,7 @@ direct:
 }
 
 
+
 //phew .. that was lota asm code ;) lets go back to C :D
 //default mem handlers ;)
 //defualt read handlers
@@ -295,6 +297,21 @@ void _vmem_map_block(void* base,u32 start,u32 end)
 		j+=0x10000;
 	}
 }
+void _vmem_mirror_mapping(u32 new_region,u32 start,u32 size)
+{
+	u32 end=start+size-1;
+	verify(start<0x10000);
+	verify(end<0x10000);
+	verify(start<=end);
+	verify(!((start>=new_region) && (end<=new_region)));
+
+	u32 j=new_region;
+	for (u32 i=start;i<=end;i++)
+	{
+		_vmem_MemInfo[j]=_vmem_MemInfo[i];
+		j++;
+	}
+}
 //benchmarking functions
 u32 __fastcall _vmem_ReadMem32_bench(u32 addresss)
 {
@@ -302,6 +319,7 @@ u32 __fastcall _vmem_ReadMem32_bench(u32 addresss)
 }
 void _vmem_Benchmark()
 {
+#define Bench_count  200000000
 	u32 hanld=_vmem_register_handler(0,0,_vmem_ReadMem32_bench,0,0,0);
 	_vmem_map_handler(hanld,0,9);
 
@@ -309,13 +327,13 @@ void _vmem_Benchmark()
 		u32 bstart=GetTickCount();
 
 		u32 rez=0;
-		for (int i=0;i<20000000;i++)
+		for (int i=0;i<Bench_count;i++)
 		{
 			rez+=_vmem_ReadMem32((0x666+i)&0xFFF);
 		}
 		u32 bdur=GetTickCount()-bstart;
 		float secs=(float)bdur/1000.0f;
-		secs=20000000/secs;
+		secs=Bench_count/secs;
 		secs/=1024*1024;
 		printf("vmem : %f MB/s from function , value=%d\n",secs*4,rez);
 	}
@@ -329,13 +347,13 @@ void _vmem_Benchmark()
 		u32 bstart=GetTickCount();
 
 		u32 rez=0;
-		for (int i=0;i<20000000;i++)
+		for (int i=0;i<Bench_count;i++)
 		{
 			rez+=_vmem_ReadMem32((0x666+i)&0xFFF);
 		}
 		u32 bdur=GetTickCount()-bstart;
 		float secs=(float)bdur/1000.0f;
-		secs=20000000/secs;
+		secs=Bench_count/secs;
 		secs/=1024*1024;
 		printf("vmem : %f MB/s from Array , value=%d\n",secs*4,rez);
 	}
@@ -433,12 +451,12 @@ return;
 //	jnz direct;
 	u8* l_direct=x86e->JNZ8(0);
 //	jmp _vmem_ReadMisc8;
-	if (sz==1)
-		x86e->CALLFunc(_vmem_ReadMisc8);
-	else if (sz==2)
-		x86e->CALLFunc(_vmem_ReadMisc16);
-	else
-		x86e->CALLFunc(_vmem_ReadMisc32);
+	//if (sz==1)
+	//	x86e->CALLFunc(_vmem_ReadMisc8);
+	//else if (sz==2)
+	//	x86e->CALLFunc(_vmem_ReadMisc16);
+	//else
+	//	x86e->CALLFunc(_vmem_ReadMisc32);
 	u8* p2=x86e->JMP8(0);
 //direct:
 	x86e->x86SetJ8(l_direct);
