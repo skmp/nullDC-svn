@@ -71,6 +71,7 @@ bool Init_DC()
 	mem_Init();
 	pvr_Init();
 	aica_Init();
+	mem_map_defualt();
 	plugins_Init();
 	maple_plugins_Init();
 
