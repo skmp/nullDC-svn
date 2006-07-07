@@ -26,6 +26,7 @@ struct vram_block
 typedef void vramLockCBFP (vram_block* block,u32 addr);
  
 u32 vramlock_ConvAddrtoOffset64(u32 Address);
+u32 vramlock_ConvOffset32toOffset64(u32 offset32);
 
 void vramlock_Unlock_block(vram_block* block);
 vram_block* vramlock_Lock_32(u32 start_offset32,u32 end_offset32,void* userdata);
