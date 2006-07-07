@@ -2492,3 +2492,291 @@ void link_compile_inject_TT_stub(rec_v1_BasicBlock* ptr)
 {
 }
 #endif
+
+
+
+//_vmem for dynarec ;)
+//included @ shil_compile_slow.cpp
+//Original vmem code
+/*
+	__asm
+	{
+	//copy address , we can't corrupt edx here ;( we will have to calculate just before used (damn ;()
+	mov eax,ecx;
+
+	//shr 14 + and vs shr16 + mov eax,[_vmem_MemInfo+eax*4];
+	//after testing , shr16+mov complex is faster , both on amd (a64 x2) and intel (northwood)
+
+	//get upper 16 bits
+	shr eax,16;
+
+	//read mem info
+	mov eax,[_vmem_MemInfo+eax*4];
+
+	test eax,0xFFFF0000;
+	jnz direct;
+	mov eax , [_vmem_WF8+eax];
+	jmp eax;
+direct:
+	and ecx,0xFFFF;//lower 16b of address
+	//or eax,edx;	//get ptr to the value we want
+	//mov eax,[eax]
+	mov [eax+ecx],dl;
+	ret;
+	}
+*/
+
+//on dynarec we have 3 cases for input , mem , reg , cost
+//and 3 cases of output , mem , reg , xmm [fpu reg]
+//this will also support 64b mem/xmm reads
+
+//handler tables
+extern _vmem_ReadMem8FP*		_vmem_RF8[0x1000];
+extern _vmem_WriteMem8FP*		_vmem_WF8[0x1000];
+
+extern _vmem_ReadMem16FP*		_vmem_RF16[0x1000];
+extern _vmem_WriteMem16FP*		_vmem_WF16[0x1000];
+
+extern _vmem_ReadMem32FP*		_vmem_RF32[0x1000];
+extern _vmem_WriteMem32FP*		_vmem_WF32[0x1000];
+
+extern void* _vmem_MemInfo[0x10000];
+
+//sz is 1,2,4,8
+//8 reads are assumed to be on same map (8 byte allign should ensure this , i dunoo -> it does)
+void emit_vmem_op(emitter<>* x86e,
+				  u32 ma,x86IntRegType ra,u32* pa,u32 amode,
+				  x86IntRegType ro,x86SSERegType xo,u32 omode,
+				  u32 sz,u32 rw)
+{
+	u8* direct=0;
+	u8* op_end=0;
+	u32 index=0;
+	u32 rb=0;
+	if (amode==2)//pointer to ram to read
+	{
+		x86e->MOV32MtoR(ECX,pa);
+		amode=1;
+		ra=ECX;
+	}
+
+	if (amode==1)
+	{
+		
+		x86e->MOV32RtoR(EAX,ra);
+		x86e->SHR32ItoR(EAX,16);
+		if (ra!=ECX);
+			x86e->MOV32RtoR(ECX,ra);
+		if (rw==0)//olny on read
+		{
+		x86e->MOV32RtoR(EDX,ECX);
+		x86e->AND32ItoR(EDX,0xFFFF);
+		}
+		//_vmem_MemInfo
+		//mov eax,[_vmem_MemInfo+eax*4];
+		//8B 04 85 base_address
+		x86e->write8(0x8b);
+		x86e->write8(0x04);
+		x86e->write8(0x85);
+		x86e->write32((u32)&_vmem_MemInfo[0]);
+
+		//test eax,0xFFFF0000;
+		x86e->TEST32ItoR(EAX,0xFFFF0000);
+	}
+	else if (amode == 0)
+	{
+		index=ma>>16;
+		rb=ma&0xFFFF;
+		//x86e->MOV32MtoR(EAX,0/*_vmem_MemInfo*/+index*4);
+	}
+	direct=x86e->JNZ8(0);
+	
+	//x86e->MOV32MtoR(EAX,
+	//	mov eax , [_vmem_WF8+eax];
+	//jmp eax;
+	x86e->CALL32R(EAX);
+	//mov rdest,EAX
+	op_end=x86e->JMP8(0);
+
+	//direct:
+	x86e->x86SetJ8(direct);
+	if (amode==1)
+	{
+		if (rw==1)
+		{
+			//and ecx,0xFFFF;//lower 16b of address
+			x86e->AND32ItoR(ECX,0xFFFF);
+			if (sz==1)
+			{
+				//mov [eax+ecx],dl;
+			}
+			else if (sz==2)
+			{
+				//mov [eax+ecx],dh;
+			}
+			else if (sz==4)
+			{
+				//mov [eax+ecx],edx;
+			}
+			else if (sz==8)
+			{
+			}
+		}
+		else
+		{
+			//x86e->SSE_MOVSS_M32_to_XMM
+			//mov edx,[eax+ecx];
+		}
+	}
+	else
+	{
+		if (rw==1)
+		{
+			//mov [eax+rb],dl;
+		}
+		else
+		{
+			if (sz<=4)
+				;//mov edx,[eax+rb];
+			else	//8 bytes read , olny possible to mem/ a pair of xmm registers
+				;
+		}
+	}
+	x86e->x86SetJ8(op_end);
+
+}
+
+//this is P4 optimised (its faster olny when shr takes a bit :) )
+//on AMD we can move the shr just before the read , and do the edx work after the read
+//so we cover the read stall :)
+//corrupts ecx,eax,edx; preserves all else (fastcall + xmm safe + xmm fpstatus safe)
+void emit_vmem_op_compat(emitter<>* x86e,x86IntRegType ra,
+					  x86IntRegType ro,
+					  u32 sz,u32 rw)
+{
+	u32 p_RWF_table=0;
+	if (rw==0)
+	{
+		if (sz==1)
+			p_RWF_table=(u32)&_vmem_RF8[0];
+		else if (sz==2)
+			p_RWF_table=(u32)&_vmem_RF16[0];
+		else if (sz==4)
+			p_RWF_table=(u32)&_vmem_RF32[0];
+	}
+	else
+	{
+		if (sz==1)
+			p_RWF_table=(u32)&_vmem_WF8[0];
+		else if (sz==2)
+			p_RWF_table=(u32)&_vmem_WF16[0];
+		else if (sz==4)
+			p_RWF_table=(u32)&_vmem_WF32[0];
+	}
+	////copy address
+	//mov eax,ecx;
+	x86e->MOV32RtoR(EAX,ra);
+	////shr 14 + and vs shr16 + mov eax,[_vmem_MemInfo+eax*4];
+	////after testing , shr16+mov complex is faster , both on amd (a64 x2) and intel (northwood)
+
+	////get upper 16 bits
+	//shr eax,16;
+	x86e->SHR32ItoR(EAX,16);
+	
+	//read olny
+	if (rw==0)
+	{
+		//mov edx,ecx;//this is done here , among w/ the and , it should be possible to fully execute it on paraler (no depency)
+		x86e->MOV32RtoR(EDX,ra);
+	}
+
+	//read mem info
+	//mov eax,[_vmem_MemInfo+eax*4];
+	//8B 04 85 base_address
+	x86e->write8(0x8B);
+	x86e->write8(0x04);
+	x86e->write8(0x85);
+	x86e->write32((u32)&_vmem_MemInfo[0]);
+
+	//olny on read
+	if (rw==0)
+	{
+		//read is gona stall , even if 1 cycle ;
+		//and edx,0xFFFF;//lower 16b of address
+		x86e->AND32ItoR(EDX,0xFFFF);
+	}
+
+	//ra may be another reg :)
+	if (ra!=ECX)
+		x86e->MOV32RtoR(ECX,ra);
+
+	//test eax,0xFFFF0000;
+	x86e->TEST32ItoR(EAX,0xFFFF0000);
+
+	if (rw==1)
+	{
+		if (ro!=EDX)
+			x86e->MOV32RtoR(EDX,ro);
+	}
+
+	//jnz direct;
+	u8* direct=x86e->JNZ8(0);
+	
+	////get function pointer
+	//mov eax , [_vmem_RF8+eax];
+	//0040FF23 8B 80 18 28 5A 02 mov         eax,dword ptr _vmem_WF32 (25A2818h)[eax] 
+	x86e->write8(0x8B);
+	x86e->write8(0x80);
+	x86e->write32(p_RWF_table);
+
+
+	//jmp eax;
+	x86e->CALL32R(EAX);
+	if (rw==0)
+	{
+		if (ro!=EAX)
+			x86e->MOV32RtoR(ro,EAX);
+	}
+	u8* rw_end=x86e->JMP8(0);
+
+//direct:
+	x86e->x86SetJ8(direct);
+	//write olny
+	if (rw==1)
+	{
+		//and edx,0xFFFF;//lower 16b of address
+		x86e->AND32ItoR(ECX,0xFFFF);
+		//write to [eax+ecx]
+		if (sz==1)
+		{	//, dl
+			x86e->write8(0x88);
+			x86e->write8(0x14);
+			x86e->write8(0x08);
+		}
+		else if (sz==2)
+		{	//,dx
+			x86e->write8(0x66);
+			x86e->write8(0x89);
+			x86e->write8(0x14);
+			x86e->write8(0x08);
+		}
+		else if (sz==4)
+		{	//,edx
+			x86e->write8(0x89);
+			x86e->write8(0x14);
+			x86e->write8(0x08);
+		}
+	}
+	else
+	{
+		//mov eax,[eax+edx];	//note : upper bits dont matter , so i do 32b read here ;) (to get read of partial register stalls)
+		//0040FE43 8B 04 10         mov         eax,dword ptr [eax+edx] 
+		x86e->write8(0x8B);
+		x86e->write8(0x04);
+		x86e->write8(0x10);
+		if (ro!=EAX)
+			x86e->MOV32RtoR(ro,EAX);
+	}
+	//ret;
+	x86e->x86SetJ8(rw_end);
+}
