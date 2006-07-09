@@ -1,7 +1,26 @@
+// -*- C++ -*-
+// VisualBoyAdvance - Nintendo Gameboy/GameboyAdvance (TM) emulator.
+// Copyright (C) 1999-2003 Forgotten
+// Copyright (C) 2004 Forgotten and the VBA development team
+
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2, or(at your option)
+// any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software Foundation,
+// Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
 #ifdef BKPT_SUPPORT
 #define CONSOLE_OUTPUT(a,b) \
-    extern void (*dbgOutput)(char *, DWORD);\
-    if((opcode == 0xe0000000) && (m_aReg[0].I == 0xC0DED00D)) {\
+    extern void (*dbgOutput)(char *, u32);\
+    if((opcode == 0xe0000000) && (reg[0].I == 0xC0DED00D)) {\
       dbgOutput((a), (b));\
     }
 #else
@@ -9,41 +28,725 @@
 #endif
 
 #define OP_AND \
-      m_aReg[dest].I = m_aReg[(opcode>>16)&15].I & value;\
-      CONSOLE_OUTPUT(NULL,m_aReg[2].I);
+      reg[dest].I = reg[(opcode>>16)&15].I & value;\
+      CONSOLE_OUTPUT(NULL,reg[2].I);
 
 #define OP_ANDS \
-      m_aReg[dest].I = m_aReg[(opcode>>16)&15].I & value;\
+      reg[dest].I = reg[(opcode>>16)&15].I & value;\
       \
-      N_FLAG = (m_aReg[dest].I & 0x80000000) ? true : false;\
-      Z_FLAG = (m_aReg[dest].I) ? false : true;\
+      N_FLAG = (reg[dest].I & 0x80000000) ? true : false;\
+      Z_FLAG = (reg[dest].I) ? false : true;\
       C_FLAG = C_OUT;
 
 #define OP_EOR \
-      m_aReg[dest].I = m_aReg[(opcode>>16)&15].I ^ value;
+      reg[dest].I = reg[(opcode>>16)&15].I ^ value;
 
 #define OP_EORS \
-      m_aReg[dest].I = m_aReg[(opcode>>16)&15].I ^ value;\
+      reg[dest].I = reg[(opcode>>16)&15].I ^ value;\
       \
-      N_FLAG = (m_aReg[dest].I & 0x80000000) ? true : false;\
-      Z_FLAG = (m_aReg[dest].I) ? false : true;\
+      N_FLAG = (reg[dest].I & 0x80000000) ? true : false;\
+      Z_FLAG = (reg[dest].I) ? false : true;\
       C_FLAG = C_OUT;
+#ifdef C_CORE
+#define NEG(i) ((i) >> 31)
+#define POS(i) ((~(i)) >> 31)
+#define ADDCARRY(a, b, c) \
+  C_FLAG = ((NEG(a) & NEG(b)) |\
+            (NEG(a) & POS(c)) |\
+            (NEG(b) & POS(c))) ? true : false;
+#define ADDOVERFLOW(a, b, c) \
+  V_FLAG = ((NEG(a) & NEG(b) & POS(c)) |\
+            (POS(a) & POS(b) & NEG(c))) ? true : false;
+#define SUBCARRY(a, b, c) \
+  C_FLAG = ((NEG(a) & POS(b)) |\
+            (NEG(a) & POS(c)) |\
+            (POS(b) & POS(c))) ? true : false;
+#define SUBOVERFLOW(a, b, c)\
+  V_FLAG = ((NEG(a) & POS(b) & POS(c)) |\
+            (POS(a) & NEG(b) & NEG(c))) ? true : false;
+#define OP_SUB \
+    {\
+      reg[dest].I = reg[base].I - value;\
+    }
+#define OP_SUBS \
+   {\
+     u32 lhs = reg[base].I;\
+     u32 rhs = value;\
+     u32 res = lhs - rhs;\
+     reg[dest].I = res;\
+     Z_FLAG = (res == 0) ? true : false;\
+     N_FLAG = NEG(res) ? true : false;\
+     SUBCARRY(lhs, rhs, res);\
+     SUBOVERFLOW(lhs, rhs, res);\
+   }
+#define OP_RSB \
+    {\
+      reg[dest].I = value - reg[base].I;\
+    }
+#define OP_RSBS \
+   {\
+     u32 lhs = reg[base].I;\
+     u32 rhs = value;\
+     u32 res = rhs - lhs;\
+     reg[dest].I = res;\
+     Z_FLAG = (res == 0) ? true : false;\
+     N_FLAG = NEG(res) ? true : false;\
+     SUBCARRY(rhs, lhs, res);\
+     SUBOVERFLOW(rhs, lhs, res);\
+   }
+#define OP_ADD \
+    {\
+      reg[dest].I = reg[base].I + value;\
+    }
+#define OP_ADDS \
+   {\
+     u32 lhs = reg[base].I;\
+     u32 rhs = value;\
+     u32 res = lhs + rhs;\
+     reg[dest].I = res;\
+     Z_FLAG = (res == 0) ? true : false;\
+     N_FLAG = NEG(res) ? true : false;\
+     ADDCARRY(lhs, rhs, res);\
+     ADDOVERFLOW(lhs, rhs, res);\
+   }
+#define OP_ADC \
+    {\
+      reg[dest].I = reg[base].I + value + (u32)C_FLAG;\
+    }
+#define OP_ADCS \
+   {\
+     u32 lhs = reg[base].I;\
+     u32 rhs = value;\
+     u32 res = lhs + rhs + (u32)C_FLAG;\
+     reg[dest].I = res;\
+     Z_FLAG = (res == 0) ? true : false;\
+     N_FLAG = NEG(res) ? true : false;\
+     ADDCARRY(lhs, rhs, res);\
+     ADDOVERFLOW(lhs, rhs, res);\
+   }
+#define OP_SBC \
+    {\
+      reg[dest].I = reg[base].I - value - !((u32)C_FLAG);\
+    }
+#define OP_SBCS \
+   {\
+     u32 lhs = reg[base].I;\
+     u32 rhs = value;\
+     u32 res = lhs - rhs - !((u32)C_FLAG);\
+     reg[dest].I = res;\
+     Z_FLAG = (res == 0) ? true : false;\
+     N_FLAG = NEG(res) ? true : false;\
+     SUBCARRY(lhs, rhs, res);\
+     SUBOVERFLOW(lhs, rhs, res);\
+   }
+#define OP_RSC \
+    {\
+      reg[dest].I = value - reg[base].I - !((u32)C_FLAG);\
+    }
+#define OP_RSCS \
+   {\
+     u32 lhs = reg[base].I;\
+     u32 rhs = value;\
+     u32 res = rhs - lhs - !((u32)C_FLAG);\
+     reg[dest].I = res;\
+     Z_FLAG = (res == 0) ? true : false;\
+     N_FLAG = NEG(res) ? true : false;\
+     SUBCARRY(rhs, lhs, res);\
+     SUBOVERFLOW(rhs, lhs, res);\
+   }
+#define OP_CMP \
+   {\
+     u32 lhs = reg[base].I;\
+     u32 rhs = value;\
+     u32 res = lhs - rhs;\
+     Z_FLAG = (res == 0) ? true : false;\
+     N_FLAG = NEG(res) ? true : false;\
+     SUBCARRY(lhs, rhs, res);\
+     SUBOVERFLOW(lhs, rhs, res);\
+   }
+#define OP_CMN \
+   {\
+     u32 lhs = reg[base].I;\
+     u32 rhs = value;\
+     u32 res = lhs + rhs;\
+     Z_FLAG = (res == 0) ? true : false;\
+     N_FLAG = NEG(res) ? true : false;\
+     ADDCARRY(lhs, rhs, res);\
+     ADDOVERFLOW(lhs, rhs, res);\
+   }
+
+#define LOGICAL_LSL_REG \
+   {\
+     u32 v = reg[opcode & 0x0f].I;\
+     C_OUT = (v >> (32 - shift)) & 1 ? true : false;\
+     value = v << shift;\
+   }
+#define LOGICAL_LSR_REG \
+   {\
+     u32 v = reg[opcode & 0x0f].I;\
+     C_OUT = (v >> (shift - 1)) & 1 ? true : false;\
+     value = v >> shift;\
+   }
+#define LOGICAL_ASR_REG \
+   {\
+     u32 v = reg[opcode & 0x0f].I;\
+     C_OUT = ((s32)v >> (int)(shift - 1)) & 1 ? true : false;\
+     value = (s32)v >> (int)shift;\
+   }
+#define LOGICAL_ROR_REG \
+   {\
+     u32 v = reg[opcode & 0x0f].I;\
+     C_OUT = (v >> (shift - 1)) & 1 ? true : false;\
+     value = ((v << (32 - shift)) |\
+              (v >> shift));\
+   }
+#define LOGICAL_RRX_REG \
+   {\
+     u32 v = reg[opcode & 0x0f].I;\
+     shift = (int)C_FLAG;\
+     C_OUT = (v  & 1) ? true : false;\
+     value = ((v >> 1) |\
+              (shift << 31));\
+   }
+#define LOGICAL_ROR_IMM \
+   {\
+     u32 v = opcode & 0xff;\
+     C_OUT = (v >> (shift - 1)) & 1 ? true : false;\
+     value = ((v << (32 - shift)) |\
+              (v >> shift));\
+   }
+#define ARITHMETIC_LSL_REG \
+   {\
+     u32 v = reg[opcode & 0x0f].I;\
+     value = v << shift;\
+   }
+#define ARITHMETIC_LSR_REG \
+   {\
+     u32 v = reg[opcode & 0x0f].I;\
+     value = v >> shift;\
+   }
+#define ARITHMETIC_ASR_REG \
+   {\
+     u32 v = reg[opcode & 0x0f].I;\
+     value = (s32)v >> (int)shift;\
+   }
+#define ARITHMETIC_ROR_REG \
+   {\
+     u32 v = reg[opcode & 0x0f].I;\
+     value = ((v << (32 - shift)) |\
+              (v >> shift));\
+   }
+#define ARITHMETIC_RRX_REG \
+   {\
+     u32 v = reg[opcode & 0x0f].I;\
+     shift = (int)C_FLAG;\
+     value = ((v >> 1) |\
+              (shift << 31));\
+   }
+#define ARITHMETIC_ROR_IMM \
+   {\
+     u32 v = opcode & 0xff;\
+     value = ((v << (32 - shift)) |\
+              (v >> shift));\
+   }
+#define ROR_IMM_MSR \
+   {\
+     u32 v = opcode & 0xff;\
+     value = ((v << (32 - shift)) |\
+              (v >> shift));\
+   }
+#define ROR_VALUE \
+   {\
+     value = ((value << (32 - shift)) |\
+              (value >> shift));\
+   }
+#define RCR_VALUE \
+   {\
+     shift = (int)C_FLAG;\
+     value = ((value >> 1) |\
+              (shift << 31));\
+   }
+#else
+#ifdef __GNUC__
+        #ifdef __POWERPC__
+            #define OP_SUB \
+                {\
+                reg[dest].I = reg[base].I - value;\
+                }
+            #define OP_SUBS \
+            {\
+                register int Flags;                             \
+                register int Result;                            \
+                asm volatile("subco. %0, %2, %3\n"              \
+                            "mcrxr cr1\n"                       \
+                            "mfcr %1\n"                         \
+                            : "=r" (Result),                    \
+                              "=r" (Flags)                      \
+                            : "r" (reg[base].I),                \
+                              "r" (value)                       \
+                            );                                  \
+                reg[dest].I = Result;                           \
+                Z_FLAG = (Flags >> 29) & 1;                     \
+                N_FLAG = (Flags >> 31) & 1;                     \
+                C_FLAG = (Flags >> 25) & 1;                     \
+                V_FLAG = (Flags >> 26) & 1;                     \
+            }
+            #define OP_RSB \
+                {\
+                reg[dest].I = value - reg[base].I;\
+                }
+            #define OP_RSBS \
+            {\
+                register int Flags;                             \
+                register int Result;                            \
+                asm volatile("subfco. %0, %2, %3\n"             \
+                            "mcrxr cr1\n"                       \
+                            "mfcr %1\n"                         \
+                            : "=r" (Result),                    \
+                              "=r" (Flags)                      \
+                            : "r" (reg[base].I),                \
+                              "r" (value)                       \
+                            );                                  \
+                reg[dest].I = Result;                           \
+                Z_FLAG = (Flags >> 29) & 1;                     \
+                N_FLAG = (Flags >> 31) & 1;                     \
+                C_FLAG = (Flags >> 25) & 1;                     \
+                V_FLAG = (Flags >> 26) & 1;                     \
+            }
+            #define OP_ADD \
+                {\
+                reg[dest].I = reg[base].I + value;\
+                }
+
+            #define OP_ADDS \
+            {\
+                register int Flags;                             \
+                register int Result;                            \
+                asm volatile("addco. %0, %2, %3\n"              \
+                            "mcrxr cr1\n"                       \
+                            "mfcr %1\n"                         \
+                            : "=r" (Result),                    \
+                              "=r" (Flags)                      \
+                            : "r" (reg[base].I),                \
+                              "r" (value)                       \
+                            );                                  \
+                reg[dest].I = Result;                           \
+                Z_FLAG = (Flags >> 29) & 1;                     \
+                N_FLAG = (Flags >> 31) & 1;                     \
+                C_FLAG = (Flags >> 25) & 1;                     \
+                V_FLAG = (Flags >> 26) & 1;                     \
+            }
+            #define OP_ADC \
+            {\
+                reg[dest].I = reg[base].I + value + (u32)C_FLAG;\
+            }
+            #define OP_ADCS \
+            {\
+                register int Flags;                             \
+                register int Result;                            \
+                asm volatile("mtspr xer, %4\n"                  \
+                             "addeo. %0, %2, %3\n"              \
+                             "mcrxr cr1\n"                      \
+                             "mfcr      %1\n"                   \
+                             : "=r" (Result),                   \
+                               "=r" (Flags)                     \
+                             : "r" (reg[base].I),               \
+                               "r" (value),                     \
+                               "r" (C_FLAG << 29)               \
+                             );                                 \
+                reg[dest].I = Result;                           \
+                Z_FLAG = (Flags >> 29) & 1;                     \
+                N_FLAG = (Flags >> 31) & 1;                     \
+                C_FLAG = (Flags >> 25) & 1;                     \
+                V_FLAG = (Flags >> 26) & 1;                     \
+            }
+            #define OP_SBC \
+                {\
+                reg[dest].I = reg[base].I - value - (C_FLAG^1);\
+                }
+            #define OP_SBCS \
+            {\
+                register int Flags;                             \
+                register int Result;                            \
+                asm volatile("mtspr xer, %4\n"                  \
+                             "subfeo. %0, %3, %2\n"             \
+                             "mcrxr cr1\n"                      \
+                             "mfcr      %1\n"                   \
+                             : "=r" (Result),                   \
+                               "=r" (Flags)                     \
+                             : "r" (reg[base].I),               \
+                               "r" (value),                     \
+                               "r" (C_FLAG << 29)               \
+                             );                                 \
+                reg[dest].I = Result;                           \
+                Z_FLAG = (Flags >> 29) & 1;                     \
+                N_FLAG = (Flags >> 31) & 1;                     \
+                C_FLAG = (Flags >> 25) & 1;                     \
+                V_FLAG = (Flags >> 26) & 1;                     \
+            }
+            #define OP_RSC \
+                {\
+                reg[dest].I = value - reg[base].I - (C_FLAG^1);\
+                }
+            #define OP_RSCS \
+            {\
+                register int Flags;                             \
+                register int Result;                            \
+                asm volatile("mtspr xer, %4\n"                  \
+                             "subfeo. %0, %2, %3\n"             \
+                             "mcrxr cr1\n"                      \
+                             "mfcr      %1\n"                   \
+                             : "=r" (Result),                   \
+                               "=r" (Flags)                     \
+                             : "r" (reg[base].I),               \
+                               "r" (value),                     \
+                               "r" (C_FLAG << 29)               \
+                             );                                 \
+                reg[dest].I = Result;                           \
+                Z_FLAG = (Flags >> 29) & 1;                     \
+                N_FLAG = (Flags >> 31) & 1;                     \
+                C_FLAG = (Flags >> 25) & 1;                     \
+                V_FLAG = (Flags >> 26) & 1;                     \
+            }
+            #define OP_CMP \
+            {\
+                register int Flags;                             \
+                register int Result;                            \
+                asm volatile("subco. %0, %2, %3\n"              \
+                            "mcrxr cr1\n"                       \
+                            "mfcr %1\n"                         \
+                            : "=r" (Result),                    \
+                              "=r" (Flags)                      \
+                            : "r" (reg[base].I),                \
+                              "r" (value)                       \
+                            );                                  \
+                Z_FLAG = (Flags >> 29) & 1;                     \
+                N_FLAG = (Flags >> 31) & 1;                     \
+                C_FLAG = (Flags >> 25) & 1;                     \
+                V_FLAG = (Flags >> 26) & 1;                     \
+            }
+            #define OP_CMN \
+            {\
+                register int Flags;                             \
+                register int Result;                            \
+                asm volatile("addco. %0, %2, %3\n"              \
+                            "mcrxr cr1\n"                       \
+                            "mfcr %1\n"                         \
+                            : "=r" (Result),                    \
+                              "=r" (Flags)                      \
+                            : "r" (reg[base].I),                \
+                              "r" (value)                       \
+                            );                                  \
+                Z_FLAG = (Flags >> 29) & 1;                     \
+                N_FLAG = (Flags >> 31) & 1;                     \
+                C_FLAG = (Flags >> 25) & 1;                     \
+                V_FLAG = (Flags >> 26) & 1;                     \
+            }
+            
+            #define LOGICAL_LSL_REG \
+            {\
+                u32 v = reg[opcode & 0x0f].I;\
+                C_OUT = (v >> (32 - shift)) & 1 ? true : false;\
+                value = v << shift;\
+            }
+            #define LOGICAL_LSR_REG \
+            {\
+                u32 v = reg[opcode & 0x0f].I;\
+                C_OUT = (v >> (shift - 1)) & 1 ? true : false;\
+                value = v >> shift;\
+            }
+            #define LOGICAL_ASR_REG \
+            {\
+                u32 v = reg[opcode & 0x0f].I;\
+                C_OUT = ((s32)v >> (int)(shift - 1)) & 1 ? true : false;\
+                value = (s32)v >> (int)shift;\
+            }
+            #define LOGICAL_ROR_REG \
+            {\
+                u32 v = reg[opcode & 0x0f].I;\
+                C_OUT = (v >> (shift - 1)) & 1 ? true : false;\
+                value = ((v << (32 - shift)) |\
+                        (v >> shift));\
+            }
+            #define LOGICAL_RRX_REG \
+            {\
+                u32 v = reg[opcode & 0x0f].I;\
+                shift = (int)C_FLAG;\
+                C_OUT = (v  & 1) ? true : false;\
+                value = ((v >> 1) |\
+                        (shift << 31));\
+            }
+            #define LOGICAL_ROR_IMM \
+            {\
+                u32 v = opcode & 0xff;\
+                C_OUT = (v >> (shift - 1)) & 1 ? true : false;\
+                value = ((v << (32 - shift)) |\
+                        (v >> shift));\
+            }
+            #define ARITHMETIC_LSL_REG \
+            {\
+                u32 v = reg[opcode & 0x0f].I;\
+                value = v << shift;\
+            }
+            #define ARITHMETIC_LSR_REG \
+            {\
+                u32 v = reg[opcode & 0x0f].I;\
+                value = v >> shift;\
+            }
+            #define ARITHMETIC_ASR_REG \
+            {\
+                u32 v = reg[opcode & 0x0f].I;\
+                value = (s32)v >> (int)shift;\
+            }
+            #define ARITHMETIC_ROR_REG \
+            {\
+                u32 v = reg[opcode & 0x0f].I;\
+                value = ((v << (32 - shift)) |\
+                        (v >> shift));\
+            }
+            #define ARITHMETIC_RRX_REG \
+            {\
+                u32 v = reg[opcode & 0x0f].I;\
+                shift = (int)C_FLAG;\
+                value = ((v >> 1) |\
+                        (shift << 31));\
+            }
+            #define ARITHMETIC_ROR_IMM \
+            {\
+                u32 v = opcode & 0xff;\
+                value = ((v << (32 - shift)) |\
+                        (v >> shift));\
+            }
+            #define ROR_IMM_MSR \
+            {\
+                u32 v = opcode & 0xff;\
+                value = ((v << (32 - shift)) |\
+                        (v >> shift));\
+            }
+            #define ROR_VALUE \
+            {\
+                value = ((value << (32 - shift)) |\
+                        (value >> shift));\
+            }
+            #define RCR_VALUE \
+            {\
+                shift = (int)C_FLAG;\
+                value = ((value >> 1) |\
+                        (shift << 31));\
+            }
+#else
+#define OP_SUB \
+     asm ("sub %1, %%ebx;"\
+                  : "=b" (reg[dest].I)\
+                  : "r" (value), "b" (reg[base].I));
+
+#define OP_SUBS \
+     asm ("sub %1, %%ebx;"\
+          "setsb N_FLAG;"\
+          "setzb Z_FLAG;"\
+          "setncb C_FLAG;"\
+          "setob V_FLAG;"\
+                  : "=b" (reg[dest].I)\
+                  : "r" (value), "b" (reg[base].I));
+
+#define OP_RSB \
+            asm  ("sub %1, %%ebx;"\
+                 : "=b" (reg[dest].I)\
+                 : "r" (reg[base].I), "b" (value));
+
+#define OP_RSBS \
+            asm  ("sub %1, %%ebx;"\
+                  "setsb N_FLAG;"\
+                  "setzb Z_FLAG;"\
+                  "setncb C_FLAG;"\
+                  "setob V_FLAG;"\
+                 : "=b" (reg[dest].I)\
+                 : "r" (reg[base].I), "b" (value));
+
+#define OP_ADD \
+            asm  ("add %1, %%ebx;"\
+                 : "=b" (reg[dest].I)\
+                 : "r" (value), "b" (reg[base].I));
+
+#define OP_ADDS \
+            asm  ("add %1, %%ebx;"\
+                  "setsb N_FLAG;"\
+                  "setzb Z_FLAG;"\
+                  "setcb C_FLAG;"\
+                  "setob V_FLAG;"\
+                 : "=b" (reg[dest].I)\
+                 : "r" (value), "b" (reg[base].I));
+
+#define OP_ADC \
+            asm  ("bt $0, C_FLAG;"\
+                  "adc %1, %%ebx;"\
+                 : "=b" (reg[dest].I)\
+                 : "r" (value), "b" (reg[base].I));
+
+#define OP_ADCS \
+            asm  ("bt $0, C_FLAG;"\
+                  "adc %1, %%ebx;"\
+                  "setsb N_FLAG;"\
+                  "setzb Z_FLAG;"\
+                  "setcb C_FLAG;"\
+                  "setob V_FLAG;"\
+                 : "=b" (reg[dest].I)\
+                 : "r" (value), "b" (reg[base].I));
+
+#define OP_SBC \
+            asm  ("bt $0, C_FLAG;"\
+                  "cmc;"\
+                  "sbb %1, %%ebx;"\
+                 : "=b" (reg[dest].I)\
+                 : "r" (value), "b" (reg[base].I));
+
+#define OP_SBCS \
+            asm  ("bt $0, C_FLAG;"\
+                  "cmc;"\
+                  "sbb %1, %%ebx;"\
+                  "setsb N_FLAG;"\
+                  "setzb Z_FLAG;"\
+                  "setncb C_FLAG;"\
+                  "setob V_FLAG;"\
+                 : "=b" (reg[dest].I)\
+                 : "r" (value), "b" (reg[base].I));
+#define OP_RSC \
+            asm  ("bt $0, C_FLAG;"\
+                  "cmc;"\
+                  "sbb %1, %%ebx;"\
+                 : "=b" (reg[dest].I)\
+                 : "r" (reg[base].I), "b" (value));
+
+#define OP_RSCS \
+            asm  ("bt $0, C_FLAG;"\
+                  "cmc;"\
+                  "sbb %1, %%ebx;"\
+                  "setsb N_FLAG;"\
+                  "setzb Z_FLAG;"\
+                  "setncb C_FLAG;"\
+                  "setob V_FLAG;"\
+                 : "=b" (reg[dest].I)\
+                 : "r" (reg[base].I), "b" (value));
+#define OP_CMP \
+            asm  ("sub %0, %1;"\
+                  "setsb N_FLAG;"\
+                  "setzb Z_FLAG;"\
+                  "setncb C_FLAG;"\
+                  "setob V_FLAG;"\
+                 :\
+                 : "r" (value), "r" (reg[base].I));
+
+#define OP_CMN \
+            asm  ("add %0, %1;"\
+                  "setsb N_FLAG;"\
+                  "setzb Z_FLAG;"\
+                  "setcb C_FLAG;"\
+                  "setob V_FLAG;"\
+                 : \
+                 : "r" (value), "r" (reg[base].I));
+#define LOGICAL_LSL_REG \
+       asm("shl %%cl, %%eax;"\
+           "setcb %%cl;"\
+           : "=a" (value), "=c" (C_OUT)\
+           : "a" (reg[opcode & 0x0f].I), "c" (shift));
+
+#define LOGICAL_LSR_REG \
+       asm("shr %%cl, %%eax;"\
+           "setcb %%cl;"\
+           : "=a" (value), "=c" (C_OUT)\
+           : "a" (reg[opcode & 0x0f].I), "c" (shift));
+
+#define LOGICAL_ASR_REG \
+       asm("sar %%cl, %%eax;"\
+           "setcb %%cl;"\
+           : "=a" (value), "=c" (C_OUT)\
+           : "a" (reg[opcode & 0x0f].I), "c" (shift));
+
+#define LOGICAL_ROR_REG \
+       asm("ror %%cl, %%eax;"\
+           "setcb %%cl;"\
+           : "=a" (value), "=c" (C_OUT)\
+           : "a" (reg[opcode & 0x0f].I), "c" (shift));       
+
+#define LOGICAL_RRX_REG \
+       asm("bt $0, C_FLAG;"\
+           "rcr $1, %%eax;"\
+           "setcb %%cl;"\
+           : "=a" (value), "=c" (C_OUT)\
+           : "a" (reg[opcode & 0x0f].I));       
+
+#define LOGICAL_ROR_IMM \
+       asm("ror %%cl, %%eax;"\
+           "setcb %%cl;"\
+           : "=a" (value), "=c" (C_OUT)\
+           : "a" (opcode & 0xff), "c" (shift));
+#define ARITHMETIC_LSL_REG \
+       asm("\
+             shl %%cl, %%eax;"\
+           : "=a" (value)\
+           : "a" (reg[opcode & 0x0f].I), "c" (shift));
+
+#define ARITHMETIC_LSR_REG \
+       asm("\
+             shr %%cl, %%eax;"\
+           : "=a" (value)\
+           : "a" (reg[opcode & 0x0f].I), "c" (shift));
+
+#define ARITHMETIC_ASR_REG \
+       asm("\
+             sar %%cl, %%eax;"\
+           : "=a" (value)\
+           : "a" (reg[opcode & 0x0f].I), "c" (shift));
+
+#define ARITHMETIC_ROR_REG \
+       asm("\
+             ror %%cl, %%eax;"\
+           : "=a" (value)\
+           : "a" (reg[opcode & 0x0f].I), "c" (shift));       
+
+#define ARITHMETIC_RRX_REG \
+       asm("\
+             bt $0, C_FLAG;\
+             rcr $1, %%eax;"\
+           : "=a" (value)\
+           : "a" (reg[opcode & 0x0f].I));       
+
+#define ARITHMETIC_ROR_IMM \
+       asm("\
+             ror %%cl, %%eax;"\
+           : "=a" (value)\
+           : "a" (opcode & 0xff), "c" (shift));
+#define ROR_IMM_MSR \
+      asm ("ror %%cl, %%eax;"\
+           : "=a" (value)\
+           : "a" (opcode & 0xFF), "c" (shift));
+#define ROR_VALUE \
+      asm("ror %%cl, %0"\
+          : "=r" (value)\
+          : "r" (value), "c" (shift));
+#define RCR_VALUE \
+      asm("bt $0, C_FLAG;"\
+          "rcr $1, %0"\
+          : "=r" (value)\
+          : "r" (value));
+#endif
+#else
 #define OP_SUB \
       {\
         __asm mov ebx, base\
-        __asm mov ebx, dword ptr [OFFSET m_aReg+4*ebx]\
+        __asm mov ebx, dword ptr [OFFSET reg+4*ebx]\
         __asm sub ebx, value\
         __asm mov eax, dest\
-        __asm mov dword ptr [OFFSET m_aReg+4*eax], ebx\
+        __asm mov dword ptr [OFFSET reg+4*eax], ebx\
       }
 
 #define OP_SUBS \
       {\
         __asm mov ebx, base\
-        __asm mov ebx, dword ptr [OFFSET m_aReg+4*ebx]\
+        __asm mov ebx, dword ptr [OFFSET reg+4*ebx]\
         __asm sub ebx, value\
         __asm mov eax, dest\
-        __asm mov dword ptr [OFFSET m_aReg+4*eax], ebx\
+        __asm mov dword ptr [OFFSET reg+4*eax], ebx\
         __asm sets byte ptr N_FLAG\
         __asm setz byte ptr Z_FLAG\
         __asm setnc byte ptr C_FLAG\
@@ -53,21 +756,21 @@
 #define OP_RSB \
       {\
         __asm mov ebx, base\
-        __asm mov ebx, dword ptr [OFFSET m_aReg+4*ebx]\
+        __asm mov ebx, dword ptr [OFFSET reg+4*ebx]\
         __asm mov eax, value\
         __asm sub eax, ebx\
         __asm mov ebx, dest\
-        __asm mov dword ptr [OFFSET m_aReg+4*ebx], eax\
+        __asm mov dword ptr [OFFSET reg+4*ebx], eax\
       }
 
 #define OP_RSBS \
       {\
         __asm mov ebx, base\
-        __asm mov ebx, dword ptr [OFFSET m_aReg+4*ebx]\
+        __asm mov ebx, dword ptr [OFFSET reg+4*ebx]\
         __asm mov eax, value\
         __asm sub eax, ebx\
         __asm mov ebx, dest\
-        __asm mov dword ptr [OFFSET m_aReg+4*ebx], eax\
+        __asm mov dword ptr [OFFSET reg+4*ebx], eax\
         __asm sets byte ptr N_FLAG\
         __asm setz byte ptr Z_FLAG\
         __asm setnc byte ptr C_FLAG\
@@ -77,19 +780,19 @@
 #define OP_ADD \
       {\
         __asm mov ebx, base\
-        __asm mov ebx, dword ptr [OFFSET m_aReg+4*ebx]\
+        __asm mov ebx, dword ptr [OFFSET reg+4*ebx]\
         __asm add ebx, value\
         __asm mov eax, dest\
-        __asm mov dword ptr [OFFSET m_aReg+4*eax], ebx\
+        __asm mov dword ptr [OFFSET reg+4*eax], ebx\
       }
 
 #define OP_ADDS \
       {\
         __asm mov ebx, base\
-        __asm mov ebx, dword ptr [OFFSET m_aReg+4*ebx]\
+        __asm mov ebx, dword ptr [OFFSET reg+4*ebx]\
         __asm add ebx, value\
         __asm mov eax, dest\
-        __asm mov dword ptr [OFFSET m_aReg+4*eax], ebx\
+        __asm mov dword ptr [OFFSET reg+4*eax], ebx\
         __asm sets byte ptr N_FLAG\
         __asm setz byte ptr Z_FLAG\
         __asm setc byte ptr C_FLAG\
@@ -99,21 +802,21 @@
 #define OP_ADC \
       {\
         __asm mov ebx, base\
-        __asm mov ebx, dword ptr [OFFSET m_aReg+4*ebx]\
+        __asm mov ebx, dword ptr [OFFSET reg+4*ebx]\
         __asm bt word ptr C_FLAG, 0\
         __asm adc ebx, value\
         __asm mov eax, dest\
-        __asm mov dword ptr [OFFSET m_aReg+4*eax], ebx\
+        __asm mov dword ptr [OFFSET reg+4*eax], ebx\
       }
 
 #define OP_ADCS \
       {\
         __asm mov ebx, base\
-        __asm mov ebx, dword ptr [OFFSET m_aReg+4*ebx]\
+        __asm mov ebx, dword ptr [OFFSET reg+4*ebx]\
         __asm bt word ptr C_FLAG, 0\
         __asm adc ebx, value\
         __asm mov eax, dest\
-        __asm mov dword ptr [OFFSET m_aReg+4*eax], ebx\
+        __asm mov dword ptr [OFFSET reg+4*eax], ebx\
         __asm sets byte ptr N_FLAG\
         __asm setz byte ptr Z_FLAG\
         __asm setc byte ptr C_FLAG\
@@ -123,25 +826,25 @@
 #define OP_SBC \
       {\
         __asm mov ebx, base\
-        __asm mov ebx, dword ptr [OFFSET m_aReg + 4*ebx]\
+        __asm mov ebx, dword ptr [OFFSET reg + 4*ebx]\
         __asm mov eax, value\
         __asm bt word ptr C_FLAG, 0\
         __asm cmc\
         __asm sbb ebx, eax\
         __asm mov eax, dest\
-        __asm mov dword ptr [OFFSET m_aReg + 4*eax], ebx\
+        __asm mov dword ptr [OFFSET reg + 4*eax], ebx\
       }
 
 #define OP_SBCS \
       {\
         __asm mov ebx, base\
-        __asm mov ebx, dword ptr [OFFSET m_aReg + 4*ebx]\
+        __asm mov ebx, dword ptr [OFFSET reg + 4*ebx]\
         __asm mov eax, value\
         __asm bt word ptr C_FLAG, 0\
         __asm cmc\
         __asm sbb ebx, eax\
         __asm mov eax, dest\
-        __asm mov dword ptr [OFFSET m_aReg + 4*eax], ebx\
+        __asm mov dword ptr [OFFSET reg + 4*eax], ebx\
         __asm sets byte ptr N_FLAG\
         __asm setz byte ptr Z_FLAG\
         __asm setnc byte ptr C_FLAG\
@@ -151,24 +854,24 @@
       {\
         __asm mov ebx, value\
         __asm mov eax, base\
-        __asm mov eax, dword ptr[OFFSET m_aReg + 4*eax]\
+        __asm mov eax, dword ptr[OFFSET reg + 4*eax]\
         __asm bt word ptr C_FLAG, 0\
         __asm cmc\
         __asm sbb ebx, eax\
         __asm mov eax, dest\
-        __asm mov dword ptr [OFFSET m_aReg + 4*eax], ebx\
+        __asm mov dword ptr [OFFSET reg + 4*eax], ebx\
       }
 
 #define OP_RSCS \
       {\
         __asm mov ebx, value\
         __asm mov eax, base\
-        __asm mov eax, dword ptr[OFFSET m_aReg + 4*eax]\
+        __asm mov eax, dword ptr[OFFSET reg + 4*eax]\
         __asm bt word ptr C_FLAG, 0\
         __asm cmc\
         __asm sbb ebx, eax\
         __asm mov eax, dest\
-        __asm mov dword ptr [OFFSET m_aReg + 4*eax], ebx\
+        __asm mov dword ptr [OFFSET reg + 4*eax], ebx\
         __asm sets byte ptr N_FLAG\
         __asm setz byte ptr Z_FLAG\
         __asm setnc byte ptr C_FLAG\
@@ -177,7 +880,7 @@
 #define OP_CMP \
      {\
        __asm mov eax, base\
-       __asm mov ebx, dword ptr [OFFSET m_aReg+4*eax]\
+       __asm mov ebx, dword ptr [OFFSET reg+4*eax]\
        __asm sub ebx, value\
        __asm sets byte ptr N_FLAG\
        __asm setz byte ptr Z_FLAG\
@@ -188,7 +891,7 @@
 #define OP_CMN \
      {\
        __asm mov eax, base\
-       __asm mov ebx, dword ptr [OFFSET m_aReg+4*eax]\
+       __asm mov ebx, dword ptr [OFFSET reg+4*eax]\
        __asm add ebx, value\
        __asm sets byte ptr N_FLAG\
        __asm setz byte ptr Z_FLAG\
@@ -198,7 +901,7 @@
 #define LOGICAL_LSL_REG \
         __asm mov eax, opcode\
         __asm and eax, 0x0f\
-        __asm mov eax, dword ptr [OFFSET m_aReg + 4 * eax]\
+        __asm mov eax, dword ptr [OFFSET reg + 4 * eax]\
         __asm mov cl, byte ptr shift\
         __asm shl eax, cl\
         __asm mov value, eax\
@@ -207,7 +910,7 @@
 #define LOGICAL_LSR_REG \
         __asm mov eax, opcode\
         __asm and eax, 0x0f\
-        __asm mov eax, dword ptr [OFFSET m_aReg + 4 * eax]\
+        __asm mov eax, dword ptr [OFFSET reg + 4 * eax]\
         __asm mov cl, byte ptr shift\
         __asm shr eax, cl\
         __asm mov value, eax\
@@ -216,7 +919,7 @@
 #define LOGICAL_ASR_REG \
         __asm mov eax, opcode\
         __asm and eax, 0x0f\
-        __asm mov eax, dword ptr [OFFSET m_aReg + 4 * eax]\
+        __asm mov eax, dword ptr [OFFSET reg + 4 * eax]\
         __asm mov cl, byte ptr shift\
         __asm sar eax, cl\
         __asm mov value, eax\
@@ -225,7 +928,7 @@
 #define LOGICAL_ROR_REG \
         __asm mov eax, opcode\
         __asm and eax, 0x0F\
-        __asm mov eax, dword ptr [OFFSET m_aReg + 4*eax]\
+        __asm mov eax, dword ptr [OFFSET reg + 4*eax]\
         __asm mov cl, byte ptr shift\
         __asm ror eax, cl\
         __asm mov value, eax\
@@ -234,7 +937,7 @@
 #define LOGICAL_RRX_REG \
         __asm mov eax, opcode\
         __asm and eax, 0x0F\
-        __asm mov eax, dword ptr [OFFSET m_aReg + 4*eax]\
+        __asm mov eax, dword ptr [OFFSET reg + 4*eax]\
         __asm bt word ptr C_OUT, 0\
         __asm rcr eax, 1\
         __asm mov value, eax\
@@ -250,7 +953,7 @@
 #define ARITHMETIC_LSL_REG \
         __asm mov eax, opcode\
         __asm and eax, 0x0f\
-        __asm mov eax, dword ptr [OFFSET m_aReg + 4 * eax]\
+        __asm mov eax, dword ptr [OFFSET reg + 4 * eax]\
         __asm mov cl, byte ptr shift\
         __asm shl eax, cl\
         __asm mov value, eax
@@ -258,7 +961,7 @@
 #define ARITHMETIC_LSR_REG \
         __asm mov eax, opcode\
         __asm and eax, 0x0f\
-        __asm mov eax, dword ptr [OFFSET m_aReg + 4 * eax]\
+        __asm mov eax, dword ptr [OFFSET reg + 4 * eax]\
         __asm mov cl, byte ptr shift\
         __asm shr eax, cl\
         __asm mov value, eax
@@ -266,7 +969,7 @@
 #define ARITHMETIC_ASR_REG \
         __asm mov eax, opcode\
         __asm and eax, 0x0f\
-        __asm mov eax, dword ptr [OFFSET m_aReg + 4 * eax]\
+        __asm mov eax, dword ptr [OFFSET reg + 4 * eax]\
         __asm mov cl, byte ptr shift\
         __asm sar eax, cl\
         __asm mov value, eax
@@ -274,7 +977,7 @@
 #define ARITHMETIC_ROR_REG \
         __asm mov eax, opcode\
         __asm and eax, 0x0F\
-        __asm mov eax, dword ptr [OFFSET m_aReg + 4*eax]\
+        __asm mov eax, dword ptr [OFFSET reg + 4*eax]\
         __asm mov cl, byte ptr shift\
         __asm ror eax, cl\
         __asm mov value, eax
@@ -282,7 +985,7 @@
 #define ARITHMETIC_RRX_REG \
         __asm mov eax, opcode\
         __asm and eax, 0x0F\
-        __asm mov eax, dword ptr [OFFSET m_aReg + 4*eax]\
+        __asm mov eax, dword ptr [OFFSET reg + 4*eax]\
         __asm bt word ptr C_FLAG, 0\
         __asm rcr eax, 1\
         __asm mov value, eax
@@ -312,53 +1015,55 @@
         __asm bt word ptr C_FLAG, 0\
         __asm rcr dword ptr value, 1\
       }
+#endif
+#endif
 
 #define OP_TST \
-      DWORD res = m_aReg[base].I & value;\
+      u32 res = reg[base].I & value;\
       N_FLAG = (res & 0x80000000) ? true : false;\
       Z_FLAG = (res) ? false : true;\
       C_FLAG = C_OUT;
 
 #define OP_TEQ \
-      DWORD res = m_aReg[base].I ^ value;\
+      u32 res = reg[base].I ^ value;\
       N_FLAG = (res & 0x80000000) ? true : false;\
       Z_FLAG = (res) ? false : true;\
       C_FLAG = C_OUT;
 
 #define OP_ORR \
-    m_aReg[dest].I = m_aReg[base].I | value;
+    reg[dest].I = reg[base].I | value;
 
 #define OP_ORRS \
-    m_aReg[dest].I = m_aReg[base].I | value;\
-    N_FLAG = (m_aReg[dest].I & 0x80000000) ? true : false;\
-    Z_FLAG = (m_aReg[dest].I) ? false : true;\
+    reg[dest].I = reg[base].I | value;\
+    N_FLAG = (reg[dest].I & 0x80000000) ? true : false;\
+    Z_FLAG = (reg[dest].I) ? false : true;\
     C_FLAG = C_OUT;
 
 #define OP_MOV \
-    m_aReg[dest].I = value;
+    reg[dest].I = value;
 
 #define OP_MOVS \
-    m_aReg[dest].I = value;\
-    N_FLAG = (m_aReg[dest].I & 0x80000000) ? true : false;\
-    Z_FLAG = (m_aReg[dest].I) ? false : true;\
+    reg[dest].I = value;\
+    N_FLAG = (reg[dest].I & 0x80000000) ? true : false;\
+    Z_FLAG = (reg[dest].I) ? false : true;\
     C_FLAG = C_OUT;
 
 #define OP_BIC \
-    m_aReg[dest].I = m_aReg[base].I & (~value);
+    reg[dest].I = reg[base].I & (~value);
 
 #define OP_BICS \
-    m_aReg[dest].I = m_aReg[base].I & (~value);\
-    N_FLAG = (m_aReg[dest].I & 0x80000000) ? true : false;\
-    Z_FLAG = (m_aReg[dest].I) ? false : true;\
+    reg[dest].I = reg[base].I & (~value);\
+    N_FLAG = (reg[dest].I & 0x80000000) ? true : false;\
+    Z_FLAG = (reg[dest].I) ? false : true;\
     C_FLAG = C_OUT;
 
 #define OP_MVN \
-    m_aReg[dest].I = ~value;
+    reg[dest].I = ~value;
 
 #define OP_MVNS \
-    m_aReg[dest].I = ~value; \
-    N_FLAG = (m_aReg[dest].I & 0x80000000) ? true : false;\
-    Z_FLAG = (m_aReg[dest].I) ? false : true;\
+    reg[dest].I = ~value; \
+    N_FLAG = (reg[dest].I & 0x80000000) ? true : false;\
+    Z_FLAG = (reg[dest].I) ? false : true;\
     C_FLAG = C_OUT;
 
 #define CASE_16(BASE) \
@@ -406,28 +1111,28 @@
       int shift = (opcode >> 7) & 0x1F;\
       int dest = (opcode>>12) & 15;\
       bool C_OUT = C_FLAG;\
-      DWORD value;\
+      u32 value;\
       \
       if(shift) {\
         LOGICAL_LSL_REG\
       } else {\
-        value = m_aReg[opcode & 0x0F].I;\
+        value = reg[opcode & 0x0F].I;\
       }\
       if(dest == 15) {\
         OPCODE2\
         /* todo */\
         if(opcode & 0x00100000) {\
-          m_uClockTicks++;\
-          CPUSwitchMode(m_aReg[17].I & 0x1f, false);\
+          clockTicks++;\
+          CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
         if(armState) {\
-          m_aReg[15].I &= 0xFFFFFFFC;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 4;\
+          reg[15].I &= 0xFFFFFFFC;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 4;\
         } else {\
-          m_aReg[15].I &= 0xFFFFFFFE;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 2;\
+          reg[15].I &= 0xFFFFFFFE;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -442,29 +1147,29 @@
       int shift = (opcode >> 7) & 0x1F;\
       int dest = (opcode>>12) & 15;\
       bool C_OUT = C_FLAG;\
-      DWORD value;\
+      u32 value;\
       if(shift) {\
         LOGICAL_LSR_REG\
       } else {\
         value = 0;\
-        C_OUT = (m_aReg[opcode & 0x0F].I & 0x80000000) ? true : false;\
+        C_OUT = (reg[opcode & 0x0F].I & 0x80000000) ? true : false;\
       }\
       \
       if(dest == 15) {\
         OPCODE2\
         /* todo */\
         if(opcode & 0x00100000) {\
-          m_uClockTicks++;\
-          CPUSwitchMode(m_aReg[17].I & 0x1f, false);\
+          clockTicks++;\
+          CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
         if(armState) {\
-          m_aReg[15].I &= 0xFFFFFFFC;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 4;\
+          reg[15].I &= 0xFFFFFFFC;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 4;\
         } else {\
-          m_aReg[15].I &= 0xFFFFFFFE;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 2;\
+          reg[15].I &= 0xFFFFFFFE;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -479,11 +1184,11 @@
       int shift = (opcode >> 7) & 0x1F;\
       int dest = (opcode>>12) & 15;\
       bool C_OUT = C_FLAG;\
-      DWORD value;\
+      u32 value;\
       if(shift) {\
         LOGICAL_ASR_REG\
       } else {\
-        if(m_aReg[opcode & 0x0F].I & 0x80000000){\
+        if(reg[opcode & 0x0F].I & 0x80000000){\
           value = 0xFFFFFFFF;\
           C_OUT = true;\
         } else {\
@@ -496,17 +1201,17 @@
         OPCODE2\
         /* todo */\
         if(opcode & 0x00100000) {\
-          m_uClockTicks++;\
-          CPUSwitchMode(m_aReg[17].I & 0x1f, false);\
+          clockTicks++;\
+          CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
         if(armState) {\
-          m_aReg[15].I &= 0xFFFFFFFC;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 4;\
+          reg[15].I &= 0xFFFFFFFC;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 4;\
         } else {\
-          m_aReg[15].I &= 0xFFFFFFFE;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 2;\
+          reg[15].I &= 0xFFFFFFFE;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -521,7 +1226,7 @@
       int shift = (opcode >> 7) & 0x1F;\
       int dest = (opcode>>12) & 15;\
       bool C_OUT = C_FLAG;\
-      DWORD value;\
+      u32 value;\
       if(shift) {\
         LOGICAL_ROR_REG\
       } else {\
@@ -531,17 +1236,17 @@
         OPCODE2\
         /* todo */\
         if(opcode & 0x00100000) {\
-          m_uClockTicks++;\
-          CPUSwitchMode(m_aReg[17].I & 0x1f, false);\
+          clockTicks++;\
+          CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
         if(armState) {\
-          m_aReg[15].I &= 0xFFFFFFFC;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 4;\
+          reg[15].I &= 0xFFFFFFFC;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 4;\
         } else {\
-          m_aReg[15].I &= 0xFFFFFFFE;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 2;\
+          reg[15].I &= 0xFFFFFFFE;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -551,16 +1256,16 @@
   case BASE+1:\
     {\
        /* OP Rd,Rb,Rm LSL Rs */\
-      m_uClockTicks++;\
+      clockTicks++;\
       int base = (opcode >> 16) & 0x0F;\
-      int shift = m_aReg[(opcode >> 8)&15].B.B0;\
+      int shift = reg[(opcode >> 8)&15].B.B0;\
       int dest = (opcode>>12) & 15;\
       bool C_OUT = C_FLAG;\
-      DWORD value;\
+      u32 value;\
       if(shift) {\
         if(shift == 32) {\
           value = 0;\
-          C_OUT = (m_aReg[opcode & 0x0F].I & 1 ? true : false);\
+          C_OUT = (reg[opcode & 0x0F].I & 1 ? true : false);\
         } else if(shift < 32) {\
            LOGICAL_LSL_REG\
         } else {\
@@ -568,23 +1273,23 @@
           C_OUT = false;\
         }\
       } else {\
-        value = m_aReg[opcode & 0x0F].I;\
+        value = reg[opcode & 0x0F].I;\
       }\
       if(dest == 15) {\
         OPCODE2\
         /* todo */\
         if(opcode & 0x00100000) {\
-          m_uClockTicks++;\
-          CPUSwitchMode(m_aReg[17].I & 0x1f, false);\
+          clockTicks++;\
+          CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
         if(armState) {\
-          m_aReg[15].I &= 0xFFFFFFFC;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 4;\
+          reg[15].I &= 0xFFFFFFFC;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 4;\
         } else {\
-          m_aReg[15].I &= 0xFFFFFFFE;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 2;\
+          reg[15].I &= 0xFFFFFFFE;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -594,16 +1299,16 @@
   case BASE+3:\
     {\
        /* OP Rd,Rb,Rm LSR Rs */ \
-      m_uClockTicks++;\
+      clockTicks++;\
       int base = (opcode >> 16) & 0x0F;\
-      int shift = m_aReg[(opcode >> 8)&15].B.B0;\
+      int shift = reg[(opcode >> 8)&15].B.B0;\
       int dest = (opcode>>12) & 15;\
       bool C_OUT = C_FLAG;\
-      DWORD value;\
+      u32 value;\
       if(shift) {\
         if(shift == 32) {\
           value = 0;\
-          C_OUT = (m_aReg[opcode & 0x0F].I & 0x80000000 ? true : false);\
+          C_OUT = (reg[opcode & 0x0F].I & 0x80000000 ? true : false);\
         } else if(shift < 32) {\
             LOGICAL_LSR_REG\
         } else {\
@@ -611,23 +1316,23 @@
           C_OUT = false;\
         }\
       } else {\
-        value = m_aReg[opcode & 0x0F].I;\
+        value = reg[opcode & 0x0F].I;\
       }\
       if(dest == 15) {\
         OPCODE2\
         /* todo */\
         if(opcode & 0x00100000) {\
-          m_uClockTicks++;\
-          CPUSwitchMode(m_aReg[17].I & 0x1f, false);\
+          clockTicks++;\
+          CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
         if(armState) {\
-          m_aReg[15].I &= 0xFFFFFFFC;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 4;\
+          reg[15].I &= 0xFFFFFFFC;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 4;\
         } else {\
-          m_aReg[15].I &= 0xFFFFFFFE;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 2;\
+          reg[15].I &= 0xFFFFFFFE;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -637,20 +1342,20 @@
   case BASE+5:\
     {\
        /* OP Rd,Rb,Rm ASR Rs */ \
-      m_uClockTicks++;\
+      clockTicks++;\
       int base = (opcode >> 16) & 0x0F;\
-      int shift = m_aReg[(opcode >> 8)&15].B.B0;\
+      int shift = reg[(opcode >> 8)&15].B.B0;\
       int dest = (opcode>>12) & 15;\
       bool C_OUT = C_FLAG;\
-      DWORD value;\
+      u32 value;\
       if(shift < 32) {\
         if(shift) {\
           LOGICAL_ASR_REG\
         } else {\
-          value = m_aReg[opcode & 0x0F].I;\
+          value = reg[opcode & 0x0F].I;\
         }\
       } else {\
-        if(m_aReg[opcode & 0x0F].I & 0x80000000){\
+        if(reg[opcode & 0x0F].I & 0x80000000){\
           value = 0xFFFFFFFF;\
           C_OUT = true;\
         } else {\
@@ -662,17 +1367,17 @@
         OPCODE2\
         /* todo */\
         if(opcode & 0x00100000) {\
-          m_uClockTicks++;\
-          CPUSwitchMode(m_aReg[17].I & 0x1f, false);\
+          clockTicks++;\
+          CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
         if(armState) {\
-          m_aReg[15].I &= 0xFFFFFFFC;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 4;\
+          reg[15].I &= 0xFFFFFFFC;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 4;\
         } else {\
-          m_aReg[15].I &= 0xFFFFFFFE;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 2;\
+          reg[15].I &= 0xFFFFFFFE;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -682,39 +1387,39 @@
   case BASE+7:\
     {\
        /* OP Rd,Rb,Rm ROR Rs */\
-      m_uClockTicks++;\
+      clockTicks++;\
       int base = (opcode >> 16) & 0x0F;\
-      int shift = m_aReg[(opcode >> 8)&15].B.B0;\
+      int shift = reg[(opcode >> 8)&15].B.B0;\
       int dest = (opcode>>12) & 15;\
       bool C_OUT = C_FLAG;\
-      DWORD value;\
+      u32 value;\
       if(shift) {\
         shift &= 0x1f;\
         if(shift) {\
           LOGICAL_ROR_REG\
         } else {\
-          value = m_aReg[opcode & 0x0F].I;\
+          value = reg[opcode & 0x0F].I;\
           C_OUT = (value & 0x80000000 ? true : false);\
         }\
       } else {\
-        value = m_aReg[opcode & 0x0F].I;\
+        value = reg[opcode & 0x0F].I;\
         C_OUT = (value & 0x80000000 ? true : false);\
       }\
       if(dest == 15) {\
         OPCODE2\
         /* todo */\
         if(opcode & 0x00100000) {\
-          m_uClockTicks++;\
-          CPUSwitchMode(m_aReg[17].I & 0x1f, false);\
+          clockTicks++;\
+          CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
         if(armState) {\
-          m_aReg[15].I &= 0xFFFFFFFC;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 4;\
+          reg[15].I &= 0xFFFFFFFC;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 4;\
         } else {\
-          m_aReg[15].I &= 0xFFFFFFFE;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 2;\
+          reg[15].I &= 0xFFFFFFFE;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -742,7 +1447,7 @@
       int base = (opcode >> 16) & 0x0F;\
       int dest = (opcode >> 12) & 0x0F;\
       bool C_OUT = C_FLAG;\
-      DWORD value;\
+      u32 value;\
       if(shift) {\
         LOGICAL_ROR_IMM\
       } else {\
@@ -752,17 +1457,381 @@
         OPCODE2\
         /* todo */\
         if(opcode & 0x00100000) {\
-          m_uClockTicks++;\
-          CPUSwitchMode(m_aReg[17].I & 0x1f, false);\
+          clockTicks++;\
+          CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
         if(armState) {\
-          m_aReg[15].I &= 0xFFFFFFFC;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 4;\
+          reg[15].I &= 0xFFFFFFFC;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 4;\
         } else {\
-          m_aReg[15].I &= 0xFFFFFFFE;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 2;\
+          reg[15].I &= 0xFFFFFFFE;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 2;\
+        }\
+      } else {\
+        OPCODE \
+      }\
+    }\
+    break;
+
+#define LOGICAL_DATA_OPCODE_WITHOUT_base(OPCODE, OPCODE2, BASE) \
+  case BASE: \
+  case BASE+8:\
+    {\
+      /* OP Rd,Rb,Rm LSL # */ \
+      int shift = (opcode >> 7) & 0x1F;\
+      int dest = (opcode>>12) & 15;\
+      bool C_OUT = C_FLAG;\
+      u32 value;\
+      \
+      if(shift) {\
+        LOGICAL_LSL_REG\
+      } else {\
+        value = reg[opcode & 0x0F].I;\
+      }\
+      if(dest == 15) {\
+        OPCODE2\
+        /* todo */\
+        if(opcode & 0x00100000) {\
+          clockTicks++;\
+          CPUSwitchMode(reg[17].I & 0x1f, false);\
+        }\
+        if(armState) {\
+          reg[15].I &= 0xFFFFFFFC;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 4;\
+        } else {\
+          reg[15].I &= 0xFFFFFFFE;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 2;\
+        }\
+      } else {\
+        OPCODE \
+      }\
+    }\
+    break;\
+  case BASE+2:\
+  case BASE+10:\
+    {\
+       /* OP Rd,Rb,Rm LSR # */ \
+      int shift = (opcode >> 7) & 0x1F;\
+      int dest = (opcode>>12) & 15;\
+      bool C_OUT = C_FLAG;\
+      u32 value;\
+      if(shift) {\
+        LOGICAL_LSR_REG\
+      } else {\
+        value = 0;\
+        C_OUT = (reg[opcode & 0x0F].I & 0x80000000) ? true : false;\
+      }\
+      \
+      if(dest == 15) {\
+        OPCODE2\
+        /* todo */\
+        if(opcode & 0x00100000) {\
+          clockTicks++;\
+          CPUSwitchMode(reg[17].I & 0x1f, false);\
+        }\
+        if(armState) {\
+          reg[15].I &= 0xFFFFFFFC;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 4;\
+        } else {\
+          reg[15].I &= 0xFFFFFFFE;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 2;\
+        }\
+      } else {\
+        OPCODE \
+      }\
+    }\
+    break;\
+  case BASE+4:\
+  case BASE+12:\
+    {\
+       /* OP Rd,Rb,Rm ASR # */\
+      int shift = (opcode >> 7) & 0x1F;\
+      int dest = (opcode>>12) & 15;\
+      bool C_OUT = C_FLAG;\
+      u32 value;\
+      if(shift) {\
+        LOGICAL_ASR_REG\
+      } else {\
+        if(reg[opcode & 0x0F].I & 0x80000000){\
+          value = 0xFFFFFFFF;\
+          C_OUT = true;\
+        } else {\
+          value = 0;\
+          C_OUT = false;\
+        }                   \
+      }\
+      \
+      if(dest == 15) {\
+        OPCODE2\
+        /* todo */\
+        if(opcode & 0x00100000) {\
+          clockTicks++;\
+          CPUSwitchMode(reg[17].I & 0x1f, false);\
+        }\
+        if(armState) {\
+          reg[15].I &= 0xFFFFFFFC;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 4;\
+        } else {\
+          reg[15].I &= 0xFFFFFFFE;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 2;\
+        }\
+      } else {\
+        OPCODE \
+      }\
+    }\
+    break;\
+  case BASE+6:\
+  case BASE+14:\
+    {\
+       /* OP Rd,Rb,Rm ROR # */\
+      int shift = (opcode >> 7) & 0x1F;\
+      int dest = (opcode>>12) & 15;\
+      bool C_OUT = C_FLAG;\
+      u32 value;\
+      if(shift) {\
+        LOGICAL_ROR_REG\
+      } else {\
+        LOGICAL_RRX_REG\
+      }\
+      if(dest == 15) {\
+        OPCODE2\
+        /* todo */\
+        if(opcode & 0x00100000) {\
+          clockTicks++;\
+          CPUSwitchMode(reg[17].I & 0x1f, false);\
+        }\
+        if(armState) {\
+          reg[15].I &= 0xFFFFFFFC;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 4;\
+        } else {\
+          reg[15].I &= 0xFFFFFFFE;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 2;\
+        }\
+      } else {\
+        OPCODE \
+      }\
+    }\
+    break;\
+  case BASE+1:\
+    {\
+       /* OP Rd,Rb,Rm LSL Rs */\
+      clockTicks++;\
+      int shift = reg[(opcode >> 8)&15].B.B0;\
+      int dest = (opcode>>12) & 15;\
+      bool C_OUT = C_FLAG;\
+      u32 value;\
+      if(shift) {\
+        if(shift == 32) {\
+          value = 0;\
+          C_OUT = (reg[opcode & 0x0F].I & 1 ? true : false);\
+        } else if(shift < 32) {\
+           LOGICAL_LSL_REG\
+        } else {\
+          value = 0;\
+          C_OUT = false;\
+        }\
+      } else {\
+        value = reg[opcode & 0x0F].I;\
+      }\
+      if(dest == 15) {\
+        OPCODE2\
+        /* todo */\
+        if(opcode & 0x00100000) {\
+          clockTicks++;\
+          CPUSwitchMode(reg[17].I & 0x1f, false);\
+        }\
+        if(armState) {\
+          reg[15].I &= 0xFFFFFFFC;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 4;\
+        } else {\
+          reg[15].I &= 0xFFFFFFFE;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 2;\
+        }\
+      } else {\
+        OPCODE \
+      }\
+    }\
+    break;\
+  case BASE+3:\
+    {\
+       /* OP Rd,Rb,Rm LSR Rs */ \
+      clockTicks++;\
+      int shift = reg[(opcode >> 8)&15].B.B0;\
+      int dest = (opcode>>12) & 15;\
+      bool C_OUT = C_FLAG;\
+      u32 value;\
+      if(shift) {\
+        if(shift == 32) {\
+          value = 0;\
+          C_OUT = (reg[opcode & 0x0F].I & 0x80000000 ? true : false);\
+        } else if(shift < 32) {\
+            LOGICAL_LSR_REG\
+        } else {\
+          value = 0;\
+          C_OUT = false;\
+        }\
+      } else {\
+        value = reg[opcode & 0x0F].I;\
+      }\
+      if(dest == 15) {\
+        OPCODE2\
+        /* todo */\
+        if(opcode & 0x00100000) {\
+          clockTicks++;\
+          CPUSwitchMode(reg[17].I & 0x1f, false);\
+        }\
+        if(armState) {\
+          reg[15].I &= 0xFFFFFFFC;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 4;\
+        } else {\
+          reg[15].I &= 0xFFFFFFFE;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 2;\
+        }\
+      } else {\
+        OPCODE \
+      }\
+    }\
+    break;\
+  case BASE+5:\
+    {\
+       /* OP Rd,Rb,Rm ASR Rs */ \
+      clockTicks++;\
+      int shift = reg[(opcode >> 8)&15].B.B0;\
+      int dest = (opcode>>12) & 15;\
+      bool C_OUT = C_FLAG;\
+      u32 value;\
+      if(shift < 32) {\
+        if(shift) {\
+          LOGICAL_ASR_REG\
+        } else {\
+          value = reg[opcode & 0x0F].I;\
+        }\
+      } else {\
+        if(reg[opcode & 0x0F].I & 0x80000000){\
+          value = 0xFFFFFFFF;\
+          C_OUT = true;\
+        } else {\
+          value = 0;\
+          C_OUT = false;\
+        }\
+      }\
+      if(dest == 15) {\
+        OPCODE2\
+        /* todo */\
+        if(opcode & 0x00100000) {\
+          clockTicks++;\
+          CPUSwitchMode(reg[17].I & 0x1f, false);\
+        }\
+        if(armState) {\
+          reg[15].I &= 0xFFFFFFFC;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 4;\
+        } else {\
+          reg[15].I &= 0xFFFFFFFE;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 2;\
+        }\
+      } else {\
+        OPCODE \
+      }\
+    }\
+    break;\
+  case BASE+7:\
+    {\
+       /* OP Rd,Rb,Rm ROR Rs */\
+      clockTicks++;\
+      int shift = reg[(opcode >> 8)&15].B.B0;\
+      int dest = (opcode>>12) & 15;\
+      bool C_OUT = C_FLAG;\
+      u32 value;\
+      if(shift) {\
+        shift &= 0x1f;\
+        if(shift) {\
+          LOGICAL_ROR_REG\
+        } else {\
+          value = reg[opcode & 0x0F].I;\
+          C_OUT = (value & 0x80000000 ? true : false);\
+        }\
+      } else {\
+        value = reg[opcode & 0x0F].I;\
+        C_OUT = (value & 0x80000000 ? true : false);\
+      }\
+      if(dest == 15) {\
+        OPCODE2\
+        /* todo */\
+        if(opcode & 0x00100000) {\
+          clockTicks++;\
+          CPUSwitchMode(reg[17].I & 0x1f, false);\
+        }\
+        if(armState) {\
+          reg[15].I &= 0xFFFFFFFC;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 4;\
+        } else {\
+          reg[15].I &= 0xFFFFFFFE;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 2;\
+        }\
+      } else {\
+        OPCODE \
+      }\
+    }\
+    break;\
+  case BASE+0x200:\
+  case BASE+0x201:\
+  case BASE+0x202:\
+  case BASE+0x203:\
+  case BASE+0x204:\
+  case BASE+0x205:\
+  case BASE+0x206:\
+  case BASE+0x207:\
+  case BASE+0x208:\
+  case BASE+0x209:\
+  case BASE+0x20a:\
+  case BASE+0x20b:\
+  case BASE+0x20c:\
+  case BASE+0x20d:\
+  case BASE+0x20e:\
+  case BASE+0x20f:\
+    {\
+      int shift = (opcode & 0xF00) >> 7;\
+      int dest = (opcode >> 12) & 0x0F;\
+      bool C_OUT = C_FLAG;\
+      u32 value;\
+      if(shift) {\
+        LOGICAL_ROR_IMM\
+      } else {\
+        value = opcode & 0xff;\
+      }\
+      if(dest == 15) {\
+        OPCODE2\
+        /* todo */\
+        if(opcode & 0x00100000) {\
+          clockTicks++;\
+          CPUSwitchMode(reg[17].I & 0x1f, false);\
+        }\
+        if(armState) {\
+          reg[15].I &= 0xFFFFFFFC;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 4;\
+        } else {\
+          reg[15].I &= 0xFFFFFFFE;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -778,27 +1847,27 @@
       int base = (opcode >> 16) & 0x0F;\
       int shift = (opcode >> 7) & 0x1F;\
       int dest = (opcode>>12) & 15;\
-      DWORD value;\
+      u32 value;\
       if(shift) {\
         ARITHMETIC_LSL_REG\
       } else {\
-        value = m_aReg[opcode & 0x0F].I;\
+        value = reg[opcode & 0x0F].I;\
       }\
       if(dest == 15) {\
         OPCODE2\
         /* todo */\
         if(opcode & 0x00100000) {\
-          m_uClockTicks++;\
-          CPUSwitchMode(m_aReg[17].I & 0x1f, false);\
+          clockTicks++;\
+          CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
         if(armState) {\
-          m_aReg[15].I &= 0xFFFFFFFC;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 4;\
+          reg[15].I &= 0xFFFFFFFC;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 4;\
         } else {\
-          m_aReg[15].I &= 0xFFFFFFFE;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 2;\
+          reg[15].I &= 0xFFFFFFFE;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -812,7 +1881,7 @@
       int base = (opcode >> 16) & 0x0F;\
       int shift = (opcode >> 7) & 0x1F;\
       int dest = (opcode>>12) & 15;\
-      DWORD value;\
+      u32 value;\
       if(shift) {\
         ARITHMETIC_LSR_REG\
       } else {\
@@ -822,17 +1891,17 @@
         OPCODE2\
         /* todo */\
         if(opcode & 0x00100000) {\
-          m_uClockTicks++;\
-          CPUSwitchMode(m_aReg[17].I & 0x1f, false);\
+          clockTicks++;\
+          CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
         if(armState) {\
-          m_aReg[15].I &= 0xFFFFFFFC;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 4;\
+          reg[15].I &= 0xFFFFFFFC;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 4;\
         } else {\
-          m_aReg[15].I &= 0xFFFFFFFE;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 2;\
+          reg[15].I &= 0xFFFFFFFE;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -846,11 +1915,11 @@
       int base = (opcode >> 16) & 0x0F;\
       int shift = (opcode >> 7) & 0x1F;\
       int dest = (opcode>>12) & 15;\
-      DWORD value;\
+      u32 value;\
       if(shift) {\
         ARITHMETIC_ASR_REG\
       } else {\
-        if(m_aReg[opcode & 0x0F].I & 0x80000000){\
+        if(reg[opcode & 0x0F].I & 0x80000000){\
           value = 0xFFFFFFFF;\
         } else value = 0;\
       }\
@@ -858,17 +1927,17 @@
         OPCODE2\
         /* todo */\
         if(opcode & 0x00100000) {\
-          m_uClockTicks++;\
-          CPUSwitchMode(m_aReg[17].I & 0x1f, false);\
+          clockTicks++;\
+          CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
         if(armState) {\
-          m_aReg[15].I &= 0xFFFFFFFC;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 4;\
+          reg[15].I &= 0xFFFFFFFC;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 4;\
         } else {\
-          m_aReg[15].I &= 0xFFFFFFFE;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 2;\
+          reg[15].I &= 0xFFFFFFFE;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -882,7 +1951,7 @@
       int base = (opcode >> 16) & 0x0F;\
       int shift = (opcode >> 7) & 0x1F;\
       int dest = (opcode>>12) & 15;\
-      DWORD value;\
+      u32 value;\
       if(shift) {\
          ARITHMETIC_ROR_REG\
       } else {\
@@ -892,17 +1961,17 @@
         OPCODE2\
         /* todo */\
         if(opcode & 0x00100000) {\
-          m_uClockTicks++;\
-          CPUSwitchMode(m_aReg[17].I & 0x1f, false);\
+          clockTicks++;\
+          CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
         if(armState) {\
-          m_aReg[15].I &= 0xFFFFFFFC;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 4;\
+          reg[15].I &= 0xFFFFFFFC;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 4;\
         } else {\
-          m_aReg[15].I &= 0xFFFFFFFE;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 2;\
+          reg[15].I &= 0xFFFFFFFE;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -912,11 +1981,11 @@
   case BASE+1:\
     {\
       /* OP Rd,Rb,Rm LSL Rs */\
-      m_uClockTicks++;\
+      clockTicks++;\
       int base = (opcode >> 16) & 0x0F;\
-      int shift = m_aReg[(opcode >> 8)&15].B.B0;\
+      int shift = reg[(opcode >> 8)&15].B.B0;\
       int dest = (opcode>>12) & 15;\
-      DWORD value;\
+      u32 value;\
       if(shift) {\
         if(shift == 32) {\
           value = 0;\
@@ -924,23 +1993,23 @@
            ARITHMETIC_LSL_REG\
         } else value = 0;\
       } else {\
-        value = m_aReg[opcode & 0x0F].I;\
+        value = reg[opcode & 0x0F].I;\
       }\
       if(dest == 15) {\
         OPCODE2\
         /* todo */\
         if(opcode & 0x00100000) {\
-          m_uClockTicks++;\
-          CPUSwitchMode(m_aReg[17].I & 0x1f, false);\
+          clockTicks++;\
+          CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
         if(armState) {\
-          m_aReg[15].I &= 0xFFFFFFFC;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 4;\
+          reg[15].I &= 0xFFFFFFFC;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 4;\
         } else {\
-          m_aReg[15].I &= 0xFFFFFFFE;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 2;\
+          reg[15].I &= 0xFFFFFFFE;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -950,11 +2019,11 @@
   case BASE+3:\
     {\
       /* OP Rd,Rb,Rm LSR Rs */\
-      m_uClockTicks++;\
+      clockTicks++;\
       int base = (opcode >> 16) & 0x0F;\
-      int shift = m_aReg[(opcode >> 8)&15].B.B0;\
+      int shift = reg[(opcode >> 8)&15].B.B0;\
       int dest = (opcode>>12) & 15;\
-      DWORD value;\
+      u32 value;\
       if(shift) {\
         if(shift == 32) {\
           value = 0;\
@@ -962,23 +2031,23 @@
            ARITHMETIC_LSR_REG\
         } else value = 0;\
       } else {\
-        value = m_aReg[opcode & 0x0F].I;\
+        value = reg[opcode & 0x0F].I;\
       }\
       if(dest == 15) {\
         OPCODE2\
         /* todo */\
         if(opcode & 0x00100000) {\
-          m_uClockTicks++;\
-          CPUSwitchMode(m_aReg[17].I & 0x1f, false);\
+          clockTicks++;\
+          CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
         if(armState) {\
-          m_aReg[15].I &= 0xFFFFFFFC;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 4;\
+          reg[15].I &= 0xFFFFFFFC;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 4;\
         } else {\
-          m_aReg[15].I &= 0xFFFFFFFE;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 2;\
+          reg[15].I &= 0xFFFFFFFE;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -988,19 +2057,19 @@
   case BASE+5:\
     {\
       /* OP Rd,Rb,Rm ASR Rs */\
-      m_uClockTicks++;\
+      clockTicks++;\
       int base = (opcode >> 16) & 0x0F;\
-      int shift = m_aReg[(opcode >> 8)&15].B.B0;\
+      int shift = reg[(opcode >> 8)&15].B.B0;\
       int dest = (opcode>>12) & 15;\
-      DWORD value;\
+      u32 value;\
       if(shift < 32) {\
         if(shift) {\
            ARITHMETIC_ASR_REG\
         } else {\
-          value = m_aReg[opcode & 0x0F].I;\
+          value = reg[opcode & 0x0F].I;\
         }\
       } else {\
-        if(m_aReg[opcode & 0x0F].I & 0x80000000){\
+        if(reg[opcode & 0x0F].I & 0x80000000){\
           value = 0xFFFFFFFF;\
         } else value = 0;\
       }\
@@ -1008,17 +2077,17 @@
         OPCODE2\
         /* todo */\
         if(opcode & 0x00100000) {\
-          m_uClockTicks++;\
-          CPUSwitchMode(m_aReg[17].I & 0x1f, false);\
+          clockTicks++;\
+          CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
         if(armState) {\
-          m_aReg[15].I &= 0xFFFFFFFC;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 4;\
+          reg[15].I &= 0xFFFFFFFC;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 4;\
         } else {\
-          m_aReg[15].I &= 0xFFFFFFFE;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 2;\
+          reg[15].I &= 0xFFFFFFFE;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -1028,36 +2097,36 @@
   case BASE+7:\
     {\
       /* OP Rd,Rb,Rm ROR Rs */\
-      m_uClockTicks++;\
+      clockTicks++;\
       int base = (opcode >> 16) & 0x0F;\
-      int shift = m_aReg[(opcode >> 8)&15].B.B0;\
+      int shift = reg[(opcode >> 8)&15].B.B0;\
       int dest = (opcode>>12) & 15;\
-      DWORD value;\
+      u32 value;\
       if(shift) {\
         shift &= 0x1f;\
         if(shift) {\
            ARITHMETIC_ROR_REG\
         } else {\
-           value = m_aReg[opcode & 0x0F].I;\
+           value = reg[opcode & 0x0F].I;\
         }\
       } else {\
-        value = m_aReg[opcode & 0x0F].I;\
+        value = reg[opcode & 0x0F].I;\
       }\
       if(dest == 15) {\
         OPCODE2\
         /* todo */\
         if(opcode & 0x00100000) {\
-          m_uClockTicks++;\
-          CPUSwitchMode(m_aReg[17].I & 0x1f, false);\
+          clockTicks++;\
+          CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
         if(armState) {\
-          m_aReg[15].I &= 0xFFFFFFFC;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 4;\
+          reg[15].I &= 0xFFFFFFFC;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 4;\
         } else {\
-          m_aReg[15].I &= 0xFFFFFFFE;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 2;\
+          reg[15].I &= 0xFFFFFFFE;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -1084,7 +2153,7 @@
       int shift = (opcode & 0xF00) >> 7;\
       int base = (opcode >> 16) & 0x0F;\
       int dest = (opcode >> 12) & 0x0F;\
-      DWORD value;\
+      u32 value;\
       {\
         ARITHMETIC_ROR_IMM\
       }\
@@ -1092,17 +2161,17 @@
         OPCODE2\
         /* todo */\
         if(opcode & 0x00100000) {\
-          m_uClockTicks++;\
-          CPUSwitchMode(m_aReg[17].I & 0x1f, false);\
+          clockTicks++;\
+          CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
         if(armState) {\
-          m_aReg[15].I &= 0xFFFFFFFC;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 4;\
+          reg[15].I &= 0xFFFFFFFC;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 4;\
         } else {\
-          m_aReg[15].I &= 0xFFFFFFFE;\
-          m_uArmNextPC = m_aReg[15].I;\
-          m_aReg[15].I += 2;\
+          reg[15].I &= 0xFFFFFFFE;\
+          armNextPC = reg[15].I;\
+          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -1110,13 +2179,18 @@
     }\
     break;
 
-  DWORD opcode = Arm7ReadMemoryQuick(m_uArmNextPC);
+  u32 opcode = CPUReadMemoryQuick(armNextPC);
 
-  m_uClockTicks = memoryWait32[(m_uArmNextPC >> 24) & 15];
+  clockTicks = memoryWaitFetch32[(armNextPC >> 24) & 15];
 
+/*#ifndef FINAL_VERSION
+  if(armNextPC == stop) {
+    armNextPC++;
+  }
+#endif*/
 
-  m_uArmNextPC = m_aReg[15].I;
-  m_aReg[15].I += 4;
+  armNextPC = reg[15].I;
+  reg[15].I += 4;
   int cond = opcode >> 28;
   // suggested optimization for frequent cases
   bool cond_res;
@@ -1179,25 +2253,25 @@
   
 if(cond_res) {
   switch(((opcode>>16)&0xFF0) | ((opcode>>4)&0x0F)) {
-    LOGICAL_DATA_OPCODE(OP_AND,  OP_AND, 0x000);
-    LOGICAL_DATA_OPCODE(OP_ANDS, OP_AND, 0x010);
+    LOGICAL_DATA_OPCODE_WITHOUT_base(OP_AND,  OP_AND, 0x000);
+    LOGICAL_DATA_OPCODE_WITHOUT_base(OP_ANDS, OP_AND, 0x010);
   case 0x009:
     {
       // MUL Rd, Rm, Rs
       int dest = (opcode >> 16) & 0x0F;
       int mult = (opcode & 0x0F);
-      DWORD rs = m_aReg[(opcode >> 8) & 0x0F].I;
-      m_aReg[dest].I = m_aReg[mult].I * rs;
-      if(((int)rs)<0)
+      u32 rs = reg[(opcode >> 8) & 0x0F].I;
+      reg[dest].I = reg[mult].I * rs;
+      if(((s32)rs)<0)
         rs = ~rs;
       if((rs & 0xFFFFFF00) == 0)
-        m_uClockTicks += 2;
+        clockTicks += 2;
       else if ((rs & 0xFFFF0000) == 0)
-        m_uClockTicks += 3;
+        clockTicks += 3;
       else if ((rs & 0xFF000000) == 0)
-        m_uClockTicks += 4;
+        clockTicks += 4;
       else
-        m_uClockTicks += 5;
+        clockTicks += 5;
     }
     break;
   case 0x019:
@@ -1205,20 +2279,20 @@ if(cond_res) {
       // MULS Rd, Rm, Rs
       int dest = (opcode >> 16) & 0x0F;
       int mult = (opcode & 0x0F);
-      DWORD rs = m_aReg[(opcode >> 8) & 0x0F].I;
-      m_aReg[dest].I = m_aReg[mult].I * rs;
-      N_FLAG = (m_aReg[dest].I & 0x80000000) ? true : false;
-      Z_FLAG = (m_aReg[dest].I) ? false : true;
-      if(((int)rs)<0)
+      u32 rs = reg[(opcode >> 8) & 0x0F].I;
+      reg[dest].I = reg[mult].I * rs;
+      N_FLAG = (reg[dest].I & 0x80000000) ? true : false;
+      Z_FLAG = (reg[dest].I) ? false : true;
+      if(((s32)rs)<0)
         rs = ~rs;
       if((rs & 0xFFFFFF00) == 0)
-        m_uClockTicks += 2;
+        clockTicks += 2;
       else if ((rs & 0xFFFF0000) == 0)
-        m_uClockTicks += 3;
+        clockTicks += 3;
       else if ((rs & 0xFF000000) == 0)
-        m_uClockTicks += 4;
+        clockTicks += 4;
       else
-        m_uClockTicks += 5;
+        clockTicks += 5;
     }
     break;
   case 0x00b:
@@ -1227,12 +2301,12 @@ if(cond_res) {
       // STRH Rd, [Rn], -Rm
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I;
-      int offset = m_aReg[opcode & 0x0F].I;
-      m_uClockTicks += 4 + CPUUpdateTicksAccesshort(address);
-      Arm7WriteHalfWord(address, m_aReg[dest].W.W0);
+      u32 address = reg[base].I;
+      int offset = reg[opcode & 0x0F].I;
+      clockTicks += 4 + CPUUpdateTicksAccess16(address);
+      CPUWriteHalfWord(address, reg[dest].W.W0);
       address -= offset;
-      m_aReg[base].I = address;
+      reg[base].I = address;
     }
     break;
   case 0x04b:
@@ -1241,12 +2315,12 @@ if(cond_res) {
       // STRH Rd, [Rn], #-offset
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I;
+      u32 address = reg[base].I;
       int offset = (opcode & 0x0F) | ((opcode >> 4) & 0xF0);
-      m_uClockTicks += 4 + CPUUpdateTicksAccesshort(address);
-      Arm7WriteHalfWord(address, m_aReg[dest].W.W0);
+      clockTicks += 4 + CPUUpdateTicksAccess16(address);
+      CPUWriteHalfWord(address, reg[dest].W.W0);
       address -= offset;
-      m_aReg[base].I = address;
+      reg[base].I = address;
     }
     break;
   case 0x08b:
@@ -1255,12 +2329,12 @@ if(cond_res) {
       // STRH Rd, [Rn], Rm
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I;
-      int offset = m_aReg[opcode & 0x0F].I;
-      m_uClockTicks += 4 + CPUUpdateTicksAccesshort(address);
-      Arm7WriteHalfWord(address, m_aReg[dest].W.W0);
+      u32 address = reg[base].I;
+      int offset = reg[opcode & 0x0F].I;
+      clockTicks += 4 + CPUUpdateTicksAccess16(address);
+      CPUWriteHalfWord(address, reg[dest].W.W0);
       address += offset;
-      m_aReg[base].I = address;
+      reg[base].I = address;
     }
     break;
   case 0x0cb:
@@ -1269,12 +2343,12 @@ if(cond_res) {
       // STRH Rd, [Rn], #offset
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I;
+      u32 address = reg[base].I;
       int offset = (opcode & 0x0F) | ((opcode >> 4) & 0xF0);
-      m_uClockTicks += 4 + CPUUpdateTicksAccesshort(address);
-      Arm7WriteHalfWord(address, m_aReg[dest].W.W0);
+      clockTicks += 4 + CPUUpdateTicksAccess16(address);
+      CPUWriteHalfWord(address, reg[dest].W.W0);
       address += offset;
-      m_aReg[base].I = address;
+      reg[base].I = address;
     }
     break;
   case 0x10b:
@@ -1282,9 +2356,9 @@ if(cond_res) {
       // STRH Rd, [Rn, -Rm]
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I - m_aReg[opcode & 0x0F].I;
-      m_uClockTicks += 4 + CPUUpdateTicksAccesshort(address);
-      Arm7WriteHalfWord(address, m_aReg[dest].W.W0);
+      u32 address = reg[base].I - reg[opcode & 0x0F].I;
+      clockTicks += 4 + CPUUpdateTicksAccess16(address);
+      CPUWriteHalfWord(address, reg[dest].W.W0);
     }
     break;
   case 0x12b:
@@ -1292,10 +2366,10 @@ if(cond_res) {
       // STRH Rd, [Rn, -Rm]!
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I - m_aReg[opcode & 0x0F].I;
-      m_uClockTicks += 4 + CPUUpdateTicksAccesshort(address);
-      Arm7WriteHalfWord(address, m_aReg[dest].W.W0);
-      m_aReg[base].I = address;
+      u32 address = reg[base].I - reg[opcode & 0x0F].I;
+      clockTicks += 4 + CPUUpdateTicksAccess16(address);
+      CPUWriteHalfWord(address, reg[dest].W.W0);
+      reg[base].I = address;
     }
     break;
   case 0x14b:
@@ -1303,9 +2377,9 @@ if(cond_res) {
       // STRH Rd, [Rn, -#offset]
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I - ((opcode & 0x0F)|((opcode>>4)&0xF0));
-      m_uClockTicks += 4 + CPUUpdateTicksAccesshort(address);
-      Arm7WriteHalfWord(address, m_aReg[dest].W.W0);
+      u32 address = reg[base].I - ((opcode & 0x0F)|((opcode>>4)&0xF0));
+      clockTicks += 4 + CPUUpdateTicksAccess16(address);
+      CPUWriteHalfWord(address, reg[dest].W.W0);
     }
     break;
   case 0x16b:
@@ -1313,10 +2387,10 @@ if(cond_res) {
       // STRH Rd, [Rn, -#offset]!
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I - ((opcode & 0x0F)|((opcode>>4)&0xF0));
-      m_uClockTicks += 4 + CPUUpdateTicksAccesshort(address);
-      Arm7WriteHalfWord(address, m_aReg[dest].W.W0);
-      m_aReg[base].I = address;
+      u32 address = reg[base].I - ((opcode & 0x0F)|((opcode>>4)&0xF0));
+      clockTicks += 4 + CPUUpdateTicksAccess16(address);
+      CPUWriteHalfWord(address, reg[dest].W.W0);
+      reg[base].I = address;
     }
     break;
   case 0x18b:
@@ -1324,9 +2398,9 @@ if(cond_res) {
       // STRH Rd, [Rn, Rm]
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I + m_aReg[opcode & 0x0F].I;
-      m_uClockTicks += 4 + CPUUpdateTicksAccesshort(address);
-      Arm7WriteHalfWord(address, m_aReg[dest].W.W0);
+      u32 address = reg[base].I + reg[opcode & 0x0F].I;
+      clockTicks += 4 + CPUUpdateTicksAccess16(address);
+      CPUWriteHalfWord(address, reg[dest].W.W0);
     }
     break;
   case 0x1ab:
@@ -1334,10 +2408,10 @@ if(cond_res) {
       // STRH Rd, [Rn, Rm]!
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I + m_aReg[opcode & 0x0F].I;
-      m_uClockTicks += 4 + CPUUpdateTicksAccesshort(address);
-      Arm7WriteHalfWord(address, m_aReg[dest].W.W0);
-      m_aReg[base].I = address;
+      u32 address = reg[base].I + reg[opcode & 0x0F].I;
+      clockTicks += 4 + CPUUpdateTicksAccess16(address);
+      CPUWriteHalfWord(address, reg[dest].W.W0);
+      reg[base].I = address;
     }
     break;
   case 0x1cb:
@@ -1345,9 +2419,9 @@ if(cond_res) {
       // STRH Rd, [Rn, #offset]
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I + ((opcode & 0x0F)|((opcode>>4)&0xF0));
-      m_uClockTicks += 4 + CPUUpdateTicksAccesshort(address);
-      Arm7WriteHalfWord(address, m_aReg[dest].W.W0);
+      u32 address = reg[base].I + ((opcode & 0x0F)|((opcode>>4)&0xF0));
+      clockTicks += 4 + CPUUpdateTicksAccess16(address);
+      CPUWriteHalfWord(address, reg[dest].W.W0);
     }
     break;
   case 0x1eb:
@@ -1355,10 +2429,10 @@ if(cond_res) {
       // STRH Rd, [Rn, #offset]!
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I + ((opcode & 0x0F)|((opcode>>4)&0xF0));
-      m_uClockTicks += 4 + CPUUpdateTicksAccesshort(address);
-      Arm7WriteHalfWord(address, m_aReg[dest].W.W0);
-      m_aReg[base].I = address;
+      u32 address = reg[base].I + ((opcode & 0x0F)|((opcode>>4)&0xF0));
+      clockTicks += 4 + CPUUpdateTicksAccess16(address);
+      CPUWriteHalfWord(address, reg[dest].W.W0);
+      reg[base].I = address;
     }
     break;
   case 0x01b:
@@ -1367,13 +2441,13 @@ if(cond_res) {
       // LDRH Rd, [Rn], -Rm
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I;
-      int offset = m_aReg[opcode & 0x0F].I;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = Arm7ReadHalfWord(address);
+      u32 address = reg[base].I;
+      int offset = reg[opcode & 0x0F].I;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = CPUReadHalfWord(address);
       if(dest != base) {
         address -= offset;
-        m_aReg[base].I = address;
+        reg[base].I = address;
       }
     }
     break;
@@ -1383,13 +2457,13 @@ if(cond_res) {
       // LDRH Rd, [Rn], #-offset
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I;
+      u32 address = reg[base].I;
       int offset = (opcode & 0x0F) | ((opcode >> 4) & 0xF0);
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = Arm7ReadHalfWord(address);
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = CPUReadHalfWord(address);
       if(dest != base) {
         address -= offset;
-        m_aReg[base].I = address;
+        reg[base].I = address;
       }
     }
     break;
@@ -1399,13 +2473,13 @@ if(cond_res) {
       // LDRH Rd, [Rn], Rm
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I;
-      int offset = m_aReg[opcode & 0x0F].I;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = Arm7ReadHalfWord(address);
+      u32 address = reg[base].I;
+      int offset = reg[opcode & 0x0F].I;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = CPUReadHalfWord(address);
       if(dest != base) {
         address += offset;
-        m_aReg[base].I = address;
+        reg[base].I = address;
       }
     }
     break;
@@ -1415,13 +2489,13 @@ if(cond_res) {
       // LDRH Rd, [Rn], #offset
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I;
+      u32 address = reg[base].I;
       int offset = (opcode & 0x0F) | ((opcode >> 4) & 0xF0);
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = Arm7ReadHalfWord(address);
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = CPUReadHalfWord(address);
       if(dest != base) {
         address += offset;
-        m_aReg[base].I = address;
+        reg[base].I = address;
       }
     }
     break;
@@ -1430,9 +2504,9 @@ if(cond_res) {
       // LDRH Rd, [Rn, -Rm]
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I - m_aReg[opcode & 0x0F].I;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = Arm7ReadHalfWord(address);
+      u32 address = reg[base].I - reg[opcode & 0x0F].I;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = CPUReadHalfWord(address);
     }
     break;
   case 0x13b:
@@ -1440,11 +2514,11 @@ if(cond_res) {
       // LDRH Rd, [Rn, -Rm]!
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I - m_aReg[opcode & 0x0F].I;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = Arm7ReadHalfWord(address);
+      u32 address = reg[base].I - reg[opcode & 0x0F].I;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = CPUReadHalfWord(address);
       if(dest != base)
-        m_aReg[base].I = address;
+        reg[base].I = address;
     }
     break;
   case 0x15b:
@@ -1452,9 +2526,9 @@ if(cond_res) {
       // LDRH Rd, [Rn, -#offset]
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I - ((opcode & 0x0F)|((opcode>>4)&0xF0));
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = Arm7ReadHalfWord(address);
+      u32 address = reg[base].I - ((opcode & 0x0F)|((opcode>>4)&0xF0));
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = CPUReadHalfWord(address);
     }
     break;
   case 0x17b:
@@ -1462,11 +2536,11 @@ if(cond_res) {
       // LDRH Rd, [Rn, -#offset]!
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I - ((opcode & 0x0F)|((opcode>>4)&0xF0));
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = Arm7ReadHalfWord(address);
+      u32 address = reg[base].I - ((opcode & 0x0F)|((opcode>>4)&0xF0));
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = CPUReadHalfWord(address);
       if(dest != base)
-        m_aReg[base].I = address;
+        reg[base].I = address;
     }
     break;
   case 0x19b:
@@ -1474,9 +2548,9 @@ if(cond_res) {
       // LDRH Rd, [Rn, Rm]
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I + m_aReg[opcode & 0x0F].I;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = Arm7ReadHalfWord(address);
+      u32 address = reg[base].I + reg[opcode & 0x0F].I;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = CPUReadHalfWord(address);
     }
     break;
   case 0x1bb:
@@ -1484,11 +2558,11 @@ if(cond_res) {
       // LDRH Rd, [Rn, Rm]!
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I + m_aReg[opcode & 0x0F].I;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = Arm7ReadHalfWord(address);
+      u32 address = reg[base].I + reg[opcode & 0x0F].I;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = CPUReadHalfWord(address);
       if(dest != base)
-        m_aReg[base].I = address;
+        reg[base].I = address;
     }
     break;
   case 0x1db:
@@ -1496,9 +2570,9 @@ if(cond_res) {
       // LDRH Rd, [Rn, #offset]
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I + ((opcode & 0x0F)|((opcode>>4)&0xF0));
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = Arm7ReadHalfWord(address);
+      u32 address = reg[base].I + ((opcode & 0x0F)|((opcode>>4)&0xF0));
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = CPUReadHalfWord(address);
     }
     break;
   case 0x1fb:
@@ -1506,11 +2580,11 @@ if(cond_res) {
       // LDRH Rd, [Rn, #offset]!
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I + ((opcode & 0x0F)|((opcode>>4)&0xF0));
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = Arm7ReadHalfWord(address);
+      u32 address = reg[base].I + ((opcode & 0x0F)|((opcode>>4)&0xF0));
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = CPUReadHalfWord(address);
       if(dest != base)
-        m_aReg[base].I = address;
+        reg[base].I = address;
     }
     break;
   case 0x01d:
@@ -1519,13 +2593,13 @@ if(cond_res) {
       // LDRSB Rd, [Rn], -Rm
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I;
-      int offset = m_aReg[opcode & 0x0F].I;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = (char)Arm7ReadByte(address);
+      u32 address = reg[base].I;
+      int offset = reg[opcode & 0x0F].I;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = (s8)CPUReadByte(address);
       if(dest != base) {
         address -= offset;
-        m_aReg[base].I = address;
+        reg[base].I = address;
       }
     }
     break;
@@ -1535,13 +2609,13 @@ if(cond_res) {
       // LDRSB Rd, [Rn], #-offset
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I;
+      u32 address = reg[base].I;
       int offset = (opcode & 0x0F) | ((opcode >> 4) & 0xF0);
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = (char)Arm7ReadByte(address);
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = (s8)CPUReadByte(address);
       if(dest != base) {
         address -= offset;
-        m_aReg[base].I = address;
+        reg[base].I = address;
       }
     }
     break;
@@ -1551,13 +2625,13 @@ if(cond_res) {
       // LDRSB Rd, [Rn], Rm
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I;
-      int offset = m_aReg[opcode & 0x0F].I;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = (char)Arm7ReadByte(address);
+      u32 address = reg[base].I;
+      int offset = reg[opcode & 0x0F].I;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = (s8)CPUReadByte(address);
       if(dest != base) {
         address += offset;
-        m_aReg[base].I = address;
+        reg[base].I = address;
       }
     }
     break;
@@ -1567,13 +2641,13 @@ if(cond_res) {
       // LDRSB Rd, [Rn], #offset
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I;
+      u32 address = reg[base].I;
       int offset = (opcode & 0x0F) | ((opcode >> 4) & 0xF0);
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = (char)Arm7ReadByte(address);
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = (s8)CPUReadByte(address);
       if(dest != base) {
         address += offset;
-        m_aReg[base].I = address;
+        reg[base].I = address;
       }
     }
     break;
@@ -1582,9 +2656,9 @@ if(cond_res) {
       // LDRSB Rd, [Rn, -Rm]
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I - m_aReg[opcode & 0x0F].I;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = (char)Arm7ReadByte(address);
+      u32 address = reg[base].I - reg[opcode & 0x0F].I;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = (s8)CPUReadByte(address);
     }
     break;
   case 0x13d:
@@ -1592,11 +2666,11 @@ if(cond_res) {
       // LDRSB Rd, [Rn, -Rm]!
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I - m_aReg[opcode & 0x0F].I;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = (char)Arm7ReadByte(address);
+      u32 address = reg[base].I - reg[opcode & 0x0F].I;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = (s8)CPUReadByte(address);
       if(dest != base)
-        m_aReg[base].I = address;
+        reg[base].I = address;
     }
     break;
   case 0x15d:
@@ -1604,9 +2678,9 @@ if(cond_res) {
       // LDRSB Rd, [Rn, -#offset]
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I - ((opcode & 0x0F)|((opcode>>4)&0xF0));
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = (char)Arm7ReadByte(address);
+      u32 address = reg[base].I - ((opcode & 0x0F)|((opcode>>4)&0xF0));
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = (s8)CPUReadByte(address);
     }
     break;
   case 0x17d:
@@ -1614,11 +2688,11 @@ if(cond_res) {
       // LDRSB Rd, [Rn, -#offset]!
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I - ((opcode & 0x0F)|((opcode>>4)&0xF0));
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = (char)Arm7ReadByte(address);
+      u32 address = reg[base].I - ((opcode & 0x0F)|((opcode>>4)&0xF0));
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = (s8)CPUReadByte(address);
       if(dest != base)
-        m_aReg[base].I = address;
+        reg[base].I = address;
     }
     break;
   case 0x19d:
@@ -1626,9 +2700,9 @@ if(cond_res) {
       // LDRSB Rd, [Rn, Rm]
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I + m_aReg[opcode & 0x0F].I;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = (char)Arm7ReadByte(address);
+      u32 address = reg[base].I + reg[opcode & 0x0F].I;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = (s8)CPUReadByte(address);
     }
     break;
   case 0x1bd:
@@ -1636,11 +2710,11 @@ if(cond_res) {
       // LDRSB Rd, [Rn, Rm]!
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I + m_aReg[opcode & 0x0F].I;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = (char)Arm7ReadByte(address);
+      u32 address = reg[base].I + reg[opcode & 0x0F].I;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = (s8)CPUReadByte(address);
       if(dest != base)
-        m_aReg[base].I = address;
+        reg[base].I = address;
     }
     break;
   case 0x1dd:
@@ -1648,9 +2722,9 @@ if(cond_res) {
       // LDRSB Rd, [Rn, #offset]
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I + ((opcode & 0x0F)|((opcode>>4)&0xF0));
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = (char)Arm7ReadByte(address);
+      u32 address = reg[base].I + ((opcode & 0x0F)|((opcode>>4)&0xF0));
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = (s8)CPUReadByte(address);
     }
     break;
   case 0x1fd:
@@ -1658,11 +2732,11 @@ if(cond_res) {
       // LDRSB Rd, [Rn, #offset]!
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I + ((opcode & 0x0F)|((opcode>>4)&0xF0));
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = (char)Arm7ReadByte(address);
+      u32 address = reg[base].I + ((opcode & 0x0F)|((opcode>>4)&0xF0));
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = (s8)CPUReadByte(address);
       if(dest != base)
-        m_aReg[base].I = address;
+        reg[base].I = address;
     }
     break;
   case 0x01f:
@@ -1671,13 +2745,13 @@ if(cond_res) {
       // LDRSH Rd, [Rn], -Rm
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I;
-      int offset = m_aReg[opcode & 0x0F].I;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = (short)Arm7ReadHalfWordSigned(address);
+      u32 address = reg[base].I;
+      int offset = reg[opcode & 0x0F].I;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = (s16)CPUReadHalfWordSigned(address);
       if(dest != base) {
         address -= offset;
-        m_aReg[base].I = address;
+        reg[base].I = address;
       }
     }
     break;
@@ -1687,13 +2761,13 @@ if(cond_res) {
       // LDRSH Rd, [Rn], #-offset
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I;
+      u32 address = reg[base].I;
       int offset = (opcode & 0x0F) | ((opcode >> 4) & 0xF0);
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = (short)Arm7ReadHalfWordSigned(address);
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = (s16)CPUReadHalfWordSigned(address);
       if(dest != base) {
         address -= offset;
-        m_aReg[base].I = address;
+        reg[base].I = address;
       }
     }
     break;
@@ -1703,13 +2777,13 @@ if(cond_res) {
       // LDRSH Rd, [Rn], Rm
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I;
-      int offset = m_aReg[opcode & 0x0F].I;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = (short)Arm7ReadHalfWordSigned(address);
+      u32 address = reg[base].I;
+      int offset = reg[opcode & 0x0F].I;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = (s16)CPUReadHalfWordSigned(address);
       if(dest != base) {
         address += offset;
-        m_aReg[base].I = address;
+        reg[base].I = address;
       }
     }
     break;
@@ -1719,13 +2793,13 @@ if(cond_res) {
       // LDRSH Rd, [Rn], #offset
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I;
+      u32 address = reg[base].I;
       int offset = (opcode & 0x0F) | ((opcode >> 4) & 0xF0);
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = (short)Arm7ReadHalfWordSigned(address);
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = (s16)CPUReadHalfWordSigned(address);
       if(dest != base) {
         address += offset;
-        m_aReg[base].I = address;
+        reg[base].I = address;
       }
     }
     break;
@@ -1734,9 +2808,9 @@ if(cond_res) {
       // LDRSH Rd, [Rn, -Rm]
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I - m_aReg[opcode & 0x0F].I;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = (short)Arm7ReadHalfWordSigned(address);
+      u32 address = reg[base].I - reg[opcode & 0x0F].I;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = (s16)CPUReadHalfWordSigned(address);
     }
     break;
   case 0x13f:
@@ -1744,11 +2818,11 @@ if(cond_res) {
       // LDRSH Rd, [Rn, -Rm]!
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I - m_aReg[opcode & 0x0F].I;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = (short)Arm7ReadHalfWordSigned(address);
+      u32 address = reg[base].I - reg[opcode & 0x0F].I;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = (s16)CPUReadHalfWordSigned(address);
       if(dest != base)
-        m_aReg[base].I = address;
+        reg[base].I = address;
     }
     break;
   case 0x15f:
@@ -1756,9 +2830,9 @@ if(cond_res) {
       // LDRSH Rd, [Rn, -#offset]
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I - ((opcode & 0x0F)|((opcode>>4)&0xF0));
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = (short)Arm7ReadHalfWordSigned(address);
+      u32 address = reg[base].I - ((opcode & 0x0F)|((opcode>>4)&0xF0));
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = (s16)CPUReadHalfWordSigned(address);
     }
     break;
   case 0x17f:
@@ -1766,11 +2840,11 @@ if(cond_res) {
       // LDRSH Rd, [Rn, -#offset]!
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I - ((opcode & 0x0F)|((opcode>>4)&0xF0));
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = (short)Arm7ReadHalfWordSigned(address);
+      u32 address = reg[base].I - ((opcode & 0x0F)|((opcode>>4)&0xF0));
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = (s16)CPUReadHalfWordSigned(address);
       if(dest != base)
-        m_aReg[base].I = address;
+        reg[base].I = address;
     }
     break;
   case 0x19f:
@@ -1778,9 +2852,9 @@ if(cond_res) {
       // LDRSH Rd, [Rn, Rm]
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I + m_aReg[opcode & 0x0F].I;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = (short)Arm7ReadHalfWordSigned(address);
+      u32 address = reg[base].I + reg[opcode & 0x0F].I;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = (s16)CPUReadHalfWordSigned(address);
     }
     break;
   case 0x1bf:
@@ -1788,11 +2862,11 @@ if(cond_res) {
       // LDRSH Rd, [Rn, Rm]!
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I + m_aReg[opcode & 0x0F].I;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = (short)Arm7ReadHalfWordSigned(address);
+      u32 address = reg[base].I + reg[opcode & 0x0F].I;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = (s16)CPUReadHalfWordSigned(address);
       if(dest != base)
-        m_aReg[base].I = address;
+        reg[base].I = address;
     }
     break;
   case 0x1df:
@@ -1800,9 +2874,9 @@ if(cond_res) {
       // LDRSH Rd, [Rn, #offset]
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I + ((opcode & 0x0F)|((opcode>>4)&0xF0));
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = (short)Arm7ReadHalfWordSigned(address);
+      u32 address = reg[base].I + ((opcode & 0x0F)|((opcode>>4)&0xF0));
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = (s16)CPUReadHalfWordSigned(address);
     }
     break;
   case 0x1ff:
@@ -1810,32 +2884,32 @@ if(cond_res) {
       // LDRSH Rd, [Rn, #offset]!
       int base = (opcode >> 16) & 0x0F;
       int dest = (opcode >> 12) & 0x0F;
-      DWORD address = m_aReg[base].I + ((opcode & 0x0F)|((opcode>>4)&0xF0));
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
-      m_aReg[dest].I = (short)Arm7ReadHalfWordSigned(address);
+      u32 address = reg[base].I + ((opcode & 0x0F)|((opcode>>4)&0xF0));
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
+      reg[dest].I = (s16)CPUReadHalfWordSigned(address);
       if(dest != base)
-        m_aReg[base].I = address;
+        reg[base].I = address;
     }
     break;
-    LOGICAL_DATA_OPCODE(OP_EOR,  OP_EOR, 0x020);
-    LOGICAL_DATA_OPCODE(OP_EORS, OP_EOR, 0x030);
+    LOGICAL_DATA_OPCODE_WITHOUT_base(OP_EOR,  OP_EOR, 0x020);
+    LOGICAL_DATA_OPCODE_WITHOUT_base(OP_EORS, OP_EOR, 0x030);
   case 0x029:
     {
       // MLA Rd, Rm, Rs, Rn
       int dest = (opcode >> 16) & 0x0F;
       int mult = (opcode & 0x0F);
-      DWORD rs = m_aReg[(opcode >> 8) & 0x0F].I;
-      m_aReg[dest].I = m_aReg[mult].I * rs + m_aReg[(opcode>>12)&0x0f].I;
-      if(((int)rs)<0)
+      u32 rs = reg[(opcode >> 8) & 0x0F].I;
+      reg[dest].I = reg[mult].I * rs + reg[(opcode>>12)&0x0f].I;
+      if(((s32)rs)<0)
         rs = ~rs;
       if((rs & 0xFFFFFF00) == 0)
-        m_uClockTicks += 3;
+        clockTicks += 3;
       else if ((rs & 0xFFFF0000) == 0)
-        m_uClockTicks += 4;
+        clockTicks += 4;
       else if ((rs & 0xFF000000) == 0)
-        m_uClockTicks += 5;
+        clockTicks += 5;
       else
-        m_uClockTicks += 6;
+        clockTicks += 6;
     }
     break;
   case 0x039:
@@ -1843,20 +2917,20 @@ if(cond_res) {
       // MLAS Rd, Rm, Rs, Rn
       int dest = (opcode >> 16) & 0x0F;
       int mult = (opcode & 0x0F);
-      DWORD rs = m_aReg[(opcode >> 8) & 0x0F].I;
-      m_aReg[dest].I = m_aReg[mult].I * rs + m_aReg[(opcode>>12)&0x0f].I;
-      N_FLAG = (m_aReg[dest].I & 0x80000000) ? true : false;
-      Z_FLAG = (m_aReg[dest].I) ? false : true;
-      if(((int)rs)<0)
+      u32 rs = reg[(opcode >> 8) & 0x0F].I;
+      reg[dest].I = reg[mult].I * rs + reg[(opcode>>12)&0x0f].I;
+      N_FLAG = (reg[dest].I & 0x80000000) ? true : false;
+      Z_FLAG = (reg[dest].I) ? false : true;
+      if(((s32)rs)<0)
         rs = ~rs;
       if((rs & 0xFFFFFF00) == 0)
-        m_uClockTicks += 3;
+        clockTicks += 3;
       else if ((rs & 0xFFFF0000) == 0)
-        m_uClockTicks += 4;
+        clockTicks += 4;
       else if ((rs & 0xFF000000) == 0)
-        m_uClockTicks += 5;
+        clockTicks += 5;
       else
-        m_uClockTicks += 6;
+        clockTicks += 6;
     }
     break;
     ARITHMETIC_DATA_OPCODE(OP_SUB,  OP_SUB, 0x040);
@@ -1868,43 +2942,43 @@ if(cond_res) {
   case 0x089:
     {
       // UMULL RdLo, RdHi, Rn, Rs
-      DWORD umult = m_aReg[(opcode & 0x0F)].I;
-      DWORD usource = m_aReg[(opcode >> 8) & 0x0F].I;
+      u32 umult = reg[(opcode & 0x0F)].I;
+      u32 usource = reg[(opcode >> 8) & 0x0F].I;
       int destLo = (opcode >> 12) & 0x0F;         
       int destHi = (opcode >> 16) & 0x0F;
-      __int64 uTemp = ((__int64)umult)*((__int64)usource);
-      m_aReg[destLo].I = (DWORD)uTemp;
-      m_aReg[destHi].I = (DWORD)(uTemp >> 32);
+      u64 uTemp = ((u64)umult)*((u64)usource);
+      reg[destLo].I = (u32)uTemp;
+      reg[destHi].I = (u32)(uTemp >> 32);
       if ((usource & 0xFFFFFF00) == 0)
-        m_uClockTicks += 2;
+        clockTicks += 2;
       else if ((usource & 0xFFFF0000) == 0)
-        m_uClockTicks += 3;
+        clockTicks += 3;
       else if ((usource & 0xFF000000) == 0)
-        m_uClockTicks += 4;
+        clockTicks += 4;
       else
-        m_uClockTicks += 5;
+        clockTicks += 5;
     }
     break;
   case 0x099:
     {
       // UMULLS RdLo, RdHi, Rn, Rs
-      DWORD umult = m_aReg[(opcode & 0x0F)].I;
-      DWORD usource = m_aReg[(opcode >> 8) & 0x0F].I;
+      u32 umult = reg[(opcode & 0x0F)].I;
+      u32 usource = reg[(opcode >> 8) & 0x0F].I;
       int destLo = (opcode >> 12) & 0x0F;         
       int destHi = (opcode >> 16) & 0x0F;
-      __int64 uTemp = ((__int64)umult)*((__int64)usource);
-      m_aReg[destLo].I = (DWORD)uTemp;
-      m_aReg[destHi].I = (DWORD)(uTemp >> 32);
+      u64 uTemp = ((u64)umult)*((u64)usource);
+      reg[destLo].I = (u32)uTemp;
+      reg[destHi].I = (u32)(uTemp >> 32);
       Z_FLAG = (uTemp) ? false : true;
-      N_FLAG = (m_aReg[destHi].I & 0x80000000) ? true : false;
+      N_FLAG = (reg[destHi].I & 0x80000000) ? true : false;
       if ((usource & 0xFFFFFF00) == 0)
-        m_uClockTicks += 2;
+        clockTicks += 2;
       else if ((usource & 0xFFFF0000) == 0)
-        m_uClockTicks += 3;
+        clockTicks += 3;
       else if ((usource & 0xFF000000) == 0)
-        m_uClockTicks += 4;
+        clockTicks += 4;
       else
-        m_uClockTicks += 5;
+        clockTicks += 5;
     }
     break;
     ARITHMETIC_DATA_OPCODE(OP_ADC,  OP_ADC, 0x0a0);
@@ -1912,49 +2986,49 @@ if(cond_res) {
   case 0x0a9:
     {
       // UMLAL RdLo, RdHi, Rn, Rs
-      DWORD umult = m_aReg[(opcode & 0x0F)].I;
-      DWORD usource = m_aReg[(opcode >> 8) & 0x0F].I;
+      u32 umult = reg[(opcode & 0x0F)].I;
+      u32 usource = reg[(opcode >> 8) & 0x0F].I;
       int destLo = (opcode >> 12) & 0x0F;         
       int destHi = (opcode >> 16) & 0x0F;
-      __int64 uTemp = (__int64)m_aReg[destHi].I;
+      u64 uTemp = (u64)reg[destHi].I;
       uTemp <<= 32;
-      uTemp |= (__int64)m_aReg[destLo].I;
-      uTemp += ((__int64)umult)*((__int64)usource);
-      m_aReg[destLo].I = (DWORD)uTemp;
-      m_aReg[destHi].I = (DWORD)(uTemp >> 32);
+      uTemp |= (u64)reg[destLo].I;
+      uTemp += ((u64)umult)*((u64)usource);
+      reg[destLo].I = (u32)uTemp;
+      reg[destHi].I = (u32)(uTemp >> 32);
       if ((usource & 0xFFFFFF00) == 0)
-        m_uClockTicks += 3;
+        clockTicks += 3;
       else if ((usource & 0xFFFF0000) == 0)
-        m_uClockTicks += 4;
+        clockTicks += 4;
       else if ((usource & 0xFF000000) == 0)
-        m_uClockTicks += 5;
+        clockTicks += 5;
       else
-        m_uClockTicks += 6;
+        clockTicks += 6;
     }
     break;
   case 0x0b9:
     {
       // UMLALS RdLo, RdHi, Rn, Rs
-      DWORD umult = m_aReg[(opcode & 0x0F)].I;
-      DWORD usource = m_aReg[(opcode >> 8) & 0x0F].I;
+      u32 umult = reg[(opcode & 0x0F)].I;
+      u32 usource = reg[(opcode >> 8) & 0x0F].I;
       int destLo = (opcode >> 12) & 0x0F;         
       int destHi = (opcode >> 16) & 0x0F;
-      __int64 uTemp = (__int64)m_aReg[destHi].I;
+      u64 uTemp = (u64)reg[destHi].I;
       uTemp <<= 32;
-      uTemp |= (__int64)m_aReg[destLo].I;
-      uTemp += ((__int64)umult)*((__int64)usource);
-      m_aReg[destLo].I = (DWORD)uTemp;
-      m_aReg[destHi].I = (DWORD)(uTemp >> 32);
+      uTemp |= (u64)reg[destLo].I;
+      uTemp += ((u64)umult)*((u64)usource);
+      reg[destLo].I = (u32)uTemp;
+      reg[destHi].I = (u32)(uTemp >> 32);
       Z_FLAG = (uTemp) ? false : true;
-      N_FLAG = (m_aReg[destHi].I & 0x80000000) ? true : false;
+      N_FLAG = (reg[destHi].I & 0x80000000) ? true : false;
       if ((usource & 0xFFFFFF00) == 0)
-        m_uClockTicks += 3;
+        clockTicks += 3;
       else if ((usource & 0xFFFF0000) == 0)
-        m_uClockTicks += 4;
+        clockTicks += 4;
       else if ((usource & 0xFF000000) == 0)
-        m_uClockTicks += 5;
+        clockTicks += 5;
       else
-        m_uClockTicks += 6;
+        clockTicks += 6;
     }
     break;
     ARITHMETIC_DATA_OPCODE(OP_SBC,  OP_SBC, 0x0c0);
@@ -1964,22 +3038,22 @@ if(cond_res) {
       // SMULL RdLo, RdHi, Rm, Rs
       int destLo = (opcode >> 12) & 0x0F;         
       int destHi = (opcode >> 16) & 0x0F;
-      DWORD rs = m_aReg[(opcode >> 8) & 0x0F].I;
-      __int64 m = (int)m_aReg[(opcode & 0x0F)].I;
-      __int64 s = (int)rs;
-      __int64 sTemp = m*s;
-      m_aReg[destLo].I = (DWORD)sTemp;
-      m_aReg[destHi].I = (DWORD)(sTemp >> 32);
-      if(((int)rs) < 0)
+      u32 rs = reg[(opcode >> 8) & 0x0F].I;
+      s64 m = (s32)reg[(opcode & 0x0F)].I;
+      s64 s = (s32)rs;
+      s64 sTemp = m*s;
+      reg[destLo].I = (u32)sTemp;
+      reg[destHi].I = (u32)(sTemp >> 32);
+      if(((s32)rs) < 0)
         rs = ~rs;
       if((rs & 0xFFFFFF00) == 0)
-        m_uClockTicks += 2;
+        clockTicks += 2;
       else if((rs & 0xFFFF0000) == 0)
-        m_uClockTicks += 3;
+        clockTicks += 3;
       else if((rs & 0xFF000000) == 0)
-        m_uClockTicks += 4;
+        clockTicks += 4;
       else
-        m_uClockTicks += 5;
+        clockTicks += 5;
     }
     break;
   case 0x0d9:
@@ -1987,24 +3061,24 @@ if(cond_res) {
       // SMULLS RdLo, RdHi, Rm, Rs
       int destLo = (opcode >> 12) & 0x0F;         
       int destHi = (opcode >> 16) & 0x0F;
-      DWORD rs = m_aReg[(opcode >> 8) & 0x0F].I;
-      __int64 m = (int)m_aReg[(opcode & 0x0F)].I;
-      __int64 s = (int)rs;
-      __int64 sTemp = m*s;
-      m_aReg[destLo].I = (DWORD)sTemp;
-      m_aReg[destHi].I = (DWORD)(sTemp >> 32);
+      u32 rs = reg[(opcode >> 8) & 0x0F].I;
+      s64 m = (s32)reg[(opcode & 0x0F)].I;
+      s64 s = (s32)rs;
+      s64 sTemp = m*s;
+      reg[destLo].I = (u32)sTemp;
+      reg[destHi].I = (u32)(sTemp >> 32);
       Z_FLAG = (sTemp) ? false : true;
       N_FLAG = (sTemp < 0) ? true : false;
-      if(((int)rs) < 0)
+      if(((s32)rs) < 0)
         rs = ~rs;
       if((rs & 0xFFFFFF00) == 0)
-        m_uClockTicks += 2;
+        clockTicks += 2;
       else if((rs & 0xFFFF0000) == 0)
-        m_uClockTicks += 3;
+        clockTicks += 3;
       else if((rs & 0xFF000000) == 0)
-        m_uClockTicks += 4;
+        clockTicks += 4;
       else
-        m_uClockTicks += 5;
+        clockTicks += 5;
     }
     break;
     ARITHMETIC_DATA_OPCODE(OP_RSC,  OP_RSC, 0x0e0);
@@ -2014,25 +3088,25 @@ if(cond_res) {
       // SMLAL RdLo, RdHi, Rm, Rs
       int destLo = (opcode >> 12) & 0x0F;         
       int destHi = (opcode >> 16) & 0x0F;
-      DWORD rs = m_aReg[(opcode >> 8) & 0x0F].I;
-      __int64 m = (int)m_aReg[(opcode & 0x0F)].I;
-      __int64 s = (int)rs;
-      __int64 sTemp = (__int64)m_aReg[destHi].I;
+      u32 rs = reg[(opcode >> 8) & 0x0F].I;
+      s64 m = (s32)reg[(opcode & 0x0F)].I;
+      s64 s = (s32)rs;
+      s64 sTemp = (u64)reg[destHi].I;
       sTemp <<= 32;
-      sTemp |= (__int64)m_aReg[destLo].I;
+      sTemp |= (u64)reg[destLo].I;
       sTemp += m*s;
-      m_aReg[destLo].I = (DWORD)sTemp;
-      m_aReg[destHi].I = (DWORD)(sTemp >> 32);
-      if(((int)rs) < 0)
+      reg[destLo].I = (u32)sTemp;
+      reg[destHi].I = (u32)(sTemp >> 32);
+      if(((s32)rs) < 0)
         rs = ~rs;
       if((rs & 0xFFFFFF00) == 0)
-        m_uClockTicks += 3;
+        clockTicks += 3;
       else if((rs & 0xFFFF0000) == 0)
-        m_uClockTicks += 4;
+        clockTicks += 4;
       else if((rs & 0xFF000000) == 0)
-        m_uClockTicks += 5;
+        clockTicks += 5;
       else
-        m_uClockTicks += 6;
+        clockTicks += 6;
     }
     break;
   case 0x0f9:
@@ -2040,27 +3114,27 @@ if(cond_res) {
       // SMLALS RdLo, RdHi, Rm, Rs
       int destLo = (opcode >> 12) & 0x0F;         
       int destHi = (opcode >> 16) & 0x0F;
-      DWORD rs = m_aReg[(opcode >> 8) & 0x0F].I;
-      __int64 m = (int)m_aReg[(opcode & 0x0F)].I;
-      __int64 s = (int)rs;
-      __int64 sTemp = (__int64)m_aReg[destHi].I;
+      u32 rs = reg[(opcode >> 8) & 0x0F].I;
+      s64 m = (s32)reg[(opcode & 0x0F)].I;
+      s64 s = (s32)rs;
+      s64 sTemp = (u64)reg[destHi].I;
       sTemp <<= 32;
-      sTemp |= (__int64)m_aReg[destLo].I;
+      sTemp |= (u64)reg[destLo].I;
       sTemp += m*s;
-      m_aReg[destLo].I = (DWORD)sTemp;
-      m_aReg[destHi].I = (DWORD)(sTemp >> 32);
+      reg[destLo].I = (u32)sTemp;
+      reg[destHi].I = (u32)(sTemp >> 32);
       Z_FLAG = (sTemp) ? false : true;
       N_FLAG = (sTemp < 0) ? true : false;
-      if(((int)rs) < 0)
+      if(((s32)rs) < 0)
         rs = ~rs;
       if((rs & 0xFFFFFF00) == 0)
-        m_uClockTicks += 3;
+        clockTicks += 3;
       else if((rs & 0xFFFF0000) == 0)
-        m_uClockTicks += 4;
+        clockTicks += 4;
       else if((rs & 0xFF000000) == 0)
-        m_uClockTicks += 5;
+        clockTicks += 5;
       else
-        m_uClockTicks += 6;
+        clockTicks += 6;
     }
     break;
     LOGICAL_DATA_OPCODE(OP_TST, OP_TST, 0x110);
@@ -2068,15 +3142,15 @@ if(cond_res) {
     // MRS Rd, CPSR
     // TODO: check if right instruction....
     CPUUpdateCPSR();
-    m_aReg[(opcode >> 12) & 0x0F].I = m_aReg[16].I;
+    reg[(opcode >> 12) & 0x0F].I = reg[16].I;
     break;
   case 0x109:
     {
       // SWP Rd, Rm, [Rn]
-      DWORD address = m_aReg[(opcode >> 16) & 15].I;
-      DWORD temp = Arm7ReadMemory(address);
-      Arm7WriteMemory(address, m_aReg[opcode&15].I);
-      m_aReg[(opcode >> 12) & 15].I = temp;
+      u32 address = reg[(opcode >> 16) & 15].I;
+      u32 temp = CPUReadMemory(address);
+      CPUWriteMemory(address, reg[opcode&15].I);
+      reg[(opcode >> 12) & 15].I = temp;
     }
     break;
     LOGICAL_DATA_OPCODE(OP_TEQ, OP_TEQ, 0x130);
@@ -2084,8 +3158,8 @@ if(cond_res) {
     {
       // MSR CPSR_fields, Rm
       CPUUpdateCPSR();
-      DWORD value = m_aReg[opcode & 15].I;
-      DWORD newValue = m_aReg[16].I;
+      u32 value = reg[opcode & 15].I;
+      u32 newValue = reg[16].I;
       if(armMode > 0x10) {
         if(opcode & 0x00010000)
           newValue = (newValue & 0xFFFFFF00) | (value & 0x000000FF);
@@ -2098,7 +3172,7 @@ if(cond_res) {
         newValue = (newValue & 0x00FFFFFF) | (value & 0xFF000000);
       newValue |= 0x10;
       CPUSwitchMode(newValue & 0x1f, false);
-      m_aReg[16].I = newValue;
+      reg[16].I = newValue;
       CPUUpdateFlags();
     }
     break;
@@ -2106,17 +3180,17 @@ if(cond_res) {
     {
       // BX Rm
       // TODO: check if right instruction...
-      m_uClockTicks += 3;
+      clockTicks += 3;
       int base = opcode & 0x0F;
-      armState = m_aReg[base].I & 1 ? false : true;
+      armState = reg[base].I & 1 ? false : true;
       if(armState) {
-        m_aReg[15].I = m_aReg[base].I & 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        reg[15].I = reg[base].I & 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       } else {
-        m_aReg[15].I = m_aReg[base].I & 0xFFFFFFFE;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 2;
+        reg[15].I = reg[base].I & 0xFFFFFFFE;
+        armNextPC = reg[15].I;
+        reg[15].I += 2;
       }
     }
     break;
@@ -2124,48 +3198,48 @@ if(cond_res) {
   case 0x140:
     // MRS Rd, SPSR
     // TODO: check if right instruction...
-    m_aReg[(opcode >> 12) & 0x0F].I = m_aReg[17].I;
+    reg[(opcode >> 12) & 0x0F].I = reg[17].I;
     break;
   case 0x149:
     {
       // SWPB Rd, Rm, [Rn]
-      DWORD address = m_aReg[(opcode >> 16) & 15].I;
-      DWORD temp = Arm7ReadByte(address);
-      Arm7WriteByte(address, m_aReg[opcode&15].B.B0);
-      m_aReg[(opcode>>12)&15].I = temp;
+      u32 address = reg[(opcode >> 16) & 15].I;
+      u32 temp = CPUReadByte(address);
+      CPUWriteByte(address, reg[opcode&15].B.B0);
+      reg[(opcode>>12)&15].I = temp;
     }
     break;
     ARITHMETIC_DATA_OPCODE(OP_CMN, OP_CMN, 0x170);
   case 0x160:
     {
       // MSR SPSR_fields, Rm
-      DWORD value = m_aReg[opcode & 15].I;
+      u32 value = reg[opcode & 15].I;
       if(armMode > 0x10 && armMode < 0x1f) {
         if(opcode & 0x00010000)
-          m_aReg[17].I = (m_aReg[17].I & 0xFFFFFF00) | (value & 0x000000FF);
+          reg[17].I = (reg[17].I & 0xFFFFFF00) | (value & 0x000000FF);
         if(opcode & 0x00020000)
-          m_aReg[17].I = (m_aReg[17].I & 0xFFFF00FF) | (value & 0x0000FF00);
+          reg[17].I = (reg[17].I & 0xFFFF00FF) | (value & 0x0000FF00);
         if(opcode & 0x00040000)
-          m_aReg[17].I = (m_aReg[17].I & 0xFF00FFFF) | (value & 0x00FF0000);
+          reg[17].I = (reg[17].I & 0xFF00FFFF) | (value & 0x00FF0000);
         if(opcode & 0x00080000)
-          m_aReg[17].I = (m_aReg[17].I & 0x00FFFFFF) | (value & 0xFF000000);
+          reg[17].I = (reg[17].I & 0x00FFFFFF) | (value & 0xFF000000);
       }
     }
     break;
-    LOGICAL_DATA_OPCODE(OP_ORR,  OP_ORR, 0x180);
-    LOGICAL_DATA_OPCODE(OP_ORRS, OP_ORR, 0x190);
-    LOGICAL_DATA_OPCODE(OP_MOV,  OP_MOV, 0x1a0);
-    LOGICAL_DATA_OPCODE(OP_MOVS, OP_MOV, 0x1b0);
-    LOGICAL_DATA_OPCODE(OP_BIC,  OP_BIC, 0x1c0);
-    LOGICAL_DATA_OPCODE(OP_BICS, OP_BIC, 0x1d0);
-    LOGICAL_DATA_OPCODE(OP_MVN,  OP_MVN, 0x1e0);
-    LOGICAL_DATA_OPCODE(OP_MVNS, OP_MVN, 0x1f0);
+    LOGICAL_DATA_OPCODE             (OP_ORR,  OP_ORR, 0x180);
+    LOGICAL_DATA_OPCODE             (OP_ORRS, OP_ORR, 0x190);
+    LOGICAL_DATA_OPCODE_WITHOUT_base(OP_MOV,  OP_MOV, 0x1a0);
+    LOGICAL_DATA_OPCODE_WITHOUT_base(OP_MOVS, OP_MOV, 0x1b0);
+    LOGICAL_DATA_OPCODE             (OP_BIC,  OP_BIC, 0x1c0);
+    LOGICAL_DATA_OPCODE             (OP_BICS, OP_BIC, 0x1d0);
+    LOGICAL_DATA_OPCODE_WITHOUT_base(OP_MVN,  OP_MVN, 0x1e0);
+    LOGICAL_DATA_OPCODE_WITHOUT_base(OP_MVNS, OP_MVN, 0x1f0);
 #ifdef BKPT_SUPPORT
   case 0x127:
   case 0x7ff: // for GDB support
     extern void (*dbgSignal)(int,int);
-    m_aReg[15].I -= 4;
-    m_uArmNextPC -= 4;
+    reg[15].I -= 4;
+    armNextPC -= 4;
     dbgSignal(5, (opcode & 0x0f)|((opcode>>4) & 0xfff0));
     return;
 #endif
@@ -2188,12 +3262,12 @@ if(cond_res) {
     {
       // MSR CPSR_fields, #
       CPUUpdateCPSR();
-      DWORD value = opcode & 0xFF;
+      u32 value = opcode & 0xFF;
       int shift = (opcode & 0xF00) >> 7;
       if(shift) {
         ROR_IMM_MSR;
       }
-      DWORD newValue = m_aReg[16].I;
+      u32 newValue = reg[16].I;
       if(armMode > 0x10) {
         if(opcode & 0x00010000)
           newValue = (newValue & 0xFFFFFF00) | (value & 0x000000FF);
@@ -2208,7 +3282,7 @@ if(cond_res) {
       newValue |= 0x10;
 
       CPUSwitchMode(newValue & 0x1f, false);
-      m_aReg[16].I = newValue;
+      reg[16].I = newValue;
       CPUUpdateFlags();
     }
     break;
@@ -2231,19 +3305,19 @@ if(cond_res) {
     {
       // MSR SPSR_fields, #
       if(armMode > 0x10 && armMode < 0x1f) {
-        DWORD value = opcode & 0xFF;
+        u32 value = opcode & 0xFF;
         int shift = (opcode & 0xF00) >> 7;
         if(shift) {
           ROR_IMM_MSR;
         }
         if(opcode & 0x00010000)
-          m_aReg[17].I = (m_aReg[17].I & 0xFFFFFF00) | (value & 0x000000FF);
+          reg[17].I = (reg[17].I & 0xFFFFFF00) | (value & 0x000000FF);
         if(opcode & 0x00020000)
-          m_aReg[17].I = (m_aReg[17].I & 0xFFFF00FF) | (value & 0x0000FF00);
+          reg[17].I = (reg[17].I & 0xFFFF00FF) | (value & 0x0000FF00);
         if(opcode & 0x00040000)
-          m_aReg[17].I = (m_aReg[17].I & 0xFF00FFFF) | (value & 0x00FF0000);
+          reg[17].I = (reg[17].I & 0xFF00FFFF) | (value & 0x00FF0000);
         if(opcode & 0x00080000)
-          m_aReg[17].I = (m_aReg[17].I & 0x00FFFFFF) | (value & 0xFF000000);
+          reg[17].I = (reg[17].I & 0x00FFFFFF) | (value & 0xFF000000);
       }
     }
   break;
@@ -2255,10 +3329,10 @@ if(cond_res) {
       int offset = opcode & 0xFFF;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_aReg[base].I = address - offset;
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I;
+      CPUWriteMemory(address, reg[dest].I);
+      reg[base].I = address - offset;
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   CASE_16(0x480)
@@ -2269,10 +3343,10 @@ if(cond_res) {
       int offset = opcode & 0xFFF;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_aReg[base].I = address + offset;
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I;
+      CPUWriteMemory(address, reg[dest].I);
+      reg[base].I = address + offset;
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   CASE_16(0x500)
@@ -2281,9 +3355,9 @@ if(cond_res) {
       int offset = opcode & 0xFFF;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I - offset;
+      CPUWriteMemory(address, reg[dest].I);
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   CASE_16(0x520)
@@ -2292,10 +3366,10 @@ if(cond_res) {
       int offset = opcode & 0xFFF;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      m_aReg[base].I = address;
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I - offset;
+      reg[base].I = address;
+      CPUWriteMemory(address, reg[dest].I);
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   CASE_16(0x580)
@@ -2304,9 +3378,9 @@ if(cond_res) {
       int offset = opcode & 0xFFF;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I + offset;
+      CPUWriteMemory(address, reg[dest].I);
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   CASE_16(0x5a0)
@@ -2315,10 +3389,10 @@ if(cond_res) {
       int offset = opcode & 0xFFF;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      m_aReg[base].I = address;
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I + offset;
+      reg[base].I = address;
+      CPUWriteMemory(address, reg[dest].I);
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   CASE_16(0x410)
@@ -2327,16 +3401,16 @@ if(cond_res) {
       int offset = opcode & 0xFFF;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      m_aReg[dest].I = Arm7ReadMemory(address);
+      u32 address = reg[base].I;
+      reg[dest].I = CPUReadMemory(address);
       if(dest != base)
-        m_aReg[base].I -= offset;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+        reg[base].I -= offset;
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -2346,11 +3420,11 @@ if(cond_res) {
       int offset = opcode & 0xFFF;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      m_aReg[dest].I = Arm7ReadMemory(address);
+      u32 address = reg[base].I;
+      reg[dest].I = CPUReadMemory(address);
       if(dest != base)
-        m_aReg[base].I -= offset;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+        reg[base].I -= offset;
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
     }
     break;
   CASE_16(0x490)
@@ -2359,16 +3433,16 @@ if(cond_res) {
       int offset = opcode & 0xFFF;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      m_aReg[dest].I = Arm7ReadMemory(address);
+      u32 address = reg[base].I;
+      reg[dest].I = CPUReadMemory(address);
       if(dest != base)
-        m_aReg[base].I += offset;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+        reg[base].I += offset;
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -2378,11 +3452,11 @@ if(cond_res) {
       int offset = opcode & 0xFFF;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      m_aReg[dest].I = Arm7ReadMemory(address);
+      u32 address = reg[base].I;
+      reg[dest].I = CPUReadMemory(address);
       if(dest != base)
-        m_aReg[base].I += offset;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+        reg[base].I += offset;
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
     }
     break;
   CASE_16(0x510)
@@ -2391,14 +3465,14 @@ if(cond_res) {
       int offset = opcode & 0xFFF;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      m_aReg[dest].I = Arm7ReadMemory(address);
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I - offset;
+      reg[dest].I = CPUReadMemory(address);
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -2408,16 +3482,16 @@ if(cond_res) {
       int offset = opcode & 0xFFF;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      m_aReg[dest].I = Arm7ReadMemory(address);
+      u32 address = reg[base].I - offset;
+      reg[dest].I = CPUReadMemory(address);
       if(dest != base)
-        m_aReg[base].I = address;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+        reg[base].I = address;
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -2427,14 +3501,14 @@ if(cond_res) {
       int offset = opcode & 0xFFF;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      m_aReg[dest].I = Arm7ReadMemory(address);
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I + offset;
+      reg[dest].I = CPUReadMemory(address);
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -2444,16 +3518,16 @@ if(cond_res) {
       int offset = opcode & 0xFFF;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      m_aReg[dest].I = Arm7ReadMemory(address);
+      u32 address = reg[base].I + offset;
+      reg[dest].I = CPUReadMemory(address);
       if(dest != base)
-        m_aReg[base].I = address;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+        reg[base].I = address;
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -2465,10 +3539,10 @@ if(cond_res) {
       int offset = opcode & 0xFFF;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      Arm7WriteByte(address, m_aReg[dest].B.B0);
-      m_aReg[base].I = address - offset;
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I;
+      CPUWriteByte(address, reg[dest].B.B0);
+      reg[base].I = address - offset;
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   CASE_16(0x4c0)
@@ -2479,10 +3553,10 @@ if(cond_res) {
       int offset = opcode & 0xFFF;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      Arm7WriteByte(address, m_aReg[dest].B.B0);
-      m_aReg[base].I = address + offset;
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I;
+      CPUWriteByte(address, reg[dest].B.B0);
+      reg[base].I = address + offset;
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   CASE_16(0x540)
@@ -2491,9 +3565,9 @@ if(cond_res) {
       int offset = opcode & 0xFFF;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      Arm7WriteByte(address, m_aReg[dest].B.B0);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I - offset;
+      CPUWriteByte(address, reg[dest].B.B0);
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   CASE_16(0x560)
@@ -2502,10 +3576,10 @@ if(cond_res) {
       int offset = opcode & 0xFFF;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      m_aReg[base].I = address;
-      Arm7WriteByte(address, m_aReg[dest].B.B0);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I - offset;
+      reg[base].I = address;
+      CPUWriteByte(address, reg[dest].B.B0);
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   CASE_16(0x5c0)
@@ -2514,9 +3588,9 @@ if(cond_res) {
       int offset = opcode & 0xFFF;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      Arm7WriteByte(address, m_aReg[dest].B.B0);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I + offset;
+      CPUWriteByte(address, reg[dest].B.B0);
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   CASE_16(0x5e0)
@@ -2525,10 +3599,10 @@ if(cond_res) {
       int offset = opcode & 0xFFF;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      m_aReg[base].I = address;
-      Arm7WriteByte(address, BYTE(m_aReg[dest].I));
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I + offset;
+      reg[base].I = address;
+      CPUWriteByte(address, reg[dest].I);
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   CASE_16(0x450)
@@ -2539,11 +3613,11 @@ if(cond_res) {
       int offset = opcode & 0xFFF;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      m_aReg[dest].I = Arm7ReadByte(address);
+      u32 address = reg[base].I;
+      reg[dest].I = CPUReadByte(address);
       if(dest != base)
-        m_aReg[base].I -= offset;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+        reg[base].I -= offset;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
   CASE_16(0x4d0)
@@ -2553,11 +3627,11 @@ if(cond_res) {
       int offset = opcode & 0xFFF;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      m_aReg[dest].I = Arm7ReadByte(address);
+      u32 address = reg[base].I;
+      reg[dest].I = CPUReadByte(address);
       if(dest != base)
-        m_aReg[base].I += offset;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+        reg[base].I += offset;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
   CASE_16(0x550)
@@ -2566,9 +3640,9 @@ if(cond_res) {
       int offset = opcode & 0xFFF;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      m_aReg[dest].I = Arm7ReadByte(address);
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I - offset;
+      reg[dest].I = CPUReadByte(address);
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
   CASE_16(0x570)
@@ -2577,11 +3651,11 @@ if(cond_res) {
       int offset = opcode & 0xFFF;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      m_aReg[dest].I = Arm7ReadByte(address);
+      u32 address = reg[base].I - offset;
+      reg[dest].I = CPUReadByte(address);
       if(dest != base)
-        m_aReg[base].I = address;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+        reg[base].I = address;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
   CASE_16(0x5d0)
@@ -2590,9 +3664,9 @@ if(cond_res) {
       int offset = opcode & 0xFFF;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      m_aReg[dest].I = Arm7ReadByte(address);
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I + offset;
+      reg[dest].I = CPUReadByte(address);
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
   CASE_16(0x5f0)
@@ -2601,11 +3675,11 @@ if(cond_res) {
       int offset = opcode & 0xFFF;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      m_aReg[dest].I = Arm7ReadByte(address);
+      u32 address = reg[base].I + offset;
+      reg[dest].I = CPUReadByte(address);
       if(dest != base)
-        m_aReg[base].I = address;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+        reg[base].I = address;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x600:
@@ -2615,13 +3689,13 @@ if(cond_res) {
   case 0x628:
     {
       // STR Rd, [Rn], -Rm, LSL #
-      int offset = m_aReg[opcode & 15].I << ((opcode>>7)& 31);
+      int offset = reg[opcode & 15].I << ((opcode>>7)& 31);
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_aReg[base].I = address - offset;
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I;
+      CPUWriteMemory(address, reg[dest].I);
+      reg[base].I = address - offset;
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   case 0x602:
@@ -2632,13 +3706,13 @@ if(cond_res) {
     {
       // STR Rd, [Rn], -Rm, LSR #
       int shift = (opcode >> 7) & 31;
-      int offset = shift ? m_aReg[opcode & 15].I >> shift : 0;
+      int offset = shift ? reg[opcode & 15].I >> shift : 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_aReg[base].I = address - offset;
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I;
+      CPUWriteMemory(address, reg[dest].I);
+      reg[base].I = address - offset;
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   case 0x604:
@@ -2651,17 +3725,17 @@ if(cond_res) {
       int shift = (opcode >> 7) & 31;
       int offset;
       if(shift)
-        offset = (int)((int)m_aReg[opcode & 15].I >> shift);
-      else if(m_aReg[opcode & 15].I & 0x80000000)
+        offset = (int)((s32)reg[opcode & 15].I >> shift);
+      else if(reg[opcode & 15].I & 0x80000000)
         offset = 0xFFFFFFFF;
       else
         offset = 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_aReg[base].I = address - offset;
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I;
+      CPUWriteMemory(address, reg[dest].I);
+      reg[base].I = address - offset;
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   case 0x606:
@@ -2672,7 +3746,7 @@ if(cond_res) {
     {
       // STR Rd, [Rn], -Rm, ROR #
       int shift = (opcode >> 7) & 31;
-      DWORD value = m_aReg[opcode & 15].I;
+      u32 value = reg[opcode & 15].I;
       if(shift) {
         ROR_VALUE;
       } else {
@@ -2680,10 +3754,10 @@ if(cond_res) {
       }
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_aReg[base].I = address - value;
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I;
+      CPUWriteMemory(address, reg[dest].I);
+      reg[base].I = address - value;
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   case 0x680:
@@ -2693,13 +3767,13 @@ if(cond_res) {
   case 0x6a8:
     {
       // STR Rd, [Rn], Rm, LSL #
-      int offset = m_aReg[opcode & 15].I << ((opcode>>7)& 31);
+      int offset = reg[opcode & 15].I << ((opcode>>7)& 31);
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_aReg[base].I = address + offset;
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I;
+      CPUWriteMemory(address, reg[dest].I);
+      reg[base].I = address + offset;
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   case 0x682:
@@ -2710,13 +3784,13 @@ if(cond_res) {
     {
       // STR Rd, [Rn], Rm, LSR #
       int shift = (opcode >> 7) & 31;
-      int offset = shift ? m_aReg[opcode & 15].I >> shift : 0;
+      int offset = shift ? reg[opcode & 15].I >> shift : 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_aReg[base].I = address + offset;
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I;
+      CPUWriteMemory(address, reg[dest].I);
+      reg[base].I = address + offset;
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   case 0x684:
@@ -2729,17 +3803,17 @@ if(cond_res) {
       int shift = (opcode >> 7) & 31;
       int offset;
       if(shift)
-        offset = (int)((int)m_aReg[opcode & 15].I >> shift);
-      else if(m_aReg[opcode & 15].I & 0x80000000)
+        offset = (int)((s32)reg[opcode & 15].I >> shift);
+      else if(reg[opcode & 15].I & 0x80000000)
         offset = 0xFFFFFFFF;
       else
         offset = 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_aReg[base].I = address + offset;
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I;
+      CPUWriteMemory(address, reg[dest].I);
+      reg[base].I = address + offset;
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   case 0x686:
@@ -2750,7 +3824,7 @@ if(cond_res) {
     {
       // STR Rd, [Rn], Rm, ROR #
       int shift = (opcode >> 7) & 31;
-      DWORD value = m_aReg[opcode & 15].I;
+      u32 value = reg[opcode & 15].I;
       if(shift) {
         ROR_VALUE;
       } else {
@@ -2758,22 +3832,22 @@ if(cond_res) {
       }
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_aReg[base].I = address + value;
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I;
+      CPUWriteMemory(address, reg[dest].I);
+      reg[base].I = address + value;
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   case 0x700:
   case 0x708:
     {
       // STR Rd, [Rn, -Rm, LSL #]
-      int offset = m_aReg[opcode & 15].I << ((opcode>>7)& 31);
+      int offset = reg[opcode & 15].I << ((opcode>>7)& 31);
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I - offset;
+      CPUWriteMemory(address, reg[dest].I);
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   case 0x702:
@@ -2781,12 +3855,12 @@ if(cond_res) {
     {
       // STR Rd, [Rn, -Rm, LSR #]
       int shift = (opcode >> 7) & 31;
-      int offset = shift ? m_aReg[opcode & 15].I >> shift : 0;
+      int offset = shift ? reg[opcode & 15].I >> shift : 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I - offset;
+      CPUWriteMemory(address, reg[dest].I);
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   case 0x704:
@@ -2796,16 +3870,16 @@ if(cond_res) {
       int shift = (opcode >> 7) & 31;
       int offset;
       if(shift)
-        offset = (int)((int)m_aReg[opcode & 15].I >> shift);
-      else if(m_aReg[opcode & 15].I & 0x80000000)
+        offset = (int)((s32)reg[opcode & 15].I >> shift);
+      else if(reg[opcode & 15].I & 0x80000000)
         offset = 0xFFFFFFFF;
       else
         offset = 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I - offset;
+      CPUWriteMemory(address, reg[dest].I);
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   case 0x706:
@@ -2813,7 +3887,7 @@ if(cond_res) {
     {
       // STR Rd, [Rn, -Rm, ROR #]
       int shift = (opcode >> 7) & 31;
-      DWORD value = m_aReg[opcode & 15].I;
+      u32 value = reg[opcode & 15].I;
       if(shift) {
         ROR_VALUE;
       } else {
@@ -2821,22 +3895,22 @@ if(cond_res) {
       }
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - value;
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I - value;
+      CPUWriteMemory(address, reg[dest].I);
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   case 0x720:
   case 0x728:
     {
       // STR Rd, [Rn, -Rm, LSL #]!
-      int offset = m_aReg[opcode & 15].I << ((opcode>>7)& 31);
+      int offset = reg[opcode & 15].I << ((opcode>>7)& 31);
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      m_aReg[base].I = address;
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I - offset;
+      reg[base].I = address;
+      CPUWriteMemory(address, reg[dest].I);
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   case 0x722:
@@ -2844,13 +3918,13 @@ if(cond_res) {
     {
       // STR Rd, [Rn, -Rm, LSR #]!
       int shift = (opcode >> 7) & 31;
-      int offset = shift ? m_aReg[opcode & 15].I >> shift : 0;
+      int offset = shift ? reg[opcode & 15].I >> shift : 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      m_aReg[base].I = address;      
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I - offset;
+      reg[base].I = address;      
+      CPUWriteMemory(address, reg[dest].I);
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   case 0x724:
@@ -2860,17 +3934,17 @@ if(cond_res) {
       int shift = (opcode >> 7) & 31;
       int offset;
       if(shift)
-        offset = (int)((int)m_aReg[opcode & 15].I >> shift);
-      else if(m_aReg[opcode & 15].I & 0x80000000)
+        offset = (int)((s32)reg[opcode & 15].I >> shift);
+      else if(reg[opcode & 15].I & 0x80000000)
         offset = 0xFFFFFFFF;
       else
         offset = 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      m_aReg[base].I = address;
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I - offset;
+      reg[base].I = address;
+      CPUWriteMemory(address, reg[dest].I);
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   case 0x726:
@@ -2878,7 +3952,7 @@ if(cond_res) {
     {
       // STR Rd, [Rn, -Rm, ROR #]!
       int shift = (opcode >> 7) & 31;
-      DWORD value = m_aReg[opcode & 15].I;
+      u32 value = reg[opcode & 15].I;
       if(shift) {
         ROR_VALUE;
       } else {
@@ -2886,22 +3960,22 @@ if(cond_res) {
       }
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - value;
-      m_aReg[base].I = address;      
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I - value;
+      reg[base].I = address;      
+      CPUWriteMemory(address, reg[dest].I);
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   case 0x780:
   case 0x788:
     {
       // STR Rd, [Rn, Rm, LSL #]
-      int offset = m_aReg[opcode & 15].I << ((opcode>>7)& 31);
+      int offset = reg[opcode & 15].I << ((opcode>>7)& 31);
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I + offset;
+      CPUWriteMemory(address, reg[dest].I);
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   case 0x782:
@@ -2909,12 +3983,12 @@ if(cond_res) {
     {
       // STR Rd, [Rn, Rm, LSR #]
       int shift = (opcode >> 7) & 31;
-      int offset = shift ? m_aReg[opcode & 15].I >> shift : 0;
+      int offset = shift ? reg[opcode & 15].I >> shift : 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I + offset;
+      CPUWriteMemory(address, reg[dest].I);
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   case 0x784:
@@ -2924,16 +3998,16 @@ if(cond_res) {
       int shift = (opcode >> 7) & 31;
       int offset;
       if(shift)
-        offset = (int)((int)m_aReg[opcode & 15].I >> shift);
-      else if(m_aReg[opcode & 15].I & 0x80000000)
+        offset = (int)((s32)reg[opcode & 15].I >> shift);
+      else if(reg[opcode & 15].I & 0x80000000)
         offset = 0xFFFFFFFF;
       else
         offset = 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I + offset;
+      CPUWriteMemory(address, reg[dest].I);
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   case 0x786:
@@ -2941,7 +4015,7 @@ if(cond_res) {
     {
       // STR Rd, [Rn, Rm, ROR #]
       int shift = (opcode >> 7) & 31;
-      DWORD value = m_aReg[opcode & 15].I;
+      u32 value = reg[opcode & 15].I;
       if(shift) {
         ROR_VALUE;
       } else {
@@ -2949,22 +4023,22 @@ if(cond_res) {
       }
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + value;
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I + value;
+      CPUWriteMemory(address, reg[dest].I);
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   case 0x7a0:
   case 0x7a8:
     {
       // STR Rd, [Rn, Rm, LSL #]!
-      int offset = m_aReg[opcode & 15].I << ((opcode>>7)& 31);
+      int offset = reg[opcode & 15].I << ((opcode>>7)& 31);
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      m_aReg[base].I = address;
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I + offset;
+      reg[base].I = address;
+      CPUWriteMemory(address, reg[dest].I);
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   case 0x7a2:
@@ -2972,13 +4046,13 @@ if(cond_res) {
     {
       // STR Rd, [Rn, Rm, LSR #]!
       int shift = (opcode >> 7) & 31;
-      int offset = shift ? m_aReg[opcode & 15].I >> shift : 0;
+      int offset = shift ? reg[opcode & 15].I >> shift : 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      m_aReg[base].I = address;      
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I + offset;
+      reg[base].I = address;      
+      CPUWriteMemory(address, reg[dest].I);
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   case 0x7a4:
@@ -2988,17 +4062,17 @@ if(cond_res) {
       int shift = (opcode >> 7) & 31;
       int offset;
       if(shift)
-        offset = (int)((int)m_aReg[opcode & 15].I >> shift);
-      else if(m_aReg[opcode & 15].I & 0x80000000)
+        offset = (int)((s32)reg[opcode & 15].I >> shift);
+      else if(reg[opcode & 15].I & 0x80000000)
         offset = 0xFFFFFFFF;
       else
         offset = 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      m_aReg[base].I = address;
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I + offset;
+      reg[base].I = address;
+      CPUWriteMemory(address, reg[dest].I);
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   case 0x7a6:
@@ -3006,7 +4080,7 @@ if(cond_res) {
     {
       // STR Rd, [Rn, Rm, ROR #]!
       int shift = (opcode >> 7) & 31;
-      DWORD value = m_aReg[opcode & 15].I;
+      u32 value = reg[opcode & 15].I;
       if(shift) {
         ROR_VALUE;
       } else {
@@ -3014,10 +4088,10 @@ if(cond_res) {
       }
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + value;
-      m_aReg[base].I = address;      
-      Arm7WriteMemory(address, m_aReg[dest].I);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I + value;
+      reg[base].I = address;      
+      CPUWriteMemory(address, reg[dest].I);
+      clockTicks += 2 + CPUUpdateTicksAccess32(address);
     }
     break;
   case 0x610:
@@ -3027,19 +4101,19 @@ if(cond_res) {
   case 0x638:
     {
       // LDR Rd, [Rn], -Rm, LSL #
-      int offset = m_aReg[opcode & 15].I << ((opcode>>7)& 31);
+      int offset = reg[opcode & 15].I << ((opcode>>7)& 31);
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      m_aReg[dest].I = Arm7ReadMemory(address);
+      u32 address = reg[base].I;
+      reg[dest].I = CPUReadMemory(address);
       if(dest != base)
-        m_aReg[base].I = address - offset;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+        reg[base].I = address - offset;
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -3051,19 +4125,19 @@ if(cond_res) {
     {
       // LDR Rd, [Rn], -Rm, LSR #
       int shift = (opcode >> 7) & 31;
-      int offset = shift ? m_aReg[opcode & 15].I >> shift : 0;
+      int offset = shift ? reg[opcode & 15].I >> shift : 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      m_aReg[dest].I = Arm7ReadMemory(address);
+      u32 address = reg[base].I;
+      reg[dest].I = CPUReadMemory(address);
       if(dest != base)
-        m_aReg[base].I = address - offset;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+        reg[base].I = address - offset;
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -3077,23 +4151,23 @@ if(cond_res) {
       int shift = (opcode >> 7) & 31;
       int offset;
       if(shift)
-        offset = (int)((int)m_aReg[opcode & 15].I >> shift);
-      else if(m_aReg[opcode & 15].I & 0x80000000)
+        offset = (int)((s32)reg[opcode & 15].I >> shift);
+      else if(reg[opcode & 15].I & 0x80000000)
         offset = 0xFFFFFFFF;
       else
         offset = 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      m_aReg[dest].I = Arm7ReadMemory(address);
+      u32 address = reg[base].I;
+      reg[dest].I = CPUReadMemory(address);
       if(dest != base)
-        m_aReg[base].I = address - offset;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+        reg[base].I = address - offset;
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -3105,7 +4179,7 @@ if(cond_res) {
     {
       // LDR Rd, [Rn], -Rm, ROR #
       int shift = (opcode >> 7) & 31;
-      DWORD value = m_aReg[opcode & 15].I;
+      u32 value = reg[opcode & 15].I;
       if(shift) {
         ROR_VALUE;
       } else {
@@ -3113,16 +4187,16 @@ if(cond_res) {
       }
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      m_aReg[dest].I = Arm7ReadMemory(address);
+      u32 address = reg[base].I;
+      reg[dest].I = CPUReadMemory(address);
       if(dest != base)
-        m_aReg[base].I = address - value;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+        reg[base].I = address - value;
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -3133,19 +4207,19 @@ if(cond_res) {
   case 0x6b8:
     {
       // LDR Rd, [Rn], Rm, LSL #
-      int offset = m_aReg[opcode & 15].I << ((opcode>>7)& 31);
+      int offset = reg[opcode & 15].I << ((opcode>>7)& 31);
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      m_aReg[dest].I = Arm7ReadMemory(address);
+      u32 address = reg[base].I;
+      reg[dest].I = CPUReadMemory(address);
       if(dest != base)
-        m_aReg[base].I = address + offset;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+        reg[base].I = address + offset;
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -3157,19 +4231,19 @@ if(cond_res) {
     {
       // LDR Rd, [Rn], Rm, LSR #
       int shift = (opcode >> 7) & 31;
-      int offset = shift ? m_aReg[opcode & 15].I >> shift : 0;
+      int offset = shift ? reg[opcode & 15].I >> shift : 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      m_aReg[dest].I = Arm7ReadMemory(address);
+      u32 address = reg[base].I;
+      reg[dest].I = CPUReadMemory(address);
       if(dest != base)
-        m_aReg[base].I = address + offset;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+        reg[base].I = address + offset;
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -3183,23 +4257,23 @@ if(cond_res) {
       int shift = (opcode >> 7) & 31;
       int offset;
       if(shift)
-        offset = (int)((int)m_aReg[opcode & 15].I >> shift);
-      else if(m_aReg[opcode & 15].I & 0x80000000)
+        offset = (int)((s32)reg[opcode & 15].I >> shift);
+      else if(reg[opcode & 15].I & 0x80000000)
         offset = 0xFFFFFFFF;
       else
         offset = 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      m_aReg[dest].I = Arm7ReadMemory(address);
+      u32 address = reg[base].I;
+      reg[dest].I = CPUReadMemory(address);
       if(dest != base)
-        m_aReg[base].I = address + offset;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+        reg[base].I = address + offset;
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -3211,7 +4285,7 @@ if(cond_res) {
     {
       // LDR Rd, [Rn], Rm, ROR #
       int shift = (opcode >> 7) & 31;
-      DWORD value = m_aReg[opcode & 15].I;
+      u32 value = reg[opcode & 15].I;
       if(shift) {
         ROR_VALUE;
       } else {
@@ -3219,16 +4293,16 @@ if(cond_res) {
       }
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      m_aReg[dest].I = Arm7ReadMemory(address);
+      u32 address = reg[base].I;
+      reg[dest].I = CPUReadMemory(address);
       if(dest != base)
-        m_aReg[base].I = address + value;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+        reg[base].I = address + value;
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -3236,17 +4310,17 @@ if(cond_res) {
   case 0x718:
     {
       // LDR Rd, [Rn, -Rm, LSL #]
-      int offset = m_aReg[opcode & 15].I << ((opcode>>7)& 31);
+      int offset = reg[opcode & 15].I << ((opcode>>7)& 31);
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      m_aReg[dest].I = Arm7ReadMemory(address);
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I - offset;
+      reg[dest].I = CPUReadMemory(address);
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -3255,17 +4329,17 @@ if(cond_res) {
     {
       // LDR Rd, [Rn, -Rm, LSR #]
       int shift = (opcode >> 7) & 31;
-      int offset = shift ? m_aReg[opcode & 15].I >> shift : 0;
+      int offset = shift ? reg[opcode & 15].I >> shift : 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      m_aReg[dest].I = Arm7ReadMemory(address);
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I - offset;
+      reg[dest].I = CPUReadMemory(address);
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -3276,21 +4350,21 @@ if(cond_res) {
       int shift = (opcode >> 7) & 31;
       int offset;
       if(shift)
-        offset = (int)((int)m_aReg[opcode & 15].I >> shift);
-      else if(m_aReg[opcode & 15].I & 0x80000000)
+        offset = (int)((s32)reg[opcode & 15].I >> shift);
+      else if(reg[opcode & 15].I & 0x80000000)
         offset = 0xFFFFFFFF;
       else
         offset = 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      m_aReg[dest].I = Arm7ReadMemory(address);
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I - offset;
+      reg[dest].I = CPUReadMemory(address);
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -3299,7 +4373,7 @@ if(cond_res) {
     {
       // LDR Rd, [Rn, -Rm, ROR #]
       int shift = (opcode >> 7) & 31;
-      DWORD value = m_aReg[opcode & 15].I;
+      u32 value = reg[opcode & 15].I;
       if(shift) {
         ROR_VALUE;
       } else {
@@ -3307,14 +4381,14 @@ if(cond_res) {
       }
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - value;
-      m_aReg[dest].I = Arm7ReadMemory(address);
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I - value;
+      reg[dest].I = CPUReadMemory(address);
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -3322,19 +4396,19 @@ if(cond_res) {
   case 0x738:
     {
       // LDR Rd, [Rn, -Rm, LSL #]!
-      int offset = m_aReg[opcode & 15].I << ((opcode>>7)& 31);
+      int offset = reg[opcode & 15].I << ((opcode>>7)& 31);
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      m_aReg[dest].I = Arm7ReadMemory(address);
+      u32 address = reg[base].I - offset;
+      reg[dest].I = CPUReadMemory(address);
       if(dest != base)
-        m_aReg[base].I = address;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+        reg[base].I = address;
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -3343,19 +4417,19 @@ if(cond_res) {
     {
       // LDR Rd, [Rn, -Rm, LSR #]!
       int shift = (opcode >> 7) & 31;
-      int offset = shift ? m_aReg[opcode & 15].I >> shift : 0;
+      int offset = shift ? reg[opcode & 15].I >> shift : 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      m_aReg[dest].I = Arm7ReadMemory(address);
+      u32 address = reg[base].I - offset;
+      reg[dest].I = CPUReadMemory(address);
       if(dest != base)
-        m_aReg[base].I = address;      
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+        reg[base].I = address;      
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -3366,23 +4440,23 @@ if(cond_res) {
       int shift = (opcode >> 7) & 31;
       int offset;
       if(shift)
-        offset = (int)((int)m_aReg[opcode & 15].I >> shift);
-      else if(m_aReg[opcode & 15].I & 0x80000000)
+        offset = (int)((s32)reg[opcode & 15].I >> shift);
+      else if(reg[opcode & 15].I & 0x80000000)
         offset = 0xFFFFFFFF;
       else
         offset = 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      m_aReg[dest].I = Arm7ReadMemory(address);
+      u32 address = reg[base].I - offset;
+      reg[dest].I = CPUReadMemory(address);
       if(dest != base)
-        m_aReg[base].I = address;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+        reg[base].I = address;
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -3391,7 +4465,7 @@ if(cond_res) {
     {
       // LDR Rd, [Rn, -Rm, ROR #]!
       int shift = (opcode >> 7) & 31;
-      DWORD value = m_aReg[opcode & 15].I;
+      u32 value = reg[opcode & 15].I;
       if(shift) {
         ROR_VALUE;
       } else {
@@ -3399,16 +4473,16 @@ if(cond_res) {
       }
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - value;
-      m_aReg[dest].I = Arm7ReadMemory(address);
+      u32 address = reg[base].I - value;
+      reg[dest].I = CPUReadMemory(address);
       if(dest != base)
-        m_aReg[base].I = address;      
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+        reg[base].I = address;      
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -3416,17 +4490,17 @@ if(cond_res) {
   case 0x798:
     {
       // LDR Rd, [Rn, Rm, LSL #]
-      int offset = m_aReg[opcode & 15].I << ((opcode>>7)& 31);
+      int offset = reg[opcode & 15].I << ((opcode>>7)& 31);
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      m_aReg[dest].I = Arm7ReadMemory(address);
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I + offset;
+      reg[dest].I = CPUReadMemory(address);
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -3435,17 +4509,17 @@ if(cond_res) {
     {
       // LDR Rd, [Rn, Rm, LSR #]
       int shift = (opcode >> 7) & 31;
-      int offset = shift ? m_aReg[opcode & 15].I >> shift : 0;
+      int offset = shift ? reg[opcode & 15].I >> shift : 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      m_aReg[dest].I = Arm7ReadMemory(address);
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I + offset;
+      reg[dest].I = CPUReadMemory(address);
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -3456,21 +4530,21 @@ if(cond_res) {
       int shift = (opcode >> 7) & 31;
       int offset;
       if(shift)
-        offset = (int)((int)m_aReg[opcode & 15].I >> shift);
-      else if(m_aReg[opcode & 15].I & 0x80000000)
+        offset = (int)((s32)reg[opcode & 15].I >> shift);
+      else if(reg[opcode & 15].I & 0x80000000)
         offset = 0xFFFFFFFF;
       else
         offset = 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      m_aReg[dest].I = Arm7ReadMemory(address);
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I + offset;
+      reg[dest].I = CPUReadMemory(address);
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -3479,7 +4553,7 @@ if(cond_res) {
     {
       // LDR Rd, [Rn, Rm, ROR #]
       int shift = (opcode >> 7) & 31;
-      DWORD value = m_aReg[opcode & 15].I;
+      u32 value = reg[opcode & 15].I;
       if(shift) {
         ROR_VALUE;
       } else {
@@ -3487,14 +4561,14 @@ if(cond_res) {
       }
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + value;
-      m_aReg[dest].I = Arm7ReadMemory(address);
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+      u32 address = reg[base].I + value;
+      reg[dest].I = CPUReadMemory(address);
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -3502,19 +4576,19 @@ if(cond_res) {
   case 0x7b8:
     {
       // LDR Rd, [Rn, Rm, LSL #]!
-      int offset = m_aReg[opcode & 15].I << ((opcode>>7)& 31);
+      int offset = reg[opcode & 15].I << ((opcode>>7)& 31);
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      m_aReg[dest].I = Arm7ReadMemory(address);
+      u32 address = reg[base].I + offset;
+      reg[dest].I = CPUReadMemory(address);
       if(dest != base)
-        m_aReg[base].I = address;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+        reg[base].I = address;
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -3523,19 +4597,19 @@ if(cond_res) {
     {
       // LDR Rd, [Rn, Rm, LSR #]!
       int shift = (opcode >> 7) & 31;
-      int offset = shift ? m_aReg[opcode & 15].I >> shift : 0;
+      int offset = shift ? reg[opcode & 15].I >> shift : 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      m_aReg[dest].I = Arm7ReadMemory(address);
+      u32 address = reg[base].I + offset;
+      reg[dest].I = CPUReadMemory(address);
       if(dest != base)
-        m_aReg[base].I = address;      
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+        reg[base].I = address;      
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -3546,23 +4620,23 @@ if(cond_res) {
       int shift = (opcode >> 7) & 31;
       int offset;
       if(shift)
-        offset = (int)((int)m_aReg[opcode & 15].I >> shift);
-      else if(m_aReg[opcode & 15].I & 0x80000000)
+        offset = (int)((s32)reg[opcode & 15].I >> shift);
+      else if(reg[opcode & 15].I & 0x80000000)
         offset = 0xFFFFFFFF;
       else
         offset = 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      m_aReg[dest].I = Arm7ReadMemory(address);
+      u32 address = reg[base].I + offset;
+      reg[dest].I = CPUReadMemory(address);
       if(dest != base)
-        m_aReg[base].I = address;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+        reg[base].I = address;
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -3571,7 +4645,7 @@ if(cond_res) {
     {
       // LDR Rd, [Rn, Rm, ROR #]!
       int shift = (opcode >> 7) & 31;
-      DWORD value = m_aReg[opcode & 15].I;
+      u32 value = reg[opcode & 15].I;
       if(shift) {
         ROR_VALUE;
       } else {
@@ -3579,16 +4653,16 @@ if(cond_res) {
       }
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + value;
-      m_aReg[dest].I = Arm7ReadMemory(address);
+      u32 address = reg[base].I + value;
+      reg[dest].I = CPUReadMemory(address);
       if(dest != base)
-        m_aReg[base].I = address;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesint(address);
+        reg[base].I = address;
+      clockTicks += 3 + CPUUpdateTicksAccess32(address);
       if(dest == 15) {
-        m_uClockTicks += 2;
-        m_aReg[15].I &= 0xFFFFFFFC;
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+        clockTicks += 2;
+        reg[15].I &= 0xFFFFFFFC;
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -3599,13 +4673,13 @@ if(cond_res) {
   case 0x668:
     {
       // STRB Rd, [Rn], -Rm, LSL #
-      int offset = m_aReg[opcode & 15].I << ((opcode>>7)& 31);
+      int offset = reg[opcode & 15].I << ((opcode>>7)& 31);
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      Arm7WriteByte(address, m_aReg[dest].B.B0);
-      m_aReg[base].I = address - offset;
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I;
+      CPUWriteByte(address, reg[dest].B.B0);
+      reg[base].I = address - offset;
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x642:
@@ -3616,13 +4690,13 @@ if(cond_res) {
     {
       // STRB Rd, [Rn], -Rm, LSR #
       int shift = (opcode >> 7) & 31;
-      int offset = shift ? m_aReg[opcode & 15].I >> shift : 0;
+      int offset = shift ? reg[opcode & 15].I >> shift : 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      Arm7WriteByte(address, m_aReg[dest].B.B0);
-      m_aReg[base].I = address - offset;
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I;
+      CPUWriteByte(address, reg[dest].B.B0);
+      reg[base].I = address - offset;
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x644:
@@ -3635,17 +4709,17 @@ if(cond_res) {
       int shift = (opcode >> 7) & 31;
       int offset;
       if(shift)
-        offset = (int)((int)m_aReg[opcode & 15].I >> shift);
-      else if(m_aReg[opcode & 15].I & 0x80000000)
+        offset = (int)((s32)reg[opcode & 15].I >> shift);
+      else if(reg[opcode & 15].I & 0x80000000)
         offset = 0xFFFFFFFF;
       else
         offset = 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      Arm7WriteByte(address, m_aReg[dest].B.B0);
-      m_aReg[base].I = address - offset;
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I;
+      CPUWriteByte(address, reg[dest].B.B0);
+      reg[base].I = address - offset;
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x646:
@@ -3656,7 +4730,7 @@ if(cond_res) {
     {
       // STRB Rd, [Rn], -Rm, ROR #
       int shift = (opcode >> 7) & 31;
-      DWORD value = m_aReg[opcode & 15].I;
+      u32 value = reg[opcode & 15].I;
       if(shift) {
         ROR_VALUE;
       } else {
@@ -3664,10 +4738,10 @@ if(cond_res) {
       }
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      Arm7WriteByte(address, m_aReg[dest].B.B0);
-      m_aReg[base].I = address - value;
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I;
+      CPUWriteByte(address, reg[dest].B.B0);
+      reg[base].I = address - value;
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x6c0:
@@ -3677,13 +4751,13 @@ if(cond_res) {
   case 0x6e8:
     {
       // STRB Rd, [Rn], Rm, LSL #
-      int offset = m_aReg[opcode & 15].I << ((opcode>>7)& 31);
+      int offset = reg[opcode & 15].I << ((opcode>>7)& 31);
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      Arm7WriteByte(address, m_aReg[dest].B.B0);
-      m_aReg[base].I = address + offset;
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I;
+      CPUWriteByte(address, reg[dest].B.B0);
+      reg[base].I = address + offset;
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x6c2:
@@ -3694,13 +4768,13 @@ if(cond_res) {
     {
       // STRB Rd, [Rn], Rm, LSR #
       int shift = (opcode >> 7) & 31;
-      int offset = shift ? m_aReg[opcode & 15].I >> shift : 0;
+      int offset = shift ? reg[opcode & 15].I >> shift : 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      Arm7WriteByte(address, m_aReg[dest].B.B0);
-      m_aReg[base].I = address + offset;
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I;
+      CPUWriteByte(address, reg[dest].B.B0);
+      reg[base].I = address + offset;
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x6c4:
@@ -3713,17 +4787,17 @@ if(cond_res) {
       int shift = (opcode >> 7) & 31;
       int offset;
       if(shift)
-        offset = (int)((int)m_aReg[opcode & 15].I >> shift);
-      else if(m_aReg[opcode & 15].I & 0x80000000)
+        offset = (int)((s32)reg[opcode & 15].I >> shift);
+      else if(reg[opcode & 15].I & 0x80000000)
         offset = 0xFFFFFFFF;
       else
         offset = 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      Arm7WriteByte(address, m_aReg[dest].B.B0);
-      m_aReg[base].I = address + offset;
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I;
+      CPUWriteByte(address, reg[dest].B.B0);
+      reg[base].I = address + offset;
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x6c6:
@@ -3734,7 +4808,7 @@ if(cond_res) {
     {
       // STRB Rd, [Rn], Rm, ROR #
       int shift = (opcode >> 7) & 31;
-      DWORD value = m_aReg[opcode & 15].I;
+      u32 value = reg[opcode & 15].I;
       if(shift) {
         ROR_VALUE;
       } else {
@@ -3742,22 +4816,22 @@ if(cond_res) {
       }
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      Arm7WriteByte(address, m_aReg[dest].B.B0);
-      m_aReg[base].I = address + value;
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I;
+      CPUWriteByte(address, reg[dest].B.B0);
+      reg[base].I = address + value;
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x740:
   case 0x748:
     {
       // STRB Rd, [Rn, -Rm, LSL #]
-      int offset = m_aReg[opcode & 15].I << ((opcode>>7)& 31);
+      int offset = reg[opcode & 15].I << ((opcode>>7)& 31);
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      Arm7WriteByte(address, m_aReg[dest].B.B0);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I - offset;
+      CPUWriteByte(address, reg[dest].B.B0);
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x742:
@@ -3765,12 +4839,12 @@ if(cond_res) {
     {
       // STRB Rd, [Rn, -Rm, LSR #]
       int shift = (opcode >> 7) & 31;
-      int offset = shift ? m_aReg[opcode & 15].I >> shift : 0;
+      int offset = shift ? reg[opcode & 15].I >> shift : 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      Arm7WriteByte(address, m_aReg[dest].B.B0);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I - offset;
+      CPUWriteByte(address, reg[dest].B.B0);
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x744:
@@ -3780,16 +4854,16 @@ if(cond_res) {
       int shift = (opcode >> 7) & 31;
       int offset;
       if(shift)
-        offset = (int)((int)m_aReg[opcode & 15].I >> shift);
-      else if(m_aReg[opcode & 15].I & 0x80000000)
+        offset = (int)((s32)reg[opcode & 15].I >> shift);
+      else if(reg[opcode & 15].I & 0x80000000)
         offset = 0xFFFFFFFF;
       else
         offset = 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      Arm7WriteByte(address, m_aReg[dest].B.B0);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I - offset;
+      CPUWriteByte(address, reg[dest].B.B0);
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x746:
@@ -3797,7 +4871,7 @@ if(cond_res) {
     {
       // STRB Rd, [Rn, -Rm, ROR #]
       int shift = (opcode >> 7) & 31;
-      DWORD value = m_aReg[opcode & 15].I;
+      u32 value = reg[opcode & 15].I;
       if(shift) {
         ROR_VALUE;
       } else {
@@ -3805,22 +4879,22 @@ if(cond_res) {
       }
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - value;
-      Arm7WriteByte(address, m_aReg[dest].B.B0);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I - value;
+      CPUWriteByte(address, reg[dest].B.B0);
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x760:
   case 0x768:
     {
       // STRB Rd, [Rn, -Rm, LSL #]!
-      int offset = m_aReg[opcode & 15].I << ((opcode>>7)& 31);
+      int offset = reg[opcode & 15].I << ((opcode>>7)& 31);
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      m_aReg[base].I = address;
-      Arm7WriteByte(address, m_aReg[dest].B.B0);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I - offset;
+      reg[base].I = address;
+      CPUWriteByte(address, reg[dest].B.B0);
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x762:
@@ -3828,13 +4902,13 @@ if(cond_res) {
     {
       // STRB Rd, [Rn, -Rm, LSR #]!
       int shift = (opcode >> 7) & 31;
-      int offset = shift ? m_aReg[opcode & 15].I >> shift : 0;
+      int offset = shift ? reg[opcode & 15].I >> shift : 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      m_aReg[base].I = address;      
-      Arm7WriteByte(address, m_aReg[dest].B.B0);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I - offset;
+      reg[base].I = address;      
+      CPUWriteByte(address, reg[dest].B.B0);
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x764:
@@ -3844,17 +4918,17 @@ if(cond_res) {
       int shift = (opcode >> 7) & 31;
       int offset;
       if(shift)
-        offset = (int)((int)m_aReg[opcode & 15].I >> shift);
-      else if(m_aReg[opcode & 15].I & 0x80000000)
+        offset = (int)((s32)reg[opcode & 15].I >> shift);
+      else if(reg[opcode & 15].I & 0x80000000)
         offset = 0xFFFFFFFF;
       else
         offset = 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      m_aReg[base].I = address;
-      Arm7WriteByte(address, m_aReg[dest].B.B0);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I - offset;
+      reg[base].I = address;
+      CPUWriteByte(address, reg[dest].B.B0);
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x766:
@@ -3862,7 +4936,7 @@ if(cond_res) {
     {
       // STRB Rd, [Rn, -Rm, ROR #]!
       int shift = (opcode >> 7) & 31;
-      DWORD value = m_aReg[opcode & 15].I;
+      u32 value = reg[opcode & 15].I;
       if(shift) {
         ROR_VALUE;
       } else {
@@ -3870,22 +4944,22 @@ if(cond_res) {
       }
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - value;
-      m_aReg[base].I = address;      
-      Arm7WriteByte(address, m_aReg[dest].B.B0);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I - value;
+      reg[base].I = address;      
+      CPUWriteByte(address, reg[dest].B.B0);
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x7c0:
   case 0x7c8:
     {
       // STRB Rd, [Rn, Rm, LSL #]
-      int offset = m_aReg[opcode & 15].I << ((opcode>>7)& 31);
+      int offset = reg[opcode & 15].I << ((opcode>>7)& 31);
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      Arm7WriteByte(address, m_aReg[dest].B.B0);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I + offset;
+      CPUWriteByte(address, reg[dest].B.B0);
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x7c2:
@@ -3893,12 +4967,12 @@ if(cond_res) {
     {
       // STRB Rd, [Rn, Rm, LSR #]
       int shift = (opcode >> 7) & 31;
-      int offset = shift ? m_aReg[opcode & 15].I >> shift : 0;
+      int offset = shift ? reg[opcode & 15].I >> shift : 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      Arm7WriteByte(address, m_aReg[dest].B.B0);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I + offset;
+      CPUWriteByte(address, reg[dest].B.B0);
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x7c4:
@@ -3908,16 +4982,16 @@ if(cond_res) {
       int shift = (opcode >> 7) & 31;
       int offset;
       if(shift)
-        offset = (int)((int)m_aReg[opcode & 15].I >> shift);
-      else if(m_aReg[opcode & 15].I & 0x80000000)
+        offset = (int)((s32)reg[opcode & 15].I >> shift);
+      else if(reg[opcode & 15].I & 0x80000000)
         offset = 0xFFFFFFFF;
       else
         offset = 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      Arm7WriteByte(address, m_aReg[dest].B.B0);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I + offset;
+      CPUWriteByte(address, reg[dest].B.B0);
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x7c6:
@@ -3925,7 +4999,7 @@ if(cond_res) {
     {
       // STRB Rd, [Rn, Rm, ROR #]
       int shift = (opcode >> 7) & 31;
-      DWORD value = m_aReg[opcode & 15].I;
+      u32 value = reg[opcode & 15].I;
       if(shift) {
         ROR_VALUE;
       } else {
@@ -3933,22 +5007,22 @@ if(cond_res) {
       }
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + value;
-      Arm7WriteByte(address, m_aReg[dest].B.B0);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I + value;
+      CPUWriteByte(address, reg[dest].B.B0);
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x7e0:
   case 0x7e8:
     {
       // STRB Rd, [Rn, Rm, LSL #]!
-      int offset = m_aReg[opcode & 15].I << ((opcode>>7)& 31);
+      int offset = reg[opcode & 15].I << ((opcode>>7)& 31);
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      m_aReg[base].I = address;
-      Arm7WriteByte(address, m_aReg[dest].B.B0);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I + offset;
+      reg[base].I = address;
+      CPUWriteByte(address, reg[dest].B.B0);
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x7e2:
@@ -3956,13 +5030,13 @@ if(cond_res) {
     {
       // STRB Rd, [Rn, Rm, LSR #]!
       int shift = (opcode >> 7) & 31;
-      int offset = shift ? m_aReg[opcode & 15].I >> shift : 0;
+      int offset = shift ? reg[opcode & 15].I >> shift : 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      m_aReg[base].I = address;      
-      Arm7WriteByte(address, m_aReg[dest].B.B0);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I + offset;
+      reg[base].I = address;      
+      CPUWriteByte(address, reg[dest].B.B0);
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x7e4:
@@ -3972,17 +5046,17 @@ if(cond_res) {
       int shift = (opcode >> 7) & 31;
       int offset;
       if(shift)
-        offset = (int)((int)m_aReg[opcode & 15].I >> shift);
-      else if(m_aReg[opcode & 15].I & 0x80000000)
+        offset = (int)((s32)reg[opcode & 15].I >> shift);
+      else if(reg[opcode & 15].I & 0x80000000)
         offset = 0xFFFFFFFF;
       else
         offset = 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      m_aReg[base].I = address;
-      Arm7WriteByte(address, m_aReg[dest].B.B0);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I + offset;
+      reg[base].I = address;
+      CPUWriteByte(address, reg[dest].B.B0);
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x7e6:
@@ -3990,7 +5064,7 @@ if(cond_res) {
     {
       // STRB Rd, [Rn, Rm, ROR #]!
       int shift = (opcode >> 7) & 31;
-      DWORD value = m_aReg[opcode & 15].I;
+      u32 value = reg[opcode & 15].I;
       if(shift) {
         ROR_VALUE;
       } else {
@@ -3998,10 +5072,10 @@ if(cond_res) {
       }
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + value;
-      m_aReg[base].I = address;      
-      Arm7WriteByte(address, m_aReg[dest].B.B0);
-      m_uClockTicks += 2 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I + value;
+      reg[base].I = address;      
+      CPUWriteByte(address, reg[dest].B.B0);
+      clockTicks += 2 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x650:
@@ -4011,14 +5085,14 @@ if(cond_res) {
   case 0x678:
     {
       // LDRB Rd, [Rn], -Rm, LSL #
-      int offset = m_aReg[opcode & 15].I << ((opcode>>7)& 31);
+      int offset = reg[opcode & 15].I << ((opcode>>7)& 31);
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      m_aReg[dest].I = Arm7ReadByte(address);
+      u32 address = reg[base].I;
+      reg[dest].I = CPUReadByte(address);
       if(dest != base)
-        m_aReg[base].I = address - offset;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+        reg[base].I = address - offset;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x652:
@@ -4029,14 +5103,14 @@ if(cond_res) {
     {
       // LDRB Rd, [Rn], -Rm, LSR #
       int shift = (opcode >> 7) & 31;
-      int offset = shift ? m_aReg[opcode & 15].I >> shift : 0;
+      int offset = shift ? reg[opcode & 15].I >> shift : 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      m_aReg[dest].I = Arm7ReadByte(address);
+      u32 address = reg[base].I;
+      reg[dest].I = CPUReadByte(address);
       if(dest != base)
-        m_aReg[base].I = address - offset;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+        reg[base].I = address - offset;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x654:
@@ -4049,18 +5123,18 @@ if(cond_res) {
       int shift = (opcode >> 7) & 31;
       int offset;
       if(shift)
-        offset = (int)((int)m_aReg[opcode & 15].I >> shift);
-      else if(m_aReg[opcode & 15].I & 0x80000000)
+        offset = (int)((s32)reg[opcode & 15].I >> shift);
+      else if(reg[opcode & 15].I & 0x80000000)
         offset = 0xFFFFFFFF;
       else
         offset = 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      m_aReg[dest].I = Arm7ReadByte(address);
+      u32 address = reg[base].I;
+      reg[dest].I = CPUReadByte(address);
       if(dest != base)
-        m_aReg[base].I = address - offset;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+        reg[base].I = address - offset;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x656:
@@ -4071,7 +5145,7 @@ if(cond_res) {
     {
       // LDRB Rd, [Rn], -Rm, ROR #
       int shift = (opcode >> 7) & 31;
-      DWORD value = m_aReg[opcode & 15].I;
+      u32 value = reg[opcode & 15].I;
       if(shift) {
         ROR_VALUE;
       } else {
@@ -4079,11 +5153,11 @@ if(cond_res) {
       }
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      m_aReg[dest].I = Arm7ReadByte(address);
+      u32 address = reg[base].I;
+      reg[dest].I = CPUReadByte(address);
       if(dest != base)
-        m_aReg[base].I = address - value;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+        reg[base].I = address - value;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x6d0:
@@ -4093,14 +5167,14 @@ if(cond_res) {
   case 0x6f8:
     {
       // LDRB Rd, [Rn], Rm, LSL #
-      int offset = m_aReg[opcode & 15].I << ((opcode>>7)& 31);
+      int offset = reg[opcode & 15].I << ((opcode>>7)& 31);
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      m_aReg[dest].I = Arm7ReadByte(address);
+      u32 address = reg[base].I;
+      reg[dest].I = CPUReadByte(address);
       if(dest != base)
-        m_aReg[base].I = address + offset;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+        reg[base].I = address + offset;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x6d2:
@@ -4111,14 +5185,14 @@ if(cond_res) {
     {
       // LDRB Rd, [Rn], Rm, LSR #
       int shift = (opcode >> 7) & 31;
-      int offset = shift ? m_aReg[opcode & 15].I >> shift : 0;
+      int offset = shift ? reg[opcode & 15].I >> shift : 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      m_aReg[dest].I = Arm7ReadByte(address);
+      u32 address = reg[base].I;
+      reg[dest].I = CPUReadByte(address);
       if(dest != base)
-        m_aReg[base].I = address + offset;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+        reg[base].I = address + offset;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x6d4:
@@ -4131,18 +5205,18 @@ if(cond_res) {
       int shift = (opcode >> 7) & 31;
       int offset;
       if(shift)
-        offset = (int)((int)m_aReg[opcode & 15].I >> shift);
-      else if(m_aReg[opcode & 15].I & 0x80000000)
+        offset = (int)((s32)reg[opcode & 15].I >> shift);
+      else if(reg[opcode & 15].I & 0x80000000)
         offset = 0xFFFFFFFF;
       else
         offset = 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      m_aReg[dest].I = Arm7ReadByte(address);
+      u32 address = reg[base].I;
+      reg[dest].I = CPUReadByte(address);
       if(dest != base)
-        m_aReg[base].I = address + offset;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+        reg[base].I = address + offset;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x6d6:
@@ -4153,7 +5227,7 @@ if(cond_res) {
     {
       // LDRB Rd, [Rn], Rm, ROR #
       int shift = (opcode >> 7) & 31;
-      DWORD value = m_aReg[opcode & 15].I;
+      u32 value = reg[opcode & 15].I;
       if(shift) {
         ROR_VALUE;
       } else {
@@ -4161,23 +5235,23 @@ if(cond_res) {
       }
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I;
-      m_aReg[dest].I = Arm7ReadByte(address);
+      u32 address = reg[base].I;
+      reg[dest].I = CPUReadByte(address);
       if(dest != base)
-        m_aReg[base].I = address + value;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+        reg[base].I = address + value;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x750:
   case 0x758:
     {
       // LDRB Rd, [Rn, -Rm, LSL #]
-      int offset = m_aReg[opcode & 15].I << ((opcode>>7)& 31);
+      int offset = reg[opcode & 15].I << ((opcode>>7)& 31);
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      m_aReg[dest].I = Arm7ReadByte(address);
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I - offset;
+      reg[dest].I = CPUReadByte(address);
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x752:
@@ -4185,12 +5259,12 @@ if(cond_res) {
     {
       // LDRB Rd, [Rn, -Rm, LSR #]
       int shift = (opcode >> 7) & 31;
-      int offset = shift ? m_aReg[opcode & 15].I >> shift : 0;
+      int offset = shift ? reg[opcode & 15].I >> shift : 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      m_aReg[dest].I = Arm7ReadByte(address);
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I - offset;
+      reg[dest].I = CPUReadByte(address);
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x754:
@@ -4200,16 +5274,16 @@ if(cond_res) {
       int shift = (opcode >> 7) & 31;
       int offset;
       if(shift)
-        offset = (int)((int)m_aReg[opcode & 15].I >> shift);
-      else if(m_aReg[opcode & 15].I & 0x80000000)
+        offset = (int)((s32)reg[opcode & 15].I >> shift);
+      else if(reg[opcode & 15].I & 0x80000000)
         offset = 0xFFFFFFFF;
       else
         offset = 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      m_aReg[dest].I = Arm7ReadByte(address);
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I - offset;
+      reg[dest].I = CPUReadByte(address);
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x756:
@@ -4217,7 +5291,7 @@ if(cond_res) {
     {
       // LDRB Rd, [Rn, -Rm, ROR #]
       int shift = (opcode >> 7) & 31;
-      DWORD value = m_aReg[opcode & 15].I;
+      u32 value = reg[opcode & 15].I;
       if(shift) {
         ROR_VALUE;
       } else {
@@ -4225,23 +5299,23 @@ if(cond_res) {
       }
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - value;
-      m_aReg[dest].I = Arm7ReadByte(address);
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I - value;
+      reg[dest].I = CPUReadByte(address);
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x770:
   case 0x778:
     {
       // LDRB Rd, [Rn, -Rm, LSL #]!
-      int offset = m_aReg[opcode & 15].I << ((opcode>>7)& 31);
+      int offset = reg[opcode & 15].I << ((opcode>>7)& 31);
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      m_aReg[dest].I = Arm7ReadByte(address);
+      u32 address = reg[base].I - offset;
+      reg[dest].I = CPUReadByte(address);
       if(dest != base)
-        m_aReg[base].I = address;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+        reg[base].I = address;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x772:
@@ -4249,14 +5323,14 @@ if(cond_res) {
     {
       // LDRB Rd, [Rn, -Rm, LSR #]!
       int shift = (opcode >> 7) & 31;
-      int offset = shift ? m_aReg[opcode & 15].I >> shift : 0;
+      int offset = shift ? reg[opcode & 15].I >> shift : 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      m_aReg[dest].I = Arm7ReadByte(address);
+      u32 address = reg[base].I - offset;
+      reg[dest].I = CPUReadByte(address);
       if(dest != base)
-        m_aReg[base].I = address;      
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+        reg[base].I = address;      
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x774:
@@ -4266,18 +5340,18 @@ if(cond_res) {
       int shift = (opcode >> 7) & 31;
       int offset;
       if(shift)
-        offset = (int)((int)m_aReg[opcode & 15].I >> shift);
-      else if(m_aReg[opcode & 15].I & 0x80000000)
+        offset = (int)((s32)reg[opcode & 15].I >> shift);
+      else if(reg[opcode & 15].I & 0x80000000)
         offset = 0xFFFFFFFF;
       else
         offset = 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - offset;
-      m_aReg[dest].I = Arm7ReadByte(address);
+      u32 address = reg[base].I - offset;
+      reg[dest].I = CPUReadByte(address);
       if(dest != base)
-        m_aReg[base].I = address;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+        reg[base].I = address;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x776:
@@ -4285,7 +5359,7 @@ if(cond_res) {
     {
       // LDRB Rd, [Rn, -Rm, ROR #]!
       int shift = (opcode >> 7) & 31;
-      DWORD value = m_aReg[opcode & 15].I;
+      u32 value = reg[opcode & 15].I;
       if(shift) {
         ROR_VALUE;
       } else {
@@ -4293,23 +5367,23 @@ if(cond_res) {
       }
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I - value;
-      m_aReg[dest].I = Arm7ReadByte(address);
+      u32 address = reg[base].I - value;
+      reg[dest].I = CPUReadByte(address);
       if(dest != base)
-        m_aReg[base].I = address;      
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+        reg[base].I = address;      
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x7d0:
   case 0x7d8:
     {
       // LDRB Rd, [Rn, Rm, LSL #]
-      int offset = m_aReg[opcode & 15].I << ((opcode>>7)& 31);
+      int offset = reg[opcode & 15].I << ((opcode>>7)& 31);
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      m_aReg[dest].I = Arm7ReadByte(address);
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I + offset;
+      reg[dest].I = CPUReadByte(address);
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x7d2:
@@ -4317,12 +5391,12 @@ if(cond_res) {
     {
       // LDRB Rd, [Rn, Rm, LSR #]
       int shift = (opcode >> 7) & 31;
-      int offset = shift ? m_aReg[opcode & 15].I >> shift : 0;
+      int offset = shift ? reg[opcode & 15].I >> shift : 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      m_aReg[dest].I = Arm7ReadByte(address);
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I + offset;
+      reg[dest].I = CPUReadByte(address);
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x7d4:
@@ -4332,16 +5406,16 @@ if(cond_res) {
       int shift = (opcode >> 7) & 31;
       int offset;
       if(shift)
-        offset = (int)((int)m_aReg[opcode & 15].I >> shift);
-      else if(m_aReg[opcode & 15].I & 0x80000000)
+        offset = (int)((s32)reg[opcode & 15].I >> shift);
+      else if(reg[opcode & 15].I & 0x80000000)
         offset = 0xFFFFFFFF;
       else
         offset = 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      m_aReg[dest].I = Arm7ReadByte(address);
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I + offset;
+      reg[dest].I = CPUReadByte(address);
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x7d6:
@@ -4349,7 +5423,7 @@ if(cond_res) {
     {
       // LDRB Rd, [Rn, Rm, ROR #]
       int shift = (opcode >> 7) & 31;
-      DWORD value = m_aReg[opcode & 15].I;
+      u32 value = reg[opcode & 15].I;
       if(shift) {
         ROR_VALUE;
       } else {
@@ -4357,23 +5431,23 @@ if(cond_res) {
       }
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + value;
-      m_aReg[dest].I = Arm7ReadByte(address);
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+      u32 address = reg[base].I + value;
+      reg[dest].I = CPUReadByte(address);
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x7f0:
   case 0x7f8:
     {
       // LDRB Rd, [Rn, Rm, LSL #]!
-      int offset = m_aReg[opcode & 15].I << ((opcode>>7)& 31);
+      int offset = reg[opcode & 15].I << ((opcode>>7)& 31);
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      m_aReg[dest].I = Arm7ReadByte(address);
+      u32 address = reg[base].I + offset;
+      reg[dest].I = CPUReadByte(address);
       if(dest != base)
-        m_aReg[base].I = address;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+        reg[base].I = address;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x7f2:
@@ -4381,14 +5455,14 @@ if(cond_res) {
     {
       // LDRB Rd, [Rn, Rm, LSR #]!
       int shift = (opcode >> 7) & 31;
-      int offset = shift ? m_aReg[opcode & 15].I >> shift : 0;
+      int offset = shift ? reg[opcode & 15].I >> shift : 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      m_aReg[dest].I = Arm7ReadByte(address);
+      u32 address = reg[base].I + offset;
+      reg[dest].I = CPUReadByte(address);
       if(dest != base)
-        m_aReg[base].I = address;      
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+        reg[base].I = address;      
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x7f4:
@@ -4398,18 +5472,18 @@ if(cond_res) {
       int shift = (opcode >> 7) & 31;
       int offset;
       if(shift)
-        offset = (int)((int)m_aReg[opcode & 15].I >> shift);
-      else if(m_aReg[opcode & 15].I & 0x80000000)
+        offset = (int)((s32)reg[opcode & 15].I >> shift);
+      else if(reg[opcode & 15].I & 0x80000000)
         offset = 0xFFFFFFFF;
       else
         offset = 0;
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + offset;
-      m_aReg[dest].I = Arm7ReadByte(address);
+      u32 address = reg[base].I + offset;
+      reg[dest].I = CPUReadByte(address);
       if(dest != base)
-        m_aReg[base].I = address;
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+        reg[base].I = address;
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
   case 0x7f6:
@@ -4417,7 +5491,7 @@ if(cond_res) {
     {
       // LDRB Rd, [Rn, Rm, ROR #]!
       int shift = (opcode >> 7) & 31;
-      DWORD value = m_aReg[opcode & 15].I;
+      u32 value = reg[opcode & 15].I;
       if(shift) {
         ROR_VALUE;
       } else {
@@ -4425,33 +5499,33 @@ if(cond_res) {
       }
       int dest = (opcode >> 12) & 15;
       int base = (opcode >> 16) & 15;
-      DWORD address = m_aReg[base].I + value;
-      m_aReg[dest].I = Arm7ReadByte(address);
+      u32 address = reg[base].I + value;
+      reg[dest].I = CPUReadByte(address);
       if(dest != base)
-        m_aReg[base].I = address;      
-      m_uClockTicks += 3 + CPUUpdateTicksAccesshort(address);
+        reg[base].I = address;      
+      clockTicks += 3 + CPUUpdateTicksAccess16(address);
     }
     break;
 #define STMW_REG(val,num) \
   if(opcode & (val)) {\
-    Arm7WriteMemory(address, m_aReg[(num)].I);\
+    CPUWriteMemory(address, reg[(num)].I);\
     if(!offset) {\
-      m_aReg[base].I = temp;\
-      m_uClockTicks += 1 + CPUUpdateTicksAccesint(address);\
+      reg[base].I = temp;\
+      clockTicks += 1 + CPUUpdateTicksAccess32(address);\
       offset = 1;\
     } else {\
-      m_uClockTicks += 1 + CPUUpdateTicksAccessSeq32(address);\
+      clockTicks += 1 + CPUUpdateTicksAccessSeq32(address);\
     }\
     address += 4;\
   }
 #define STM_REG(val,num) \
   if(opcode & (val)) {\
-    Arm7WriteMemory(address, m_aReg[(num)].I);\
+    CPUWriteMemory(address, reg[(num)].I);\
     if(!offset) {\
-      m_uClockTicks += 1 + CPUUpdateTicksAccesint(address);\
+      clockTicks += 1 + CPUUpdateTicksAccess32(address);\
       offset = 1;\
     } else {\
-      m_uClockTicks += 1 + CPUUpdateTicksAccessSeq32(address);\
+      clockTicks += 1 + CPUUpdateTicksAccessSeq32(address);\
     }\
     address += 4;\
   }
@@ -4460,10 +5534,10 @@ if(cond_res) {
     // STMDA Rn, {Rlist}
     {
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD temp = m_aReg[base].I - 
+      u32 temp = reg[base].I - 
         4 * (cpuBitsSet[opcode & 255] + cpuBitsSet[(opcode >> 8) & 255]);
-      DWORD address = (temp + 4) & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = (temp + 4) & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
       STM_REG(1, 0);
       STM_REG(2, 1);
@@ -4481,11 +5555,11 @@ if(cond_res) {
       STM_REG(8192, 13);
       STM_REG(16384, 14);
       if(opcode & 32768) {
-        Arm7WriteMemory(address, m_aReg[15].I+4);
+        CPUWriteMemory(address, reg[15].I+4);
         if(!offset)
-          m_uClockTicks += 1 + CPUUpdateTicksAccesint(address);
+          clockTicks += 1 + CPUUpdateTicksAccess32(address);
         else
-          m_uClockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
+          clockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
       }
     }
     break;
@@ -4493,10 +5567,10 @@ if(cond_res) {
     {
       // STMDA Rn!, {Rlist}
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD temp = m_aReg[base].I - 
+      u32 temp = reg[base].I - 
         4 * (cpuBitsSet[opcode & 255] + cpuBitsSet[(opcode >> 8) & 255]);
-      DWORD address = (temp+4) & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = (temp+4) & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
 
       STMW_REG(1, 0);
@@ -4515,12 +5589,12 @@ if(cond_res) {
       STMW_REG(8192, 13);
       STMW_REG(16384, 14);
       if(opcode & 32768) {
-        Arm7WriteMemory(address, m_aReg[15].I+4);
+        CPUWriteMemory(address, reg[15].I+4);
         if(!offset)
-          m_uClockTicks += 1 + CPUUpdateTicksAccesint(address);
+          clockTicks += 1 + CPUUpdateTicksAccess32(address);
         else
-          m_uClockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
-        m_aReg[base].I = temp;
+          clockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
+        reg[base].I = temp;
       }
     }
   break;
@@ -4528,10 +5602,10 @@ if(cond_res) {
     {
       // STMDA Rn, {Rlist}^
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD temp = m_aReg[base].I - 
+      u32 temp = reg[base].I - 
         4 * (cpuBitsSet[opcode & 255] + cpuBitsSet[(opcode >> 8) & 255]);
-      DWORD address = (temp+4) & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = (temp+4) & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
 
       STM_REG(1, 0);
@@ -4566,11 +5640,11 @@ if(cond_res) {
       }
 
       if(opcode & 32768) {
-        Arm7WriteMemory(address, m_aReg[15].I+4);
+        CPUWriteMemory(address, reg[15].I+4);
         if(!offset)
-          m_uClockTicks += 1 + CPUUpdateTicksAccesint(address);
+          clockTicks += 1 + CPUUpdateTicksAccess32(address);
         else
-          m_uClockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
+          clockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
       }
     }
     break;
@@ -4578,10 +5652,10 @@ if(cond_res) {
     {
       // STMDA Rn!, {Rlist}^
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD temp = m_aReg[base].I - 
+      u32 temp = reg[base].I - 
         4 * (cpuBitsSet[opcode & 255] + cpuBitsSet[(opcode >> 8) & 255]);
-      DWORD address = (temp+4) & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = (temp+4) & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
 
       STMW_REG(1, 0);
@@ -4616,12 +5690,12 @@ if(cond_res) {
       }
 
       if(opcode & 32768) {
-        Arm7WriteMemory(address, m_aReg[15].I+4);
+        CPUWriteMemory(address, reg[15].I+4);
         if(!offset)
-          m_uClockTicks += 1 + CPUUpdateTicksAccesint(address);
+          clockTicks += 1 + CPUUpdateTicksAccess32(address);
         else
-          m_uClockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
-        m_aReg[base].I = temp;
+          clockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
+        reg[base].I = temp;
       }
     }
     break;
@@ -4630,8 +5704,8 @@ if(cond_res) {
     {
       // STMIA Rn, {Rlist}
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD address = m_aReg[base].I & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = reg[base].I & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
       STM_REG(1, 0);
       STM_REG(2, 1);
@@ -4649,11 +5723,11 @@ if(cond_res) {
       STM_REG(8192, 13);
       STM_REG(16384, 14);
       if(opcode & 32768) {
-        Arm7WriteMemory(address, m_aReg[15].I+4);
+        CPUWriteMemory(address, reg[15].I+4);
         if(!offset)
-          m_uClockTicks += 1 + CPUUpdateTicksAccesint(address);
+          clockTicks += 1 + CPUUpdateTicksAccess32(address);
         else
-          m_uClockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
+          clockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
       }
     }
   break;
@@ -4661,10 +5735,10 @@ if(cond_res) {
     {
       // STMIA Rn!, {Rlist}
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD address = m_aReg[base].I & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = reg[base].I & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
-      DWORD temp = m_aReg[base].I + 4*(cpuBitsSet[opcode & 0xFF] +
+      u32 temp = reg[base].I + 4*(cpuBitsSet[opcode & 0xFF] +
                                   cpuBitsSet[(opcode >> 8) & 255]);
       STMW_REG(1, 0);
       STMW_REG(2, 1);
@@ -4682,12 +5756,12 @@ if(cond_res) {
       STMW_REG(8192, 13);
       STMW_REG(16384, 14);
       if(opcode & 32768) {
-        Arm7WriteMemory(address, m_aReg[15].I+4);
+        CPUWriteMemory(address, reg[15].I+4);
         if(!offset) {
-          m_aReg[base].I = temp;
-          m_uClockTicks += 1 + CPUUpdateTicksAccesint(address);
+          reg[base].I = temp;
+          clockTicks += 1 + CPUUpdateTicksAccess32(address);
         } else
-          m_uClockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
+          clockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
       }
     }
   break;
@@ -4695,8 +5769,8 @@ if(cond_res) {
     {
       // STMIA Rn, {Rlist}^
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD address = m_aReg[base].I & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = reg[base].I & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
       STM_REG(1, 0);
       STM_REG(2, 1);
@@ -4727,11 +5801,11 @@ if(cond_res) {
         STM_REG(16384, 14);
       }
       if(opcode & 32768) {
-        Arm7WriteMemory(address, m_aReg[15].I+4);
+        CPUWriteMemory(address, reg[15].I+4);
         if(!offset)
-          m_uClockTicks += 1 + CPUUpdateTicksAccesint(address);
+          clockTicks += 1 + CPUUpdateTicksAccess32(address);
         else
-          m_uClockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
+          clockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
       }
     }
     break;
@@ -4739,10 +5813,10 @@ if(cond_res) {
     {
       // STMIA Rn!, {Rlist}^
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD address = m_aReg[base].I & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = reg[base].I & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
-      DWORD temp = m_aReg[base].I + 4*(cpuBitsSet[opcode & 0xFF] +
+      u32 temp = reg[base].I + 4*(cpuBitsSet[opcode & 0xFF] +
                                   cpuBitsSet[(opcode >> 8) & 255]);    
       STMW_REG(1, 0);
       STMW_REG(2, 1);
@@ -4773,12 +5847,12 @@ if(cond_res) {
         STMW_REG(16384, 14);
       }
       if(opcode & 32768) {
-        Arm7WriteMemory(address, m_aReg[15].I+4);
+        CPUWriteMemory(address, reg[15].I+4);
         if(!offset) {
-          m_aReg[base].I = temp;
-          m_uClockTicks += 1 + CPUUpdateTicksAccesint(address);
+          reg[base].I = temp;
+          clockTicks += 1 + CPUUpdateTicksAccess32(address);
         } else
-          m_uClockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
+          clockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
       }
     }
     break;
@@ -4787,10 +5861,10 @@ if(cond_res) {
     {
       // STMDB Rn, {Rlist}
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD temp = m_aReg[base].I - 
+      u32 temp = reg[base].I - 
         4 * (cpuBitsSet[opcode & 255] + cpuBitsSet[(opcode >> 8) & 255]);
-      DWORD address = temp & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = temp & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
       STM_REG(1, 0);
       STM_REG(2, 1);
@@ -4808,11 +5882,11 @@ if(cond_res) {
       STM_REG(8192, 13);
       STM_REG(16384, 14);
       if(opcode & 32768) {
-        Arm7WriteMemory(address, m_aReg[15].I+4);
+        CPUWriteMemory(address, reg[15].I+4);
         if(!offset)
-          m_uClockTicks += 1 + CPUUpdateTicksAccesint(address);
+          clockTicks += 1 + CPUUpdateTicksAccess32(address);
         else
-          m_uClockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
+          clockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
       }
     }
     break;
@@ -4820,10 +5894,10 @@ if(cond_res) {
     {
       // STMDB Rn!, {Rlist}
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD temp = m_aReg[base].I - 
+      u32 temp = reg[base].I - 
         4 * (cpuBitsSet[opcode & 255] + cpuBitsSet[(opcode >> 8) & 255]);
-      DWORD address = temp & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = temp & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
 
       STMW_REG(1, 0);
@@ -4842,12 +5916,12 @@ if(cond_res) {
       STMW_REG(8192, 13);
       STMW_REG(16384, 14);
       if(opcode & 32768) {
-        Arm7WriteMemory(address, m_aReg[15].I+4);
+        CPUWriteMemory(address, reg[15].I+4);
         if(!offset)
-          m_uClockTicks += 1 + CPUUpdateTicksAccesint(address);
+          clockTicks += 1 + CPUUpdateTicksAccess32(address);
         else
-          m_uClockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
-        m_aReg[base].I = temp;
+          clockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
+        reg[base].I = temp;
       }
     }
   break;
@@ -4855,10 +5929,10 @@ if(cond_res) {
     {
       // STMDB Rn, {Rlist}^
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD temp = m_aReg[base].I - 
+      u32 temp = reg[base].I - 
         4 * (cpuBitsSet[opcode & 255] + cpuBitsSet[(opcode >> 8) & 255]);
-      DWORD address = temp & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = temp & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
 
       STM_REG(1, 0);
@@ -4893,11 +5967,11 @@ if(cond_res) {
       }
 
       if(opcode & 32768) {
-        Arm7WriteMemory(address, m_aReg[15].I+4);
+        CPUWriteMemory(address, reg[15].I+4);
         if(!offset)
-          m_uClockTicks += 1 + CPUUpdateTicksAccesint(address);
+          clockTicks += 1 + CPUUpdateTicksAccess32(address);
         else
-          m_uClockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
+          clockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
       }
     }
     break;
@@ -4905,10 +5979,10 @@ if(cond_res) {
     {
       // STMDB Rn!, {Rlist}^
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD temp = m_aReg[base].I - 
+      u32 temp = reg[base].I - 
         4 * (cpuBitsSet[opcode & 255] + cpuBitsSet[(opcode >> 8) & 255]);
-      DWORD address = temp & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = temp & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
 
       STMW_REG(1, 0);
@@ -4943,12 +6017,12 @@ if(cond_res) {
       }
 
       if(opcode & 32768) {
-        Arm7WriteMemory(address, m_aReg[15].I+4);
+        CPUWriteMemory(address, reg[15].I+4);
         if(!offset)
-          m_uClockTicks += 1 + CPUUpdateTicksAccesint(address);
+          clockTicks += 1 + CPUUpdateTicksAccess32(address);
         else
-          m_uClockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
-        m_aReg[base].I = temp;
+          clockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
+        reg[base].I = temp;
       }
     }
     break;
@@ -4957,8 +6031,8 @@ if(cond_res) {
     // STMIB Rn, {Rlist}
     {
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD address = (m_aReg[base].I+4) & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = (reg[base].I+4) & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
       STM_REG(1, 0);
       STM_REG(2, 1);
@@ -4976,11 +6050,11 @@ if(cond_res) {
       STM_REG(8192, 13);
       STM_REG(16384, 14);
       if(opcode & 32768) {
-        Arm7WriteMemory(address, m_aReg[15].I+4);
+        CPUWriteMemory(address, reg[15].I+4);
         if(!offset)
-          m_uClockTicks += 1 + CPUUpdateTicksAccesint(address);
+          clockTicks += 1 + CPUUpdateTicksAccess32(address);
         else
-          m_uClockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
+          clockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
       }
     }
     break;
@@ -4988,10 +6062,10 @@ if(cond_res) {
     {
       // STMIB Rn!, {Rlist}
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD address = (m_aReg[base].I+4) & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = (reg[base].I+4) & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
-      DWORD temp = m_aReg[base].I + 4*(cpuBitsSet[opcode & 0xFF] +
+      u32 temp = reg[base].I + 4*(cpuBitsSet[opcode & 0xFF] +
                                   cpuBitsSet[(opcode >> 8) & 255]);
       STMW_REG(1, 0);
       STMW_REG(2, 1);
@@ -5009,12 +6083,12 @@ if(cond_res) {
       STMW_REG(8192, 13);
       STMW_REG(16384, 14);
       if(opcode & 32768) {
-        Arm7WriteMemory(address, m_aReg[15].I+4);
+        CPUWriteMemory(address, reg[15].I+4);
         if(!offset) {
-          m_aReg[base].I = temp;
-          m_uClockTicks += 1 + CPUUpdateTicksAccesint(address);
+          reg[base].I = temp;
+          clockTicks += 1 + CPUUpdateTicksAccess32(address);
         } else
-          m_uClockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
+          clockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
       }
     }
     break;
@@ -5022,8 +6096,8 @@ if(cond_res) {
     {
       // STMIB Rn, {Rlist}^
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD address = (m_aReg[base].I+4) & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = (reg[base].I+4) & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
       STM_REG(1, 0);
       STM_REG(2, 1);
@@ -5054,11 +6128,11 @@ if(cond_res) {
         STM_REG(16384, 14);
       }
       if(opcode & 32768) {
-        Arm7WriteMemory(address, m_aReg[15].I+4);
+        CPUWriteMemory(address, reg[15].I+4);
         if(!offset)
-          m_uClockTicks += 1 + CPUUpdateTicksAccesint(address);
+          clockTicks += 1 + CPUUpdateTicksAccess32(address);
         else
-          m_uClockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
+          clockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
       }
     }
     break;
@@ -5066,10 +6140,10 @@ if(cond_res) {
     {
       // STMIB Rn!, {Rlist}^
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD address = (m_aReg[base].I+4) & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = (reg[base].I+4) & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
-      DWORD temp = m_aReg[base].I + 4*(cpuBitsSet[opcode & 0xFF] +
+      u32 temp = reg[base].I + 4*(cpuBitsSet[opcode & 0xFF] +
                                   cpuBitsSet[(opcode >> 8) & 255]);    
       STMW_REG(1, 0);
       STMW_REG(2, 1);
@@ -5100,23 +6174,23 @@ if(cond_res) {
         STMW_REG(16384, 14);
       }
       if(opcode & 32768) {
-        Arm7WriteMemory(address, m_aReg[15].I+4);
+        CPUWriteMemory(address, reg[15].I+4);
         if(!offset) {
-          m_aReg[base].I = temp;
-          m_uClockTicks += 1 + CPUUpdateTicksAccesint(address);
+          reg[base].I = temp;
+          clockTicks += 1 + CPUUpdateTicksAccess32(address);
         } else
-          m_uClockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
+          clockTicks += 1 + CPUUpdateTicksAccessSeq32(address);
       }
     }
     break;
     
 #define LDM_REG(val,num) \
   if(opcode & (val)) {\
-    m_aReg[(num)].I = Arm7ReadMemory(address);\
+    reg[(num)].I = CPUReadMemory(address);\
     if(offset)\
-      m_uClockTicks += 1 + CPUUpdateTicksAccessSeq32(address);\
+      clockTicks += 1 + CPUUpdateTicksAccessSeq32(address);\
     else {\
-      m_uClockTicks += 1 + CPUUpdateTicksAccesint(address);\
+      clockTicks += 1 + CPUUpdateTicksAccess32(address);\
       offset = 1;\
     }\
     address += 4;\
@@ -5126,10 +6200,10 @@ if(cond_res) {
     {
       // LDMDA Rn, {Rlist}
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD temp = m_aReg[base].I - 
+      u32 temp = reg[base].I - 
         4 * (cpuBitsSet[opcode & 255] + cpuBitsSet[(opcode >> 8) & 255]);
-      DWORD address = (temp + 4) & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = (temp + 4) & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
       LDM_REG(1, 0);
       LDM_REG(2, 1);
@@ -5147,13 +6221,13 @@ if(cond_res) {
       LDM_REG(8192, 13);
       LDM_REG(16384, 14);
       if(opcode & 32768) {
-        m_aReg[15].I = Arm7ReadMemory(address);
+        reg[15].I = CPUReadMemory(address);
         if (!offset)
-          m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+          clockTicks += 2 + CPUUpdateTicksAccess32(address);
         else
-          m_uClockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+          clockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -5161,10 +6235,10 @@ if(cond_res) {
     {
       // LDMDA Rn!, {Rlist}
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD temp = m_aReg[base].I - 
+      u32 temp = reg[base].I - 
         4 * (cpuBitsSet[opcode & 255] + cpuBitsSet[(opcode >> 8) & 255]);
-      DWORD address = (temp + 4) & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = (temp + 4) & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
       LDM_REG(1, 0);
       LDM_REG(2, 1);
@@ -5182,26 +6256,26 @@ if(cond_res) {
       LDM_REG(8192, 13);
       LDM_REG(16384, 14);
       if(opcode & 32768) {
-        m_aReg[15].I = Arm7ReadMemory(address);
+        reg[15].I = CPUReadMemory(address);
         if (!offset)
-          m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+          clockTicks += 2 + CPUUpdateTicksAccess32(address);
         else
-          m_uClockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+          clockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
       if(!(opcode & (1 << base)))
-        m_aReg[base].I = temp;
+        reg[base].I = temp;
     }
     break;
   CASE_16(0x850)
     {
       // LDMDA Rn, {Rlist}^
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD temp = m_aReg[base].I - 
+      u32 temp = reg[base].I - 
         4 * (cpuBitsSet[opcode & 255] + cpuBitsSet[(opcode >> 8) & 255]);
-      DWORD address = (temp + 4) & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = (temp + 4) & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
       if(opcode & 0x8000) {
         LDM_REG(1, 0);
@@ -5220,19 +6294,19 @@ if(cond_res) {
         LDM_REG(8192, 13);
         LDM_REG(16384, 14);
 
-        m_aReg[15].I = Arm7ReadMemory(address);
+        reg[15].I = CPUReadMemory(address);
         if (!offset)
-          m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+          clockTicks += 2 + CPUUpdateTicksAccess32(address);
         else
-          m_uClockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
+          clockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
 
-        CPUSwitchMode(m_aReg[17].I & 0x1f, false);
+        CPUSwitchMode(reg[17].I & 0x1f, false);
         if(armState) {
-          m_uArmNextPC = m_aReg[15].I & 0xFFFFFFFC;
-          m_aReg[15].I = m_uArmNextPC + 4;
+          armNextPC = reg[15].I & 0xFFFFFFFC;
+          reg[15].I = armNextPC + 4;
         } else {
-          m_uArmNextPC = m_aReg[15].I & 0xFFFFFFFE;
-          m_aReg[15].I = m_uArmNextPC + 2;
+          armNextPC = reg[15].I & 0xFFFFFFFE;
+          reg[15].I = armNextPC + 2;
         }
       } else {
         LDM_REG(1, 0);
@@ -5272,10 +6346,10 @@ if(cond_res) {
     {
       // LDMDA Rn!, {Rlist}^
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD temp = m_aReg[base].I - 
+      u32 temp = reg[base].I - 
         4 * (cpuBitsSet[opcode & 255] + cpuBitsSet[(opcode >> 8) & 255]);
-      DWORD address = (temp + 4) & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = (temp + 4) & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
       if(opcode & 0x8000) {
         LDM_REG(1, 0);
@@ -5294,22 +6368,22 @@ if(cond_res) {
         LDM_REG(8192, 13);
         LDM_REG(16384, 14);
 
-        m_aReg[15].I = Arm7ReadMemory(address);
+        reg[15].I = CPUReadMemory(address);
         if(!offset)
-          m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);      
+          clockTicks += 2 + CPUUpdateTicksAccess32(address);      
         else
-          m_uClockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
+          clockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
 
         if(!(opcode & (1 << base)))    
-          m_aReg[base].I = temp;
+          reg[base].I = temp;
 
-        CPUSwitchMode(m_aReg[17].I & 0x1f, false);
+        CPUSwitchMode(reg[17].I & 0x1f, false);
         if(armState) {
-          m_uArmNextPC = m_aReg[15].I & 0xFFFFFFFC;
-          m_aReg[15].I = m_uArmNextPC + 4;
+          armNextPC = reg[15].I & 0xFFFFFFFC;
+          reg[15].I = armNextPC + 4;
         } else {
-          m_uArmNextPC = m_aReg[15].I & 0xFFFFFFFE;
-          m_aReg[15].I = m_uArmNextPC + 2;
+          armNextPC = reg[15].I & 0xFFFFFFFE;
+          reg[15].I = armNextPC + 2;
         }
       } else {
         LDM_REG(1, 0);
@@ -5344,7 +6418,7 @@ if(cond_res) {
         }
 
         if(!(opcode & (1 << base)))    
-          m_aReg[base].I = temp;
+          reg[base].I = temp;
       }
     }
     break;
@@ -5353,8 +6427,8 @@ if(cond_res) {
     {
       // LDMIA Rn, {Rlist}
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD address = m_aReg[base].I & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = reg[base].I & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
       LDM_REG(1, 0);
       LDM_REG(2, 1);
@@ -5372,13 +6446,13 @@ if(cond_res) {
       LDM_REG(8192, 13);
       LDM_REG(16384, 14);
       if(opcode & 32768) {
-        m_aReg[15].I = Arm7ReadMemory(address);
+        reg[15].I = CPUReadMemory(address);
         if (!offset)
-          m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+          clockTicks += 2 + CPUUpdateTicksAccess32(address);
         else
-          m_uClockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+          clockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
   break;
@@ -5386,10 +6460,10 @@ if(cond_res) {
     {
       // LDMIA Rn!, {Rlist}
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD temp = m_aReg[base].I + 
+      u32 temp = reg[base].I + 
         4 * (cpuBitsSet[opcode & 255] + cpuBitsSet[(opcode >> 8) & 255]);
-      DWORD address = m_aReg[base].I & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = reg[base].I & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
       LDM_REG(1, 0);
       LDM_REG(2, 1);
@@ -5407,26 +6481,24 @@ if(cond_res) {
       LDM_REG(8192, 13);
       LDM_REG(16384, 14);
       if(opcode & 32768) {
-        m_aReg[15].I = Arm7ReadMemory(address);
+        reg[15].I = CPUReadMemory(address);
         if (!offset)
-          m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+          clockTicks += 2 + CPUUpdateTicksAccess32(address);
         else
-          m_uClockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+          clockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
       if(!(opcode & (1 << base)))
-        m_aReg[base].I = temp;
+        reg[base].I = temp;
     }
     break;
   CASE_16(0x8d0)
     {
       // LDMIA Rn, {Rlist}^
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD temp = m_aReg[base].I + 
-        4 * (cpuBitsSet[opcode & 255] + cpuBitsSet[(opcode >> 8) & 255]);
-      DWORD address = m_aReg[base].I & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = reg[base].I & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
       if(opcode & 0x8000) {
         LDM_REG(1, 0);
@@ -5445,19 +6517,19 @@ if(cond_res) {
         LDM_REG(8192, 13);
         LDM_REG(16384, 14);
 
-        m_aReg[15].I = Arm7ReadMemory(address);
+        reg[15].I = CPUReadMemory(address);
         if (!offset)
-          m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+          clockTicks += 2 + CPUUpdateTicksAccess32(address);
         else
-          m_uClockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
+          clockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
 
-        CPUSwitchMode(m_aReg[17].I & 0x1f, false);
+        CPUSwitchMode(reg[17].I & 0x1f, false);
         if(armState) {
-          m_uArmNextPC = m_aReg[15].I & 0xFFFFFFFC;
-          m_aReg[15].I = m_uArmNextPC + 4;
+          armNextPC = reg[15].I & 0xFFFFFFFC;
+          reg[15].I = armNextPC + 4;
         } else {
-          m_uArmNextPC = m_aReg[15].I & 0xFFFFFFFE;
-          m_aReg[15].I = m_uArmNextPC + 2;
+          armNextPC = reg[15].I & 0xFFFFFFFE;
+          reg[15].I = armNextPC + 2;
         }
       } else {
         LDM_REG(1, 0);
@@ -5497,10 +6569,10 @@ if(cond_res) {
     {
       // LDMIA Rn!, {Rlist}^
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD temp = m_aReg[base].I +
+      u32 temp = reg[base].I +
         4 * (cpuBitsSet[opcode & 255] + cpuBitsSet[(opcode >> 8) & 255]);
-      DWORD address = m_aReg[base].I & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = reg[base].I & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
       if(opcode & 0x8000) {
         LDM_REG(1, 0);
@@ -5519,22 +6591,22 @@ if(cond_res) {
         LDM_REG(8192, 13);
         LDM_REG(16384, 14);
 
-        m_aReg[15].I = Arm7ReadMemory(address);
+        reg[15].I = CPUReadMemory(address);
         if(!offset)
-          m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);      
+          clockTicks += 2 + CPUUpdateTicksAccess32(address);      
         else
-          m_uClockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
+          clockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
 
         if(!(opcode & (1 << base)))    
-          m_aReg[base].I = temp;
+          reg[base].I = temp;
 
-        CPUSwitchMode(m_aReg[17].I & 0x1f, false);
+        CPUSwitchMode(reg[17].I & 0x1f, false);
         if(armState) {
-          m_uArmNextPC = m_aReg[15].I & 0xFFFFFFFC;
-          m_aReg[15].I = m_uArmNextPC + 4;
+          armNextPC = reg[15].I & 0xFFFFFFFC;
+          reg[15].I = armNextPC + 4;
         } else {
-          m_uArmNextPC = m_aReg[15].I & 0xFFFFFFFE;
-          m_aReg[15].I = m_uArmNextPC + 2;
+          armNextPC = reg[15].I & 0xFFFFFFFE;
+          reg[15].I = armNextPC + 2;
         }
       } else {
         LDM_REG(1, 0);
@@ -5569,7 +6641,7 @@ if(cond_res) {
         }
 
         if(!(opcode & (1 << base)))    
-          m_aReg[base].I = temp;
+          reg[base].I = temp;
       }
     }
     break;
@@ -5578,10 +6650,10 @@ if(cond_res) {
     {
       // LDMDB Rn, {Rlist}
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD temp = m_aReg[base].I - 
+      u32 temp = reg[base].I - 
         4 * (cpuBitsSet[opcode & 255] + cpuBitsSet[(opcode >> 8) & 255]);
-      DWORD address = temp & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = temp & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
       LDM_REG(1, 0);
       LDM_REG(2, 1);
@@ -5599,13 +6671,13 @@ if(cond_res) {
       LDM_REG(8192, 13);
       LDM_REG(16384, 14);
       if(opcode & 32768) {
-        m_aReg[15].I = Arm7ReadMemory(address);
+        reg[15].I = CPUReadMemory(address);
         if (!offset)
-          m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+          clockTicks += 2 + CPUUpdateTicksAccess32(address);
         else
-          m_uClockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+          clockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -5613,10 +6685,10 @@ if(cond_res) {
     {
       // LDMDB Rn!, {Rlist}
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD temp = m_aReg[base].I - 
+      u32 temp = reg[base].I - 
         4 * (cpuBitsSet[opcode & 255] + cpuBitsSet[(opcode >> 8) & 255]);
-      DWORD address = temp & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = temp & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
       LDM_REG(1, 0);
       LDM_REG(2, 1);
@@ -5634,26 +6706,26 @@ if(cond_res) {
       LDM_REG(8192, 13);
       LDM_REG(16384, 14);
       if(opcode & 32768) {
-        m_aReg[15].I = Arm7ReadMemory(address);
+        reg[15].I = CPUReadMemory(address);
         if (!offset)
-          m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+          clockTicks += 2 + CPUUpdateTicksAccess32(address);
         else
-          m_uClockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+          clockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
       if(!(opcode & (1 << base)))
-        m_aReg[base].I = temp;
+        reg[base].I = temp;
     }
     break;
   CASE_16(0x950)
     {
       // LDMDB Rn, {Rlist}^
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD temp = m_aReg[base].I - 
+      u32 temp = reg[base].I - 
         4 * (cpuBitsSet[opcode & 255] + cpuBitsSet[(opcode >> 8) & 255]);
-      DWORD address = temp & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = temp & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
       if(opcode & 0x8000) {
         LDM_REG(1, 0);
@@ -5672,19 +6744,19 @@ if(cond_res) {
         LDM_REG(8192, 13);
         LDM_REG(16384, 14);
 
-        m_aReg[15].I = Arm7ReadMemory(address);
+        reg[15].I = CPUReadMemory(address);
         if (!offset)
-          m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+          clockTicks += 2 + CPUUpdateTicksAccess32(address);
         else
-          m_uClockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
+          clockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
 
-        CPUSwitchMode(m_aReg[17].I & 0x1f, false);
+        CPUSwitchMode(reg[17].I & 0x1f, false);
         if(armState) {
-          m_uArmNextPC = m_aReg[15].I & 0xFFFFFFFC;
-          m_aReg[15].I = m_uArmNextPC + 4;
+          armNextPC = reg[15].I & 0xFFFFFFFC;
+          reg[15].I = armNextPC + 4;
         } else {
-          m_uArmNextPC = m_aReg[15].I & 0xFFFFFFFE;
-          m_aReg[15].I = m_uArmNextPC + 2;
+          armNextPC = reg[15].I & 0xFFFFFFFE;
+          reg[15].I = armNextPC + 2;
         }
       } else {
         LDM_REG(1, 0);
@@ -5724,10 +6796,10 @@ if(cond_res) {
     {
       // LDMDB Rn!, {Rlist}^
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD temp = m_aReg[base].I - 
+      u32 temp = reg[base].I - 
         4 * (cpuBitsSet[opcode & 255] + cpuBitsSet[(opcode >> 8) & 255]);
-      DWORD address = temp & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = temp & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
       if(opcode & 0x8000) {
         LDM_REG(1, 0);
@@ -5746,22 +6818,22 @@ if(cond_res) {
         LDM_REG(8192, 13);
         LDM_REG(16384, 14);
 
-        m_aReg[15].I = Arm7ReadMemory(address);
+        reg[15].I = CPUReadMemory(address);
         if(!offset)
-          m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);      
+          clockTicks += 2 + CPUUpdateTicksAccess32(address);      
         else
-          m_uClockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
+          clockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
 
         if(!(opcode & (1 << base)))    
-          m_aReg[base].I = temp;
+          reg[base].I = temp;
 
-        CPUSwitchMode(m_aReg[17].I & 0x1f, false);
+        CPUSwitchMode(reg[17].I & 0x1f, false);
         if(armState) {
-          m_uArmNextPC = m_aReg[15].I & 0xFFFFFFFC;
-          m_aReg[15].I = m_uArmNextPC + 4;
+          armNextPC = reg[15].I & 0xFFFFFFFC;
+          reg[15].I = armNextPC + 4;
         } else {
-          m_uArmNextPC = m_aReg[15].I & 0xFFFFFFFE;
-          m_aReg[15].I = m_uArmNextPC + 2;
+          armNextPC = reg[15].I & 0xFFFFFFFE;
+          reg[15].I = armNextPC + 2;
         }
       } else {
         LDM_REG(1, 0);
@@ -5796,7 +6868,7 @@ if(cond_res) {
         }
 
         if(!(opcode & (1 << base)))    
-          m_aReg[base].I = temp;
+          reg[base].I = temp;
       }
     }
     break;
@@ -5805,8 +6877,8 @@ if(cond_res) {
     {
       // LDMIB Rn, {Rlist}
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD address = (m_aReg[base].I+4) & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = (reg[base].I+4) & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
       LDM_REG(1, 0);
       LDM_REG(2, 1);
@@ -5824,13 +6896,13 @@ if(cond_res) {
       LDM_REG(8192, 13);
       LDM_REG(16384, 14);
       if(opcode & 32768) {
-        m_aReg[15].I = Arm7ReadMemory(address);
+        reg[15].I = CPUReadMemory(address);
         if (!offset)
-          m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+          clockTicks += 2 + CPUUpdateTicksAccess32(address);
         else
-          m_uClockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+          clockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
     }
     break;
@@ -5838,10 +6910,10 @@ if(cond_res) {
     {
       // LDMIB Rn!, {Rlist}
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD temp = m_aReg[base].I + 
+      u32 temp = reg[base].I + 
         4 * (cpuBitsSet[opcode & 255] + cpuBitsSet[(opcode >> 8) & 255]);
-      DWORD address = (m_aReg[base].I+4) & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = (reg[base].I+4) & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
       LDM_REG(1, 0);
       LDM_REG(2, 1);
@@ -5859,26 +6931,24 @@ if(cond_res) {
       LDM_REG(8192, 13);
       LDM_REG(16384, 14);
       if(opcode & 32768) {
-        m_aReg[15].I = Arm7ReadMemory(address);
+        reg[15].I = CPUReadMemory(address);
         if (!offset)
-          m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+          clockTicks += 2 + CPUUpdateTicksAccess32(address);
         else
-          m_uClockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
-        m_uArmNextPC = m_aReg[15].I;
-        m_aReg[15].I += 4;
+          clockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
+        armNextPC = reg[15].I;
+        reg[15].I += 4;
       }
       if(!(opcode & (1 << base)))
-        m_aReg[base].I = temp;
+        reg[base].I = temp;
     }
     break;    
   CASE_16(0x9d0)
     {
       // LDMIB Rn, {Rlist}^
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD temp = m_aReg[base].I + 
-        4 * (cpuBitsSet[opcode & 255] + cpuBitsSet[(opcode >> 8) & 255]);
-      DWORD address = (m_aReg[base].I+4) & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = (reg[base].I+4) & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
       if(opcode & 0x8000) {
         LDM_REG(1, 0);
@@ -5897,19 +6967,19 @@ if(cond_res) {
         LDM_REG(8192, 13);
         LDM_REG(16384, 14);
 
-        m_aReg[15].I = Arm7ReadMemory(address);
+        reg[15].I = CPUReadMemory(address);
         if (!offset)
-          m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);
+          clockTicks += 2 + CPUUpdateTicksAccess32(address);
         else
-          m_uClockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
+          clockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
 
-        CPUSwitchMode(m_aReg[17].I & 0x1f, false);
+        CPUSwitchMode(reg[17].I & 0x1f, false);
         if(armState) {
-          m_uArmNextPC = m_aReg[15].I & 0xFFFFFFFC;
-          m_aReg[15].I = m_uArmNextPC + 4;
+          armNextPC = reg[15].I & 0xFFFFFFFC;
+          reg[15].I = armNextPC + 4;
         } else {
-          m_uArmNextPC = m_aReg[15].I & 0xFFFFFFFE;
-          m_aReg[15].I = m_uArmNextPC + 2;
+          armNextPC = reg[15].I & 0xFFFFFFFE;
+          reg[15].I = armNextPC + 2;
         }
       } else {
         LDM_REG(1, 0);
@@ -5949,10 +7019,10 @@ if(cond_res) {
     {
       // LDMIB Rn!, {Rlist}^
       int base = (opcode & 0x000F0000) >> 16;
-      DWORD temp = m_aReg[base].I +
+      u32 temp = reg[base].I +
         4 * (cpuBitsSet[opcode & 255] + cpuBitsSet[(opcode >> 8) & 255]);
-      DWORD address = (m_aReg[base].I+4) & 0xFFFFFFFC;
-      m_uClockTicks += 2;
+      u32 address = (reg[base].I+4) & 0xFFFFFFFC;
+      clockTicks += 2;
       int offset = 0;
       if(opcode & 0x8000) {
         LDM_REG(1, 0);
@@ -5971,22 +7041,22 @@ if(cond_res) {
         LDM_REG(8192, 13);
         LDM_REG(16384, 14);
 
-        m_aReg[15].I = Arm7ReadMemory(address);
+        reg[15].I = CPUReadMemory(address);
         if(!offset)
-          m_uClockTicks += 2 + CPUUpdateTicksAccesint(address);      
+          clockTicks += 2 + CPUUpdateTicksAccess32(address);      
         else
-          m_uClockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
+          clockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
 
         if(!(opcode & (1 << base)))    
-          m_aReg[base].I = temp;
+          reg[base].I = temp;
 
-        CPUSwitchMode(m_aReg[17].I & 0x1f, false);
+        CPUSwitchMode(reg[17].I & 0x1f, false);
         if(armState) {
-          m_uArmNextPC = m_aReg[15].I & 0xFFFFFFFC;
-          m_aReg[15].I = m_uArmNextPC + 4;
+          armNextPC = reg[15].I & 0xFFFFFFFC;
+          reg[15].I = armNextPC + 4;
         } else {
-          m_uArmNextPC = m_aReg[15].I & 0xFFFFFFFE;
-          m_aReg[15].I = m_uArmNextPC + 2;
+          armNextPC = reg[15].I & 0xFFFFFFFE;
+          reg[15].I = armNextPC + 2;
         }
       } else {
         LDM_REG(1, 0);
@@ -6021,42 +7091,42 @@ if(cond_res) {
         }
 
         if(!(opcode & (1 << base)))    
-          m_aReg[base].I = temp;
+          reg[base].I = temp;
       }
     }
     break;    
   CASE_256(0xa00)
     {
       // B <offset>
-      m_uClockTicks += 3;
+      clockTicks += 3;
       int offset = opcode & 0x00FFFFFF;
       if(offset & 0x00800000) {
         offset |= 0xFF000000;
       }
       offset <<= 2;
-      m_aReg[15].I += offset;
-      m_uArmNextPC = m_aReg[15].I;
-      m_aReg[15].I += 4;
+      reg[15].I += offset;
+      armNextPC = reg[15].I;
+      reg[15].I += 4;
     }
     break;
   CASE_256(0xb00)
     {
       // BL <offset>
-      m_uClockTicks += 3;
+      clockTicks += 3;
       int offset = opcode & 0x00FFFFFF;
       if(offset & 0x00800000) {
         offset |= 0xFF000000;
       }
       offset <<= 2;
-      m_aReg[14].I = m_aReg[15].I - 4;
-      m_aReg[15].I += offset;
-      m_uArmNextPC = m_aReg[15].I;
-      m_aReg[15].I += 4;
+      reg[14].I = reg[15].I - 4;
+      reg[15].I += offset;
+      armNextPC = reg[15].I;
+      reg[15].I += 4;
     }
     break;
   CASE_256(0xf00)
     // SWI <comment>
-    m_uClockTicks += 3;
+    clockTicks += 3;
     CPUSoftwareInterrupt(opcode & 0x00FFFFFF);      
     break;
 #ifdef GP_SUPPORT
@@ -6085,7 +7155,7 @@ if(cond_res) {
 #ifdef DEV_VERSION
     if(systemVerbose & VERBOSE_UNDEFINED)
       log("Undefined ARM instruction %08x at %08x\n", opcode,
-          m_uArmNextPC-4);
+          armNextPC-4);
 #endif
     CPUUndefinedException();
     break;
