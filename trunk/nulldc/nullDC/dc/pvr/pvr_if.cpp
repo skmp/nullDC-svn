@@ -39,7 +39,7 @@ u32 YUV_y_size;
 //writes 2 pixels to vram
 INLINE void YUV_putpixel2(u32 x ,u32 y, u32 pixdata)
 {
-	pvr_write_area1_32(YUV_dest + (YUV_x_curr+x+(YUV_y_curr+y)*YUV_x_size)*2,pixdata);
+	*(u32*) (&(vram.data [YUV_dest + (YUV_x_curr+x+(YUV_y_curr+y)*YUV_x_size)*2]))  =pixdata;
 }
 
 void YUV_init()
@@ -48,7 +48,7 @@ void YUV_init()
 	YUV_x_curr=0;
 	YUV_y_curr=0;
 
-	YUV_dest=pvr_readreg_TA(0x5F8148,4);//TODO : add the masking needed
+	YUV_dest=pvr_readreg_TA(0x5F8148,4)&VRAM_MASK;//TODO : add the masking needed
 	YUV_doneblocks=0;
 	u32 TA_YUV_TEX_CTRL=pvr_readreg_TA(0x5F814C,4);
 	YUV_blockcount=(((TA_YUV_TEX_CTRL>>0)&0x3F)+1)*(((TA_YUV_TEX_CTRL>>8)&0x3F)+1);

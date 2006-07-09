@@ -373,6 +373,8 @@ bool ExecuteDelayslot()
 //u32 gdCnt=0;
 u32 aica_cycl=0;
 void FreeSuspendedBlocks();;
+void DynaPrintCycles();
+u32 shitaaa=0;
 int __fastcall UpdateSystem(u32 Cycles)
 {
 	//TODO : Add Update System implementation
@@ -381,6 +383,12 @@ int __fastcall UpdateSystem(u32 Cycles)
 	{
 		UpdateAica(aica_cycl);
 		FreeSuspendedBlocks();
+		/*if (shitaaa==0x10000)
+		{
+			shitaaa=0;
+			DynaPrintCycles();
+		}
+		shitaaa++;*/
 		aica_cycl=0;
 	}
 	UpdateTMU(Cycles);

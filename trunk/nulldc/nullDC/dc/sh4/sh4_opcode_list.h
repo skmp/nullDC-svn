@@ -17,7 +17,8 @@ enum sh4_eu
 	LS,
 	FE,
 	CO,
-	MA
+	MA,
+	sh4_eu_max
 };
 struct sh4_opcodelistentry
 {

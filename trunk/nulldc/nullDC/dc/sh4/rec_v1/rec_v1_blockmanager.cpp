@@ -315,6 +315,7 @@ rec_v1_BasicBlock* rec_v1_NewBlock(u32 address)
 	rec_v1_BasicBlock* rv=new rec_v1_BasicBlock();
 	rv->start=address;
 	rv->cpu_mode_tag=fpscr.PR_SZ;
+	//all_block_list.Add(rv);
 	all_block_list.push_back(rv);
 
 	return rv;
@@ -363,6 +364,7 @@ void rec_v1_UnRegisterBlock(rec_v1_BasicBlock* block)
 
 	GetLookupBlockList(block->start)->Remove(block);
 
+	//all_block_list.Remove(block);
 	#ifdef BLOCK_LUT_GUESS
 	if (BlockLookupGuess[GetLookupHash(block->start)]==block)
 		BlockLookupGuess[GetLookupHash(block->start)]=0;
@@ -518,54 +520,70 @@ int compare_calls (const void * a, const void * b)
 
 void nullprof_GetBlocks(nullprof_blocklist* to, u32 type,u32 count)
 {
+	BlockList used_blocks;
+	
+	for (int i=0;i<all_block_list.size();i++)
+	{
+		if (all_block_list[i])
+			used_blocks.Add(all_block_list[i]);
+	}
+
 	if (type!=ALL_BLOCKS)
 	{
-		if (count==0 || count>all_block_list.size())
-			count=all_block_list.size();
+		if (count==0 || count>used_blocks.size())
+			count=used_blocks.size();
 
 		to->count=count;
 		to->blocks=(nullprof_block_info*)malloc(count*sizeof(nullprof_block_info));
 
 		if (type==PSLOW_BLOCKS)
-			qsort(&(all_block_list[0]), all_block_list.size(), sizeof(rec_v1_BasicBlock*), compare_usage);
+			qsort(&(used_blocks[0]), used_blocks.size(), sizeof(rec_v1_BasicBlock*), compare_usage);
 		else if (type==PTIME_BLOCKS)
-			qsort(&(all_block_list[0]), all_block_list.size(), sizeof(rec_v1_BasicBlock*), compare_time);
+			qsort(&(used_blocks[0]), used_blocks.size(), sizeof(rec_v1_BasicBlock*), compare_time);
 		else if (type==PCALL_BLOCKS)
-			qsort(&(all_block_list[0]), all_block_list.size(), sizeof(rec_v1_BasicBlock*), compare_calls);
+			qsort(&(used_blocks[0]), used_blocks.size(), sizeof(rec_v1_BasicBlock*), compare_calls);
 
 
 		for (u32 i=0;i<count;i++)
 		{
-			//double cpb=(double)all_block_list[i]->profile_time/(double)all_block_list[i]->profile_calls;
+			//double cpb=(double)used_blocks[i]->profile_time/(double)used_blocks[i]->profile_calls;
 			//fprintf(to,"Block 0x%X , size %d[%d cycles] , %f cycles/call , %f cycles/emucycle,%f consumed Mhrz\n",
-			//	all_block_list[i]->start,
-			//	(all_block_list[i]->end-all_block_list[i]->start+2)>>1,
-			//	all_block_list[i]->cycles,
+			//	used_blocks[i]->start,
+			//	(used_blocks[i]->end-used_blocks[i]->start+2)>>1,
+			//	used_blocks[i]->cycles,
 			//	cpb,
-			//	cpb/all_block_list[i]->cycles,
-			//	all_block_list[i]->profile_time/(1000.0f*1000.0f));
-			ConvBlockInfo(&to->blocks[i],all_block_list[i]);
+			//	cpb/used_blocks[i]->cycles,
+			//	used_blocks[i]->profile_time/(1000.0f*1000.0f));
+			ConvBlockInfo(&to->blocks[i],used_blocks[i]);
 			void CompileBasicBlock_slow_c(rec_v1_BasicBlock* block);;
-			CompileBasicBlock_slow_c(all_block_list[i]);
+			CompileBasicBlock_slow_c(used_blocks[i]);
 		}
 	}
 	else
 	{
-		count=all_block_list.size();
+		count=used_blocks.size();
 		to->count=count;
 		to->blocks=(nullprof_block_info*)malloc(count*sizeof(nullprof_block_info));
-		for (u32 i=0;i<all_block_list.size();i++)
+		for (u32 i=0;i<used_blocks.size();i++)
 		{
-			ConvBlockInfo(&to->blocks[i],all_block_list[i]);
+			ConvBlockInfo(&to->blocks[i],used_blocks[i]);
 		}
 	}
 }
 void nullprof_ClearBlockPdata()
 {
-	for (u32 i=0;i<all_block_list.size();i++)
+	BlockList used_blocks;
+
+	for (int i=0;i<all_block_list.size();i++)
 	{
-		all_block_list[i]->profile_calls=0;
-		all_block_list[i]->profile_time=0;
+		if (all_block_list[i])
+			used_blocks.Add(all_block_list[i]);
+	}
+
+	for (u32 i=0;i<used_blocks.size();i++)
+	{
+		used_blocks[i]->profile_calls=0;
+		used_blocks[i]->profile_time=0;
 	}
 }
 

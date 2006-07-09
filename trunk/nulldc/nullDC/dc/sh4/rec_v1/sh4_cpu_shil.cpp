@@ -2096,8 +2096,11 @@ sh4op(i1100_0011_iiii_iiii)
 
 
 
-
-
+//sh4_bpt_op => breakpoint opcode
+sh4op(sh4_bpt_op)
+{
+	shil_interpret(op);
+}
 //sleep                         
  sh4op(i0000_0000_0001_1011)
 {

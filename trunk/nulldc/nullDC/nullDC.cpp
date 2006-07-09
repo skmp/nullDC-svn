@@ -100,7 +100,7 @@ void EnumPlugins()
 	//getc(stdin);
 }
 
-int main(int argc, char* argv[])
+int main___(int argc,char* argv[])
 {
 	char * currpath=GetEmuPath("");
 	SetCurrentDirectoryA(currpath);
@@ -139,5 +139,16 @@ int main(int argc, char* argv[])
 	DestroyGUI();
 	
 	return rv;
+}
+int main(int argc, char* argv[])
+{
+	__try
+	{
+		main___(argc,argv);
+	}
+	__except( ExeptionHandler( GetExceptionCode(), (GetExceptionInformation())->ExceptionRecord ) )
+	{
+
+	}
 }
 

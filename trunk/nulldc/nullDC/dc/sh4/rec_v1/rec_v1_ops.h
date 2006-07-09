@@ -461,7 +461,8 @@ sh4op(i1111_nnnn_mmmm_1110);
 sh4op(i1111_nn01_1111_1101);
 //FSRRA
 sh4op(i1111_nnnn_0111_1101);
-
+//Breakpoint
+sh4op(sh4_bpt_op);
 
 //not handled
 sh4op(icpu_nimp);

@@ -56,11 +56,22 @@ void map_area1(u32 base)
 	u32 start= 0x0400 | base;
 	u32 end  = start+(VRAM_MASK>>16);
 	_vmem_map_block(vram.data,start,end);
-	
+	if (end!=0x04FF)
+	{
+		start+=(VRAM_SIZE>>16);
+		end+=(VRAM_SIZE>>16);
+		_vmem_map_block(vram.data,start,end);
+	}
 	//32b interface
 	start= 0x0500 | base;
 	end  = start+(VRAM_MASK>>16);
 	_vmem_map_handler(area1_32b,start,end);
+	if (end!=0x05FF)
+	{
+		start+=(VRAM_SIZE>>16);
+		end+=(VRAM_SIZE>>16);
+		_vmem_map_block(vram.data,start,end);
+	}
 
 	//upper 32mb mirror lower 32 mb
 	//0x0600 to 0x07FF

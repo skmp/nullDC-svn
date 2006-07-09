@@ -99,11 +99,59 @@ void __fastcall dyna_profile_block_exit(rec_v1_BasicBlock* bb)
 		mov dyn_now_block.h,edx;
 	}
 
-	bb->profile_time+=dyn_now_block.v-dyn_last_block.v;
+	u64 t=dyn_now_block.v-dyn_last_block.v;
+	//rec_native_cycles+=t;
+	bb->profile_time+=t;
 	bb->profile_calls++;
 }
 //#endif
+//
 
+_Cmp64 dyn_ls;
+_Cmp64 dyn_le;
+u64 rec_native_cycles;
+
+_Cmp64 old_tsmp;
+_Cmp64 c_tsmp;
+void DynaPrintCycles()
+{
+	__asm
+	{
+		rdtsc;
+		mov c_tsmp.l,eax;
+		mov c_tsmp.h,edx;
+	}
+	u64 hole=c_tsmp.v-old_tsmp.v;
+	double percent=(double)rec_native_cycles/(double)hole;
+	printf("Dynarec block execution path : %f%%\n",percent*100);
+	rec_native_cycles=0;
+	hole=0;
+	__asm
+	{
+		rdtsc;
+		mov old_tsmp.l,eax;
+		mov old_tsmp.h,edx;
+	}
+}
+void DynaPrintLinkStart()
+{
+	__asm
+	{
+		rdtsc;
+		mov dyn_ls.l,eax;
+		mov dyn_ls.h,edx;
+	}
+}
+void DynaPrintLinkEnd()
+{
+	__asm
+	{
+		rdtsc;
+		mov dyn_le.l,eax;
+		mov dyn_le.h,edx;
+	}
+	rec_native_cycles+=dyn_le.v-dyn_ls.v;
+}
 void c_Ensure32()
 {
 	assert(fpscr.PR==0);
@@ -153,7 +201,7 @@ x86IntRegType reg_to_alloc[4]=
 {
 	EBX,
 	EBP,
-	ESI,//-> reserved for cycle counts : no more :)
+	ESI,
 	EDI
 };
 
@@ -165,7 +213,7 @@ x86SSERegType reg_to_alloc_xmm[7]=
 	XMM3,
 	XMM4,
 	XMM5,
-	XMM6,//-> reserved for cycle counts : no more :)
+	XMM6,
 	XMM7,
 };
 
@@ -303,7 +351,7 @@ void AllocateRegisters(rec_v1_BasicBlock* block)
 
 		for (u32 i=0;i<REG_ALLOC_COUNT;i++)
 		{
-			if (used[i].cnt<14)
+			if (used[i].cnt<5)
 				break;
 			r_alloced[used[i].reg].x86reg=reg_to_alloc[i];
 		}
@@ -986,6 +1034,10 @@ bool IsOnSamePage(rec_v1_BasicBlock* bb,u32 adr)
 
 	return (start>=adrP) && (end<=adrP);
 }
+void emit_vmem_op_compat(emitter<>* x86e,x86IntRegType ra,
+					  x86IntRegType ro,
+					  u32 sz,u32 rw);
+u32 m_unpack_sz[3]={1,2,4};
 void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	u32 size=op->flags&3;
@@ -1033,8 +1085,8 @@ void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
 
 	readwrteparams(op);
 
-	u8* inline_label=0;
-
+	emit_vmem_op_compat(x86e,ECX,EAX,m_unpack_sz[size],0);
+	/*u8* inline_label=0;
 	if (INLINE_MEM_READ)
 	{
 		//try to inline all mem reads , by comparing values at runtime :P
@@ -1058,26 +1110,26 @@ void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
 		x86e->TEST32RtoR(EAX,EAX);
 		//jz inline;//if !0 , then do normal read
 		inline_label = x86e->JZ8(0);
-	}
+	}*/
 	//call ReadMem32
 	//movsx [if needed]
 	if (size==0)
 	{
-		x86e->CALLFunc(ReadMem8);
+		//x86e->CALLFunc(ReadMem8);
 		x86e->MOVSX32R8toR(EAX,EAX);	//se8
 	}
 	else if (size==1)
 	{
-		x86e->CALLFunc(ReadMem16);
+		//x86e->CALLFunc(ReadMem16);
 		x86e->MOVSX32R16toR(EAX,EAX);	//se16
 	}
 	else if (size==2)
 	{
-		x86e->CALLFunc(ReadMem32);
+		//x86e->CALLFunc(ReadMem32);
 	}
 	else
 		printf("ReadMem error\n");
-
+/*
 	if (INLINE_MEM_READ)
 	{
 		//jmp normal;
@@ -1108,7 +1160,7 @@ void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
 			printf("ReadMem error\n");
 		//normal:
 		x86e->x86SetJ8(normal_label);
-	}
+	}*/
 	//mov reg,eax
 	SaveReg(op->reg1,EAX);//save return value
 	MarkDirty(op->reg1);
@@ -1125,9 +1177,9 @@ void __fastcall shil_compile_writem(shil_opcode* op,rec_v1_BasicBlock* block)
 	//so it's sure loaded (if from reg cache)
 	x86IntRegType r1=LoadReg(EDX,op->reg1);
 	
-	u8* inline_label=0;
+	/*u8* inline_label=0;
 
-	if (INLINE_MEM_WRITE)
+	/*if (INLINE_MEM_WRITE)
 	{	//try to inline all mem reads at runtime :P
 		//eax = ((ecx>>24) & 0xFF)<<2
 
@@ -1146,8 +1198,8 @@ void __fastcall shil_compile_writem(shil_opcode* op,rec_v1_BasicBlock* block)
 		x86e->TEST32RtoR(EAX,EAX);
 		//jz inline;//if !0 , then do normal write
 		inline_label = x86e->JZ8(0);
-	}
-	if (size==FLAG_8)
+	}*/
+	/*if (size==FLAG_8)
 	{	//maby zx ?
 		if (r1!=EDX)
 			x86e->MOV32RtoR(EDX,r1);
@@ -1166,8 +1218,9 @@ void __fastcall shil_compile_writem(shil_opcode* op,rec_v1_BasicBlock* block)
 		x86e->CALLFunc(WriteMem32);
 	}
 	else
-		printf("WriteMem error\n");
-
+		printf("WriteMem error\n");*/
+	emit_vmem_op_compat(x86e,ECX,r1,m_unpack_sz[size],1);
+/*
 	
 	if (INLINE_MEM_WRITE)
 	{
@@ -1217,7 +1270,7 @@ void __fastcall shil_compile_writem(shil_opcode* op,rec_v1_BasicBlock* block)
 			printf("ReadMem error\n");
 		//normal:
 		x86e->x86SetJ8(normal_label);
-	}
+	}*/
 
 }
 
@@ -2220,14 +2273,19 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 
 	//x86e->MOV32ItoR(ECX,(u32)block);
 	//x86e->CALLFunc(CheckBlock);
+	
+	s8* start_ptr;
 
 	if (PROFILE_BLOCK_CYCLES){
+		start_ptr=x86e->x86Ptr;
 		x86e->CALLFunc(dyna_profile_block_enter);
 	}
 
 	AllocateRegisters(block);
 	LoadRegisters();
-	s8* start_ptr=x86e->x86Ptr;
+	if (PROFILE_BLOCK_CYCLES==false){
+		start_ptr=x86e->x86Ptr;
+	}
 
 	x86e->ADD32ItoM(&rec_cycles,block->cycles);
 	//x86e->MOV32ItoM((u32*)&rec_v1_pCurrentBlock,(u32)block);

@@ -91,7 +91,8 @@ void naked __fastcall DoRunCode(void * code)
 }
 #endif
 
-
+void DynaPrintLinkStart();
+void DynaPrintLinkEnd();
 u32 rec_cycles=0;
 u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 {
@@ -113,6 +114,7 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 #ifdef X86
 		//call block :)
 #ifndef PROFILE_DYNAREC_CALL
+		//DynaPrintLinkStart();
 		__asm
 		{
 			push esi;
@@ -127,6 +129,7 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 			pop edi
 			pop esi;
 		}
+		//DynaPrintLinkEnd();
 #else	
 		//call it using a helper function
 		//so we can profile :)

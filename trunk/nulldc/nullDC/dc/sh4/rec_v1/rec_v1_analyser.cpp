@@ -19,12 +19,71 @@
 
 #define CPU_RATIO 1
 #define CPU_BASIC_BLOCK_SIZE (BLOCKLIST_MAX_CYCLES/2)
+u32 execution_groop_busy[sh4_eu::sh4_eu_max];
+u32 known_pl_cycles=0;
+
+void InitPipeline()
+{
+	known_pl_cycles=0;
+	memset(execution_groop_busy,0,sizeof(execution_groop_busy));
+}
+void plSubCycles(u32 cycles)
+{
+	for (int i=0;i<sh4_eu::sh4_eu_max;i++)
+	{
+		if (execution_groop_busy[i]>0)
+		{
+			execution_groop_busy[i]-=cycles;
+			if (execution_groop_busy[i]<0)
+				execution_groop_busy[i]=0;
+
+		}
+	}
+}
+void StepPipeline(u32 opcode)
+{
+	s32 rv;
+	if (OpDesc[opcode])
+	{
+		rv= OpDesc[opcode]->IssueCycles;
+		if (rv==0)
+			rv=OpDesc[opcode]->LatencyCycles;
+
+		s32 lc=OpDesc[opcode]->LatencyCycles;
+		lc-=rv;//if it has latency>issue
+		
+		if (lc>0)
+			execution_groop_busy[OpDesc[opcode]->unit]+=lc;
+		//we allways count issue cycles
+		//latecny cycles are counted @ the end :)
+		known_pl_cycles+=rv;
+	}
+	else
+	{
+		rv= 10;
+	}
+	//if (rv<2)
+	//	rv=2;
+	//return rv;
+}
+void TermPipeline()
+{
+	u32 mpc=0;
+	for (int i=0;i<sh4_eu::sh4_eu_max;i++)
+	{
+		//if (execution_groop_busy[i]>mpc)
+		{
+			mpc+=execution_groop_busy[i];
+		}
+	}
+	known_pl_cycles+=mpc;
+}
 void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 {
 
 	u32 pc=start;
 
-	u32 block_size=0;
+	//u32 block_size=0;
 	u32 block_ops=0;
 
 	shil_DynarecInit();
@@ -32,24 +91,14 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 	ilst=&to->ilst;
 	to->flags.FpuMode = GET_CURRENT_FPU_MODE();
 
+	InitPipeline();
 
 	while (true)
 	{
-		u16 opcode=ReadMem16(pc);
+		u32 opcode=ReadMem16(pc);
+		//block_size+=GetOpCycles(opcode);
 		block_ops++;
-		if (OpDesc[opcode])
-		{
-			if (OpDesc[opcode]->LatencyCycles!=0)
-				block_size+=OpDesc[opcode]->LatencyCycles*CPU_RATIO;
-			else
-				block_size+=OpDesc[opcode]->IssueCycles*CPU_RATIO;
-		}
-		else
-		{
-			block_size+=10;
-			//pc+=2;
-			//continue;
-		}
+		StepPipeline(opcode);
 		/*if (((pc>>26)&0x7)==3)
 			rec_v1_SetBlockTest(pc);*/
 
@@ -70,7 +119,7 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 				printf("Syth opcode found at pc 0x%X , bytelen = 128+2 , skiping 130 bytes\n",pc);
 				pc+=128;
 				block_ops+=128>>1;
-				block_size+=128>>1;
+				known_pl_cycles+=128>>1;
 				break;
 			
 			case BLOCK_SOM_RESERVED1:
@@ -107,7 +156,7 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 			break;
 		}
 
-		if (block_size>=CPU_BASIC_BLOCK_SIZE)
+		if (block_ops>=(CPU_BASIC_BLOCK_SIZE))
 		{
 			ilst->mov(reg_pc,pc);//save next opcode pc-2 , pc+2 is done after execution
 			
@@ -125,7 +174,13 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 	
 	//add delayslot opcode :)
 	if (to->flags.HasDelaySlot)
+	{
 		to->end+=2;
+		u32 opcode=ReadMem16(to->end);
+		//block_size+=GetOpCycles(opcode);
+		StepPipeline(opcode);
+		block_ops++;
+	}
 
 #ifdef PROFILE_DYNAREC
 	if( (to->flags & BLOCK_TYPE_MASK)==BLOCK_TYPE_DYNAMIC)
@@ -135,12 +190,13 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 		printf("Dynamic block ending at %s\n",temp);
 	}
 #endif
-	to->cycles=block_size;
+	TermPipeline();
+	to->cycles=known_pl_cycles*CPU_RATIO;
 
 	//shil_opt_return srv;
 //	perform_shil_opt(shil_opt_ntc,to,srv);
 
-	//printf("Block done %f avg cycl/op\n",(float)block_size/(float)block_ops);
-	//if (((float)block_size/(float)block_ops)<1)
-	//	__asm int 3;
+	/*printf("Block done %f avg cycl/op , %d total cycles\n",(float)to->cycles/(float)block_ops,to->cycles);
+	if (((float)to->cycles/(float)block_ops)<1)
+		__asm int 3;*/
 }

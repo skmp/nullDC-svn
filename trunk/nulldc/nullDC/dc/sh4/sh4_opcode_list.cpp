@@ -3,7 +3,7 @@
 #include "sh4_fpu.h"
 #include "dc/mem/memutil.h"
 #include "sh4_opcode_list.h"
-#include "rec_v1\rec_v1_ops.h"
+#include "rec_v1/rec_v1_ops.h"
 #include "plugins/plugin_manager.h"
 
 
@@ -822,7 +822,7 @@ sh4_opcodelistentry opcodes[]=
 	
 	//HLE ops
 	{0								,gdrom_hle_op			,Mask_none	,GDROM_OPCODE,ReadWritePC	,dissasm_GDROM},
-	{0								,sh4_bpt_op				,Mask_none	,BPT_OPCODE	 ,ReadWritePC	,dissasm_Break},
+	{rec_shil_sh4_bpt_op					,sh4_bpt_op				,Mask_none	,BPT_OPCODE	 ,ReadWritePC	,dissasm_Break},
 
 	//end of list
 	{0,0,0,0,ReadWritePC}//Branch in order to stop the block and save pc ect :)
