@@ -3,6 +3,7 @@
 
 #include "nullAICA.h"
 #include "aica_hax.h"
+#include "aica_hle.h"
 
 
 BOOL APIENTRY DllMain( HMODULE hModule,
@@ -16,7 +17,8 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 
 void cfgdlg(PluginType type,void* window)
 {
-	printf("null AICA plugin [h4x0rs olny kthx]:No config kthx\n");
+	printf("null AICA plugin [h4x0rs olny kthx]:No config kthx , however i will show ya some hle info :D\n");
+	ARM_Katana_Driver_Info();
 }
 
 //Give to the emu info for the plugin type
@@ -54,17 +56,20 @@ EXPORT void dcGetAICAInfo(aica_plugin_if* info)
 void dcInit(void* param,PluginType type)
 {
 	init_mem();
+	InitHLE();
 }
 
 //called when plugin is unloaded by emu , olny if dcInit is called (eg , not called to enumerate plugins)
 void dcTerm(PluginType type)
 {
 	term_mem();
+	TermHLE();
 }
 
 //It's suposed to reset anything 
 void dcReset(bool Manual,PluginType type)
 {
+	ResetHLE();
 }
 
 //called when entering sh4 thread , from the new thread context (for any thread speciacific init)
