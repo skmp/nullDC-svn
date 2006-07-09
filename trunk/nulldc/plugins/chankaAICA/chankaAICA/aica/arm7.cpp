@@ -497,11 +497,9 @@ CArm7::EErrorCode	CArm7::_BlockStepArm7(DWORD uNumCycles)
 
 CArm7::EErrorCode	CArm7::ExecuteInstruction()
 {
-	
 #define clockTicks m_uClockTicks
 #include "arm-new.h"
--
-	return E_OK;
+return E_OK;
 }
 
 
