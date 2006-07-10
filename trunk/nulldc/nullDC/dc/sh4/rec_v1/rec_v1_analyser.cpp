@@ -193,6 +193,7 @@ void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
 	TermPipeline();
 	to->cycles=known_pl_cycles*CPU_RATIO;
 
+	to->ilst.op_count=to->ilst.opcodes.size();
 	//shil_opt_return srv;
 //	perform_shil_opt(shil_opt_ntc,to,srv);
 

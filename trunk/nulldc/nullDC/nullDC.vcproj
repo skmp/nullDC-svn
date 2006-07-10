@@ -779,6 +779,22 @@
 						RelativePath=".\dc\sh4\shil\shil.h"
 						>
 					</File>
+					<File
+						RelativePath=".\dc\sh4\shil\shil_ce.cpp"
+						>
+						<FileConfiguration
+							Name="Release-NoTrace|Win32"
+							>
+							<Tool
+								Name="VCCLCompilerTool"
+								Optimization="0"
+							/>
+						</FileConfiguration>
+					</File>
+					<File
+						RelativePath=".\dc\sh4\shil\shil_ce.h"
+						>
+					</File>
 				</Filter>
 			</Filter>
 			<Filter

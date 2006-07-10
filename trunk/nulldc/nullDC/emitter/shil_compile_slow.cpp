@@ -2,6 +2,7 @@
 #include <assert.h>
 #include "emitter.h"
 
+#include "dc\sh4\shil\shil_ce.h"
 #include "dc\sh4\sh4_registers.h"
 #include "dc\sh4\rec_v1\rec_v1_blockmanager.h"
 #include "dc\sh4\rec_v1\nullprof.h"
@@ -107,6 +108,7 @@ void __fastcall dyna_profile_block_exit(rec_v1_BasicBlock* bb)
 //#endif
 //
 
+//find % of time used by dynarec code link
 _Cmp64 dyn_ls;
 _Cmp64 dyn_le;
 u64 rec_native_cycles;
@@ -152,16 +154,21 @@ void DynaPrintLinkEnd()
 	}
 	rec_native_cycles+=dyn_le.v-dyn_ls.v;
 }
+//more helpers
+//ensure mode is 32b (for floating point)
 void c_Ensure32()
 {
 	assert(fpscr.PR==0);
 }
+//emit a call to c_Ensure32 
 bool Ensure32()
 {
 	x86e->CALLFunc(c_Ensure32);
 	return true;
 }
 
+//Register managment related
+//Get a pointer to a reg
 INLINE u32* GetRegPtr(u32 reg)
 {
 	if (reg==Sh4RegType::reg_pc_temp)
@@ -553,48 +560,48 @@ INLINE void SaveReg(u8 reg,u32* from)
 	}
 }
 
-INLINE void SaveReg(u8 reg,u16* from)
+INLINE void SaveReg(u8 reg,s16* from)
 {
 	MarkDirty(reg);
 	if(REG_ALLOC_X86)
 	{
 		if (reg>r15 || (!IsRegCached(reg)))
 		{
-			x86e->MOVSX32M16toR(ECX,from);
+			x86e->MOVSX32M16toR(ECX,(u16*)from);
 			x86e->MOV32RtoM(GetRegPtr(reg),ECX);
 		}
 		else
 		{
 			x86IntRegType x86reg=LoadRegCache_reg_nodata(reg);
-			x86e->MOVSX32M16toR(x86reg,from);
+			x86e->MOVSX32M16toR(x86reg,(u16*)from);
 		}
 	}
 	else
 	{
-		x86e->MOVSX32M16toR(ECX,from);
+		x86e->MOVSX32M16toR(ECX,(u16*)from);
 		x86e->MOV32RtoM(GetRegPtr(reg),ECX);
 	}
 }
 
-INLINE void SaveReg(u8 reg,u8* from)
+INLINE void SaveReg(u8 reg,s8* from)
 {
 	MarkDirty(reg);
 	if(REG_ALLOC_X86)
 	{
 		if (reg>r15 || (!IsRegCached(reg)))
 		{
-			x86e->MOVSX32M8toR(ECX,from);
+			x86e->MOVSX32M8toR(ECX,(u8*)from);
 			x86e->MOV32RtoM(GetRegPtr(reg),ECX);
 		}
 		else
 		{
 			x86IntRegType x86reg=LoadRegCache_reg_nodata(reg);
-			x86e->MOVSX32M8toR(x86reg,from);
+			x86e->MOVSX32M8toR(x86reg,(u8*)from);
 		}
 	}
 	else
 	{
-		x86e->MOVSX32M8toR(ECX,from);
+		x86e->MOVSX32M8toR(ECX,(u8*)from);
 		x86e->MOV32RtoM(GetRegPtr(reg),ECX);
 	}
 }
@@ -971,6 +978,7 @@ void readwrteparams(shil_opcode* op)
 	if (!(op->flags & (FLAG_R0|FLAG_GBR)))
 	{//[reg2] form
 		assert(op->flags & FLAG_IMM1);
+		assert(0==(op->flags & FLAG_IMM2));
 
 		if (op->flags & FLAG_REG2)
 		{	//[reg2+imm1]
@@ -986,54 +994,37 @@ void readwrteparams(shil_opcode* op)
 	}
 	else
 	{
-		//reg0/gbr[reg2] form
+		//reg0/gbr[reg2+imm1] form
 		assert(op->flags & (FLAG_R0|FLAG_GBR));
-
-		assert(0==(op->flags & FLAG_IMM1));
+		//imm1 can be used now ;)
+		assert(0==(op->flags & FLAG_IMM2));
 
 		if (op->flags & FLAG_R0)
 			LoadReg_force(ECX,r0);
 		else
 			LoadReg_force(ECX,reg_gbr);
 
-		if (IsRegCached(op->reg2))
+		if (op->flags & FLAG_REG2)
 		{
-			x86IntRegType r2=LoadReg(EAX,op->reg2);
-			assert(r2!=EAX);
-			x86e->ADD32RtoR(ECX,r2);
+			if (IsRegCached(op->reg2))
+			{
+				x86IntRegType r2=LoadReg(EAX,op->reg2);
+				assert(r2!=EAX);
+				x86e->ADD32RtoR(ECX,r2);
+			}
+			else
+				x86e->ADD32MtoR(ECX,GetRegPtr(op->reg2));
 		}
-		else
-			x86e->ADD32MtoR(ECX,GetRegPtr(op->reg2));
+		if (op->flags & FLAG_IMM1)
+		{
+			x86e->ADD32ItoR(ECX,op->imm1);
+		}
 	}
 }
-INLINE bool IsOnRam(u32 addr)
-{
-	if (((addr>>26)&0x7)==3)
-	{
-		if ((((addr>>29) &0x7)!=7))
-		{
-			return true;
-		}
-	}
 
-	return false;
-}
 u32 const_hit=0;
 u32 non_const_hit=0;
-bool IsOnSamePage(rec_v1_BasicBlock* bb,u32 adr)
-{
-	if (bb->flags.ProtectionType==BLOCK_PROTECTIONTYPE_MANUAL)
-		return false;
 
-	if (IsOnRam(adr)==false)
-		return false;
-	
-	u32 start=(bb->start & RAM_MASK)/PAGE_SIZE;
-	u32 end=(bb->start & RAM_MASK)/PAGE_SIZE;
-	u32 adrP=(adr & RAM_MASK)/PAGE_SIZE;
-
-	return (start>=adrP) && (end<=adrP);
-}
 void emit_vmem_op_compat(emitter<>* x86e,x86IntRegType ra,
 					  x86IntRegType ro,
 					  u32 sz,u32 rw);
@@ -1050,27 +1041,23 @@ void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
 		{//[reg2] form
 			assert(op->flags & FLAG_IMM1);
 
-			if (op->flags & FLAG_REG2)
-			{	//[reg2+imm1]
-
-			}
-			else
+			if (!(op->flags & FLAG_REG2))
 			{	//[imm1]
 				assert(0==(op->flags & FLAG_REG2));
 				if (IsOnRam(op->imm1))
 				{
-					if (IsOnSamePage(block,op->imm1))
+					if (block->IsMemLocked(op->imm1))
 						const_hit++;
 					else
 						non_const_hit++;
 
 					if (size==0)
 					{
-						SaveReg(op->reg1,(u8 *)GetMemPtr(op->imm1,1));
+						SaveReg(op->reg1,(s8 *)GetMemPtr(op->imm1,1));
 					}
 					else 	if (size==1)
 					{
-						SaveReg(op->reg1,(u16*)GetMemPtr(op->imm1,2));
+						SaveReg(op->reg1,(s16*)GetMemPtr(op->imm1,2));
 					}
 					else 	if (size==2)
 					{
@@ -1086,82 +1073,23 @@ void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
 	readwrteparams(op);
 
 	emit_vmem_op_compat(x86e,ECX,EAX,m_unpack_sz[size],0);
-	/*u8* inline_label=0;
-	if (INLINE_MEM_READ)
-	{
-		//try to inline all mem reads , by comparing values at runtime :P
-		//ECX is address
-
-		//eax = ((ecx>>24) & 0xFF)<<2
-
-		//mov eax,ecx
-		x86e->MOV32RtoR(EAX,ECX);
-		//shr eax,24
-		//shl eax,2
-		x86e->SHR32ItoR(EAX,24-2);
-		x86e->AND32ItoR(EAX,0xFF<<2);
-		//x86e->SHL32ItoR(EAX,2);
-
-		//add eax , imm	;//should realy use lea/mov eax,[eax+xx]
-		x86e->ADD32ItoR(EAX,(u32)IsRamAddr);
-		//mov eax,[eax]
-		x86e->MOV32RmtoR(EAX,EAX);
-		//test eax,eax
-		x86e->TEST32RtoR(EAX,EAX);
-		//jz inline;//if !0 , then do normal read
-		inline_label = x86e->JZ8(0);
-	}*/
-	//call ReadMem32
+	
 	//movsx [if needed]
 	if (size==0)
 	{
-		//x86e->CALLFunc(ReadMem8);
 		x86e->MOVSX32R8toR(EAX,EAX);	//se8
 	}
 	else if (size==1)
 	{
-		//x86e->CALLFunc(ReadMem16);
 		x86e->MOVSX32R16toR(EAX,EAX);	//se16
 	}
 	else if (size==2)
 	{
-		//x86e->CALLFunc(ReadMem32);
+		//nothing needed
 	}
 	else
 		printf("ReadMem error\n");
-/*
-	if (INLINE_MEM_READ)
-	{
-		//jmp normal;
-		u8* normal_label = x86e->JMP8(0);
-		//
-		//inline:  //inlined ram read
-		x86e->x86SetJ8(inline_label);
-		//and ecx , ram_mask
-		x86e->AND32ItoR(ECX,RAM_MASK);
-		//add ecx, ram_base
-		x86e->ADD32ItoR(ECX,(u32)(&mem_b[0]));
-		//mov/sx eax,[ecx]
-		if (size==0)
-		{
-			x86e->MOV32RmtoR(EAX,ECX);		//1 byte read ?
-			x86e->MOVSX32R8toR(EAX,EAX);	//se8
-		}
-		else if (size==1)
-		{
-			x86e->MOV32RmtoR(EAX,ECX);		//2 bytes read ?
-			x86e->MOVSX32R16toR(EAX,EAX);	//se16
-		}
-		else if (size==2)
-		{
-			x86e->MOV32RmtoR(EAX,ECX);
-		}
-		else
-			printf("ReadMem error\n");
-		//normal:
-		x86e->x86SetJ8(normal_label);
-	}*/
-	//mov reg,eax
+
 	SaveReg(op->reg1,EAX);//save return value
 	MarkDirty(op->reg1);
 }
@@ -2270,6 +2198,11 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 			x86e->x86SetJ8(patch);
 		}
 	}
+
+	//perform constan elimination as many times as needed :)
+	u32 num_itt=0;
+	while(shil_optimise_pass_ce(block) && num_itt<100)
+		num_itt++;
 
 	//x86e->MOV32ItoR(ECX,(u32)block);
 	//x86e->CALLFunc(CheckBlock);

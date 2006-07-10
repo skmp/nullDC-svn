@@ -740,3 +740,16 @@ void GetMemInfo(u32 addr,u32 size)
 {
 	//needs to be done
 }
+
+bool IsOnRam(u32 addr)
+{
+	if (((addr>>26)&0x7)==3)
+	{
+		if ((((addr>>29) &0x7)!=7))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}

@@ -63,6 +63,7 @@ u8* GetMemPtr(u32 Addr,u32 size);
 //Get infomation about an area , eg ram /size /anything
 //For dynarec - needs to be done
 void GetMemInfo(u32 addr,u32 size);
+bool IsOnRam(u32 addr);
 
 #define 	ReadMemArrRet(arr,addr,sz)				\
 			{if (sz==1)								\

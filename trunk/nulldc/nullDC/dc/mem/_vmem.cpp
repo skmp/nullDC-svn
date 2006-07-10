@@ -319,7 +319,7 @@ u32 __fastcall _vmem_ReadMem32_bench(u32 addresss)
 }
 void _vmem_Benchmark()
 {
-#define Bench_count  200000000
+#define Bench_count  20000
 	u32 hanld=_vmem_register_handler(0,0,_vmem_ReadMem32_bench,0,0,0);
 	_vmem_map_handler(hanld,0,9);
 

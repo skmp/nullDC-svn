@@ -48,6 +48,8 @@ class rec_v1_BasicBlock
 	void BlockWasSuspended(rec_v1_BasicBlock* block);
 	void AddRef(rec_v1_BasicBlock* block);
 	void ClearBlock(rec_v1_BasicBlock* block);
+	bool IsMemLocked(u32 adr);
+
 	//start pc
 	u32 start;
 	//end pc

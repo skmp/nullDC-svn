@@ -39,6 +39,9 @@
 using namespace std;
 
 #define BLOCK_LUT_GUESS
+//#defune DEBUG_BLOCKLIST
+//#define OPTIMISE_LUT_SORT
+#define COMPACT_GLOBAL_LIST
 
 //rec_v1_BasicBlock* Blockz[RAM_SIZE>>1];
 //
@@ -48,7 +51,15 @@ int compare_BlockLookups(const void * a, const void * b)
 	rec_v1_BasicBlock* ba=*(rec_v1_BasicBlock**)a;
 	rec_v1_BasicBlock* bb=*(rec_v1_BasicBlock**)b;
 
-	return bb->lookups-ba->lookups;
+	if (bb && ba)
+	{
+		return bb->lookups-ba->lookups;
+	}
+	else if (bb)
+		return 1;
+	else
+		return -1;
+	
 
 	/*
 	if ( ba->lookups > bb->lookups)
@@ -71,18 +82,28 @@ public :
 	}
 	u32 Add(rec_v1_BasicBlock* block)
 	{
-		ItemCount++;
-		for (u32 i=0;i<size();i++)
-		{
-			if (_Myfirst[i]==0)
-			{
-				_Myfirst[i]=block;
-				return i;
-			}
+		if (ItemCount==size())
+		{	
+			ItemCount++;
+			push_back(block);
+			return size();
 		}
-
-		push_back(block);
-		return size();
+		else
+		{
+			ItemCount++;
+			for (u32 i=0;i<size();i++)
+			{
+				if (_Myfirst[i]==0)
+				{
+					_Myfirst[i]=block;
+					return i;
+				}
+			}
+#ifdef DEBUG_BLOCKLIST
+			printf("BlockList::Add , ItemCount!+RealItemCount\n");
+			__asm int 3;
+#endif
+		}
 	}
 	void Remove(rec_v1_BasicBlock* block)
 	{
@@ -119,12 +140,14 @@ public :
 		u32 sz=size();
 		for (u32 i=0;i<sz;i++)
 		{
+#ifdef DEBUG_BLOCKLIST
 			if (_Myfirst[i]!=0)
 			{
 				printf("BlockList::CheckEmptyList fatal error , ItemCount!=RealItemCount\n");
 				__asm int 3;
 				return;
 			}
+#endif
 		}
 		clear();
 	}
@@ -138,12 +161,18 @@ public :
 			//using a specialised routine is gona be faster .. bah
 			qsort(_Myfirst, size(), sizeof(rec_v1_BasicBlock*), compare_BlockLookups);
 			//sort(begin(), end());
-			u32 max=_Myfirst[0]->lookups/100;
+			/*u32 max=_Myfirst[0]->lookups/100;
 			//if (max==0)
 			max++;
 			for (u32 i=0;i<size();i++)
-				_Myfirst[i]->lookups/=max;
+				_Myfirst[i]->lookups/=max;*/
 		}
+	}
+
+	void clear()
+	{
+		vector::clear();
+		ItemCount=0;
 	}
 };
 //page info
@@ -249,7 +278,7 @@ INLINE BlockList* GetLookupBlockList(u32 address)
 
 
 u32 luk=0;
-u32 r_value=0;
+u32 r_value=0x112;
 
 rec_v1_BasicBlock* rec_v1_FindBlock(u32 address)
 {
@@ -277,13 +306,15 @@ rec_v1_BasicBlock* rec_v1_FindBlock(u32 address)
 	BlockList* blklist = GetLookupBlockList(address);
 
 	u32 listsz=(u32)blklist->size();
+#ifdef OPTIMISE_LUT_SORT
 	luk++;
 	if (luk==r_value)
 	{
 		luk=0;
-		r_value=(frand() & 0x7FFF) + 0x10000;
+		r_value=(frand() & 0x1FF) + 0x800;
 		blklist->Optimise();
 	}
+#endif
 	for (u32 i=0;i<listsz;i++)
 	{ 
 		thisblock=(*blklist)[i];
@@ -315,8 +346,11 @@ rec_v1_BasicBlock* rec_v1_NewBlock(u32 address)
 	rec_v1_BasicBlock* rv=new rec_v1_BasicBlock();
 	rv->start=address;
 	rv->cpu_mode_tag=fpscr.PR_SZ;
-	//all_block_list.Add(rv);
+#ifdef COMPACT_GLOBAL_LIST
+	all_block_list.Add(rv);
+#else
 	all_block_list.push_back(rv);
+#endif
 
 	return rv;
 }
@@ -364,7 +398,10 @@ void rec_v1_UnRegisterBlock(rec_v1_BasicBlock* block)
 
 	GetLookupBlockList(block->start)->Remove(block);
 
-	//all_block_list.Remove(block);
+#ifdef COMPACT_GLOBAL_LIST
+	all_block_list.Remove(block);
+#endif
+
 	#ifdef BLOCK_LUT_GUESS
 	if (BlockLookupGuess[GetLookupHash(block->start)]==block)
 		BlockLookupGuess[GetLookupHash(block->start)]=0;
@@ -414,7 +451,7 @@ void __fastcall SuspendBlock(rec_v1_BasicBlock* block)
 void FreeBlock(rec_v1_BasicBlock* block)
 {
 	//free the block
-	all_block_list.Remove(block);
+	//all_block_list.Remove(block);
 	block->Free();
 	delete block;
 }

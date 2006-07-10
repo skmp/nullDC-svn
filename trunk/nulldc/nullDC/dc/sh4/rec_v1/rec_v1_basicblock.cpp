@@ -60,7 +60,6 @@ void rec_v1_BasicBlock::Suspend()
 		TT_block->BlockWasSuspended(this);
 
 	//if we jump to another block , we have to re compile it :)
-	//rec_cycles=BLOCKLIST_MAX_CYCLES;
 	Discarded=true;
 }
 
@@ -85,4 +84,19 @@ bool rec_v1_BasicBlock::Contains(u32 pc)
 	u32 real_end=end & RAM_MASK;
 
 	return ((pc_real>=(real_start-4)) && (pc_real<=(real_end+6)));
+}
+
+bool rec_v1_BasicBlock::IsMemLocked(u32 adr)
+{
+	if (flags.ProtectionType==BLOCK_PROTECTIONTYPE_MANUAL)
+		return false;
+
+	if (IsOnRam(adr)==false)
+		return false;
+	
+	u32 startP=(start & RAM_MASK)/PAGE_SIZE;
+	u32 endP=(end & RAM_MASK)/PAGE_SIZE;
+	u32 adrP=(adr & RAM_MASK)/PAGE_SIZE;
+
+	return (startP<=adrP) && (endP>=adrP);
 }
