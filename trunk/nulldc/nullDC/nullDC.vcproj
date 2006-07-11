@@ -787,7 +787,7 @@
 							>
 							<Tool
 								Name="VCCLCompilerTool"
-								Optimization="0"
+								Optimization="2"
 							/>
 						</FileConfiguration>
 					</File>
@@ -1331,6 +1331,14 @@
 				<File
 					RelativePath=".\emitter\shil_compile_slow.cpp"
 					>
+					<FileConfiguration
+						Name="Release-NoTrace|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="2"
+						/>
+					</FileConfiguration>
 				</File>
 				<File
 					RelativePath=".\emitter\shil_compile_slow.h"

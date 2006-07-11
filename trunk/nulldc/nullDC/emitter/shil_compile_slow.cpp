@@ -1028,44 +1028,31 @@ u32 non_const_hit=0;
 void emit_vmem_op_compat(emitter<>* x86e,x86IntRegType ra,
 					  x86IntRegType ro,
 					  u32 sz,u32 rw);
+
+void emit_vmem_op_compat_const(emitter<>* x86e,u32 ra,
+					x86IntRegType ro,
+					  u32 sz,u32 rw);
 u32 m_unpack_sz[3]={1,2,4};
 void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	u32 size=op->flags&3;
 
+	
 	if (INLINE_MEM_READ_CONST)
 	{
 		//if constant read , and on ram area , make it a direct mem access
 		//_watch_ mmu
 		if (!(op->flags & (FLAG_R0|FLAG_GBR)))
-		{//[reg2] form
+		{//[reg2+imm] form
 			assert(op->flags & FLAG_IMM1);
 
 			if (!(op->flags & FLAG_REG2))
-			{	//[imm1]
-				assert(0==(op->flags & FLAG_REG2));
-				if (IsOnRam(op->imm1))
-				{
-					if (block->IsMemLocked(op->imm1))
-						const_hit++;
-					else
-						non_const_hit++;
-
-					if (size==0)
-					{
-						SaveReg(op->reg1,(s8 *)GetMemPtr(op->imm1,1));
-					}
-					else 	if (size==1)
-					{
-						SaveReg(op->reg1,(s16*)GetMemPtr(op->imm1,2));
-					}
-					else 	if (size==2)
-					{
-						SaveReg(op->reg1,(u32*)GetMemPtr(op->imm1,4));
-					}
-					MarkDirty(op->reg1);
-					return;
-				}
+			{	//[imm1] form
+				x86IntRegType rall=LoadReg(EDX,op->reg1);
+				emit_vmem_op_compat_const(x86e,op->imm1,rall,m_unpack_sz[size],0);
+				SaveReg(op->reg1,rall);
+				MarkDirty(op->reg1);
+				return;
 			}
 		}
 	}
@@ -1097,6 +1084,20 @@ void __fastcall shil_compile_writem(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	
 	u32 size=op->flags&3;
+
+	//if constant read , and on ram area , make it a direct mem access
+	//_watch_ mmu
+	if (!(op->flags & (FLAG_R0|FLAG_GBR)))
+	{//[reg2+imm] form
+		assert(op->flags & FLAG_IMM1);
+
+		if (!(op->flags & FLAG_REG2))
+		{	//[imm1] form
+			x86IntRegType rall=LoadReg(EDX,op->reg1);
+			emit_vmem_op_compat_const(x86e,op->imm1,rall,m_unpack_sz[size],1);
+			return;
+		}
+	}
 
 	readwrteparams(op);
 
@@ -2770,4 +2771,107 @@ void emit_vmem_op_compat(emitter<>* x86e,x86IntRegType ra,
 	}
 	//ret;
 	x86e->x86SetJ8(rw_end);
+}
+
+void emit_vmem_op_compat_const(emitter<>* x86e,u32 ra,
+					x86IntRegType ro,
+					  u32 sz,u32 rw)
+{
+	void* p_RWF_table=0;
+	if (rw==0)
+	{
+		if (sz==1)
+			p_RWF_table=&_vmem_RF8[0];
+		else if (sz==2)
+			p_RWF_table=&_vmem_RF16[0];
+		else if (sz==4)
+			p_RWF_table=&_vmem_RF32[0];
+	}
+	else
+	{
+		if (sz==1)
+			p_RWF_table=&_vmem_WF8[0];
+		else if (sz==2)
+			p_RWF_table=&_vmem_WF16[0];
+		else if (sz==4)
+			p_RWF_table=&_vmem_WF32[0];
+	}
+
+	u32 upper=ra>>16;
+
+	void * t =_vmem_MemInfo[upper];
+
+
+	u32 lower=ra& 0xFFFF;
+
+	if ((((u32)t) & 0xFFFF0000)==0)
+	{
+
+		if (rw==1)
+		{
+			
+			if (ro!=EDX)
+				x86e->MOV32RtoR(EDX,ro);
+		}
+
+		x86e->MOV32ItoR(ECX,ra);
+
+		u32 entry=((u32)t)>>2;
+
+		x86e->CALLFunc(((u32**)p_RWF_table)[entry]);
+		if (rw==0)
+		{
+			if (sz==1)
+			{
+				x86e->MOVSX32R8toR(ro,EAX);
+			}
+			else if (sz==2)
+			{
+				x86e->MOVSX32R16toR(ro,EAX);
+			}
+			else if (sz==4)
+			{
+				if (ro!=EAX)
+					x86e->MOV32RtoR(ro,EAX);
+			}
+		}
+	}
+	else
+	{
+		if (rw==1)
+		{
+			void* paddr=&((u8*)t)[lower];
+			
+			if (sz==1)
+			{	//copy to eax :p
+				if (ro!=EDX)
+					x86e->MOV32RtoR(EDX,ro);
+				x86e->MOV8RtoM((u8*)paddr,EDX);
+			}
+			else if (sz==2)
+			{	//,dx
+				x86e->MOV16RtoM((u16*)paddr,ro);
+			}
+			else if (sz==4)
+			{	//,edx
+				x86e->MOV32RtoM((u32*)paddr,ro);
+			}
+		}
+		else
+		{
+			void* paddr=&((u8*)t)[lower];
+			if (sz==1)
+			{
+				x86e->MOVSX32M8toR(ro,(u8*)paddr);
+			}
+			else if (sz==2)
+			{
+				x86e->MOVSX32M16toR(ro,(u16*)paddr);
+			}
+			else if (sz==4)
+			{
+				x86e->MOV32MtoR(ro,(u32*)paddr);
+			}
+		}
+	}
 }

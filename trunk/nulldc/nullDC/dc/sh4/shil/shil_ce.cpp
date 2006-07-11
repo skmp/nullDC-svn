@@ -92,9 +92,11 @@ shilh(fcmp);
 bool Inited_ce_pass=false;
 struct RegData
 {
-	u32 RegValue;
-	u32 RB_value;
+	u32 RegValue;//Current reg value (if IsConstant is true)
+	u32 RB_value;//last value writen back onto the register (exists olny of IsRB is true)
+
 	bool IsConstant;
+	bool IsRB;
 };
 
 RegData shil_ce_gpr[16];
@@ -157,52 +159,71 @@ void Init_ce()
 	SetShilHanlder(shil_opcodes::fcmp,shil_ce_fcmp);
 }
 
+bool ce_CanBeConst(u8 reg)
+{
+	return reg<16;
+}
 
 bool ce_IsConst(u8 reg)
 {
-	if (reg<16)
+	if (ce_CanBeConst(reg))
 		return shil_ce_gpr[reg].IsConstant;
 	else
 		return false;
 }
 
-bool ce_CanBeConst(u8 reg)
-{
-	return reg<16;
-}
 u32 ce_GetConst(u8 reg)
 {
-	if (reg<16)
+	if (ce_CanBeConst(reg))
 		return shil_ce_gpr[reg].RegValue;
 	else
 		return false;
 }
+void ce_SetConst(u8 reg,u32 value)
+{
+	if (ce_IsConst(reg))
+	{
+		shil_ce_gpr[reg].RegValue=value;
+	}
+	else
+		__asm int 3;
+}
 void ce_MakeConst(u8 reg,u32 value)
 {
-	if (reg<16)
+	if (ce_CanBeConst(reg))
 	{
-		//if (shil_ce_gpr[reg].IsConstant==false)
+		if (shil_ce_gpr[reg].IsConstant==false)
 		{
 			shil_ce_gpr[reg].IsConstant=true;
 			shil_ce_gpr[reg].RegValue=value;
-			//shil_ce_gpr[reg].RegValue
+			shil_ce_gpr[reg].IsRB=false;
+		}
+		else
+		{
+			shil_ce_gpr[reg].RegValue=value;
 		}
 	}
 }
 void ce_KillConst(u8 reg)
 {
-	if (reg<16)
+	if (ce_CanBeConst(reg))
+	{
 		shil_ce_gpr[reg].IsConstant=false;
+		shil_ce_gpr[reg].IsRB=false;
+	}
 }
 void ce_WriteBack(u8 reg,shil_stream* il)
 {
 	if (ce_IsConst(reg))
 	{
-		//if (shil_ce_gpr[reg].RegValue!=shil_ce_gpr[reg].RB_value)
+		if ((shil_ce_gpr[reg].IsRB==false) || (shil_ce_gpr[reg].RegValue!=shil_ce_gpr[reg].RB_value))
 		{
 			il->mov((Sh4RegType)reg,ce_GetConst(reg));
-			shil_ce_gpr[reg].RB_value=shil_ce_gpr[reg].RegValue;
+			shil_ce_gpr[reg].RB_value=ce_GetConst(reg);
+			shil_ce_gpr[reg].IsRB=true;
 		}
+		//else
+		//	__asm int 3;
 	}
 }
 void ce_WriteBack_aks(u8 reg,shil_stream* il)
@@ -251,8 +272,8 @@ bool shil_optimise_pass_ce(rec_v1_BasicBlock* bb)
 
 
 
-//	if (rv)
-//		printf("Optimised block 0x%X , %d opts\n",bb->start,opt);
+	if (rv)
+		printf("Optimised block 0x%X , %d opts\n",bb->start,opt);
 
 	return ce_re_run;
 }
@@ -284,43 +305,48 @@ shilh(adc)
 	DefHanlder(op,bb,il);
 	return false;
 }
+#define NormBinaryOp(oppstrrr)\
+if ((op->flags & FLAG_REG2) && (ce_IsConst(op->reg2)))\
+	{\
+		op->imm1=ce_GetConst(op->reg2);\
+		op->flags|=FLAG_IMM1;\
+		op->flags&=~FLAG_REG2;\
+	}\
+	\
+	if (ce_IsConst(op->reg1))\
+	{\
+		if ((op->flags & FLAG_IMM1))\
+		{\
+			ce_SetConst(op->reg1,ce_GetConst(op->reg1) oppstrrr op->imm1);\
+			return true;\
+		}\
+		else\
+		{\
+			/*kill our nice const ;(*/\
+			ce_WriteBack_aks(op->reg1,il);\
+		}\
+	}\
+	else\
+	{\
+		ce_WriteBack_aks(op->reg1,il);\
+		ce_WriteBack(op->reg2,il);\
+	}\
+
+		//reg1 has to be writen back , and its no more const 
+		//-> its not const to start with :p not realy needed here
+		//----*----\
+		//reg2 has to be writen back , but it will remain constant ;)
+		//-> not needed , if const , the reg1,imm1 form is used
 shilh(add)
 {
-	DefHanlder(op,bb,il);
-	return false;
-	if (ce_IsConst(op->reg2))
-	{
-		op->imm1=ce_GetConst(op->reg2);
-		op->flags|=FLAG_IMM1;
-		op->flags&=~FLAG_REG2;
-	}
-
-	if (ce_IsConst(op->reg1))
-	{
-		if ((op->flags & FLAG_IMM1))
-		{
-			ce_MakeConst(op->reg1,ce_GetConst(op->reg1)+op->imm1);
-			return true;
-		}
-		else
-		{
-			//something unkown is added
-			ce_WriteBack_aks(op->reg1,il);
-		}
-	}
-	else
-	{
-		//reg1 has to be writen back , and its no more const
-		ce_WriteBack_aks(op->reg1,il);
-		//reg2 has to be writen back , but it may remain constant ;)
-		ce_WriteBack(op->reg2,il);
-	}
 	//DefHanlder(op,bb,il);
+	NormBinaryOp(+);
 	return false;
 }
 shilh(and)
 {
-	DefHanlder(op,bb,il);
+	//DefHanlder(op,bb,il);
+	NormBinaryOp(&);
 	return false;
 }
 shilh(cmp)
@@ -328,41 +354,7 @@ shilh(cmp)
 	DefHanlder(op,bb,il);
 	return false;
 }
-shilh(fabs)
-{
-	DefHanlder(op,bb,il);
-	return false;
-}
-shilh(fadd)
-{
-	DefHanlder(op,bb,il);
-	return false;
-}
-shilh(fdiv)
-{
-	DefHanlder(op,bb,il);
-	return false;
-}
-shilh(fmac)
-{
-	DefHanlder(op,bb,il);
-	return false;
-}
-shilh(fmul)
-{
-	DefHanlder(op,bb,il);
-	return false;
-}
-shilh(fneg)
-{
-	DefHanlder(op,bb,il);
-	return false;
-}
-shilh(fsub)
-{
-	DefHanlder(op,bb,il);
-	return false;
-}
+
 shilh(LoadT)
 {
 	DefHanlder(op,bb,il);
@@ -379,7 +371,7 @@ shilh(mov)
 	bool rv=false;
 	//DefHanlder(op,bb,il);
 	if (op->flags & FLAG_IMM1)
-	{
+	{	//reg1=imm1
 		//reg1 gets a known value
 		if (ce_CanBeConst(op->reg1))
 		{
@@ -389,15 +381,11 @@ shilh(mov)
 		}
 		else
 		{
-			ce_WriteBack(op->reg2,il);
 			ce_KillConst(op->reg1);
 		}
 	}
 	else
-	{
-		/*ce_WriteBack(op->reg2,il);
-		ce_KillConst(op->reg1);
-		return false;*/
+	{	//reg1=reg2
 		if (ce_IsConst(op->reg2) && ce_CanBeConst(op->reg1))
 		{	//reg1 gets a known value
 			ce_MakeConst(op->reg1, ce_GetConst(op->reg2));
@@ -440,7 +428,8 @@ shilh(not)
 }
 shilh(or)
 {
-	DefHanlder(op,bb,il);
+	//DefHanlder(op,bb,il);
+	NormBinaryOp( | );
 	return false;
 }
 shilh(rcl)
@@ -641,7 +630,8 @@ shilh(shr)
 }
 shilh(sub)
 {
-	DefHanlder(op,bb,il);
+	//DefHanlder(op,bb,il);
+	NormBinaryOp( - );
 	return false;
 }
 shilh(swap)
@@ -654,10 +644,10 @@ shilh(test)
 	DefHanlder(op,bb,il);
 	return false;
 }
-
 shilh(xor)
 {
-	DefHanlder(op,bb,il);
+	//DefHanlder(op,bb,il);
+	NormBinaryOp( ^ );
 	return false;
 }
 shilh(jcond)
@@ -671,6 +661,58 @@ shilh(jmp)
 	return false;
 }
 shilh(mul)
+{
+	DefHanlder(op,bb,il);
+	return false;
+}
+shilh(div32)
+{
+	/*if (ce_IsConst((u8)op->imm1))
+	{
+		il->mov((Sh4RegType)(u8)op->imm1,ce_GetConst((u8)op->imm1));
+	}*/
+	ce_WriteBack_aks(op->reg1,il);
+	ce_WriteBack_aks(op->reg2,il);
+	ce_WriteBack_aks(op->imm1,il);
+	DefHanlder(op,bb,il);
+	return false;
+}
+shilh(fcmp)
+{
+	DefHanlder(op,bb,il);
+	return false;
+}
+shilh(fabs)
+{
+	DefHanlder(op,bb,il);
+	return false;
+}
+shilh(fadd)
+{
+	DefHanlder(op,bb,il);
+	return false;
+}
+shilh(fdiv)
+{
+	DefHanlder(op,bb,il);
+	return false;
+}
+shilh(fmac)
+{
+	DefHanlder(op,bb,il);
+	return false;
+}
+shilh(fmul)
+{
+	DefHanlder(op,bb,il);
+	return false;
+}
+shilh(fneg)
+{
+	DefHanlder(op,bb,il);
+	return false;
+}
+shilh(fsub)
 {
 	DefHanlder(op,bb,il);
 	return false;
@@ -706,23 +748,6 @@ shilh(fsca)
 	return false;
 }
 shilh(fsrra)
-{
-	DefHanlder(op,bb,il);
-	return false;
-}
-shilh(div32)
-{
-	/*if (ce_IsConst((u8)op->imm1))
-	{
-		il->mov((Sh4RegType)(u8)op->imm1,ce_GetConst((u8)op->imm1));
-	}*/
-	ce_WriteBack_aks(op->reg1,il);
-	ce_WriteBack_aks(op->reg2,il);
-	ce_WriteBack_aks(op->imm1,il);
-	DefHanlder(op,bb,il);
-	return false;
-}
-shilh(fcmp)
 {
 	DefHanlder(op,bb,il);
 	return false;
