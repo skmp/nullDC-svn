@@ -272,8 +272,8 @@ bool shil_optimise_pass_ce(rec_v1_BasicBlock* bb)
 
 
 
-	if (rv)
-		printf("Optimised block 0x%X , %d opts\n",bb->start,opt);
+	//if (rv)
+	//	printf("Optimised block 0x%X , %d opts\n",bb->start,opt);
 
 	return ce_re_run;
 }
