@@ -1347,6 +1347,14 @@
 				<File
 					RelativePath=".\emitter\shil_to_text.cpp"
 					>
+					<FileConfiguration
+						Name="Release-NoTrace|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"
+						/>
+					</FileConfiguration>
 				</File>
 				<Filter
 					Name="regalloc"

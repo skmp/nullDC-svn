@@ -159,6 +159,15 @@ void Init_ce()
 	SetShilHanlder(shil_opcodes::fcmp,shil_ce_fcmp);
 }
 
+void ce_die(char* reason)
+{
+	if (reason)
+		printf("C.E. pass : die [%s]\n",reason);
+	else
+		printf("C.E. pass : die\n");
+
+	__asm int 3;
+}
 bool ce_CanBeConst(u8 reg)
 {
 	return reg<16;
@@ -186,7 +195,7 @@ void ce_SetConst(u8 reg,u32 value)
 		shil_ce_gpr[reg].RegValue=value;
 	}
 	else
-		__asm int 3;
+		ce_die("ce_SetConst : can't set const when reg is not const");
 }
 void ce_MakeConst(u8 reg,u32 value)
 {
@@ -203,6 +212,8 @@ void ce_MakeConst(u8 reg,u32 value)
 			shil_ce_gpr[reg].RegValue=value;
 		}
 	}
+	else
+		ce_die("ce_MakeConst : can't create const when reg can't be const.tracked");
 }
 void ce_KillConst(u8 reg)
 {
@@ -222,8 +233,6 @@ void ce_WriteBack(u8 reg,shil_stream* il)
 			shil_ce_gpr[reg].RB_value=ce_GetConst(reg);
 			shil_ce_gpr[reg].IsRB=true;
 		}
-		//else
-		//	__asm int 3;
 	}
 }
 void ce_WriteBack_aks(u8 reg,shil_stream* il)
@@ -233,7 +242,7 @@ void ce_WriteBack_aks(u8 reg,shil_stream* il)
 }
 bool ce_re_run;
 //Optimisation pass mainloop
-bool shil_optimise_pass_ce(rec_v1_BasicBlock* bb)
+u32 shil_optimise_pass_ce_main(rec_v1_BasicBlock* bb)
 {
 	bool rv=false;
 	ce_re_run=false;
@@ -242,6 +251,8 @@ bool shil_optimise_pass_ce(rec_v1_BasicBlock* bb)
 	Init_ce();
 
 	shil_stream il;
+
+	size_t old_Size=bb->ilst.opcodes.size();
 
 	for (size_t i=0;i<bb->ilst.opcodes.size();i++)
 	{
@@ -270,12 +281,33 @@ bool shil_optimise_pass_ce(rec_v1_BasicBlock* bb)
 		bb->ilst.op_count=bb->ilst.opcodes.size();
 	}
 
+	if (old_Size!=bb->ilst.opcodes.size())
+		ce_re_run = true;
 
+	return opt;
+}
+u64 total_ops_removed=0;
+void shil_optimise_pass_ce_driver(rec_v1_BasicBlock* bb)
+{
+	ce_re_run=true;
+	u32 rv=0;
+	u32 pass=0;
+	size_t old_Size=bb->ilst.opcodes.size();
+
+	void CompileBasicBlock_slow_c(rec_v1_BasicBlock* block,u32 pass);
+	//CompileBasicBlock_slow_c(bb,0);
+	while(ce_re_run)
+	{
+		rv+=shil_optimise_pass_ce_main(bb);
+		pass++;
+	//	CompileBasicBlock_slow_c(bb,pass);
+	}
+
+	total_ops_removed+=old_Size-bb->ilst.opcodes.size();
 
 	//if (rv)
-	//	printf("Optimised block 0x%X , %d opts\n",bb->start,opt);
+	//	printf("Optimised block 0x%X , %d opts : %d passes ,delta=%d, total removed %d \n",bb->start,rv,pass,old_Size-bb->ilst.opcodes.size(),total_ops_removed);
 
-	return ce_re_run;
 }
 //default thing to do :p
 void DefHanlder(shil_opcode* op,rec_v1_BasicBlock* bb,shil_stream* il)
@@ -284,12 +316,8 @@ void DefHanlder(shil_opcode* op,rec_v1_BasicBlock* bb,shil_stream* il)
 	{
 		if (ce_IsConst(i))
 		{
-			//ce_WriteBack_aks(i,il);
 			if (op->ReadsReg((Sh4RegType)i))
 			{
-				//write back it ;(
-				//shil_ce_gpr[i].IsConstant=false;
-				//il->mov((Sh4RegType)i,shil_ce_gpr[i].RegValue);
 				ce_WriteBack(i,il);
 			}
 			if (op->WritesReg((Sh4RegType)i))
@@ -328,10 +356,10 @@ if ((op->flags & FLAG_REG2) && (ce_IsConst(op->reg2)))\
 	}\
 	else\
 	{\
-		ce_WriteBack_aks(op->reg1,il);\
-		ce_WriteBack(op->reg2,il);\
 	}\
 
+	//ce_WriteBack_aks(op->reg1,il);
+	//	ce_WriteBack(op->reg2,il);
 		//reg1 has to be writen back , and its no more const 
 		//-> its not const to start with :p not realy needed here
 		//----*----\
@@ -369,6 +397,13 @@ shilh(mov)
 	ce_KillConst(op->reg1);
 	return false;*/
 	bool rv=false;
+	if ((op->flags & FLAG_REG2) &&  ce_IsConst(op->reg2))
+	{
+		op->flags&=~FLAG_REG2;
+		op->flags|=FLAG_IMM1;
+		op->imm1 = ce_GetConst(op->reg2);
+		ce_re_run=true;
+	}
 	//DefHanlder(op,bb,il);
 	if (op->flags & FLAG_IMM1)
 	{	//reg1=imm1
@@ -376,7 +411,7 @@ shilh(mov)
 		if (ce_CanBeConst(op->reg1))
 		{
 			ce_MakeConst(op->reg1,op->imm1);
-			ce_WriteBack_aks(op->reg1,il);/*HackME this is a bug realy fix me todo */
+			//ce_WriteBack_aks(op->reg1,il);/*HackME this is a bug realy fix me todo */
 			rv=true;
 		}
 		else
@@ -385,28 +420,10 @@ shilh(mov)
 		}
 	}
 	else
-	{	//reg1=reg2
-		if (ce_IsConst(op->reg2) && ce_CanBeConst(op->reg1))
-		{	//reg1 gets a known value
-			ce_MakeConst(op->reg1, ce_GetConst(op->reg2));
-			rv=true;
-		}
-		else
-		{
-			if (ce_IsConst(op->reg2))
-			{
-				op->flags&=~FLAG_REG2;
-				op->flags|=FLAG_IMM1;
-				op->imm1 = ce_GetConst(op->reg2);
-				ce_KillConst(op->reg1);
-			}
-			else
-			{
-				//reg1 gets an unkown value
-				ce_WriteBack(op->reg2,il);
-				ce_KillConst(op->reg1);
-			}
-		}
+	{
+		//reg1 gets an unkown value
+		ce_WriteBack(op->reg2,il);
+		ce_KillConst(op->reg1);
 	}
 
 	return rv;
@@ -555,7 +572,13 @@ shilh(readm)
 			data=ReadMem32(addr);
 		}
 
-		ce_MakeConst(op->reg1,data);
+		if (ce_CanBeConst(op->reg1))
+		{
+			ce_MakeConst(op->reg1,data);
+		}
+		else
+			il->mov((Sh4RegType)op->reg1,data);
+
 		ce_re_run=true;
 		return true;
 	}
@@ -602,11 +625,7 @@ shilh(ror)
 	DefHanlder(op,bb,il);
 	return false;
 }
-shilh(sar)
-{
-	DefHanlder(op,bb,il);
-	return false;
-}
+//uses flags from previus opcode
 shilh(SaveT)
 {
 	DefHanlder(op,bb,il);
@@ -618,14 +637,40 @@ shilh(shil_ifb)
 		ce_WriteBack_aks(i,il);
 	return false;
 }
-shilh(shl)
+//sets T if imm ==1
+shilh(sar)
 {
-	DefHanlder(op,bb,il);
+	if (ce_IsConst(op->reg1) && (op->imm1>1))
+	{
+		ce_SetConst(op->reg1,(u32)(((s32)ce_GetConst(op->reg1))>>(op->imm1)));
+		return true;
+	}
+	else
+		DefHanlder(op,bb,il);
 	return false;
 }
+//sets T if imm ==1
+shilh(shl)
+{
+	if (ce_IsConst(op->reg1) && (op->imm1>1))
+	{
+		ce_SetConst(op->reg1,ce_GetConst(op->reg1)<<(op->imm1));
+		return true;
+	}
+	else
+		DefHanlder(op,bb,il);
+	return false;
+}
+//sets T if imm ==1
 shilh(shr)
 {
-	DefHanlder(op,bb,il);
+	if (ce_IsConst(op->reg1) && (op->imm1>1))
+	{
+		ce_SetConst(op->reg1,ce_GetConst(op->reg1)>>(op->imm1));
+		return true;
+	}
+	else
+		DefHanlder(op,bb,il);
 	return false;
 }
 shilh(sub)
@@ -636,9 +681,29 @@ shilh(sub)
 }
 shilh(swap)
 {
-	DefHanlder(op,bb,il);
+	if (ce_IsConst(op->reg1))
+	{
+		u32 size=op->flags&3;
+		if (size==FLAG_8)
+		{
+			u32 ov=ce_GetConst(op->reg1);
+			ov=(ov & 0xFFFF0000) | ((ov&0xFF)<<8) | ((ov>>8)&0xFF);
+			ce_SetConst(op->reg1,ov);
+		}
+		else
+		{
+			u32 ov=ce_GetConst(op->reg1);
+			ov=(ov>>16)|(ov<<16);
+			ce_SetConst(op->reg1,ov);
+		}
+		
+		return true;
+	}
+	else
+		DefHanlder(op,bb,il);
 	return false;
 }
+//sets T
 shilh(test)
 {
 	DefHanlder(op,bb,il);

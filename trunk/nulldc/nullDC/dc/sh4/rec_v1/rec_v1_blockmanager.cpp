@@ -592,8 +592,8 @@ void nullprof_GetBlocks(nullprof_blocklist* to, u32 type,u32 count)
 			//	cpb/used_blocks[i]->cycles,
 			//	used_blocks[i]->profile_time/(1000.0f*1000.0f));
 			ConvBlockInfo(&to->blocks[i],used_blocks[i]);
-			void CompileBasicBlock_slow_c(rec_v1_BasicBlock* block);;
-			CompileBasicBlock_slow_c(used_blocks[i]);
+			//void CompileBasicBlock_slow_c(rec_v1_BasicBlock* block);;
+			//CompileBasicBlock_slow_c(used_blocks[i]);
 		}
 	}
 	else

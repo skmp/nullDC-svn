@@ -21,7 +21,9 @@ bool shil_opcode::ReadsReg(Sh4RegType reg)
 	}
 
 	if (this->flags & FLAG_REG2)
+	{
 		used |= (reg2==reg) ;
+	}
 
 	if (this->flags & FLAG_R0)
 		used |= (r0==reg) ;

@@ -2201,9 +2201,10 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 	}
 
 	//perform constan elimination as many times as needed :)
-	u32 num_itt=0;
-	while(shil_optimise_pass_ce(block) && num_itt<100)
-		num_itt++;
+	//u32 num_itt=0;
+	//while(shil_optimise_pass_ce(block) && num_itt<100)
+	//	num_itt++;
+	shil_optimise_pass_ce_driver(block);
 
 	//x86e->MOV32ItoR(ECX,(u32)block);
 	//x86e->CALLFunc(CheckBlock);
