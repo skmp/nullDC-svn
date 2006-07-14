@@ -105,7 +105,11 @@ unsigned __stdcall Answer(void* a);
 EXPORT void InitProfiller(nullprof_prof_pointers* pif)
 {
 	//thread_id=GetCurrentThreadId();
-	thr_han=OpenThread(THREAD_SUSPEND_RESUME,false,GetCurrentThreadId());
+	thr_han=OpenThread(THREAD_SUSPEND_RESUME | THREAD_SET_INFORMATION | THREAD_QUERY_INFORMATION,false,GetCurrentThreadId());
+	printf("Setting Thread anffinity to 1...");
+	DWORD_PTR arv= SetThreadAffinityMask(thr_han,1);
+	printf("rv=%d\n",(u32)arv);
+	
 	memcpy(&p_if,pif,sizeof(p_if));
 	  SocketServer in(1337,1);
 

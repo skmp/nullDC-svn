@@ -14,6 +14,12 @@ bool shil_opcode::ReadsReg(Sh4RegType reg)
 {
 	bool used=false;
 
+	if (reg==reg_fpul)
+	{
+		if (this->opcode==floatfpul)
+			return true;
+	}
+
 	if (this->flags & FLAG_REG1)
 	{
 		if (opcode!=mov && opcode!=movex && opcode!=readm)
@@ -55,7 +61,14 @@ bool shil_opcode::UpdatesReg(Sh4RegType reg)
 }
 bool shil_opcode::WritesReg(Sh4RegType reg)
 {
-		bool used=false;
+	bool used=false;
+
+	if (reg==reg_fpul)
+	{
+		if (this->opcode==ftrc)
+			return true;
+	}
+
 
 	if (this->flags & FLAG_REG1)
 	{

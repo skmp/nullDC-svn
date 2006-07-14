@@ -970,12 +970,56 @@ void __fastcall shil_compile_and(shil_opcode* op,rec_v1_BasicBlock* block)
 }
 //read-write
 void readwrteparams(shil_opcode* op)
-{
+	{
 	assert(0==(op->flags & FLAG_IMM2));
 	assert(op->flags & FLAG_REG1);
 
+	bool Loaded=false;
+
+	//can use
+	//mov ecx,imm
+	//mov ecx,r0/gbr
+	//mov ecx,r[2]
+	//lea ecx[r[2]+imm]
+	//lea ecx[r0/gbr+imm]
+	//lea ecx[r0/gbr+r[2]*1]
+	//lea ecx,[r0/gbr+r[2]*1+imm] ;)
+	//
+	if (op->flags & FLAG_IMM1)
+	{
+		Loaded=true;
+		x86e->MOV32ItoR(ECX,op->imm1);
+	}
+	if (op->flags & FLAG_REG2)
+	{
+		x86IntRegType r1=LoadReg(EAX,op->reg2);
+		if (Loaded)
+			x86e->ADD32RtoR(ECX,r1);
+		else
+			x86e->MOV32RtoR(ECX,r1);
+		Loaded=true;
+	}
+	if (op->flags & FLAG_R0)
+	{
+		x86IntRegType r1=LoadReg(EAX,r0);
+		if (Loaded)
+			x86e->ADD32RtoR(ECX,r1);
+		else
+			x86e->MOV32RtoR(ECX,r1);
+		Loaded=true;
+	}
+	if (op->flags & FLAG_GBR)
+	{
+		x86IntRegType r1=LoadReg(EAX,reg_gbr);
+		if (Loaded)
+			x86e->ADD32RtoR(ECX,r1);
+		else
+			x86e->MOV32RtoR(ECX,r1);
+		Loaded=true;
+	}
 	
-	if (!(op->flags & (FLAG_R0|FLAG_GBR)))
+
+	/*if (!(op->flags & (FLAG_R0|FLAG_GBR)))
 	{//[reg2] form
 		assert(op->flags & FLAG_IMM1);
 		assert(0==(op->flags & FLAG_IMM2));
@@ -1019,7 +1063,7 @@ void readwrteparams(shil_opcode* op)
 		{
 			x86e->ADD32ItoR(ECX,op->imm1);
 		}
-	}
+	}*/
 }
 
 u32 const_hit=0;
@@ -1037,23 +1081,19 @@ void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	u32 size=op->flags&3;
 
-	
 	if (INLINE_MEM_READ_CONST)
 	{
 		//if constant read , and on ram area , make it a direct mem access
 		//_watch_ mmu
-		if (!(op->flags & (FLAG_R0|FLAG_GBR)))
+		if (!(op->flags & (FLAG_R0|FLAG_GBR|FLAG_REG2)))
 		{//[reg2+imm] form
 			assert(op->flags & FLAG_IMM1);
-
-			if (!(op->flags & FLAG_REG2))
-			{	//[imm1] form
-				x86IntRegType rall=LoadReg(EDX,op->reg1);
-				emit_vmem_op_compat_const(x86e,op->imm1,rall,m_unpack_sz[size],0);
-				SaveReg(op->reg1,rall);
-				MarkDirty(op->reg1);
-				return;
-			}
+			//[imm1] form
+			x86IntRegType rall=LoadReg(EDX,op->reg1);
+			emit_vmem_op_compat_const(x86e,op->imm1,rall,m_unpack_sz[size],0);
+			SaveReg(op->reg1,rall);
+			MarkDirty(op->reg1);
+			return;
 		}
 	}
 
@@ -1087,16 +1127,13 @@ void __fastcall shil_compile_writem(shil_opcode* op,rec_v1_BasicBlock* block)
 
 	//if constant read , and on ram area , make it a direct mem access
 	//_watch_ mmu
-	if (!(op->flags & (FLAG_R0|FLAG_GBR)))
+	if (!(op->flags & (FLAG_R0|FLAG_GBR|FLAG_REG2)))
 	{//[reg2+imm] form
 		assert(op->flags & FLAG_IMM1);
-
-		if (!(op->flags & FLAG_REG2))
-		{	//[imm1] form
-			x86IntRegType rall=LoadReg(EDX,op->reg1);
-			emit_vmem_op_compat_const(x86e,op->imm1,rall,m_unpack_sz[size],1);
-			return;
-		}
+		//[imm1] form
+		x86IntRegType rall=LoadReg(EDX,op->reg1);
+		emit_vmem_op_compat_const(x86e,op->imm1,rall,m_unpack_sz[size],1);
+		return;
 	}
 
 	readwrteparams(op);

@@ -183,10 +183,10 @@ bool ce_IsConst(u8 reg)
 
 u32 ce_GetConst(u8 reg)
 {
-	if (ce_CanBeConst(reg))
+	if (ce_IsConst(reg))
 		return shil_ce_gpr[reg].RegValue;
 	else
-		return false;
+		ce_die("ce_GetConst : can't get const when reg is not const");
 }
 void ce_SetConst(u8 reg,u32 value)
 {
@@ -217,7 +217,7 @@ void ce_MakeConst(u8 reg,u32 value)
 }
 void ce_KillConst(u8 reg)
 {
-	if (ce_CanBeConst(reg))
+	if (ce_IsConst(reg))
 	{
 		shil_ce_gpr[reg].IsConstant=false;
 		shil_ce_gpr[reg].IsRB=false;
@@ -300,7 +300,7 @@ void shil_optimise_pass_ce_driver(rec_v1_BasicBlock* bb)
 	{
 		rv+=shil_optimise_pass_ce_main(bb);
 		pass++;
-	//	CompileBasicBlock_slow_c(bb,pass);
+		//CompileBasicBlock_slow_c(bb,pass);
 	}
 
 	total_ops_removed+=old_Size-bb->ilst.opcodes.size();
@@ -328,11 +328,6 @@ void DefHanlder(shil_opcode* op,rec_v1_BasicBlock* bb,shil_stream* il)
 	}
 }
 //optimisation hanlders ;)
-shilh(adc)
-{
-	DefHanlder(op,bb,il);
-	return false;
-}
 #define NormBinaryOp(oppstrrr)\
 if ((op->flags & FLAG_REG2) && (ce_IsConst(op->reg2)))\
 	{\
@@ -350,7 +345,6 @@ if ((op->flags & FLAG_REG2) && (ce_IsConst(op->reg2)))\
 		}\
 		else\
 		{\
-			/*kill our nice const ;(*/\
 			ce_WriteBack_aks(op->reg1,il);\
 		}\
 	}\
@@ -365,6 +359,11 @@ if ((op->flags & FLAG_REG2) && (ce_IsConst(op->reg2)))\
 		//----*----\
 		//reg2 has to be writen back , but it will remain constant ;)
 		//-> not needed , if const , the reg1,imm1 form is used
+shilh(adc)
+{
+	DefHanlder(op,bb,il);
+	return false;
+}
 shilh(add)
 {
 	//DefHanlder(op,bb,il);
@@ -390,12 +389,6 @@ shilh(LoadT)
 }
 shilh(mov)
 {
-	/*DefHanlder(op,bb,il);
-	return false;*/
-
-	/*ce_WriteBack(op->reg2,il);
-	ce_KillConst(op->reg1);
-	return false;*/
 	bool rv=false;
 	if ((op->flags & FLAG_REG2) &&  ce_IsConst(op->reg2))
 	{
@@ -404,14 +397,13 @@ shilh(mov)
 		op->imm1 = ce_GetConst(op->reg2);
 		ce_re_run=true;
 	}
-	//DefHanlder(op,bb,il);
+
 	if (op->flags & FLAG_IMM1)
 	{	//reg1=imm1
 		//reg1 gets a known value
 		if (ce_CanBeConst(op->reg1))
 		{
 			ce_MakeConst(op->reg1,op->imm1);
-			//ce_WriteBack_aks(op->reg1,il);/*HackME this is a bug realy fix me todo */
 			rv=true;
 		}
 		else
@@ -446,7 +438,7 @@ shilh(not)
 shilh(or)
 {
 	//DefHanlder(op,bb,il);
-	NormBinaryOp( | );
+	NormBinaryOp(|);
 	return false;
 }
 shilh(rcl)
@@ -462,15 +454,11 @@ shilh(rcr)
 //ReadMem 
 u32 GetRamReadAdr(shil_opcode* op)
 {
-	if (!(op->flags & (FLAG_R0|FLAG_GBR)))
-	{//[reg2] form
-
-		if (!(op->flags & FLAG_REG2))
-		{	//[imm1]
-			if (IsOnRam(op->imm1))
-			{
-				return op->imm1;
-			}
+	if ((op->flags & (FLAG_R0|FLAG_GBR|FLAG_REG2))==0)
+	{//[imm] form
+		if (IsOnRam(op->imm1))
+		{
+			return op->imm1;
 		}
 	}
 	return 0xFFFFFFFF;
@@ -479,75 +467,53 @@ bool ce_ReadWriteParams(shil_opcode* op)
 {
 	//return false;
 	bool rv=false;
-	if (!(op->flags & (FLAG_R0|FLAG_GBR)))
-	{//[reg2 + off] form
-		if (op->flags & FLAG_REG2)
-		{	//[reg2+imm1]
-			//reg 2 is const , so it gets converted to [imm1] form
-			if (ce_IsConst(op->reg2))
-			{
-				op->flags&=~FLAG_REG2;
-				op->imm1+=ce_GetConst(op->reg2);
-				rv|=true;
-			}
-		}
-		else
-		{	//[imm1]
-			//nothing to do here
-		}
-	}
-	else
+
+	if (op->flags & FLAG_REG2)
 	{
-		//reg0/gbr[reg2+imm] form
-		bool is_c=false;
-		u32 cv=0;
-		if (op->flags & FLAG_R0)
-		{
-			if (ce_IsConst(r0))
-			{
-				cv=ce_GetConst(r0);
-				is_c=true;
-			}
-		}
-		else
-		{
-			if (ce_IsConst(reg_gbr))
-			{
-				cv=ce_GetConst(reg_gbr);
-				is_c=true;
-			}
-		}
-
-		if (is_c)
-		{
-			//we got rid of the base register :)
-			rv|=true;
-			op->flags &= ~(FLAG_R0|FLAG_GBR);
-
-			if (op->flags & FLAG_IMM1)
-				op->imm1+=cv;
-			else
-				op->imm1=cv;
-
-			op->flags |= FLAG_IMM1;
-		}
-
 		if (ce_IsConst(op->reg2))
 		{
-			//we got rid of the index register
-			rv|=true;
-			cv=ce_GetConst(op->reg2);
-			op->flags&=~FLAG_REG2;
-
+			u32 vl=ce_GetConst(op->reg2);
 			if (op->flags & FLAG_IMM1)
-				op->imm1+=cv;
+				op->imm1+=vl;
 			else
-				op->imm1=cv;
+				op->imm1=vl;
 
+			rv=true;
 			op->flags |= FLAG_IMM1;
+			op->flags&=~FLAG_REG2;
 		}
 	}
+	if (op->flags & FLAG_R0)
+	{
+		if (ce_IsConst(r0))
+		{
+			u32 vl=ce_GetConst(r0);
+			if (op->flags & FLAG_IMM1)
+				op->imm1+=vl;
+			else
+				op->imm1=vl;
 
+			rv=true;
+			op->flags |= FLAG_IMM1;
+			op->flags&=~FLAG_R0;
+		}
+	}
+	if (op->flags & FLAG_GBR)
+	{
+		if (ce_IsConst(reg_gbr))
+		{
+			u32 vl=ce_GetConst(reg_gbr);
+			if (op->flags & FLAG_IMM1)
+				op->imm1+=vl;
+			else
+				op->imm1=vl;
+
+			rv=true;
+			op->flags |= FLAG_IMM1;
+			op->flags&=~FLAG_GBR;
+		}
+	}
+	
 	return rv;
 }
 shilh(readm)
@@ -559,6 +525,8 @@ shilh(readm)
 	{
 		u32 size=op->flags&3;
 		u32 data=0;
+		if (size==FLAG_64)
+			__asm int 3;
 		if (size==0)
 		{
 			data=(u32)(s32)(s8)ReadMem8(addr);
@@ -586,16 +554,12 @@ shilh(readm)
 	//even if we did optimise smth , a readback may be needed
 	//since it uses opcode flags to decode what to write back , it should't cause any non needed write backs ;)
 	DefHanlder(op,bb,il);
-	//we did chainge smth :0
-	if (rv)
-	{
-		//push the new opcode
-		il->opcodes.push_back(*op);
-		//we optimised something , re run the ce pass once more
-		ce_re_run=true;
-	}
 
-	return rv;
+	//we did chainge smth :0
+	if (rv)//we optimised something , re run the ce pass once more
+		ce_re_run=true;
+
+	return false;
 }
 shilh(writem)
 {
@@ -605,15 +569,10 @@ shilh(writem)
 	DefHanlder(op,bb,il);
 
 	//we did chainge smth :0
-	if (rv)
-	{
-		//push the new opcode
-		il->opcodes.push_back(*op);
-		//we optimised something , re run the ce pass once more
+	if (rv)//we optimised something , re run the ce pass once more
 		ce_re_run=true;
-	}
 
-	return rv;
+	return false;
 }
 shilh(rol)
 {
@@ -643,6 +602,7 @@ shilh(sar)
 	if (ce_IsConst(op->reg1) && (op->imm1>1))
 	{
 		ce_SetConst(op->reg1,(u32)(((s32)ce_GetConst(op->reg1))>>(op->imm1)));
+		__asm int 3;
 		return true;
 	}
 	else
@@ -673,10 +633,20 @@ shilh(shr)
 		DefHanlder(op,bb,il);
 	return false;
 }
+//sets T if used as DT
 shilh(sub)
 {
-	//DefHanlder(op,bb,il);
-	NormBinaryOp( - );
+	//NormBinaryOp(-);
+	//that's all we can do for now
+	//DT uses sub , and it needs flags to be ok after it
+	if ((op->flags & FLAG_REG2) && (ce_IsConst(op->reg2)))
+	{
+		op->imm1=ce_GetConst(op->reg2);
+		op->flags|=FLAG_IMM1;
+		op->flags&=~FLAG_REG2;
+	}
+	
+	DefHanlder(op,bb,il);
 	return false;
 }
 shilh(swap)
@@ -711,8 +681,7 @@ shilh(test)
 }
 shilh(xor)
 {
-	//DefHanlder(op,bb,il);
-	NormBinaryOp( ^ );
+	NormBinaryOp(^);
 	return false;
 }
 shilh(jcond)
