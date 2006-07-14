@@ -56,28 +56,28 @@ INT_PTR CALLBACK sch( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 	case WM_KEYDOWN:
 		switch(wParam)
 		{
-		case 'Z':
+		case 'V':
 			kcode &= 0xFFFF - key_CONT_A;
 			break;
 		case 'X':
 			kcode &= 0xFFFF - key_CONT_B;
 			break;
-		case 'C':
+		case 'B':
 			kcode &= 0xFFFF - key_CONT_C;
 			break;
-		case 'V':
+		case 'N':
 			kcode &= 0xFFFF - key_CONT_D;
 			break;
 		
-		case 'B':
+		case 'M':
 			kcode &= 0xFFFF - key_CONT_Z;
 			break;
 		
-		case 'N':
+		case 'Z':
 			kcode &= 0xFFFF - key_CONT_Y;
 			break;
 		
-		case 'M':
+		case 'C':
 			kcode &= 0xFFFF - key_CONT_X;
 			break;
 
@@ -98,17 +98,17 @@ INT_PTR CALLBACK sch( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 			kcode &= 0xFFFF - key_CONT_DPAD_RIGHT;
 			break;
 
-		case 'K'://analog right
+		case 'L'://analog right
 			joyx= +126;
 			break;
-		case 'H'://alalog left
+		case 'J'://alalog left
 			joyx= -126;
 			break;
 
-		case 'U'://analog up
+		case 'I'://analog up
 			joyy= -126;
 			break;
-		case 'J'://analog down
+		case 'K'://analog down
 			joyy= +126;
 			break;
 
@@ -124,28 +124,28 @@ INT_PTR CALLBACK sch( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 	case WM_KEYUP:
 		switch(wParam)
 		{
-		case 'Z':
+		case 'V':
 			kcode |= key_CONT_A;
 			break;
 		case 'X':
 			kcode |= key_CONT_B;
 			break;
-		case 'C':
+		case 'B':
 			kcode |= key_CONT_C;
 			break;
-		case 'V':
+		case 'N':
 			kcode |= key_CONT_D;
 			break;
 
-		case 'B':
+		case 'M':
 			kcode |= key_CONT_Z;
 			break;
 		
-		case 'N':
+		case 'Z':
 			kcode |= key_CONT_Y;
 			break;
 		
-		case 'M':
+		case 'C':
 			kcode |= key_CONT_X;
 			break;
 
@@ -166,17 +166,17 @@ INT_PTR CALLBACK sch( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 			kcode |= key_CONT_DPAD_RIGHT;
 			break;
 
-		case 'K'://analog right
+		case 'J'://analog right
 			joyx=0;
 			break;
-		case 'H'://alalog left
+		case 'L'://alalog left
 			joyx=0;
 			break;
 
-		case 'U'://analog up
+		case 'I'://analog up
 			joyy=0;
 			break;
-		case 'J'://analog down
+		case 'K'://analog down
 			joyy=0;
 			break;
 
@@ -724,19 +724,19 @@ EXPORT void dcGetMapleInfo(maple_plugin_if* info)
 	info->Devices[0].DestroyInstance=DestroyInstance;
 	info->Devices[0].type=0;//Controller
 	info->Devices[0].id=0;
-	strcpy(info->Devices[0].name,"teh l33t DC controller (" __DATE__ ")");
+	strcpy(info->Devices[0].name,"nullDC DC controller [WinHook] (" __DATE__ ")");
  
 	info->Devices[1].CreateInstance=CreateInstance;
 	info->Devices[1].DestroyInstance=DestroyInstance;
 	info->Devices[1].type=1;//Vmu
 	info->Devices[1].id=1;
-	strcpy(info->Devices[1].name,"teh l33t VMU(" __DATE__ ")");
+	strcpy(info->Devices[1].name,"nullDC VMU (" __DATE__ ")");
 
 	info->Devices[2].CreateInstance=CreateInstance;
 	info->Devices[2].DestroyInstance=DestroyInstance;
 	info->Devices[2].type=0;//Controller
 	info->Devices[2].id=0;
-	strcpy(info->Devices[2].name,"teh null DC controller [no input](" __DATE__ ")");
+	strcpy(info->Devices[2].name,"nullDC DC controller [no input](" __DATE__ ")");
 
 	info->Devices[3].CreateInstance=0;
 	info->Devices[3].DestroyInstance=0;

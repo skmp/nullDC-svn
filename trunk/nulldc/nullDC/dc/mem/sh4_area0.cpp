@@ -301,7 +301,7 @@ void map_area0_init()
 	//									  WriteMem8_area0,WriteMem16_area0,WriteMem32_area0);
 	
 	area0_handler_00_1F = _vmem_register_handler_Template2(ReadMem_area0,WriteMem_area0,0x0000,0x001F);
-	area0_handler_20_21 = _vmem_register_handler_Template2(ReadMem_area0,WriteMem_area0,0x0020,0x001F);
+	area0_handler_20_21 = _vmem_register_handler_Template2(ReadMem_area0,WriteMem_area0,0x0020,0x0021);
 	area0_handler_5F_5F = _vmem_register_handler_Template2(ReadMem_area0,WriteMem_area0,0x005F,0x005F);
 	area0_handler_60_60 = _vmem_register_handler_Template2(ReadMem_area0,WriteMem_area0,0x0060,0x0060);
 	area0_handler_61_6F = _vmem_register_handler_Template2(ReadMem_area0,WriteMem_area0,0x0061,0x006F);

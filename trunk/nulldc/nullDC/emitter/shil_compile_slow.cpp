@@ -320,6 +320,8 @@ INLINE x86IntRegType LoadRegCache_reg_nodata(u32 reg)
 
 	return GPR_Error;
 }
+u32 ssenoalloc=0;
+u32 ssealloc=0;
 void AllocateRegisters(rec_v1_BasicBlock* block)
 {
 	if(REG_ALLOC_X86)
@@ -337,6 +339,7 @@ void AllocateRegisters(rec_v1_BasicBlock* block)
 		u32 op_count=block->ilst.op_count;
 		shil_opcode* curop;
 
+		bool fpu_alloc=false;
 		for (u32 j=0;j<op_count;j++)
 		{
 			curop=&block->ilst.opcodes[j];
@@ -352,16 +355,35 @@ void AllocateRegisters(rec_v1_BasicBlock* block)
 				if (curop->WritesReg((Sh4RegType) (r0+i)))
 					used[i].cnt+=9;
 			}
+			for (int i=fr_0;i<=fr_15;i++)
+			{
+				if (curop->ReadsReg((Sh4RegType)i))
+					fpu_alloc=true;
+				if (curop->WritesReg((Sh4RegType)i))
+					fpu_alloc=true;
+			}
 		}
 
 		bubble_sort(used,16);
 
 		for (u32 i=0;i<REG_ALLOC_COUNT;i++)
 		{
-			if (used[i].cnt<5)
+			if (used[i].cnt<14)
 				break;
 			r_alloced[used[i].reg].x86reg=reg_to_alloc[i];
 		}
+
+		if (block->flags.FpuIsVector)
+			ssenoalloc++;
+		else
+		{
+			if (fpu_alloc)
+				ssealloc++;	
+		}
+		u32 scale=ssenoalloc>ssealloc?ssealloc:ssenoalloc;
+		if (scale==0)
+			scale=1;
+	//	printf("FA:FD %f:%f , %f%% alloc\n",(float)ssenoalloc/scale,(float)ssealloc/scale,(float)ssealloc/(ssealloc+ssenoalloc));
 	}
 }
 void LoadRegisters()
@@ -2241,7 +2263,7 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 	//u32 num_itt=0;
 	//while(shil_optimise_pass_ce(block) && num_itt<100)
 	//	num_itt++;
-	shil_optimise_pass_ce_driver(block);
+	//shil_optimise_pass_ce_driver(block);
 
 	//x86e->MOV32ItoR(ECX,(u32)block);
 	//x86e->CALLFunc(CheckBlock);
