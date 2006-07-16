@@ -25,6 +25,8 @@
 //#include "sh4.h"
 
 #include "drkPvr.h"
+void SaveSSERegs();
+void LoadSSERegs();
 #define g_uVideoMemorySize 0x800000
 
 extern int CurrentFrame;

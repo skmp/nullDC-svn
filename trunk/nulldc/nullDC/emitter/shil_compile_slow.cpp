@@ -10,7 +10,8 @@
 #include "dc\mem\sh4_mem.h"
 #include "regalloc\x86_sseregalloc.h"
 
-FloatRegAllocator* falloc;
+FloatRegAllocator*		fra;
+IntegerRegAllocator*	ira;
 //TEMP!!!
 emitter<>* x86e;
 shil_scs shil_compile_slow_settings=
@@ -54,11 +55,9 @@ u32 T_bit_value;
 bool T_Edited;
 
 u32 reg_pc_temp_value;
-rec_v1_BasicBlock* rec_v1_pCurrentBlock;
-u32 IsRamAddr[0x100];
+
 int block_count=0;
 
-#ifdef X86
 //profiling related things
 u64 ifb_calls=0;
 void profile_ifb_call()
@@ -169,7 +168,7 @@ bool Ensure32()
 
 //Register managment related
 //Get a pointer to a reg
-INLINE u32* GetRegPtr(u32 reg)
+u32* GetRegPtr(u32 reg)
 {
 	if (reg==Sh4RegType::reg_pc_temp)
 		return &reg_pc_temp_value;
@@ -178,479 +177,18 @@ INLINE u32* GetRegPtr(u32 reg)
 	assert(rv!=0);
 	return rv;
 }
-INLINE u32* GetRegPtr(Sh4RegType reg)
+u32* GetRegPtr(Sh4RegType reg)
 {
 	return GetRegPtr((u8)reg);
 }
 
+
 //REGISTER ALLOCATION
-
-struct RegAllocInfo
-{
-	x86IntRegType x86reg;
-	bool InReg;
-	bool Dirty;
-};
- RegAllocInfo r_alloced[16];
-//compile a basicblock
-
-struct sort_temp
-{
-	int cnt;
-	int reg;
-};
-
-//ebx, ebp, esi, and edi are preserved
-
-
-
-x86IntRegType reg_to_alloc[4]=
-{
-	EBX,
-	EBP,
-	ESI,
-	EDI
-};
-
-//xmm0 is reserved for math/temp
-x86SSERegType reg_to_alloc_xmm[7]=
-{
-	XMM1,
-	XMM2,
-	XMM3,
-	XMM4,
-	XMM5,
-	XMM6,
-	XMM7,
-};
-
-//implement register allocators on a class , so we can swap em around?
-//methods needed
-//
-//DoAllocation		: do allocation on the block
-//BeforeEmit		: generate any code needed before the main emittion begins (other register allocators may have emited code tho)
-//BeforeTrail		: generate any code needed after the main emittion has ended (other register allocators may emit code after that tho)
-//AfterTrail		: generate code after the native block end (after the ret) , can be used to emit helper functions (other register allocators may emit code after that tho)
-//IsRegAllocated	: *couh* yea .. :P
-//GetRegister		: Get the register , needs flag if it's read or write. Carefull w/ register state , we may need to implement state push/pop
-//PushRegister		: push register to stack (if allocated)
-//PopRegister		: pop register from stack (if allocated)
-//FlushRegister		: write reg to reg location , and dealloc it
-//WriteBackRegister	: write reg to reg location
-//ReloadRegister	: read reg from reg location , discard old result
-
-void bubble_sort(sort_temp numbers[] , int array_size)
-{
-  int i, j;
-  sort_temp temp;
-  for (i = (array_size - 1); i >= 0; i--)
-  {
-    for (j = 1; j <= i; j++)
-	{
-		if (numbers[j-1].cnt < numbers[j].cnt)
-		{
-			temp = numbers[j-1];
-			numbers[j-1] = numbers[j];
-			numbers[j] = temp;
-		}
-	}
-  }
-}
-INLINE bool IsRegCached(u32 reg)
-{
-	if (reg<=r15)
-	{
-		if (REG_ALLOC_X86)
-		{
-			return r_alloced[reg].x86reg!=GPR_Error;
-		}
-		else
-		{
-			return false;
-		}
-	}
-	else
-		return false;
-}
-INLINE void FlushRegCache_reg(u32 reg)
-{
-	if (IsRegCached(reg) && r_alloced[reg].InReg)
-	{
-		if (r_alloced[reg].Dirty)
-			x86e->MOV32RtoM(GetRegPtr(reg),r_alloced[reg].x86reg);
-		/*else
-			printf("red r%d not dirty ;)\n",reg);*/
-		r_alloced[reg].InReg=false;
-		r_alloced[reg].Dirty=false;
-	}
-}
-
-INLINE void MarkDirty(u32 reg)
-{
-	if (IsRegCached(reg))
-	{
-		r_alloced[reg].Dirty=true;
-	}
-}
-INLINE x86IntRegType LoadRegCache_reg(u32 reg)
-{
-	if (IsRegCached(reg))
-	{
-		if (r_alloced[reg].InReg==false )
-		{
-			r_alloced[reg].InReg=true;
-			x86e->MOV32MtoR(r_alloced[reg].x86reg,GetRegPtr(reg));
-		}
-		return r_alloced[reg].x86reg;
-	}
-
-	return GPR_Error;
-}
-
-INLINE x86IntRegType LoadRegCache_reg_nodata(u32 reg)
-{
-	if (IsRegCached(reg))
-	{
-		if (r_alloced[reg].InReg==false )
-		{
-			r_alloced[reg].InReg=true;
-		}
-		return r_alloced[reg].x86reg;
-	}
-
-	return GPR_Error;
-}
-u32 ssenoalloc=0;
-u32 ssealloc=0;
-void AllocateRegisters(rec_v1_BasicBlock* block)
-{
-	if(REG_ALLOC_X86)
-	{
-		sort_temp used[16];
-		for (int i=0;i<16;i++)
-		{
-			used[i].cnt=0;
-			used[i].reg=r0+i;
-			r_alloced[i].x86reg=GPR_Error;
-			r_alloced[i].InReg=false;
-			r_alloced[i].Dirty=false;
-		}
-
-		u32 op_count=block->ilst.op_count;
-		shil_opcode* curop;
-
-		bool fpu_alloc=false;
-		for (u32 j=0;j<op_count;j++)
-		{
-			curop=&block->ilst.opcodes[j];
-			for (int i = 0;i<16;i++)
-			{
-				//both reads and writes , give it one more ;P
-				if ( curop->UpdatesReg((Sh4RegType) (r0+i)) )
-					used[i].cnt+=12;
-
-				if (curop->ReadsReg((Sh4RegType) (r0+i)))
-					used[i].cnt+=6;
-
-				if (curop->WritesReg((Sh4RegType) (r0+i)))
-					used[i].cnt+=9;
-			}
-			for (int i=fr_0;i<=fr_15;i++)
-			{
-				if (curop->ReadsReg((Sh4RegType)i))
-					fpu_alloc=true;
-				if (curop->WritesReg((Sh4RegType)i))
-					fpu_alloc=true;
-			}
-		}
-
-		bubble_sort(used,16);
-
-		for (u32 i=0;i<REG_ALLOC_COUNT;i++)
-		{
-			if (used[i].cnt<14)
-				break;
-			r_alloced[used[i].reg].x86reg=reg_to_alloc[i];
-		}
-
-		if (block->flags.FpuIsVector)
-			ssenoalloc++;
-		else
-		{
-			if (fpu_alloc)
-				ssealloc++;	
-		}
-		u32 scale=ssenoalloc>ssealloc?ssealloc:ssenoalloc;
-		if (scale==0)
-			scale=1;
-	//	printf("FA:FD %f:%f , %f%% alloc\n",(float)ssenoalloc/scale,(float)ssealloc/scale,(float)ssealloc/(ssealloc+ssenoalloc));
-	}
-}
-void LoadRegisters()
-{
-	if(REG_ALLOC_X86)
-	{
-		for (int i=0;i<16;i++)
-		{
-			if (IsRegCached(i))
-			{
-				LoadRegCache_reg(i);
-			}
-		}
-	}
-}
-//more helpers
-INLINE x86IntRegType LoadReg_force(x86IntRegType to,u8 reg)
-{
-	if(REG_ALLOC_X86)
-	{
-		if (reg>r15 || (!IsRegCached(reg)))
-		{
-			x86e->MOV32MtoR(to,GetRegPtr(reg));
-		}
-		else
-		{
-			x86IntRegType x86reg=LoadRegCache_reg(reg);
-			if (!(to==x86reg))
-				x86e->MOV32RtoR(to,x86reg);
-		}
-	}
-	else
-	{
-		x86e->MOV32MtoR(to,GetRegPtr(reg));
-	}
-
-	if (REG_ALLOC_T_BIT_SEPERATE)
-	{
-		if (reg==reg_sr)
-		{
-			x86e->AND32ItoR(to,(u32)~1);
-			x86e->OR32MtoR(to,&T_bit_value);
-			x86e->MOV32RtoM(GetRegPtr(reg_sr),to);//save it back to be sure :P
-			T_Edited=false;
-		}
-	}
-	return to;
-}
-
-INLINE x86IntRegType LoadReg(x86IntRegType to,u8 reg)
-{
-	if(REG_ALLOC_X86)
-	{
-		if (reg>r15 || (!IsRegCached(reg)))
-		{
-			x86e->MOV32MtoR(to,GetRegPtr(reg));
-			//return to;
-		}
-		else
-		{
-			to= LoadRegCache_reg(reg);
-		}
-	}
-	else
-	{
-		x86e->MOV32MtoR(to,GetRegPtr(reg));
-		//return to;
-	}
-	
-	if(REG_ALLOC_T_BIT_SEPERATE)
-	{
-		if (reg==reg_sr)
-		{
-			x86e->AND32ItoR(to,(u32)~1);
-			x86e->OR32MtoR(to,&T_bit_value);
-			x86e->MOV32RtoM(GetRegPtr(reg_sr),to);//save it back to be sure :P
-			T_Edited=false;
-		}
-	}
-	return to;
-}
-
-INLINE x86IntRegType LoadReg_nodata(x86IntRegType to,u8 reg)
-{
-	if(REG_ALLOC_X86)
-	{
-		if (reg>r15 || (!IsRegCached(reg)))
-		{
-			//x86e->MOV32MtoR(to,GetRegPtr(reg)); -> do nothin :P
-			return to;
-		}
-		else
-		{
-			return LoadRegCache_reg_nodata(reg);
-		}
-	}
-	else
-	{
-		return to;
-	}
-}
-
-
-INLINE void SaveReg(u8 reg,x86IntRegType from)
-{
-	MarkDirty(reg);
-	if(REG_ALLOC_X86)
-	{
-		if (reg>r15 || (!IsRegCached(reg)))
-		{
-			x86e->MOV32RtoM(GetRegPtr(reg),from);
-		}
-		else
-		{
-			x86IntRegType x86reg=LoadRegCache_reg_nodata(reg);
-			if (x86reg!=from)
-				x86e->MOV32RtoR(x86reg,from);
-		}
-	}
-	else
-	{
-		x86e->MOV32RtoM(GetRegPtr(reg),from);
-	}
-
-	if (REG_ALLOC_T_BIT_SEPERATE)
-	{
-		if (reg==reg_sr)
-		{
-			T_Edited=false;
-		}
-	}
-}
-
-INLINE void SaveReg(u8 reg,u32 from)
-{
-	MarkDirty(reg);
-	if(REG_ALLOC_X86)
-	{
-		if (reg>r15 || (!IsRegCached(reg)))
-		{
-			x86e->MOV32ItoM(GetRegPtr(reg),from);
-		}
-		else
-		{
-			x86IntRegType x86reg=LoadRegCache_reg_nodata(reg);
-			if (from==0)
-				x86e->XOR32RtoR(x86reg,x86reg);
-			else if (from ==0xFFFFFFFF)
-				x86e->MOV32ItoR(x86reg,from);//xor , dec ?
-			else
-				x86e->MOV32ItoR(x86reg,from);
-		}
-	}
-	else
-	{
-		x86e->MOV32ItoM(GetRegPtr(reg),from);
-	}
-
-	if (REG_ALLOC_T_BIT_SEPERATE)
-	{
-		if (reg==reg_sr)
-		{
-			T_Edited=false;
-		}
-	}
-}
-
-INLINE void SaveReg(u8 reg,u32* from)
-{
-	MarkDirty(reg);
-	if(REG_ALLOC_X86)
-	{
-		if (reg>r15 || (!IsRegCached(reg)))
-		{
-			x86e->MOV32MtoR(ECX,from);
-			x86e->MOV32RtoM(GetRegPtr(reg),ECX);
-		}
-		else
-		{
-			x86IntRegType x86reg=LoadRegCache_reg_nodata(reg);
-			x86e->MOV32MtoR(x86reg,from);
-		}
-	}
-	else
-	{
-		x86e->MOV32MtoR(ECX,from);
-		x86e->MOV32RtoM(GetRegPtr(reg),ECX);
-	}
-
-	if (REG_ALLOC_T_BIT_SEPERATE)
-	{
-		if (reg==reg_sr)
-		{
-			T_Edited=false;
-		}
-	}
-}
-
-INLINE void SaveReg(u8 reg,s16* from)
-{
-	MarkDirty(reg);
-	if(REG_ALLOC_X86)
-	{
-		if (reg>r15 || (!IsRegCached(reg)))
-		{
-			x86e->MOVSX32M16toR(ECX,(u16*)from);
-			x86e->MOV32RtoM(GetRegPtr(reg),ECX);
-		}
-		else
-		{
-			x86IntRegType x86reg=LoadRegCache_reg_nodata(reg);
-			x86e->MOVSX32M16toR(x86reg,(u16*)from);
-		}
-	}
-	else
-	{
-		x86e->MOVSX32M16toR(ECX,(u16*)from);
-		x86e->MOV32RtoM(GetRegPtr(reg),ECX);
-	}
-}
-
-INLINE void SaveReg(u8 reg,s8* from)
-{
-	MarkDirty(reg);
-	if(REG_ALLOC_X86)
-	{
-		if (reg>r15 || (!IsRegCached(reg)))
-		{
-			x86e->MOVSX32M8toR(ECX,(u8*)from);
-			x86e->MOV32RtoM(GetRegPtr(reg),ECX);
-		}
-		else
-		{
-			x86IntRegType x86reg=LoadRegCache_reg_nodata(reg);
-			x86e->MOVSX32M8toR(x86reg,(u8*)from);
-		}
-	}
-	else
-	{
-		x86e->MOVSX32M8toR(ECX,(u8*)from);
-		x86e->MOV32RtoM(GetRegPtr(reg),ECX);
-	}
-}
-
-INLINE void FlushRegCache()
-{
-	if(REG_ALLOC_X86)
-	{
-		for (int i=0;i<16;i++)
-		{
-			FlushRegCache_reg(i);
-		}
-	}
-	
-	if (REG_ALLOC_T_BIT_SEPERATE)
-	{
-		if (T_Edited)
-		{
-			//save T
-			LoadReg_force(EAX,reg_sr);			//ecx=sr(~1)|T
-			x86e->AND32ItoR(EAX,(u32)~1);
-			x86e->OR32MtoR(EAX,&T_bit_value);
-			SaveReg(reg_sr,EAX);
-			T_Edited=false;
-		}
-	}
-}
+#define LoadReg(to,reg) ira->GetRegister(to,reg,RA_DEFAULT)
+#define LoadReg_force(to,reg) ira->GetRegister(to,reg,RA_FORCE)
+#define LoadReg_nodata(to,reg) ira->GetRegister(to,reg,RA_NODATA)
+#define SaveReg(reg,from)	ira->SaveRegister(reg,from)
+//#define MarkDirty_(reg) ira->MarkDirty(reg);
 //Original :
 	/*
 	assert(FLAG_32==(op->flags & 3));//32b olny
@@ -683,7 +221,7 @@ INLINE void FlushRegCache()
 	if (op->flags & FLAG_IMM1)\
 	{\
 		assert(0==(op->flags & FLAG_REG2));\
-		if (IsRegCached(op->reg1))\
+		if (ira->IsRegAllocated(op->reg1))\
 		{\
 			x86IntRegType r1 = LoadReg(EAX,op->reg1);\
 			assert(r1!=EAX);\
@@ -700,11 +238,11 @@ INLINE void FlushRegCache()
 	else\
 	{\
 		assert(op->flags & FLAG_REG2);\
-		if (IsRegCached(op->reg1))\
+		if (ira->IsRegAllocated(op->reg1))\
 		{\
 			x86IntRegType r1 = LoadReg(EAX,op->reg1);\
 			assert(r1!=EAX);\
-			if (IsRegCached(op->reg2))\
+			if (ira->IsRegAllocated(op->reg2))\
 			{\
 				x86IntRegType r2 = LoadReg(EAX,op->reg2);\
 				assert(r2!=EAX);\
@@ -741,7 +279,7 @@ INLINE void FlushRegCache()
 	assert(0==(op->flags & (FLAG_IMM2)));\
 	assert(op->flags & FLAG_REG1);\
 	assert(0==(op->flags & FLAG_REG2));\
-	if (IsRegCached(op->reg1))\
+	if (ira->IsRegAllocated(op->reg1))\
 	{\
 		x86IntRegType r1=LoadReg(EAX,op->reg1);\
 		assert(r1!=EAX);\
@@ -756,7 +294,7 @@ INLINE void FlushRegCache()
 	assert(0==(op->flags & (FLAG_IMM2)));\
 	assert(op->flags & FLAG_REG1);\
 	assert(0==(op->flags & FLAG_REG2));\
-	if (IsRegCached(op->reg1))\
+	if (ira->IsRegAllocated(op->reg1))\
 	{\
 		x86IntRegType r1=LoadReg(EAX,op->reg1);\
 		assert(r1!=EAX);\
@@ -843,7 +381,7 @@ void __fastcall shil_compile_movex(shil_opcode* op,rec_v1_BasicBlock* block)
 			else
 				r1= LoadReg(ECX,op->reg1);	//get or alocate reg 1 , load data b/c it's gona be used
 
-			if (IsRegCached(op->reg2))
+			if (ira->IsRegAllocated(op->reg2))
 			{
 				x86IntRegType r2= LoadReg(EAX,op->reg2);
 				assert(r2!=EAX);//reg 2 must be allocated
@@ -863,7 +401,7 @@ void __fastcall shil_compile_movex(shil_opcode* op,rec_v1_BasicBlock* block)
 			else
 				r1= LoadReg(ECX,op->reg1);	//get or alocate reg 1 , load data b/c it's gona be used
 
-			if (IsRegCached(op->reg2))
+			if (ira->IsRegAllocated(op->reg2))
 			{
 				x86IntRegType r2= LoadReg(EAX,op->reg2);
 				assert(r2!=EAX);//reg 2 must be allocated
@@ -886,7 +424,8 @@ void __fastcall shil_compile_shil_ifb(shil_opcode* op,rec_v1_BasicBlock* block)
 	if (OpTyp[op->imm1] !=Normal)
 		SaveReg(reg_pc,op->imm2);
 	
-	FlushRegCache();
+	ira->FlushRegCache();
+	//FlushRegCache();
 
 	x86e->MOV32ItoR(ECX,op->imm1);
 	x86e->CALLFunc(OpPtr[op->imm1]);
@@ -920,75 +459,75 @@ void __fastcall shil_compile_swap(shil_opcode* op,rec_v1_BasicBlock* block)
 		x86e->ROR32ItoR(r1,16);
 		SaveReg(op->reg1,r1);
 	}
-	MarkDirty(op->reg1);
+	//MarkDirty(op->reg1);
 }
 
 void __fastcall shil_compile_shl(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_ItMoR(SHL32ItoM,SHL32ItoR,(u8)op->imm1);
-	MarkDirty(op->reg1);
+	//MarkDirty(op->reg1);
 }
 
 void __fastcall shil_compile_shr(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_ItMoR(SHR32ItoM,SHR32ItoR,(u8)op->imm1);
-	MarkDirty(op->reg1);
+	//MarkDirty(op->reg1);
 }
 
 void __fastcall shil_compile_sar(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_ItMoR(SAR32ItoM,SAR32ItoR,(u8)op->imm1);
-	MarkDirty(op->reg1);
+	//MarkDirty(op->reg1);
 }
 
 //rotates
 void __fastcall shil_compile_rcl(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_NtMoR_noimm(RCL321toM,RCL321toR);
-	MarkDirty(op->reg1);
+	//MarkDirty(op->reg1);
 }
 void __fastcall shil_compile_rcr(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_NtR_noimm(RCR321toR);
-	MarkDirty(op->reg1);
+	//MarkDirty(op->reg1);
 }
 void __fastcall shil_compile_ror(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_NtR_noimm(ROR321toR);
-	MarkDirty(op->reg1);
+	//MarkDirty(op->reg1);
 }
 void __fastcall shil_compile_rol(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_NtR_noimm(ROL321toR);
-	MarkDirty(op->reg1);
+	//MarkDirty(op->reg1);
 }
 //neg
 void __fastcall shil_compile_neg(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_NtR_noimm(NEG32R);
-	MarkDirty(op->reg1);
+	//MarkDirty(op->reg1);
 }
 //not
 void __fastcall shil_compile_not(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_NtR_noimm(NOT32R);
-	MarkDirty(op->reg1);
+	//MarkDirty(op->reg1);
 }
 //or xor and
 void __fastcall shil_compile_xor(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_RegToReg_simple(XOR32);
-	MarkDirty(op->reg1);
+	//MarkDirty(op->reg1);
 }
 void __fastcall shil_compile_or(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_RegToReg_simple(OR32);
-	MarkDirty(op->reg1);
+	//MarkDirty(op->reg1);
 }
 void __fastcall shil_compile_and(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_RegToReg_simple(AND32);
-	MarkDirty(op->reg1);
+	//MarkDirty(op->reg1);
 }
 //read-write
 void readwrteparams(shil_opcode* op)
@@ -1072,7 +611,7 @@ void readwrteparams(shil_opcode* op)
 
 		if (op->flags & FLAG_REG2)
 		{
-			if (IsRegCached(op->reg2))
+			if (ira->IsRegAllocated(op->reg2))
 			{
 				x86IntRegType r2=LoadReg(EAX,op->reg2);
 				assert(r2!=EAX);
@@ -1111,10 +650,10 @@ void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
 		{//[reg2+imm] form
 			assert(op->flags & FLAG_IMM1);
 			//[imm1] form
-			x86IntRegType rall=LoadReg(EDX,op->reg1);
+			x86IntRegType rall=LoadReg_nodata(EDX,op->reg1);
 			emit_vmem_op_compat_const(x86e,op->imm1,rall,m_unpack_sz[size],0);
 			SaveReg(op->reg1,rall);
-			MarkDirty(op->reg1);
+			//MarkDirty(op->reg1);
 			return;
 		}
 	}
@@ -1140,7 +679,7 @@ void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
 		printf("ReadMem error\n");
 
 	SaveReg(op->reg1,EAX);//save return value
-	MarkDirty(op->reg1);
+	//MarkDirty(op->reg1);
 }
 void __fastcall shil_compile_writem(shil_opcode* op,rec_v1_BasicBlock* block)
 {
@@ -1336,7 +875,7 @@ void __fastcall shil_compile_cmp(shil_opcode* op,rec_v1_BasicBlock* block)
 	if (op->flags & FLAG_IMM1)
 	{
 		assert(0==(op->flags & (FLAG_REG2|FLAG_IMM2)));
-		if (IsRegCached(op->reg1))
+		if (ira->IsRegAllocated(op->reg1))
 		{
 			x86IntRegType r1 = LoadReg(EAX,op->reg1);
 			x86e->CMP32ItoR(r1,op->imm1);
@@ -1353,7 +892,7 @@ void __fastcall shil_compile_cmp(shil_opcode* op,rec_v1_BasicBlock* block)
 		assert(op->flags & FLAG_REG2);
 
 		x86IntRegType r1 = LoadReg(EAX,op->reg1);
-		if (IsRegCached(op->reg2))
+		if (ira->IsRegAllocated(op->reg2))
 		{
 			x86IntRegType r2 = LoadReg(ECX,op->reg2);
 			x86e->CMP32RtoR(r1,r2);//rm,rn
@@ -1371,7 +910,7 @@ void __fastcall shil_compile_test(shil_opcode* op,rec_v1_BasicBlock* block)
 	if (op->flags & FLAG_IMM1)
 	{
 		assert(0==(op->flags & (FLAG_REG2|FLAG_IMM2)));
-		if (IsRegCached(op->reg1))
+		if (ira->IsRegAllocated(op->reg1))
 		{
 			x86IntRegType r1 = LoadReg(EAX,op->reg1);
 			x86e->TEST32ItoR(r1,op->imm1);
@@ -1388,7 +927,7 @@ void __fastcall shil_compile_test(shil_opcode* op,rec_v1_BasicBlock* block)
 		assert(op->flags & FLAG_REG2);
 
 		x86IntRegType r1 = LoadReg(EAX,op->reg1);
-		if (IsRegCached(op->reg2))
+		if (ira->IsRegAllocated(op->reg2))
 		{
 			x86IntRegType r2 = LoadReg(ECX,op->reg2);
 			x86e->TEST32RtoR(r1,r2);//rm,rn
@@ -1405,17 +944,17 @@ void __fastcall shil_compile_test(shil_opcode* op,rec_v1_BasicBlock* block)
 void __fastcall shil_compile_add(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_RegToReg_simple(ADD32);
-	MarkDirty(op->reg1);
+	//MarkDirty(op->reg1);
 }
 void __fastcall shil_compile_adc(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_RegToReg_simple(ADC32);
-	MarkDirty(op->reg1);
+	//MarkDirty(op->reg1);
 }
 void __fastcall shil_compile_sub(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	OP_RegToReg_simple(SUB32);
-	MarkDirty(op->reg1);
+	//MarkDirty(op->reg1);
 }
 
 //**
@@ -1479,7 +1018,7 @@ void __fastcall shil_compile_jmp(shil_opcode* op,rec_v1_BasicBlock* block)
 
 void load_with_se16(x86IntRegType to,u8 from)
 {
-	if (IsRegCached(from))
+	if (ira->IsRegAllocated(from))
 	{
 		x86IntRegType r1=LoadReg(EAX,from);
 		x86e->MOVSX32R16toR(to,r1);
@@ -1490,7 +1029,7 @@ void load_with_se16(x86IntRegType to,u8 from)
 
 void load_with_ze16(x86IntRegType to,u8 from)
 {
-	if (IsRegCached(from))
+	if (ira->IsRegAllocated(from))
 	{
 		x86IntRegType r1=LoadReg(EAX,from);
 		x86e->MOVZX32R16toR(to,r1);
@@ -1548,14 +1087,17 @@ void __fastcall shil_compile_mul(shil_opcode* op,rec_v1_BasicBlock* block)
 			x86e->MUL32R(ECX);
 		
 		SaveReg((u8)reg_macl,EAX);
-		MarkDirty(reg_macl);
+		//MarkDirty(reg_macl);
 	}
 	else
 	{
 		assert(sz==FLAG_64);
 
-		FlushRegCache_reg(op->reg1);
-		FlushRegCache_reg(op->reg2);
+//		FlushRegCache_reg(op->reg1);
+//		FlushRegCache_reg(op->reg2);
+		
+		ira->FlushRegister(op->reg1);
+		ira->FlushRegister(op->reg2);
 
 		x86e->MOV32MtoR(EAX,GetRegPtr(op->reg1));
 
@@ -1566,8 +1108,8 @@ void __fastcall shil_compile_mul(shil_opcode* op,rec_v1_BasicBlock* block)
 
 		SaveReg((u8)reg_macl,EAX);
 		SaveReg((u8)reg_mach,EDX);
-		MarkDirty(reg_macl);
-		MarkDirty(reg_mach);
+		//MarkDirty(reg_macl);
+		//MarkDirty(reg_mach);
 	}
 }
 
@@ -1624,22 +1166,10 @@ void __fastcall shil_compile_fabs(shil_opcode* op,rec_v1_BasicBlock* block)
 	}
 }
 
-x86SSERegType LoadSSEReg(u8 reg,u8 mode)
-{
-	if (falloc->IsRegAllocated(reg))
-	{
-		return falloc->GetRegister(reg,mode);
-	}
-	else
-	{
-		x86e->SSE_MOVSS_M32_to_XMM(XMM0,GetRegPtr(reg));
-		return XMM0;
-	}
-}
 
 void SaveSSEReg(u8 reg,x86SSERegType from)
 {
-	if (falloc->IsRegAllocated(reg))
+	/*if (falloc->IsRegAllocated(reg))
 	{
 		x86SSERegType ar= falloc->GetRegister(reg,RALLOC_W);
 		if (ar!=from)
@@ -1648,7 +1178,7 @@ void SaveSSEReg(u8 reg,x86SSERegType from)
 	else
 	{
 		x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(reg),from);
-	}
+	}*/
 }
 
 void __fastcall shil_compile_fadd(shil_opcode* op,rec_v1_BasicBlock* block)
@@ -1958,7 +1488,7 @@ void __fastcall shil_compile_div32(shil_opcode* op,rec_v1_BasicBlock* block)
 	x86IntRegType Dividend=LoadReg_force(EDX,rDividend);
 
 
-	if (IsRegCached(rDivisor))
+	if (ira->IsRegAllocated(rDivisor))
 	{
 		x86IntRegType Divisor=LoadReg(EAX,rDivisor);
 		if (op->flags & FLAG_SX)
@@ -2005,7 +1535,7 @@ void __fastcall shil_compile_div32(shil_opcode* op,rec_v1_BasicBlock* block)
 	x86e->TEST32RtoR(ECX,ECX);
 	u8* j1=x86e->JNZ8(0);
 
-	if (IsRegCached(rDivisor))
+	if (ira->IsRegAllocated(rDivisor))
 	{	//safe to do here b/c rDivisor was loaded to reg above (if reg cached)
 		x86IntRegType t=LoadReg(EAX,rDivisor);
 		x86e->SUB32RtoR(EDX,t);
@@ -2028,8 +1558,10 @@ void __fastcall shil_compile_div32(shil_opcode* op,rec_v1_BasicBlock* block)
 	//WARNING--JUMP--
 	x86e->x86SetJ8(j2);
 
-	MarkDirty(rDividend);
-	MarkDirty(rQuotient);
+	//MarkDirty(rDividend);
+	//MarkDirty(rQuotient);
+	ira->MarkDirty(rDividend);
+	ira->MarkDirty(rQuotient);
 }
 
 
@@ -2120,11 +1652,6 @@ void Init()
 	{
 		if (sclt[i]==shil_compile_nimp)
 			shil_nimp--;
-	}
-
-	for (int i=0;i<0x100;i++)
-	{
-		IsRamAddr[i]=IsOnRam(i<<24)?0:0xFFFFFFFF;
 	}
 
 	printf("lazy shil compiler stats : %d%% opcodes done\n",shil_nimp*100/shil_opcodes::shil_count);
@@ -2263,7 +1790,7 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 	//u32 num_itt=0;
 	//while(shil_optimise_pass_ce(block) && num_itt<100)
 	//	num_itt++;
-	//shil_optimise_pass_ce_driver(block);
+	shil_optimise_pass_ce_driver(block);
 
 	//x86e->MOV32ItoR(ECX,(u32)block);
 	//x86e->CALLFunc(CheckBlock);
@@ -2275,8 +1802,18 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 		x86e->CALLFunc(dyna_profile_block_enter);
 	}
 
-	AllocateRegisters(block);
-	LoadRegisters();
+	fra=GetFloatAllocator();
+	ira=GetGPRtAllocator();
+	
+	ira->DoAllocation(block,x86e);
+	fra->DoAllocation(block,x86e);
+	//AllocateRegisters(block);
+	
+	
+	//LoadRegisters();
+	ira->BeforeEmit();
+	fra->BeforeEmit();
+
 	if (PROFILE_BLOCK_CYCLES==false){
 		start_ptr=x86e->x86Ptr;
 	}
@@ -2300,7 +1837,10 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 		sclt[op->opcode](op,block);
 	}
 
-	FlushRegCache();//flush reg cache
+	
+	//FlushRegCache();//flush reg cache
+	ira->BeforeTrail();
+	fra->BeforeTrail();
 
 	if (PROFILE_BLOCK_CYCLES){
 			x86e->MOV32ItoR(ECX,(u32)(block));
@@ -2500,6 +2040,10 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 		}
 	}
 
+	
+	ira->AfterTrail();
+	fra->AfterTrail();
+
 	x86e->GenCode();//heh
 
 
@@ -2529,22 +2073,13 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 		printf("Average block size : %d opcodes ; ",(fallbacks+native)/block_count);
 		printf("%d const hits and %d const misses\n",const_hit,non_const_hit);
 	}
+	
+	delete fra;
+	delete ira;
 	delete x86e;
 }
 
 //non x86 , no dynarec
-#else
-void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
-{
-}
-void link_compile_inject_TF_stub(rec_v1_BasicBlock* ptr)
-{
-}
-void link_compile_inject_TT_stub(rec_v1_BasicBlock* ptr)
-{
-}
-#endif
-
 
 
 //_vmem for dynarec ;)

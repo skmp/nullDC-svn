@@ -48,7 +48,8 @@
 				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="3"
-				EnableEnhancedInstructionSet="2"
+				BufferSecurityCheck="false"
+				EnableEnhancedInstructionSet="0"
 				FloatingPointModel="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="4"
@@ -127,7 +128,8 @@
 				AdditionalIncludeDirectories="$(SolutionDir)\nullDC"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;TRACE;NULLDC;X86"
 				RuntimeLibrary="2"
-				EnableEnhancedInstructionSet="2"
+				BufferSecurityCheck="false"
+				EnableEnhancedInstructionSet="0"
 				FloatingPointModel="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="4"
@@ -1361,6 +1363,10 @@
 					>
 					<File
 						RelativePath=".\emitter\regalloc\regalloc.h"
+						>
+					</File>
+					<File
+						RelativePath=".\emitter\regalloc\regalloc_base.h"
 						>
 					</File>
 					<File

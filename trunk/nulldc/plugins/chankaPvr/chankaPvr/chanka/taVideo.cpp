@@ -1682,6 +1682,7 @@ void TADoRender()
 
   //  save sse data
  // g_psh4_dynarec->SaveExtraRegs();
+	SaveSSERegs();
 
   //  prepare d3d objects
   IDirect3DDevice9* pd3dDevice = m_DisplayDevice.GetD3DDevice();
@@ -1840,6 +1841,8 @@ void TADoRender()
     m_uTAState = TA_STATE_NONE;
     m_uTAFlags = 0;
   }
+
+  LoadSSERegs();
 //  g_psh4_dynarec->RestoreExtraRegs();
 
 

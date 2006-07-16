@@ -22,10 +22,59 @@ int g_bCreationFullScreen=0;
 HWND g_hWnd;
 unsigned long g_framesLatency=0;
 bool g_bShowStats=true;
-unsigned long g_dwCreationWidth=640;
-unsigned long g_dwCreationHeight=480;
+unsigned long g_dwCreationWidth=1280;
+unsigned long g_dwCreationHeight=1024;
 
 
+__declspec(align(32)) byte sse_regs[4*8*4];
+__declspec(align(32)) u32 mxcsr_reg;
+void __declspec(noinline) ncs()
+{
+		__asm 
+	{
+		//stmxcsr mxcsr_reg;
+		//movaps sse_regs[4*4*0],xmm0;
+		//movaps sse_regs[4*4*1],xmm1;
+		//movaps sse_regs[4*4*2],xmm2;
+		//movaps sse_regs[4*4*3],xmm3;
+		//movaps sse_regs[4*4*4],xmm4;
+		//movaps sse_regs[4*4*5],xmm5;
+		//movaps sse_regs[4*4*6],xmm6;
+		movaps sse_regs[4*4*7],xmm7;
+	}
+}
+void __declspec(noinline) SaveSSERegs()
+{
+	//return;
+	//ncs();
+	__asm 
+	{
+		stmxcsr mxcsr_reg;
+		movaps sse_regs[4*4*0],xmm0;
+		movaps sse_regs[4*4*1],xmm1;
+		movaps sse_regs[4*4*2],xmm2;
+		movaps sse_regs[4*4*3],xmm3;
+		movaps sse_regs[4*4*4],xmm4;
+		movaps sse_regs[4*4*5],xmm5;
+		movaps sse_regs[4*4*6],xmm6;
+		movaps sse_regs[4*4*7],xmm7;
+	}
+}
+void __declspec(noinline) LoadSSERegs()
+{
+	__asm 
+	{
+		ldmxcsr mxcsr_reg;
+		movaps xmm0,sse_regs[4*4*0];
+		movaps xmm1,sse_regs[4*4*1];
+		movaps xmm2,sse_regs[4*4*2];
+		movaps xmm3,sse_regs[4*4*3];
+		movaps xmm4,sse_regs[4*4*4];
+		movaps xmm5,sse_regs[4*4*5];
+		movaps xmm6,sse_regs[4*4*6];
+		movaps xmm7,sse_regs[4*4*7];
+	}
+}
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
                        LPVOID lpReserved
