@@ -174,7 +174,6 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 		u32 op_count=block->ilst.op_count;
 		shil_opcode* curop;
 
-		bool fpu_alloc=false;
 		for (u32 j=0;j<op_count;j++)
 		{
 			curop=&block->ilst.opcodes[j];
@@ -240,6 +239,7 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 			{
 				//if we must load , and its not loaded
 				x86e->MOV32MtoR(r_alloced[sh4_reg].x86reg,GetRegPtr(sh4_reg));
+				r_alloced[sh4_reg].Dirty=false;//not dirty .ffs, we just loaded it....
 			}
 			
 			r_alloced[sh4_reg].InReg=true;

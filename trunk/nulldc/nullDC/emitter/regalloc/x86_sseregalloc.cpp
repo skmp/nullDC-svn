@@ -1,6 +1,7 @@
 #include "x86_sseregalloc.h"
 
 
+#define REG_ALLOC_COUNT (7)
 //xmm0 is reserved for math/temp
 x86SSERegType reg_to_alloc_xmm[7]=
 {
@@ -19,20 +20,47 @@ struct fprinfo
 	x86SSERegType reg;
 	bool Loaded;
 	bool WritenBack;
-	bool IsAllocated;
 };
 
 class SimpleSSERegAlloc:public FloatRegAllocator
 {
+	struct sort_temp
+	{
+		int cnt;
+		int reg;
+	};
+
+	//ebx, ebp, esi, and edi are preserved
+
+	//Yay bubble sort
+	void bubble_sort(sort_temp numbers[] , int array_size)
+	{
+		int i, j;
+		sort_temp temp;
+		for (i = (array_size - 1); i >= 0; i--)
+		{
+			for (j = 1; j <= i; j++)
+			{
+				if (numbers[j-1].cnt < numbers[j].cnt)
+				{
+					temp = numbers[j-1];
+					numbers[j-1] = numbers[j];
+					numbers[j] = temp;
+				}
+			}
+		}
+	}
+
+
+
 	emitter<>* x86e;
 	fprinfo reginf[16];
 
 	fprinfo* GetInfo(u32 reg)
 	{
-		return 0;
 		if (reg<16)
 		{
-			if (reginf[reg].IsAllocated)
+			if (reginf[reg].reg!=XMM_Error)
 			{
 				__asm int 3;
 				return &reginf[reg];
@@ -51,39 +79,75 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 	//methods needed
 	//
 	//DoAllocation		: do allocation on the block
-	virtual void DoAllocation(rec_v1_BasicBlock* bb,emitter<>* x86e)
+	virtual void DoAllocation(rec_v1_BasicBlock* block,emitter<>* x86e)
 	{
 		this->x86e=x86e;
-		DoAlloc=bb->flags.FpuIsVector==0;
+		DoAlloc=block->flags.FpuIsVector==0;
+		
+		sort_temp used[16];
+		for (int i=0;i<16;i++)
+		{
+			used[i].cnt=0;
+			used[i].reg=r0+i;
+			reginf[i].reg=XMM_Error;
+			reginf[i].Loaded=false;
+			reginf[i].WritenBack=false;
+		}
+
 		if (DoAlloc)
 		{
-			memset(reginf,0,sizeof(reginf));
-			for (int i=0;i<16;i++)
+			u32 op_count=block->ilst.op_count;
+			shil_opcode* curop;
+			
+			for (u32 j=0;j<op_count;j++)
 			{
-				reginf[i].IsAllocated=false;
+				curop=&block->ilst.opcodes[j];
+				for (int i = 0;i<16;i++)
+				{
+					//both reads and writes , give it one more ;P
+					if ( curop->UpdatesReg((Sh4RegType) (fr_0+i)) )
+						used[i].cnt+=12;
+
+					if (curop->ReadsReg((Sh4RegType) (fr_0+i)))
+						used[i].cnt+=6;
+
+					if (curop->WritesReg((Sh4RegType) (fr_0+i)))
+						used[i].cnt+=9;
+				}
 			}
+
+			bubble_sort(used,16);
+			u32 i;
+			for (i=0;i<REG_ALLOC_COUNT;i++)
+			{
+				if (used[i].cnt<14)
+					break;
+				reginf[used[i].reg].reg=reg_to_alloc_xmm[i];
+			}
+			//printf("Allocaded %d xmm regs\n",i);
+			memset(reginf,0xFF,sizeof(reginf));
 		}
 	}
 	//BeforeEmit		: generate any code needed before the main emittion begins (other register allocators may have emited code tho)
 	virtual void BeforeEmit()
 	{
-		if (DoAlloc)
+		for (int i=0;i<16;i++)
 		{
+			if (IsRegAllocated(i+fr_0))
+			{
+				GetRegister(XMM0,i+fr_0,RA_DEFAULT);
+			}
 		}
 	}
 	//BeforeTrail		: generate any code needed after the main emittion has ended (other register allocators may emit code after that tho)
 	virtual void BeforeTrail()
 	{
-		if (DoAlloc)
-		{
-		}
+
 	}
 	//AfterTrail		: generate code after the native block end (after the ret) , can be used to emit helper functions (other register allocators may emit code after that tho)
 	virtual void AfterTrail()
 	{
-		if (DoAlloc)
-		{
-		}
+
 	}
 	//IsRegAllocated	: *couh* yea .. :P
 	virtual bool IsRegAllocated(u32 sh4_reg)
@@ -93,58 +157,111 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 	}
 	//Carefull w/ register state , we may need to implement state push/pop
 	//GetRegister		: Get the register , needs flag for mode
-	virtual x86SSERegType GetRegister(x86SSERegType d_reg,u32 sh4_reg,u32 mode)
+	virtual x86SSERegType GetRegister(x86SSERegType d_reg,u32 reg,u32 mode)
 	{
-		if (DoAlloc)
+		ensure_valid(reg);
+		if (IsRegAllocated(reg))
 		{
+			fprinfo* r1=  GetInfo(reg);
+			if (r1->Loaded==false && ((mode & RA_NODATA)==0) )
+			{
+				x86e->SSE_MOVSS_M32_to_XMM(r1->reg,GetRegPtr(reg));
+				r1->WritenBack=true;
+			}
+			r1->Loaded=true;
+
+			if (mode & RA_FORCE)
+			{
+				x86e->SSE_MOVSS_XMM_to_XMM(d_reg,r1->reg);
+				return d_reg;
+			}
+			else
+			{
+				return r1->reg;
+			}
+
 		}
-		x86e->SSE_MOVSS_M32_to_XMM(d_reg,GetRegPtr(sh4_reg));
-		return d_reg;
+		else
+		{
+			if ((mode & RA_NODATA)==0)
+				x86e->SSE_MOVSS_M32_to_XMM(d_reg,GetRegPtr(reg));
+			return d_reg;
+		}
+		__asm int 3;
+		return XMM_Error;
 	}
 	//Save registers
 	virtual void SaveRegister(u32 reg,x86SSERegType from)
 	{
-		if (DoAlloc)
+		ensure_valid(reg);
+		if (IsRegAllocated(reg))
 		{
+			fprinfo* r1=  GetInfo(reg);
+			r1->Loaded=true;
+			r1->WritenBack=false;
+			
+			if (r1->reg!=from)
+				x86e->SSE_MOVSS_XMM_to_XMM(r1->reg,from);
 		}
-		x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(reg),from);
+		else
+			x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(reg),from);
 	}
 	
 	virtual void SaveRegister(u32 reg,float* from)
 	{
-		if (DoAlloc)
+		ensure_valid(reg);
+		if (IsRegAllocated(reg))
 		{
+			fprinfo* r1=  GetInfo(reg);
+			r1->Loaded=true;
+			r1->WritenBack=false;
+			x86e->SSE_MOVSS_M32_to_XMM(r1->reg,(u32*)from);
 		}
-		x86e->SSE_MOVSS_M32_to_XMM(XMM0,(u32*)from);
-		x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(reg),XMM0);
+		else
+		{
+			x86e->SSE_MOVSS_M32_to_XMM(XMM0,(u32*)from);
+			x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(reg),XMM0);
+		}
 	}
 	//FlushRegister		: write reg to reg location , and reload it on next use that needs reloading
-	virtual void FlushRegister(u32 sh4_reg)
+	virtual void FlushRegister(u32 reg)
 	{
-		if (IsRegAllocated(sh4_reg))
+		ensure_valid(reg);
+		if (IsRegAllocated(reg))
 		{
+			WriteBackRegister(reg);
+			ReloadRegister(reg);
 		}
 	}
 	virtual void FlushRegCache()
 	{
-		if (DoAlloc)
-		{
-			for (int i=0;i<16;i++)
-				FlushRegister(fr_0+i);
-		}
+		for (int i=0;i<16;i++)
+			FlushRegister(fr_0+i);
 	}
 	//WriteBackRegister	: write reg to reg location
-	virtual void WriteBackRegister(u32 sh4_reg)
+	virtual void WriteBackRegister(u32 reg)
 	{
-		if (IsRegAllocated(sh4_reg))
+		ensure_valid(reg);
+		if (IsRegAllocated(reg))
 		{
+			fprinfo* r1=  GetInfo(reg);
+			if (r1->Loaded)
+			{
+				if (r1->WritenBack==false)
+				{
+					r1->WritenBack=true;
+				}
+			}
 		}
 	}
 	//ReloadRegister	: read reg from reg location , discard old result
-	virtual void ReloadRegister(u32 sh4_reg)
+	virtual void ReloadRegister(u32 reg)
 	{
-		if (IsRegAllocated(sh4_reg))
+		ensure_valid(reg);
+		if (IsRegAllocated(reg))
 		{
+			fprinfo* r1=  GetInfo(reg);
+			r1->Loaded=false;
 		}
 	}
 };
