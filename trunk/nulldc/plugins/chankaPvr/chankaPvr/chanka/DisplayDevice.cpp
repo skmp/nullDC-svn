@@ -52,22 +52,33 @@ TError CDisplayDevice::Init(DWORD uWidth, DWORD uHeight, void* hWnd, BOOL bFullS
   m_d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
   m_d3dpp.BackBufferFormat = D3DFMT_X8R8G8B8;
   m_d3dpp.EnableAutoDepthStencil = TRUE;
-  m_d3dpp.AutoDepthStencilFormat = D3DFMT_D24X8;
+  m_d3dpp.AutoDepthStencilFormat = D3DFMT_D32;
   m_d3dpp.PresentationInterval   = D3DPRESENT_INTERVAL_IMMEDIATE;
   m_d3dpp.Flags = D3DPRESENTFLAG_DISCARD_DEPTHSTENCIL;
   m_d3dpp.BackBufferWidth  = uWidth;
   m_d3dpp.BackBufferHeight = uHeight;
   m_d3dpp.FullScreen_RefreshRateInHz = 0;
+  printf("Trying to use 32b Z buffer\n");
   hr = m_pD3D->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, (HWND) m_hWnd,  dwBehavior, &m_d3dpp, &m_pd3dDevice);
+
 
   if (FAILED(hr))
   {
+	  printf("Failed.\nTrying to use 24b Z buffer\n");
+	  m_d3dpp.AutoDepthStencilFormat = D3DFMT_D24X8;
+	  hr = m_pD3D->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, (HWND) hWnd,  dwBehavior, &m_d3dpp, &m_pd3dDevice);
+  }
+
+  if (FAILED(hr))
+  {
+	 printf("Failed.\nTrying SOFTWARE VERTEXPROCESSING\n");
     dwBehavior =  D3DCREATE_SOFTWARE_VERTEXPROCESSING;
     hr = m_pD3D->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, (HWND) hWnd,  dwBehavior, &m_d3dpp, &m_pd3dDevice);
   }
 
   if (FAILED(hr))
   {
+	printf("Failed.\nTrying to use 16b Z buffer\n");
     m_d3dpp.AutoDepthStencilFormat = D3DFMT_D16;
     hr = m_pD3D->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, (HWND) hWnd,  dwBehavior, &m_d3dpp, &m_pd3dDevice);
   }
@@ -192,6 +203,16 @@ TError        CDisplayDevice::Reset       (DWORD uWidth, DWORD uHeight, BOOL bFu
 
   m_pd3dDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
 
+  if (caps.RasterCaps & D3DPRASTERCAPS_WBUFFER)
+  {
+	  printf("W buffer supported \n");
+	  //m_pd3dDevice->SetRenderState(D3DRS_ZENABLE,D3DZB_USEW);
+  }
+  else
+  {
+	  printf("W buffer not supported \n");
+	  //m_pd3dDevice->SetRenderState(D3DRS_ZENABLE,D3DZB_TRUE);
+  }
   for(int i=0;i<8;++i)
   {
     m_pd3dDevice->SetSamplerState(i, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
