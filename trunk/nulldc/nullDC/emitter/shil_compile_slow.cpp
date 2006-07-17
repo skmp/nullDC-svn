@@ -181,7 +181,10 @@ u32* GetRegPtr(Sh4RegType reg)
 {
 	return GetRegPtr((u8)reg);
 }
-
+bool IsSSEAllocReg(u32 reg)
+{
+	return (reg >=fr_0 && reg<=fr_15);
+}
 
 //REGISTER ALLOCATION
 #define LoadReg(to,reg) ira->GetRegister(to,reg,RA_DEFAULT)
@@ -1113,30 +1116,47 @@ void __fastcall shil_compile_mul(shil_opcode* op,rec_v1_BasicBlock* block)
 	}
 }
 
-#define SSE_ItoRoM(_ItR_,_ItM_,reg,flags,imm1,imm2) \
-	if (falloc->IsRegAllocated(reg))\
-{\
-	x86SSERegType reg=falloc->GetRegister(reg,flags);\
-	x86e->_ItR_(reg,imm1);\
-}\
-	else\
-	{\
-		x86e->_ItM_(GetRegPtr(reg),imm2);\
-	}
 
 //FPU !!! YESH
+u32 IsInFReg(u32 reg)
+{
+	if (IsSSEAllocReg(reg))
+	{
+		if (fra->IsRegAllocated(reg))
+			return 1;
+	}
+	return 0;
+}
+//Fpu alloc helpers
+#define fa_r1r2 (1|2)
+#define fa_r1m2 (1|0)
+#define fa_m1r2 (0|2)
+#define fa_m1m2 (0|0)
+
+#define frs(op) (IsInFReg(op->reg1)|(IsInFReg(op->reg2)<<1))
+__declspec(align(32)) u32 ps_not_data[4]={0x80000000,0x80000000,0x80000000,0x80000000};
+__declspec(align(32)) u32 ps_and_data[4]={0x80000000-1,0x80000000-1,0x80000000-1,0x80000000-1};
 void __fastcall shil_compile_fneg(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 
 	
-
+//IsSSEAllocReg
 	assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2|FLAG_REG2)));
 	u32 sz=op->flags & 3;
 	if (sz==FLAG_32)
 	{
 		assert(!IsReg64 ((Sh4RegType)op->reg1));
-		//SSE_ItoRoM(SSE_XORPS_M128_to_XMM,XOR32ItoM,op->reg1,RALLOC_RW,ps_not_data,0x80000000);
-		x86e->XOR32ItoM(GetRegPtr(op->reg1),0x80000000);
+		if (IsInFReg(op->reg1))
+		{
+			x86SSERegType r1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
+			assert(r1!=XMM0);
+			x86e->SSE_XORPS_M128_to_XMM(r1,ps_not_data);
+			fra->SaveRegister(op->reg1,r1);
+		}
+		else
+		{
+			x86e->XOR32ItoM(GetRegPtr(op->reg1),0x80000000);
+		}
 	}
 	else
 	{
@@ -1154,8 +1174,17 @@ void __fastcall shil_compile_fabs(shil_opcode* op,rec_v1_BasicBlock* block)
 	if (sz==FLAG_32)
 	{
 		assert(!IsReg64((Sh4RegType)op->reg1));
-		x86e->AND32ItoM(GetRegPtr(op->reg1),0x7FFFFFFF);
-		//SSE_ItoRoM(SSE_ANDPS_M128_to_XMM,AND32ItoM,op->reg1,RALLOC_RW,ps_and_data,0x7FFFFFFF);
+		if (IsInFReg(op->reg1))
+		{
+			x86SSERegType r1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
+			assert(r1!=XMM0);
+			x86e->SSE_ANDPS_M128_to_XMM(r1,ps_and_data);
+			fra->SaveRegister(op->reg1,r1);
+		}
+		else
+		{
+			x86e->AND32ItoM(GetRegPtr(op->reg1),0x7FFFFFFF);
+		}
 	}
 	else
 	{
@@ -1181,6 +1210,47 @@ void SaveSSEReg(u8 reg,x86SSERegType from)
 	}*/
 }
 
+#define SSE_SS_OP(op,RtR,RtM)\
+	switch (frs(op))\
+	{\
+	case fa_r1r2:\
+		{\
+			x86SSERegType r1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);\
+			x86SSERegType r2=fra->GetRegister(XMM0,op->reg2,RA_DEFAULT);\
+			assert(r1!=XMM0 && r2!=XMM0);\
+			x86e->RtR(r1,r2);\
+			fra->SaveRegister(op->reg1,r1);\
+		}\
+		break;\
+	case fa_r1m2:\
+		{\
+			x86SSERegType r1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);\
+			assert(r1!=XMM0);\
+			x86e->RtM(r1,GetRegPtr(op->reg2));\
+			fra->SaveRegister(op->reg1,r1);\
+		}\
+		break;\
+	case fa_m1r2:\
+		{\
+			x86SSERegType r1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);\
+			x86SSERegType r2=fra->GetRegister(XMM0,op->reg2,RA_DEFAULT);\
+			assert(r1==XMM0);\
+			assert(r2!=XMM0);\
+			x86e->RtR(r1,r2);\
+			fra->SaveRegister(op->reg1,r1);\
+		}\
+		break;\
+	case fa_m1m2:\
+		{\
+			x86SSERegType r1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);\
+			assert(r1==XMM0);\
+			x86e->RtM(r1,GetRegPtr(op->reg2));\
+			fra->SaveRegister(op->reg1,r1);\
+		}\
+		break;\
+	}
+
+#define SSE_s(op,sseop) SSE_SS_OP(op,sseop##_XMM_to_XMM,sseop##_M32_to_XMM);
 void __fastcall shil_compile_fadd(shil_opcode* op,rec_v1_BasicBlock* block)
 {
 	assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2)));
@@ -1189,6 +1259,7 @@ void __fastcall shil_compile_fadd(shil_opcode* op,rec_v1_BasicBlock* block)
 	{
 		assert(!IsReg64((Sh4RegType)op->reg1));
 		assert(Ensure32());
+		
 /*		
 		x86SSERegType sse1=LoadSSEReg(reg1,mode);
 		if(falloc->IsRegAllocated(reg2))
@@ -1201,9 +1272,11 @@ void __fastcall shil_compile_fadd(shil_opcode* op,rec_v1_BasicBlock* block)
 			x86e->SSE_ADDSS_M32_to_XMM(sse1,GetRegPtr(reg2));
 		}
 */
-		x86e->SSE_MOVSS_M32_to_XMM(XMM0,GetRegPtr(op->reg1));
-		x86e->SSE_ADDSS_M32_to_XMM(XMM0,GetRegPtr(op->reg2));
-		x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),XMM0);
+		//x86e->SSE_MOVSS_M32_to_XMM(XMM0,GetRegPtr(op->reg1));
+		//x86e->SSE_ADDSS_M32_to_XMM(XMM0,GetRegPtr(op->reg2));
+		//x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),XMM0);
+		//SSE_SS_OP(op,SSE_ADDSS_M32_to_XMM,SSE_ADDSS);
+		SSE_s(op,SSE_ADDSS);
 	}
 	else
 	{
@@ -1236,9 +1309,11 @@ void __fastcall shil_compile_fsub(shil_opcode* op,rec_v1_BasicBlock* block)
 		assert(!IsReg64((Sh4RegType)op->reg1));
 		assert(Ensure32());
 		
-		x86e->SSE_MOVSS_M32_to_XMM(XMM0,GetRegPtr(op->reg1));
-		x86e->SSE_SUBSS_M32_to_XMM(XMM0,GetRegPtr(op->reg2));
-		x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),XMM0);
+		//x86e->SSE_MOVSS_M32_to_XMM(XMM0,GetRegPtr(op->reg1));
+		//x86e->SSE_SUBSS_M32_to_XMM(XMM0,GetRegPtr(op->reg2));
+		//x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),XMM0);
+		//SSE_SS_OP(op,SSE_ADDSS_M32_to_XMM,SSE_ADDSS_XMM_to_XMM);
+		SSE_s(op,SSE_SUBSS);
 	}
 	else
 	{
@@ -1255,9 +1330,10 @@ void __fastcall shil_compile_fmul(shil_opcode* op,rec_v1_BasicBlock* block)
 		assert(!IsReg64((Sh4RegType)op->reg1));
 		assert(Ensure32());
 
-		x86e->SSE_MOVSS_M32_to_XMM(XMM0,GetRegPtr(op->reg1));
-		x86e->SSE_MULSS_M32_to_XMM(XMM0,GetRegPtr(op->reg2));
-		x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),XMM0);
+	//	x86e->SSE_MOVSS_M32_to_XMM(XMM0,GetRegPtr(op->reg1));
+//		x86e->SSE_MULSS_M32_to_XMM(XMM0,GetRegPtr(op->reg2));
+//		x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),XMM0);
+		SSE_s(op,SSE_MULSS);
 	}
 	else
 	{
@@ -1274,9 +1350,10 @@ void __fastcall shil_compile_fdiv(shil_opcode* op,rec_v1_BasicBlock* block)
 		assert(!IsReg64((Sh4RegType)op->reg1));
 		assert(Ensure32());
 
-		x86e->SSE_MOVSS_M32_to_XMM(XMM0,GetRegPtr(op->reg1));
-		x86e->SSE_DIVSS_M32_to_XMM(XMM0,GetRegPtr(op->reg2));
-		x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),XMM0);
+		//x86e->SSE_MOVSS_M32_to_XMM(XMM0,GetRegPtr(op->reg1));
+		//x86e->SSE_DIVSS_M32_to_XMM(XMM0,GetRegPtr(op->reg2));
+		//x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),XMM0);
+		SSE_s(op,SSE_DIVSS);
 	}
 	else
 	{
@@ -1372,7 +1449,7 @@ void __fastcall shil_compile_fsqrt(shil_opcode* op,rec_v1_BasicBlock* block)
 		assert(Ensure32());
 
 		assert(!IsReg64((Sh4RegType)op->reg1));
-		//RSQRT vs SQRTSS -- why rsqrt no workie ? :P
+		//RSQRT vs SQRTSS -- why rsqrt no workie ? :P -> RSQRT = 1/SQRTSS
 		x86e->SSE_SQRTSS_M32_to_XMM(XMM0,GetRegPtr(op->reg1));
 		x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),XMM0);
 	}
@@ -1445,6 +1522,9 @@ void __fastcall shil_compile_fsca(shil_opcode* op,rec_v1_BasicBlock* block)
 		
 		x86e->FSTP32(GetRegPtr(op->reg1 +1));	//Store cos to reg+1
 		x86e->FSTP32(GetRegPtr(op->reg1));		//store sin to reg
+
+		fra->ReloadRegister(op->reg1+1);
+		fra->ReloadRegister(op->reg1);
 	}
 	else
 	{
@@ -1461,10 +1541,13 @@ void __fastcall shil_compile_fsrra(shil_opcode* op,rec_v1_BasicBlock* block)
 		assert(Ensure32());
 		assert(!IsReg64((Sh4RegType)op->reg1));
 		//maby need to calculate 1/sqrt manualy ? -> yes , it seems rcp is not as accurate as needed :)
-		x86e->SSE_SQRTSS_M32_to_XMM(XMM0,GetRegPtr(op->reg1));	//XMM0=sqrt
-		x86e->SSE_MOVSS_M32_to_XMM(XMM1,(u32*)mm_1);			//XMM1=1
-		x86e->SSE_DIVSS_XMM_to_XMM(XMM1,XMM0);					//XMM1=1/sqrt
-		x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),XMM1);	//fr=XMM1
+		//-> no , it wasn that , rcp=1/x , RSQRT=1/srqt tho
+		//x86e->SSE_SQRTSS_M32_to_XMM(XMM1,GetRegPtr(op->reg1));	//XMM1=sqrt
+		//x86e->SSE_MOVSS_M32_to_XMM(XMM0,(u32*)mm_1);			//XMM0=1
+		//x86e->SSE_DIVSS_XMM_to_XMM(XMM0,XMM1);					//XMM0=1/sqrt
+
+		x86e->SSE_RSQRTSS_M32_to_XMM(XMM0,GetRegPtr(op->reg1));//XMM0=APPR(1/sqrt(fr1))
+		x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),XMM0);	//fr1=XMM0
 	}
 	else
 	{
@@ -2152,7 +2235,7 @@ void emit_vmem_op(emitter<>* x86e,
 		
 		x86e->MOV32RtoR(EAX,ra);
 		x86e->SHR32ItoR(EAX,16);
-		if (ra!=ECX);
+		if (ra!=ECX)
 			x86e->MOV32RtoR(ECX,ra);
 		if (rw==0)//olny on read
 		{

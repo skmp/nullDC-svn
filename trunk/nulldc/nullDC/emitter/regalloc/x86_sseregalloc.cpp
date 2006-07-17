@@ -29,10 +29,14 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 
 	fprinfo* GetInfo(u32 reg)
 	{
+		return 0;
 		if (reg<16)
 		{
 			if (reginf[reg].IsAllocated)
+			{
+				__asm int 3;
 				return &reginf[reg];
+			}
 		}
 		return 0;
 	}
@@ -53,6 +57,11 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 		DoAlloc=bb->flags.FpuIsVector==0;
 		if (DoAlloc)
 		{
+			memset(reginf,0,sizeof(reginf));
+			for (int i=0;i<16;i++)
+			{
+				reginf[i].IsAllocated=false;
+			}
 		}
 	}
 	//BeforeEmit		: generate any code needed before the main emittion begins (other register allocators may have emited code tho)
@@ -89,21 +98,25 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 		if (DoAlloc)
 		{
 		}
-		return XMM0;
+		x86e->SSE_MOVSS_M32_to_XMM(d_reg,GetRegPtr(sh4_reg));
+		return d_reg;
 	}
 	//Save registers
-	virtual void SaveRegister(u32 to,x86SSERegType from)
+	virtual void SaveRegister(u32 reg,x86SSERegType from)
 	{
 		if (DoAlloc)
 		{
 		}
+		x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(reg),from);
 	}
 	
-	virtual void SaveRegister(u32 to,float* from)
+	virtual void SaveRegister(u32 reg,float* from)
 	{
 		if (DoAlloc)
 		{
 		}
+		x86e->SSE_MOVSS_M32_to_XMM(XMM0,(u32*)from);
+		x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(reg),XMM0);
 	}
 	//FlushRegister		: write reg to reg location , and reload it on next use that needs reloading
 	virtual void FlushRegister(u32 sh4_reg)
