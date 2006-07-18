@@ -206,7 +206,9 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 		for (int i=0;i<16;i++)
 		{
 			if (IsRegAllocated(i))
+			{
 				GetRegister(EAX,i,RA_DEFAULT);
+			}
 		}
 	}
 	//BeforeTrail		: generate any code needed after the main emittion has ended (other register allocators may emit code after that tho)

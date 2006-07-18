@@ -1410,7 +1410,7 @@ u32 IsInFReg(u32 reg)
 #define pi (3.14159265f)
 
 __declspec(align(32)) u32 ps_not_data[4]={0x80000000,0x80000000,0x80000000,0x80000000};
-__declspec(align(32)) u32 ps_and_data[4]={0x80000000-1,0x80000000-1,0x80000000-1,0x80000000-1};
+__declspec(align(32)) u32 ps_and_data[4]={0x7FFFFFFF,0x7FFFFFFF,0x7FFFFFFF,0x7FFFFFFF};
 
 __declspec(align(32)) float mm_1[4]={1.0f,1.0f,1.0f,1.0f};
 __declspec(align(32)) float fsca_fpul_adj[4]={((2*pi)/65536.0f),((2*pi)/65536.0f),((2*pi)/65536.0f),((2*pi)/65536.0f)};

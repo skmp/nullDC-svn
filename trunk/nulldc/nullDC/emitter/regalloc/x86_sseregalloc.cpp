@@ -126,7 +126,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 				reginf[used[i].reg].reg=reg_to_alloc_xmm[i];
 			}
 			//printf("Allocaded %d xmm regs\n",i);
-			//memset(reginf,0xFF,sizeof(reginf));
+			memset(reginf,0xFF,sizeof(reginf));
 		}
 	}
 	//BeforeEmit		: generate any code needed before the main emittion begins (other register allocators may have emited code tho)
@@ -136,7 +136,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 		{
 			if (IsRegAllocated(i+fr_0))
 			{
-				GetRegister(XMM0,i+fr_0,RA_DEFAULT);
+				//GetRegister(XMM0,i+fr_0,RA_DEFAULT);
 			}
 		}
 	}
