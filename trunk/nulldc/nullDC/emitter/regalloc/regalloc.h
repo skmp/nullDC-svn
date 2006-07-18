@@ -75,6 +75,9 @@ public :
 	//ReloadRegister	: read reg from reg location , discard old result
 	virtual void ReloadRegister(u32 sh4_reg)=0;
 	virtual void SaveRegister(u32 to,float* from)=0;
+	virtual void FlushRegister_xmm(x86SSERegType reg)=0;
+	//virtual void SaveRegisterGPR(u32 to,x86IntRegType from)=0;
+	//virtual void LoadRegisterGPR(u32 to,x86IntRegType from)=0;
 #undef T
 };
 u32* GetRegPtr(u32 reg);

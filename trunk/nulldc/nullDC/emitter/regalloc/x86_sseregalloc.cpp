@@ -58,11 +58,12 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 
 	fprinfo* GetInfo(u32 reg)
 	{
+		reg-=fr_0;
 		if (reg<16)
 		{
 			if (reginf[reg].reg!=XMM_Error)
 			{
-				__asm int 3;
+				//__asm int 3;
 				return &reginf[reg];
 			}
 		}
@@ -82,7 +83,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 	virtual void DoAllocation(rec_v1_BasicBlock* block,emitter<>* x86e)
 	{
 		this->x86e=x86e;
-		DoAlloc=block->flags.FpuIsVector==0;
+		DoAlloc=block->flags.FpuIsVector==0 && block->cpu_mode_tag==0;
 		
 		sort_temp used[16];
 		for (int i=0;i<16;i++)
@@ -125,7 +126,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 				reginf[used[i].reg].reg=reg_to_alloc_xmm[i];
 			}
 			//printf("Allocaded %d xmm regs\n",i);
-			memset(reginf,0xFF,sizeof(reginf));
+			//memset(reginf,0xFF,sizeof(reginf));
 		}
 	}
 	//BeforeEmit		: generate any code needed before the main emittion begins (other register allocators may have emited code tho)
@@ -142,7 +143,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 	//BeforeTrail		: generate any code needed after the main emittion has ended (other register allocators may emit code after that tho)
 	virtual void BeforeTrail()
 	{
-
+		FlushRegCache();
 	}
 	//AfterTrail		: generate code after the native block end (after the ret) , can be used to emit helper functions (other register allocators may emit code after that tho)
 	virtual void AfterTrail()
@@ -153,7 +154,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 	virtual bool IsRegAllocated(u32 sh4_reg)
 	{
 		ensure_valid(sh4_reg);
-		return GetInfo(sh4_reg-fr_0)!=0;
+		return GetInfo(sh4_reg)!=0;
 	}
 	//Carefull w/ register state , we may need to implement state push/pop
 	//GetRegister		: Get the register , needs flag for mode
@@ -233,6 +234,17 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 			ReloadRegister(reg);
 		}
 	}
+	virtual void FlushRegister_xmm(x86SSERegType reg)
+	{
+		for (int i=0;i<16;i++)
+		{
+			fprinfo* r1=  GetInfo(fr_0+i);
+			if (r1!=0 && r1->reg==reg)
+			{
+				FlushRegister(fr_0+i);
+			}
+		}
+	}
 	virtual void FlushRegCache()
 	{
 		for (int i=0;i<16;i++)
@@ -249,6 +261,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 			{
 				if (r1->WritenBack==false)
 				{
+					x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(reg),r1->reg);
 					r1->WritenBack=true;
 				}
 			}
