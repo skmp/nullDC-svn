@@ -1,5 +1,5 @@
 #include "x86_sseregalloc.h"
-
+#include <assert.h>
 
 #define REG_ALLOC_COUNT (7)
 //xmm0 is reserved for math/temp
@@ -21,6 +21,36 @@ struct fprinfo
 	bool Loaded;
 	bool WritenBack;
 };
+
+bool SimpleSSERegAlloc_sse2=false;
+bool SimpleSSERegAlloc_cft=false;
+void SimpleSSERegAlloc_init()
+{
+	if (SimpleSSERegAlloc_cft)
+		return;
+	SimpleSSERegAlloc_cft=true;
+	SimpleSSERegAlloc_sse2=true;
+	try
+	{
+		__asm
+		{
+			movd XMM0,EAX;
+		}
+	}
+	catch(...)
+	{
+		SimpleSSERegAlloc_sse2=false;
+	}
+
+	if (SimpleSSERegAlloc_sse2)
+	{
+		printf("SSE2 supported , using it\n");
+	}
+	else
+	{
+		printf("SSE2 not supported , using olny SSE1\n");
+	}
+}
 
 class SimpleSSERegAlloc:public FloatRegAllocator
 {
@@ -55,6 +85,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 
 	emitter<>* x86e;
 	fprinfo reginf[16];
+	
 
 	fprinfo* GetInfo(u32 reg)
 	{
@@ -82,6 +113,8 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 	//DoAllocation		: do allocation on the block
 	virtual void DoAllocation(rec_v1_BasicBlock* block,emitter<>* x86e)
 	{
+		SimpleSSERegAlloc_init();
+
 		this->x86e=x86e;
 		DoAlloc=block->flags.FpuIsVector==0 && block->cpu_mode_tag==0;
 		
@@ -275,6 +308,51 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 		{
 			fprinfo* r1=  GetInfo(reg);
 			r1->Loaded=false;
+		}
+	}
+	virtual void SaveRegisterGPR(u32 to,x86IntRegType from)
+	{
+		if (IsRegAllocated(to))
+		{
+			if (SimpleSSERegAlloc_sse2)
+			{
+				x86SSERegType freg=GetRegister(XMM0,to,RA_NODATA);
+				assert(freg!=XMM0);
+				//
+				x86e->SSE2_MOVD_32R_to_XMM(freg,from);
+			}
+			else
+			{
+				x86e->MOV32RtoM(GetRegPtr(to),from);
+				ReloadRegister(to);
+			}
+		}
+		else
+		{
+			x86e->MOV32RtoM(GetRegPtr(to),from);
+		}
+	}
+	virtual void LoadRegisterGPR(x86IntRegType to,u32 from)
+	{
+		if (IsRegAllocated(from))
+		{
+			fprinfo* r1=  GetInfo(from);
+			if ((SimpleSSERegAlloc_sse2==true) &&  (r1->Loaded==true) && (r1->WritenBack==false))
+			{
+				x86SSERegType freg=GetRegister(XMM0,to,RA_DEFAULT);
+				assert(freg!=XMM0);
+				x86e->INT3();
+				x86e->SSE2_MOVD_XMM_to_32R(to,freg);
+			}
+			else
+			{
+				FlushRegister(from);
+				x86e->MOV32MtoR(to,GetRegPtr(from));
+			}
+		}
+		else
+		{
+			x86e->MOV32MtoR(to,GetRegPtr(from));
 		}
 	}
 };

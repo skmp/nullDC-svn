@@ -41,7 +41,7 @@ using namespace std;
 #define BLOCK_LUT_GUESS
 //#defune DEBUG_BLOCKLIST
 //#define OPTIMISE_LUT_SORT
-#define COMPACT_GLOBAL_LIST
+//#define COMPACT_GLOBAL_LIST
 
 //rec_v1_BasicBlock* Blockz[RAM_SIZE>>1];
 //
@@ -86,7 +86,7 @@ public :
 		{	
 			ItemCount++;
 			push_back(block);
-			return size();
+			return (u32)size();
 		}
 		else
 		{
@@ -137,18 +137,20 @@ public :
 	{
 		if (ItemCount!=0)
 			return;
+		#ifdef DEBUG_BLOCKLIST
 		u32 sz=size();
 		for (u32 i=0;i<sz;i++)
 		{
-#ifdef DEBUG_BLOCKLIST
+
 			if (_Myfirst[i]!=0)
 			{
 				printf("BlockList::CheckEmptyList fatal error , ItemCount!=RealItemCount\n");
 				__asm int 3;
 				return;
 			}
-#endif
+
 		}
+		#endif
 		clear();
 	}
 
@@ -202,7 +204,7 @@ BlockList BlockPageLists[RAM_SIZE/PAGE_SIZE];
 BlockList SuspendedBlocks;
 
 //block lookup vars
-#define LOOKUP_HASH_SIZE	0x1000
+#define LOOKUP_HASH_SIZE	0x4000
 #define LOOKUP_HASH_MASK	(LOOKUP_HASH_SIZE-1)
 #define GetLookupHash(addr) ((addr>>2)&LOOKUP_HASH_MASK)
 BlockList					BlockLookupLists[LOOKUP_HASH_SIZE];
@@ -559,7 +561,7 @@ void nullprof_GetBlocks(nullprof_blocklist* to, u32 type,u32 count)
 {
 	BlockList used_blocks;
 	
-	for (int i=0;i<all_block_list.size();i++)
+	for (u32 i=0;i<all_block_list.size();i++)
 	{
 		if (all_block_list[i])
 			used_blocks.Add(all_block_list[i]);

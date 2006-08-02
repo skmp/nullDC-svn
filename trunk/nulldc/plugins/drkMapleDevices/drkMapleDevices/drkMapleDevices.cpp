@@ -633,9 +633,9 @@ void VmuDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u3
 				buffer_out[0] = (2<<24);
 				u32 Block = (SWAP32(buffer_in[1]))&0xffff;
 				buffer_out[1] = buffer_in[1];
-				printf("Block read : %d\n",Block);
 				if (Block>255)
 				{
+					printf("Block read : %d\n",Block);
 					printf("BLOCK READ ERROR\n");
 					Block&=256;
 				}
@@ -653,7 +653,7 @@ void VmuDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u3
 
 				u32 Block = (SWAP32(buffer_in[1]))&0xffff;
 				u32 Phase = ((SWAP32(buffer_in[1]))>>16)&0xff; 
-				printf("Block wirte : %d:%d , %d bytes\n",Block,Phase,(buffer_in_len-4));
+				//printf("Block wirte : %d:%d , %d bytes\n",Block,Phase,(buffer_in_len-4));
 				memcpy(&dev->data[Block*512+Phase*(512/4)],&buffer_in[2],(buffer_in_len-4));
 				buffer_out_len=0;
 				FILE* f=fopen(dev->file,"wb");

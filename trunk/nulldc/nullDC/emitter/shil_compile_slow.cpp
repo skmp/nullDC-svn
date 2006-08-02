@@ -366,10 +366,10 @@ void __fastcall shil_compile_mov(shil_opcode* op,rec_v1_BasicBlock* block)
 		if (((op->flags & FLAG_IMM1)==0) && IsSSEAllocReg(op->reg2) && fra->IsRegAllocated(op->reg2))
 			flags|=mov_flag_XMM_2;
 
-		if (ira->IsRegAllocated(op->reg1))
+		if (IsSSEAllocReg(op->reg1)==false && ira->IsRegAllocated(op->reg1))
 			flags|=mov_flag_GRP_1;
 
-		if (((op->flags & FLAG_IMM1)==0) && ira->IsRegAllocated(op->reg2))
+		if (((op->flags & FLAG_IMM1)==0) && IsSSEAllocReg(op->reg2)==false && ira->IsRegAllocated(op->reg2))
 			flags|=mov_flag_GRP_2;
 
 		#define XMMtoXMM (mov_flag_XMM_1 | mov_flag_XMM_2)
@@ -816,8 +816,8 @@ void emit_vmem_op_compat(emitter<>* x86e,x86IntRegType ra,
 					  u32 sz,u32 rw);
 
 void emit_vmem_op_compat_const(emitter<>* x86e,u32 ra,
-					x86IntRegType ro,
-					  u32 sz,u32 rw);
+							   x86IntRegType ro,x86SSERegType ro_sse,bool sse,
+								u32 sz,u32 rw);
 u32 m_unpack_sz[3]={1,2,4};
 void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
 {
@@ -832,9 +832,18 @@ void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
 		{//[reg2+imm] form
 			assert(op->flags & FLAG_IMM1);
 			//[imm1] form
-			x86IntRegType rall=LoadReg_nodata(EDX,op->reg1);
-			emit_vmem_op_compat_const(x86e,op->imm1,rall,m_unpack_sz[size],0);
-			SaveReg(op->reg1,rall);
+			if (!IsSSEAllocReg(op->reg1))
+			{
+				x86IntRegType rall=LoadReg_nodata(EDX,op->reg1);
+				emit_vmem_op_compat_const(x86e,op->imm1,rall,XMM0,false,m_unpack_sz[size],0);
+				SaveReg(op->reg1,rall);
+			}
+			else
+			{
+				x86SSERegType rall=fra->GetRegister(XMM0,op->reg1,RA_NODATA);
+				emit_vmem_op_compat_const(x86e,op->imm1,EAX,rall,true,m_unpack_sz[size],0);
+				fra->SaveRegister(op->reg1,rall);
+			}
 			//MarkDirty(op->reg1);
 			return;
 		}
@@ -860,7 +869,14 @@ void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
 	else
 		printf("ReadMem error\n");
 
-	SaveReg(op->reg1,EAX);//save return value
+	if (IsSSEAllocReg(op->reg1))
+	{
+		fra->SaveRegisterGPR(op->reg1,EAX);
+	}
+	else
+	{
+		SaveReg(op->reg1,EAX);//save return value
+	}
 	//MarkDirty(op->reg1);
 }
 void __fastcall shil_compile_writem(shil_opcode* op,rec_v1_BasicBlock* block)
@@ -874,8 +890,16 @@ void __fastcall shil_compile_writem(shil_opcode* op,rec_v1_BasicBlock* block)
 	{//[reg2+imm] form
 		assert(op->flags & FLAG_IMM1);
 		//[imm1] form
-		x86IntRegType rall=LoadReg(EDX,op->reg1);
-		emit_vmem_op_compat_const(x86e,op->imm1,rall,m_unpack_sz[size],1);
+		if (!IsSSEAllocReg(op->reg1))
+		{
+			x86IntRegType rall=LoadReg(EDX,op->reg1);
+			emit_vmem_op_compat_const(x86e,op->imm1,rall,XMM0,false,m_unpack_sz[size],1);
+		}
+		else
+		{
+			x86SSERegType rall=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
+			emit_vmem_op_compat_const(x86e,op->imm1,EAX,rall,true,m_unpack_sz[size],1);
+		}
 		return;
 	}
 
@@ -884,103 +908,16 @@ void __fastcall shil_compile_writem(shil_opcode* op,rec_v1_BasicBlock* block)
 	//ECX is address
 
 	//so it's sure loaded (if from reg cache)
-	x86IntRegType r1=LoadReg(EDX,op->reg1);
-	
-	/*u8* inline_label=0;
-
-	/*if (INLINE_MEM_WRITE)
-	{	//try to inline all mem reads at runtime :P
-		//eax = ((ecx>>24) & 0xFF)<<2
-
-		//mov eax,ecx
-		x86e->MOV32RtoR(EAX,ECX);
-		//shr eax,24
-		//shl eax,2
-		x86e->SHR32ItoR(EAX,24-2);
-		x86e->AND32ItoR(EAX,0xFF<<2);
-
-		//add eax , imm	;//should realy use lea/mov eax,[eax+xx]
-		x86e->ADD32ItoR(EAX,(u32)IsRamAddr);
-		//mov eax,[eax]
-		x86e->MOV32RmtoR(EAX,EAX);
-		//test eax,eax
-		x86e->TEST32RtoR(EAX,EAX);
-		//jz inline;//if !0 , then do normal write
-		inline_label = x86e->JZ8(0);
-	}*/
-	/*if (size==FLAG_8)
-	{	//maby zx ?
-		if (r1!=EDX)
-			x86e->MOV32RtoR(EDX,r1);
-		x86e->CALLFunc(WriteMem8);
-	}
-	else if (size==FLAG_16)
-	{	//maby zx ?
-		if (r1!=EDX)
-			x86e->MOV32RtoR(EDX,r1);
-		x86e->CALLFunc(WriteMem16);
-	}
-	else if (size==FLAG_32)
+	x86IntRegType r1;
+	if (IsSSEAllocReg(op->reg1))
 	{
-		if (r1!=EDX)
-			x86e->MOV32RtoR(EDX,r1);
-		x86e->CALLFunc(WriteMem32);
+		r1=EDX;
+		fra->LoadRegisterGPR(EDX,op->reg1);
 	}
 	else
-		printf("WriteMem error\n");*/
-	emit_vmem_op_compat(x86e,ECX,r1,m_unpack_sz[size],1);
-/*
+		r1=LoadReg(EDX,op->reg1);
 	
-	if (INLINE_MEM_WRITE)
-	{
-		//jmp normal;
-		u8* normal_label = x86e->JMP8(0);
-		//
-		//inline:  //inlined ram write
-		x86e->x86SetJ8(inline_label);
-
-		//and ecx , ram_mask
-		x86e->AND32ItoR(ECX,RAM_MASK);
-
-
-		//no more block tests
-		
-		//if needed
-		//if (r1==EDX)
-		//	x86e->PUSH32R(r1);
-
-
-		//call rec_v1_BlockTest
-		//
-		//rec_v1_CompileBlockTest(x86e,ECX,EAX);
-
-		//if needed
-		//if (r1==EDX)
-		//	x86e->POP32R(r1);
-
-		//add ecx, ram_base
-		x86e->ADD32ItoR(ECX,(u32)(&mem_b[0]));
-		//mov/sx eax,[ecx]
-		if (size==0)
-		{
-			if (r1!=EDX)
-				x86e->MOV32RtoR(EDX,r1);
-			x86e->MOV8RtoRm(ECX,EDX);
-		}
-		else if (size==1)
-		{
-			x86e->MOV16RtoRm(ECX,r1);
-		}
-		else if (size==2)
-		{
-			x86e->MOV32RtoRm(ECX,r1);
-		}
-		else
-			printf("ReadMem error\n");
-		//normal:
-		x86e->x86SetJ8(normal_label);
-	}*/
-
+	emit_vmem_op_compat(x86e,ECX,r1,m_unpack_sz[size],1);
 }
 
 //save-loadT
@@ -2707,8 +2644,8 @@ void emit_vmem_op_compat(emitter<>* x86e,x86IntRegType ra,
 }
 
 void emit_vmem_op_compat_const(emitter<>* x86e,u32 ra,
-					x86IntRegType ro,
-					  u32 sz,u32 rw)
+							   x86IntRegType ro,x86SSERegType ro_sse,bool sse,
+								u32 sz,u32 rw)
 {
 	void* p_RWF_table=0;
 	if (rw==0)
@@ -2742,9 +2679,15 @@ void emit_vmem_op_compat_const(emitter<>* x86e,u32 ra,
 
 		if (rw==1)
 		{
-			
-			if (ro!=EDX)
-				x86e->MOV32RtoR(EDX,ro);
+			if (sse)
+			{
+				__asm int 3;
+			}
+			else
+			{
+				if (ro!=EDX)
+					x86e->MOV32RtoR(EDX,ro);
+			}
 		}
 
 		x86e->MOV32ItoR(ECX,ra);
@@ -2787,7 +2730,12 @@ void emit_vmem_op_compat_const(emitter<>* x86e,u32 ra,
 			}
 			else if (sz==4)
 			{	//,edx
-				x86e->MOV32RtoM((u32*)paddr,ro);
+				if (sse)
+				{
+					x86e->SSE_MOVSS_XMM_to_M32((u32*)paddr,ro_sse);
+				}
+				else
+					x86e->MOV32RtoM((u32*)paddr,ro);
 			}
 		}
 		else
@@ -2803,7 +2751,12 @@ void emit_vmem_op_compat_const(emitter<>* x86e,u32 ra,
 			}
 			else if (sz==4)
 			{
-				x86e->MOV32MtoR(ro,(u32*)paddr);
+				if (sse)
+				{
+					x86e->SSE_MOVSS_M32_to_XMM(ro_sse,(u32*)paddr);
+				}
+				else
+					x86e->MOV32MtoR(ro,(u32*)paddr);
 			}
 		}
 	}

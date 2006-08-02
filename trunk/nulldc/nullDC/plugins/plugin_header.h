@@ -1,6 +1,10 @@
 #pragma once
 
 //SHUT UP M$ COMPILER !@#!@$#
+#ifdef _CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES
+#undef _CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES
+#endif
+
 #define _CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES 1
 #define _CRT_SECURE_NO_DEPRECATE 
 
@@ -177,7 +181,7 @@ enum PluginType
 	MapleDevice=8,	//controler ,mouse , vmu , ect
 };
 
-#define PLUGIN_I_F_VERSION NDC_MakeVersion(0,0,1)
+#define PLUGIN_I_F_VERSION NDC_MakeVersion(0,0,2)
 
 //common functions
 //called when plugin is used by emu (you should do first time init here)
@@ -199,6 +203,9 @@ typedef void dcThreadTermFP(PluginType type);
 
 //simple ehh ?
 typedef void dcShowConfigFP(PluginType type,void* window);
+
+//Unhandled Write Exeption handler
+typedef bool dcUnhandledWriteExeption(void* addr);
 
 //
 typedef u32 ReadMemFP(u32 addr,u32 size);
@@ -223,6 +230,7 @@ struct plugin_info
 	dcThreadInitFP*	ThreadInit;				//Thread init (called from cpu thread)
 	dcThreadTermFP*	ThreadTerm;				//Thread term (called from cpu thread)
 	dcShowConfigFP* ShowConfig;				//Show config ;)
+	dcUnhandledWriteExeption* UnhandledWriteExeption;//Called on unhandled write exeption ;)
 
 	//Functions "Exported" from the emu , these are SET by the emu
 	ConfigLoadStrFP*   ConfigLoadStr;

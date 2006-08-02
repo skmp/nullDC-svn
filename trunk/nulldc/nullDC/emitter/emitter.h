@@ -3707,7 +3707,7 @@ public :
 	//MOVD: Move Dword(32bit) to /from XMM reg                                         *
 	//**********************************************************************************
 	void SSE2_MOVD_M32_to_XMM( x86SSERegType to, u32* from ) { SSEMtoR66(0x6E0F); }
-	void SSE2_MOVD_32R_to_XMM( x86SSERegType to, x86IntRegType from ) { _SSERtoR66(0x6E0F); }
+	void SSE2_MOVD_32R_to_XMM( x86SSERegType from, x86IntRegType to ) { _SSERtoR66(0x6E0F); }
 	void SSE2_MOVD_XMM_to_M32( u32* to, x86SSERegType from ) { SSERtoM66(0x7E0F); }
 	void SSE2_MOVD_XMM_to_32R( x86IntRegType to, x86SSERegType from ) { _SSERtoR66(0x7E0F); }
 	////////////////////////////////////////////////////////////////////////////////////
