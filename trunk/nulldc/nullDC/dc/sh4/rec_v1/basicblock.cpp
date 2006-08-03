@@ -1,4 +1,4 @@
-#include "rec_v1_basicblock.h"
+#include "BasicBlock.h"
 #include "emitter/shil_compile_slow.h"
 #include "dc/mem/sh4_mem.h"
 #include "dc/sh4/sh4_registers.h"
@@ -6,7 +6,7 @@
 
 #include <memory.h>
 extern u32 rec_cycles;
-void rec_v1_BasicBlock::ClearBlock(rec_v1_BasicBlock* block)
+void BasicBlock::ClearBlock(BasicBlock* block)
 {
 	if (block->TF_block==this)
 	{
@@ -20,7 +20,7 @@ void rec_v1_BasicBlock::ClearBlock(rec_v1_BasicBlock* block)
 		block->pTT_next_addr=link_compile_inject_TT_stub;
 	}
 }
-void rec_v1_BasicBlock::BlockWasSuspended(rec_v1_BasicBlock* block)
+void BasicBlock::BlockWasSuspended(BasicBlock* block)
 {
 	for (int i=0;i<blocks_to_clear.size();i++)
 	{
@@ -31,7 +31,7 @@ void rec_v1_BasicBlock::BlockWasSuspended(rec_v1_BasicBlock* block)
 	}
 }
 
-void rec_v1_BasicBlock::AddRef(rec_v1_BasicBlock* block)
+void BasicBlock::AddRef(BasicBlock* block)
 {
 	if (!Discarded)
 	{
@@ -42,7 +42,7 @@ void rec_v1_BasicBlock::AddRef(rec_v1_BasicBlock* block)
 	else
 		printf("Warning : Discarded, AddRef call\n");
 }
-void rec_v1_BasicBlock::Suspend()
+void BasicBlock::Suspend()
 {
 	for (int i=0;i<blocks_to_clear.size();i++)
 	{
@@ -63,7 +63,7 @@ void rec_v1_BasicBlock::Suspend()
 	Discarded=true;
 }
 
-void rec_v1_BasicBlock::Free()
+void BasicBlock::Free()
 {
 	if (compiled)
 	{
@@ -77,7 +77,7 @@ void rec_v1_BasicBlock::Free()
 		printf("FREE!!! 0x%x\n",start);
 	}	
 }
-bool rec_v1_BasicBlock::Contains(u32 pc)
+bool BasicBlock::Contains(u32 pc)
 {
 	u32 pc_real=pc & RAM_MASK;
 	u32 real_start=start & RAM_MASK;
@@ -86,7 +86,7 @@ bool rec_v1_BasicBlock::Contains(u32 pc)
 	return ((pc_real>=(real_start-4)) && (pc_real<=(real_end+6)));
 }
 
-bool rec_v1_BasicBlock::IsMemLocked(u32 adr)
+bool BasicBlock::IsMemLocked(u32 adr)
 {
 	if (flags.ProtectionType==BLOCK_PROTECTIONTYPE_MANUAL)
 		return false;

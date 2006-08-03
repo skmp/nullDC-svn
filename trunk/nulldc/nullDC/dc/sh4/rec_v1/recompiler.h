@@ -10,7 +10,7 @@
 //#define PROFILE_DYNAREC_CALL
 void printprofile();
 
-typedef u32 rec_v1_BasicBlockEP();
+typedef u32 BasicBlockEP();
 
 
 using namespace std;    

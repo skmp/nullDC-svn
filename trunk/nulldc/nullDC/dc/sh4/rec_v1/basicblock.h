@@ -1,13 +1,13 @@
 #pragma once
 #include "rec_v1_recompiler.h"
 
-class rec_v1_BasicBlock;
+class BasicBlock;
 
-class rec_v1_CompiledBlock
+class CompiledBlock
 {
 public :
-	rec_v1_BasicBlockEP* Code;						//compiled code ptr
-	rec_v1_BasicBlock* parent;		//basic block that the compiled code is for
+	BasicBlockEP* Code;						//compiled code ptr
+	BasicBlock* parent;		//basic block that the compiled code is for
 	u32 size;						//compiled code size (bytes)
 	u32 count;						//compiled code opcode count
 };
@@ -16,17 +16,17 @@ public :
 #define GET_CURRENT_FPU_MODE() (fpscr.PR_SZ)
 
 #define BLOCKLIST_MAX_CYCLES (448)
-class rec_v1_BasicBlock;
+class BasicBlock;
 
-class rec_v1_BasicBlock
+class BasicBlock
 {
-	vector<rec_v1_BasicBlock*> blocks_to_clear;
+	vector<BasicBlock*> blocks_to_clear;
 	public :
 
-	rec_v1_BasicBlock* TF_block;
-	rec_v1_BasicBlock* TT_block;
+	BasicBlock* TF_block;
+	BasicBlock* TT_block;
 
-	rec_v1_BasicBlock()
+	BasicBlock()
 	{
 		start=0;
 		end=0;
@@ -45,9 +45,9 @@ class rec_v1_BasicBlock
 	void Free();
 	void Suspend();
 	bool Contains(u32 pc);
-	void BlockWasSuspended(rec_v1_BasicBlock* block);
-	void AddRef(rec_v1_BasicBlock* block);
-	void ClearBlock(rec_v1_BasicBlock* block);
+	void BlockWasSuspended(BasicBlock* block);
+	void AddRef(BasicBlock* block);
+	void ClearBlock(BasicBlock* block);
 	bool IsMemLocked(u32 adr);
 
 	//start pc
@@ -120,4 +120,4 @@ class rec_v1_BasicBlock
 };
 
 
-typedef void (__fastcall RecOpCallFP) (u32 op,u32 pc,rec_v1_BasicBlock* bb);
+typedef void (__fastcall RecOpCallFP) (u32 op,u32 pc,BasicBlock* bb);

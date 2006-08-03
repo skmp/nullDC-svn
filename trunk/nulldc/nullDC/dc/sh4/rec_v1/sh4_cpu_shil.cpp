@@ -27,7 +27,7 @@
 
 shil_stream* ilst;
 
-#define sh4op(str) void  __fastcall rec_shil_##str (u32 op,u32 pc,rec_v1_BasicBlock* bb)
+#define sh4op(str) void  __fastcall rec_shil_##str (u32 op,u32 pc,BasicBlock* bb)
 
 #define GetN(str) ((str>>8) & 0xf)
 #define GetM(str) ((str>>4) & 0xf)
@@ -481,7 +481,7 @@ sh4op(i0000_nnnn_mmmm_0111)
 #define DIV0S_KEY 0x2007
 #define DIV1_KEY 0x3004
 #define ROTCL_KEY 0x4024
-u32 MatchDiv32(u32 pc , rec_v1_BasicBlock* bb,Sh4RegType &reg1,Sh4RegType &reg2 , Sh4RegType &reg3)
+u32 MatchDiv32(u32 pc , BasicBlock* bb,Sh4RegType &reg1,Sh4RegType &reg2 , Sh4RegType &reg3)
 {
 	u32 v_pc=pc;
 	u32 match=1;
@@ -1801,7 +1801,7 @@ sh4op(icpu_nimp)
 
 //Branches
 
-void DoDslot(u32 pc,rec_v1_BasicBlock* bb)
+void DoDslot(u32 pc,BasicBlock* bb)
 {
 	u16 opcode=ReadMem16(pc+2);
 

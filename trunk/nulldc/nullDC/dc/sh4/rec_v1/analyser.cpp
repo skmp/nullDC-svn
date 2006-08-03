@@ -14,7 +14,7 @@
 //handle delayslots
 
 //will alayse code and convert it to shil
-//the basicblock (and suprtblock later) will be the send to the optimiser , and after that
+//the basicblock (and superblock later) will be the send to the optimiser , and after that
 //to the compiler
 
 #define CPU_RATIO 1
@@ -78,7 +78,7 @@ void TermPipeline()
 	}
 	known_pl_cycles+=mpc;
 }
-void rec_v1_AnalyseCode(u32 start,rec_v1_BasicBlock* to)
+void rec_v1_AnalyseCode(u32 start,BasicBlock* to)
 {
 
 	u32 pc=start;

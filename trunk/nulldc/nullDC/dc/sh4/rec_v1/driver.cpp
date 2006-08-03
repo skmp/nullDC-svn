@@ -37,9 +37,9 @@ u32 avg_bc=0;
 //recBlock* lastBlock;
 
 
-INLINE rec_v1_BasicBlock* __fastcall GetRecompiledCode(u32 pc)
+INLINE BasicBlock* __fastcall GetRecompiledCode(u32 pc)
 {
-	rec_v1_BasicBlock* block=rec_v1_FindBlock(pc);
+	BasicBlock* block=rec_v1_FindBlock(pc);
 	
 	if (block)
 		return block;
@@ -56,7 +56,7 @@ INLINE rec_v1_BasicBlock* __fastcall GetRecompiledCode(u32 pc)
 	}
 }
 
-rec_v1_BasicBlock* rec_v1_FindOrRecompileCode(u32 pc)
+BasicBlock* rec_v1_FindOrRecompileCode(u32 pc)
 {
 	return GetRecompiledCode(pc);
 }
@@ -107,9 +107,9 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 	SetFloatStatusReg();
 	while(true)
 	{
-		rec_v1_BasicBlock* currBlock=GetRecompiledCode(pc);
+		BasicBlock* currBlock=GetRecompiledCode(pc);
 		//rec_cycles+=currBlock->cycles;
-		rec_v1_BasicBlockEP* fp=currBlock->compiled->Code;
+		BasicBlockEP* fp=currBlock->compiled->Code;
 
 #ifdef X86
 		//call block :)
