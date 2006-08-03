@@ -4,7 +4,9 @@
 #include "BasicBlock.h"
 #include "emitter\emitter.h"
 
-CompiledBasicBlock* FindBlock(u32 address);
+//CompiledBasicBlock* __fastcall FindBlock(u32 address);
+#define FindBlock FindBlock_fast
+INLINE CompiledBasicBlock* __fastcall FindBlock_fast(u32 address);
 
 void RegisterBlock(CompiledBasicBlock* block);
 void UnRegisterBlock(CompiledBasicBlock* block);

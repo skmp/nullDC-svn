@@ -43,6 +43,9 @@ using namespace std;
 //#define OPTIMISE_LUT_SORT
 #define COMPACT_GLOBAL_LIST
 
+#define BLOCK_NONE (&BLOCK_NONE_B)
+CompiledBasicBlock BLOCK_NONE_B;
+
 //BasicBlock* Blockz[RAM_SIZE>>1];
 //
 //helper list class
@@ -51,14 +54,14 @@ int compare_BlockLookups(const void * a, const void * b)
 	CompiledBasicBlock* ba=*(CompiledBasicBlock**)a;
 	CompiledBasicBlock* bb=*(CompiledBasicBlock**)b;
 
-	if (bb && ba)
-	{
+	/*if (bb && ba)
+	{*/
 		return bb->lookups-ba->lookups;
-	}
+	/*}
 	else if (bb)
 		return 1;
 	else
-		return -1;
+		return -1;*/
 	
 
 	/*
@@ -93,7 +96,7 @@ public :
 			ItemCount++;
 			for (u32 i=0;i<size();i++)
 			{
-				if (_Myfirst[i]==0)
+				if (_Myfirst[i]==BLOCK_NONE)
 				{
 					_Myfirst[i]=block;
 					return i;
@@ -114,7 +117,7 @@ public :
 		{
 			if (_Myfirst[i]==block)
 			{
-				_Myfirst[i]=0;
+				_Myfirst[i]=BLOCK_NONE;
 				return;
 			}
 		}
@@ -123,9 +126,7 @@ public :
 	{
 		for (u32 i=0;i<size();i++)
 		{
-			if (
-				(_Myfirst[i]!=0) && 
-				(_Myfirst[i]->start == address) &&
+			if ((_Myfirst[i]->start == address) &&
 				(_Myfirst[i]->cpu_mode_tag == cpu_mode)
 				)
 			{
@@ -134,7 +135,7 @@ public :
 		}
 	}
 	
-	//check if the list is empty (full of 0's) , if so , clear it
+	//check if the list is empty (full of BLOCK_NONE's) , if so , clear it
 	void CheckEmpty()
 	{
 		if (ItemCount!=0)
@@ -144,7 +145,7 @@ public :
 		for (u32 i=0;i<sz;i++)
 		{
 
-			if (_Myfirst[i]!=0)
+			if (_Myfirst[i]!=BLOCK_NONE)
 			{
 				printf("BlockList::CheckEmptyList fatal error , ItemCount!=RealItemCount\n");
 				__asm int 3;
@@ -233,6 +234,8 @@ void FreeBlocks(BlockList* blocks)
 	}
 	blocks->clear();
 }
+
+
 //this should not be called from a running block , or it will crash
 //Fully resets block hash/list , clears all entrys and free's any prevusly allocated blocks
 void ResetBlocks()
@@ -241,7 +244,7 @@ void ResetBlocks()
 	{
 		BlockLookupLists[i].clear();
 		#ifdef BLOCK_LUT_GUESS
-		BlockLookupGuess[i]=0;
+		BlockLookupGuess[i]=BLOCK_NONE;
 		#endif
 	}
 
@@ -283,28 +286,37 @@ INLINE BlockList* GetLookupBlockList(u32 address)
 u32 luk=0;
 u32 r_value=0x112;
 
-CompiledBasicBlock* FindBlock(u32 address)
+CompiledBasicBlock* __fastcall FindBlock_full(u32 address,CompiledBasicBlock* fastblock);
+
+INLINE CompiledBasicBlock* __fastcall FindBlock_fast(u32 address)
 {
-	CompiledBasicBlock* thisblock;
-
-	//if (((address>>26)&0x7)==3)
-	//	return Blockz[((address&RAM_MASK)>>1)];
-
-	#ifdef BLOCK_LUT_GUESS
+#ifdef BLOCK_LUT_GUESS
 	CompiledBasicBlock* fastblock;
 
 	fastblock=BlockLookupGuess[GetLookupHash(address)];
 
-	if (
-		(fastblock!=0) && 
-		(fastblock->start==address) && 
+	if ((fastblock->start==address) && 
 		(fastblock->cpu_mode_tag ==fpscr.PR_SZ)
 		)
 	{
 		fastblock->lookups++;
 		return fastblock;
 	}
-	#endif
+	else
+	{
+		return FindBlock_full(address,fastblock);
+	}
+#else
+	return FindBlock_full(address,BLOCK_NONE);
+#endif
+
+}
+CompiledBasicBlock* __fastcall FindBlock_full(u32 address,CompiledBasicBlock* fastblock)
+{
+	CompiledBasicBlock* thisblock;
+
+	//if (((address>>26)&0x7)==3)
+	//	return Blockz[((address&RAM_MASK)>>1)];
 
 	BlockList* blklist = GetLookupBlockList(address);
 
@@ -321,19 +333,16 @@ CompiledBasicBlock* FindBlock(u32 address)
 	for (u32 i=0;i<listsz;i++)
 	{ 
 		thisblock=(*blklist)[i];
-		if ((thisblock!=0) && (thisblock->start==address))
+		if (thisblock->start==address && thisblock->cpu_mode_tag==fpscr.PR_SZ)
 		{
-			if (thisblock->cpu_mode_tag==fpscr.PR_SZ)
-			{
+			thisblock->lookups++;
 #ifdef BLOCK_LUT_GUESS
-				if (fastblock==0 || fastblock->lookups<=thisblock->lookups)
-				{
-					BlockLookupGuess[GetLookupHash(address)]=thisblock;
-				}
-#endif
-				thisblock->lookups++;
-				return thisblock;
+			if (fastblock->lookups<=thisblock->lookups)
+			{
+				BlockLookupGuess[GetLookupHash(address)]=thisblock;
 			}
+#endif
+			return thisblock;
 		}
 	}
 
@@ -398,7 +407,7 @@ void UnRegisterBlock(CompiledBasicBlock* block)
 
 	#ifdef BLOCK_LUT_GUESS
 	if (BlockLookupGuess[GetLookupHash(block->start)]==block)
-		BlockLookupGuess[GetLookupHash(block->start)]=0;
+		BlockLookupGuess[GetLookupHash(block->start)]=BLOCK_NONE;
 	#endif
 
 	if (((block->start >>26)&0x7)==3)
@@ -481,6 +490,9 @@ bool RamLockedWrite(u8* address)
 
 void InitBlockManager()
 {
+	BLOCK_NONE->start=0xFFFFFFFF;
+	BLOCK_NONE->cpu_mode_tag=0xFFFFFFFF;
+	BLOCK_NONE->lookups=0;
 }
 void ResetBlockManager()
 {
@@ -496,7 +508,7 @@ void TermBlockManager()
 ///////////////////////////////////////////////
 void ConvBlockInfo(nullprof_block_info* to,CompiledBasicBlock* pblk)
 {
-	if (pblk==0)
+	if (pblk==BLOCK_NONE)
 	{
 		to->addr=0xFFFFFFFF;
 		return;

@@ -36,6 +36,20 @@ u32 avg_rat_cnt=0;
 u32 avg_bc=0;
 //recBlock* lastBlock;
 
+CompiledBasicBlock*  __fastcall CompileCode(u32 pc)
+{
+	CompiledBasicBlock* cblock;
+	BasicBlock* block=new BasicBlock();
+	//analyse code
+	AnalyseCode(pc,block);
+	FillBlockLockInfo(block);
+	CompileBasicBlock_slow(block);
+	RegisterBlock(cblock=block->cBB);
+	delete block;
+	//compile code
+	//return pointer
+	return cblock;
+}
 INLINE CompiledBasicBlock* __fastcall GetRecompiledCode(u32 pc)
 {
 	CompiledBasicBlock* cblock=FindBlock(pc);
@@ -43,18 +57,7 @@ INLINE CompiledBasicBlock* __fastcall GetRecompiledCode(u32 pc)
 	if (cblock)
 		return cblock;
 	else
-	{
-		BasicBlock* block=new BasicBlock();
-		//analyse code
-		AnalyseCode(pc,block);
-		FillBlockLockInfo(block);
-		CompileBasicBlock_slow(block);
-		RegisterBlock(cblock=block->cBB);
-		delete block;
-		//compile code
-		//return pointer
-		return cblock;
-	}
+		return CompileCode(pc);
 }
 
 CompiledBasicBlock* FindOrRecompileCode(u32 pc)
@@ -111,7 +114,7 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 	{
 		CompiledBasicBlock* currBlock=GetRecompiledCode(pc);
 		//rec_cycles+=currBlock->cycles;
-		BasicBlockEP* fp=currBlock->Code;
+		//BasicBlockEP* fp=currBlock->Code;
 
 #ifdef X86
 		//call block :)
@@ -123,9 +126,12 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 			push edi
 			push ebx
 			push ebp
+		}
 
-			call fp;
+		currBlock->Code();
 
+		__asm 
+		{
 			pop ebp
 			pop ebx
 			pop edi

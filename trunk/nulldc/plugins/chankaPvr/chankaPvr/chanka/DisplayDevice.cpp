@@ -314,7 +314,7 @@ void CDisplayDevice::EndScene()
 
   if (g_bShowStats)
   {  
-    DrawText(0,400,0xff00ff00,"%.2f fps",fFPS);
+  //  DrawText(0,400,0xff00ff00,"%.2f fps",fFPS);
 //    DrawText(0,410,0xff00ff00,"CPU: %3d",g_uCPUUsage);
   }
 
