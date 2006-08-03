@@ -150,7 +150,9 @@ void LoadBiosFiles()
 void SaveFlash()
 {
 	char* temp_path=GetEmuPath("data\\");
-	u32 pl=(u32)strlen(temp_path);
+	printf("ERROR : FLASH NOT SAVED\n");
+//	u32 pl=(u32)strlen(temp_path);
+	//SaveSh4FlashromToFile(
 }
 void Start_DC()
 {

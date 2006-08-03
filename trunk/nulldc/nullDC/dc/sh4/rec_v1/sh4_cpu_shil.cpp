@@ -565,8 +565,8 @@ sh4op(i0010_nnnn_mmmm_0111)
 	sr.T=sr.M^sr.Q;*/
 
 	Sh4RegType reg1=Sh4RegType::NoReg;
-	Sh4RegType reg2=(Sh4RegType)GetM(op);
-	Sh4RegType reg3=(Sh4RegType)GetN(op);
+	Sh4RegType reg2=(Sh4RegType)m;
+	Sh4RegType reg3=(Sh4RegType)n;
 
 	u32 match=MatchDiv32(pc+2,bb,reg1,reg2,reg3);
 	printf("DIV32S matched %d%%\n",match*100/65);
@@ -2380,6 +2380,7 @@ void shil_DynarecInit()
 #define sr		a_not_defined_name_has_to_be_rec_sr
 #define fpscr	a_not_defined_name_has_to_be_rec_fpscr
 
+#undef iNimp
 #define iNimp(op,info) rec_shil_iNimp(pc,op,info)
 
 #include "dc\sh4\sh4_cpu_arith.h"

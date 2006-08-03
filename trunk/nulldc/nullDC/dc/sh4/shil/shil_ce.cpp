@@ -274,11 +274,11 @@ u32 shil_optimise_pass_ce_main(BasicBlock* bb)
 		for (size_t i=0;i<il.opcodes.size();i++)
 			bb->ilst.opcodes.push_back(il.opcodes[i]);
 		
-		for (int i=0;i<16;i++)
+		for (u8 i=0;i<16;i++)
 		{
 			ce_WriteBack_aks(i,&bb->ilst);
 		}
-		bb->ilst.op_count=bb->ilst.opcodes.size();
+		bb->ilst.op_count=(u32)bb->ilst.opcodes.size();
 	}
 
 	if (old_Size!=bb->ilst.opcodes.size())
@@ -312,7 +312,7 @@ void shil_optimise_pass_ce_driver(BasicBlock* bb)
 //default thing to do :p
 void DefHanlder(shil_opcode* op,BasicBlock* bb,shil_stream* il)
 {
-	for (int i=0;i<16;i++)
+	for (u8 i=0;i<16;i++)
 	{
 		if (ce_IsConst(i))
 		{
@@ -592,7 +592,7 @@ shilh(SaveT)
 }
 shilh(shil_ifb)
 {
-	for (int i=0;i<16;i++)
+	for (u8 i=0;i<16;i++)
 		ce_WriteBack_aks(i,il);
 	return false;
 }
@@ -707,7 +707,7 @@ shilh(div32)
 	}*/
 	ce_WriteBack_aks(op->reg1,il);
 	ce_WriteBack_aks(op->reg2,il);
-	ce_WriteBack_aks(op->imm1,il);
+	ce_WriteBack_aks((u8)op->imm1,il);
 	DefHanlder(op,bb,il);
 	return false;
 }

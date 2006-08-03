@@ -954,7 +954,7 @@ void AddMapleItemsToCB(List<MapleDeviceLoadInfo>* list,HWND hw,char* selected)
 				,(*list)[i].PluginVersion.build
 				,dll,(*list)[i].id);
 			
-			int dll_len=strlen(dll);
+			size_t dll_len=strlen(dll);
 			lp = (char * )malloc(dll_len+1+2); 
 			//strcpy(lp,dll);
 			sprintf(lp,"%s:%d",dll,(*list)[i].id);
@@ -978,7 +978,7 @@ void AddItemsToCB(List<PluginLoadInfo>* list,HWND hw,char* selected)
 				,(*list)[i].plugin_info.PluginVersion.build
 				,dll);
 			
-			int dll_len=strlen(dll);
+			size_t dll_len=strlen(dll);
 			char* lp = (char *)malloc(dll_len+1); 
 			strcpy(lp,dll);
 			int i2 = ComboBox_AddString(hw, temp); 
@@ -998,8 +998,8 @@ void GetCurrent(HWND hw,char* dest)
 void UpdateMapleSelections(HWND hw,HWND hWnd)
 {
 	int cs=ComboBox_GetCurSel(hw);
-	int new_port=ComboBox_GetItemData(hw,cs);
-	char temp[512];
+	LRESULT new_port=ComboBox_GetItemData(hw,cs);
+//	char temp[512];
 	
 	//save selected ones
 	if (current_maple_port!=-1)
@@ -1024,7 +1024,7 @@ void SaveMaple()
 		for (int j=0;j<6;j++)
 		{
 			char temp[512];
-			char plugin[512];
+//			char plugin[512];
 			sprintf(temp,"Current_maple%d_%d",i,j);
 			cfgSaveStr("nullDC_plugins",temp,SelectedPlugin_maple[i][j]);
 		}
@@ -1038,7 +1038,7 @@ void LoadMaple()
 		for (int j=0;j<6;j++)
 		{
 			char temp[512];
-			char plugin[512];
+//			char plugin[512];
 			sprintf(temp,"Current_maple%d_%d",i,j);
 			cfgLoadStr("nullDC_plugins",temp,SelectedPlugin_maple[i][j]);
 		}

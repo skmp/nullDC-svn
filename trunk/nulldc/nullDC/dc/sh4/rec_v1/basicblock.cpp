@@ -22,7 +22,7 @@ void BasicBlock::ClearBlock(BasicBlock* block)
 }
 void BasicBlock::BlockWasSuspended(BasicBlock* block)
 {
-	for (int i=0;i<blocks_to_clear.size();i++)
+	for (u32 i=0;i<blocks_to_clear.size();i++)
 	{
 		if (blocks_to_clear[i]==block)
 		{
@@ -44,7 +44,7 @@ void BasicBlock::AddRef(BasicBlock* block)
 }
 void BasicBlock::Suspend()
 {
-	for (int i=0;i<blocks_to_clear.size();i++)
+	for (u32 i=0;i<blocks_to_clear.size();i++)
 	{
 		if (blocks_to_clear[i])
 		{

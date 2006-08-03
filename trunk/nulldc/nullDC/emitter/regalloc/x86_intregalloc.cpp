@@ -269,8 +269,8 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 		}
 
 		//yes it realy can't come here
-		__asm int 3;
-		return EAX;
+//		__asm int 3;
+		//return EAX;
 	}
 	//Save registers
 	virtual void SaveRegister(u32 reg,x86IntRegType from)

@@ -7,13 +7,13 @@ extern u8 GetSingleFromDouble(u8 dbl)
 {
 	if (dbl>=Sh4RegType::dr_0 && dbl<=Sh4RegType::dr_7)
 	{
-		u8 res=dbl-Sh4RegType::dr_0;
-		return (Sh4RegType::fr_0+(res<<1));
+		u8 res=(u8)(dbl-Sh4RegType::dr_0);
+		return (u8)(Sh4RegType::fr_0+(res<<1));
 	}
 	else if (dbl>=Sh4RegType::xd_0 && dbl<=Sh4RegType::xd_7)
 	{
-		u8 res=dbl-Sh4RegType::xd_0;
-		return (Sh4RegType::xf_0+(res<<1));
+		u8 res=(u8)(dbl-Sh4RegType::xd_0);
+		return (u8)(Sh4RegType::xf_0+(res<<1));
 	}
 
 	printf("GetSingleFromDouble : WRONG ID %X\n",dbl);

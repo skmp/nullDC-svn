@@ -277,7 +277,7 @@ void WriteMem_gdrom(u32 Addr, u32 data, u32 sz)
 
 			// Ok this is crash worthy ;)
 
-			gdRM.Words[gdSR.ByteCount/2] = data;
+			gdRM.Words[gdSR.ByteCount/2] = (u16)data;
 
 			if(0 >= (gdSR.ByteCount -= 2))
 			{

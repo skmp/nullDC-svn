@@ -1665,7 +1665,7 @@ void __fastcall shil_compile_fsrra(shil_opcode* op,BasicBlock* block)
 		if (fra->IsRegAllocated(op->reg1))
 		{
 			//sse_WBF(op->reg1);
-			x86SSERegType fr1=fra->GetRegister(fr1,op->reg1,RA_DEFAULT);
+			x86SSERegType fr1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
 #ifdef _FAST_fssra
 			x86e->SSE_RSQRTSS_XMM_to_XMM(fr1,fr1);
 #else

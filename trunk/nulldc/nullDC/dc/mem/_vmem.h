@@ -51,5 +51,6 @@ void __fastcall _vmem_WriteMem16(u32 Address,u16 data);
 void __fastcall _vmem_WriteMem32(u32 Address,u32 data);
 
 //Emitters
+/*
 void _vmem_EmitReadMem(void* x86e,u32 addr,u32 out,u32 sz);
-void _vmem_EmitWriteMem(void* x86e,u32 addr,u32 data,u32 sz);
+void _vmem_EmitWriteMem(void* x86e,u32 addr,u32 data,u32 sz);*/

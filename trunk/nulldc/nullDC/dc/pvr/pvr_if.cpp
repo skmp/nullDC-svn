@@ -137,13 +137,13 @@ INLINE void YUV_ConvertMacroBlock()
 	else
 	{
 		printf("YUV4:2:2 not supported (YUV converter)");
-		u8* U0=(u8*)&YUV_tempdata[0];
+		/*u8* U0=(u8*)&YUV_tempdata[0];
 		u8* V0=(u8*)&YUV_tempdata[64/4];
 		u8* Y0=(u8*)&YUV_tempdata[(64+64)/4];
 
 		u8* U1=(u8*)&YUV_tempdata[256/4];
 		u8* V1=(u8*)&YUV_tempdata[(64+256)/4];
-		u8* Y1=(u8*)&YUV_tempdata[(64+64+256)/4];
+		u8* Y1=(u8*)&YUV_tempdata[(64+64+256)/4];*/
 
 	}
 

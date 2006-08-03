@@ -585,62 +585,6 @@
 							>
 						</File>
 					</Filter>
-					<Filter
-						Name="rec_v1"
-						>
-						<File
-							RelativePath=".\dc\sh4\rec_v1\analyser.cpp"
-							>
-						</File>
-						<File
-							RelativePath=".\dc\sh4\rec_v1\analyser.h"
-							>
-						</File>
-						<File
-							RelativePath=".\dc\sh4\rec_v1\basicblock.cpp"
-							>
-						</File>
-						<File
-							RelativePath=".\dc\sh4\rec_v1\basicblock.h"
-							>
-						</File>
-						<File
-							RelativePath=".\dc\sh4\rec_v1\blockmanager.cpp"
-							>
-						</File>
-						<File
-							RelativePath=".\dc\sh4\rec_v1\blockmanager.h"
-							>
-						</File>
-						<File
-							RelativePath=".\dc\sh4\rec_v1\driver.cpp"
-							>
-						</File>
-						<File
-							RelativePath=".\dc\sh4\rec_v1\driver.h"
-							>
-						</File>
-						<File
-							RelativePath=".\dc\sh4\rec_v1\nullprof.h"
-							>
-						</File>
-						<File
-							RelativePath=".\dc\sh4\rec_v1\ops.h"
-							>
-						</File>
-						<File
-							RelativePath=".\dc\sh4\rec_v1\recompiler.h"
-							>
-						</File>
-						<File
-							RelativePath=".\dc\sh4\rec_v1\sh4_cpu_shil.cpp"
-							>
-						</File>
-						<File
-							RelativePath=".\dc\sh4\rec_v1\sh4_cpu_shil.h"
-							>
-						</File>
-					</Filter>
 				</Filter>
 				<Filter
 					Name="shil"
@@ -667,6 +611,62 @@
 					</File>
 					<File
 						RelativePath=".\dc\sh4\shil\shil_ce.h"
+						>
+					</File>
+				</Filter>
+				<Filter
+					Name="rec_v1"
+					>
+					<File
+						RelativePath=".\dc\sh4\rec_v1\analyser.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\dc\sh4\rec_v1\analyser.h"
+						>
+					</File>
+					<File
+						RelativePath=".\dc\sh4\rec_v1\basicblock.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\dc\sh4\rec_v1\basicblock.h"
+						>
+					</File>
+					<File
+						RelativePath=".\dc\sh4\rec_v1\blockmanager.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\dc\sh4\rec_v1\blockmanager.h"
+						>
+					</File>
+					<File
+						RelativePath=".\dc\sh4\rec_v1\driver.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\dc\sh4\rec_v1\driver.h"
+						>
+					</File>
+					<File
+						RelativePath=".\dc\sh4\rec_v1\nullprof.h"
+						>
+					</File>
+					<File
+						RelativePath=".\dc\sh4\rec_v1\ops.h"
+						>
+					</File>
+					<File
+						RelativePath=".\dc\sh4\rec_v1\recompiler.h"
+						>
+					</File>
+					<File
+						RelativePath=".\dc\sh4\rec_v1\sh4_cpu_shil.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\dc\sh4\rec_v1\sh4_cpu_shil.h"
 						>
 					</File>
 				</Filter>

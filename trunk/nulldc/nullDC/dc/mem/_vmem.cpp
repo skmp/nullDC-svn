@@ -223,12 +223,12 @@ direct:
 u8 __fastcall _vmem_ReadMem8_not_mapped(u32 addresss)
 {
 	printf("Read8 from 0x%X, not mapped [_vmem default handler]\n",addresss);
-	return 0xDEADC0D3;
+	return 0xD3;
 }
 u16 __fastcall _vmem_ReadMem16_not_mapped(u32 addresss)
 {
 	printf("Read16 from 0x%X, not mapped [_vmem default handler]\n",addresss);
-	return 0xDEADC0D3;
+	return 0xC0D3;
 }
 u32 __fastcall _vmem_ReadMem32_not_mapped(u32 addresss)
 {
@@ -414,6 +414,7 @@ void _vmem_term()
 045239B6  mov         esi,eax 
 */
 //emitters
+/*
 void _vmem_EmitReadMem(void* px86e,u32 addr,u32 out,u32 sz)
 {	
 	emitter<>* x86e=(emitter<>*)px86e;
@@ -468,3 +469,4 @@ return;
 void _vmem_EmitWriteMem(emitter<>* x86e,u32 addr,u32 data,u32 sz)
 {
 }
+*/

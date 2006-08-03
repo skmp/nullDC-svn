@@ -193,7 +193,7 @@ void AnalyseCode(u32 start,BasicBlock* to)
 	TermPipeline();
 	to->cycles=known_pl_cycles*CPU_RATIO;
 
-	to->ilst.op_count=to->ilst.opcodes.size();
+	to->ilst.op_count=(u32)to->ilst.opcodes.size();
 	//shil_opt_return srv;
 //	perform_shil_opt(shil_opt_ntc,to,srv);
 

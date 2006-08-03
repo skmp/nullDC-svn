@@ -135,7 +135,7 @@ void vramlock_list_add(vram_block* block)
 	for (u32 i=base;i<=end;i++)
 	{
 		vector<vram_block*>* list=&VramLocks[i];
-		for (int j=0;j<list->size();j++)
+		for (u32 j=0;j<list->size();j++)
 		{
 			if ((*list)[j]==0)
 			{
@@ -226,7 +226,7 @@ bool VramLockedWrite(u8* address)
 
 	if (offset<VRAM_SIZE)
 	{
-		u32 found=0;
+//		u32 found=0;
 		size_t addr_hash = offset/PAGE_SIZE;
 		vector<vram_block*>* list=&VramLocks[addr_hash];
 			
@@ -234,7 +234,7 @@ bool VramLockedWrite(u8* address)
 		{
 			if ((*list)[i])
 			{
-				libPvr->pvr_info.LockedBlockWrite((*list)[i],offset);
+				libPvr->pvr_info.LockedBlockWrite((*list)[i],(u32)offset);
 				//found++;
 				if ((*list)[i])
 				{
@@ -245,7 +245,7 @@ bool VramLockedWrite(u8* address)
 			}
 		}
 		list->clear();
-		vram.UnLockRegion(offset&(~(PAGE_SIZE-1)),PAGE_SIZE);
+		vram.UnLockRegion((u32)offset&(~(PAGE_SIZE-1)),PAGE_SIZE);
 
 		return true;
 	}

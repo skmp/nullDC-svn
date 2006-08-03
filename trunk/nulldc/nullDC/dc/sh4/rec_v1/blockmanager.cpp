@@ -104,6 +104,8 @@ public :
 			__asm int 3;
 #endif
 		}
+
+		return 0xFFFFFFFF;
 	}
 	void Remove(BasicBlock* block)
 	{
@@ -476,7 +478,7 @@ bool RamLockedWrite(u8* address)
 			}
 		}
 		list->clear();
-		mem_b.UnLockRegion(offset&(~(PAGE_SIZE-1)),PAGE_SIZE);
+		mem_b.UnLockRegion((u32)offset&(~(PAGE_SIZE-1)),PAGE_SIZE);
 
 		if (PageInfo[addr_hash].invalidates>20)
 			PageInfo[addr_hash].flags.ManualCheck=1;
@@ -570,7 +572,7 @@ void nullprof_GetBlocks(nullprof_blocklist* to, u32 type,u32 count)
 	if (type!=ALL_BLOCKS)
 	{
 		if (count==0 || count>used_blocks.size())
-			count=used_blocks.size();
+			count=(u32)used_blocks.size();
 
 		to->count=count;
 		to->blocks=(nullprof_block_info*)malloc(count*sizeof(nullprof_block_info));
@@ -600,7 +602,7 @@ void nullprof_GetBlocks(nullprof_blocklist* to, u32 type,u32 count)
 	}
 	else
 	{
-		count=used_blocks.size();
+		count=(u32)used_blocks.size();
 		to->count=count;
 		to->blocks=(nullprof_block_info*)malloc(count*sizeof(nullprof_block_info));
 		for (u32 i=0;i<used_blocks.size();i++)
@@ -613,7 +615,7 @@ void nullprof_ClearBlockPdata()
 {
 	BlockList used_blocks;
 
-	for (int i=0;i<all_block_list.size();i++)
+	for (u32 i=0;i<all_block_list.size();i++)
 	{
 		if (all_block_list[i])
 			used_blocks.Add(all_block_list[i]);

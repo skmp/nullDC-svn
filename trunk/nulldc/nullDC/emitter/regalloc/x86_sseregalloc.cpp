@@ -221,8 +221,8 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 				x86e->SSE_MOVSS_M32_to_XMM(d_reg,GetRegPtr(reg));
 			return d_reg;
 		}
-		__asm int 3;
-		return XMM_Error;
+//		__asm int 3;
+		//return XMM_Error;
 	}
 	//Save registers
 	virtual void SaveRegister(u32 reg,x86SSERegType from)

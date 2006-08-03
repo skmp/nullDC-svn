@@ -123,7 +123,7 @@ bool SaveSh4FlashromToFile(char *szFile)
 	
 	fseek(fd, 0, SEEK_SET);	// to beginning of file
 
-	char buf = 'Z';
+//	char buf = 'Z';
 	for( int i=0; i<128*1024; i++ )	{
 		fwrite(&flash_b[i], 1,1, fd);
 	}
