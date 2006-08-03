@@ -3,7 +3,7 @@
 
 
 
-#define shilh(name) bool __fastcall shil_ce_##name(shil_opcode* op,rec_v1_BasicBlock* bb,shil_stream* il)
+#define shilh(name) bool __fastcall shil_ce_##name(shil_opcode* op,BasicBlock* bb,shil_stream* il)
 
 typedef shilh(FP);
 
@@ -242,7 +242,7 @@ void ce_WriteBack_aks(u8 reg,shil_stream* il)
 }
 bool ce_re_run;
 //Optimisation pass mainloop
-u32 shil_optimise_pass_ce_main(rec_v1_BasicBlock* bb)
+u32 shil_optimise_pass_ce_main(BasicBlock* bb)
 {
 	bool rv=false;
 	ce_re_run=false;
@@ -287,14 +287,14 @@ u32 shil_optimise_pass_ce_main(rec_v1_BasicBlock* bb)
 	return opt;
 }
 u64 total_ops_removed=0;
-void shil_optimise_pass_ce_driver(rec_v1_BasicBlock* bb)
+void shil_optimise_pass_ce_driver(BasicBlock* bb)
 {
 	ce_re_run=true;
 	u32 rv=0;
 	u32 pass=0;
 	size_t old_Size=bb->ilst.opcodes.size();
 
-	void CompileBasicBlock_slow_c(rec_v1_BasicBlock* block,u32 pass);
+	void CompileBasicBlock_slow_c(BasicBlock* block,u32 pass);
 	//CompileBasicBlock_slow_c(bb,0);
 	while(ce_re_run)
 	{
@@ -310,7 +310,7 @@ void shil_optimise_pass_ce_driver(rec_v1_BasicBlock* bb)
 
 }
 //default thing to do :p
-void DefHanlder(shil_opcode* op,rec_v1_BasicBlock* bb,shil_stream* il)
+void DefHanlder(shil_opcode* op,BasicBlock* bb,shil_stream* il)
 {
 	for (int i=0;i<16;i++)
 	{

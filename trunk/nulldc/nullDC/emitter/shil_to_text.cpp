@@ -3,7 +3,7 @@
 #include "emitter.h"
 
 #include "dc\sh4\sh4_registers.h"
-#include "dc\sh4\rec_v1\rec_v1_blockmanager.h"
+#include "dc\sh4\rec_v1\blockmanager.h"
 #include "dc\sh4\rec_v1\nullprof.h"
 #include "dc\sh4\sh4_opcode_list.h"
 #include "dc\mem\sh4_mem.h"
@@ -11,7 +11,7 @@
 
 
 
-void CompileBasicBlock_slow_c(rec_v1_BasicBlock* block,u32 pass)
+void CompileBasicBlock_slow_c(BasicBlock* block,u32 pass)
 {
 	FILE* to;
 	char temp[512];

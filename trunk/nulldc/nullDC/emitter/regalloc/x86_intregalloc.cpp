@@ -158,7 +158,7 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 	}
 	//reg alloc interface :)
 	//DoAllocation		: do allocation on the block
-	virtual void DoAllocation(rec_v1_BasicBlock* block,emitter<>* x86e)
+	virtual void DoAllocation(BasicBlock* block,emitter<>* x86e)
 	{
 		this->x86e=x86e;
 		sort_temp used[16];

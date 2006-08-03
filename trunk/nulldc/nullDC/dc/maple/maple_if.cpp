@@ -9,7 +9,7 @@
 #include "dc/mem/sb.h"
 #include "dc/mem/sh4_mem.h"
 #include "plugins/plugin_manager.h"
-#include "dc/sh4/rec_v1/rec_v1_blockmanager.h"
+#include "dc/sh4/rec_v1/blockmanager.h"
 
 maple_device_instance MapleDevices[4][6];
 
@@ -197,7 +197,7 @@ void DoMapleDma()
 				outlen=4;
 				p_out[0]=0xFFFFFFFF;
 			}
-			//rec_v1_NotifyMemWrite(header_2,outlen);
+			//NotifyMemWrite(header_2,outlen);
 
 			//goto next command
 			addr += 2 * 4 + plen * 4;

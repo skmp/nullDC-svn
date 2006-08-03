@@ -1,6 +1,6 @@
-#include "rec_v1_analyser.h"
+#include "analyser.h"
 #include "sh4_cpu_shil.h"
-#include "rec_v1_blockmanager.h"
+#include "blockmanager.h"
 
 #include "dc\mem\sh4_mem.h"
 #include "dc\sh4\sh4_registers.h"
@@ -78,7 +78,7 @@ void TermPipeline()
 	}
 	known_pl_cycles+=mpc;
 }
-void rec_v1_AnalyseCode(u32 start,BasicBlock* to)
+void AnalyseCode(u32 start,BasicBlock* to)
 {
 
 	u32 pc=start;
@@ -100,7 +100,7 @@ void rec_v1_AnalyseCode(u32 start,BasicBlock* to)
 		block_ops++;
 		StepPipeline(opcode);
 		/*if (((pc>>26)&0x7)==3)
-			rec_v1_SetBlockTest(pc);*/
+			SetBlockTest(pc);*/
 
 		/*if ((opcode&0xF000)==0xF000)
 			ilst->shil_ifb(opcode,pc);

@@ -3,7 +3,7 @@
 #include "sh4_fpu.h"
 #include "dc/mem/memutil.h"
 #include "sh4_opcode_list.h"
-#include "rec_v1/rec_v1_ops.h"
+#include "rec_v1/ops.h"
 #include "plugins/plugin_manager.h"
 
 

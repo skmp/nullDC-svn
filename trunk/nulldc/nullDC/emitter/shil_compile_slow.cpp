@@ -4,7 +4,7 @@
 
 #include "dc\sh4\shil\shil_ce.h"
 #include "dc\sh4\sh4_registers.h"
-#include "dc\sh4\rec_v1\rec_v1_blockmanager.h"
+#include "dc\sh4\rec_v1\blockmanager.h"
 #include "dc\sh4\rec_v1\nullprof.h"
 #include "dc\sh4\sh4_opcode_list.h"
 #include "dc\mem\sh4_mem.h"
@@ -44,7 +44,7 @@ cDllHandler profiler_dll;
 bool nullprof_enabled=false;
 
 #define PROFILE_BLOCK_CYCLES (nullprof_enabled)
-typedef void __fastcall shil_compileFP(shil_opcode* op,rec_v1_BasicBlock* block);
+typedef void __fastcall shil_compileFP(shil_opcode* op,BasicBlock* block);
 
 bool inited=false;
 
@@ -90,7 +90,7 @@ void __fastcall dyna_profile_block_enter()
 	}
 }
 
-void __fastcall dyna_profile_block_exit(rec_v1_BasicBlock* bb)
+void __fastcall dyna_profile_block_exit(BasicBlock* bb)
 {
 	__asm
 	{
@@ -332,12 +332,12 @@ void sse_RLF(u32 reg)
 	SaveReg(op->reg1,r1);
 
 //shil compilation
-void __fastcall shil_compile_nimp(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_nimp(shil_opcode* op,BasicBlock* block)
 {
 	printf("*********SHIL \"%s\" not recompiled*********\n",GetShilName((shil_opcodes)op->opcode));
 }
 
-void __fastcall shil_compile_mov(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_mov(shil_opcode* op,BasicBlock* block)
 {
 	u32 size=op->flags&3;
 	assert(op->flags & FLAG_REG1);//reg1 has to be used on mov :)
@@ -529,7 +529,7 @@ void __fastcall shil_compile_mov(shil_opcode* op,rec_v1_BasicBlock* block)
 
 
 //mnnn movex !! wowhoo
-void __fastcall shil_compile_movex(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_movex(shil_opcode* op,BasicBlock* block)
 {
 	u32 size=op->flags&3;
 	assert(op->flags & (FLAG_REG1|FLAG_REG2));	//reg1 , reg2 has to be used on movex :)
@@ -598,7 +598,7 @@ void __fastcall shil_compile_movex(shil_opcode* op,rec_v1_BasicBlock* block)
 }
 
 //ahh .. just run interpreter :P
-void __fastcall shil_compile_shil_ifb(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_shil_ifb(shil_opcode* op,BasicBlock* block)
 {
 
 	//if opcode needs pc , save it
@@ -616,7 +616,7 @@ void __fastcall shil_compile_shil_ifb(shil_opcode* op,rec_v1_BasicBlock* block)
 }
 
 //shift
-void __fastcall shil_compile_swap(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_swap(shil_opcode* op,BasicBlock* block)
 {
 	u32 size=op->flags&3;
 	
@@ -643,69 +643,69 @@ void __fastcall shil_compile_swap(shil_opcode* op,rec_v1_BasicBlock* block)
 	//MarkDirty(op->reg1);
 }
 
-void __fastcall shil_compile_shl(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_shl(shil_opcode* op,BasicBlock* block)
 {
 	OP_ItMoR(SHL32ItoM,SHL32ItoR,(u8)op->imm1);
 	//MarkDirty(op->reg1);
 }
 
-void __fastcall shil_compile_shr(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_shr(shil_opcode* op,BasicBlock* block)
 {
 	OP_ItMoR(SHR32ItoM,SHR32ItoR,(u8)op->imm1);
 	//MarkDirty(op->reg1);
 }
 
-void __fastcall shil_compile_sar(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_sar(shil_opcode* op,BasicBlock* block)
 {
 	OP_ItMoR(SAR32ItoM,SAR32ItoR,(u8)op->imm1);
 	//MarkDirty(op->reg1);
 }
 
 //rotates
-void __fastcall shil_compile_rcl(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_rcl(shil_opcode* op,BasicBlock* block)
 {
 	OP_NtMoR_noimm(RCL321toM,RCL321toR);
 	//MarkDirty(op->reg1);
 }
-void __fastcall shil_compile_rcr(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_rcr(shil_opcode* op,BasicBlock* block)
 {
 	OP_NtR_noimm(RCR321toR);
 	//MarkDirty(op->reg1);
 }
-void __fastcall shil_compile_ror(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_ror(shil_opcode* op,BasicBlock* block)
 {
 	OP_NtR_noimm(ROR321toR);
 	//MarkDirty(op->reg1);
 }
-void __fastcall shil_compile_rol(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_rol(shil_opcode* op,BasicBlock* block)
 {
 	OP_NtR_noimm(ROL321toR);
 	//MarkDirty(op->reg1);
 }
 //neg
-void __fastcall shil_compile_neg(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_neg(shil_opcode* op,BasicBlock* block)
 {
 	OP_NtR_noimm(NEG32R);
 	//MarkDirty(op->reg1);
 }
 //not
-void __fastcall shil_compile_not(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_not(shil_opcode* op,BasicBlock* block)
 {
 	OP_NtR_noimm(NOT32R);
 	//MarkDirty(op->reg1);
 }
 //or xor and
-void __fastcall shil_compile_xor(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_xor(shil_opcode* op,BasicBlock* block)
 {
 	OP_RegToReg_simple(XOR32);
 	//MarkDirty(op->reg1);
 }
-void __fastcall shil_compile_or(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_or(shil_opcode* op,BasicBlock* block)
 {
 	OP_RegToReg_simple(OR32);
 	//MarkDirty(op->reg1);
 }
-void __fastcall shil_compile_and(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_and(shil_opcode* op,BasicBlock* block)
 {
 	OP_RegToReg_simple(AND32);
 	//MarkDirty(op->reg1);
@@ -819,7 +819,7 @@ void emit_vmem_op_compat_const(emitter<>* x86e,u32 ra,
 							   x86IntRegType ro,x86SSERegType ro_sse,bool sse,
 								u32 sz,u32 rw);
 u32 m_unpack_sz[3]={1,2,4};
-void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_readm(shil_opcode* op,BasicBlock* block)
 {
 	u32 size=op->flags&3;
 
@@ -879,7 +879,7 @@ void __fastcall shil_compile_readm(shil_opcode* op,rec_v1_BasicBlock* block)
 	}
 	//MarkDirty(op->reg1);
 }
-void __fastcall shil_compile_writem(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_writem(shil_opcode* op,BasicBlock* block)
 {
 	sse_WBF(op->reg1);//Write back possibly readed reg
 	u32 size=op->flags&3;
@@ -921,7 +921,7 @@ void __fastcall shil_compile_writem(shil_opcode* op,rec_v1_BasicBlock* block)
 }
 
 //save-loadT
-void __fastcall shil_compile_SaveT(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_SaveT(shil_opcode* op,BasicBlock* block)
 {
 	assert(op->flags & FLAG_IMM1);//imm1
 	assert(0==(op->flags & (FLAG_IMM2|FLAG_REG1|FLAG_REG2)));//no imm2/r1/r2
@@ -951,7 +951,7 @@ void __fastcall shil_compile_SaveT(shil_opcode* op,rec_v1_BasicBlock* block)
 		//SaveReg(reg_sr,ECX);
 	}
 }
-void __fastcall shil_compile_LoadT(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_LoadT(shil_opcode* op,BasicBlock* block)
 {
 	assert(op->flags & FLAG_IMM1);//imm1
 	assert(0==(op->flags & (FLAG_IMM2|FLAG_REG1|FLAG_REG2)));//no imm2/r1/r2
@@ -988,7 +988,7 @@ void __fastcall shil_compile_LoadT(shil_opcode* op,rec_v1_BasicBlock* block)
 }
 //cmp-test
 
-void __fastcall shil_compile_cmp(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_cmp(shil_opcode* op,BasicBlock* block)
 {
 	assert(FLAG_32==(op->flags & 3));
 	if (op->flags & FLAG_IMM1)
@@ -1023,7 +1023,7 @@ void __fastcall shil_compile_cmp(shil_opcode* op,rec_v1_BasicBlock* block)
 		//eflags is used w/ combination of SaveT
 	}
 }
-void __fastcall shil_compile_test(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_test(shil_opcode* op,BasicBlock* block)
 {
 	assert(FLAG_32==(op->flags & 3));
 	if (op->flags & FLAG_IMM1)
@@ -1060,24 +1060,24 @@ void __fastcall shil_compile_test(shil_opcode* op,rec_v1_BasicBlock* block)
 }
 
 //add-sub
-void __fastcall shil_compile_add(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_add(shil_opcode* op,BasicBlock* block)
 {
 	OP_RegToReg_simple(ADD32);
 	//MarkDirty(op->reg1);
 }
-void __fastcall shil_compile_adc(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_adc(shil_opcode* op,BasicBlock* block)
 {
 	OP_RegToReg_simple(ADC32);
 	//MarkDirty(op->reg1);
 }
-void __fastcall shil_compile_sub(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_sub(shil_opcode* op,BasicBlock* block)
 {
 	OP_RegToReg_simple(SUB32);
 	//MarkDirty(op->reg1);
 }
 
 //**
-void __fastcall shil_compile_jcond(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_jcond(shil_opcode* op,BasicBlock* block)
 {
 	printf("jcond ... heh not implemented\n");
 	assert(false);
@@ -1130,7 +1130,7 @@ void __fastcall shil_compile_jcond(shil_opcode* op,rec_v1_BasicBlock* block)
 		//printf("Deleted temp block \n");
 	}*/
 }
-void __fastcall shil_compile_jmp(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_jmp(shil_opcode* op,BasicBlock* block)
 {
 	printf("jmp ... heh not implemented\n");
 }
@@ -1157,7 +1157,7 @@ void load_with_ze16(x86IntRegType to,u8 from)
 		x86e->MOVZX32M16toR(to,(u16*)GetRegPtr(from));
 }
 
-void __fastcall shil_compile_mul(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_mul(shil_opcode* op,BasicBlock* block)
 {
 	u32 sz=op->flags&3;
 
@@ -1233,7 +1233,7 @@ void __fastcall shil_compile_mul(shil_opcode* op,rec_v1_BasicBlock* block)
 }
 
 
-void __fastcall shil_compile_div32(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_div32(shil_opcode* op,BasicBlock* block)
 {
 	assert(0==(op->flags & (FLAG_IMM2)));
 
@@ -1394,7 +1394,7 @@ __declspec(align(32)) float fsca_fpul_adj[4]={((2*pi)/65536.0f),((2*pi)/65536.0f
 
 #define SSE_s(op,sseop) SSE_SS_OP(op,sseop##_XMM_to_XMM,sseop##_M32_to_XMM);
 //simple opcodes
-void __fastcall shil_compile_fadd(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_fadd(shil_opcode* op,BasicBlock* block)
 {
 	assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2)));
 	u32 sz=op->flags & 3;
@@ -1410,7 +1410,7 @@ void __fastcall shil_compile_fadd(shil_opcode* op,rec_v1_BasicBlock* block)
 		assert(false);
 	}
 }
-void __fastcall shil_compile_fsub(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_fsub(shil_opcode* op,BasicBlock* block)
 {
 	assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2)));
 	u32 sz=op->flags & 3;
@@ -1427,7 +1427,7 @@ void __fastcall shil_compile_fsub(shil_opcode* op,rec_v1_BasicBlock* block)
 	}
 }
 
-void __fastcall shil_compile_fmul(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_fmul(shil_opcode* op,BasicBlock* block)
 {
 	assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2)));
 	u32 sz=op->flags & 3;
@@ -1444,7 +1444,7 @@ void __fastcall shil_compile_fmul(shil_opcode* op,rec_v1_BasicBlock* block)
 	}
 }
 
-void __fastcall shil_compile_fdiv(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_fdiv(shil_opcode* op,BasicBlock* block)
 {
 	assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2)));
 	u32 sz=op->flags & 3;
@@ -1462,7 +1462,7 @@ void __fastcall shil_compile_fdiv(shil_opcode* op,rec_v1_BasicBlock* block)
 }
 
 //binary opcodes
-void __fastcall shil_compile_fneg(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_fneg(shil_opcode* op,BasicBlock* block)
 {
 
 	
@@ -1493,7 +1493,7 @@ void __fastcall shil_compile_fneg(shil_opcode* op,rec_v1_BasicBlock* block)
 	}
 }
 
-void __fastcall shil_compile_fabs(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_fabs(shil_opcode* op,BasicBlock* block)
 {
 	assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2|FLAG_REG2)));
 	u32 sz=op->flags & 3;
@@ -1524,7 +1524,7 @@ void __fastcall shil_compile_fabs(shil_opcode* op,rec_v1_BasicBlock* block)
 
 
 //complex opcodes
-void __fastcall shil_compile_fcmp(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_fcmp(shil_opcode* op,BasicBlock* block)
 {
 	assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2)));
 	u32 sz=op->flags & 3;
@@ -1557,7 +1557,7 @@ void __fastcall shil_compile_fcmp(shil_opcode* op,rec_v1_BasicBlock* block)
 	}
 }
 
-void __fastcall shil_compile_fmac(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_fmac(shil_opcode* op,BasicBlock* block)
 {
 	assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2)));
 	u32 sz=op->flags & 3;
@@ -1612,7 +1612,7 @@ void __fastcall shil_compile_fmac(shil_opcode* op,rec_v1_BasicBlock* block)
 }
 
 
-void __fastcall shil_compile_fsqrt(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_fsqrt(shil_opcode* op,BasicBlock* block)
 {
 	assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2|FLAG_REG2)));
 	u32 sz=op->flags & 3;
@@ -1643,7 +1643,7 @@ void __fastcall shil_compile_fsqrt(shil_opcode* op,rec_v1_BasicBlock* block)
 		assert(false);
 	}
 }
-void __fastcall shil_compile_fsrra(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_fsrra(shil_opcode* op,BasicBlock* block)
 {
 	assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2|FLAG_REG2)));
 	u32 sz=op->flags & 3;
@@ -1697,7 +1697,7 @@ void __fastcall shil_compile_fsrra(shil_opcode* op,rec_v1_BasicBlock* block)
 	}
 }
 
-void __fastcall shil_compile_floatfpul(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_floatfpul(shil_opcode* op,BasicBlock* block)
 {
 	assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2|FLAG_REG2)));
 	u32 sz=op->flags & 3;
@@ -1720,7 +1720,7 @@ void __fastcall shil_compile_floatfpul(shil_opcode* op,rec_v1_BasicBlock* block)
 		assert(false);
 	}
 }
-void __fastcall shil_compile_ftrc(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_ftrc(shil_opcode* op,BasicBlock* block)
 {
 	assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2|FLAG_REG2)));
 	u32 sz=op->flags & 3;
@@ -1754,7 +1754,7 @@ void __fastcall shil_compile_ftrc(shil_opcode* op,rec_v1_BasicBlock* block)
 }
 
 //Mixed opcodes (sse & x87)
-void __fastcall shil_compile_fsca(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_fsca(shil_opcode* op,BasicBlock* block)
 {
 	assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2|FLAG_REG2)));
 	u32 sz=op->flags & 3;
@@ -1782,7 +1782,7 @@ void __fastcall shil_compile_fsca(shil_opcode* op,rec_v1_BasicBlock* block)
 }
 
 //Vector opcodes ;)
-void __fastcall shil_compile_ftrv(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_ftrv(shil_opcode* op,BasicBlock* block)
 {
 	assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2|FLAG_REG2)));
 	u32 sz=op->flags & 3;
@@ -1817,7 +1817,7 @@ void __fastcall shil_compile_ftrv(shil_opcode* op,rec_v1_BasicBlock* block)
 	}
 }
 
-void __fastcall shil_compile_fipr(shil_opcode* op,rec_v1_BasicBlock* block)
+void __fastcall shil_compile_fipr(shil_opcode* op,BasicBlock* block)
 {
 	assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2)));
 	u32 sz=op->flags & 3;
@@ -1943,9 +1943,9 @@ void Init()
 
 }
 //Compile block and return pointer to it's code
-void* __fastcall link_compile_inject_TF(rec_v1_BasicBlock* ptr)
+void* __fastcall link_compile_inject_TF(BasicBlock* ptr)
 {
-	rec_v1_BasicBlock* target= rec_v1_FindOrRecompileCode(ptr->TF_next_addr);
+	BasicBlock* target= FindOrRecompileCode(ptr->TF_next_addr);
 	
 	
 	//if current block is Discared , we must not add any chain info , just jump to the new one :)
@@ -1959,9 +1959,9 @@ void* __fastcall link_compile_inject_TF(rec_v1_BasicBlock* ptr)
 	return target->compiled->Code;
 }
 
-void* __fastcall link_compile_inject_TT(rec_v1_BasicBlock* ptr)
+void* __fastcall link_compile_inject_TT(BasicBlock* ptr)
 {
-	rec_v1_BasicBlock* target= rec_v1_FindOrRecompileCode(ptr->TT_next_addr);
+	BasicBlock* target= FindOrRecompileCode(ptr->TT_next_addr);
 
 	//if current block is Discared , we must not add any chain info , just jump to the new one :)
 	if (ptr->Discarded==false)
@@ -1976,7 +1976,7 @@ void* __fastcall link_compile_inject_TT(rec_v1_BasicBlock* ptr)
 
 
 //call link_compile_inject_TF , and jump to code
-void naked link_compile_inject_TF_stub(rec_v1_BasicBlock* ptr)
+void naked link_compile_inject_TF_stub(BasicBlock* ptr)
 {
 	__asm
 	{
@@ -1986,7 +1986,7 @@ void naked link_compile_inject_TF_stub(rec_v1_BasicBlock* ptr)
 }
 
 
-void naked link_compile_inject_TT_stub(rec_v1_BasicBlock* ptr)
+void naked link_compile_inject_TT_stub(BasicBlock* ptr)
 {
 	__asm
 	{
@@ -1999,9 +1999,9 @@ void naked link_compile_inject_TT_stub(rec_v1_BasicBlock* ptr)
 extern u32 rec_cycles;
 
 u32 call_ret_address=0xFFFFFFFF;//holds teh return address of the previus call ;)
-rec_v1_BasicBlock* pcall_ret_address=0;//holds teh return address of the previus call ;)
+BasicBlock* pcall_ret_address=0;//holds teh return address of the previus call ;)
 
-void CBBs_BlockSuspended(rec_v1_BasicBlock* block)
+void CBBs_BlockSuspended(BasicBlock* block)
 {
 	if (pcall_ret_address == block)
 	{
@@ -2009,7 +2009,7 @@ void CBBs_BlockSuspended(rec_v1_BasicBlock* block)
 		pcall_ret_address=0;
 	}
 }
-void __fastcall CheckBlock(rec_v1_BasicBlock* block)
+void __fastcall CheckBlock(BasicBlock* block)
 {
 	if (block->Discarded)
 	{
@@ -2017,7 +2017,7 @@ void __fastcall CheckBlock(rec_v1_BasicBlock* block)
 		__asm int 3;
 	}
 }
-void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
+void CompileBasicBlock_slow(BasicBlock* block)
 {
 	//CompileBasicBlock_slow_c(block);
 	if (!inited)
@@ -2035,7 +2035,7 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 		T_bit_value=0;//just to be sure
 	}
 
-	block->compiled=new rec_v1_CompiledBlock();
+	block->compiled=new CompiledBlock();
 	
 
 	if (block->flags.ProtectionType==BLOCK_PROTECTIONTYPE_MANUAL)
@@ -2094,7 +2094,7 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 	}
 
 	x86e->ADD32ItoM(&rec_cycles,block->cycles);
-	//x86e->MOV32ItoM((u32*)&rec_v1_pCurrentBlock,(u32)block);
+	//x86e->MOV32ItoM((u32*)&pCurrentBlock,(u32)block);
 
 	u32 list_sz=(u32)block->ilst.opcodes.size();
 	for (u32 i=0;i<list_sz;i++)
@@ -2160,7 +2160,7 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 				x86e->MOV32MtoR(ECX,(u32*)&pcall_ret_address);
 				//mov eax,[pcall_ret_address+codeoffset]
 				x86e->MOV32RtoR(EAX,ECX);
-				x86e->ADD32ItoR(EAX,offsetof(rec_v1_BasicBlock,pTT_next_addr));
+				x86e->ADD32ItoR(EAX,offsetof(BasicBlock,pTT_next_addr));
 				x86e->MOV32RmtoR(EAX,EAX);//get ptr to compiled block/link stub
 				//jmp eax
 				x86e->JMP32R(EAX);	//jump to it
@@ -2322,7 +2322,7 @@ void CompileBasicBlock_slow(rec_v1_BasicBlock* block)
 	x86e->GenCode();//heh
 
 
-	block->compiled->Code=(rec_v1_BasicBlockEP*)x86e->GetCode();
+	block->compiled->Code=(BasicBlockEP*)x86e->GetCode();
 	block->compiled->count=x86e->UsedBytes()/5;
 	block->compiled->parent=block;
 	block->compiled->size=x86e->UsedBytes();

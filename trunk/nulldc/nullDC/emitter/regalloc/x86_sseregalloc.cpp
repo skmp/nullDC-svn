@@ -111,7 +111,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 	//methods needed
 	//
 	//DoAllocation		: do allocation on the block
-	virtual void DoAllocation(rec_v1_BasicBlock* block,emitter<>* x86e)
+	virtual void DoAllocation(BasicBlock* block,emitter<>* x86e)
 	{
 		SimpleSSERegAlloc_init();
 

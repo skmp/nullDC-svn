@@ -1,6 +1,6 @@
 #include "dc\sh4\sh4_registers.h"
 #include "dc\mem\sh4_mem.h"
-#include "rec_v1_blockmanager.h"
+#include "blockmanager.h"
 #include "nullprof.h"
 
 //block manager : new implementation 
@@ -282,7 +282,7 @@ INLINE BlockList* GetLookupBlockList(u32 address)
 u32 luk=0;
 u32 r_value=0x112;
 
-BasicBlock* rec_v1_FindBlock(u32 address)
+BasicBlock* FindBlock(u32 address)
 {
 	BasicBlock* thisblock;
 
@@ -343,7 +343,7 @@ BasicBlock* rec_v1_FindBlock(u32 address)
 
 
 
-BasicBlock* rec_v1_NewBlock(u32 address)
+BasicBlock* NewBlock(u32 address)
 {
 	BasicBlock* rv=new BasicBlock();
 	rv->start=address;
@@ -359,7 +359,7 @@ BasicBlock* rec_v1_NewBlock(u32 address)
 
 
 
-void rec_v1_RegisterBlock(BasicBlock* block)
+void RegisterBlock(BasicBlock* block)
 {
 	u32 start=(block->start&RAM_MASK)/PAGE_SIZE;
 	u32 end=(block->end&RAM_MASK)/PAGE_SIZE;
@@ -393,7 +393,7 @@ void rec_v1_RegisterBlock(BasicBlock* block)
 	}
 }
 
-void rec_v1_UnRegisterBlock(BasicBlock* block)
+void UnRegisterBlock(BasicBlock* block)
 {
 	u32 start=(block->start&RAM_MASK)/PAGE_SIZE;
 	u32 end=(block->end&RAM_MASK)/PAGE_SIZE;
@@ -441,7 +441,7 @@ void __fastcall SuspendBlock(BasicBlock* block)
 	//look up block list
 	//Look up guess block list
 	//unregisting a block does exactly all that :)
-	rec_v1_UnRegisterBlock(block);
+	UnRegisterBlock(block);
 	block->Suspend();
 	CBBs_BlockSuspended(block);
 
@@ -516,7 +516,7 @@ void nullprof_GetBlock(nullprof_block_info* to,u32 type,u32 address)
 		return;
 	}
 
-	BasicBlock* pblk=rec_v1_FindBlock(address);
+	BasicBlock* pblk=FindBlock(address);
 
 
 	ConvBlockInfo(to,pblk);

@@ -1,5 +1,5 @@
 #pragma once
-#include "rec_v1_recompiler.h"
+#include "recompiler.h"
 
 class BasicBlock;
 
@@ -105,7 +105,7 @@ class BasicBlock
 
 	shil_stream ilst;
 
-	rec_v1_CompiledBlock* compiled;
+	CompiledBlock* compiled;
 
 	u32 TF_next_addr;//tfalse or jmp
 	u32 TT_next_addr;//ttrue  or rts guess

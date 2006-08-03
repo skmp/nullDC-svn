@@ -1,6 +1,6 @@
 #pragma once
 #include "emitter/emitter.h"
-#include "dc/sh4/rec_v1/rec_v1_basicblock.h"
+#include "dc/sh4/rec_v1/BasicBlock.h"
 
 #define RALLOC_R  1
 #define RALLOC_W  2
@@ -15,7 +15,7 @@ class IntegerRegAllocator
 	public :
 #define T x86IntRegType
 	//DoAllocation		: do allocation on the block
-	virtual void DoAllocation(rec_v1_BasicBlock* bb,emitter<>* x86e)=0;
+	virtual void DoAllocation(BasicBlock* bb,emitter<>* x86e)=0;
 	//BeforeEmit		: generate any code needed before the main emittion begins (other register allocators may have emited code tho)
 	virtual void BeforeEmit()=0;
 	//BeforeTrail		: generate any code needed after the main emittion has ended (other register allocators may emit code after that tho)
@@ -52,7 +52,7 @@ class FloatRegAllocator
 public :
 #define T x86SSERegType
 	//DoAllocation		: do allocation on the block
-	virtual void DoAllocation(rec_v1_BasicBlock* bb,emitter<>* x86e)=0;
+	virtual void DoAllocation(BasicBlock* bb,emitter<>* x86e)=0;
 	//BeforeEmit		: generate any code needed before the main emittion begins (other register allocators may have emited code tho)
 	virtual void BeforeEmit()=0;
 	//BeforeTrail		: generate any code needed after the main emittion has ended (other register allocators may emit code after that tho)

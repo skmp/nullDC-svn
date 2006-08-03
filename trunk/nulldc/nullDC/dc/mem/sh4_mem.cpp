@@ -8,7 +8,7 @@
 #include "dc/pvr/pvr_if.h"
 #include "dc/sh4/sh4_registers.h"
 #include "dc/dc.h"
-#include "dc/sh4/rec_v1/rec_v1_blockmanager.h"
+#include "dc/sh4/rec_v1/blockmanager.h"
 #include "_vmem.h"
 
 
@@ -465,7 +465,7 @@ void MEMCALL WriteMem8_i(u32 addr,u8 data)
 
 	//area 3 : System Ram 16 mb, {64b}x4
 	case 3:
-//		rec_v1_BlockTest(addr);
+//		BlockTest(addr);
 		mem_b[addr&RAM_MASK]=data;
 		return;
 		break;
@@ -533,7 +533,7 @@ void MEMCALL WriteMem16_i(u32 addr,u16 data)
 
 	//area 3 : System Ram 16 mb, {64b}x4
 	case 3:
-//		rec_v1_BlockTest(addr);
+//		BlockTest(addr);
 		*(u16*)&mem_b[addr&RAM_MASK]=data;
 		return;
 		break;
@@ -597,7 +597,7 @@ void MEMCALL WriteMemBlock(u32 addr,u32* data,u32 size)
 
 	//area 3 : System Ram 16 mb, {64b}x4
 	case 3:
-		//rec_v1_NotifyMemWrite(addr,size);
+		//NotifyMemWrite(addr,size);
 		//*WATCH* , mem has to be copied forwards. i duno if that's what memcpy does :)
 		memcpy(GetMemPtr(addr,size),data,size);
 		return;
@@ -666,7 +666,7 @@ void MEMCALL WriteMem32_i(u32 addr,u32 data)
 
 	//area 3 : System Ram 16 mb, {64b}x4
 	case 3:
-//		rec_v1_BlockTest(addr);
+//		BlockTest(addr);
 		*(u32*)&mem_b[addr&RAM_MASK]=data;
 		return;
 		break;

@@ -15,9 +15,9 @@
 
 #include "emitter/shil_compile_slow.h"
 
-#include "rec_v1_recompiler.h"
-#include "rec_v1_blockmanager.h"
-#include "rec_v1_analyser.h"
+#include "recompiler.h"
+#include "blockmanager.h"
+#include "analyser.h"
 
 #include <time.h>
 #include <float.h>
@@ -39,16 +39,16 @@ u32 avg_bc=0;
 
 INLINE BasicBlock* __fastcall GetRecompiledCode(u32 pc)
 {
-	BasicBlock* block=rec_v1_FindBlock(pc);
+	BasicBlock* block=FindBlock(pc);
 	
 	if (block)
 		return block;
 	else
 	{
-		block=rec_v1_NewBlock(pc);
+		block=NewBlock(pc);
 		//analyse code
-		rec_v1_AnalyseCode(pc,block);
-		rec_v1_RegisterBlock(block);
+		AnalyseCode(pc,block);
+		RegisterBlock(block);
 		CompileBasicBlock_slow(block);
 		//compile code
 		//return pointer
@@ -56,7 +56,7 @@ INLINE BasicBlock* __fastcall GetRecompiledCode(u32 pc)
 	}
 }
 
-BasicBlock* rec_v1_FindOrRecompileCode(u32 pc)
+BasicBlock* FindOrRecompileCode(u32 pc)
 {
 	return GetRecompiledCode(pc);
 }

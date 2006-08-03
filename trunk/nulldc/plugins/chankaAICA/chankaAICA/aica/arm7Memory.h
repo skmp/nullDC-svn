@@ -37,7 +37,7 @@ inline DWORD Arm7ReadMemory(DWORD uAddress)
 	else
 	{
 		ASSERT(false);
-		return 0xffffffff;
+		return 0;
 	}
 }
 
@@ -50,7 +50,7 @@ inline WORD Arm7ReadHalfWord(DWORD uAddress)
 	else
 	{
 		ASSERT(false);
-		return 0xffff;
+		return 0;
 	}
 }
 
@@ -78,7 +78,7 @@ inline BYTE Arm7ReadByte(const DWORD uAddress)
 	else
 	{
 		ASSERT(false);
-		return 0xff;
+		return 0;
 	}
 }
 
