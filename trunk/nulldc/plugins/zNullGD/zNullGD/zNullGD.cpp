@@ -41,7 +41,7 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 extern "C" __declspec(dllexport) 
 void dcGetPluginInfo(ndcPluginIf* If)
 {
-	If->dwIfVersion	= 0x00010000;	// double check with nullgdr
+	If->dwIfVersion	= 0x00020000;	// double check with nullgdr
 	If->dwLibVersion= 0x01;			// 
 	If->dwPluginType= 0x02;			// 2=GDROM
 	strcpy_s(If->szName, "zNullGD, SCSI Passthru GDROM Plugin By _ZeZu_ [" __DATE__ "]");

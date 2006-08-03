@@ -990,7 +990,10 @@ void AddItemsToCB(List<PluginLoadInfo>* list,HWND hw,char* selected)
 void GetCurrent(HWND hw,char* dest)
 {
 	int sel=ComboBox_GetCurSel(hw);
-	strcpy(dest,(char*)ComboBox_GetItemData(hw,sel));
+	char* source=(char*)ComboBox_GetItemData(hw,sel);
+	if (source==0 || source==(((char*)0)-1))
+		source="";
+	strcpy(dest,source);
 }
 void UpdateMapleSelections(HWND hw,HWND hWnd)
 {

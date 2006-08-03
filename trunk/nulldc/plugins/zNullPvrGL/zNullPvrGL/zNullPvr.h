@@ -107,6 +107,7 @@ typedef struct
 	ThreadInitFP	* ThreadInit;
 	ThreadTermFP	* ThreadTerm;
 	ConfigFP		* Config;
+	void* UEH;		//unhandled write handler
 
 	//Functions "Exported" from the emu , these are SET by the emu
 	ConfigLoadStrFP	* ConfigLoadStr;
