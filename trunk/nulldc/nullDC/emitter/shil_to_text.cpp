@@ -13,6 +13,7 @@
 
 void CompileBasicBlock_slow_c(BasicBlock* block,u32 pass)
 {
+	/*
 	FILE* to;
 	char temp[512];
 	sprintf(temp,"c:\\shilz\\0x%X_block_shil_pass_%d.c",block->start,pass);
@@ -150,4 +151,5 @@ u32 list_sz=(u32)block->ilst.opcodes.size();
 		}
 	}
 	fclose(to);
+	*/
 }

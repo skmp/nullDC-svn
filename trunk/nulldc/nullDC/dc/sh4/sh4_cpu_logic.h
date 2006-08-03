@@ -11,7 +11,7 @@
 
 //xor <REG_M>,<REG_N>           
  sh4op(i0010_nnnn_mmmm_1010)
-{//ToDo : Check This [26/4/05]
+{
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 	r[n] ^= r[m];
@@ -19,7 +19,7 @@
 
 //or <REG_M>,<REG_N>            
  sh4op(i0010_nnnn_mmmm_1011)
-{//ToDo : Check This [26/4/05]
+{
 	u32 n = GetN(op);
 	u32 m = GetM(op);	
 	r[n] |= r[m];
@@ -28,7 +28,7 @@
 
 //shll2 <REG_N>                 
  sh4op(i0100_nnnn_0000_1000)
-{//ToDo : Check This [26/4/05]
+{
 	u32 n = GetN(op);
 	r[n] <<= 2;
 }
@@ -69,7 +69,7 @@
 
 //shlr16 <REG_N>                
  sh4op(i0100_nnnn_0010_1001)
-{//TODO : CHECK ME
+{
 	u32 n = GetN(op);
 	r[n] >>= 16;
 }

@@ -46,7 +46,6 @@ sh4op(i0000_nnnn_0010_0011)
 //rts                           
  sh4op(i0000_0000_0000_1011)
 {
-	//TODO Check new delay slot code [28/1/06]
 	u32 newpc=pr;//+2 is added after instruction
 	ExecuteDelayslot();	//WARN : pr can change here
 	pc=newpc-2;
@@ -68,7 +67,7 @@ sh4op(i0000_nnnn_0010_0011)
 
 // bf.s <bdisp8>                 
  sh4op(i1000_1111_iiii_iiii)
-{//TODO : Check This [26/4/05] | Check DELAY SLOT [28/1/06]
+{
 	if (sr.T==0)
 	{
 		//delay 1 instruction
@@ -81,7 +80,7 @@ sh4op(i0000_nnnn_0010_0011)
 
 // bt <bdisp8>                   
  sh4op(i1000_1001_iiii_iiii)
-{//TODO : Check This [26/4/05]  | Check DELAY SLOT [28/1/06]
+{
 	if (sr.T==1)
 	{
 		//direct jump
@@ -94,7 +93,7 @@ sh4op(i0000_nnnn_0010_0011)
  sh4op(i1000_1101_iiii_iiii)
 {
 	if (sr.T == 1)
-	{//TODO : Check This [26/4/05]  | Check DELAY SLOT [28/1/06]
+	{
 		//delay 1 instruction
 		u32 newpc=(u32) ( (GetSImm8(op)<<1) + pc+2);//pc+2 is done after
 		ExecuteDelayslot();

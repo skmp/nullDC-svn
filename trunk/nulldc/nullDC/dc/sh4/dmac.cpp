@@ -65,13 +65,6 @@ void DMAC_Ch2St()
 
 		u32 dst_ptr=(dst&0xFFFFFF) |0xa4000000;
 		WriteMemBlock(dst_ptr,(u32*)GetMemPtr(src,len),len);
-		/*u32 *sys_buf=(u32 *)(&mem_b[src&RAM_MASK]);
-		//
-
-		for (u32 i_c=0;i_c<len;i_c+=4)
-		{
-			WriteMem32(dst_ptr+i_c,*sys_buf++);
-		}*/
 
 	//	*pSB_LMMODE0 = 1;			// this prob was done by system already
 	//	WriteMem(SB_LMMODE1, 0, 4);	// should this be done ?

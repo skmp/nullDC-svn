@@ -403,9 +403,9 @@ void plugins_Init()
 
 void plugins_Term()
 {
-	for (size_t i=libMaple.size()-1;i>=0;i--)
+	for (size_t i=libMaple.size();i>0;i--)
 	{
-		libMaple[i]->info.Term(PluginType::MapleDevice);
+		libMaple[i-1]->info.Term(PluginType::MapleDevice);
 	}
 
 	if (libAICA)
@@ -518,9 +518,9 @@ void plugins_ThreadInit()
 
 void plugins_ThreadTerm()
 {
-	for (size_t i=libMaple.size()-1;i>=0;i--)
+	for (size_t i=libMaple.size();i>0;i--)
 	{
-		libMaple[i]->info.ThreadTerm(PluginType::MapleDevice);
+		libMaple[i-1]->info.ThreadTerm(PluginType::MapleDevice);
 	}
 
 

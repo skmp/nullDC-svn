@@ -90,7 +90,7 @@ void __fastcall dyna_profile_block_enter()
 	}
 }
 
-void __fastcall dyna_profile_block_exit(BasicBlock* bb)
+void __fastcall dyna_profile_block_exit(CompiledBasicBlock* bb)
 {
 	__asm
 	{
@@ -1943,9 +1943,9 @@ void Init()
 
 }
 //Compile block and return pointer to it's code
-void* __fastcall link_compile_inject_TF(BasicBlock* ptr)
+void* __fastcall link_compile_inject_TF(CompiledBasicBlock* ptr)
 {
-	BasicBlock* target= FindOrRecompileCode(ptr->TF_next_addr);
+	CompiledBasicBlock* target= FindOrRecompileCode(ptr->TF_next_addr);
 	
 	
 	//if current block is Discared , we must not add any chain info , just jump to the new one :)
@@ -1954,14 +1954,14 @@ void* __fastcall link_compile_inject_TF(BasicBlock* ptr)
 		//Add reference so we can undo the chain later
 		target->AddRef(ptr);
 		ptr->TF_block=target;
-		ptr->pTF_next_addr=target->compiled->Code;
+		ptr->pTF_next_addr=target->Code;
 	}
-	return target->compiled->Code;
+	return target->Code;
 }
 
-void* __fastcall link_compile_inject_TT(BasicBlock* ptr)
+void* __fastcall link_compile_inject_TT(CompiledBasicBlock* ptr)
 {
-	BasicBlock* target= FindOrRecompileCode(ptr->TT_next_addr);
+	CompiledBasicBlock* target= FindOrRecompileCode(ptr->TT_next_addr);
 
 	//if current block is Discared , we must not add any chain info , just jump to the new one :)
 	if (ptr->Discarded==false)
@@ -1969,14 +1969,14 @@ void* __fastcall link_compile_inject_TT(BasicBlock* ptr)
 		//Add reference so we can undo the chain later
 		target->AddRef(ptr);
 		ptr->TT_block=target;
-		ptr->pTT_next_addr=target->compiled->Code;
+		ptr->pTT_next_addr=target->Code;
 	}
-	return target->compiled->Code;
+	return target->Code;
 } 
 
 
 //call link_compile_inject_TF , and jump to code
-void naked link_compile_inject_TF_stub(BasicBlock* ptr)
+void naked link_compile_inject_TF_stub(CompiledBasicBlock* ptr)
 {
 	__asm
 	{
@@ -1986,7 +1986,7 @@ void naked link_compile_inject_TF_stub(BasicBlock* ptr)
 }
 
 
-void naked link_compile_inject_TT_stub(BasicBlock* ptr)
+void naked link_compile_inject_TT_stub(CompiledBasicBlock* ptr)
 {
 	__asm
 	{
@@ -1999,9 +1999,9 @@ void naked link_compile_inject_TT_stub(BasicBlock* ptr)
 extern u32 rec_cycles;
 
 u32 call_ret_address=0xFFFFFFFF;//holds teh return address of the previus call ;)
-BasicBlock* pcall_ret_address=0;//holds teh return address of the previus call ;)
+CompiledBasicBlock* pcall_ret_address=0;//holds teh return address of the previus call ;)
 
-void CBBs_BlockSuspended(BasicBlock* block)
+void CBBs_BlockSuspended(CompiledBasicBlock* block)
 {
 	if (pcall_ret_address == block)
 	{
@@ -2009,7 +2009,7 @@ void CBBs_BlockSuspended(BasicBlock* block)
 		pcall_ret_address=0;
 	}
 }
-void __fastcall CheckBlock(BasicBlock* block)
+void __fastcall CheckBlock(CompiledBasicBlock* block)
 {
 	if (block->Discarded)
 	{
@@ -2035,7 +2035,8 @@ void CompileBasicBlock_slow(BasicBlock* block)
 		T_bit_value=0;//just to be sure
 	}
 
-	block->compiled=new CompiledBlock();
+	block->CreateCompiledBlock();
+	CompiledBasicBlock* cBB=block->cBB;
 	
 
 	if (block->flags.ProtectionType==BLOCK_PROTECTIONTYPE_MANUAL)
@@ -2054,7 +2055,7 @@ void CompileBasicBlock_slow(BasicBlock* block)
 			u32* pmem=(u32*)GetMemPtr(block->start+i*4,4);
 			x86e->CMP32ItoM((u32*)GetMemPtr(block->start+i*4,4),*pmem);
 			u8* patch=x86e->JE8(0);
-			x86e->MOV32ItoR(ECX,(u32)block);
+			x86e->MOV32ItoR(ECX,(u32)cBB);
 			x86e->MOV32ItoM(GetRegPtr(reg_pc),block->start);
 			x86e->JMP(SuspendBlock);
 			x86e->x86SetJ8(patch);
@@ -2117,7 +2118,8 @@ void CompileBasicBlock_slow(BasicBlock* block)
 	ira->BeforeTrail();
 	fra->BeforeTrail();
 
-	if (PROFILE_BLOCK_CYCLES){
+	if (PROFILE_BLOCK_CYCLES)
+	{
 			x86e->MOV32ItoR(ECX,(u32)(block));
 			x86e->CALLFunc(dyna_profile_block_exit);
 	}
@@ -2130,13 +2132,13 @@ void CompileBasicBlock_slow(BasicBlock* block)
 		if (RET_PREDICTION)
 		{
 			//mov guess,pr
-			x86e->MOV32ItoM(&call_ret_address,block->TT_next_addr);
+			x86e->MOV32ItoM(&call_ret_address,cBB->TT_next_addr);
 			//mov pguess,this
-			x86e->MOV32ItoM((u32*)&pcall_ret_address,(u32)(block));
+			x86e->MOV32ItoM((u32*)&pcall_ret_address,(u32)(cBB));
 		}
 	case BLOCK_EXITTYPE_DYNAMIC:
 		{
-//			x86e->MOV32ItoM((u32*)&pExitBlock,(u32)block);
+//			x86e->MOV32ItoM((u32*)&pExitBlock,(u32)cBB);
 			x86e->RET();
 			break;
 		}
@@ -2160,7 +2162,7 @@ void CompileBasicBlock_slow(BasicBlock* block)
 				x86e->MOV32MtoR(ECX,(u32*)&pcall_ret_address);
 				//mov eax,[pcall_ret_address+codeoffset]
 				x86e->MOV32RtoR(EAX,ECX);
-				x86e->ADD32ItoR(EAX,offsetof(BasicBlock,pTT_next_addr));
+				x86e->ADD32ItoR(EAX,offsetof(CompiledBasicBlock,pTT_next_addr));
 				x86e->MOV32RmtoR(EAX,EAX);//get ptr to compiled block/link stub
 				//jmp eax
 				x86e->JMP32R(EAX);	//jump to it
@@ -2169,7 +2171,7 @@ void CompileBasicBlock_slow(BasicBlock* block)
 			else
 			{
 				//save exit block 
-//				x86e->MOV32ItoM((u32*)&pExitBlock,(u32)block);
+//				x86e->MOV32ItoM((u32*)&pExitBlock,(u32)cBB);
 				x86e->RET();
 			}
 			break;
@@ -2180,18 +2182,18 @@ void CompileBasicBlock_slow(BasicBlock* block)
 		{
 			//ok , handle COND_0/COND_1 here :)
 			//mem address
-			u32* TT_a=&block->TT_next_addr;
-			u32* TF_a=&block->TF_next_addr;
+			u32* TT_a=&cBB->TT_next_addr;
+			u32* TF_a=&cBB->TF_next_addr;
 			//functions
-			u32* pTF_f=(u32*)&(block->pTF_next_addr);
-			u32* pTT_f=(u32*)&(block->pTT_next_addr);
+			u32* pTF_f=(u32*)&(cBB->pTF_next_addr);
+			u32* pTT_f=(u32*)&(cBB->pTT_next_addr);
 			
 			if (block->flags.ExitType==BLOCK_EXITTYPE_COND_0)
 			{
-				TT_a=&block->TF_next_addr;
-				TF_a=&block->TT_next_addr;
-				pTF_f=(u32*)&(block->pTT_next_addr);
-				pTT_f=(u32*)&(block->pTF_next_addr);
+				TT_a=&cBB->TF_next_addr;
+				TF_a=&cBB->TT_next_addr;
+				pTF_f=(u32*)&(cBB->pTT_next_addr);
+				pTT_f=(u32*)&(cBB->pTF_next_addr);
 			}
 
 
@@ -2227,14 +2229,14 @@ void CompileBasicBlock_slow(BasicBlock* block)
 				x86e->x86SetJ8(Link);
 				{
 					//for dynamic link!
-					x86e->MOV32ItoR(ECX,(u32)block);					//mov ecx , block
+					x86e->MOV32ItoR(ECX,(u32)cBB);					//mov ecx , block
 					x86e->MOV32MtoR(EAX,&T_jcond_value);
 					x86e->TEST32ItoR(EAX,1);//test for T
 
 
 					/*
 					//link to next block :
-					if (*TF_a==block->start)
+					if (*TF_a==cBB->start)
 					{
 						//fast link (direct jmp to block start)
 						if (x86e->CanJ8(start_ptr))
@@ -2248,7 +2250,7 @@ void CompileBasicBlock_slow(BasicBlock* block)
 					/*}
 					//!=
 
-					if (*TT_a==block->start)
+					if (*TT_a==cBB->start)
 					{
 						//fast link (direct jmp to block start)
 						if (x86e->CanJ8(start_ptr))
@@ -2258,7 +2260,7 @@ void CompileBasicBlock_slow(BasicBlock* block)
 					}
 					else
 					{
-						if (*TF_a==block->start)
+						if (*TF_a==cBB->start)
 						{
 							x86e->MOV32MtoR(EAX,pTT_f);// ;)
 						}
@@ -2275,9 +2277,9 @@ void CompileBasicBlock_slow(BasicBlock* block)
 		//mov guess,pr
 		if (RET_PREDICTION)
 		{
-			x86e->MOV32ItoM(&call_ret_address,block->TT_next_addr);
+			x86e->MOV32ItoM(&call_ret_address,cBB->TT_next_addr);
 			//mov pguess,this
-			x86e->MOV32ItoM((u32*)&pcall_ret_address,(u32)(block));
+			x86e->MOV32ItoM((u32*)&pcall_ret_address,(u32)(cBB));
 		}
 	case BLOCK_EXITTYPE_FIXED:
 		{
@@ -2291,7 +2293,7 @@ void CompileBasicBlock_slow(BasicBlock* block)
 			}
 
 			//If our cycle count is expired
-			x86e->MOV32ItoM(GetRegPtr(reg_pc),block->TF_next_addr);
+			x86e->MOV32ItoM(GetRegPtr(reg_pc),cBB->TF_next_addr);
 			x86e->RET();//return to caller to check for interrupts
 
 
@@ -2300,15 +2302,15 @@ void CompileBasicBlock_slow(BasicBlock* block)
 				//Link:
 				//if we can execute more blocks
 				x86e->x86SetJ8(Link);
-				if (block->TF_next_addr==block->start)
+				if (cBB->TF_next_addr==cBB->start)
 				{
 					//__asm int 03;
 					printf("Fast Link possible\n");
 				}
 
 				//link to next block :
-				x86e->MOV32ItoR(ECX,(u32)block);					//mov ecx , block
-				x86e->MOV32MtoR(EAX,(u32*)&(block->pTF_next_addr));	//mov eax , [pTF_next_addr]
+				x86e->MOV32ItoR(ECX,(u32)cBB);					//mov ecx , cBB
+				x86e->MOV32MtoR(EAX,(u32*)&(cBB->pTF_next_addr));	//mov eax , [pTF_next_addr]
 				x86e->JMP32R(EAX);									//jmp eax
 			}
 			break;
@@ -2322,18 +2324,16 @@ void CompileBasicBlock_slow(BasicBlock* block)
 	x86e->GenCode();//heh
 
 
-	block->compiled->Code=(BasicBlockEP*)x86e->GetCode();
-	block->compiled->count=x86e->UsedBytes()/5;
-	block->compiled->parent=block;
-	block->compiled->size=x86e->UsedBytes();
+	//block->compiled->Code=(BasicBlockEP*)x86e->GetCode();
+	//block->compiled->count=x86e->UsedBytes()/5;
+	//block->compiled->parent=block;
+	//block->compiled->size=x86e->UsedBytes();
+	cBB->Code=(BasicBlockEP*)x86e->GetCode();
+	cBB->size=x86e->UsedBytes();
 
 	//make it call the stubs , unless otherwise needed
-	block->pTF_next_addr=link_compile_inject_TF_stub;
-	block->pTT_next_addr=link_compile_inject_TT_stub;
-
-
-	//block->ilst.opcodes.clear();
-
+	cBB->pTF_next_addr=link_compile_inject_TF_stub;
+	cBB->pTT_next_addr=link_compile_inject_TT_stub;
 
 	block_count++;
 	

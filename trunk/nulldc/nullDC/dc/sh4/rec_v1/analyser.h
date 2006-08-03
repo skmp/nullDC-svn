@@ -6,3 +6,8 @@
 
 
 void AnalyseCode(u32 start,BasicBlock* to); 
+
+//Init/Reset/Term
+void InitAnalyser();
+void ResetAnalyser();
+void TermAnalyser();

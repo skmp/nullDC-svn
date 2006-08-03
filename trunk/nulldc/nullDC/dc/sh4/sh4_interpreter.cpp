@@ -165,6 +165,12 @@ void Sh4_int_Reset(bool Manual)
 	{
 		pc = 0xA0000000;
 
+		memset(r,0,sizeof(r));
+		memset(r_bank,0,sizeof(r_bank));
+
+		gbr=ssr=spc=sgr=dbr=vbr=0;
+		mach=macl=pr=fpul=0;
+
 		sr.SetFull(0x700000F0);
 		old_sr=sr;
 		UpdateSR();

@@ -6,7 +6,7 @@
 
 #include <memory.h>
 extern u32 rec_cycles;
-void BasicBlock::ClearBlock(BasicBlock* block)
+void CompiledBasicBlock::ClearBlock(CompiledBasicBlock* block)
 {
 	if (block->TF_block==this)
 	{
@@ -20,7 +20,7 @@ void BasicBlock::ClearBlock(BasicBlock* block)
 		block->pTT_next_addr=link_compile_inject_TT_stub;
 	}
 }
-void BasicBlock::BlockWasSuspended(BasicBlock* block)
+void CompiledBasicBlock::BlockWasSuspended(CompiledBasicBlock* block)
 {
 	for (u32 i=0;i<blocks_to_clear.size();i++)
 	{
@@ -31,7 +31,7 @@ void BasicBlock::BlockWasSuspended(BasicBlock* block)
 	}
 }
 
-void BasicBlock::AddRef(BasicBlock* block)
+void CompiledBasicBlock::AddRef(CompiledBasicBlock* block)
 {
 	if (!Discarded)
 	{
@@ -42,7 +42,7 @@ void BasicBlock::AddRef(BasicBlock* block)
 	else
 		printf("Warning : Discarded, AddRef call\n");
 }
-void BasicBlock::Suspend()
+void CompiledBasicBlock::Suspend()
 {
 	for (u32 i=0;i<blocks_to_clear.size();i++)
 	{
@@ -63,19 +63,10 @@ void BasicBlock::Suspend()
 	Discarded=true;
 }
 
-void BasicBlock::Free()
+void CompiledBasicBlock::Free()
 {
-	if (compiled)
-	{
-		free(compiled->Code);
-		compiled->Code=0;
-		delete compiled;
-		compiled=0;
-	}
-	else
-	{
-		printf("FREE!!! 0x%x\n",start);
-	}	
+		free(Code);
+		Code=0;	
 }
 bool BasicBlock::Contains(u32 pc)
 {

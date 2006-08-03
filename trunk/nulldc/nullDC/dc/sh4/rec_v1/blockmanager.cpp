@@ -41,15 +41,15 @@ using namespace std;
 #define BLOCK_LUT_GUESS
 //#defune DEBUG_BLOCKLIST
 //#define OPTIMISE_LUT_SORT
-//#define COMPACT_GLOBAL_LIST
+#define COMPACT_GLOBAL_LIST
 
 //BasicBlock* Blockz[RAM_SIZE>>1];
 //
 //helper list class
 int compare_BlockLookups(const void * a, const void * b)
 {
-	BasicBlock* ba=*(BasicBlock**)a;
-	BasicBlock* bb=*(BasicBlock**)b;
+	CompiledBasicBlock* ba=*(CompiledBasicBlock**)a;
+	CompiledBasicBlock* bb=*(CompiledBasicBlock**)b;
 
 	if (bb && ba)
 	{
@@ -72,15 +72,15 @@ int compare_BlockLookups(const void * a, const void * b)
 }
 
 
-class BlockList:public vector<BasicBlock*>
+class BlockList:public vector<CompiledBasicBlock*>
 {
 public :
 	size_t ItemCount;
-	BlockList():vector<BasicBlock*>()
+	BlockList():vector<CompiledBasicBlock*>()
 	{
 		ItemCount=0;
 	}
-	u32 Add(BasicBlock* block)
+	u32 Add(CompiledBasicBlock* block)
 	{
 		if (ItemCount==size())
 		{	
@@ -107,7 +107,7 @@ public :
 
 		return 0xFFFFFFFF;
 	}
-	void Remove(BasicBlock* block)
+	void Remove(CompiledBasicBlock* block)
 	{
 		ItemCount--;
 		for (u32 i=0;i<size();i++)
@@ -119,7 +119,7 @@ public :
 			}
 		}
 	}
-	BasicBlock* Find(u32 address,u32 cpu_mode)
+	CompiledBasicBlock* Find(u32 address,u32 cpu_mode)
 	{
 		for (u32 i=0;i<size();i++)
 		{
@@ -213,11 +213,10 @@ BlockList					BlockLookupLists[LOOKUP_HASH_SIZE];
 
 #ifdef BLOCK_LUT_GUESS
 //even after optimising blocks , guesses give a good speedup :)
-BasicBlock*			BlockLookupGuess[LOOKUP_HASH_SIZE];
+CompiledBasicBlock*			BlockLookupGuess[LOOKUP_HASH_SIZE];
 #endif
 //implemented later
-void FreeBlock(BasicBlock* block);
-//void __fastcall SuspendBlock(BasicBlock* block);
+void FreeBlock(CompiledBasicBlock* block);
 
 //misc code & helper functions
 //this should not be called from a running block , or it could crash
@@ -284,15 +283,15 @@ INLINE BlockList* GetLookupBlockList(u32 address)
 u32 luk=0;
 u32 r_value=0x112;
 
-BasicBlock* FindBlock(u32 address)
+CompiledBasicBlock* FindBlock(u32 address)
 {
-	BasicBlock* thisblock;
+	CompiledBasicBlock* thisblock;
 
 	//if (((address>>26)&0x7)==3)
 	//	return Blockz[((address&RAM_MASK)>>1)];
 
 	#ifdef BLOCK_LUT_GUESS
-	BasicBlock* fastblock;
+	CompiledBasicBlock* fastblock;
 
 	fastblock=BlockLookupGuess[GetLookupHash(address)];
 
@@ -341,27 +340,7 @@ BasicBlock* FindBlock(u32 address)
 	return 0;
 }
 
-
-
-
-
-BasicBlock* NewBlock(u32 address)
-{
-	BasicBlock* rv=new BasicBlock();
-	rv->start=address;
-	rv->cpu_mode_tag=fpscr.PR_SZ;
-#ifdef COMPACT_GLOBAL_LIST
-	all_block_list.Add(rv);
-#else
-	all_block_list.push_back(rv);
-#endif
-
-	return rv;
-}
-
-
-
-void RegisterBlock(BasicBlock* block)
+void FillBlockLockInfo(BasicBlock* block)
 {
 	u32 start=(block->start&RAM_MASK)/PAGE_SIZE;
 	u32 end=(block->end&RAM_MASK)/PAGE_SIZE;
@@ -376,11 +355,22 @@ void RegisterBlock(BasicBlock* block)
 		block->flags.ProtectionType=BLOCK_PROTECTIONTYPE_MANUAL;
 	else
 		block->flags.ProtectionType=BLOCK_PROTECTIONTYPE_LOCK;
+}
+
+void RegisterBlock(CompiledBasicBlock* block)
+{
+	#ifdef COMPACT_GLOBAL_LIST
+		all_block_list.Remove(block);
+	#else
+		all_block_list.push_back(block);
+	#endif
+
+	u32 start=(block->start&RAM_MASK)/PAGE_SIZE;
+	u32 end=(block->end&RAM_MASK)/PAGE_SIZE;
 
 	//AddToBlockList(GetLookupBlockList(block->start),block);
 	GetLookupBlockList(block->start)->Add(block);
 
-	
 	if (((block->start >>26)&0x7)==3)
 	{	//Care about invalidates olny if on ram
 		//Blockz[((block->start&RAM_MASK)>>1)]=block;
@@ -395,7 +385,7 @@ void RegisterBlock(BasicBlock* block)
 	}
 }
 
-void UnRegisterBlock(BasicBlock* block)
+void UnRegisterBlock(CompiledBasicBlock* block)
 {
 	u32 start=(block->start&RAM_MASK)/PAGE_SIZE;
 	u32 end=(block->end&RAM_MASK)/PAGE_SIZE;
@@ -433,8 +423,8 @@ void UnRegisterBlock(BasicBlock* block)
 //suspend/ free related ;)
 //called to suspend a block
 //can be called from a mem invalidation , or directly from a manualy invalidated block
-void CBBs_BlockSuspended(BasicBlock* block);
-void __fastcall SuspendBlock(BasicBlock* block)
+void CBBs_BlockSuspended(CompiledBasicBlock* block);
+void __fastcall SuspendBlock(CompiledBasicBlock* block)
 {
 	//remove the block from :
 	//
@@ -452,7 +442,7 @@ void __fastcall SuspendBlock(BasicBlock* block)
 	SuspendedBlocks.Add(block);
 }
 //called to free a suspended block
-void FreeBlock(BasicBlock* block)
+void FreeBlock(CompiledBasicBlock* block)
 {
 	//free the block
 	//all_block_list.Remove(block);
@@ -489,10 +479,22 @@ bool RamLockedWrite(u8* address)
 		return false;
 }
 
+void InitBlockManager()
+{
+}
+void ResetBlockManager()
+{
+	ResetBlocks();
+}
+void TermBlockManager()
+{
+	ResetBlocks();
+}
+
 ///////////////////////////////////////////////
 //			nullProf implementation			 //
 ///////////////////////////////////////////////
-void ConvBlockInfo(nullprof_block_info* to,BasicBlock* pblk)
+void ConvBlockInfo(nullprof_block_info* to,CompiledBasicBlock* pblk)
 {
 	if (pblk==0)
 	{
@@ -502,9 +504,9 @@ void ConvBlockInfo(nullprof_block_info* to,BasicBlock* pblk)
 
 	to->addr=pblk->start;
 	to->sh4_code=GetMemPtr(pblk->start,4);
-	to->x86_code=pblk->compiled->Code;
+	to->x86_code=pblk->Code;
 	to->sh4_bytes=pblk->end-pblk->start+2;
-	to->x86_bytes=pblk->compiled->size;
+	to->x86_bytes=pblk->size;
 	to->sh4_cycles=pblk->cycles;
 	to->time=pblk->profile_time;
 	to->calls=pblk->profile_calls;
@@ -518,7 +520,7 @@ void nullprof_GetBlock(nullprof_block_info* to,u32 type,u32 address)
 		return;
 	}
 
-	BasicBlock* pblk=FindBlock(address);
+	CompiledBasicBlock* pblk=FindBlock(address);
 
 
 	ConvBlockInfo(to,pblk);
@@ -526,8 +528,8 @@ void nullprof_GetBlock(nullprof_block_info* to,u32 type,u32 address)
 
 int compare_usage (const void * a, const void * b)
 {
-	BasicBlock* ba=*(BasicBlock**)a;
-	BasicBlock* bb=*(BasicBlock**)b;
+	CompiledBasicBlock* ba=*(CompiledBasicBlock**)a;
+	CompiledBasicBlock* bb=*(CompiledBasicBlock**)b;
 
 	double ava=(double)ba->profile_time;//(double)ba->profile_calls;
 	double avb=(double)bb->profile_time;//(double)bb->profile_calls;
@@ -538,8 +540,8 @@ int compare_usage (const void * a, const void * b)
 
 int compare_time (const void * a, const void * b)
 {
-	BasicBlock* ba=*(BasicBlock**)a;
-	BasicBlock* bb=*(BasicBlock**)b;
+	CompiledBasicBlock* ba=*(CompiledBasicBlock**)a;
+	CompiledBasicBlock* bb=*(CompiledBasicBlock**)b;
 
 	double ava=(double)ba->profile_time/(double)ba->profile_calls;
 	double avb=(double)bb->profile_time/(double)bb->profile_calls;
@@ -549,8 +551,8 @@ int compare_time (const void * a, const void * b)
 }
 int compare_calls (const void * a, const void * b)
 {
-	BasicBlock* ba=*(BasicBlock**)a;
-	BasicBlock* bb=*(BasicBlock**)b;
+	CompiledBasicBlock* ba=*(CompiledBasicBlock**)a;
+	CompiledBasicBlock* bb=*(CompiledBasicBlock**)b;
 
 	double ava=(double)ba->profile_calls;
 	double avb=(double)bb->profile_calls;

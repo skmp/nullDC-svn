@@ -128,12 +128,6 @@ sh4op(i0000_nnnn_1000_0011)
 
 		Address = (Dest & 0x03FFFFE0) | (QACR << 26);//ie:(QACR&0x1c>>2)<<26
 
-
-				//printf("TA dlist SQ to Addr: %08X\n", Address);
-				//TODO: Add pvr handling
-				//				PvrLib.lib.Update(PVRU_TA_SQ,sq);
-				//	PvrPlugin.PvrSQWrite(sq,1);
-
 		if (((Address >> 26) & 0x7) == 4)//Area 4 !11!!
 		{
 			TAWrite(Address,sq,1);
@@ -208,7 +202,7 @@ sh4op(i0100_nnnn_0001_0001)
 
 //cmp/pl <REG_N>                
 sh4op(i0100_nnnn_0001_0101)
-{//TODO : !Add this
+{
 	//iNimp("cmp/pl <REG_N>");
 	u32 n = GetN(op);
 	if ((s32)r[n] > 0) 
@@ -222,7 +216,7 @@ sh4op(i0100_nnnn_0001_0101)
 
 //cmp/eq #<imm>,R0              
 sh4op(i1000_1000_iiii_iiii)
-{//TODO : Check This [26/4/05]
+{
 	u32 imm = (u32)(s32)(GetSImm8(op));
 	if (r[0] == imm)
 		sr.T =1;
@@ -256,7 +250,7 @@ sh4op(i0011_nnnn_mmmm_0010)
 
 //cmp/ge <REG_M>,<REG_N>        
 sh4op(i0011_nnnn_mmmm_0011)
-{//TODO : Check This [26/4/05]
+{
 	//iNimp("cmp/ge <REG_M>,<REG_N>");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
@@ -280,7 +274,7 @@ sh4op(i0011_nnnn_mmmm_0110)
 
 //cmp/gt <REG_M>,<REG_N>        
 sh4op(i0011_nnnn_mmmm_0111)
-{//TODO : Check This [26/4/05]
+{
 	//iNimp("cmp/gt <REG_M>,<REG_N>");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
@@ -293,7 +287,7 @@ sh4op(i0011_nnnn_mmmm_0111)
 
 //cmp/str <REG_M>,<REG_N>       
 sh4op(i0010_nnnn_mmmm_1100)
-{//TODO : Check This [26/4/05]
+{
 	//iNimp("cmp/str <REG_M>,<REG_N>");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
@@ -314,7 +308,7 @@ sh4op(i0010_nnnn_mmmm_1100)
 
 //tst #<imm>,R0                 
 sh4op(i1100_1000_iiii_iiii)
-{//TODO : Check This [26/4/05]
+{
 	//iNimp("tst #<imm>,R0");
 	u32 utmp1 = r[0] & GetImm8(op);
 	if (utmp1 == 0) 
@@ -348,7 +342,6 @@ sh4op(i0010_nnnn_mmmm_1110)
 //muls.w <REG_M>,<REG_N>          
 sh4op(i0010_nnnn_mmmm_1111)
 {
-	//TODO : Check This [26/4/05]
 	//iNimp("muls <REG_M>,<REG_N>");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
@@ -387,11 +380,38 @@ sh4op(i0011_nnnn_mmmm_1101)
 //mac.w @<REG_M>+,@<REG_N>+     
 sh4op(i0100_nnnn_mmmm_1111)
 {
-	iNimp(op, "mac.w @<REG_M>+,@<REG_N>+");
+	u32 n = GetN(op);
+	u32 m = GetM(op);
+	if (sr.S==1)
+	{
+		printf("mac.w @<REG_M>+,@<REG_N>+ : s=%d\n",sr.S);
+	}
+	else
+	{
+		s32 rm,rn;
+		
+		rn = (s32)(s16)ReadMem16(r[n]);
+		r[n]+=2;
+		//if (n==m)
+		//{
+		//	r[n]+=2;
+		//	r[m]+=2;
+		//}
+		rm = (s32)(s16)ReadMem16(r[m]);
+		r[m]+=2;
+
+		s32 mul=rm * rn;
+		s64 mac = (s64)(((u64)mach << 32) + macl);
+		
+		mac+=mul;
+
+		macl = (u32)(mac & 0xFFFFFFFF);
+		mach = (u32)((mac >> 32) & 0xFFFFFFFF);
+	}
 }		
 //mac.l @<REG_M>+,@<REG_N>+     
 sh4op(i0000_nnnn_mmmm_1111)
-{//TODO : !Add this
+{
 	//iNimp("mac.l @<REG_M>+,@<REG_N>+");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
@@ -417,7 +437,7 @@ sh4op(i0000_nnnn_mmmm_1111)
 
 //mul.l <REG_M>,<REG_N>         
 sh4op(i0000_nnnn_mmmm_0111)
-{//TODO : CHECK THIS
+{
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 	macl = (u32)((((s32)r[n]) * ((s32)r[m])));
@@ -836,7 +856,7 @@ sh4op(i0110_nnnn_mmmm_1000)
 
 //swap.w <REG_M>,<REG_N>        
 sh4op(i0110_nnnn_mmmm_1001)
-{//TODO : Check This [26/4/05]
+{
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 
@@ -848,7 +868,7 @@ sh4op(i0110_nnnn_mmmm_1001)
 
 //extu.b <REG_M>,<REG_N>        
 sh4op(i0110_nnnn_mmmm_1100)
-{//TODO : CHECK THIS
+{
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 	r[n] = r[m] & 0xFF;
@@ -857,7 +877,7 @@ sh4op(i0110_nnnn_mmmm_1100)
 
 //extu.w <REG_M>,<REG_N>        
 sh4op(i0110_nnnn_mmmm_1101)
-{//TODO : Check This [26/4/05]
+{
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 	r[n] = r[m] & 0x0000FFFF;
@@ -866,7 +886,7 @@ sh4op(i0110_nnnn_mmmm_1101)
 
 //exts.b <REG_M>,<REG_N>        
 sh4op(i0110_nnnn_mmmm_1110)
-{//TODO : Check This [26/4/05]
+{
 	//iNimp("exts.b <REG_M>,<REG_N>");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
@@ -889,7 +909,7 @@ sh4op(i0110_nnnn_mmmm_1111)
 
 //xtrct <REG_M>,<REG_N>         
 sh4op(i0010_nnnn_mmmm_1101)
-{//TODO: unsure of proper emulation [26/4/05]
+{
 	//iNimp("xtrct <REG_M>,<REG_N>");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
@@ -966,7 +986,7 @@ sh4op(i0000_nnnn_0000_0010)//0002
 
 //sts.l FPSCR,@-<REG_N>         
  sh4op(i0100_nnnn_0110_0010)
-{//TODO : Check This [26/4/05]
+{
 	u32 n = GetN(op);
 	r[n] -= 4;
 	WriteMemU32(r[n],fpscr.full);
@@ -983,7 +1003,7 @@ sh4op(i0000_nnnn_0000_0010)//0002
 
 //lds.l @<REG_N>+,FPSCR         
  sh4op(i0100_nnnn_0110_0110)
-{//TODO : Check This [26/4/05]
+{
 	u32 n = GetN(op);
 	//fpscr.full =ReadMem32(r[n]);
 	ReadMemU32(fpscr.full,r[n]);
@@ -1010,7 +1030,7 @@ sh4op(i0000_nnnn_0000_0010)//0002
 
 //lds <REG_N>,FPSCR             
  sh4op(i0100_nnnn_0110_1010)
-{//TODO : Check This [26/4/05]
+{
 	u32 n = GetN(op);
 	fpscr.full = r[n];
 	UpdateFPSCR();

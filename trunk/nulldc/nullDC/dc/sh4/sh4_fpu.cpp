@@ -69,7 +69,7 @@ INLINE void Denorm32(float &value)
 
 //fadd <FREG_M>,<FREG_N>
 sh4op(i1111_nnnn_mmmm_0000)
-{//TODO : CHECK THIS PR FP
+{
 	if (fpscr.PR == 0)
 	{
 		u32 n = GetN(op);
@@ -384,7 +384,7 @@ sh4op(i1111_nnnn_mmmm_1011)
 
 //fmov <FREG_M>,<FREG_N>   
 sh4op(i1111_nnnn_mmmm_1100)
-{//TODO : checkthis
+{
 	if (fpscr.SZ == 0)
 	{
 		u32 n = GetN(op);
@@ -626,7 +626,7 @@ sh4op(i1111_nnnn_0001_1101)
 
 //float FPUL,<FREG_N>      
 sh4op(i1111_nnnn_0010_1101)
-{//TODO : CHECK THIS (FP)
+{
 	if (fpscr.PR == 0)
 	{
 		u32 n = GetN(op);

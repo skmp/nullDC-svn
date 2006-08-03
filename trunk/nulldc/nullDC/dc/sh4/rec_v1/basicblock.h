@@ -3,13 +3,50 @@
 
 class BasicBlock;
 
-class CompiledBlock
+class CompiledBasicBlock
 {
 public :
-	BasicBlockEP* Code;						//compiled code ptr
-	BasicBlock* parent;		//basic block that the compiled code is for
-	u32 size;						//compiled code size (bytes)
-	u32 count;						//compiled code opcode count
+	BasicBlockEP* Code;				//compiled code ptr
+	//needed for lookups
+	u32 start;
+	u32 cpu_mode_tag;
+	u32 lookups;	//count of lookups for this block
+
+	//needed for free() // maby not ?
+	u32 size;			//compiled code size (bytes)
+	u32 end;			//needed for locks/minnor shit
+
+	
+	//Addresses to blocks
+	u32 TF_next_addr;//tfalse or jmp
+	u32 TT_next_addr;//ttrue  or rts guess
+
+	//pointers to blocks
+	CompiledBasicBlock* TF_block;
+	CompiledBasicBlock* TT_block;
+
+	//pointers to block entry points [isnt that the same as above ?]
+	void* pTF_next_addr;//tfalse or jmp
+	void* pTT_next_addr;//ttrue  or rts guess
+
+	//can be avoided
+	bool Discarded;
+
+	//misc profile & debug variables
+	u64 profile_time;
+	u32 profile_calls;
+	u32 cycles;
+
+	//Functions
+	void Free();
+	void Suspend();
+	void BlockWasSuspended(CompiledBasicBlock* block);
+	void AddRef(CompiledBasicBlock* block);
+	void ClearBlock(CompiledBasicBlock* block);
+
+private :
+	//Block link info
+	vector<CompiledBasicBlock*> blocks_to_clear;
 };
 
 //helpers
@@ -20,11 +57,7 @@ class BasicBlock;
 
 class BasicBlock
 {
-	vector<BasicBlock*> blocks_to_clear;
 	public :
-
-	BasicBlock* TF_block;
-	BasicBlock* TT_block;
 
 	BasicBlock()
 	{
@@ -32,22 +65,11 @@ class BasicBlock
 		end=0;
 		flags.full=0;
 		cycles=0;
-		compiled=0;
+		cBB=0;
 		TF_next_addr=0xFFFFFFFF;
 		TT_next_addr=0xFFFFFFFF;
-		TF_block=TT_block=0;
-		profile_time=0;
-		profile_calls=0;
-		Discarded=false;
 	}
 
-
-	void Free();
-	void Suspend();
-	bool Contains(u32 pc);
-	void BlockWasSuspended(BasicBlock* block);
-	void AddRef(BasicBlock* block);
-	void ClearBlock(BasicBlock* block);
 	bool IsMemLocked(u32 adr);
 
 	//start pc
@@ -101,22 +123,33 @@ class BasicBlock
 	}flags;	//compiled block flags :)
 
 	u32 cycles;
-	u32 lookups;	//count of lookups for this block
 
 	shil_stream ilst;
 
-	CompiledBlock* compiled;
+	void CreateCompiledBlock()
+	{
+		cBB= new CompiledBasicBlock();
+
+		cBB->start=start;
+		cBB->TF_next_addr=TF_next_addr;
+		cBB->TT_next_addr=TT_next_addr;
+		cBB->cycles=cycles;
+		cBB->end=end;
+		cBB->cpu_mode_tag=cpu_mode_tag;
+		cBB->lookups=0;
+
+		cBB->TF_block=cBB->TT_block=0;
+		cBB->profile_time=0;
+		cBB->profile_calls=0;
+		cBB->Discarded=false;
+	}
+
+	CompiledBasicBlock* cBB;
+
+	bool Contains(u32 pc);
 
 	u32 TF_next_addr;//tfalse or jmp
 	u32 TT_next_addr;//ttrue  or rts guess
-
-	//pointers to blocks
-	void* pTF_next_addr;//tfalse or jmp
-	void* pTT_next_addr;//ttrue  or rts guess
-
-	bool Discarded;
-	u64 profile_time;
-	u32 profile_calls;
 };
 
 

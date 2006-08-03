@@ -5,9 +5,13 @@
 #include "dc\mem\sh4_mem.h"
 #include "dc\sh4\sh4_registers.h"
 
-//w/ a block size of 256 we can have max 7 levels of basic blocks (heh)
-//w/ a block size of 448 (bad number for inlinings , but good for vsyncs) we can have 13-14
-//w/ a block size of 512 (prop i will use this) we can have 15
+//3/8/2k6 
+//Work for superblocking/better dynarec starts
+
+//Analyser will be splited on 2 parts , block scanner , that will find block regions/ approximate cycle counts
+//and block analyser , that given a block region , it will generate il for it ;)
+
+
 
 //target for analyser :
 //stop blocks olny on unkown jumps [jump to reg]
@@ -16,6 +20,7 @@
 //will alayse code and convert it to shil
 //the basicblock (and superblock later) will be the send to the optimiser , and after that
 //to the compiler
+
 
 #define CPU_RATIO 1
 #define CPU_BASIC_BLOCK_SIZE (BLOCKLIST_MAX_CYCLES/2)
@@ -80,13 +85,12 @@ void TermPipeline()
 }
 void AnalyseCode(u32 start,BasicBlock* to)
 {
-
 	u32 pc=start;
 
-	//u32 block_size=0;
-	u32 block_ops=0;
+	to->start=start;
+	to->cpu_mode_tag=fpscr.PR_SZ;
 
-	shil_DynarecInit();
+	u32 block_ops=0;
 
 	ilst=&to->ilst;
 	to->flags.FpuMode = GET_CURRENT_FPU_MODE();
@@ -96,20 +100,11 @@ void AnalyseCode(u32 start,BasicBlock* to)
 	while (true)
 	{
 		u32 opcode=ReadMem16(pc);
-		//block_size+=GetOpCycles(opcode);
+
 		block_ops++;
 		StepPipeline(opcode);
-		/*if (((pc>>26)&0x7)==3)
-			SetBlockTest(pc);*/
 
-		/*if ((opcode&0xF000)==0xF000)
-			ilst->shil_ifb(opcode,pc);
-		else*/
-		//u32 nop=ilst->opcodes.size();
-			RecOpPtr[opcode](opcode,pc,to);
-
-		/*if (ilst->opcodes.size()>nop)
-			ilst->opcodes[nop]|=FLAG_NEXT_OP;*/
+		RecOpPtr[opcode](opcode,pc,to);
 
 		if (to->flags.SynthOpcode)
 		{
@@ -200,4 +195,23 @@ void AnalyseCode(u32 start,BasicBlock* to)
 	/*printf("Block done %f avg cycl/op , %d total cycles\n",(float)to->cycles/(float)block_ops,to->cycles);
 	if (((float)to->cycles/(float)block_ops)<1)
 		__asm int 3;*/
+}
+
+
+
+
+//Init/Reset/Term
+void InitAnalyser()
+{
+	shil_DynarecInit();
+}
+
+void ResetAnalyser()
+{
+	
+}
+
+void TermAnalyser()
+{
+	
 }

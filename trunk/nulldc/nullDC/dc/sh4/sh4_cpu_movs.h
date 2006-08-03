@@ -48,7 +48,7 @@
 
 //sts FPUL,<REG_N>              
  sh4op(i0000_nnnn_0101_1010)
-{//TODO : Check This [26/4/05]
+{
 	u32 n = GetN(op);
 	r[n] = fpul;
 } 
@@ -64,16 +64,14 @@
 //sts MACH,<REG_N>              
  sh4op(i0000_nnnn_0000_1010)
 {
-	//iNimp("sts MACH,<REG_N>");
 	u32 n = GetN(op);
-
 	r[n] = mach;
 } 
 
 
 //sts MACL,<REG_N>              
  sh4op(i0000_nnnn_0001_1010)
-{//TODO : CHECK THIS
+{
 	u32 n = GetN(op);
 	r[n]=macl; 
 } 
@@ -90,7 +88,7 @@
 
  //mov.b @(R0,<REG_M>),<REG_N>   
  sh4op(i0000_nnnn_mmmm_1100)
-{//TODO : Check This [26/4/05]
+{
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 	ReadMemBOS8(r[n],r[0],r[m]);
@@ -111,7 +109,7 @@
 
 //mov.l @(R0,<REG_M>),<REG_N>   
  sh4op(i0000_nnnn_mmmm_1110)
-{//TODO : Check This [26/4/05]
+{
 	//iNimp("mov.l @(R0,<REG_M>),<REG_N>");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
@@ -134,7 +132,7 @@
 
 //mov.w <REG_M>,@(R0,<REG_N>)   
  sh4op(i0000_nnnn_mmmm_0101)
-{//TODO : Check This [26/4/05]
+{
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 	WriteMemBOU16(r[0] , r[n], r[m]);
@@ -143,7 +141,7 @@
 
 //mov.l <REG_M>,@(R0,<REG_N>)   
  sh4op(i0000_nnnn_mmmm_0110)
-{//TODO : Check This [26/4/05]
+{
 	//iNimp("mov.l <REG_M>,@(R0,<REG_N>)");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
@@ -158,7 +156,7 @@
 
 //mov.l <REG_M>,@(<disp>,<REG_N>)
  sh4op(i0001_nnnn_mmmm_iiii)
-{//TODO : Check This [26/4/05]
+{
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 	u32 disp = GetImm4(op);
@@ -170,7 +168,7 @@
 
 //mov.b <REG_M>,@<REG_N>        
  sh4op(i0010_nnnn_mmmm_0000)
-{//TODO : Check This [26/4/05]
+{
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 	WriteMemU8(r[n],r[m] );
@@ -178,7 +176,7 @@
 
 // mov.w <REG_M>,@<REG_N>        
  sh4op(i0010_nnnn_mmmm_0001)
-{//TODO : Check This [26/4/05]
+{
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 	WriteMemU16(r[n],r[m]);
@@ -186,7 +184,7 @@
 
 // mov.l <REG_M>,@<REG_N>        
  sh4op(i0010_nnnn_mmmm_0010)
-{//TODO : Check This [26/4/05]
+{
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 	WriteMemU32(r[n],r[m]);
@@ -240,7 +238,7 @@
 
 //mov.l <REG_M>,@-<REG_N>       
  sh4op(i0010_nnnn_mmmm_0110)
-{//TODO : Check This [26/4/05]
+{
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 	//r[n] -= 4;
@@ -292,7 +290,7 @@
 
 //sts.l PR,@-<REG_N>            
  sh4op(i0100_nnnn_0010_0010)
-{//TODO : fAdd this
+{
 	u32 n = GetN(op);
 	r[n] -= 4;
 	WriteMemU32(r[n],pr);
@@ -374,7 +372,7 @@
 
 //lds.l @<REG_N>+,PR            
  sh4op(i0100_nnnn_0010_0110)
-{//TODO : hADD THIS
+{
 	u32 n = GetN(op);
 	ReadMemU32(pr,r[n]);
 	//pr = ReadMem32(r[n]);
@@ -474,7 +472,7 @@
 
 //lds <REG_N>,PR                
  sh4op(i0100_nnnn_0010_1010)
-{//TODO : check this
+{
 	u32 n = GetN(op);
 	pr = r[n];
 }
@@ -482,7 +480,7 @@
 
 //lds <REG_N>,FPUL              
  sh4op(i0100_nnnn_0101_1010)
-{//TODO : CHECK THIS
+{
 	u32 n = GetN(op);
 	fpul =r[n];
 }
@@ -553,7 +551,7 @@
 
 //mov.l @(<disp>,<REG_M>),<REG_N>
  sh4op(i0101_nnnn_mmmm_iiii)
-{//TODO : Check This [26/4/05]
+{
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 	u32 disp = GetImm4(op) << 2;
@@ -565,7 +563,7 @@
 // 6xxx
 //mov.b @<REG_M>,<REG_N>        
  sh4op(i0110_nnnn_mmmm_0000)
-{//TODO : Check This [26/4/05]
+{
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 	//r[n] = (u32)(s32)(s8)ReadMem8(r[m]);
@@ -575,7 +573,7 @@
 
 //mov.w @<REG_M>,<REG_N>        
  sh4op(i0110_nnnn_mmmm_0001)
-{//TODO : Check This [26/4/05]
+{
 	//iNimp("mov.w @<REG_M>,<REG_N>");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
@@ -586,7 +584,7 @@
 
 //mov.l @<REG_M>,<REG_N>        
  sh4op(i0110_nnnn_mmmm_0010)
-{//TODO : Check This [26/4/05]
+{
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 	//r[n]=ReadMem32(r[m]);
@@ -596,7 +594,7 @@
 
 //mov <REG_M>,<REG_N>           
  sh4op(i0110_nnnn_mmmm_0011)
-{//TODO : Check This [26/4/05]
+{
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 	r[n] = r[m];
@@ -605,7 +603,7 @@
 
 //mov.b @<REG_M>+,<REG_N>       
  sh4op(i0110_nnnn_mmmm_0100)
-{//TODO : Check This [26/4/05]
+{
 	//iNimp("mov.b @<REG_M>+,<REG_N>");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
@@ -631,7 +629,7 @@
 
 //mov.l @<REG_M>+,<REG_N>       
  sh4op(i0110_nnnn_mmmm_0110)
-{//TODO : hADD THIS
+{
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 
@@ -646,7 +644,7 @@
 //8xxx
  // mov.b R0,@(<disp>,<REG_M>)    
  sh4op(i1000_0000_mmmm_iiii)
-{//TODO : Check This [26/4/05]
+{
 	//iNimp("mov.b R0,@(<disp>,<REG_M>)");
 	u32 n = GetM(op);
 	u32 disp = GetImm4(op);
@@ -656,7 +654,7 @@
 
 // mov.w R0,@(<disp>,<REG_M>)    
  sh4op(i1000_0001_mmmm_iiii)
-{//TODO : !Add this
+{
 	//iNimp("mov.w R0,@(<disp>,<REG_M>)");
 	u32 disp = GetImm4(op);
 	u32 m = GetM(op);
@@ -666,7 +664,7 @@
 
 // mov.b @(<disp>,<REG_M>),R0    
  sh4op(i1000_0100_mmmm_iiii)
-{//TODO : Check This [26/4/05] x2
+{
 	//iNimp("mov.b @(<disp>,<REG_M>),R0");
 	u32 disp = GetImm4(op);
 	u32 m = GetM(op);
@@ -677,7 +675,7 @@
 
 // mov.w @(<disp>,<REG_M>),R0    
  sh4op(i1000_0101_mmmm_iiii)
-{//TODO : Check This [26/4/05]
+{
 	//iNimp("mov.w @(<disp>,<REG_M>),R0");
 	u32 disp = GetImm4(op);
 	u32 m = GetM(op);
@@ -690,7 +688,7 @@
 
 //mov.w @(<disp>,PC),<REG_N>   
  sh4op(i1001_nnnn_iiii_iiii)
-{//TODO : Check This [26/4/05]
+{
 	u32 n = GetN(op);
 	u32 disp = (GetImm8(op));
 	//r[n]=(u32)(s32)(s16)ReadMem16((disp<<1) + pc + 4);
@@ -761,7 +759,7 @@
 
 // mova @(<disp>,PC),R0          
  sh4op(i1100_0111_iiii_iiii)
-{//TODO : Check This [26/4/05]
+{
 	//u32 disp = (() << 2) + ((pc + 4) & 0xFFFFFFFC);
 	r[0] = (pc&0xFFFFFFFC)+4+(GetImm8(op)<<2);
 }
@@ -771,7 +769,7 @@
 
 // mov.l @(<disp>,PC),<REG_N>    
  sh4op(i1101_nnnn_iiii_iiii)
-{//TODO : Check This [26/4/05]
+{
 	u32 n = GetN(op);
 	u32 disp = (GetImm8(op));
 	
@@ -784,7 +782,7 @@
 
 // mov #<imm>,<REG_N>
  sh4op(i1110_nnnn_iiii_iiii)
-{//TODO : Check This [26/4/05]
+{
 	u32 n = GetN(op);
 	r[n] = (u32)(s32)(s8)(GetImm8(op));//(u32)(s8)= signextend8 :)
 }

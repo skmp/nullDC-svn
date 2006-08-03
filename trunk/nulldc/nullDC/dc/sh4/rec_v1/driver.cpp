@@ -36,28 +36,30 @@ u32 avg_rat_cnt=0;
 u32 avg_bc=0;
 //recBlock* lastBlock;
 
-
-INLINE BasicBlock* __fastcall GetRecompiledCode(u32 pc)
+INLINE CompiledBasicBlock* __fastcall GetRecompiledCode(u32 pc)
 {
-	BasicBlock* block=FindBlock(pc);
+	CompiledBasicBlock* cblock=FindBlock(pc);
 	
-	if (block)
-		return block;
+	if (cblock)
+		return cblock;
 	else
 	{
-		block=NewBlock(pc);
+		BasicBlock* block=new BasicBlock();
 		//analyse code
 		AnalyseCode(pc,block);
-		RegisterBlock(block);
+		FillBlockLockInfo(block);
 		CompileBasicBlock_slow(block);
+		RegisterBlock(cblock=block->cBB);
+		delete block;
 		//compile code
 		//return pointer
-		return block;
+		return cblock;
 	}
 }
 
-BasicBlock* FindOrRecompileCode(u32 pc)
+CompiledBasicBlock* FindOrRecompileCode(u32 pc)
 {
+	
 	return GetRecompiledCode(pc);
 }
 
@@ -107,9 +109,9 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 	SetFloatStatusReg();
 	while(true)
 	{
-		BasicBlock* currBlock=GetRecompiledCode(pc);
+		CompiledBasicBlock* currBlock=GetRecompiledCode(pc);
 		//rec_cycles+=currBlock->cycles;
-		BasicBlockEP* fp=currBlock->compiled->Code;
+		BasicBlockEP* fp=currBlock->Code;
 
 #ifdef X86
 		//call block :)
@@ -257,15 +259,10 @@ void rec_Sh4_int_Reset(bool Manual)
 	}
 	else
 	{
-		pc = 0xA0000000;
+		Sh4_int_Reset(Manual);
 
-		sr.SetFull(0x700000F0);
-		old_sr=sr;
-		UpdateSR();
-
-		fpscr.full = 0x0004001;
-		old_fpscr=fpscr;
-		UpdateFPSCR();
+		ResetAnalyser();
+		ResetBlockManager();
 		
 		//Any more registers have default value ?
 		printf("recSh4 Reset\n");
@@ -276,11 +273,16 @@ void rec_Sh4_int_Init()
 {
 	//InitHash();
 	Sh4_int_Init();
+	InitAnalyser();
+	InitBlockManager();
 	printf("recSh4 Init\n");
 }
 
 void rec_Sh4_int_Term() 
 {
+	TermBlockManager();
+	TermAnalyser();
+	Sh4_int_Term();
 	printf("recSh4 Term\n");
 }
 
