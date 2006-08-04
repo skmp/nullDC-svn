@@ -39,7 +39,7 @@
 using namespace std;
 
 #define BLOCK_LUT_GUESS
-#define DEBUG_BLOCKLIST
+//#define DEBUG_BLOCKLIST
 //#define OPTIMISE_LUT_SORT
 
 #define BLOCK_NONE (&BLOCK_NONE_B)
@@ -65,7 +65,7 @@ public :
 	{
 		ItemCount=0;
 	}
-
+#ifdef DEBUG_BLOCKLIST
 	void Test()
 	{
 	#ifdef DEBUG_BLOCKLIST
@@ -78,6 +78,9 @@ public :
 					verify(_Myfirst[i]==BLOCK_NONE);
 	#endif
 	}
+#else
+	#define Test()
+#endif
 	u32 Add(CompiledBasicBlock* block)
 	{
 		Test();
@@ -90,7 +93,9 @@ public :
 		}
 		else
 		{
+			#ifdef DEBUG_BLOCKLIST
 			verify(_Myfirst[ItemCount]==BLOCK_NONE);
+			#endif
 			_Myfirst[ItemCount]=block;
 			ItemCount++;
 			Test();
@@ -118,22 +123,28 @@ public :
 				ItemCount--;
 				if (ItemCount==0)
 				{
+					#ifdef DEBUG_BLOCKLIST
 					verify(_Myfirst[0]==block && i==0);
+					#endif
 					_Myfirst[i]=BLOCK_NONE;
 					CheckEmpty();
 				}
 				else if (ItemCount!=i)
 				{
+					#ifdef DEBUG_BLOCKLIST
 					verify(_Myfirst[ItemCount]!=BLOCK_NONE);
 					verify(ItemCount<size());
 					verify(i<ItemCount);
+					#endif
 					_Myfirst[i]=_Myfirst[ItemCount];
 					_Myfirst[ItemCount]=BLOCK_NONE;
 				}
 				else
 				{
+					#ifdef DEBUG_BLOCKLIST
 					verify(ItemCount<size());
 					verify(i==ItemCount);
+					#endif
 					_Myfirst[i]=BLOCK_NONE;
 				}
 
@@ -440,7 +451,7 @@ void UnRegisterBlock(CompiledBasicBlock* block)
 		BlockLookupGuess[GetLookupHash(block->start)]=BLOCK_NONE;
 	#endif
 
-	if (((block->start >>26)&0x7)==3)
+	if (block->OnRam())
 	{	//Care about invalidates olny if on ram
 		//Blockz[((block->start&RAM_MASK)>>1)]=0;
 		for (u32 i=start;i<=end;i++)
@@ -502,14 +513,15 @@ bool RamLockedWrite(u8* address)
 		BlockList* list=&BlockPageLists[addr_hash];
 		PageInfo[addr_hash].invalidates++;
 					
-		for (size_t i=0;i<list->ItemCount;i++)
-		{
-			if ((*list)[i])
-			{
-				SuspendBlock((*list)[i]);
-			}
-		}
-		list->clear();
+		//for (size_t i=0;i<list->ItemCount;i++)
+		//{
+		//	if ((*list)[i])
+		//	{
+		while(list->ItemCount)
+			SuspendBlock((*list)[list->ItemCount-1]);
+		//	}
+		//}
+		//list->clear();
 		mem_b.UnLockRegion((u32)offset&(~(PAGE_SIZE-1)),PAGE_SIZE);
 
 		if (PageInfo[addr_hash].invalidates>20)
