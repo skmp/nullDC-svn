@@ -100,16 +100,17 @@ void ScanCode(u32 pc,CodeRegion* to)
 		op_count++;
 		u32 opcode=ReadMem16(pc);
 		StepPipeline(opcode);
-		pc+=2;
 
 		if (Scanner_FindSOM(opcode,pc,&SOM))
 		{
-			pc+=SOM;
+			printf("Scanner : SOM %d\n",SOM);
+			pc+=SOM+2;
 			op_count+=SOM>>1;
 			known_pl_cycles+=SOM>>1;
 		}
 		else
 		{
+			pc+=2;
 			stop=(OpTyp[opcode] &  (WritesSR | WritesFPSCR | WritesPC))!=0;
 			if (stop && OpTyp[opcode] & Delayslot) 
 			{

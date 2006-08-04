@@ -64,6 +64,7 @@ u8* GetMemPtr(u32 Addr,u32 size);
 //For dynarec - needs to be done
 void GetMemInfo(u32 addr,u32 size);
 bool IsOnRam(u32 addr);
+u32 __fastcall GetRamPageFromAddress(u32 RamAddress);
 
 #define 	ReadMemArrRet(arr,addr,sz)				\
 			{if (sz==1)								\

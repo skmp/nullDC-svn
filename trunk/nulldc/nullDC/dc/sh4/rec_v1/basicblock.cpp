@@ -84,24 +84,27 @@ bool BasicBlock::IsMemLocked(u32 adr)
 
 	if (IsOnRam(adr)==false)
 		return false;
-	
-	u32 startP=(start & RAM_MASK)/PAGE_SIZE;
-	u32 endP=(end & RAM_MASK)/PAGE_SIZE;
-	u32 adrP=(adr & RAM_MASK)/PAGE_SIZE;
 
-	return (startP<=adrP) && (endP>=adrP);
+	//if block isnt on ram , then there's no way to tell if its locked (well , bios mem is allways locked :p)
+	if (OnRam()==false)
+		return false;
+
+	
+	u32 adrP=GetRamPageFromAddress(adr);
+
+	return (page_start() <=adrP) && (page_end()>=adrP);
 }
 
 
 //start page , olny valid if in ram
 u32 CodeRegion::page_start()
 {
-	return (start & RAM_MASK)/PAGE_SIZE;
+	return GetRamPageFromAddress(start);
 }
 //end page , olny valid if in ram
 u32 CodeRegion::page_end()
 {
-	return (end & RAM_MASK)/PAGE_SIZE;
+	return GetRamPageFromAddress(end);
 }
 //True if block is on ram :)
 bool CodeRegion::OnRam()

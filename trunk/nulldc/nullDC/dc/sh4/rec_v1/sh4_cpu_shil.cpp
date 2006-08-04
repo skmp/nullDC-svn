@@ -488,6 +488,7 @@ Sh4RegType div_som_reg3;
 
 u32 MatchDiv32(u32 pc , Sh4RegType &reg1,Sh4RegType &reg2 , Sh4RegType &reg3)
 {
+	verify(0x8C009AC0!=pc);
 	u32 v_pc=pc;
 	u32 match=1;
 	for (int i=0;i<32;i++)
@@ -542,7 +543,7 @@ bool __fastcall MatchDiv32u(u32 op,u32 pc)
 	u32 match=MatchDiv32(pc+2,div_som_reg1,div_som_reg2,div_som_reg3);
 
 
-	printf("DIV32U matched %d%%\n",match*100/65);
+	printf("DIV32U matched %d%% @ 0x%X\n",match*100/65,pc);
 	if (match==65)
 	{
 		//DIV32U was perfectly matched :)
@@ -562,7 +563,7 @@ bool __fastcall MatchDiv32s(u32 op,u32 pc)
 	div_som_reg3=(Sh4RegType)n;
 
 	u32 match=MatchDiv32(pc+2,div_som_reg1,div_som_reg2,div_som_reg3);
-	printf("DIV32S matched %d%%\n",match*100/65);
+	printf("DIV32S matched %d%% @ 0x%X\n",match*100/65,pc);
 	
 	if (match==65)
 	{
@@ -605,43 +606,6 @@ sh4op(i0011_nnnn_mmmm_0100)
 	u32 n=GetN(op);
 	u32 m=GetM(op);
 	shil_interpret(op);
-/*
-	unsigned long tmp0, tmp2;
-	unsigned char old_q, tmp1;
-
-	old_q = sr.Q;
-	sr.Q = (u8)((0x80000000 & r[n]) !=0);
-
-	r[n] <<= 1;
-	r[n] |= (unsigned long)sr.T;
-
-	tmp0 = r[n];	// this need only be done once here ..
-	tmp2 = r[m];
-
-	if( 0 == old_q )
-	{	if( 0 == sr.M )
-	{
-		r[n] -= tmp2;
-		tmp1	= (r[n]>tmp0);
-		sr.Q	= (sr.Q==0) ? tmp1 : (u8)(tmp1==0) ;
-	}	else	{
-		r[n] += tmp2;
-		tmp1	=(r[n]<tmp0);
-		sr.Q	= (sr.Q==0) ? (u8)(tmp1==0) : tmp1 ;
-	}
-	}	else
-	{	if( 0 == sr.M )
-	{
-		r[n] += tmp2;
-		tmp1	=(r[n]<tmp0);
-		sr.Q	= (sr.Q==0) ? tmp1 : (u8)(tmp1==0) ;
-	}	else	{
-		r[n] -= tmp2;
-		tmp1	=(r[n]>tmp0);
-		sr.Q	= (sr.Q==0) ? (u8)(tmp1==0) : tmp1 ;
-	}
-	}
-	sr.T = (sr.Q==sr.M);*/
 }
 
 

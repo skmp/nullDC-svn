@@ -119,7 +119,7 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 		CompiledBasicBlock* currBlock=GetRecompiledCode(pc);
 		//rec_cycles+=currBlock->cycles;
 		BasicBlockEP* fp=currBlock->Code;
-
+		u32 opc=pc;
 #ifdef X86
 		//call block :)
 #ifndef PROFILE_DYNAREC_CALL
@@ -134,6 +134,7 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 
 		fp();
 
+
 		__asm 
 		{
 			pop ebp
@@ -141,6 +142,7 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 			pop edi
 			pop esi;
 		}
+
 		//DynaPrintLinkEnd();
 #else	
 		//call it using a helper function

@@ -32,9 +32,6 @@ public:
 	u32 page_end();
 };
 
-class BasicBlock;
-
-
 class CompiledBasicBlock:public CodeRegion
 {
 public :

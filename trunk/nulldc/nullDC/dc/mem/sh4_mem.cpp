@@ -753,3 +753,9 @@ bool IsOnRam(u32 addr)
 
 	return false;
 }
+
+u32 __fastcall GetRamPageFromAddress(u32 RamAddress)
+{
+	verify(IsOnRam(RamAddress));
+	return (RamAddress & RAM_MASK)/PAGE_SIZE;
+}
