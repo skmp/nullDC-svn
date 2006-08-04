@@ -2037,6 +2037,11 @@ void CompileBasicBlock_slow(BasicBlock* block)
 
 	block->CreateCompiledBlock();
 	CompiledBasicBlock* cBB=block->cBB;
+	//16 ticks or more to convert to zuper block
+	//241760/8 ~=30220 blocks
+	//we promote to superblock f more that 10% of the time is spent on this block , 3022 ticks
+	cBB->gcp_lasttimer=gcp_timer;
+	cBB->bpm_ticks=3022;
 	
 
 	if (block->flags.ProtectionType==BLOCK_PROTECTIONTYPE_MANUAL)
@@ -2060,6 +2065,36 @@ void CompileBasicBlock_slow(BasicBlock* block)
 			x86e->JMP(SuspendBlock);
 			x86e->x86SetJ8(patch);
 		}
+	}
+	else
+	{
+		//check for block promotion to superblock ;)
+		x86e->DEC32M(&cBB->bpm_ticks);
+		u8* not_zero2=0;
+		u8* not_zero=x86e->JNZ8(0);
+		{
+			//yay , 0 , see if it needs promotion kkthxdie
+			x86e->MOV32MtoR(EAX,&gcp_timer);//now
+			x86e->SUB32MtoR(EAX,&cBB->gcp_lasttimer);//now-last
+			x86e->CMP32ItoR(EAX,16);
+			//if it took more that 16 ticks , then its less that 10% , no promotion
+			u8*no_promote= x86e->JBE8(0);
+			{
+				//suspend block
+				//x86e->CALLFunc(SuspendBlock);
+				x86e->MOV32ItoR(ECX,cBB->start);
+				void*  __fastcall CompileCode_SuperBlock(u32 pc);
+				//x86e->JMP(CompileCode_SuperBlock);
+				x86e->CALLFunc(CompileCode_SuperBlock);
+				not_zero2=x86e->JMP8(0);
+			}
+			x86e->x86SetJ8(no_promote);
+			x86e->ADD32RtoM(&cBB->gcp_lasttimer,EAX);//last+now-last=now ;)
+			x86e->MOV32ItoM(&cBB->bpm_ticks,3022);
+		}
+		x86e->x86SetJ8(not_zero);
+		x86e->x86SetJ8(not_zero2);
+		
 	}
 
 	//perform constan elimination as many times as needed :)

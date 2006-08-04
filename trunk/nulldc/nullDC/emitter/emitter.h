@@ -1065,7 +1065,7 @@ public :
 	}
 
 	/* inc m32 */
-	void INC32M( u32 to ) 
+	void INC32M( u32* to ) 
 	{
 		write8( 0xFF );
 		ModRM( 0, 0, DISP32 );
@@ -1080,7 +1080,7 @@ public :
 	}
 
 	/* inc m16 */
-	void INC16M( u32 to ) 
+	void INC16M( u16* to ) 
 	{
 		write8( 0x66 );
 		write8( 0xFF );
@@ -1248,7 +1248,7 @@ public :
 	}
 
 	/* dec m32 */
-	void DEC32M( u32 to ) 
+	void DEC32M( u32* to ) 
 	{
 		write8( 0xFF );
 		ModRM( 0, 1, DISP32 );
@@ -1263,7 +1263,7 @@ public :
 	}
 
 	/* dec m16 */
-	void DEC16M( u32 to ) 
+	void DEC16M( u16* to ) 
 	{
 		write8( 0x66 );
 		write8( 0xFF );

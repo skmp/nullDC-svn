@@ -1,6 +1,5 @@
 #pragma once
 #include "recompiler.h"
-#include "recompiler.h"
 
 class CodeRegion
 {
@@ -41,10 +40,13 @@ public :
 	u32 cpu_mode_tag;
 	u32 lookups;	//count of lookups for this block
 
-	//needed for free() // maby not ?
+	//needed for free()/debug info
 	u32 size;			//compiled code size (bytes)
 
-	
+	u32 gcp_lasttimer;
+	u32 bpm_ticks;
+
+
 	//Addresses to blocks
 	u32 TF_next_addr;//tfalse or jmp
 	u32 TT_next_addr;//ttrue  or rts guess
@@ -53,7 +55,7 @@ public :
 	CompiledBasicBlock* TF_block;
 	CompiledBasicBlock* TT_block;
 
-	//pointers to block entry points [isnt that the same as above ?]
+	//pointers to block entry points [isnt that the same as above ?-> not anymore]
 	void* pTF_next_addr;//tfalse or jmp
 	void* pTT_next_addr;//ttrue  or rts guess
 

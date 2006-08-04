@@ -34,10 +34,21 @@ time_t rec_odtime=0;
 u32 avg_rat=0;
 u32 avg_rat_cnt=0;
 u32 avg_bc=0;
-//recBlock* lastBlock;
+
+u32 sb_count=0;
+u32 nb_count=0;
+void*  __fastcall CompileCode_SuperBlock(u32 pc)
+{
+	sb_count++;
+	printf("Zuperblock @ pc=0x%X , %d superblocks , %d%% of all blocks\n",pc,sb_count,sb_count*100/nb_count);
+	CompiledBasicBlock* cBB=FindBlock(pc);
+	cBB->bpm_ticks=0xFFFFFFFF;
+	return 0;
+}
 
 CompiledBasicBlock*  __fastcall CompileCode(u32 pc)
 {
+	nb_count++;
 	CompiledBasicBlock* cblock;
 	BasicBlock* block=new BasicBlock();
 	//scan code
@@ -119,7 +130,7 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 		CompiledBasicBlock* currBlock=GetRecompiledCode(pc);
 		//rec_cycles+=currBlock->cycles;
 		BasicBlockEP* fp=currBlock->Code;
-		u32 opc=pc;
+		
 #ifdef X86
 		//call block :)
 #ifndef PROFILE_DYNAREC_CALL

@@ -381,6 +381,9 @@ u32 aica_cycl=0;
 void FreeSuspendedBlocks();;
 void DynaPrintCycles();
 u32 shitaaa=0;
+
+u32 gcp_timer=0;
+u32 gpc_counter=0;
 int __fastcall UpdateSystem(u32 Cycles)
 {
 	//TODO : Add Update System implementation
@@ -388,7 +391,15 @@ int __fastcall UpdateSystem(u32 Cycles)
 	if (aica_cycl>(200*1000*1000/(44100*3)))
 	{
 		UpdateAica(aica_cycl);
-		FreeSuspendedBlocks();
+
+		//~15k cycles
+		gpc_counter++;
+		if (gpc_counter>10)
+		{
+			gpc_counter=0;
+			gcp_timer++;
+			FreeSuspendedBlocks();
+		}
 		/*if (shitaaa==0x10000)
 		{
 			shitaaa=0;
