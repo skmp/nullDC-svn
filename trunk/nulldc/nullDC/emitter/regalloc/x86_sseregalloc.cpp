@@ -116,7 +116,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 		SimpleSSERegAlloc_init();
 
 		this->x86e=x86e;
-		DoAlloc=block->flags.FpuIsVector==0 && block->cpu_mode_tag==0;
+		DoAlloc=block->flags.FpuIsVector==0 && block->flags.FpuMode==0;
 		
 		sort_temp used[16];
 		for (int i=0;i<16;i++)

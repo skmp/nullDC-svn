@@ -40,9 +40,13 @@ CompiledBasicBlock*  __fastcall CompileCode(u32 pc)
 {
 	CompiledBasicBlock* cblock;
 	BasicBlock* block=new BasicBlock();
-	//analyse code
-	AnalyseCode(pc,block);
+	//scan code
+	ScanCode(pc,block);
+	//Fill block lock type info
 	FillBlockLockInfo(block);
+	//analyse code [generate il/block type]
+	AnalyseCode(block);
+	//Compile code
 	CompileBasicBlock_slow(block);
 	RegisterBlock(cblock=block->cBB);
 	delete block;
@@ -114,7 +118,7 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 	{
 		CompiledBasicBlock* currBlock=GetRecompiledCode(pc);
 		//rec_cycles+=currBlock->cycles;
-		//BasicBlockEP* fp=currBlock->Code;
+		BasicBlockEP* fp=currBlock->Code;
 
 #ifdef X86
 		//call block :)
@@ -128,7 +132,7 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 			push ebp
 		}
 
-		currBlock->Code();
+		fp();
 
 		__asm 
 		{

@@ -481,7 +481,12 @@ sh4op(i0000_nnnn_mmmm_0111)
 #define DIV0S_KEY 0x2007
 #define DIV1_KEY 0x3004
 #define ROTCL_KEY 0x4024
-u32 MatchDiv32(u32 pc , BasicBlock* bb,Sh4RegType &reg1,Sh4RegType &reg2 , Sh4RegType &reg3)
+
+Sh4RegType div_som_reg1;
+Sh4RegType div_som_reg2;
+Sh4RegType div_som_reg3;
+
+u32 MatchDiv32(u32 pc , Sh4RegType &reg1,Sh4RegType &reg2 , Sh4RegType &reg3)
 {
 	u32 v_pc=pc;
 	u32 match=1;
@@ -528,56 +533,67 @@ u32 MatchDiv32(u32 pc , BasicBlock* bb,Sh4RegType &reg1,Sh4RegType &reg2 , Sh4Re
 	
 	return match;
 }
-//div0u                         
-sh4op(i0000_0000_0001_1001)
-{//ToDo : Check This [26/4/05]
-	//iNimp("div0u");
-	//sr.Q = 0;
-	//sr.M = 0;
-	//sr.T = 0;
-	Sh4RegType reg1=Sh4RegType::NoReg;
-	Sh4RegType reg2=Sh4RegType::NoReg;
-	Sh4RegType reg3=Sh4RegType::NoReg;
+bool __fastcall MatchDiv32u(u32 op,u32 pc)
+{
+	div_som_reg1=Sh4RegType::NoReg;
+	div_som_reg2=Sh4RegType::NoReg;
+	div_som_reg3=Sh4RegType::NoReg;
 
-	u32 match=MatchDiv32(pc+2,bb,reg1,reg2,reg3);
+	u32 match=MatchDiv32(pc+2,div_som_reg1,div_som_reg2,div_som_reg3);
 
 
 	printf("DIV32U matched %d%%\n",match*100/65);
 	if (match==65)
 	{
 		//DIV32U was perfectly matched :)
-		bb->flags.SynthOpcode=BLOCK_SOM_SIZE_128;
-		ilst->div(reg1,reg2,reg3,FLAG_ZX|FLAG_32);
+		return true;
 	}
-	else //<- uncoment when we realy emit em :P
-		shil_interpret(op);
-
+	else //no match ...
+		return false;
 }
-//div0s <REG_M>,<REG_N>         
-sh4op(i0010_nnnn_mmmm_0111)
-{//ToDo : Check This [26/4/05]
-	//iNimp("div0s <REG_M>,<REG_N>");
+
+bool __fastcall MatchDiv32s(u32 op,u32 pc)
+{
 	u32 n = GetN(op);
 	u32 m = GetM(op);
-	/*//new implementation
-	sr.Q=r[n]>>31;
-	sr.M=r[m]>>31;
-	sr.T=sr.M^sr.Q;*/
 
-	Sh4RegType reg1=Sh4RegType::NoReg;
-	Sh4RegType reg2=(Sh4RegType)m;
-	Sh4RegType reg3=(Sh4RegType)n;
+	div_som_reg1=Sh4RegType::NoReg;
+	div_som_reg2=(Sh4RegType)m;
+	div_som_reg3=(Sh4RegType)n;
 
-	u32 match=MatchDiv32(pc+2,bb,reg1,reg2,reg3);
+	u32 match=MatchDiv32(pc+2,div_som_reg1,div_som_reg2,div_som_reg3);
 	printf("DIV32S matched %d%%\n",match*100/65);
 	
 	if (match==65)
 	{
 		//DIV32S was perfectly matched :)
-		bb->flags.SynthOpcode=BLOCK_SOM_SIZE_128;
-		ilst->div(reg1,reg2,reg3,FLAG_SX|FLAG_32);
+		return true;
 	}
-	else //<- uncoment when we realy emit em :P
+	else //no match ...
+		return false;
+}
+//div0u                         
+sh4op(i0000_0000_0001_1001)
+{	
+	if (MatchDiv32u(op,pc))
+	{
+		//DIV32U was perfectly matched :)
+		bb->flags.SynthOpcode=BLOCK_SOM_SIZE_128;
+		ilst->div(div_som_reg1,div_som_reg2,div_som_reg3,FLAG_ZX|FLAG_32);
+	}
+	else //fallback to interpreter (16b div propably)
+		shil_interpret(op);
+}
+//div0s <REG_M>,<REG_N>         
+sh4op(i0010_nnnn_mmmm_0111)
+{
+	if (MatchDiv32s(op,pc))
+	{
+		//DIV32S was perfectly matched :)
+		bb->flags.SynthOpcode=BLOCK_SOM_SIZE_128;
+		ilst->div(div_som_reg1,div_som_reg2,div_som_reg3,FLAG_SX|FLAG_32);
+	}
+	else //fallback to interpreter (16b div propably)
 		shil_interpret(op);
 
 	return;
@@ -2133,6 +2149,26 @@ sh4op(sh4_bpt_op)
 	ilst->add(reg_pc,2);
 	return;
 } 
+
+bool __fastcall Scanner_FindSOM(u32 opcode,u32 pc,u32* SOM)
+{ 
+	if (opcode ==0x0019)
+	{
+		//possible div0u
+		//i0000_0000_0001_1001  
+		*SOM=128;
+		return MatchDiv32u(opcode,pc);
+	}
+	else if ((opcode & 0xF00F)==0x2007)
+	{
+		//possible div0s
+		//i0010_nnnn_mmmm_0111  
+		*SOM=128;
+		return MatchDiv32s(opcode,pc);
+	}
+
+	return false;
+}
 #define notshit
 #ifdef notshit
 //ok , all the opcodes to here are hand writen for the rec

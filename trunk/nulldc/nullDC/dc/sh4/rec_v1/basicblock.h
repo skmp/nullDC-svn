@@ -1,20 +1,51 @@
 #pragma once
 #include "recompiler.h"
+#include "recompiler.h"
+
+class CodeRegion
+{
+public:
+	//start pc
+	u32 start;
+	
+	//end pc
+	u32 end;
+
+	//cycle count
+	u32 cycles;
+
+	bool OnRam();
+
+	u32 Size()
+	{
+		return end-start+2;
+	}
+
+	u32 OpcodeCount()
+	{
+		return Size()>>1;
+	}
+
+	//start page , olny valid if in ram
+	u32 page_start();
+	//end page , olny valid if in ram
+	u32 page_end();
+};
 
 class BasicBlock;
 
-class CompiledBasicBlock
+
+class CompiledBasicBlock:public CodeRegion
 {
 public :
 	BasicBlockEP* Code;				//compiled code ptr
+	
 	//needed for lookups
-	u32 start;
 	u32 cpu_mode_tag;
 	u32 lookups;	//count of lookups for this block
 
 	//needed for free() // maby not ?
 	u32 size;			//compiled code size (bytes)
-	u32 end;			//needed for locks/minnor shit
 
 	
 	//Addresses to blocks
@@ -35,7 +66,6 @@ public :
 	//misc profile & debug variables
 	u64 profile_time;
 	u32 profile_calls;
-	u32 cycles;
 
 	//Functions
 	void Free();
@@ -55,9 +85,19 @@ private :
 #define BLOCKLIST_MAX_CYCLES (448)
 class BasicBlock;
 
-class BasicBlock
+
+
+class BasicBlock: public CodeRegion
 {
 	public :
+
+	BasicBlock(CodeRegion& cregion):CodeRegion(cregion)
+	{
+		flags.full=0;
+		cBB=0;
+		TF_next_addr=0xFFFFFFFF;
+		TT_next_addr=0xFFFFFFFF;
+	}
 
 	BasicBlock()
 	{
@@ -72,12 +112,10 @@ class BasicBlock
 
 	bool IsMemLocked(u32 adr);
 
-	//start pc
-	u32 start;
+	
+	//u32 start;
 	//end pc
-	u32 end;
-	//duplicates  flags.FpuMode , so that we can check it fast on block lookups
-	u32 cpu_mode_tag;
+	//u32 end;
 
 	//flags
 	union
@@ -122,7 +160,7 @@ class BasicBlock
 		};
 	}flags;	//compiled block flags :)
 
-	u32 cycles;
+	//u32 cycles;
 
 	shil_stream ilst;
 
@@ -135,7 +173,7 @@ class BasicBlock
 		cBB->TT_next_addr=TT_next_addr;
 		cBB->cycles=cycles;
 		cBB->end=end;
-		cBB->cpu_mode_tag=cpu_mode_tag;
+		cBB->cpu_mode_tag=flags.FpuMode;
 		cBB->lookups=0;
 
 		cBB->TF_block=cBB->TT_block=0;

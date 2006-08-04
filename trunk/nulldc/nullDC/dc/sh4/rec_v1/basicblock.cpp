@@ -91,3 +91,21 @@ bool BasicBlock::IsMemLocked(u32 adr)
 
 	return (startP<=adrP) && (endP>=adrP);
 }
+
+
+//start page , olny valid if in ram
+u32 CodeRegion::page_start()
+{
+	return (start & RAM_MASK)/PAGE_SIZE;
+}
+//end page , olny valid if in ram
+u32 CodeRegion::page_end()
+{
+	return (end & RAM_MASK)/PAGE_SIZE;
+}
+//True if block is on ram :)
+bool CodeRegion::OnRam()
+{
+	//code can't start and end on diff mem areas , so olny check start :)
+	return IsOnRam(start);
+}

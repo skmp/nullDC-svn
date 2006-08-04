@@ -27,6 +27,7 @@
 u32 execution_groop_busy[sh4_eu::sh4_eu_max];
 u32 known_pl_cycles=0;
 
+//pipeline hackmulation
 void InitPipeline()
 {
 	known_pl_cycles=0;
@@ -83,27 +84,66 @@ void TermPipeline()
 	}
 	known_pl_cycles+=mpc;
 }
-void AnalyseCode(u32 start,BasicBlock* to)
+
+void ScanCode(u32 pc,CodeRegion* to)
 {
-	u32 pc=start;
-
-	to->start=start;
-	to->cpu_mode_tag=fpscr.PR_SZ;
-
-	u32 block_ops=0;
-
-	ilst=&to->ilst;
-	to->flags.FpuMode = GET_CURRENT_FPU_MODE();
+	to->start=pc;
 
 	InitPipeline();
+	
+	bool stop=false;
+	u32 op_count=0;
+	u32 SOM;
 
+	while(stop==false)
+	{
+		op_count++;
+		u32 opcode=ReadMem16(pc);
+		StepPipeline(opcode);
+		pc+=2;
+
+		if (Scanner_FindSOM(opcode,pc,&SOM))
+		{
+			pc+=SOM;
+			op_count+=SOM>>1;
+			known_pl_cycles+=SOM>>1;
+		}
+		else
+		{
+			stop=(OpTyp[opcode] &  (WritesSR | WritesFPSCR | WritesPC))!=0;
+			if (stop && OpTyp[opcode] & Delayslot) 
+			{
+				u32 opcode=ReadMem16(pc);
+				StepPipeline(opcode);
+				pc+=2;
+			}
+		}
+
+		if (op_count>=CPU_BASIC_BLOCK_SIZE)
+			stop=true;
+	}
+
+	TermPipeline();
+
+	to->end=pc-2;
+
+	to->cycles=known_pl_cycles*CPU_RATIO;
+}
+
+//Code Analyser
+void AnalyseCode(BasicBlock* to)
+{
+	u32 pc=to->start;
+	ilst=&to->ilst;
+
+	to->flags.FpuMode = GET_CURRENT_FPU_MODE();
+
+	u32 block_ops=0;
+	u32 endpc;
 	while (true)
 	{
 		u32 opcode=ReadMem16(pc);
-
 		block_ops++;
-		StepPipeline(opcode);
-
 		RecOpPtr[opcode](opcode,pc,to);
 
 		if (to->flags.SynthOpcode)
@@ -126,14 +166,14 @@ void AnalyseCode(u32 start,BasicBlock* to)
 
 		if (to->flags.EndAnalyse)
 		{
-			to->end=pc;
+			endpc=pc;
 			break;
 		}
 
 		//if branch , then block end
 		if (OpTyp[opcode]&WritesPC)
 		{
-			to->end=pc;
+			endpc=pc;
 			to->flags.ExitType =BLOCK_EXITTYPE_DYNAMIC;
 			break;
 		}
@@ -145,7 +185,7 @@ void AnalyseCode(u32 start,BasicBlock* to)
 			//ilst->mov(reg_pc,pc);//save next opcode pc-2 , pc+2 is done after execution
 			//opcode is interpreter so pc is set , if update shit() is called , pc must remain
 
-			to->end=pc;
+			endpc=pc;
 			to->flags.ExitType =BLOCK_EXITTYPE_DYNAMIC;
 			ilst->add(reg_pc,2);
 			break;
@@ -156,7 +196,7 @@ void AnalyseCode(u32 start,BasicBlock* to)
 			ilst->mov(reg_pc,pc);//save next opcode pc-2 , pc+2 is done after execution
 			
 			to->flags.ExitType=BLOCK_EXITTYPE_FIXED;
-			to->end=pc;
+			endpc=pc;
 			to->TF_next_addr=pc+2;
 			break;
 		}
@@ -170,7 +210,7 @@ void AnalyseCode(u32 start,BasicBlock* to)
 	//add delayslot opcode :)
 	if (to->flags.HasDelaySlot)
 	{
-		to->end+=2;
+		endpc+=2;
 		u32 opcode=ReadMem16(to->end);
 		//block_size+=GetOpCycles(opcode);
 		StepPipeline(opcode);
@@ -185,10 +225,13 @@ void AnalyseCode(u32 start,BasicBlock* to)
 		printf("Dynamic block ending at %s\n",temp);
 	}
 #endif
-	TermPipeline();
-	to->cycles=known_pl_cycles*CPU_RATIO;
+
+
+	verify(endpc==to->end);
 
 	to->ilst.op_count=(u32)to->ilst.opcodes.size();
+	
+	
 	//shil_opt_return srv;
 //	perform_shil_opt(shil_opt_ntc,to,srv);
 

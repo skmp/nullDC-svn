@@ -351,19 +351,26 @@ CompiledBasicBlock* __fastcall FindBlock_full(u32 address,CompiledBasicBlock* fa
 
 void FillBlockLockInfo(BasicBlock* block)
 {
-	u32 start=(block->start&RAM_MASK)/PAGE_SIZE;
-	u32 end=(block->end&RAM_MASK)/PAGE_SIZE;
-
-	bool ManualCheck=false;
-	for (u32 i=start;i<=end;i++)
+	if (block->OnRam())
 	{
-		ManualCheck|=PageInfo[i].flags.ManualCheck;
-	}
+		u32 start=block->page_start();
+		u32 end=block->page_end();
 
-	if (ManualCheck)
-		block->flags.ProtectionType=BLOCK_PROTECTIONTYPE_MANUAL;
-	else
+		bool ManualCheck=false;
+		for (u32 i=start;i<=end;i++)
+		{
+			ManualCheck|=PageInfo[i].flags.ManualCheck;
+		}
+
+		if (ManualCheck)
+			block->flags.ProtectionType=BLOCK_PROTECTIONTYPE_MANUAL;
+		else
+			block->flags.ProtectionType=BLOCK_PROTECTIONTYPE_LOCK;
+	}
+	else//On rom , LOCK protection , never gets invalidated :)
+	{
 		block->flags.ProtectionType=BLOCK_PROTECTIONTYPE_LOCK;
+	}
 }
 
 void RegisterBlock(CompiledBasicBlock* block)
@@ -442,6 +449,8 @@ void __fastcall SuspendBlock(CompiledBasicBlock* block)
 	//look up block list
 	//Look up guess block list
 	//unregisting a block does exactly all that :)
+	if(block==BLOCK_NONE)
+		return;
 	UnRegisterBlock(block);
 	block->Suspend();
 	CBBs_BlockSuspended(block);
@@ -455,6 +464,7 @@ void FreeBlock(CompiledBasicBlock* block)
 {
 	//free the block
 	//all_block_list.Remove(block);
+	verify(block!=BLOCK_NONE);
 	block->Free();
 	delete block;
 }

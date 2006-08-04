@@ -5,7 +5,8 @@
 #include "dc\sh4\sh4_opcode_list.h"
 
 
-void AnalyseCode(u32 start,BasicBlock* to); 
+void ScanCode(u32 pc,CodeRegion* to);
+void AnalyseCode(BasicBlock* to);
 
 //Init/Reset/Term
 void InitAnalyser();
