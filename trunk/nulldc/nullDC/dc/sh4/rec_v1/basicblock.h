@@ -1,37 +1,54 @@
 #pragma once
 #include "recompiler.h"
+#define BASIC_BLOCK 0
+#define SUPER_BLOCK 1
 
-class CodeRegion
+class CodeSpan
 {
 public:
 	//start pc
 	u32 start;
-	
+
 	//end pc
 	u32 end;
 
-	//cycle count
-	u32 cycles;
-
+	//True if block is on ram :)
 	bool OnRam();
 
-	u32 Size()
-	{
-		return end-start+2;
-	}
-
-	u32 OpcodeCount()
-	{
-		return Size()>>1;
-	}
-
+	//Retuns the size of the code span (in bytes)
+	u32 Size();
+	//Returns the opcode count of the code span
+	u32 OpcodeCount();
+	//Returns the Page count of the code span [olny valid if in vram]
+	u32 PageCount();
 	//start page , olny valid if in ram
 	u32 page_start();
 	//end page , olny valid if in ram
 	u32 page_end();
+
+	//Checks if this CodeSpan contains an adress.Valid olny if on block is on ram and address is on ram :)
+	bool Contains(u32 address,u32 sz);
+	//checks if this CodeSpan contains another Codespan
+	bool Contains(CodeSpan* to);
+	//Checks if this CodeSpan contains an adress , counting in page units.
+	bool ContainsPage(u32 address);
+	//Checks if this CodeSpan contains another code span , counting in page units.
+	bool ContainsPage(CodeSpan* to);
+
+	//Creates a Union w/ the CodeSpan , assuming this CodeSpan is on ram.The to codespan contains decoded ram offsets
+	void Union(CodeSpan* to);
+	//Checks if this CodeSpan Intersects w/ another , assuming both are on ram
+	bool Intersect(CodeSpan* to);
 };
 
-class CompiledBasicBlock:public CodeRegion
+class CodeRegion : public CodeSpan
+{
+public:
+	//cycle count
+	u32 cycles;
+};
+
+class CompiledBlock:public CodeRegion
 {
 public :
 	BasicBlockEP* Code;				//compiled code ptr
@@ -46,14 +63,17 @@ public :
 	u32 gcp_lasttimer;
 	u32 bpm_ticks;
 
+	//block type
+	u32 block_type;
+
 
 	//Addresses to blocks
 	u32 TF_next_addr;//tfalse or jmp
 	u32 TT_next_addr;//ttrue  or rts guess
 
 	//pointers to blocks
-	CompiledBasicBlock* TF_block;
-	CompiledBasicBlock* TT_block;
+	CompiledBlock* TF_block;
+	CompiledBlock* TT_block;
 
 	//pointers to block entry points [isnt that the same as above ?-> not anymore]
 	void* pTF_next_addr;//tfalse or jmp
@@ -69,13 +89,13 @@ public :
 	//Functions
 	void Free();
 	void Suspend();
-	void BlockWasSuspended(CompiledBasicBlock* block);
-	void AddRef(CompiledBasicBlock* block);
-	void ClearBlock(CompiledBasicBlock* block);
+	void BlockWasSuspended(CompiledBlock* block);
+	void AddRef(CompiledBlock* block);
+	void ClearBlock(CompiledBlock* block);
 
 private :
 	//Block link info
-	vector<CompiledBasicBlock*> blocks_to_clear;
+	vector<CompiledBlock*> blocks_to_clear;
 };
 
 //helpers
@@ -165,7 +185,7 @@ class BasicBlock: public CodeRegion
 
 	void CreateCompiledBlock()
 	{
-		cBB= new CompiledBasicBlock();
+		cBB= new CompiledBlock();
 
 		cBB->start=start;
 		cBB->TF_next_addr=TF_next_addr;
@@ -179,11 +199,12 @@ class BasicBlock: public CodeRegion
 		cBB->profile_time=0;
 		cBB->profile_calls=0;
 		cBB->Discarded=false;
+		cBB->block_type=BASIC_BLOCK;
 	}
 
-	CompiledBasicBlock* cBB;
+	CompiledBlock* cBB;
 
-	bool Contains(u32 pc);
+	//bool Contains(u32 pc);
 
 	u32 TF_next_addr;//tfalse or jmp
 	u32 TT_next_addr;//ttrue  or rts guess

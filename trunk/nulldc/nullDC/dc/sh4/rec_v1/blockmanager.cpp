@@ -43,25 +43,25 @@ using namespace std;
 //#define OPTIMISE_LUT_SORT
 
 #define BLOCK_NONE (&BLOCK_NONE_B)
-CompiledBasicBlock BLOCK_NONE_B;
+CompiledBlock BLOCK_NONE_B;
 
 //BasicBlock* Blockz[RAM_SIZE>>1];
 //
 //helper list class
 int compare_BlockLookups(const void * a, const void * b)
 {
-	CompiledBasicBlock* ba=*(CompiledBasicBlock**)a;
-	CompiledBasicBlock* bb=*(CompiledBasicBlock**)b;
+	CompiledBlock* ba=*(CompiledBlock**)a;
+	CompiledBlock* bb=*(CompiledBlock**)b;
 
 	return bb->lookups-ba->lookups;
 }
 
 
-class BlockList:public vector<CompiledBasicBlock*>
+class BlockList:public vector<CompiledBlock*>
 {
 public :
 	size_t ItemCount;
-	BlockList():vector<CompiledBasicBlock*>()
+	BlockList():vector<CompiledBlock*>()
 	{
 		ItemCount=0;
 	}
@@ -81,7 +81,7 @@ public :
 #else
 	#define Test()
 #endif
-	u32 Add(CompiledBasicBlock* block)
+	u32 Add(CompiledBlock* block)
 	{
 		Test();
 		if (ItemCount==size())
@@ -110,7 +110,7 @@ public :
 			//}
 		}
 	}
-	void Remove(CompiledBasicBlock* block)
+	void Remove(CompiledBlock* block)
 	{
 		Test();
 		if (ItemCount==0)
@@ -155,7 +155,7 @@ public :
 		Test();
 		verify(false);
 	}
-	CompiledBasicBlock* Find(u32 address,u32 cpu_mode)
+	CompiledBlock* Find(u32 address,u32 cpu_mode)
 	{
 		Test();
 		for (u32 i=0;i<ItemCount;i++)
@@ -252,10 +252,10 @@ BlockList					BlockLookupLists[LOOKUP_HASH_SIZE];
 
 #ifdef BLOCK_LUT_GUESS
 //even after optimising blocks , guesses give a good speedup :)
-CompiledBasicBlock*			BlockLookupGuess[LOOKUP_HASH_SIZE];
+CompiledBlock*			BlockLookupGuess[LOOKUP_HASH_SIZE];
 #endif
 //implemented later
-void FreeBlock(CompiledBasicBlock* block);
+void FreeBlock(CompiledBlock* block);
 
 //misc code & helper functions
 //this should not be called from a running block , or it could crash
@@ -324,12 +324,12 @@ INLINE BlockList* GetLookupBlockList(u32 address)
 u32 luk=0;
 u32 r_value=0x112;
 
-CompiledBasicBlock* __fastcall FindBlock_full(u32 address,CompiledBasicBlock* fastblock);
+CompiledBlock* __fastcall FindBlock_full(u32 address,CompiledBlock* fastblock);
 
-INLINE CompiledBasicBlock* __fastcall FindBlock_fast(u32 address)
+INLINE CompiledBlock* __fastcall FindBlock_fast(u32 address)
 {
 #ifdef BLOCK_LUT_GUESS
-	CompiledBasicBlock* fastblock;
+	CompiledBlock* fastblock;
 
 	fastblock=BlockLookupGuess[GetLookupHash(address)];
 
@@ -349,9 +349,9 @@ INLINE CompiledBasicBlock* __fastcall FindBlock_fast(u32 address)
 #endif
 
 }
-CompiledBasicBlock* __fastcall FindBlock_full(u32 address,CompiledBasicBlock* fastblock)
+CompiledBlock* __fastcall FindBlock_full(u32 address,CompiledBlock* fastblock)
 {
-	CompiledBasicBlock* thisblock;
+	CompiledBlock* thisblock;
 
 	BlockList* blklist = GetLookupBlockList(address);
 
@@ -413,7 +413,7 @@ void FillBlockLockInfo(BasicBlock* block)
 	}
 }
 
-void RegisterBlock(CompiledBasicBlock* block)
+void RegisterBlock(CompiledBlock* block)
 {
 	all_block_list.Add(block);
 
@@ -437,7 +437,7 @@ void RegisterBlock(CompiledBasicBlock* block)
 	}
 }
 
-void UnRegisterBlock(CompiledBasicBlock* block)
+void UnRegisterBlock(CompiledBlock* block)
 {
 	u32 start=(block->start&RAM_MASK)/PAGE_SIZE;
 	u32 end=(block->end&RAM_MASK)/PAGE_SIZE;
@@ -473,8 +473,8 @@ void UnRegisterBlock(CompiledBasicBlock* block)
 //suspend/ free related ;)
 //called to suspend a block
 //can be called from a mem invalidation , or directly from a manualy invalidated block
-void CBBs_BlockSuspended(CompiledBasicBlock* block);
-void __fastcall SuspendBlock(CompiledBasicBlock* block)
+void CBBs_BlockSuspended(CompiledBlock* block);
+void __fastcall SuspendBlock(CompiledBlock* block)
 {
 	//remove the block from :
 	//
@@ -494,7 +494,7 @@ void __fastcall SuspendBlock(CompiledBasicBlock* block)
 	//SuspendedBlocks.Add(block);
 }
 //called to free a suspended block
-void FreeBlock(CompiledBasicBlock* block)
+void FreeBlock(CompiledBlock* block)
 {
 	//free the block
 	//all_block_list.Remove(block);
@@ -544,7 +544,7 @@ void InitBlockManager()
 	srand(0);
 	for (int i=0;i<777;i++)
 	{
-		CompiledBasicBlock* a=new CompiledBasicBlock();
+		CompiledBlock* a=new CompiledBlock();
 		a->Discarded=false;
 		a->start=rand();
 		a->cpu_mode_tag=rand();
@@ -555,7 +555,7 @@ void InitBlockManager()
 	{
 		u32 r1=rand();
 		u32 r2=rand();
-		CompiledBasicBlock* a=papa.Find(r1,r2);
+		CompiledBlock* a=papa.Find(r1,r2);
 		verify(r1==a->start && r2==a->cpu_mode_tag);
 	}*/
 }
@@ -571,7 +571,7 @@ void TermBlockManager()
 ///////////////////////////////////////////////
 //			nullProf implementation			 //
 ///////////////////////////////////////////////
-void ConvBlockInfo(nullprof_block_info* to,CompiledBasicBlock* pblk)
+void ConvBlockInfo(nullprof_block_info* to,CompiledBlock* pblk)
 {
 	if (pblk==BLOCK_NONE)
 	{
@@ -597,7 +597,7 @@ void nullprof_GetBlock(nullprof_block_info* to,u32 type,u32 address)
 		return;
 	}
 
-	CompiledBasicBlock* pblk=FindBlock(address);
+	CompiledBlock* pblk=FindBlock(address);
 
 
 	ConvBlockInfo(to,pblk);
@@ -605,8 +605,8 @@ void nullprof_GetBlock(nullprof_block_info* to,u32 type,u32 address)
 
 int compare_usage (const void * a, const void * b)
 {
-	CompiledBasicBlock* ba=*(CompiledBasicBlock**)a;
-	CompiledBasicBlock* bb=*(CompiledBasicBlock**)b;
+	CompiledBlock* ba=*(CompiledBlock**)a;
+	CompiledBlock* bb=*(CompiledBlock**)b;
 
 	double ava=(double)ba->profile_time;//(double)ba->profile_calls;
 	double avb=(double)bb->profile_time;//(double)bb->profile_calls;
@@ -617,8 +617,8 @@ int compare_usage (const void * a, const void * b)
 
 int compare_time (const void * a, const void * b)
 {
-	CompiledBasicBlock* ba=*(CompiledBasicBlock**)a;
-	CompiledBasicBlock* bb=*(CompiledBasicBlock**)b;
+	CompiledBlock* ba=*(CompiledBlock**)a;
+	CompiledBlock* bb=*(CompiledBlock**)b;
 
 	double ava=(double)ba->profile_time/(double)ba->profile_calls;
 	double avb=(double)bb->profile_time/(double)bb->profile_calls;
@@ -628,8 +628,8 @@ int compare_time (const void * a, const void * b)
 }
 int compare_calls (const void * a, const void * b)
 {
-	CompiledBasicBlock* ba=*(CompiledBasicBlock**)a;
-	CompiledBasicBlock* bb=*(CompiledBasicBlock**)b;
+	CompiledBlock* ba=*(CompiledBlock**)a;
+	CompiledBlock* bb=*(CompiledBlock**)b;
 
 	double ava=(double)ba->profile_calls;
 	double avb=(double)bb->profile_calls;

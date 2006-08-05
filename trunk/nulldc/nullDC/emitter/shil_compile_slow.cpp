@@ -90,7 +90,7 @@ void __fastcall dyna_profile_block_enter()
 	}
 }
 
-void __fastcall dyna_profile_block_exit(CompiledBasicBlock* bb)
+void __fastcall dyna_profile_block_exit(CompiledBlock* bb)
 {
 	__asm
 	{
@@ -1943,9 +1943,9 @@ void Init()
 
 }
 //Compile block and return pointer to it's code
-void* __fastcall link_compile_inject_TF(CompiledBasicBlock* ptr)
+void* __fastcall link_compile_inject_TF(CompiledBlock* ptr)
 {
-	CompiledBasicBlock* target= FindOrRecompileCode(ptr->TF_next_addr);
+	CompiledBlock* target= FindOrRecompileCode(ptr->TF_next_addr);
 	
 	
 	//if current block is Discared , we must not add any chain info , just jump to the new one :)
@@ -1959,9 +1959,9 @@ void* __fastcall link_compile_inject_TF(CompiledBasicBlock* ptr)
 	return target->Code;
 }
 
-void* __fastcall link_compile_inject_TT(CompiledBasicBlock* ptr)
+void* __fastcall link_compile_inject_TT(CompiledBlock* ptr)
 {
-	CompiledBasicBlock* target= FindOrRecompileCode(ptr->TT_next_addr);
+	CompiledBlock* target= FindOrRecompileCode(ptr->TT_next_addr);
 
 	//if current block is Discared , we must not add any chain info , just jump to the new one :)
 	if (ptr->Discarded==false)
@@ -1976,7 +1976,7 @@ void* __fastcall link_compile_inject_TT(CompiledBasicBlock* ptr)
 
 
 //call link_compile_inject_TF , and jump to code
-void naked link_compile_inject_TF_stub(CompiledBasicBlock* ptr)
+void naked link_compile_inject_TF_stub(CompiledBlock* ptr)
 {
 	__asm
 	{
@@ -1986,7 +1986,7 @@ void naked link_compile_inject_TF_stub(CompiledBasicBlock* ptr)
 }
 
 
-void naked link_compile_inject_TT_stub(CompiledBasicBlock* ptr)
+void naked link_compile_inject_TT_stub(CompiledBlock* ptr)
 {
 	__asm
 	{
@@ -1999,9 +1999,9 @@ void naked link_compile_inject_TT_stub(CompiledBasicBlock* ptr)
 extern u32 rec_cycles;
 
 u32 call_ret_address=0xFFFFFFFF;//holds teh return address of the previus call ;)
-CompiledBasicBlock* pcall_ret_address=0;//holds teh return address of the previus call ;)
+CompiledBlock* pcall_ret_address=0;//holds teh return address of the previus call ;)
 
-void CBBs_BlockSuspended(CompiledBasicBlock* block)
+void CBBs_BlockSuspended(CompiledBlock* block)
 {
 	if (pcall_ret_address == block)
 	{
@@ -2009,7 +2009,7 @@ void CBBs_BlockSuspended(CompiledBasicBlock* block)
 		pcall_ret_address=0;
 	}
 }
-void __fastcall CheckBlock(CompiledBasicBlock* block)
+void __fastcall CheckBlock(CompiledBlock* block)
 {
 	if (block->Discarded)
 	{
@@ -2036,7 +2036,7 @@ void CompileBasicBlock_slow(BasicBlock* block)
 	}
 
 	block->CreateCompiledBlock();
-	CompiledBasicBlock* cBB=block->cBB;
+	CompiledBlock* cBB=block->cBB;
 	//16 ticks or more to convert to zuper block
 	//241760/8 ~=30220 blocks
 	//we promote to superblock f more that 10% of the time is spent on this block , 3022 ticks
@@ -2197,7 +2197,7 @@ void CompileBasicBlock_slow(BasicBlock* block)
 				x86e->MOV32MtoR(ECX,(u32*)&pcall_ret_address);
 				//mov eax,[pcall_ret_address+codeoffset]
 				x86e->MOV32RtoR(EAX,ECX);
-				x86e->ADD32ItoR(EAX,offsetof(CompiledBasicBlock,pTT_next_addr));
+				x86e->ADD32ItoR(EAX,offsetof(CompiledBlock,pTT_next_addr));
 				x86e->MOV32RmtoR(EAX,EAX);//get ptr to compiled block/link stub
 				//jmp eax
 				x86e->JMP32R(EAX);	//jump to it
