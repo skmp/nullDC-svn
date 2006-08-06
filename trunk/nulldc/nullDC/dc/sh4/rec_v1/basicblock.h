@@ -1,9 +1,13 @@
 #pragma once
 #include "recompiler.h"
-#define BASIC_BLOCK 0
-#define SUPER_BLOCK 1
+#define COMPILED_BASIC_BLOCK 0
+#define COMPILED_SUPER_BLOCK 1
 
-class CodeSpan
+#define COMPILED_BLOCK_TYPE_MASK 0xFF
+#define COMPILED_BLOCK_NULLPROF 0x100
+#define COMPILED_BLOCK_HOTSPOT 0x200
+
+struct CodeSpan
 {
 public:
 	//start pc
@@ -41,14 +45,24 @@ public:
 	bool Intersect(CodeSpan* to);
 };
 
-class CodeRegion : public CodeSpan
+struct CodeRegion : public CodeSpan
 {
 public:
 	//cycle count
 	u32 cycles;
 };
 
-class CompiledBlock:public CodeRegion
+//YAY , compiled block fun ;)
+//mmhhzztt
+
+struct HotSpotInfo;
+struct NullProfInfo;
+struct CompiledBasicBlockInfo;
+struct CompiledSuperBlockInfo;
+
+//Generic block info
+//All Compiled Block structs contain this first
+struct CompiledBlockInfo:CodeSpan
 {
 public :
 	BasicBlockEP* Code;				//compiled code ptr
@@ -57,54 +71,115 @@ public :
 	u32 cpu_mode_tag;
 	u32 lookups;	//count of lookups for this block
 
-	//needed for free()/debug info
-	u32 size;			//compiled code size (bytes)
-
-	u32 gcp_lasttimer;
-	u32 bpm_ticks;
-
 	//block type
 	u32 block_type;
 
+	//needed for free()/debug info
+	u32 size;			//compiled code size (bytes)
 
+	//can be avoided
+	bool Discarded;
+
+	//Called to Free :p yeshrly
+	void Free();
+	//Called when this block is suspended
+	void Suspend();
+	//Called when a block we reference is suspended
+	void BlockWasSuspended(CompiledBlockInfo* block);
+	//Called when a block adds reference to this
+	void AddRef(CompiledBlockInfo* block);
+	//remote pthis reference to block *warning* it was the oposite before
+	void ClearBlock(CompiledBlockInfo* block);
+
+	//Get Hotspot info (on Hotspot blocks)
+	HotSpotInfo* GetHS();
+	//Get NullProf info (on NullProf blocks)
+	NullProfInfo* GetNP();
+
+	//Get BasicBlock info (on BasicBlock blocks)
+	CompiledBasicBlockInfo* GetBB();
+	//Get SuperBlock info (on SuperBlock blocks)
+	CompiledSuperBlockInfo* GetSP();
+};
+
+/////////////////////////////////////////////////
+//Block TYPES:
+//Block Type : BasicBlock
+struct CompiledBasicBlockInfo
+{	
 	//Addresses to blocks
 	u32 TF_next_addr;//tfalse or jmp
 	u32 TT_next_addr;//ttrue  or rts guess
 
 	//pointers to blocks
-	CompiledBlock* TF_block;
-	CompiledBlock* TT_block;
+	CompiledBlockInfo* TF_block;
+	CompiledBlockInfo* TT_block;
 
 	//pointers to block entry points [isnt that the same as above ?-> not anymore]
 	void* pTF_next_addr;//tfalse or jmp
 	void* pTT_next_addr;//ttrue  or rts guess
 
-	//can be avoided
-	bool Discarded;
-
-	//misc profile & debug variables
-	u64 profile_time;
-	u32 profile_calls;
-
-	//Functions
-	void Free();
-	void Suspend();
-	void BlockWasSuspended(CompiledBlock* block);
-	void AddRef(CompiledBlock* block);
-	void ClearBlock(CompiledBlock* block);
-
-private :
 	//Block link info
-	vector<CompiledBlock*> blocks_to_clear;
+	vector<CompiledBlockInfo*> blocks_to_clear;
 };
+//Block Type : SuperBlock
+struct CompiledSuperBlockInfo
+{	
+	void FillInfo(CompiledBlockInfo* to);
+};
+
+/////////////////////////////////////////////////
+//Block MODS
+//Block Mod : HotSpot
+struct HotSpotInfo
+{
+	//profile timer value on last reset
+	u32 gcp_lasttimer;
+	//count time timer , when it reaches 0 a reset on gcp_lasttimer is made
+	u32 bpm_ticks;
+};
+//Block Mod : NullProf
+struct NullProfInfo
+{
+	u64 time;
+	u32 calls;
+	u32 cycles;
+};
+/////////////////////////////////////////////////
+//Block type structs ;)
+#pragma warning( disable : 4003)
+#define BLOCKSTRUCT(name,eBlockInfo) struct name {CompiledBlockInfo cbi;eBlockInfo ebi;HOTSPOTINFO;NULLPROFINFO;};
+
+#define ALLBLOCKSTRUCTS(namemod) BLOCKSTRUCT(CompiledBasicBlock##namemod,CompiledBasicBlockInfo)\
+								 BLOCKSTRUCT(CompiledSuperBlock##namemod,CompiledSuperBlockInfo)
+
+//NON HS , NON NP
+#define HOTSPOTINFO
+#define NULLPROFINFO
+ALLBLOCKSTRUCTS( );
+
+//HS , NON NP
+#undef HOTSPOTINFO
+#define HOTSPOTINFO HotSpotInfo hs
+ALLBLOCKSTRUCTS(HotSpot);
+
+//HS , NP
+#undef NULLPROFINFO
+#define NULLPROFINFO NullProfInfo np
+ALLBLOCKSTRUCTS(HotSpotNullProf);
+
+//NON HS , NP
+#undef HOTSPOTINFO
+#define HOTSPOTINFO
+
+ALLBLOCKSTRUCTS(NullProf);
+
+#pragma warning( default : 4003)
 
 //helpers
 #define GET_CURRENT_FPU_MODE() (fpscr.PR_SZ)
 
 #define BLOCKLIST_MAX_CYCLES (448)
-class BasicBlock;
-
-
 
 class BasicBlock: public CodeRegion
 {
@@ -183,26 +258,9 @@ class BasicBlock: public CodeRegion
 
 	shil_stream ilst;
 
-	void CreateCompiledBlock()
-	{
-		cBB= new CompiledBlock();
+	void SetCompiledBlockInfo(CompiledBasicBlock* cBl);
 
-		cBB->start=start;
-		cBB->TF_next_addr=TF_next_addr;
-		cBB->TT_next_addr=TT_next_addr;
-		cBB->cycles=cycles;
-		cBB->end=end;
-		cBB->cpu_mode_tag=flags.FpuMode;
-		cBB->lookups=0;
-
-		cBB->TF_block=cBB->TT_block=0;
-		cBB->profile_time=0;
-		cBB->profile_calls=0;
-		cBB->Discarded=false;
-		cBB->block_type=BASIC_BLOCK;
-	}
-
-	CompiledBlock* cBB;
+	CompiledBasicBlock* cBB;
 
 	//bool Contains(u32 pc);
 
@@ -212,3 +270,5 @@ class BasicBlock: public CodeRegion
 
 
 typedef void (__fastcall RecOpCallFP) (u32 op,u32 pc,BasicBlock* bb);
+void DeleteBlock(CompiledBlockInfo* block);
+CompiledBlockInfo* CreateBlock(u32 type);

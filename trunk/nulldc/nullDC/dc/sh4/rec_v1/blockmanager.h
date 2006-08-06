@@ -4,12 +4,12 @@
 #include "BasicBlock.h"
 #include "emitter\emitter.h"
 
-//CompiledBlock* __fastcall FindBlock(u32 address);
+//CompiledBlockInfo* __fastcall FindBlock(u32 address);
 #define FindBlock FindBlock_fast
-INLINE CompiledBlock* __fastcall FindBlock_fast(u32 address);
+INLINE CompiledBlockInfo* __fastcall FindBlock_fast(u32 address);
 
-void RegisterBlock(CompiledBlock* block);
-void UnRegisterBlock(CompiledBlock* block);
+void RegisterBlock(CompiledBlockInfo* block);
+void UnRegisterBlock(CompiledBlockInfo* block);
 
 void FillBlockLockInfo(BasicBlock* block);
 
@@ -18,8 +18,8 @@ void FreeSuspendedBlocks();
 
 BasicBlock* FindOrAnalyse(u32 pc);
 
-CompiledBlock* FindOrRecompileCode(u32 pc);
-void __fastcall SuspendBlock(CompiledBlock* block);
+CompiledBlockInfo* FindOrRecompileCode(u32 pc);
+void __fastcall SuspendBlock(CompiledBlockInfo* block);
 
 void InitBlockManager();
 void ResetBlockManager();

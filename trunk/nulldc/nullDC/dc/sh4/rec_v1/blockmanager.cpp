@@ -43,25 +43,25 @@ using namespace std;
 //#define OPTIMISE_LUT_SORT
 
 #define BLOCK_NONE (&BLOCK_NONE_B)
-CompiledBlock BLOCK_NONE_B;
+CompiledBlockInfo BLOCK_NONE_B;
 
 //BasicBlock* Blockz[RAM_SIZE>>1];
 //
 //helper list class
 int compare_BlockLookups(const void * a, const void * b)
 {
-	CompiledBlock* ba=*(CompiledBlock**)a;
-	CompiledBlock* bb=*(CompiledBlock**)b;
+	CompiledBlockInfo* ba=*(CompiledBlockInfo**)a;
+	CompiledBlockInfo* bb=*(CompiledBlockInfo**)b;
 
 	return bb->lookups-ba->lookups;
 }
 
 
-class BlockList:public vector<CompiledBlock*>
+class BlockList:public vector<CompiledBlockInfo*>
 {
 public :
 	size_t ItemCount;
-	BlockList():vector<CompiledBlock*>()
+	BlockList():vector<CompiledBlockInfo*>()
 	{
 		ItemCount=0;
 	}
@@ -81,7 +81,7 @@ public :
 #else
 	#define Test()
 #endif
-	u32 Add(CompiledBlock* block)
+	u32 Add(CompiledBlockInfo* block)
 	{
 		Test();
 		if (ItemCount==size())
@@ -110,7 +110,7 @@ public :
 			//}
 		}
 	}
-	void Remove(CompiledBlock* block)
+	void Remove(CompiledBlockInfo* block)
 	{
 		Test();
 		if (ItemCount==0)
@@ -155,7 +155,7 @@ public :
 		Test();
 		verify(false);
 	}
-	CompiledBlock* Find(u32 address,u32 cpu_mode)
+	CompiledBlockInfo* Find(u32 address,u32 cpu_mode)
 	{
 		Test();
 		for (u32 i=0;i<ItemCount;i++)
@@ -252,10 +252,10 @@ BlockList					BlockLookupLists[LOOKUP_HASH_SIZE];
 
 #ifdef BLOCK_LUT_GUESS
 //even after optimising blocks , guesses give a good speedup :)
-CompiledBlock*			BlockLookupGuess[LOOKUP_HASH_SIZE];
+CompiledBlockInfo*			BlockLookupGuess[LOOKUP_HASH_SIZE];
 #endif
 //implemented later
-void FreeBlock(CompiledBlock* block);
+void FreeBlock(CompiledBlockInfo* block);
 
 //misc code & helper functions
 //this should not be called from a running block , or it could crash
@@ -324,12 +324,12 @@ INLINE BlockList* GetLookupBlockList(u32 address)
 u32 luk=0;
 u32 r_value=0x112;
 
-CompiledBlock* __fastcall FindBlock_full(u32 address,CompiledBlock* fastblock);
+CompiledBlockInfo* __fastcall FindBlock_full(u32 address,CompiledBlockInfo* fastblock);
 
-INLINE CompiledBlock* __fastcall FindBlock_fast(u32 address)
+INLINE CompiledBlockInfo* __fastcall FindBlock_fast(u32 address)
 {
 #ifdef BLOCK_LUT_GUESS
-	CompiledBlock* fastblock;
+	CompiledBlockInfo* fastblock;
 
 	fastblock=BlockLookupGuess[GetLookupHash(address)];
 
@@ -349,9 +349,9 @@ INLINE CompiledBlock* __fastcall FindBlock_fast(u32 address)
 #endif
 
 }
-CompiledBlock* __fastcall FindBlock_full(u32 address,CompiledBlock* fastblock)
+CompiledBlockInfo* __fastcall FindBlock_full(u32 address,CompiledBlockInfo* fastblock)
 {
-	CompiledBlock* thisblock;
+	CompiledBlockInfo* thisblock;
 
 	BlockList* blklist = GetLookupBlockList(address);
 
@@ -413,7 +413,7 @@ void FillBlockLockInfo(BasicBlock* block)
 	}
 }
 
-void RegisterBlock(CompiledBlock* block)
+void RegisterBlock(CompiledBlockInfo* block)
 {
 	all_block_list.Add(block);
 
@@ -437,7 +437,7 @@ void RegisterBlock(CompiledBlock* block)
 	}
 }
 
-void UnRegisterBlock(CompiledBlock* block)
+void UnRegisterBlock(CompiledBlockInfo* block)
 {
 	u32 start=(block->start&RAM_MASK)/PAGE_SIZE;
 	u32 end=(block->end&RAM_MASK)/PAGE_SIZE;
@@ -473,8 +473,8 @@ void UnRegisterBlock(CompiledBlock* block)
 //suspend/ free related ;)
 //called to suspend a block
 //can be called from a mem invalidation , or directly from a manualy invalidated block
-void CBBs_BlockSuspended(CompiledBlock* block);
-void __fastcall SuspendBlock(CompiledBlock* block)
+void CBBs_BlockSuspended(CompiledBlockInfo* block);
+void __fastcall SuspendBlock(CompiledBlockInfo* block)
 {
 	//remove the block from :
 	//
@@ -491,16 +491,16 @@ void __fastcall SuspendBlock(CompiledBlock* block)
 
 	//
 	//add it to the "to be suspended" list
-	//SuspendedBlocks.Add(block);
+	SuspendedBlocks.Add(block);
 }
 //called to free a suspended block
-void FreeBlock(CompiledBlock* block)
+void FreeBlock(CompiledBlockInfo* block)
 {
 	//free the block
 	//all_block_list.Remove(block);
 	verify(block!=BLOCK_NONE);
 	block->Free();
-	delete block;
+	DeleteBlock(block);
 }
 
 bool RamLockedWrite(u8* address)
@@ -538,26 +538,6 @@ void InitBlockManager()
 	BLOCK_NONE->start=0xFFFFFFFF;
 	BLOCK_NONE->cpu_mode_tag=0xFFFFFFFF;
 	BLOCK_NONE->lookups=0;
-/*
-	BlockList papa;
-	
-	srand(0);
-	for (int i=0;i<777;i++)
-	{
-		CompiledBlock* a=new CompiledBlock();
-		a->Discarded=false;
-		a->start=rand();
-		a->cpu_mode_tag=rand();
-		papa.Add(a);
-	}
-	srand(0);
-	for (int i=0;i<777;i++)
-	{
-		u32 r1=rand();
-		u32 r2=rand();
-		CompiledBlock* a=papa.Find(r1,r2);
-		verify(r1==a->start && r2==a->cpu_mode_tag);
-	}*/
 }
 void ResetBlockManager()
 {
@@ -571,7 +551,7 @@ void TermBlockManager()
 ///////////////////////////////////////////////
 //			nullProf implementation			 //
 ///////////////////////////////////////////////
-void ConvBlockInfo(nullprof_block_info* to,CompiledBlock* pblk)
+void ConvBlockInfo(nullprof_block_info* to,CompiledBlockInfo* pblk)
 {
 	if (pblk==BLOCK_NONE)
 	{
@@ -584,9 +564,9 @@ void ConvBlockInfo(nullprof_block_info* to,CompiledBlock* pblk)
 	to->x86_code=pblk->Code;
 	to->sh4_bytes=pblk->end-pblk->start+2;
 	to->x86_bytes=pblk->size;
-	to->sh4_cycles=pblk->cycles;
-	to->time=pblk->profile_time;
-	to->calls=pblk->profile_calls;
+	to->sh4_cycles=pblk->GetNP()->cycles;
+	to->time=pblk->GetNP()->time;
+	to->calls=pblk->GetNP()->calls;
 }
 void nullprof_GetBlock(nullprof_block_info* to,u32 type,u32 address)
 {
@@ -597,46 +577,68 @@ void nullprof_GetBlock(nullprof_block_info* to,u32 type,u32 address)
 		return;
 	}
 
-	CompiledBlock* pblk=FindBlock(address);
+	CompiledBlockInfo* pblk=FindBlock(address);
 
 
 	ConvBlockInfo(to,pblk);
 }
 
-int compare_usage (const void * a, const void * b)
-{
-	CompiledBlock* ba=*(CompiledBlock**)a;
-	CompiledBlock* bb=*(CompiledBlock**)b;
 
+template <class Ta,class Tb>
+int compare_usage (const Ta * ba, const Tb * bb)
+{
 	double ava=(double)ba->profile_time;//(double)ba->profile_calls;
 	double avb=(double)bb->profile_time;//(double)bb->profile_calls;
 
-
 	return ( avb>ava?1:-1);
 }
-
-int compare_time (const void * a, const void * b)
+template <class Ta,class Tb>
+int compare_time (const Ta * ba, const Tb * bb)
 {
-	CompiledBlock* ba=*(CompiledBlock**)a;
-	CompiledBlock* bb=*(CompiledBlock**)b;
-
 	double ava=(double)ba->profile_time/(double)ba->profile_calls;
 	double avb=(double)bb->profile_time/(double)bb->profile_calls;
 
-
 	return ( avb>ava?1:-1);
 }
-int compare_calls (const void * a, const void * b)
+template <class Ta,class Tb>
+int compare_calls (const Ta * ba, const Tb * bb)
 {
-	CompiledBlock* ba=*(CompiledBlock**)a;
-	CompiledBlock* bb=*(CompiledBlock**)b;
-
 	double ava=(double)ba->profile_calls;
 	double avb=(double)bb->profile_calls;
 
-
 	return ( avb>ava?1:-1);
 }
+
+int compare_usage_g (const void * a, const void * b)
+{
+	//CompiledBlockInfo* cba=*(CompiledBlockInfo*)a,CompiledBlockInfo* cbc=*(CompiledBlockInfo*)b;
+	//verify(cba->block_type & COMPILED_BLOCK_NULLPROF);
+	//verify(cbb->block_type & COMPILED_BLOCK_NULLPROF);
+
+	//switch(cba->block_type & COMPILED_BLOCK_TYPE_MASK)
+	//{
+	//case COMPILED_BASIC_BLOCK:
+	//	break;
+	//case COMPILED_SUPER_BLOCK:
+	//	break;
+	//}
+	return 0;
+}
+int compare_time_g (const void * a, const void * b)
+{
+	//CompiledBlockInfo* cba=*(CompiledBlockInfo**)a,CompiledBlockInfo* cbc=*(CompiledBlockInfo**)b;
+	//verify(cba->block_type & COMPILED_BLOCK_NULLPROF);
+	//verify(cbb->block_type & COMPILED_BLOCK_NULLPROF);
+	return 0;
+}
+int compare_calls_g (const void * a, const void * b)
+{
+	//CompiledBlockInfo* cba=*(CompiledBlockInfo**)a,CompiledBlockInfo* cbc=*(CompiledBlockInfo**)b;
+	//verify(cba->block_type & COMPILED_BLOCK_NULLPROF);
+	//verify(cbb->block_type & COMPILED_BLOCK_NULLPROF);
+	return 0;
+}
+
 
 void nullprof_GetBlocks(nullprof_blocklist* to, u32 type,u32 count)
 {
@@ -657,11 +659,11 @@ void nullprof_GetBlocks(nullprof_blocklist* to, u32 type,u32 count)
 		to->blocks=(nullprof_block_info*)malloc(count*sizeof(nullprof_block_info));
 
 		if (type==PSLOW_BLOCKS)
-			qsort(&(used_blocks[0]), used_blocks.ItemCount, sizeof(BasicBlock*), compare_usage);
+			qsort(&(used_blocks[0]), used_blocks.ItemCount, sizeof(BasicBlock*), compare_usage_g);
 		else if (type==PTIME_BLOCKS)
-			qsort(&(used_blocks[0]), used_blocks.ItemCount, sizeof(BasicBlock*), compare_time);
+			qsort(&(used_blocks[0]), used_blocks.ItemCount, sizeof(BasicBlock*), compare_time_g);
 		else if (type==PCALL_BLOCKS)
-			qsort(&(used_blocks[0]), used_blocks.ItemCount, sizeof(BasicBlock*), compare_calls);
+			qsort(&(used_blocks[0]), used_blocks.ItemCount, sizeof(BasicBlock*), compare_calls_g);
 
 
 		for (u32 i=0;i<count;i++)
@@ -702,8 +704,8 @@ void nullprof_ClearBlockPdata()
 
 	for (u32 i=0;i<used_blocks.ItemCount;i++)
 	{
-		used_blocks[i]->profile_calls=0;
-		used_blocks[i]->profile_time=0;
+		used_blocks[i]->GetNP()->calls=0;
+		used_blocks[i]->GetNP()->time=0;
 	}
 }
 

@@ -5,78 +5,181 @@
 #include "emitter/emitter.h"
 
 #include <memory.h>
-extern u32 rec_cycles;
-void CompiledBlock::ClearBlock(CompiledBlock* block)
-{
-	if (block->TF_block==this)
-	{
-		block->TF_block=0;
-		block->pTF_next_addr=link_compile_inject_TF_stub;
-	}
+//extern u32 rec_cycles;
 
-	if (block->TT_block==this)
-	{
-		block->TT_block=0;
-		block->pTT_next_addr=link_compile_inject_TT_stub;
-	}
-}
-void CompiledBlock::BlockWasSuspended(CompiledBlock* block)
+//Common Functions
+//Called to Free :p yeshrly
+typedef void __fastcall FreeBlockFP(CompiledBlockInfo* pthis);
+//Called when this block is suspended
+typedef void __fastcall SuspendBlockFP(CompiledBlockInfo* pthis);
+//Called when a block we reference is suspended
+typedef void __fastcall BlockWasSuspendedFP(CompiledBlockInfo* pthis,CompiledBlockInfo* block);
+//Called when a block adds reference to this
+typedef void __fastcall AddBlockRefFP(CompiledBlockInfo* pthis,CompiledBlockInfo* block);
+//remote pthis reference to block *warning* it was the oposite before
+typedef void __fastcall ClearBlockFP(CompiledBlockInfo* pthis,CompiledBlockInfo* block);
+
+struct block_functs
 {
-	for (u32 i=0;i<blocks_to_clear.size();i++)
+	AddBlockRefFP* AddRef;
+	BlockWasSuspendedFP* BlockWasSuspended;
+	SuspendBlockFP* Suspend;
+	ClearBlockFP* ClearBlock;
+	FreeBlockFP* Free;
+};
+
+//Compiled basic block Common interface
+#define bbthis	verify((p_this->block_type&COMPILED_BLOCK_TYPE_MASK)==COMPILED_BASIC_BLOCK);\
+				CompiledBasicBlockInfo* pthis=&((CompiledBasicBlock*)p_this)->ebi;
+
+void __fastcall basic_block_AddRef(CompiledBlockInfo* p_this,CompiledBlockInfo* block)
+{
+	bbthis;
+	verify(p_this->Discarded==false);
+	//if we reference ourselfs we dont care ;) were suspended anyhow
+	if (block !=p_this)
+		pthis->blocks_to_clear.push_back(block);
+}
+void __fastcall basic_block_BlockWasSuspended(CompiledBlockInfo* p_this,CompiledBlockInfo* block)
+{
+	bbthis;
+	for (u32 i=0;i<pthis->blocks_to_clear.size();i++)
 	{
-		if (blocks_to_clear[i]==block)
+		if (pthis->blocks_to_clear[i]==block)
 		{
-			blocks_to_clear[i]=0;
+			pthis->blocks_to_clear[i]=0;
 		}
 	}
 }
-
-void CompiledBlock::AddRef(CompiledBlock* block)
+void __fastcall basic_block_ClearBlock(CompiledBlockInfo* p_this,CompiledBlockInfo* block)
 {
-	if (!Discarded)
+	bbthis;
+	if (pthis->TF_block==block)
 	{
-		//if we reference ourselfs we dont care ;) were suspended anyhow
-		if (block !=this)
-			blocks_to_clear.push_back(block);
+		pthis->TF_block=0;
+		pthis->pTF_next_addr=bb_link_compile_inject_TF_stub;
 	}
-	else
-		printf("Warning : Discarded, AddRef call\n");
-}
-void CompiledBlock::Suspend()
-{
-	for (u32 i=0;i<blocks_to_clear.size();i++)
+
+	if (pthis->TT_block==block)
 	{
-		if (blocks_to_clear[i])
+		pthis->TT_block=0;
+		pthis->pTT_next_addr=bb_link_compile_inject_TT_stub;
+	}
+}
+void __fastcall basic_block_Suspend(CompiledBlockInfo* p_this)
+{
+	bbthis;
+	for (u32 i=0;i<pthis->blocks_to_clear.size();i++)
+	{
+		if (pthis->blocks_to_clear[i])
 		{
-			ClearBlock(blocks_to_clear[i]);
+			pthis->blocks_to_clear[i]->ClearBlock(p_this);
 		}
 	}
-	blocks_to_clear.clear();
+	pthis->blocks_to_clear.clear();
 
-	if (TF_block)
-		TF_block->BlockWasSuspended(this);
+	if (pthis->TF_block)
+		pthis->TF_block->BlockWasSuspended(p_this);
 
-	if (TT_block)
-		TT_block->BlockWasSuspended(this);
+	if (pthis->TT_block)
+		pthis->TT_block->BlockWasSuspended(p_this);
+}
+void __fastcall basic_block_Free(CompiledBlockInfo* p_this)
+{
+	bbthis;
+}
 
+//btf vtable
+#define BLOCK_VTABLE_ENTRY(bname) bname##_AddRef,bname##_BlockWasSuspended,bname##_Suspend,bname##_ClearBlock,bname##_Free
+block_functs block_vtable[COMPILED_BLOCK_TYPE_MASK+1]=
+{
+	//Basic Block
+	{BLOCK_VTABLE_ENTRY(basic_block)},
+	//SuperBlock -- isnt this marvelous ?
+	{0,0,0,0,0}
+};
+//CompiledBlockInfo Helper functions
+void CompiledBlockInfo::ClearBlock(CompiledBlockInfo* block)
+{
+	block_vtable[block_type&COMPILED_BLOCK_TYPE_MASK].ClearBlock(this,block);
+}
+
+void CompiledBlockInfo::BlockWasSuspended(CompiledBlockInfo* block)
+{
+	block_vtable[block_type&COMPILED_BLOCK_TYPE_MASK].BlockWasSuspended(this,block);
+}
+
+void CompiledBlockInfo::AddRef(CompiledBlockInfo* block)
+{
+	block_vtable[block_type&COMPILED_BLOCK_TYPE_MASK].AddRef(this,block);
+}
+void CompiledBlockInfo::Suspend()
+{
+	block_vtable[block_type&COMPILED_BLOCK_TYPE_MASK].Suspend(this);
 	//if we jump to another block , we have to re compile it :)
 	Discarded=true;
 }
 
-void CompiledBlock::Free()
+void CompiledBlockInfo::Free()
 {
 		free(Code);
 		Code=0;	
+
+		block_vtable[block_type&COMPILED_BLOCK_TYPE_MASK].Free(this);
 }
-/*bool BasicBlock::Contains(u32 pc)
+
+//Get Hotspot info (on Hotspot blocks)
+HotSpotInfo* CompiledBlockInfo::GetHS()
 {
-	u32 pc_real=pc & RAM_MASK;
-	u32 real_start=start & RAM_MASK;
-	u32 real_end=end & RAM_MASK;
+	verify(block_type & COMPILED_BLOCK_HOTSPOT);
+	//NP mod is after HS , so we dont have to care about it ;)
+	switch(block_type & COMPILED_BLOCK_TYPE_MASK)
+	{
+	case COMPILED_BASIC_BLOCK:
+		return &((CompiledBasicBlockHotSpot*)this)->hs;
+	case COMPILED_SUPER_BLOCK:
+		return &((CompiledSuperBlockHotSpot*)this)->hs;
+	}
+	return 0;
+}
+//Get NullProf info (on NullProf blocks)
+NullProfInfo* CompiledBlockInfo::GetNP()
+{
+	verify(block_type & COMPILED_BLOCK_NULLPROF);
 
-	return ((pc_real>=(real_start-4)) && (pc_real<=(real_end+6)));
-}*/
+	switch(block_type & COMPILED_BLOCK_TYPE_MASK)
+	{
+	case COMPILED_BASIC_BLOCK:
+		{	
+			if (block_type & COMPILED_BLOCK_HOTSPOT)
+				return &((CompiledBasicBlockHotSpotNullProf*)this)->np;
+			else
+				return &((CompiledBasicBlockNullProf*)this)->np;
+		}
+	case COMPILED_SUPER_BLOCK:
+		{	
+			if (block_type & COMPILED_BLOCK_HOTSPOT)
+				return &((CompiledSuperBlockHotSpotNullProf*)this)->np;
+			else
+				return &((CompiledBasicBlockNullProf*)this)->np;
+		}
+	}
 
+	return 0;
+}
+//Get BasicBlock info (on BasicBlock blocks)
+CompiledBasicBlockInfo* CompiledBlockInfo::GetBB()
+{
+	verify((block_type & COMPILED_BLOCK_TYPE_MASK)== COMPILED_BASIC_BLOCK);
+	return &((CompiledBasicBlock*)this)->ebi;
+}
+//Get SuperBlock info (on SuperBlock blocks)
+CompiledSuperBlockInfo* CompiledBlockInfo::GetSP()
+{
+	verify((block_type & COMPILED_BLOCK_TYPE_MASK)== COMPILED_SUPER_BLOCK);
+	return &((CompiledSuperBlock*)this)->ebi;
+}
+//Basic Block
 bool BasicBlock::IsMemLocked(u32 adr)
 {
 	if (flags.ProtectionType==BLOCK_PROTECTIONTYPE_MANUAL)
@@ -95,7 +198,33 @@ bool BasicBlock::IsMemLocked(u32 adr)
 	return (page_start() <=adrP) && (page_end()>=adrP);
 }
 
+void BasicBlock::SetCompiledBlockInfo(CompiledBasicBlock* cBl)
+	{
+		verify((cBl->cbi.block_type & COMPILED_BLOCK_TYPE_MASK)==COMPILED_BASIC_BLOCK);
+		cBB= cBl;
 
+		cBB->cbi.start=start;
+		cBB->cbi.end=end;
+		cBB->cbi.cpu_mode_tag=flags.FpuMode;
+		cBB->cbi.lookups=0;
+		cBB->cbi.Discarded=false;
+
+		if (cBl->cbi.block_type & COMPILED_BLOCK_NULLPROF)
+			cBB->cbi.GetNP()->cycles=cycles;
+
+		cBB->ebi.TF_next_addr=TF_next_addr;
+		cBB->ebi.TT_next_addr=TT_next_addr;
+
+		cBB->ebi.TF_block=cBB->ebi.TT_block=0;
+
+		if (cBB->cbi.block_type & COMPILED_BLOCK_NULLPROF)
+		{
+			cBB->cbi.GetNP()->time=0;
+			cBB->cbi.GetNP()->calls=0;
+		}
+		
+		//cBB->block_type=BASIC_BLOCK;
+	}
 //start page , olny valid if in ram
 u32 CodeSpan::page_start()
 {
@@ -186,7 +315,7 @@ bool CodeSpan::Intersect(CodeSpan* to)
 	u32 tr_end=to->end&RAM_MASK;
 
 	//in order not to inersect , the block must be before  (this-> start < to-> end) or after (this->end <to->start)
-	return  !(cr_start<tr_end || cr_end<tr_end);
+	return  !(cr_start<tr_end || cr_end<tr_start);
 }
 
 //A tree , made by many BasicBlocks
@@ -214,7 +343,7 @@ public:
 		u8* temp_map=(u8*)malloc(sbspan.PageCount());
 		memset(temp_map,0,sbspan.PageCount()*sizeof(temp_map[0]));
 
-		u32 c_page=sbspan.page_start()*PAGE_SIZE+PAGE_SIZE>>1;
+		u32 c_page=(sbspan.page_start()*PAGE_SIZE)+(PAGE_SIZE>>1);
 		u32 lock_count=0;
 		for (u32 i=0;i<sbspan.PageCount();i++)
 		{
@@ -243,6 +372,62 @@ public:
 
 		free(temp_map);
 
-		return lock_map;
+		return rv;
 	}
 };
+
+void DeleteBlock(CompiledBlockInfo* block)
+{
+#define GENERIC_CASE(name,NAME)\
+case COMPILED_##NAME##_BLOCK:\
+		delete (Compiled##name##Block*)block;\
+		break;\
+\
+	case COMPILED_##NAME##_BLOCK | COMPILED_BLOCK_HOTSPOT:\
+		delete (Compiled##name##BlockHotSpot*)block;\
+		break;\
+\
+	case COMPILED_##NAME##_BLOCK | COMPILED_BLOCK_NULLPROF:\
+		delete (Compiled##name##BlockNullProf*)block;\
+		break;\
+\
+	case COMPILED_##NAME##_BLOCK | COMPILED_BLOCK_NULLPROF | COMPILED_BLOCK_HOTSPOT:\
+		delete (Compiled##name##BlockHotSpotNullProf*)block;\
+		break;
+
+	switch(block->block_type)
+	{
+		GENERIC_CASE(Basic,BASIC);
+		GENERIC_CASE(Super,SUPER);
+	}
+}
+
+CompiledBlockInfo* CreateBlock(u32 type)
+{
+	CompiledBlockInfo* rv;
+
+#define GENERIC_CASE(name,NAME)\
+case COMPILED_##NAME##_BLOCK:\
+		rv=(CompiledBlockInfo*) new Compiled##name##Block();\
+		break;\
+\
+	case COMPILED_##NAME##_BLOCK | COMPILED_BLOCK_HOTSPOT:\
+		rv=(CompiledBlockInfo*) new Compiled##name##BlockHotSpot();\
+		break;\
+\
+	case COMPILED_##NAME##_BLOCK | COMPILED_BLOCK_NULLPROF:\
+		rv=(CompiledBlockInfo*) new Compiled##name##BlockNullProf();\
+		break;\
+\
+	case COMPILED_##NAME##_BLOCK | COMPILED_BLOCK_NULLPROF | COMPILED_BLOCK_HOTSPOT:\
+		rv=(CompiledBlockInfo*) new Compiled##name##BlockHotSpotNullProf();\
+		break;
+
+	switch(type)
+	{
+		GENERIC_CASE(Basic,BASIC);
+		GENERIC_CASE(Super,SUPER);
+	}
+	rv->block_type=type;
+	return rv;
+}

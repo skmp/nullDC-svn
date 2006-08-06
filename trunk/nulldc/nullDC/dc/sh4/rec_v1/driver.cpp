@@ -41,15 +41,16 @@ void*  __fastcall CompileCode_SuperBlock(u32 pc)
 {
 	sb_count++;
 	printf("Zuperblock @ pc=0x%X , %d superblocks , %d%% of all blocks\n",pc,sb_count,sb_count*100/nb_count);
-	CompiledBlock* cBB=FindBlock(pc);
-	cBB->bpm_ticks=0xFFFFFFFF;
+	CompiledBlockInfo* cBB=FindBlock(pc);
+	verify(cBB->block_type & COMPILED_BLOCK_HOTSPOT);
+	//cBB->bpm_ticks=0xFFFFFFFF;
 	return 0;
 }
 
-CompiledBlock*  __fastcall CompileCode(u32 pc)
+CompiledBlockInfo*  __fastcall CompileCode(u32 pc)
 {
 	nb_count++;
-	CompiledBlock* cblock;
+	CompiledBlockInfo* cblock;
 	BasicBlock* block=new BasicBlock();
 	//scan code
 	ScanCode(pc,block);
@@ -59,15 +60,15 @@ CompiledBlock*  __fastcall CompileCode(u32 pc)
 	AnalyseCode(block);
 	//Compile code
 	CompileBasicBlock_slow(block);
-	RegisterBlock(cblock=block->cBB);
+	RegisterBlock(cblock=&block->cBB->cbi);
 	delete block;
 	//compile code
 	//return pointer
 	return cblock;
 }
-INLINE CompiledBlock* __fastcall GetRecompiledCode(u32 pc)
+INLINE CompiledBlockInfo* __fastcall GetRecompiledCode(u32 pc)
 {
-	CompiledBlock* cblock=FindBlock(pc);
+	CompiledBlockInfo* cblock=FindBlock(pc);
 	
 	if (cblock)
 		return cblock;
@@ -75,7 +76,7 @@ INLINE CompiledBlock* __fastcall GetRecompiledCode(u32 pc)
 		return CompileCode(pc);
 }
 
-CompiledBlock* FindOrRecompileCode(u32 pc)
+CompiledBlockInfo* FindOrRecompileCode(u32 pc)
 {
 	
 	return GetRecompiledCode(pc);
@@ -127,7 +128,7 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 	SetFloatStatusReg();
 	while(true)
 	{
-		CompiledBlock* currBlock=GetRecompiledCode(pc);
+		CompiledBlockInfo* currBlock=GetRecompiledCode(pc);
 		//rec_cycles+=currBlock->cycles;
 		BasicBlockEP* fp=currBlock->Code;
 		
