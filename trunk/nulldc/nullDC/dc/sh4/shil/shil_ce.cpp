@@ -390,6 +390,14 @@ shilh(LoadT)
 shilh(mov)
 {
 	bool rv=false;
+	
+
+	if ((op->flags & FLAG_REG2) &&  op->reg1==op->reg2)
+	{
+		ce_re_run=true;
+		return true;
+	}
+
 	if ((op->flags & FLAG_REG2) &&  ce_IsConst(op->reg2))
 	{
 		op->flags&=~FLAG_REG2;

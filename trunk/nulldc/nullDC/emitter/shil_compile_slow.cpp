@@ -344,6 +344,8 @@ void __fastcall shil_compile_mov(shil_opcode* op,BasicBlock* block)
 	
 	if (size==FLAG_32)
 	{
+		if (op->reg1==op->reg2)
+			return;
 		//sse_WBF(op->reg2);//write back possibly readed reg
 		//OP_RegToReg_simple(MOV32);
 		//sse_RLF(op->reg1);//reload writen reg
@@ -1666,13 +1668,14 @@ void __fastcall shil_compile_fsrra(shil_opcode* op,BasicBlock* block)
 		{
 			//sse_WBF(op->reg1);
 			x86SSERegType fr1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
+			verify(fr1!=XMM0);
 #ifdef _FAST_fssra
 			x86e->SSE_RSQRTSS_XMM_to_XMM(fr1,fr1);
 #else
-			fra->FlushRegister_xmm(XMM7);
-			x86e->SSE_SQRTSS_XMM_to_XMM(XMM7,fr1);				//XMM7=sqrt(fr1)
+			//fra->FlushRegister_xmm(XMM7);
+			x86e->SSE_SQRTSS_XMM_to_XMM(XMM0,fr1);				//XMM0=sqrt(fr1)
 			x86e->SSE_MOVSS_M32_to_XMM(fr1,(u32*)mm_1);			//fr1=1
-			x86e->SSE_DIVSS_XMM_to_XMM(fr1,XMM7);				//fr1=1/sqrt
+			x86e->SSE_DIVSS_XMM_to_XMM(fr1,XMM0);				//fr1=1/XMM0
 #endif
 			fra->SaveRegister(op->reg1,fr1);
 			//sse_RLF(op->reg1);
