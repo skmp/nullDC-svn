@@ -136,7 +136,7 @@ INLINE void YUV_ConvertMacroBlock()
 	}
 	else
 	{
-		printf("YUV4:2:2 not supported (YUV converter)");
+		printf("YUV4:2:2 not supported (YUV converter)\n");
 		/*u8* U0=(u8*)&YUV_tempdata[0];
 		u8* V0=(u8*)&YUV_tempdata[64/4];
 		u8* Y0=(u8*)&YUV_tempdata[(64+64)/4];
@@ -166,22 +166,22 @@ void YUV_data(u32* data , u32 count)
 	u32 TA_YUV_TEX_BASE=pvr_readreg_TA(0x5F8148,4);
 	u32 TA_YUV_TEX_CTRL=pvr_readreg_TA(0x5F814C,4);
 
-	printf("Yuv Converter : size %d\n",count);
-	printf("Yuv Format : %s , texture type %d ,  %d x %d [0x%X];",
-		(TA_YUV_TEX_CTRL & (1<<24))==0?"YUV420":"YUV422",
-		(TA_YUV_TEX_CTRL>>16 )&1,
-		(((TA_YUV_TEX_CTRL>>0)&0x3F)+1)*16,
-		(((TA_YUV_TEX_CTRL>>8)&0x3F)+1)*16,
-		TA_YUV_TEX_CTRL);
+	//printf("Yuv Converter : size %d\n",count);
+	//printf("Yuv Format : %s , texture type %d ,  %d x %d [0x%X];",
+	//	(TA_YUV_TEX_CTRL & (1<<24))==0?"YUV420":"YUV422",
+	//	(TA_YUV_TEX_CTRL>>16 )&1,
+	//	(((TA_YUV_TEX_CTRL>>0)&0x3F)+1)*16,
+	//	(((TA_YUV_TEX_CTRL>>8)&0x3F)+1)*16,
+	//	TA_YUV_TEX_CTRL);
 	
-	if ((TA_YUV_TEX_CTRL & (1<<24))==0)
-	{
-		printf("%d blocks;",count*32/384);
-	}
-	else
-		printf("%d blocks;",count*32/512);
+//	if ((TA_YUV_TEX_CTRL & (1<<24))==0)
+//	{
+//		printf("%d blocks;",count*32/384);
+//	}
+//	else
+//		printf("%d blocks;",count*32/512);
 
-	printf("Destination : 0x%X\n",TA_YUV_TEX_BASE);
+//	printf("Destination : 0x%X\n",TA_YUV_TEX_BASE);
 
 
 	//YUV420 is 384 bytes , YUV422 is 512 bytes

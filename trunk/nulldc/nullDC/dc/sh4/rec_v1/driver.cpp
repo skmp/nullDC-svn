@@ -37,14 +37,28 @@ u32 avg_bc=0;
 
 u32 sb_count=0;
 u32 nb_count=0;
+
 void*  __fastcall CompileCode_SuperBlock(u32 pc)
 {
 	sb_count++;
 	printf("Zuperblock @ pc=0x%X , %d superblocks , %d%% of all blocks\n",pc,sb_count,sb_count*100/nb_count);
-	CompiledBlockInfo* cBB=FindBlock(pc);
-	verify(cBB->block_type & COMPILED_BLOCK_HOTSPOT);
-	//cBB->bpm_ticks=0xFFFFFFFF;
-	return 0;
+
+	CompiledBlockInfo* cblock;
+	BasicBlock* block=new BasicBlock();
+	//scan code
+	ScanCode(pc,block);
+	//Fill block lock type info
+	FillBlockLockInfo(block);
+	//analyse code [generate il/block type]
+	AnalyseCode(block);
+	block->flags.DisableHS=true;
+	//Compile code
+	CompileBasicBlock_slow(block);
+	RegisterBlock(cblock=&block->cBB->cbi);
+	delete block;
+	//compile code
+	//return pointer
+	return cblock->Code;
 }
 
 CompiledBlockInfo*  __fastcall CompileCode(u32 pc)

@@ -2037,7 +2037,7 @@ void CompileBasicBlock_slow(BasicBlock* block)
 
 	CompiledBasicBlock* cBB;
 
-	bool do_hs=block->flags.ProtectionType!=BLOCK_PROTECTIONTYPE_MANUAL;
+	bool do_hs=(block->flags.ProtectionType!=BLOCK_PROTECTIONTYPE_MANUAL) && (block->flags.DisableHS==0);
 
 	u32 b_type=0;
 	
@@ -2081,7 +2081,7 @@ void CompileBasicBlock_slow(BasicBlock* block)
 	{
 		//check for block promotion to superblock ;)
 		x86e->DEC32M(&cBB->cbi.GetHS()->bpm_ticks);
-		u8* not_zero2=0;
+		//u8* not_zero2=0;
 		u8* not_zero=x86e->JNZ8(0);
 		{
 			//yay , 0 , see if it needs promotion kkthxdie
@@ -2092,19 +2092,20 @@ void CompileBasicBlock_slow(BasicBlock* block)
 			u8*no_promote= x86e->JBE8(0);
 			{
 				//suspend block
-				//x86e->CALLFunc(SuspendBlock);
-				x86e->MOV32ItoR(ECX,cBB->cbi.start);
+				x86e->MOV32ItoR(ECX,(u32)cBB);
+				x86e->CALLFunc(SuspendBlock);
 				void*  __fastcall CompileCode_SuperBlock(u32 pc);
-				//x86e->JMP(CompileCode_SuperBlock);
+				x86e->MOV32ItoR(ECX,(u32)cBB->cbi.start);
 				x86e->CALLFunc(CompileCode_SuperBlock);
-				not_zero2=x86e->JMP8(0);
+				x86e->JMP32R(EAX);
+				//not_zero2=x86e->JMP8(0);
 			}
 			x86e->x86SetJ8(no_promote);
 			x86e->ADD32RtoM(&cBB->cbi.GetHS()->gcp_lasttimer,EAX);//last+now-last=now ;)
 			x86e->MOV32ItoM(&cBB->cbi.GetHS()->bpm_ticks,3022);
 		}
 		x86e->x86SetJ8(not_zero);
-		x86e->x86SetJ8(not_zero2);
+		//x86e->x86SetJ8(not_zero2);
 
 		//16 ticks or more to convert to zuper block
 		//241760/8 ~=30220 blocks

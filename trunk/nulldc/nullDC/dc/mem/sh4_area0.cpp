@@ -136,7 +136,7 @@ T __fastcall ReadMem_area0(u32 addr)
 	//map 0x0100 to 0x01FF
 	else if ((base_start >=0x0100) && (base_end <=0x01FF) /*&& (addr>= 0x01000000) && (addr<= 0x01FFFFFF)*/) //	:Ext. Device
 	{
-		EMUERROR2("Read from area0_32 not implemented [Ext. Device], addr=%x",addr);
+	//	EMUERROR2("Read from area0_32 not implemented [Ext. Device], addr=%x",addr);
 	}
 	//rest of it ;P
 	/*else 
@@ -245,7 +245,7 @@ void  __fastcall WriteMem_area0(u32 addr,T data)
 	//map 0x0100 to 0x01FF
 	else if ((base_start >=0x0100) && (base_end <=0x01FF) /*&& (addr>= 0x01000000) && (addr<= 0x01FFFFFF)*/) //	:Ext. Device
 	{
-		EMUERROR4("Write to area0_32 not implemented [Ext. Device], addr=%x,data=%x,size=%d",addr,data,sz);
+		//EMUERROR4("Write to area0_32 not implemented [Ext. Device], addr=%x,data=%x,size=%d",addr,data,sz);
 	}
 	/*else
 	{
