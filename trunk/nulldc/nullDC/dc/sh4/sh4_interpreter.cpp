@@ -404,7 +404,11 @@ int __fastcall UpdateSystem(u32 Cycles)
 		if (gpc_counter &1)
 		{
 			if (CCN_MMUCR.AT)
-				CCN_MMUCR.URC=fastrand() % CCN_MMUCR.URB;
+			{
+				u32 rv=CCN_MMUCR.URB;
+				rv=rv==0?63:rv;
+				CCN_MMUCR.URC=fastrand() % rv;
+			}
 		}
 
 		/*if (shitaaa==0x10000)

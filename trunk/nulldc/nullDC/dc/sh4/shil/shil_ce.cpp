@@ -99,7 +99,7 @@ struct RegData
 	bool IsRB;
 };
 
-RegData shil_ce_gpr[16];
+RegData shil_ce_gpr[160];
 
 void Init_ce()
 {
@@ -170,7 +170,7 @@ void ce_die(char* reason)
 }
 bool ce_CanBeConst(u8 reg)
 {
-	return reg<16;
+	return (reg<16) || (reg==reg_pc_temp);
 }
 
 bool ce_IsConst(u8 reg)
@@ -223,18 +223,44 @@ void ce_KillConst(u8 reg)
 		shil_ce_gpr[reg].IsRB=false;
 	}
 }
+bool ce_FindExistingConst(u32 value,u8* reg_num)
+{
+	for (u8 i=0;i<160;i++)
+	{
+		if (ce_IsConst(i))
+		{
+			if ((shil_ce_gpr[i].IsRB==true) && shil_ce_gpr[i].RB_value==value)
+			{
+				*reg_num=i;
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 void ce_WriteBack(u8 reg,shil_stream* il)
 {
 	if (ce_IsConst(reg))
 	{
 		if ((shil_ce_gpr[reg].IsRB==false) || (shil_ce_gpr[reg].RegValue!=shil_ce_gpr[reg].RB_value))
 		{
-			il->mov((Sh4RegType)reg,ce_GetConst(reg));
+			u8 aliased_reg;
+			u32 rv=ce_GetConst(reg);
+			if (ce_FindExistingConst(rv,&aliased_reg))
+			{
+				il->mov((Sh4RegType)reg,(Sh4RegType)aliased_reg);
+			}
+			else
+			{
+				il->mov((Sh4RegType)reg,ce_GetConst(reg));
+			}
 			shil_ce_gpr[reg].RB_value=ce_GetConst(reg);
 			shil_ce_gpr[reg].IsRB=true;
 		}
 	}
 }
+
 void ce_WriteBack_aks(u8 reg,shil_stream* il)
 {
 	ce_WriteBack(reg,il);
@@ -254,10 +280,12 @@ u32 shil_optimise_pass_ce_main(BasicBlock* bb)
 
 	size_t old_Size=bb->ilst.opcodes.size();
 
+	bool old_re_run=ce_re_run;
 	for (size_t i=0;i<bb->ilst.opcodes.size();i++)
 	{
 		shil_opcode* op=&bb->ilst.opcodes[i];
 
+		old_re_run=ce_re_run;
 		if (shil_ce_lut[op->opcode](op,bb,&il)==false)
 			il.opcodes.push_back(*op);//emit the old opcode
 		else
@@ -267,6 +295,9 @@ u32 shil_optimise_pass_ce_main(BasicBlock* bb)
 		}
 	}
 
+	if (old_re_run!=ce_re_run)
+		ce_re_run=false;
+
 	if (rv)
 	{
 		bb->ilst.opcodes.clear();
@@ -274,6 +305,7 @@ u32 shil_optimise_pass_ce_main(BasicBlock* bb)
 		for (size_t i=0;i<il.opcodes.size();i++)
 			bb->ilst.opcodes.push_back(il.opcodes[i]);
 		
+		//no need to write back reg_pc_temp , it not used after block [its olny a temp reg]:)
 		for (u8 i=0;i<16;i++)
 		{
 			ce_WriteBack_aks(i,&bb->ilst);
@@ -286,6 +318,7 @@ u32 shil_optimise_pass_ce_main(BasicBlock* bb)
 
 	return opt;
 }
+u32 shil_optimise_pass_btp_main(BasicBlock* bb);
 u64 total_ops_removed=0;
 void shil_optimise_pass_ce_driver(BasicBlock* bb)
 {
@@ -300,11 +333,13 @@ void shil_optimise_pass_ce_driver(BasicBlock* bb)
 	{
 		rv+=shil_optimise_pass_ce_main(bb);
 		pass++;
+		if (pass>10)
+			break;
 		//CompileBasicBlock_slow_c(bb,pass);
 	}
 
 	total_ops_removed+=old_Size-bb->ilst.opcodes.size();
-
+	shil_optimise_pass_btp_main(bb);
 	//if (rv)
 	//	printf("Optimised block 0x%X , %d opts : %d passes ,delta=%d, total removed %d \n",bb->start,rv,pass,old_Size-bb->ilst.opcodes.size(),total_ops_removed);
 
@@ -334,6 +369,7 @@ if ((op->flags & FLAG_REG2) && (ce_IsConst(op->reg2)))\
 		op->imm1=ce_GetConst(op->reg2);\
 		op->flags|=FLAG_IMM1;\
 		op->flags&=~FLAG_REG2;\
+		ce_re_run=true;\
 	}\
 	\
 	if (ce_IsConst(op->reg1))\
@@ -341,6 +377,7 @@ if ((op->flags & FLAG_REG2) && (ce_IsConst(op->reg2)))\
 		if ((op->flags & FLAG_IMM1))\
 		{\
 			ce_SetConst(op->reg1,ce_GetConst(op->reg1) oppstrrr op->imm1);\
+			ce_re_run=true;\
 			return true;\
 		}\
 		else\
@@ -390,7 +427,6 @@ shilh(LoadT)
 shilh(mov)
 {
 	bool rv=false;
-	
 
 	if ((op->flags & FLAG_REG2) &&  op->reg1==op->reg2)
 	{
@@ -793,4 +829,68 @@ shilh(fsrra)
 {
 	DefHanlder(op,bb,il);
 	return false;
+}
+
+//works olny of moves
+//a very limited form of dce pre scan ;)
+bool backscan_const(BasicBlock* bb,u8 reg,u32* rv)
+{
+	u32 lop=bb->ilst.op_count;
+	shil_stream* ilst=&bb->ilst;
+
+	//look if reg takes a const value
+	while (lop)
+	{
+		lop--;
+		shil_opcode* op=&ilst->opcodes[lop];
+		//if move (we can take const value olny from here for now)
+		if (op->opcode==shil_opcodes::mov && op->reg1==reg)
+		{
+			//if the reg we want became a const , were finished :D
+			if (op->flags & FLAG_IMM1)
+			{
+				*rv=op->imm1;
+				return true;
+			}
+			else
+			{
+				//if its a reg 2 reg move , we alias the old reg w/ the one that replaced it ;)
+				verify(op->flags & FLAG_REG2);
+				reg=op->reg2;
+			}
+		}
+		else
+		{
+			//we get writen an unkown value , unable to fix it up :p
+			if (op->WritesReg((Sh4RegType)reg))
+				return false;
+		}
+	}
+
+	//we failed to find a const on the entire block
+	return false;
+}
+
+u32 shil_optimise_pass_btp_main(BasicBlock* bb)
+{
+	bb->flags.DisableHS=1;
+	if (bb->flags.PerformModeLookup)
+		return 0;
+
+	if ((bb->flags.ExitType==BLOCK_EXITTYPE_DYNAMIC) ||
+		(bb->flags.ExitType==BLOCK_EXITTYPE_DYNAMIC_CALL))
+	{
+		u32 new_cv=0;
+		if (backscan_const(bb,reg_pc,&new_cv))
+		{
+			//printf("Block promote 0x%X , from DYNAMIC to FIXED exit 0x%X\n",bb->start,new_cv);
+			bb->TF_next_addr=new_cv;
+			if (bb->flags.ExitType=BLOCK_EXITTYPE_DYNAMIC)
+				bb->flags.ExitType=BLOCK_EXITTYPE_FIXED;
+			else
+				bb->flags.ExitType=BLOCK_EXITTYPE_FIXED_CALL;
+		}
+	}
+
+	return 1;
 }

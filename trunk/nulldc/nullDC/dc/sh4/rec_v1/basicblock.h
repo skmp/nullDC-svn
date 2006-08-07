@@ -253,7 +253,10 @@ class BasicBlock: public CodeRegion
 
 			u32 HasDelaySlot:1;
 
+			//If set , this block wont be profiled and as a result it can't become a superblock 
 			u32 DisableHS:1;
+
+			u32 PerformModeLookup:1;
 		};
 	}flags;	//compiled block flags :)
 

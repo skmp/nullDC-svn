@@ -188,6 +188,7 @@ void AnalyseCode(BasicBlock* to)
 
 			endpc=pc;
 			to->flags.ExitType =BLOCK_EXITTYPE_DYNAMIC;
+			to->flags.PerformModeLookup=1;
 			ilst->add(reg_pc,2);
 			break;
 		}

@@ -810,8 +810,8 @@ void readwrteparams(shil_opcode* op)
 	}*/
 }
 
-u32 const_hit=0;
-u32 non_const_hit=0;
+//u32 const_hit=0;
+//u32 non_const_hit=0;
 
 void emit_vmem_op_compat(emitter<>* x86e,x86IntRegType ra,
 					  x86IntRegType ro,
@@ -2401,7 +2401,7 @@ void CompileBasicBlock_slow(BasicBlock* block)
 		else
 			printf("Native/Fallback ratio : %d:%d [%d:%d]\n",native,fallbacks,native,fallbacks);
 		printf("Average block size : %d opcodes ; ",(fallbacks+native)/block_count);
-		printf("%d const hits and %d const misses\n",const_hit,non_const_hit);
+	//	printf("%d const hits and %d const misses\n",const_hit,non_const_hit);
 	}
 	
 	delete fra;

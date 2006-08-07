@@ -605,7 +605,7 @@
 							>
 							<Tool
 								Name="VCCLCompilerTool"
-								Optimization="2"
+								Optimization="0"
 							/>
 						</FileConfiguration>
 					</File>
