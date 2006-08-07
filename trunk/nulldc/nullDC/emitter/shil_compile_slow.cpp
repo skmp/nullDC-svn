@@ -2029,6 +2029,9 @@ void CompileBasicBlock_slow(BasicBlock* block)
 		inited=true;
 	}
 
+	//perform constan elimination on this block :)
+	shil_optimise_pass_ce_driver(block);
+
 
 	x86e=new emitter<>();
 
@@ -2040,7 +2043,8 @@ void CompileBasicBlock_slow(BasicBlock* block)
 
 	CompiledBasicBlock* cBB;
 
-	bool do_hs=(block->flags.ProtectionType!=BLOCK_PROTECTIONTYPE_MANUAL) && (block->flags.DisableHS==0);
+	bool do_hs=(block->flags.ProtectionType!=BLOCK_PROTECTIONTYPE_MANUAL) && (block->flags.DisableHS==0) &&
+		(block->flags.ExitType!=BLOCK_EXITTYPE_DYNAMIC) && (block->flags.ExitType!=BLOCK_EXITTYPE_DYNAMIC_CALL);
 
 	u32 b_type=0;
 	
@@ -2111,17 +2115,13 @@ void CompileBasicBlock_slow(BasicBlock* block)
 		//x86e->x86SetJ8(not_zero2);
 
 		//16 ticks or more to convert to zuper block
-		//241760/8 ~=30220 blocks
-		//we promote to superblock if more that 10% of the time is spent on this block , 3022 ticks
+		//16 ticks -> 241760hrz /8 ~=30220 blocks
+		//we promote to superblock if more that 20% of the time is spent on this block , 3022 ticks
 		cBB->cbi.GetHS()->gcp_lasttimer=gcp_timer;
-		cBB->cbi.GetHS()->bpm_ticks=3022;
+		cBB->cbi.GetHS()->bpm_ticks=3022*2;
 	}
 
-	//perform constan elimination as many times as needed :)
-	//u32 num_itt=0;
-	//while(shil_optimise_pass_ce(block) && num_itt<100)
-	//	num_itt++;
-	shil_optimise_pass_ce_driver(block);
+	
 
 	//x86e->MOV32ItoR(ECX,(u32)block);
 	//x86e->CALLFunc(CheckBlock);

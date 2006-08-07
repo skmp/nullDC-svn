@@ -10,7 +10,7 @@ extern u32 Array_T_id_count;
 char* GetNullDCSoruceFileName(char* full);
 void GetPathFromFileName(char* full);
 void GetFileNameFromPath(char* path,char* outp);
-
+u32 fastrand();
 //comonly used classes across the project
 //Simple Array class for helping me out ;P
 template<class T>

@@ -723,6 +723,14 @@
 					>
 				</File>
 				<File
+					RelativePath=".\dc\mem\mmu.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\dc\mem\mmu.h"
+					>
+				</File>
+				<File
 					RelativePath=".\dc\mem\sh4_mem.cpp"
 					>
 				</File>

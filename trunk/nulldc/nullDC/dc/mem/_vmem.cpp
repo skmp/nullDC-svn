@@ -308,7 +308,7 @@ void _vmem_mirror_mapping(u32 new_region,u32 start,u32 size)
 	u32 j=new_region;
 	for (u32 i=start;i<=end;i++)
 	{
-		_vmem_MemInfo[j]=_vmem_MemInfo[i];
+		_vmem_MemInfo[j&0xFFFF]=_vmem_MemInfo[i&0xFFFF];
 		j++;
 	}
 }

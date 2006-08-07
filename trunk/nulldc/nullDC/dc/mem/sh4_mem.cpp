@@ -10,6 +10,7 @@
 #include "dc/dc.h"
 #include "dc/sh4/rec_v1/blockmanager.h"
 #include "_vmem.h"
+#include "mmu.h"
 
 
 
@@ -213,6 +214,7 @@ void mem_Init()
 
 	sh4_area0_Init();
 	sh4_internal_reg_Init();
+	MMU_Init();
 }
 
 //Reset Sysmem/Regs -- Pvr is not changed , bios/flash are not zero'd out
@@ -232,14 +234,16 @@ void mem_Reset(bool Manual)
 
 	//Reset registers
 	sh4_area0_Reset(Manual);
-	sh4_internal_reg_Reset(Manual);;
+	sh4_internal_reg_Reset(Manual);
+	MMU_Reset(Manual);
 }
 
 void mem_Term()
 {
-	//Free allocated mem for memory/bios/flash
-	mem_b.Term();
-	bios_b.Free();
+	MMU_Term();
+	sh4_internal_reg_Term();
+	sh4_area0_Term();
+
 	//write back flash ?
 	char* temp_path=GetEmuPath("data\\");
 	strcat(temp_path,"dc_flash_wb.bin");
@@ -247,8 +251,10 @@ void mem_Term()
 	free(temp_path);
 	flash_b.Free();
 
-	sh4_internal_reg_Term();
-	sh4_area0_Term();
+	//Free allocated mem for memory/bios/flash
+	bios_b.Free();
+	mem_b.Term();
+
 	//vmem
 	_vmem_term();
 }

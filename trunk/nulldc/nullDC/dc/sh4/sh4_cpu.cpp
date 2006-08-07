@@ -57,8 +57,10 @@ void cpu_iNimp(u32 op, char* info)
 {
 	printf("not implemented opcode : %X : ", op);
 	printf(info);
-	printf(" @ %X\n", pc);
-	sh4_cpu->Stop();
+	printf(" @ %X\nPress Any key to continue\n", pc);
+	getc(stdin);
+
+	//sh4_cpu->Stop();
 }
 
 void cpu_iWarn(u32 op, char* info)
@@ -72,13 +74,36 @@ void cpu_iWarn(u32 op, char* info)
 #include "sh4_cpu_branch.h"
 #include "sh4_cpu_arith.h"
 #include "sh4_cpu_logic.h"
-
+#include "dc\mem\mmu.h"
 
 //************************ TLB/Cache ************************
 //ldtlb                         
 sh4op(i0000_0000_0011_1000)
 {
+	u32 size[4]={1,4,64,1024};
+	u32 size_2[4]={1,1,1,1024/64};
+	printf("ldtlb : ASID : %d , VPN : 0x%X ,PPN 0x%X,V %d , SZ : %d kb,PR %d, C %d , D %d , SH %d , WT %d\n"
+		,CCN_PTEH.ASID,CCN_PTEH.VPN,
+		CCN_PTEL.PPN,CCN_PTEL.V,size[CCN_PTEL.SZ1*2 + CCN_PTEL.SZ0],CCN_PTEL.PR,
+		CCN_PTEL.C,CCN_PTEL.D,CCN_PTEL.SH,CCN_PTEL.WT);
+
+	u32 newmap=CCN_PTEH.VPN <<10;
+	u32 start=CCN_PTEL.PPN<<10;
+	printf("Map 0x%X to 0x%X\n",start,newmap);
+	start >>=16;
+	newmap >>=16;
+	
+	for (u32 i=0;i<4;i++)
+		_vmem_mirror_mapping((i<<29) | (newmap & 0x1FFFFFFF),start,size_2[CCN_PTEL.SZ1*2 + CCN_PTEL.SZ0]);
+	
+	_vmem_mirror_mapping((3<<30) | (newmap & 0x1FFFFFFF),start,size_2[CCN_PTEL.SZ1*2 + CCN_PTEL.SZ0]);
+
+	UTLB[CCN_MMUCR.URC].Data.full=CCN_PTEL.reg_data;
+	UTLB[CCN_MMUCR.URC].Address.full=CCN_PTEH.reg_data;
+
+	UTLB_Sync(CCN_MMUCR.URC);
 	iNimp(op, "ldtlb");
+
 } 
 
 

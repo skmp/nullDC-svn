@@ -12,6 +12,7 @@
 #include "dc/sh4/tmu.h"
 #include "dc/sh4/ubc.h"
 #include "_vmem.h"
+#include "mmu.h"
 
 //64bytes of sq
 __declspec(align(32)) u8 sq_both[64];
@@ -167,19 +168,27 @@ T __fastcall ReadMem_P4(u32 addr)
 		break;
 
 	case 0xF2:
-		printf("Unhandled p4 read [Instruction TLB address array] 0x%x\n",addr);
+		//printf("Unhandled p4 read [Instruction TLB address array] 0x%x\n",addr);
+		{
+			u32 entry=(addr>>8)&3;
+			return ITLB[entry].Address.full;
+		}
 		break;
 
 	case 0xF3:
-		printf("Unhandled p4 read [Instruction TLB data arrays 1 and 2] 0x%x\n",addr);
+		//printf("Unhandled p4 read [Instruction TLB data arrays 1 and 2] 0x%x\n",addr);
+		{
+			u32 entry=(addr>>8)&3;
+			return ITLB[entry].Data.full;
+		}
 		break;
 
 	case 0xF4:
 		{
-			int W,Set,A;
-			W=(addr>>14)&1;
-			A=(addr>>3)&1;
-			Set=(addr>>5)&0xFF;
+			//int W,Set,A;
+			//W=(addr>>14)&1;
+			//A=(addr>>3)&1;
+			//Set=(addr>>5)&0xFF;
 			//printf("Unhandled p4 read [Operand cache address array] %d:%d,%d  0x%x\n",Set,W,A,addr);
 			return 0;
 		}
@@ -190,11 +199,19 @@ T __fastcall ReadMem_P4(u32 addr)
 		break;
 
 	case 0xF6:
-		printf("Unhandled p4 read [Unified TLB address array] 0x%x\n",addr);
+		//printf("Unhandled p4 read [Unified TLB address array] 0x%x\n",addr);
+		{
+			u32 entry=(addr>>8)&63;
+			return UTLB[entry].Address.full;
+		}
 		break;
 
 	case 0xF7:
-		printf("Unhandled p4 read [Unified TLB data arrays 1 and 2] 0x%x\n",addr);
+		//printf("Unhandled p4 read [Unified TLB data arrays 1 and 2] 0x%x\n",addr);
+		{
+			u32 entry=(addr>>8)&63;
+			return UTLB[entry].Data.full;
+		}
 		break;
 
 	case 0xFF:
@@ -239,19 +256,31 @@ void __fastcall WriteMem_P4(u32 addr,T data)
 		break;
 
 	case 0xF2:
-		printf("Unhandled p4 Write [Instruction TLB address array] 0x%x = %x\n",addr,data);
+		//printf("Unhandled p4 Write [Instruction TLB address array] 0x%x = %x\n",addr,data);
+		{
+			u32 entry=(addr>>8)&3;
+			ITLB[entry].Address.full=data;
+			ITLB_Sync(entry);
+			return;
+		}
 		break;
 
 	case 0xF3:
-		printf("Unhandled p4 Write [Instruction TLB data arrays 1 and 2] 0x%x = %x\n",addr,data);
+		//printf("Unhandled p4 Write [Instruction TLB data arrays 1 and 2] 0x%x = %x\n",addr,data);
+		{
+			u32 entry=(addr>>8)&3;
+			ITLB[entry].Data.full=data;
+			ITLB_Sync(entry);
+			return;
+		}
 		break;
 
 	case 0xF4:
 		{
-			int W,Set,A;
-			W=(addr>>14)&1;
-			A=(addr>>3)&1;
-			Set=(addr>>5)&0xFF;
+			//int W,Set,A;
+			//W=(addr>>14)&1;
+			//A=(addr>>3)&1;
+			//Set=(addr>>5)&0xFF;
 			//printf("Unhandled p4 Write [Operand cache address array] %d:%d,%d  0x%x = %x\n",Set,W,A,addr,data);
 			return;
 		}
@@ -262,11 +291,29 @@ void __fastcall WriteMem_P4(u32 addr,T data)
 		break;
 
 	case 0xF6:
-		printf("Unhandled p4 Write [Unified TLB address array] 0x%x = %x\n",addr,data);
+		{
+			if (addr&0x80)
+			{
+				printf("Unhandled p4 Write [Unified TLB address array , Associative Write] 0x%x = %x\n",addr,data);
+			}
+			else
+			{
+				u32 entry=(addr>>8)&63;
+				UTLB[entry].Address.full=data;
+				UTLB_Sync(entry);
+			}
+			return;
+		}
 		break;
 
 	case 0xF7:
-		printf("Unhandled p4 Write [Unified TLB data arrays 1 and 2] 0x%x = %x\n",addr,data);
+		{
+			//printf("Unhandled p4 Write [Unified TLB data arrays 1 and 2] 0x%x = %x\n",addr,data);
+			u32 entry=(addr>>8)&63;
+			UTLB[entry].Data.full=data;
+			UTLB_Sync(entry);
+			return;
+		}
 		break;
 
 	case 0xFF:

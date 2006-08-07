@@ -374,6 +374,7 @@ bool ExecuteDelayslot()
 	return true;
 }
 
+#include "ccn.h"
 
 //General update
 //u32 gdCnt=0;
@@ -400,6 +401,12 @@ int __fastcall UpdateSystem(u32 Cycles)
 			gcp_timer++;
 			FreeSuspendedBlocks();
 		}
+		if (gpc_counter &1)
+		{
+			if (CCN_MMUCR.AT)
+				CCN_MMUCR.URC=fastrand() % CCN_MMUCR.URB;
+		}
+
 		/*if (shitaaa==0x10000)
 		{
 			shitaaa=0;

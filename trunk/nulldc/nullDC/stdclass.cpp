@@ -8,6 +8,14 @@
 //anyhow , this is needed here ;P
 u32 Array_T_id_count=0;
 
+u32 fastrand_seed=0xDEADCAFE;
+
+u32 fastrand()
+{
+	fastrand_seed=(fastrand_seed>>9)^(fastrand_seed<<11)^(fastrand_seed>>24);//^1 is there 
+	return fastrand_seed++;//if it got 0 , take good care of it :)
+}
+
 //Misc function to get relative source directory for printf's
 char temp[1000];
 char* GetNullDCSoruceFileName(char* full)
