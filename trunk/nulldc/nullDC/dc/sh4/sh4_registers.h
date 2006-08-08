@@ -2,6 +2,28 @@
 #include "types.h"
 #include "sh4_if.h"
 
+
+struct Sh4RegContext
+{
+	u32 r[16];
+	u32 r_bank[8];
+
+	u32 gbr,ssr,spc,sgr,dbr,vbr;
+	u32 mach,macl,pr,fpul;
+	u32 pc;
+	//u16* pc_ptr;
+
+	StatusReg sr;
+
+	fpscr_type fpscr;
+
+	f32 xf[16];
+	f32 fr[16];
+
+	StatusReg old_sr;
+	fpscr_type old_fpscr;
+};
+
 __declspec(align(32)) extern u32 r[16];
 __declspec(align(32)) extern u32 r_bank[8];
 
@@ -18,6 +40,9 @@ extern __declspec(align(32)) f32 fr[16];
 
 
 extern u32*  xf_hex,*fr_hex;
+
+void SaveSh4Regs(Sh4RegContext* to);
+void LoadSh4Regs(Sh4RegContext* from);
 
 void UpdateFPSCR();
 bool UpdateSR();

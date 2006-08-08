@@ -113,7 +113,7 @@
 	//iNimp("mov.l @(R0,<REG_M>),<REG_N>");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
-	//r[n] = ReadMem32(r[0] + r[m]);
+	
 	ReadMemBOU32(r[n],r[0],r[m]);
 } 
 
@@ -354,7 +354,7 @@
 	//iNimp("lds.l @<REG_N>+,MACH");
 	u32 n = GetN(op);
 	ReadMemU32(mach,r[n]);
-	//mach = ReadMem32(r[n]);
+	
 	r[n] += 4;
 }
 
@@ -365,7 +365,7 @@
 	//iNimp("lds.l @<REG_N>+,MACL ");
 	u32 n = GetN(op);
 	ReadMemU32(macl,r[n]);
-	//macl = ReadMem32(r[n]);
+	
 	r[n] += 4;
 }
 
@@ -375,7 +375,7 @@
 {
 	u32 n = GetN(op);
 	ReadMemU32(pr,r[n]);
-	//pr = ReadMem32(r[n]);
+	
 	r[n] += 4;
 }
 
@@ -385,7 +385,7 @@
 {
 	//iNimp("lds.l @<REG_N>+,FPUL");
 	u32 n = GetN(op);
-	//fpul = ReadMem32(r[n]);
+	
 	ReadMemU32(fpul,r[n]);
 	r[n] += 4;
 }
@@ -402,7 +402,7 @@
 {
 	//iNimp("ldc.l @<REG_N>+,GBR");
 	u32 n = GetN(op);
-	//gbr = ReadMem32(r[n]);
+	
 	ReadMemU32(gbr,r[n]);
 	r[n] += 4;
 }
@@ -413,7 +413,7 @@
 {
 	//iNimp("ldc.l @<REG_N>+,VBR");
 	u32 n = GetN(op);
-	//vbr = ReadMem32(r[n]);
+	
 	ReadMemU32(vbr,r[n]);
 	r[n] += 4;
 }
@@ -424,7 +424,7 @@
 {
 	//iNimp("ldc.l @<REG_N>+,SSR");
 	u32 n = GetN(op);
-	//ssr = ReadMem32(r[n]);
+	
 	ReadMemU32(ssr,r[n]);
 	r[n] += 4;
 }
@@ -435,7 +435,7 @@
 {
 	//iNimp("ldc.l @<REG_N>+,SPC");
 	u32 n = GetN(op);
-	//spc = ReadMem32(r[n]);
+	
 	ReadMemU32(spc,r[n]);
 	r[n] += 4;
 }
@@ -447,7 +447,7 @@
 	//iNimp("ldc.l @<REG_N>+,R0_BANK");
 	u32 n = GetN(op);
 	u32 m = GetM(op) & 7;
-	//r_bank[m]= ReadMem32(r[n]);
+	
 	ReadMemU32(r_bank[m],r[n]);
 	r[n] += 4;
 }
@@ -555,7 +555,7 @@
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 	u32 disp = GetImm4(op) << 2;
-	//r[n]=ReadMem32(r[m]+disp);
+	
 	ReadMemBOU32(r[n],r[m],disp);
 }
 
@@ -566,7 +566,7 @@
 {
 	u32 n = GetN(op);
 	u32 m = GetM(op);
-	//r[n] = (u32)(s32)(s8)ReadMem8(r[m]);
+	
 	ReadMemS8(r[n],r[m]);
 } 
 
@@ -587,7 +587,7 @@
 {
 	u32 n = GetN(op);
 	u32 m = GetM(op);
-	//r[n]=ReadMem32(r[m]);
+	
 	ReadMemU32(r[n],r[m]);
 } 
 
@@ -633,7 +633,7 @@
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 
-	//r[n]=ReadMem32(r[m]);
+	
 	ReadMemU32(r[n],r[m]);
 	if (n != m)
 		r[m] += 4;
@@ -752,7 +752,7 @@
 {
 //	iNimp(op, "mov.l @(<disp>,GBR),R0");
 	u32 disp = GetImm8(op);
-	//r[0] = ReadMem32(gbr+(disp<<2));
+	
 	ReadMemBOU32(r[0],gbr,(disp<<2));
 }
 
@@ -773,8 +773,6 @@
 	u32 n = GetN(op);
 	u32 disp = (GetImm8(op));
 	
-	//r[n]=ReadMem32((disp<<2) + (pc & 0xFFFFFFFC) + 4);
-
 	ReadMemU32(r[n],(disp<<2) + (pc & 0xFFFFFFFC) + 4);
 }
 //

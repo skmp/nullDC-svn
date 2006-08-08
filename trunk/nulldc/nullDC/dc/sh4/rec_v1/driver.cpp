@@ -126,6 +126,9 @@ void naked __fastcall DoRunCode(void * code)
 }
 #endif
 
+void __fastcall rec_sh4_int_RaiseExeption(u32 ExeptionCode,u32 VectorAddress)
+{
+}
 void DynaPrintLinkStart();
 void DynaPrintLinkEnd();
 u32 rec_cycles=0;

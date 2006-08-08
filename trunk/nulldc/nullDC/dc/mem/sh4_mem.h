@@ -29,22 +29,41 @@ extern Array<u8> flash_b;
 #define MEMCALL __fastcall
 
 #include "_vmem.h"
+#include "mmu.h"
 
-//u8 MEMCALL ReadMem8(u32 addr);
+#ifdef NO_MMU
 #define ReadMem8 _vmem_ReadMem8
-//u16 MEMCALL ReadMem16(u32 addr);
 #define ReadMem16 _vmem_ReadMem16
-//u32 MEMCALL ReadMem32(u32 addr);
+#define IReadMem16 ReadMem16
 #define ReadMem32 _vmem_ReadMem32
 
-//void MEMCALL WriteMem8(u32 addr,u8 data);
 #define WriteMem8 _vmem_WriteMem8
-//void MEMCALL WriteMem16(u32 addr,u16 data);
 #define WriteMem16 _vmem_WriteMem16
-//void MEMCALL WriteMem32(u32 addr,u32 data);
 #define WriteMem32 _vmem_WriteMem32
+#else
+#define ReadMem8 mmu_ReadMem8
+#define ReadMem16 mmu_ReadMem16
+#define IReadMem16 mmu_IReadMem16
+#define ReadMem32 mmu_ReadMem32
+
+#define WriteMem8 mmu_WriteMem8
+#define WriteMem16 mmu_WriteMem16
+#define WriteMem32 mmu_WriteMem32
+#endif
+
+
+#define ReadMem8_nommu _vmem_ReadMem8
+#define ReadMem16_nommu _vmem_ReadMem16
+#define IReadMem16_nommu _vmem_IReadMem16
+#define ReadMem32_nommu _vmem_ReadMem32
+
+
+#define WriteMem8_nommu _vmem_WriteMem8
+#define WriteMem16_nommu _vmem_WriteMem16
+#define WriteMem32_nommu _vmem_WriteMem32
 
 void MEMCALL WriteMemBlock(u32 addr,u32* data,u32 size);
+void MEMCALL WriteMemBlock_nommu(u32 addr,u32* data,u32 size);
 
 //Init/Res/Term
 void mem_Init();

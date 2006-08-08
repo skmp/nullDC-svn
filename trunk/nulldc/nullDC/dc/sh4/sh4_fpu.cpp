@@ -23,6 +23,26 @@ void iNimp(char*str);
 
 #define IS_DENORMAL(f) (((*(f))&0x7f800000) == 0)
 
+#define ReadMemU32(to,addr) to=ReadMem32(addr)
+#define ReadMemS32(to,addr) to=(s32)ReadMem32(addr)
+#define ReadMemS16(to,addr) to=(u32)(s32)(s16)ReadMem16(addr)
+#define ReadMemS8(to,addr) to=(u32)(s32)(s8)ReadMem8(addr)
+
+//Base,offset format
+#define ReadMemBOU32(to,addr,offset)	ReadMemU32(to,addr+offset)
+#define ReadMemBOS16(to,addr,offset)	ReadMemS16(to,addr+offset)
+#define ReadMemBOS8(to,addr,offset)		ReadMemS8(to,addr+offset)
+
+//Write Mem Macros
+#define WriteMemU32(addr,data)				WriteMem32(addr,(u32)data)
+#define WriteMemU16(addr,data)				WriteMem16(addr,(u16)data)
+#define WriteMemU8(addr,data)				WriteMem8(addr,(u8)data)
+
+//Base,offset format
+#define WriteMemBOU32(addr,offset,data)		WriteMemU32(addr+offset,data)
+#define WriteMemBOU16(addr,offset,data)		WriteMemU16(addr+offset,data)
+#define WriteMemBOU8(addr,offset,data)		WriteMemU8(addr+offset,data)
+
 INLINE void Denorm32(float &value)
 {
 	if (fpscr.DN)
@@ -215,7 +235,7 @@ sh4op(i1111_nnnn_mmmm_0110)
 		u32 n = GetN(op);
 		u32 m = GetM(op);
 
-		fr_hex[n] = ReadMem32(r[m] + r[0]);
+		ReadMemU32(fr_hex[n],r[m] + r[0]);
 	}
 	else
 	{
@@ -223,13 +243,13 @@ sh4op(i1111_nnnn_mmmm_0110)
 		u32 m = GetM(op);
 		if (((op >> 8) & 0x1) == 0)
 		{
-			fr_hex[n] = ReadMem32(r[m] + r[0]);
-			fr_hex[n + 1] = ReadMem32(r[m] + r[0] + 4);
+			ReadMemU32(fr_hex[n],r[m] + r[0]);
+			ReadMemU32(fr_hex[n + 1],r[m] + r[0] + 4);
 		}
 		else
 		{
-			xf_hex[n] = ReadMem32(r[m] + r[0]);
-			xf_hex[n + 1] = ReadMem32(r[m] + r[0] + 4);
+			ReadMemU32(xf_hex[n],r[m] + r[0]);
+			ReadMemU32(xf_hex[n + 1],r[m] + r[0] + 4);
 		}
 	}
 }
@@ -270,7 +290,7 @@ sh4op(i1111_nnnn_mmmm_1000)
 	{
 		u32 n = GetN(op);
 		u32 m = GetM(op);
-		fr_hex[n] = ReadMem32(r[m]);
+		ReadMemU32(fr_hex[n],r[m]);
 	}
 	else
 	{
@@ -278,13 +298,13 @@ sh4op(i1111_nnnn_mmmm_1000)
 		u32 m = GetM(op);
 		if (((op >> 8) & 0x1) == 0)
 		{
-			fr_hex[n] = ReadMem32(r[m]);
-			fr_hex[n + 1] = ReadMem32(r[m] + 4);
+			ReadMemU32(fr_hex[n],r[m]);
+			ReadMemU32(fr_hex[n + 1],r[m] + 4);
 		}
 		else
 		{
-			xf_hex[n] = ReadMem32(r[m]);
-			xf_hex[n + 1] = ReadMem32(r[m] + 4);
+			ReadMemU32(xf_hex[n],r[m]);
+			ReadMemU32(xf_hex[n + 1],r[m] + 4);
 		}
 	}
 }
@@ -298,7 +318,7 @@ sh4op(i1111_nnnn_mmmm_1001)
 		u32 n = GetN(op);
 		u32 m = GetM(op);
 
-		fr_hex[n] = ReadMem32(r[m]);
+		ReadMemU32(fr_hex[n],r[m]);
 		r[m] += 4;
 	}
 	else 
@@ -307,13 +327,13 @@ sh4op(i1111_nnnn_mmmm_1001)
 		u32 m = GetM(op);
 		if (((op >> 8) & 0x1) == 0)
 		{
-			fr_hex[n] = ReadMem32(r[m]);
-			fr_hex[n + 1] = ReadMem32(r[m]+ 4);
+			ReadMemU32(fr_hex[n],r[m]);
+			ReadMemU32(fr_hex[n + 1],r[m]+ 4);
 		}
 		else
 		{
-			xf_hex[n] = ReadMem32(r[m] );
-			xf_hex[n + 1] = ReadMem32(r[m]+ 4);
+			ReadMemU32(xf_hex[n],r[m] );
+			ReadMemU32(xf_hex[n + 1],r[m]+ 4);
 		}
 		r[m] += 8;
 	}
@@ -327,7 +347,7 @@ sh4op(i1111_nnnn_mmmm_1010)
 	{
 		u32 n = GetN(op);
 		u32 m = GetM(op);
-		WriteMem32(r[n], fr_hex[m]);
+		WriteMemU32(r[n], fr_hex[m]);
 	}
 	else
 	{
@@ -336,13 +356,13 @@ sh4op(i1111_nnnn_mmmm_1010)
 
 		if (((op >> 4) & 0x1) == 0)
 		{
-			WriteMem32(r[n], fr_hex[m]);
-			WriteMem32(r[n] + 4, fr_hex[m + 1]);
+			WriteMemU32(r[n], fr_hex[m]);
+			WriteMemU32(r[n] + 4, fr_hex[m + 1]);
 		}
 		else
 		{
-			WriteMem32(r[n], xf_hex[m]);
-			WriteMem32(r[n] + 4, xf_hex[m + 1]);
+			WriteMemU32(r[n], xf_hex[m]);
+			WriteMemU32(r[n] + 4, xf_hex[m + 1]);
 		}
 		
 	}
@@ -359,7 +379,7 @@ sh4op(i1111_nnnn_mmmm_1011)
 
 		r[n] -= 4;
 
-		WriteMem32(r[n], fr_hex[m]);
+		WriteMemU32(r[n], fr_hex[m]);
 	}
 	else
 	{
@@ -370,13 +390,13 @@ sh4op(i1111_nnnn_mmmm_1011)
 		r[n] -= 8;
 		if (((op >> 4) & 0x1) == 0)
 		{
-			WriteMem32(r[n] , fr_hex[m]);
-			WriteMem32(r[n]+ 4, fr_hex[m + 1]);
+			WriteMemU32(r[n] , fr_hex[m]);
+			WriteMemU32(r[n]+ 4, fr_hex[m + 1]);
 		}
 		else
 		{
-			WriteMem32(r[n] , xf_hex[m]);
-			WriteMem32(r[n]+ 4, xf_hex[m + 1]);
+			WriteMemU32(r[n] , xf_hex[m]);
+			WriteMemU32(r[n]+ 4, xf_hex[m + 1]);
 		}
 	}
 }

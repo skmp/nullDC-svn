@@ -1,0 +1,75 @@
+--Interrupt handling :
+Interrupt handling is simple , its done on updates betwen links.We can freely set the pc reg
+there , and all the regs are on known positions (at mem).It works the same way on interpreter
+and dynarec :)
+
+
+--Exeption handling :
+For interpreter :
+We usualy know where the register are but within a function they may be on a reg.That's
+not a problem , as on exeptions we dont want results writen back anyhow.An exeption sets
+varius cpu state flags , saves registers and sets pc (prety much like an interrupt).
+
+
+The trick is we need to violate the callstack and return to the main emulation loop , w/o
+saving any updates to the regs made by the opcode (we want to save the chainges made by the
+exeption state change).We can do this by using Windows/C++ SEH  (i hope :p).
+
+-> I wrote the mainloop on asm , so we use out own fallback system (For speed :p)
+
+For dynarec :
+Sh4 regs can be on 
+a) normal reg position
+b) a register
+c) stack
+d) nowhere (pc , but can be looked up from code position:p)
+
+a -> when not reg allocated
+
+b,c -> when reg allocated
+
+d -> pc
+
+we can solve b,d by using a map point on the compiled block (code start , code end , pc , alloc flags).
+
+the problem is , that any function on the callstack can have used ebx,ebp,
+esi,edi , and saved em on stack.This way we cant seperate b from c ,and 
+we can't recovert from c at all.So exeptions can't be freely raised from
+ any stack level. Stack has to retun til the last call from dynareccode.
+ We can replace that value on the callstack , to call our own hook at 
+ that point , save registers and raise the exeption.
+
+--Some interesting side effects of register allocation problem.
+Just in the same way we dont know where the register value is , within a 
+function we can't set regs that are allocated at all.So , if on an exeption
+we save all known reg , hook the return value , and save the ones we dont
+know on the return , it should be allright :).That's a lota hacking around
+, so be sure to use it on safe place kk ? (dont make assuptions that code
+won't run after exeption raised).We can do that on interpreter too , to
+ensure compat on interpreter/dynarec code [i think thats the best idea tbh]
+
+
+------------------------------------- Implementation --------------------------------------------
+sh4if.RaiseExeption(u32 Exeption code) -> Save exeption code & regs somewhere safe , 
+										hook return to interpreter , return 
+---code---
+---code---
+--return-- -> it will call our hook instead (sh4_handle_exept)
+sh4_exept_hook -> restore all saved regs to mem , set exeption regs & pc , and jump to 
+execute_next_op
+
+now , Raise Exeption , and sh4_exept_hook are core implementation speciacific.
+
+RaiseExeption Spec : saves regs to safe location & sets sh4_exept_raised flag 
+					 (indicates an exeption hapened that is not yet handled).
+					 Then it hooks the return value on stack.
+
+sh4_exept_hook	   : restores all regs , clears sh4_exept_raised flag , and 
+					 jumps to next opcode handler .
+
+
+Global Vars :
+sh4_exept_raised -> true if a non handled exeption is pending
+sh4_exept_next   -> pointer , point to be called after all regs & pc are set after sh4_exept_hook is caled
+sh4_exept_ssp    -> pointer to stack element that has to be replaced w/ hook 
+				    value so hooked function gets called :)

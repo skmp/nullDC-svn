@@ -12,3 +12,4 @@ void rec_Sh4_int_Reset(bool Manual);
 void rec_Sh4_int_Init();
 void rec_Sh4_int_Term();
 bool rec_Sh4_int_IsCpuRunning();   
+void __fastcall rec_sh4_int_RaiseExeption(u32 ExeptionCode,u32 VectorAddress);

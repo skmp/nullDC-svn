@@ -110,7 +110,7 @@ void Write_SB_ADST(u32 data)
 
 			for (u32 i=0;i<len;i+=4)
 			{
-				u32 data=ReadMem32(src+i);
+				u32 data=ReadMem32_nommu(src+i);
 				libAICA->aica_info.WriteMem_aica_ram(dst+i,data,4);
 			}
 

@@ -23,6 +23,70 @@ u32*  xf_hex=(u32*)xf,*fr_hex=(u32*)fr;
 
 StatusReg old_sr;
 fpscr_type old_fpscr;
+
+#define SAVE_REG(name) memcpy(&to->name,&name,sizeof(name))
+#define LOAD_REG(name) memcpy(&name,&from->name,sizeof(name))
+
+#define SAVE_REG_A(name) memcpy(to->name,name,sizeof(name))
+#define LOAD_REG_A(name) memcpy(name,from->name,sizeof(name))
+
+void SaveSh4Regs(Sh4RegContext* to)
+{
+	SAVE_REG_A(r);
+	SAVE_REG_A(r_bank);
+
+	SAVE_REG(gbr);
+	SAVE_REG(ssr);
+	SAVE_REG(spc);
+	SAVE_REG(sgr);
+	SAVE_REG(dbr);
+	SAVE_REG(vbr);
+
+
+	SAVE_REG(mach);
+	SAVE_REG(macl);
+	SAVE_REG(pr);
+	SAVE_REG(fpul);
+	SAVE_REG(pc);
+
+	SAVE_REG(sr);
+	SAVE_REG(fpscr);
+
+	SAVE_REG_A(xf);
+	SAVE_REG_A(fr);
+
+	SAVE_REG(old_sr);
+	SAVE_REG(old_fpscr);
+}
+void LoadSh4Regs(Sh4RegContext* from)
+{
+	LOAD_REG_A(r);
+	LOAD_REG_A(r_bank);
+
+	LOAD_REG(gbr);
+	LOAD_REG(ssr);
+	LOAD_REG(spc);
+	LOAD_REG(sgr);
+	LOAD_REG(dbr);
+	LOAD_REG(vbr);
+
+
+	LOAD_REG(mach);
+	LOAD_REG(macl);
+	LOAD_REG(pr);
+	LOAD_REG(fpul);
+	LOAD_REG(pc);
+
+	LOAD_REG(sr);
+	LOAD_REG(fpscr);
+
+	LOAD_REG_A(xf);
+	LOAD_REG_A(fr);
+
+	LOAD_REG(old_sr);
+	LOAD_REG(old_fpscr);
+}
+
 INLINE void ChangeGPR()
 {
 	u32 temp[8];

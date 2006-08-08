@@ -64,7 +64,7 @@ void DMAC_Ch2St()
 		//printf(">>\tDMAC: TEX LNMODE0 Ch2 DMA SRC=%X DST=%X LEN=%X | LN(%X::%X)\n", src, dst, len, *pSB_LMMODE0, *pSB_LMMODE1 );
 
 		u32 dst_ptr=(dst&0xFFFFFF) |0xa4000000;
-		WriteMemBlock(dst_ptr,(u32*)GetMemPtr(src,len),len);
+		WriteMemBlock_nommu(dst_ptr,(u32*)GetMemPtr(src,len),len);
 
 	//	*pSB_LMMODE0 = 1;			// this prob was done by system already
 	//	WriteMem(SB_LMMODE1, 0, 4);	// should this be done ?

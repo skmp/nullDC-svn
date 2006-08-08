@@ -371,6 +371,10 @@
 				Name="sh4"
 				>
 				<File
+					RelativePath=".\dc\sh4\Interrupt And Exeption handling.txt"
+					>
+				</File>
+				<File
 					RelativePath=".\dc\sh4\sh4_cst.cpp"
 					>
 				</File>
@@ -725,6 +729,14 @@
 				<File
 					RelativePath=".\dc\mem\mmu.cpp"
 					>
+					<FileConfiguration
+						Name="Release-NoTrace|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"
+						/>
+					</FileConfiguration>
 				</File>
 				<File
 					RelativePath=".\dc\mem\mmu.h"

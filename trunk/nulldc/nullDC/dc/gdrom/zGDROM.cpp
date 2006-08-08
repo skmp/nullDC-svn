@@ -598,7 +598,7 @@ void DMAC_Ch3St(u32 data)
 	if( 1 == SB_GDDIR ) 
 	{
 		//best solution ;) will automagically invalidate block too
-		WriteMemBlock(src,(u32*)&gdReadBuffer[dmaOffset], len);
+		WriteMemBlock_nommu(src,(u32*)&gdReadBuffer[dmaOffset], len);
 
 		//GetMemPtr perhaps ? it's better not to use the arrays like that ;P
 		//memcpy( &mem_b[src&RAM_MASK], &gdReadBuffer[dmaOffset], len );		

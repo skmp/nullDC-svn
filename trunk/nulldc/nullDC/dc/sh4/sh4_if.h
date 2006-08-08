@@ -2,6 +2,12 @@
 #include "types.h"
 #include "intc_types.h"
 
+//sh4 exeption saved stack pointer :)
+extern u32* sh4_exept_ssp;
+//sh4 next opcode execute
+extern u32* sh4_exept_next;
+//sh4 exeption raised bool , set to true when an exeption was raised , and its not handled
+extern bool sh4_exept_raised;
 
 enum Sh4RegType
 {
@@ -186,6 +192,7 @@ typedef bool IsCpuRunningFP();
 typedef u32 GetRegisterFP(Sh4RegType reg);
 typedef void SetRegisterFP(Sh4RegType reg,u32 value);
 typedef cResetEvent* GetArmResetEventFP();
+typedef void __fastcall sh4_int_RaiseExeptionFP(u32 ExeptionCode,u32 VectorAddress);
 
 
 
@@ -203,6 +210,7 @@ struct sh4_if
 	GetRegisterFP* GetRegister;
 	SetRegisterFP* SetRegister;
 	RaiseInterruptFP* RaiseInterrupt;
+	sh4_int_RaiseExeptionFP* RaiseExeption;
 };
 
 //Get an interface to sh4 interpreter

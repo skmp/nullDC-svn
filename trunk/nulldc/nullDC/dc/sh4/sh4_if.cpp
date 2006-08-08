@@ -3,6 +3,13 @@
 #include "sh4_interpreter.h"
 #include "rec_v1\driver.h"
 
+//sh4 exeption saved stack pointer :)
+u32* sh4_exept_ssp;
+//sh4 next opcode execute
+u32* sh4_exept_next;
+//sh4 exeption raised bool , set to true when an exeption was raised , and its not handled
+bool sh4_exept_raised=false;
+
 extern u8 GetSingleFromDouble(u8 dbl)
 {
 	if (dbl>=Sh4RegType::dr_0 && dbl<=Sh4RegType::dr_7)
@@ -50,6 +57,7 @@ sh4_if* Get_Sh4Interpreter()
 	rv->GetRegister=Sh4_int_GetRegister;
 	rv->SetRegister=Sh4_int_SetRegister;
 	rv->RaiseInterrupt=RaiseInterrupt;
+	rv->RaiseExeption=sh4_int_RaiseExeption;
 	return rv;
 }
 
@@ -69,6 +77,7 @@ sh4_if* Get_Sh4Recompiler()
 	rv->GetRegister=Sh4_int_GetRegister;
 	rv->SetRegister=Sh4_int_SetRegister;
 	rv->RaiseInterrupt=RaiseInterrupt;
+	rv->RaiseExeption=rec_sh4_int_RaiseExeption;
 	return rv;
 }
 

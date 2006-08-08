@@ -34,6 +34,40 @@ u32 opcode_fam_cycles[0x10]=
  CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,1
 };
 
+u32 sh4_ex_ExeptionCode,sh4_ex_VectorAddress;
+Sh4RegContext sh4_ex_SRC;
+
+void sh4_int_restore_reg_cnt()
+{
+	//restore reg context
+	LoadSh4Regs(&sh4_ex_SRC);
+	//raise exeption
+	RaiseExeption(sh4_ex_ExeptionCode,sh4_ex_VectorAddress);
+	sh4_exept_raised=false;
+	//do more magic++
+}
+void naked sh4_int_exept_hook()
+{
+	__asm 
+	{
+		call sh4_int_restore_reg_cnt;
+		jmp [sh4_exept_next];
+	}
+}
+
+void __fastcall sh4_int_RaiseExeption(u32 ExeptionCode,u32 VectorAddress)
+{
+	verify(sh4_exept_raised==false);
+	sh4_exept_raised=true;
+	*sh4_exept_ssp=(u32)sh4_int_exept_hook;
+
+	sh4_ex_ExeptionCode=ExeptionCode;
+	sh4_ex_VectorAddress=VectorAddress;
+
+	//save reg context
+	SaveSh4Regs(&sh4_ex_SRC);
+}
+
 u32 THREADCALL sh4_int_ThreadEntry_code(void* ptar)
 {
 
@@ -41,6 +75,10 @@ u32 THREADCALL sh4_int_ThreadEntry_code(void* ptar)
 	ThreadCallbackFP* ptr=(ThreadCallbackFP*) ptar;
 
 	ptr(true);//call the callback to init
+#ifdef C_INTERP_MAINLOOP
+#ifdef EXEPT_ON
+#error Exeptions are olny availabe with asm mainloop
+#endif
 	u32 i=0;
 	while(sh4_int_bCpuRun)
 	{
@@ -63,18 +101,91 @@ u32 THREADCALL sh4_int_ThreadEntry_code(void* ptar)
 
 		UpdateSystem(i);
 		i=0;
-		/*
-		cycles++;
-		if (cycles>200*1000*1000)
-		{
-			time_t now=time(0);
-			printf("Cycl:%d , time : %d , speed %f\n",cycles,now-odtime,(float)((double)cycles/(double)(now-odtime))/1000000.0);
-			cycles=0;
-			odtime=now;
-		}*/
 	}
-	ptr(false);//call the callback
+#else
+	__asm
+	{
+		//save regs used
+		push esi;
 
+		mov sh4_exept_ssp,esp;		//esp wont chainge after that :)
+		sub sh4_exept_ssp,4;		//point to next stack item :)
+		mov sh4_exept_next,offset i_sh4eh_lno;
+
+		//init vars
+		mov esi,CPU_TIMESLICE;  //cycle count = max
+
+		//loop start
+		i_mainloop:
+
+		//run a single opcode -- doesnt use _any_ stack space :D
+		{
+			i_run_opcode:
+			/*
+			cmp pc,0x8C022532;
+			je aa;
+			cmp pc,0x8C022528;
+			je aa;
+			cmp pc,0x8C022524;
+			je aa;
+			cmp r[3*4],0xFFFFFD1F;
+			je aa;
+			jmp na
+aa:
+			int 3;
+
+na:*/
+
+			mov ecx , pc;			//param #1 for readmem16
+			call IReadMem16;		//ax has opcode to execute now
+			movzx eax,ax;			//zero extend to 32b
+			
+			mov ecx,eax;			//ecx=opcode (param 1 to opcode handler)
+			//mov eax,OpPtr[eax*4];	//eax= opcode handler
+			call OpPtr[eax*4];				//call opcode handler
+
+			add pc,2;				//pc+=2 -> goto next opcode
+			
+			//if an exeption happened , resume execution here
+			i_sh4eh_lno:
+
+
+			sub esi,CPU_RATIO;		//remove cycles from cycle count
+			jns i_run_opcode;		//jump not overlow (esi>0)
+		}
+		
+		xor eax,eax;			//zero eax [used later]
+
+		//esi is 0 or negative here
+		//cc = CPU_TIMESLICE - esi
+		//cc =  (-esi) + CPU_TIMESLICE
+		//we want cc on ecx (to call update)
+
+		mov ecx,esi;			//save leftover cycles
+		mov esi,CPU_TIMESLICE;	//reset cycle count
+
+		neg ecx;				//ecx=-ecx , now we have leftover as positive
+		add ecx,esi;			//add ecx+=CPU_TIMESLICE , so we have total cycles on ecx
+		
+		//take in acount delay slots now
+		add ecx,exec_cycles;	//add cycles to ecx
+		mov exec_cycles,eax;	//zero out cycles [rember ? we zero'd out eax lots ago :p]
+
+		//ecx : passed cycles
+		//esi : new cycle count , inited
+		call UpdateSystem;
+
+		//if cpu still on go for one more brust of opcodes :)
+		cmp  sh4_int_bCpuRun,0;
+		jne i_mainloop;
+
+		//restore regs used
+		pop esi;
+	}
+#endif
+
+	ptr(false);//call the callback
+	sh4_int_bCpuRun=false;
 	return 0;
 }
 //setup the SEH handler here so it doesnt fuq us (vc realy likes not to optimise SEH enabled functions)
@@ -365,7 +476,7 @@ void Sh4_int_SetRegister(Sh4RegType reg,u32 regdata)
 //TODO : Check for valid delayslot instruction
 bool ExecuteDelayslot()
 {
-	exec_cycles++;
+	exec_cycles+=CPU_RATIO;
 
 	pc+=2;
 	u32 op=ReadMem16(pc);

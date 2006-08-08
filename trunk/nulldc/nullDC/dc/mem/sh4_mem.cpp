@@ -568,6 +568,14 @@ void MEMCALL WriteMem16_i(u32 addr,u16 data)
 	EMUERROR3("Write to Mem not implemented , addr=%x,data=%x",addr,data);
 }
 
+void MEMCALL WriteMemBlock_nommu(u32 addr,u32* data,u32 size)
+{
+	for (u32 i=0;i<size;i+=4)
+	{
+		WriteMem32_nommu(addr+i,data[i>>2]);
+	}
+}
+
 void MEMCALL WriteMemBlock(u32 addr,u32* data,u32 size)
 {
 	//not worth the trouble to decode :p

@@ -140,8 +140,8 @@ void DoMapleDma()
 	while (last != true)
 	{
 		dmacount++;
-		u32 header_1 = ReadMem32(addr);
-		u32 header_2 = ReadMem32(addr + 4) &0x1FFFFFE0;
+		u32 header_1 = ReadMem32_nommu(addr);
+		u32 header_2 = ReadMem32_nommu(addr + 4) &0x1FFFFFE0;
 
 		last = (header_1 >> 31) == 1;//is last transfer ?
 		u32 plen = (header_1 & 0xFF )+1;//transfer lenght
@@ -152,8 +152,10 @@ void DoMapleDma()
 		{
 			if (!IsOnSh4Ram(header_2))
 			{
-				printf("MAPLE ERROR : DESTINATION NOT ON SH4 RAM\n");
-				goto dma_end;//a baaddd error
+				printf("MAPLE ERROR : DESTINATION NOT ON SH4 RAM 0x%X\n",header_2);
+				header_2&=0xFFFFFF;
+				header_2|=(3<<26);
+				//goto dma_end;//a baaddd error
 			}
 			u32* p_out=(u32*)GetMemPtr(header_2,4);
 			u32 outlen=0;

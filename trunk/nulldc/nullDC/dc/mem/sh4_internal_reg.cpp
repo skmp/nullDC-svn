@@ -171,7 +171,7 @@ T __fastcall ReadMem_P4(u32 addr)
 		//printf("Unhandled p4 read [Instruction TLB address array] 0x%x\n",addr);
 		{
 			u32 entry=(addr>>8)&3;
-			return ITLB[entry].Address.full;
+			return ITLB[entry].Address.reg_data;
 		}
 		break;
 
@@ -179,7 +179,7 @@ T __fastcall ReadMem_P4(u32 addr)
 		//printf("Unhandled p4 read [Instruction TLB data arrays 1 and 2] 0x%x\n",addr);
 		{
 			u32 entry=(addr>>8)&3;
-			return ITLB[entry].Data.full;
+			return ITLB[entry].Data.reg_data;
 		}
 		break;
 
@@ -202,7 +202,7 @@ T __fastcall ReadMem_P4(u32 addr)
 		//printf("Unhandled p4 read [Unified TLB address array] 0x%x\n",addr);
 		{
 			u32 entry=(addr>>8)&63;
-			return UTLB[entry].Address.full;
+			return UTLB[entry].Address.reg_data;
 		}
 		break;
 
@@ -210,7 +210,7 @@ T __fastcall ReadMem_P4(u32 addr)
 		//printf("Unhandled p4 read [Unified TLB data arrays 1 and 2] 0x%x\n",addr);
 		{
 			u32 entry=(addr>>8)&63;
-			return UTLB[entry].Data.full;
+			return UTLB[entry].Data.reg_data;
 		}
 		break;
 
@@ -259,7 +259,7 @@ void __fastcall WriteMem_P4(u32 addr,T data)
 		//printf("Unhandled p4 Write [Instruction TLB address array] 0x%x = %x\n",addr,data);
 		{
 			u32 entry=(addr>>8)&3;
-			ITLB[entry].Address.full=data;
+			ITLB[entry].Address.reg_data=data;
 			ITLB_Sync(entry);
 			return;
 		}
@@ -269,7 +269,7 @@ void __fastcall WriteMem_P4(u32 addr,T data)
 		//printf("Unhandled p4 Write [Instruction TLB data arrays 1 and 2] 0x%x = %x\n",addr,data);
 		{
 			u32 entry=(addr>>8)&3;
-			ITLB[entry].Data.full=data;
+			ITLB[entry].Data.reg_data=data;
 			ITLB_Sync(entry);
 			return;
 		}
@@ -294,12 +294,25 @@ void __fastcall WriteMem_P4(u32 addr,T data)
 		{
 			if (addr&0x80)
 			{
-				printf("Unhandled p4 Write [Unified TLB address array , Associative Write] 0x%x = %x\n",addr,data);
+			//	printf("Unhandled p4 Write [Unified TLB address array , Associative Write] 0x%x = %x\n",addr,data);
+				CCN_PTEH_type t;
+				t.reg_data=data;
+				
+				for (int i=0;i<64;i++)
+				{
+					if ((UTLB[i].Address.VPN==t.VPN) && (UTLB[i].Address.ASID == t.ASID))
+					{
+						UTLB[i].Data.V=((u32)data>>8)&1;
+						UTLB[i].Data.D=((u32)data>>9)&1;
+					}
+				}
 			}
 			else
 			{
 				u32 entry=(addr>>8)&63;
-				UTLB[entry].Address.full=data;
+				UTLB[entry].Address.reg_data=data & 0xFFFFFCFF;
+				UTLB[entry].Data.D=(data>>9)&1;
+				UTLB[entry].Data.V=(data>>8)&1;
 				UTLB_Sync(entry);
 			}
 			return;
@@ -310,7 +323,7 @@ void __fastcall WriteMem_P4(u32 addr,T data)
 		{
 			//printf("Unhandled p4 Write [Unified TLB data arrays 1 and 2] 0x%x = %x\n",addr,data);
 			u32 entry=(addr>>8)&63;
-			UTLB[entry].Data.full=data;
+			UTLB[entry].Data.reg_data=data;
 			UTLB_Sync(entry);
 			return;
 		}

@@ -96,6 +96,18 @@ INTC_IPRC_type INTC_IPRC;
 
 InterruptID intr_l;
 
+void RaiseExeption(u32 code,u32 vector)
+{
+	spc = pc;
+	ssr = sr.full;
+	sgr = r[15];
+	CCN_EXPEVT = code;
+	sr.MD = 1;
+	sr.RB = 1;
+	sr.BL = 1;
+	pc = vbr + vector;
+	UpdateSR();
+}
 void RaiseInterrupt(InterruptID intr)
 {
 	intr_l=intr;
