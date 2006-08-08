@@ -113,7 +113,11 @@ void OpDissCFS(char* text,const char* tx1,u32 pc,u16 opcode)
 			{
 				text+=sprintf(text,"0x%X",GetImm4(opcode)*4); 
 			}
-			else if (strcmp2(tx1,"PCdisp8>"))
+			else if (strcmp2(tx1,"PCdisp8w>"))
+			{
+				text+=sprintf(text,"0x%X[PC]",(pc)+4+(GetImm8(opcode)<<1));
+			}
+			else if (strcmp2(tx1,"PCdisp8d>"))
 			{
 				text+=sprintf(text,"0x%X[PC]",(pc&0xFFFFFFFC)+4+(GetImm8(opcode)<<2));
 			}
@@ -765,7 +769,7 @@ sh4_opcodelistentry opcodes[]=
 	{rec_shil_i1000_0001_mmmm_iiii	,i1000_0001_mmmm_iiii	,Mask_imm8	,0x8100	,Normal				,OpDissCFS,"mov.w R0,@(<disp4w>,<REG_M>)"	,1,1,LS},	// mov.w R0,@(<disp>,<REG_M>)    
 	{rec_shil_i1000_0100_mmmm_iiii	,i1000_0100_mmmm_iiii	,Mask_imm8	,0x8400	,Normal				,OpDissCFS,"mov.b @(<disp4b>,<REG_M>),R0"	,1,2,LS},	// mov.b @(<disp>,<REG_M>),R0    
 	{rec_shil_i1000_0101_mmmm_iiii	,i1000_0101_mmmm_iiii	,Mask_imm8	,0x8500	,Normal				,OpDissCFS,"mov.w @(<disp4w>,<REG_M>),R0"	,1,2,LS},	// mov.w @(<disp>,<REG_M>),R0    
-	{rec_shil_i1001_nnnn_iiii_iiii	,i1001_nnnn_iiii_iiii	,Mask_n_imm8,0x9000	,ReadsPC			,OpDissCFS,"mov.w @(<PCdisp8>),<REG_N>"		,1,2,LS},	//mov.w @(<disp>,PC),<REG_N>   
+	{rec_shil_i1001_nnnn_iiii_iiii	,i1001_nnnn_iiii_iiii	,Mask_n_imm8,0x9000	,ReadsPC			,OpDissCFS,"mov.w @(<PCdisp8w>),<REG_N>"	,1,2,LS},	//mov.w @(<disp>,PC),<REG_N>   
 	{rec_shil_i1010_iiii_iiii_iiii	,i1010_iiii_iiii_iiii	,Mask_n_imm8,0xA000	,Branch_rel_d		,OpDissCFS,"bra <bdisp12>"					,1,2,BR},	// bra <bdisp12>
 	{rec_shil_i1011_iiii_iiii_iiii	,i1011_iiii_iiii_iiii	,Mask_n_imm8,0xB000	,Branch_rel_d		,OpDissCFS,"bsr <bdisp12>"					,1,2,BR},	// bsr <bdisp12>
 	{rec_shil_i1100_0000_iiii_iiii	,i1100_0000_iiii_iiii	,Mask_imm8	,0xC000	,Normal				,OpDissCFS,"mov.b R0,@(<disp8b>,GBR)"		,1,1,LS},	// mov.b R0,@(<disp>,GBR)        
@@ -775,7 +779,7 @@ sh4_opcodelistentry opcodes[]=
 	{rec_shil_i1100_0100_iiii_iiii	,i1100_0100_iiii_iiii	,Mask_imm8	,0xC400	,Normal				,OpDissCFS,"mov.b @(<GBRdisp8b>),R0"		,1,2,LS},	// mov.b @(<disp>,GBR),R0        
 	{rec_shil_i1100_0101_iiii_iiii	,i1100_0101_iiii_iiii	,Mask_imm8	,0xC500	,Normal				,OpDissCFS,"mov.w @(<GBRdisp8w>),R0"		,1,2,LS},	// mov.w @(<disp>,GBR),R0        
 	{rec_shil_i1100_0110_iiii_iiii	,i1100_0110_iiii_iiii	,Mask_imm8	,0xC600	,Normal				,OpDissCFS,"mov.l @(<GBRdisp8dw>),R0"		,1,2,LS},	// mov.l @(<disp>,GBR),R0        
-	{rec_shil_i1100_0111_iiii_iiii	,i1100_0111_iiii_iiii	,Mask_imm8	,0xC700	,ReadsPC			,OpDissCFS,"mova @(<PCdisp8>),R0"			,1,1,EX},	// mova @(<disp>,PC),R0          
+	{rec_shil_i1100_0111_iiii_iiii	,i1100_0111_iiii_iiii	,Mask_imm8	,0xC700	,ReadsPC			,OpDissCFS,"mova @(<PCdisp8d>),R0"			,1,1,EX},	// mova @(<disp>,PC),R0          
 	{rec_shil_i1100_1000_iiii_iiii	,i1100_1000_iiii_iiii	,Mask_imm8	,0xC800	,Normal				,OpDissCFS,"tst #<imm8>,R0"					,1,1,MT},	// tst #<imm>,R0                 
 	{rec_shil_i1100_1001_iiii_iiii	,i1100_1001_iiii_iiii	,Mask_imm8	,0xC900	,Normal				,OpDissCFS,"and #<imm8>,R0"					,1,1,EX},	// and #<imm>,R0                 
 	{rec_shil_i1100_1010_iiii_iiii	,i1100_1010_iiii_iiii	,Mask_imm8	,0xCA00	,Normal				,OpDissCFS,"xor #<imm8>,R0"					,1,1,EX},	// xor #<imm>,R0                 
@@ -784,7 +788,7 @@ sh4_opcodelistentry opcodes[]=
 	{rec_shil_i1100_1101_iiii_iiii	,i1100_1101_iiii_iiii	,Mask_imm8	,0xCD00	,Normal				,OpDissCFS,"and.b #<imm8>,@(R0,GBR)"		,4,4,CO},	// and.b #<imm>,@(R0,GBR)        
 	{rec_shil_i1100_1110_iiii_iiii	,i1100_1110_iiii_iiii	,Mask_imm8	,0xCE00	,Normal				,OpDissCFS,"xor.b #<imm8>,@(R0,GBR)"		,4,4,CO},	// xor.b #<imm>,@(R0,GBR)        
 	{rec_shil_i1100_1111_iiii_iiii	,i1100_1111_iiii_iiii	,Mask_imm8	,0xCF00	,Normal				,OpDissCFS,"or.b #<imm8>,@(R0,GBR)"			,4,4,CO},	// or.b #<imm>,@(R0,GBR)         
-	{rec_shil_i1101_nnnn_iiii_iiii	,i1101_nnnn_iiii_iiii	,Mask_n_imm8,0xD000	,ReadsPC			,OpDissCFS,"mov.l @(<PCdisp8>),<REG_N>"		,1,2,CO},	// mov.l @(<disp>,PC),<REG_N>    
+	{rec_shil_i1101_nnnn_iiii_iiii	,i1101_nnnn_iiii_iiii	,Mask_n_imm8,0xD000	,ReadsPC			,OpDissCFS,"mov.l @(<PCdisp8d>),<REG_N>"		,1,2,CO},	// mov.l @(<disp>,PC),<REG_N>    
 	{rec_shil_i1110_nnnn_iiii_iiii	,i1110_nnnn_iiii_iiii	,Mask_n_imm8,0xE000	,Normal				,OpDissCFS,"mov #<simm8hex>,<REG_N>"		,1,1,EX},	// mov #<imm>,<REG_N>
 	
 	//and here are the new ones :D

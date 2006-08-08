@@ -59,7 +59,7 @@ void mmu_raise_exeption(u32 mmu_error,u32 address,u32 am)
 
 	//Mem is read/write protected (depends on translation type)
 	case MMU_ERROR_PROTECTED :
-		printf("MMU_ERROR_PROTECTED\n");
+		printf("MMU_ERROR_PROTECTED 0x%X, handled\n",address);
 		if (am==MMU_TT_DWRITE)			//WRITEPROT - Write Data TLB Protection Violation Exception
 			sh4_cpu->RaiseExeption(0xC0,0x100);
 		else if (am==MMU_TT_DREAD)		//READPROT - Data TLB Protection Violation Exception
@@ -74,7 +74,7 @@ void mmu_raise_exeption(u32 mmu_error,u32 address,u32 am)
 
 	//data read/write missasligned
 	case MMU_ERROR_BADADDR :
-		printf("MMU_ERROR_BADADDR\n");
+		printf("MMU_ERROR_BADADDR 0x%X, handled\n",address);
 		if (am==MMU_TT_DWRITE)			//WADDERR - Write Data Address Error
 			sh4_cpu->RaiseExeption(0x100,0x100);
 		else if (am==MMU_TT_DREAD)		//RADDERR - Read Data Address Error
@@ -86,7 +86,7 @@ void mmu_raise_exeption(u32 mmu_error,u32 address,u32 am)
 
 	//Can't Execute
 	case MMU_ERROR_EXECPROT :
-		printf("MMU_ERROR_EXECPROT\n");
+		printf("MMU_ERROR_EXECPROT 0x%X, handled\n",address);
 		//EXECPROT - Instruction TLB Protection Violation Exception
 		sh4_cpu->RaiseExeption(0xA0,0x100);
 		return;
@@ -119,6 +119,12 @@ u32 mmu_full_lookup(u32 va,u32& rv,u32 translation_type)
 		return MMU_ERROR_NONE;
 	}
 	
+	/*if (va==0xC0C110)
+	{
+		__asm int 3;
+		return;
+	}*/
+
 	CCN_MMUCR.URC++;
 	if (CCN_MMUCR.URB==CCN_MMUCR.URC)
 		CCN_MMUCR.URC=0;

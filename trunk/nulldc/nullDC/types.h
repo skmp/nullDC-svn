@@ -179,3 +179,5 @@ struct RegisterStruct
 	RegChangeFP* NextCange;		//stored pointer to reg change calculation function
 	u32 flags;					//flags for read/write
 };
+
+#define NO_MMU

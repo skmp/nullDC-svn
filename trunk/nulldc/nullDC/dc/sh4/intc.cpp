@@ -98,6 +98,8 @@ InterruptID intr_l;
 
 void RaiseExeption(u32 code,u32 vector)
 {
+	verify(sr.BL == 0);
+		
 	spc = pc;
 	ssr = sr.full;
 	sgr = r[15];

@@ -31,7 +31,7 @@ time_t odtime=0;
 u32 opcode_fam_cycles[0x10]=
 {
  CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,
- CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,1
+ CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO
 };
 
 u32 sh4_ex_ExeptionCode,sh4_ex_VectorAddress;
@@ -44,7 +44,6 @@ void sh4_int_restore_reg_cnt()
 	//raise exeption
 	RaiseExeption(sh4_ex_ExeptionCode,sh4_ex_VectorAddress);
 	sh4_exept_raised=false;
-	//do more magic++
 }
 void naked sh4_int_exept_hook()
 {
@@ -57,6 +56,8 @@ void naked sh4_int_exept_hook()
 
 void __fastcall sh4_int_RaiseExeption(u32 ExeptionCode,u32 VectorAddress)
 {
+	//if (sh4_exept_raised)
+	//	return;
 	verify(sh4_exept_raised==false);
 	sh4_exept_raised=true;
 	*sh4_exept_ssp=(u32)sh4_int_exept_hook;
@@ -70,39 +71,12 @@ void __fastcall sh4_int_RaiseExeption(u32 ExeptionCode,u32 VectorAddress)
 
 u32 THREADCALL sh4_int_ThreadEntry_code(void* ptar)
 {
-
 	//just cast it
 	ThreadCallbackFP* ptr=(ThreadCallbackFP*) ptar;
 
 	ptr(true);//call the callback to init
-#ifdef C_INTERP_MAINLOOP
-#ifdef EXEPT_ON
-#error Exeptions are olny availabe with asm mainloop
-#endif
-	u32 i=0;
-	while(sh4_int_bCpuRun)
-	{
-		if (fpscr.RM)
-			_controlfp( _RC_DOWN, _MCW_RC );//round to 0
-		else
-			_controlfp( _RC_NEAR, _MCW_RC );//round to nearest
 
-		//for ( int i=0;i<CPU_TIMESLICE;i++)
-		while(i<CPU_TIMESLICE)
-		{
-			GDB_BOOT_TEST();
-
-			u32 op=ReadMem16(pc);
-			i+=opcode_fam_cycles[op>>12];
-			ExecuteOpcode(op);
-			pc+=2;
-			//UpdateSystem(1);			
-		}
-
-		UpdateSystem(i);
-		i=0;
-	}
-#else
+	u32 oldpc;
 	__asm
 	{
 		//save regs used
@@ -110,7 +84,7 @@ u32 THREADCALL sh4_int_ThreadEntry_code(void* ptar)
 
 		mov sh4_exept_ssp,esp;		//esp wont chainge after that :)
 		sub sh4_exept_ssp,4;		//point to next stack item :)
-		mov sh4_exept_next,offset i_sh4eh_lno;
+		mov sh4_exept_next,offset i_exept_rp;
 
 		//init vars
 		mov esi,CPU_TIMESLICE;  //cycle count = max
@@ -120,22 +94,7 @@ u32 THREADCALL sh4_int_ThreadEntry_code(void* ptar)
 
 		//run a single opcode -- doesnt use _any_ stack space :D
 		{
-			i_run_opcode:
-			/*
-			cmp pc,0x8C022532;
-			je aa;
-			cmp pc,0x8C022528;
-			je aa;
-			cmp pc,0x8C022524;
-			je aa;
-			cmp r[3*4],0xFFFFFD1F;
-			je aa;
-			jmp na
-aa:
-			int 3;
-
-na:*/
-
+i_run_opcode:
 			mov ecx , pc;			//param #1 for readmem16
 			call IReadMem16;		//ax has opcode to execute now
 			movzx eax,ax;			//zero extend to 32b
@@ -147,13 +106,13 @@ na:*/
 			add pc,2;				//pc+=2 -> goto next opcode
 			
 			//if an exeption happened , resume execution here
-			i_sh4eh_lno:
-
-
+			
 			sub esi,CPU_RATIO;		//remove cycles from cycle count
-			jns i_run_opcode;		//jump not overlow (esi>0)
+			jns i_run_opcode;		//jump not (esi>0)
 		}
 		
+i_exept_rp:
+
 		xor eax,eax;			//zero eax [used later]
 
 		//esi is 0 or negative here
@@ -179,10 +138,11 @@ na:*/
 		cmp  sh4_int_bCpuRun,0;
 		jne i_mainloop;
 
+i_exit_mainloop:
 		//restore regs used
 		pop esi;
 	}
-#endif
+
 
 	ptr(false);//call the callback
 	sh4_int_bCpuRun=false;
