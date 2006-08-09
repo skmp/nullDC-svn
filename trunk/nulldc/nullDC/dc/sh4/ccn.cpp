@@ -3,6 +3,8 @@
 
 #include "types.h"
 #include "dc/mem/sh4_internal_reg.h"
+#include "dc/mem/sh4_internal_reg.h"
+#include "dc/mem/mmu.h"
 #include "ccn.h"
 
 
@@ -22,7 +24,22 @@ CCN_PTEA_type CCN_PTEA;
 CCN_QACR_type CCN_QACR0;
 CCN_QACR_type CCN_QACR1;
 
+void CCN_MMUCR_write(u32 value)
+{
+	CCN_MMUCR_type temp;
+	temp.reg_data=value;
+	
+	if (temp.TI)
+	{
+		temp.TI=0;
 
+		for (u32 i=0;i<64;i++)
+		{
+			UTLB[i].Data.V=0;
+		}
+	}
+	CCN_MMUCR=temp;
+}
 //Init/Res/Term
 void ccn_Init()
 {
@@ -55,10 +72,10 @@ void ccn_Init()
 	CCN[(CCN_TEA_addr&0xFF)>>2].data32=&CCN_TEA;
 
 	//CCN MMUCR 0xFF000010 0x1F000010 32 0x00000000 0x00000000 Held Held Iclk
-	CCN[(CCN_MMUCR_addr&0xFF)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
+	CCN[(CCN_MMUCR_addr&0xFF)>>2].flags= REG_32BIT_READWRITE | REG_READ_DATA ;
 	CCN[(CCN_MMUCR_addr&0xFF)>>2].NextCange=0;
 	CCN[(CCN_MMUCR_addr&0xFF)>>2].readFunction=0;
-	CCN[(CCN_MMUCR_addr&0xFF)>>2].writeFunction=0;
+	CCN[(CCN_MMUCR_addr&0xFF)>>2].writeFunction=CCN_MMUCR_write;
 	CCN[(CCN_MMUCR_addr&0xFF)>>2].data32=&CCN_MMUCR.reg_data;
 
 	//CCN BASRA 0xFF000014 0x1F000014 8 Undefined Held Held Held Iclk

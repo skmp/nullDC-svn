@@ -1,6 +1,6 @@
 #pragma once
 #include "types.h"
-#include "dc\sh4\ccn.h"
+#include "dc/sh4/ccn.h"
 /*
 struct TLB_AddressEntry -- CCN_PTEH_type
 {

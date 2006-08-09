@@ -1,9 +1,9 @@
 #include "mmu.h"
-#include "dc\sh4\sh4_if.h"
-#include "dc\sh4\ccn.h"
-#include "dc\sh4\intc.h"
-#include "dc\sh4\sh4_registers.h"
-#include "plugins\plugin_manager.h"
+#include "dc/sh4/sh4_if.h"
+#include "dc/sh4/ccn.h"
+#include "dc/sh4/intc.h"
+#include "dc/sh4/sh4_registers.h"
+#include "plugins/plugin_manager.h"
 
 
 #include "_vmem.h"
@@ -110,7 +110,9 @@ u32 mmu_full_lookup(u32 va,u32& rv,u32 translation_type)
 {
 	if ((sr.MD==0) && (va&0x80000000)!=0)
 	{
-		return MMU_ERROR_BADADDR;
+		//if SQ disabled , or if if SQ on but out of SQ mem then BAD ADDR ;)
+		if (CCN_MMUCR.SQMD==0 || (va&0xFC000000)!=0xE0000000)
+			return MMU_ERROR_BADADDR;
 	}
 
 	if ((CCN_MMUCR.AT==0) || (fast_reg_lut[va>>29]!=0))

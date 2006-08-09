@@ -1,8 +1,6 @@
 //new memory mapping code ..."_vmem" ... Don't ask where i got the name , it somehow poped on my head :p
 //
 #include "_vmem.h"
-#include "emitter\emitter.h"
-#include <windows.h>
 
 
 //top registed handler
@@ -87,7 +85,7 @@ void naked _vmem_WriteMisc32()
 
 //ReadMem/WriteMem functions
 //ReadMem
-u8 naked __fastcall _vmem_ReadMem8(u32 Address)
+u8 naked fastcall _vmem_ReadMem8(u32 Address)
 {
 	__asm
 	{
@@ -114,7 +112,7 @@ direct:
 	}
 }
 
-u16 naked __fastcall _vmem_ReadMem16(u32 Address)
+u16 naked fastcall _vmem_ReadMem16(u32 Address)
 {
 	//read comments on 8 bit ver ;)
 	__asm
@@ -133,7 +131,7 @@ direct:
 	}
 }
 
-u32 naked __fastcall _vmem_ReadMem32(u32 Address)
+u32 naked fastcall _vmem_ReadMem32(u32 Address)
 {
 	//read comments on 8 bit ver ;)
 	__asm
@@ -152,7 +150,7 @@ direct:
 	}
 }
 //WriteMem
-void naked __fastcall _vmem_WriteMem8(u32 Address,u8 data)
+void naked fastcall _vmem_WriteMem8(u32 Address,u8 data)
 {
 	__asm
 	{
@@ -180,7 +178,7 @@ direct:
 	}
 }
 
-void naked __fastcall _vmem_WriteMem16(u32 Address,u16 data)
+void naked fastcall _vmem_WriteMem16(u32 Address,u16 data)
 {
 	//for comments read 8 bit version
 	__asm
@@ -197,7 +195,7 @@ direct:
 	ret;
 	}
 }
-void naked __fastcall _vmem_WriteMem32(u32 Address,u32 data)
+void naked fastcall _vmem_WriteMem32(u32 Address,u32 data)
 {
 	//for comments read 8 bit version
 	__asm
@@ -220,31 +218,31 @@ direct:
 //phew .. that was lota asm code ;) lets go back to C :D
 //default mem handlers ;)
 //defualt read handlers
-u8 __fastcall _vmem_ReadMem8_not_mapped(u32 addresss)
+u8 fastcall _vmem_ReadMem8_not_mapped(u32 addresss)
 {
 	printf("Read8 from 0x%X, not mapped [_vmem default handler]\n",addresss);
 	return 0xD3;
 }
-u16 __fastcall _vmem_ReadMem16_not_mapped(u32 addresss)
+u16 fastcall _vmem_ReadMem16_not_mapped(u32 addresss)
 {
 	printf("Read16 from 0x%X, not mapped [_vmem default handler]\n",addresss);
 	return 0xC0D3;
 }
-u32 __fastcall _vmem_ReadMem32_not_mapped(u32 addresss)
+u32 fastcall _vmem_ReadMem32_not_mapped(u32 addresss)
 {
 	printf("Read32 from 0x%X, not mapped [_vmem default handler]\n",addresss);
 	return 0xDEADC0D3;
 }
 //defualt write handers
-void __fastcall _vmem_WriteMem8_not_mapped(u32 addresss,u8 data)
+void fastcall _vmem_WriteMem8_not_mapped(u32 addresss,u8 data)
 {
 	printf("Write8 to 0x%X=0x%X, not mapped [_vmem default handler]\n",addresss,data);
 }
-void __fastcall _vmem_WriteMem16_not_mapped(u32 addresss,u16 data)
+void fastcall _vmem_WriteMem16_not_mapped(u32 addresss,u16 data)
 {
 	printf("Write16 to 0x%X=0x%X, not mapped [_vmem default handler]\n",addresss,data);
 }
-void __fastcall _vmem_WriteMem32_not_mapped(u32 addresss,u32 data)
+void fastcall _vmem_WriteMem32_not_mapped(u32 addresss,u32 data)
 {
 	printf("Write32 to 0x%X=0x%X, not mapped [_vmem default handler]\n",addresss,data);
 }
@@ -313,7 +311,8 @@ void _vmem_mirror_mapping(u32 new_region,u32 start,u32 size)
 	}
 }
 //benchmarking functions
-u32 __fastcall _vmem_ReadMem32_bench(u32 addresss)
+#ifdef _VMEM_BENCHMARK
+u32 fastcall _vmem_ReadMem32_bench(u32 addresss)
 {
 	return 0x1;
 }
@@ -360,11 +359,14 @@ void _vmem_Benchmark()
 
 	free(pm);
 }
+#endif
 //init/reset/term
 void _vmem_init()
 {
 	_vmem_reset();
+	#ifdef _VMEM_BENCHMARK
 	_vmem_Benchmark();
+	#endif
 }
 
 void _vmem_reset()
@@ -385,88 +387,9 @@ void _vmem_reset()
 
 	//register default functions (0) for slot 0 :)
 	verify(_vmem_register_handler(0,0,0,0,0,0)==0);
-	
-	/*_vmem_ReadMem8(0xFFFFFFFF);
-	_vmem_ReadMem8(0xDEADBEEF);
-	_vmem_ReadMem16(0x2DEABEEF);
-	_vmem_ReadMem32(0x4DEBEEF);
-
-	_vmem_WriteMem8(0xDEADBEEF,0xBE);
-	_vmem_WriteMem16(0x2DEABEEF,0xDEED);
-	_vmem_WriteMem32(0x4DEABEEF,0xCAFECAFE);*/
 }
 
 void _vmem_term()
 {
 
 }
-
-/*
-04523993  mov         edx,ecx 
-04523995  mov         eax,ecx 
-04523997  and         edx,0FFFFh 
-0452399D  shl         edx,10h 
-045239A0  mov         eax,dword ptr [eax*4+54A810h] 
-045239A7  test        eax,0FFFF0000h 
-045239AC  jne         045239B3 
-045239AE  jmp         _vmem_ReadMisc32 (40FFA0h) 
-045239B3  mov         eax,dword ptr [eax+edx*2] 
-045239B6  mov         esi,eax 
-*/
-//emitters
-/*
-void _vmem_EmitReadMem(void* px86e,u32 addr,u32 out,u32 sz)
-{	
-	emitter<>* x86e=(emitter<>*)px86e;
-
-	if (sz==1)
-		x86e->CALLFunc(_vmem_ReadMem8);
-	else if (sz==2)
-		x86e->CALLFunc(_vmem_ReadMem16);
-	else
-		x86e->CALLFunc(_vmem_ReadMem32);
-return;
-	x86e->INT3();
-//	//copy address
-//	mov edx,ecx;//this is done here , among w/ the and , it should be possible to fully execute it on paraler (no depency)
-	x86e->MOV32RtoR(EDX,(x86IntRegType)addr);
-//	mov eax,ecx;
-	x86e->MOV32RtoR(EAX,(x86IntRegType)addr);
-	if ((x86IntRegType)addr!=ECX)
-		x86e->MOV32RtoR(ECX,(x86IntRegType)addr);
-//	and edx,0xFFFF;//lower 16b of address
-	x86e->AND32ItoR(EDX,0xFFFF);
-//	//get upper 16 bits
-//	shr eax,16;
-	x86e->SHR32ItoR(EAX,16);
-//
-//	//read mem info
-//	mov eax,[_vmem_MemInfo+eax*4];
-	//8B 04 85 base_address
-	x86e->write8(0x8b);
-	x86e->write8(0x04);
-	x86e->write8(0x85);
-	x86e->write32((u32)&_vmem_MemInfo[0]);
-//	test eax,0xFFFF0000;
-	x86e->TEST32ItoR(EAX,0xFFFF0000);
-//	jnz direct;
-	u8* l_direct=x86e->JNZ8(0);
-//	jmp _vmem_ReadMisc8;
-	//if (sz==1)
-	//	x86e->CALLFunc(_vmem_ReadMisc8);
-	//else if (sz==2)
-	//	x86e->CALLFunc(_vmem_ReadMisc16);
-	//else
-	//	x86e->CALLFunc(_vmem_ReadMisc32);
-	u8* p2=x86e->JMP8(0);
-//direct:
-	x86e->x86SetJ8(l_direct);
-	//mov eax,[eax+edx];	//note : upper bits dont matter , so i do 32b read here ;) (to get read of partial register stalls)
-	x86e->MOV32RmStoR((x86IntRegType)out,EAX,EDX,1);
-	//ret;
-	x86e->x86SetJ8(p2);
-}
-void _vmem_EmitWriteMem(emitter<>* x86e,u32 addr,u32 data,u32 sz)
-{
-}
-*/

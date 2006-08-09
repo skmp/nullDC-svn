@@ -472,7 +472,7 @@ int __fastcall UpdateSystem(u32 Cycles)
 			gcp_timer++;
 			FreeSuspendedBlocks();
 		}
-		if (gpc_counter &1)
+		/*if (gpc_counter &1)
 		{
 			if (CCN_MMUCR.AT)
 			{
@@ -480,7 +480,7 @@ int __fastcall UpdateSystem(u32 Cycles)
 				rv=rv==0?63:rv;
 				CCN_MMUCR.URC=fastrand() % rv;
 			}
-		}
+		}*/
 
 		/*if (shitaaa==0x10000)
 		{

@@ -144,7 +144,7 @@
 
 #define VER_STRING "pre release alpha"
 
-#define verify(x) if((x)==false){ printf("Verify Failed  : " #x "\n in %s : %d \n",__FILE__,__LINE__); __asm {int 3}}
+#define verify(x) if((x)==false){ printf("Verify Failed  : " #x "\n in %s -> %s : %d \n",__FUNCTION__,__FILE__,__LINE__); __asm {int 3}}
 
 //will be removed sometime soon
 //This shit needs to be moved to proper headers
