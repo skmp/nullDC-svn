@@ -147,7 +147,7 @@ bool UpdateSR()
 	if (sr.IMASK==0xF)
 		rv=false;
 
-	old_sr.full=sr.full;
+	old_sr.m_full=sr.m_full;
 
 	return rv;
 }
@@ -299,8 +299,13 @@ u32* Sh4_int_GetRegisterPtr(Sh4RegType reg)
 			break;
 
 		case Sh4RegType::reg_sr :
-			return &sr.full;
+			return &sr.m_full;
 			break;
+
+		case Sh4RegType::reg_sr_T :
+			return &sr.T;
+			break;
+
 		case Sh4RegType::reg_fpscr :
 			return &fpscr.full;
 			break;

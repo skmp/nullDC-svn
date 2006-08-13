@@ -12,7 +12,6 @@ struct shil_scs
 	bool InlineMemRead_const;
 	bool InlineMemRead;
 	bool InlineMemWrite;
-	bool TBitsperate;
 	bool RetPrediction;
 };
 

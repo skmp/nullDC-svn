@@ -104,6 +104,7 @@ enum Sh4RegType
 	xd_0=dr_7+1,
 	xd_7=xd_0+7,
 	reg_pc_temp=xd_7+1,
+	reg_sr_T=reg_pc_temp+1,
 
 	NoReg=-1
 };
@@ -115,7 +116,7 @@ struct StatusReg
 	{
 		struct
 		{
-			u32 T		:1;//<<0
+			u32 T_h		:1;//<<0
 			u32 S		:1;//<<1
 			u32 rsvd0	:2;//<<2
 			u32 IMASK	:4;//<<4
@@ -129,16 +130,19 @@ struct StatusReg
 			u32 MD		:1;//<<20
 			u32 rsvd3	:1;//<<31
 		};
-		u32 full;
+		u32 m_full;
 	};
+	u32 T;
 	INLINE u32 GetFull()
 	{
-		return full;
+		T_h=0;
+		return m_full | T;
 	}
 
 	INLINE void SetFull(u32 value)
 	{
-		full=value & 0x700083F3;
+		m_full=value & 0x700083F3;
+		T=value&1;
 	}
 
 };

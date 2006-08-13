@@ -22,14 +22,13 @@ shil_scs shil_compile_slow_settings=
 	true,	//Inline Const Mem reads
 	true,	//Inline normal mem reads
 	false,	//Inline mem writes
-	false,	//Do _not_ keep tbit seperate ;P , needs bug fixing
 	true	//Predict returns (needs a bit debuggin)	
 };
 
 cDllHandler profiler_dll;
 
 #define REG_ALLOC_COUNT			 (shil_compile_slow_settings.RegAllocCount)
-#define REG_ALLOC_T_BIT_SEPERATE (shil_compile_slow_settings.TBitsperate)
+//#define REG_ALLOC_T_BIT_SEPERATE (shil_compile_slow_settings.TBitsperate)
 #define REG_ALLOC_X86			 (shil_compile_slow_settings.RegAllocX86)
 #define REG_ALLOC_XMM			 (shil_compile_slow_settings.RegAllocXMM)
 
@@ -51,7 +50,7 @@ bool inited=false;
 int fallbacks=0;
 int native=0;
 u32 T_jcond_value;
-u32 T_bit_value;
+
 bool T_Edited;
 
 u32 reg_pc_temp_value;
@@ -928,30 +927,22 @@ void __fastcall shil_compile_SaveT(shil_opcode* op,BasicBlock* block)
 	assert(op->flags & FLAG_IMM1);//imm1
 	assert(0==(op->flags & (FLAG_IMM2|FLAG_REG1|FLAG_REG2)));//no imm2/r1/r2
 
-	if (REG_ALLOC_T_BIT_SEPERATE)
-	{
-		T_Edited=true;
 
-		//x86e->SETcc8M(&T_bit_value,op->imm1); //imm1 is cond ;)
+	//x86e->XOR32RtoR(EAX,EAX);
 
-		x86e->SETcc8R(EAX,op->imm1);//imm1 :P
-		x86e->MOV8RtoM((u8*)&T_bit_value,EAX);
+	//x86e->SETcc8M(GetRegPtr(reg_sr_T),op->imm1);//imm1 :P
+	x86e->SETcc8R(EAX,op->imm1);
+	x86e->MOVZX32R8toR(EAX,EAX);		//clear rest of eax (to remove partial depency on 32:8)
+	x86e->MOV32RtoM(GetRegPtr(reg_sr_T),EAX);
 
-		x86e->INT3();
-	}
-	else
-	{
-		//x86e->XOR32RtoR(EAX,EAX);
-		
-		x86e->SETcc8R(EAX,op->imm1);//imm1 :P
-		x86e->AND32ItoM(GetRegPtr(reg_sr),(u32)~1);
-		x86e->MOVZX32R8toR(EAX,EAX);//clear rest of eax (to remove partial depency on 32:8)
-		x86e->OR32RtoM(GetRegPtr(reg_sr),EAX);
-		//LoadReg_force(ECX,reg_sr);			//ecx=sr(~1)|T
-		//x86e->AND32ItoR(ECX,(u32)~1);
-		//x86e->OR32RtoR(ECX,EAX);
-		//SaveReg(reg_sr,ECX);
-	}
+	//x86e->AND32ItoM(GetRegPtr(reg_sr),(u32)~1);
+	//x86e->MOVZX32R8toR(EAX,EAX);//clear rest of eax (to remove partial depency on 32:8)
+	//x86e->OR32RtoM(GetRegPtr(reg_sr),EAX);
+	//LoadReg_force(ECX,reg_sr);			//ecx=sr(~1)|T
+	//x86e->AND32ItoR(ECX,(u32)~1);
+	//x86e->OR32RtoR(ECX,EAX);
+	//SaveReg(reg_sr,ECX);
+	
 }
 void __fastcall shil_compile_LoadT(shil_opcode* op,BasicBlock* block)
 {
@@ -963,29 +954,13 @@ void __fastcall shil_compile_LoadT(shil_opcode* op,BasicBlock* block)
 
 	if (op->imm1==x86_flags::jcond_flag)
 	{
-		if ( (!REG_ALLOC_T_BIT_SEPERATE) || (!T_Edited))
-		{
-			LoadReg_force(EAX,reg_sr);
-			x86e->MOV32RtoM(&T_jcond_value,EAX);//T_jcond_value;
-		}
-		else
-		{
-			x86e->MOV32MtoR(EAX,&T_bit_value);
-			x86e->MOV32RtoM(&T_jcond_value,EAX);//T_jcond_value;
-		}
+		LoadReg_force(EAX,reg_sr_T);
+		x86e->MOV32RtoM(&T_jcond_value,EAX);//T_jcond_value;
 	}
 	else
 	{
-		if ( (!REG_ALLOC_T_BIT_SEPERATE) || (!T_Edited))
-		{
-			LoadReg_force(EAX,reg_sr);
-			x86e->SHR32ItoR(EAX,1);//heh T bit is there now :P CF
-		}
-		else
-		{
-			x86e->MOV32MtoR(EAX,&T_bit_value);
-			x86e->SHR32ItoR(EAX,1);//heh T bit is there now :P CF
-		}
+		LoadReg_force(EAX,reg_sr_T);
+		x86e->SHR32ItoR(EAX,1);//heh T bit is there now :P CF
 	}
 }
 //cmp-test
@@ -1285,10 +1260,16 @@ void __fastcall shil_compile_div32(shil_opcode* op,BasicBlock* block)
 	}
 
 	//set T
-	x86e->SETcc8R(ECX,(u8)CC_B);
-	x86e->AND32ItoM(GetRegPtr(reg_sr),~1);
-	x86e->MOVZX32R8toR(ECX,ECX);
-	x86e->OR32RtoM(GetRegPtr(reg_sr),ECX);
+	//WTF ? why doing both is faster?!?!?! WTFHH ?H?H?HH?H?H
+	//TODO : Add an option for this :)
+	x86e->SETcc8M(GetRegPtr(reg_sr_T),(u8)CC_B);
+	x86e->SETcc8R(ECX,CC_B);
+	x86e->MOVZX32R8toR(ECX,ECX);		//clear rest of eax (to remove partial depency on 32:8)
+	x86e->MOV32RtoM(GetRegPtr(reg_sr_T),ECX);
+
+	//x86e->AND32ItoM(GetRegPtr(reg_sr),~1);
+	//x86e->MOVZX32R8toR(ECX,ECX);
+	//x86e->OR32RtoM(GetRegPtr(reg_sr),ECX);
 
 
 	SaveReg(rQuotient,Quotient);
@@ -2034,12 +2015,6 @@ void CompileBasicBlock_slow(BasicBlock* block)
 
 
 	x86e=new emitter<>();
-
-	if (REG_ALLOC_T_BIT_SEPERATE)
-	{
-		T_Edited=false;
-		T_bit_value=0;//just to be sure
-	}
 
 	CompiledBasicBlock* cBB;
 

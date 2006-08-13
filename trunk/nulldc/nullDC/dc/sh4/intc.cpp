@@ -101,7 +101,7 @@ void RaiseExeption(u32 code,u32 vector)
 	verify(sr.BL == 0);
 		
 	spc = pc;
-	ssr = sr.full;
+	ssr = sr.GetFull();
 	sgr = r[15];
 	CCN_EXPEVT = code;
 	sr.MD = 1;

@@ -809,7 +809,7 @@ void RefreshDebugger(HWND hDlg)
 	SetDlgItemText( hDlg, IDS_FPSCR, x8s(sh4_cpu->GetRegister(reg_fpscr) ));
 
 	StatusReg sr;
-	sr.full=sh4_cpu->GetRegister(reg_sr);
+	sr.SetFull(sh4_cpu->GetRegister(reg_sr));
 
 	SetDlgItemText( hDlg, IDS_SR_T, (sr.T?"1":"0") );
 	SetDlgItemText( hDlg, IDS_SR_S, (sr.S?"1":"0") );
