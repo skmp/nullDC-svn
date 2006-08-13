@@ -57,6 +57,66 @@ u32 reg_pc_temp_value;
 
 int block_count=0;
 
+//temporal register cache :)
+//we cache contents of EAX,ECX,EDX , for as long as possible for registers that are not staticaly allocated
+//to static reg alloc (ESI,EDI,EBX,EBP are staticaly allocated per block)
+
+struct temporal_reg_cache_entry
+{
+	x86IntRegType reg;
+	u32 am;		//0 == no alloc , 1 == spare reg , 2 == temporal cache , 3 == locked temporal cache
+
+	u32 creation_time;	//relative position on x86 stream that the reg was alloated 
+						//we replace less used/ old regs first :) (old regs prop got reused , 
+						//usualy regs are reused within a few opcodes
+	u32 sh4_reg;
+};
+
+temporal_reg_cache_entry trc [3]=
+{
+	{EAX,0,0,0},
+	{ECX,0,0,0},
+	{EDX,0,0,0}
+};
+/*
+x86IntRegType GetTemporalRegCache(u32 sh4_reg)
+{
+	for (u32 i=0;i<3;i++)
+	{
+		if ((temporal_reg_cache_entry[i].am ==2) && (temporal_reg_cache_entry[i].sh4_reg==sh4_reg))
+		{
+			temporal_reg_cache_entry[i].am =3;//lock
+			return temporal_reg_cache_entry[i].reg;
+		}
+	}
+
+	return GPR_Error;
+}
+
+x86IntRegType GetSpareReg()
+{
+	for (u32 i=0;i<3;i++)
+	{
+		if ((temporal_reg_cache_entry[i].am ==0))
+		{
+			temporal_reg_cache_entry[i].am=1;
+			return temporal_reg_cache_entry[i].reg;
+		}
+	}
+
+	for (u32 i=0;i<3;i++)
+	{
+		if ((temporal_reg_cache_entry[i].valid ==2))
+		{
+			return temporal_reg_cache_entry[i].reg;
+		}
+	}
+	printf("dynarec :: x86IntRegType GetSpareReg() -> cant find spare reg");
+	__asm int 3;
+	return GPR_Error;
+}
+
+*/
 //profiling related things
 u64 ifb_calls=0;
 void profile_ifb_call()
