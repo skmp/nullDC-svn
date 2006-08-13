@@ -76,12 +76,12 @@ u32 THREADCALL sh4_int_ThreadEntry_code(void* ptar)
 
 	ptr(true);//call the callback to init
 
-	u32 oldpc;
 	__asm
 	{
 		//save regs used
 		push esi;
 
+		//for exeption rollback
 		mov sh4_exept_ssp,esp;		//esp wont chainge after that :)
 		sub sh4_exept_ssp,4;		//point to next stack item :)
 		mov sh4_exept_next,offset i_exept_rp;
@@ -100,19 +100,20 @@ i_run_opcode:
 			movzx eax,ax;			//zero extend to 32b
 			
 			mov ecx,eax;			//ecx=opcode (param 1 to opcode handler)
-			//mov eax,OpPtr[eax*4];	//eax= opcode handler
-			call OpPtr[eax*4];				//call opcode handler
+			call OpPtr[eax*4];		//call opcode handler
 
 			add pc,2;				//pc+=2 -> goto next opcode
 			
-			//if an exeption happened , resume execution here
 			
 			sub esi,CPU_RATIO;		//remove cycles from cycle count
-			jns i_run_opcode;		//jump not (esi>0)
+			jns i_run_opcode;		//jump not (esi>0) , inner loop til timeslice is executed
 		}
 		
+		//exeption rollback point
+		//if an exeption happened , resume execution here
 i_exept_rp:
 
+		//update system  and run a new timeslice
 		xor eax,eax;			//zero eax [used later]
 
 		//esi is 0 or negative here

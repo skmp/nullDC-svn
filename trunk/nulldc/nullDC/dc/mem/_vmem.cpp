@@ -279,7 +279,7 @@ void _vmem_map_handler(_vmem_handler Handler,u32 start,u32 end)
 	verify(start<=end);
 	for (u32 i=start;i<=end;i++)
 	{
-		_vmem_MemInfo[i]=(void*)(Handler*4);
+		_vmem_MemInfo[i]=((u8*)0)+(Handler*4);
 	}
 }
 //map a memory block to a mem region :)

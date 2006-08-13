@@ -269,6 +269,30 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 			}
 			//add warn message
 			return 0;
+			case ID_FILE_LOADBIN:
+			//if (!sh4_cpu->IsCpuRunning())	//if cpu is stoped
+			{
+				ZeroMemory(&ofn, sizeof(OPENFILENAME));
+				ofn.lStructSize		= sizeof(OPENFILENAME);
+				ofn.hwndOwner		= hWnd;
+				ofn.lpstrFile		= g_szFileName;
+				ofn.nMaxFile		= MAX_PATH;
+				ofn.lpstrFilter		= "All(.BIN\\.ELF)\0*.BIN;*.ELF\0Binary\0*.BIN\0Elf\0*.ELF\0All\0*.*\0";
+				ofn.nFilterIndex	= 1;
+				ofn.nMaxFileTitle	= 128;
+				ofn.lpstrFileTitle	= szFile;
+				ofn.lpstrInitialDir	= NULL;
+				ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
+
+				if(GetOpenFileName(&ofn)>0)
+				{
+					if(!LoadBinfileToSh4Mem(0x10000, g_szFileName))
+						return 0;
+					return 0;
+				}
+			}
+			//add warn message
+			return 0;
 
 		case ID_FILE_BOOTHLE:
 		 {

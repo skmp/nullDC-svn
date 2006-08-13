@@ -271,7 +271,8 @@ IDR_FMENU MENU
 BEGIN
     POPUP "&File"
     BEGIN
-        MENUITEM "&Open",                       ID_FILE_OPENBIN
+        MENUITEM "&Open bin/elf",               ID_FILE_OPENBIN
+        MENUITEM "Load bin/elf",                ID_FILE_LOADBIN
         MENUITEM SEPARATOR
         MENUITEM "Boot GDRom (HLE)",            ID_FILE_BOOTHLE
         MENUITEM SEPARATOR
