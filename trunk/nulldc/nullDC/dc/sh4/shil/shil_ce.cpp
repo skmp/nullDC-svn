@@ -170,7 +170,7 @@ void ce_die(char* reason)
 }
 bool ce_CanBeConst(u8 reg)
 {
-	return (reg<16) || (reg==reg_pc_temp);
+	return (reg<16) || (reg==reg_pc_temp)|| (reg==reg_macl) || (reg==reg_mach);
 }
 
 bool ce_IsConst(u8 reg)

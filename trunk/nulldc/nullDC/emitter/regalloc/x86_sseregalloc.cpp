@@ -94,7 +94,6 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 		{
 			if (reginf[reg].reg!=XMM_Error)
 			{
-				//__asm int 3;
 				return &reginf[reg];
 			}
 		}

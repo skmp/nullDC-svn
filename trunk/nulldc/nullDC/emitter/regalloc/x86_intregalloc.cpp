@@ -237,11 +237,18 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 		//No move , or RtR move + reload
 		if (IsRegAllocated(sh4_reg))
 		{
-			if ( ((mode & RA_NODATA)==0) && r_alloced[sh4_reg].InReg==false)
+			if ( r_alloced[sh4_reg].InReg==false)
 			{
-				//if we must load , and its not loaded
-				x86e->MOV32MtoR(r_alloced[sh4_reg].x86reg,GetRegPtr(sh4_reg));
-				r_alloced[sh4_reg].Dirty=false;//not dirty .ffs, we just loaded it....
+				if ((mode & RA_NODATA)==0)
+				{
+					//if we must load , and its not loaded
+					x86e->MOV32MtoR(r_alloced[sh4_reg].x86reg,GetRegPtr(sh4_reg));
+					r_alloced[sh4_reg].Dirty=false;//not dirty .ffs, we just loaded it....
+				}
+				else
+				{
+					r_alloced[sh4_reg].Dirty=true;//its dirty, we dint load data :)
+				}
 			}
 			
 			r_alloced[sh4_reg].InReg=true;
@@ -250,7 +257,7 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 			if (mode & RA_FORCE)
 			{
 				//move to forced reg , if needed
-				if (r_alloced[sh4_reg].x86reg!=d_reg)
+				if ((r_alloced[sh4_reg].x86reg!=d_reg) && ((mode & RA_NODATA)==0))
 					x86e->MOV32RtoR(d_reg,r_alloced[sh4_reg].x86reg);
 				return d_reg;
 			}
@@ -262,7 +269,7 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 		}
 		else
 		{
-			//MtoR move , nodata is invalid , force has no effect ;)
+			//MtoR move , force has no effect (allways forced) ;)
 			if (0==(mode & RA_NODATA))
 				x86e->MOV32MtoR(d_reg,GetRegPtr(sh4_reg));
 			return d_reg;
@@ -384,8 +391,9 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 		checkvr(reg);
 		if (IsRegAllocated(reg) && r_alloced[reg].InReg)
 		{
-			r_alloced[reg].Dirty=false;
-			x86e->MOV32MtoR(r_alloced[reg].x86reg,GetRegPtr(reg));
+			//r_alloced[reg].Dirty=false;
+			//x86e->MOV32MtoR(r_alloced[reg].x86reg,GetRegPtr(reg));
+			r_alloced[reg].InReg=false;
 		}
 	}
 };
