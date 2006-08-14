@@ -1,7 +1,7 @@
 #include "x86_sseregalloc.h"
 #include <assert.h>
 
-#define REG_ALLOC_COUNT (7)
+#define REG_ALLOC_COUNT (0)
 //xmm0 is reserved for math/temp
 x86SSERegType reg_to_alloc_xmm[7]=
 {
@@ -116,7 +116,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 		SimpleSSERegAlloc_init();
 
 		this->x86e=x86e;
-		DoAlloc=block->flags.FpuIsVector==0 && block->flags.FpuMode==0;
+		DoAlloc= (block->flags.FpuIsVector==0) && (block->flags.FpuMode==0);
 		
 		sort_temp used[16];
 		for (int i=0;i<16;i++)
@@ -158,8 +158,13 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 					break;
 				reginf[used[i].reg].reg=reg_to_alloc_xmm[i];
 			}
-			//printf("Allocaded %d xmm regs\n",i);
-			memset(reginf,0xFF,sizeof(reginf));
+			if (i)
+			{
+				//printf("Allocaded %d xmm regs\n",i);
+				//if (getchar()=='n')
+				//	memset(reginf,0xFF,sizeof(reginf));
+			}
+			//
 		}
 	}
 	//BeforeEmit		: generate any code needed before the main emittion begins (other register allocators may have emited code tho)
@@ -197,16 +202,24 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 		if (IsRegAllocated(reg))
 		{
 			fprinfo* r1=  GetInfo(reg);
-			if (r1->Loaded==false && ((mode & RA_NODATA)==0) )
+			if (r1->Loaded==false)
 			{
-				x86e->SSE_MOVSS_M32_to_XMM(r1->reg,GetRegPtr(reg));
-				r1->WritenBack=true;
+				if ((mode & RA_NODATA)==0)
+				{
+					x86e->SSE_MOVSS_M32_to_XMM(r1->reg,GetRegPtr(reg));
+					r1->WritenBack=true;//data on reg is same w/ data on mem
+				}
+				else
+					r1->WritenBack=false;//data on reg is not same w/ data on mem
 			}
+			
+			//we reg is now on sse reg :)
 			r1->Loaded=true;
 
 			if (mode & RA_FORCE)
 			{
-				x86e->SSE_MOVSS_XMM_to_XMM(d_reg,r1->reg);
+				if ((mode & RA_NODATA)==0)
+					x86e->SSE_MOVSS_XMM_to_XMM(d_reg,r1->reg);
 				return d_reg;
 			}
 			else
@@ -346,7 +359,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 			}
 			else
 			{
-				FlushRegister(from);
+				WriteBackRegister(from);
 				x86e->MOV32MtoR(to,GetRegPtr(from));
 			}
 		}

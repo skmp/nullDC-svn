@@ -145,6 +145,10 @@ void shil_stream::emit32(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2)
 {
 	emit(op,reg1,reg2,0,0,FLAG_32 | FLAG_REG1| FLAG_REG2);
 }
+void shil_stream::emit32(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2,u32 extraflags)
+{
+	emit(op,reg1,reg2,0,0,FLAG_32 | FLAG_REG1| FLAG_REG2 | extraflags);
+}
 
 void shil_stream::emitReg(shil_opcodes op,Sh4RegType reg1,u32 flags)
 {
@@ -674,7 +678,7 @@ void shil_stream::ftrc(Sh4RegType frn)
 }
 void shil_stream::fcmp(Sh4RegType to,Sh4RegType from)
 {
-	emit32(shil_opcodes::fcmp,to,from);
+	emit32(shil_opcodes::fcmp,to,from,FLAG_SETFLAGS);
 }
 void shil_stream::div(Sh4RegType r0,Sh4RegType r1,Sh4RegType r2,u32 flags)
 {

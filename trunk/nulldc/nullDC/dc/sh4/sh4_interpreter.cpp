@@ -457,8 +457,10 @@ u32 shitaaa=0;
 
 u32 gcp_timer=0;
 u32 gpc_counter=0;
+#define cpu_ratio 100
 int __fastcall UpdateSystem(u32 Cycles)
 {
+	Cycles=Cycles*100/cpu_ratio;
 	//TODO : Add Update System implementation
 	aica_cycl+=Cycles;
 	if (aica_cycl>(200*1000*1000/(44100*3)))

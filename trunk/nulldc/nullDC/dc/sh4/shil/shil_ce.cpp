@@ -646,7 +646,6 @@ shilh(sar)
 	if (ce_IsConst(op->reg1) && (op->imm1>1))
 	{
 		ce_SetConst(op->reg1,(u32)(((s32)ce_GetConst(op->reg1))>>(op->imm1)));
-		__asm int 3;
 		return true;
 	}
 	else

@@ -173,8 +173,9 @@ sh4op(i0000_0000_0001_1000)
 {
 	//iNimp("sett");
 	//sr.T = 1;
-	shil_interpret(op);
+	//shil_interpret(op);
 	//ilst->mov(Sh4RegType::sr_T,1);
+	ilst->mov(reg_sr_T,1);
 } 
 
 
@@ -184,8 +185,9 @@ sh4op(i0000_0000_0000_1000)
 {
 	//iNimp("clrt");
 	//sr.T = 0;
-	shil_interpret(op);
+	//shil_interpret(op);
 	//ilst->mov(Sh4RegType::sr_T,0);
+	ilst->mov(reg_sr_T,0);
 } 
 //movt <REG_N>                  
 sh4op(i0000_nnnn_0010_1001)
@@ -488,7 +490,6 @@ Sh4RegType div_som_reg3;
 
 u32 MatchDiv32(u32 pc , Sh4RegType &reg1,Sh4RegType &reg2 , Sh4RegType &reg3)
 {
-	verify(0x8C009AC0!=pc);
 	u32 v_pc=pc;
 	u32 match=1;
 	for (int i=0;i<32;i++)
@@ -671,6 +672,7 @@ sh4op(i0011_nnnn_mmmm_1010)
 	}
 
 	//no subc on x86 .. what a pain
+	//sbb ??
 	*/
 }
 

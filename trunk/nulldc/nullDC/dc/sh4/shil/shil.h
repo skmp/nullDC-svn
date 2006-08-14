@@ -60,7 +60,10 @@ enum shil_opflags
 	FLAG_R0=128,
 	FLAG_GBR=256,
 	FLAG_MACH=512,
-	FLAG_MACL=1024
+	FLAG_MACL=1024,
+
+	FLAG_SETFLAGS=2048,
+	FLAG_PRESERVE=2048
 };
 
 //shil is a combination of sh4 and x86 opcodes , in a decoded form so that varius optimisations
@@ -279,6 +282,7 @@ class shil_stream
 	void shil_stream::emit32(shil_opcodes op,Sh4RegType reg1,u32 param);
 	void shil_stream::emit32(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2);
 	void shil_stream::emit(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2,u32 imm1,u32 imm2,u32 flags);
+	void shil_stream::emit32(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2,u32 extraflags);
 
 	void shil_stream::emitReg(shil_opcodes op,Sh4RegType reg1,u32 flags);
 	void shil_stream::emitRegImm(shil_opcodes op,Sh4RegType reg1,u32 imm1,u32 flags);
