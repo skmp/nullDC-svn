@@ -1,6 +1,7 @@
 #pragma once
 #include "drkPvr.h"
-
+#include "ta.h"
+#include "TexCache.h"
 
 //basic i/f
 typedef bool InitRendererFP(void* window);
@@ -11,6 +12,8 @@ typedef void ResetRendererFP(bool Manual);
 //Present FB/Rendered data
 //~~Watch~~ for rendered data/fb writes/RenderToTexture ...
 typedef void PresentFBFP();
+
+typedef void StartRenderFP();
 
 //Renderer interface
 struct rend_if
@@ -24,6 +27,7 @@ struct rend_if
 	TermRendererFP* ThreadEnd;
 
 	PresentFBFP*	PresentFB;
+	StartRenderFP*	StartRender;
 
 	//misc data
 	bool Inited;

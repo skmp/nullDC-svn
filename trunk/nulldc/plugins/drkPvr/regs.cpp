@@ -17,6 +17,7 @@ u32 ReadPvrRegister(u32 addr,u32 size)
 
 	return PvrReg(addr);
 }
+extern u32 FrameCount;
 
 void WritePvrRegister(u32 addr,u32 data,u32 size)
 {
@@ -33,8 +34,9 @@ void WritePvrRegister(u32 addr,u32 data,u32 size)
 	if ((addr&RegMask)==STARTRENDER_addr)
 	{
 		//start render
-		//renderer->StartRender();
+		renderer->StartRender();
 		//TODO : fix that mess
+		FrameCount++;
 		RaiseInterrupt(InterruptID::holly_RENDER_DONE);
 		RaiseInterrupt(InterruptID::holly_RENDER_DONE_isp);
 		RaiseInterrupt(InterruptID::holly_RENDER_DONE_vd);

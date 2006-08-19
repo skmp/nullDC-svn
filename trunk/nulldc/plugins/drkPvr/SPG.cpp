@@ -8,7 +8,9 @@ u32 clc_pvr_scanline;
 u32 pvr_numscanlines=512;
 u32 prv_cur_scanline=-1;
 u32 vblk_cnt=0;
-
+u32 FrameCount=0;
+u32 VertexCount=0;
+u32 last_fps=0;
 u8 VblankInfo()
 {
 	u32 data = SPG_VBLANK_INT;
@@ -77,9 +79,27 @@ void spgUpdatePvr(u32 cycles)
 		{
 			//Vblank counter
 			vblk_cnt++;
-//			RaiseInterrupt(InterruptID::holly_VBLank); -> This turned out to be HBlank btw , needs to be emulater ;(
+			RaiseInterrupt(InterruptID::holly_HBLank);// -> This turned out to be HBlank btw , needs to be emulater ;(
 			//TODO : Renderer->PresentFB();
 			renderer->PresentFB();//present FB data
+
+			if ((timeGetTime()-last_fps)>800)
+			{
+				double spd_fps=(double)FrameCount/(double)((double)(timeGetTime()-(double)last_fps)/1000);
+				double spd_cpu=(double)vblk_cnt/(double)((double)(timeGetTime()-(double)last_fps)/1000);
+				spd_cpu*=Frame_Cycles;
+				spd_cpu/=1000000;	//mrhz kthx
+				double fullfps=(spd_fps/spd_cpu)*200;
+				double mv=VertexCount/1000000.0;
+				VertexCount=0;
+				last_fps=timeGetTime();
+				FrameCount=0;
+				vblk_cnt=0;
+
+				char fpsStr[256];
+				sprintf(fpsStr,"FPS: %4.2f(%4.2f) Vert : %4.2fM -  Sh4: %4.2f mhz (%4.2f%%) - nullDC v0.0.1", spd_fps,fullfps,mv, spd_cpu,spd_cpu*100/200);
+				SetWindowText((HWND)Hwnd, fpsStr);
+			}
 		}
 	}
 }

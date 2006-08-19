@@ -4,6 +4,9 @@
 void nullPresentFB()
 {
 }
+void nullStartRender()
+{
+}
 
 bool nullInitRenderer(void* window)
 {
@@ -41,4 +44,5 @@ void GetNullRenderer(rend_if* rif)
 
 	//drawing related functions :)
 	rif->PresentFB=nullPresentFB;
+	rif->StartRender=nullStartRender;
 }

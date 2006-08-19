@@ -30,6 +30,10 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     return TRUE;
 }
 
+void dcShowConfig(PluginType type,void* window)
+{
+	printf("No config for now\n");
+}
 //Give to the emu info for the plugin type
 EXPORT void dcGetPluginInfo(plugin_info* info)
 {
@@ -46,6 +50,7 @@ EXPORT void dcGetPluginInfo(plugin_info* info)
 	info->ThreadTerm=dcThreadTermPvr;
 
 	info->Type=PluginType::PowerVR;
+	info->ShowConfig=dcShowConfig;
 }
 
 //Give to the emu pointers for the PowerVR interface
@@ -69,6 +74,9 @@ void dcInitPvr(void* aparam,PluginType type)
 	Hwnd=param->WindowHandle;
 	RaiseInterrupt=param->RaiseInterrupt;
 	
+
+	SetRenderer(RendererType::Hw_OGL,Hwnd);
+
 	if ((!Regs_Init()))
 	{
 		//failed

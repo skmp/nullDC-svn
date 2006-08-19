@@ -6,6 +6,7 @@
 #include <stdio.h>
 
 #include <string.h>
+#include "helper_classes.h"
 
 #define BUILD 0
 #define MINOR 1
@@ -41,3 +42,16 @@ extern void* Hwnd;
 extern RaiseInterruptFP* RaiseInterrupt;
 
 float GetSeconds();
+
+
+#define dbgbreak __asm {int 3}
+
+#define fastcall __fastcall
+#define verify(x) if((x)==false){ printf("Verify Failed  : " #x "\n in %s -> %s : %d \n",__FUNCTION__,__FILE__,__LINE__); dbgbreak;}
+#define die(reason) { printf("Fatal error : " #reason "\n in %s -> %s : %d \n",__FUNCTION__,__FILE__,__LINE__); dbgbreak;}
+#define fverify verify
+
+#define log(xx) printf(xx " (from "__FUNCTION__ ")\n");
+#define log1(xx,yy) printf(xx " (from "__FUNCTION__ ")\n",yy);
+#define log2(xx,yy,zz) printf(xx " (from "__FUNCTION__ ")\n",yy,zz);
+#define log3(xx,yy,gg) printf(xx " (from "__FUNCTION__ ")\n",yy,zz,gg);
