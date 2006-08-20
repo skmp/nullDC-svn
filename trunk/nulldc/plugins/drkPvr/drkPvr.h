@@ -55,3 +55,6 @@ float GetSeconds();
 #define log1(xx,yy) printf(xx " (from "__FUNCTION__ ")\n",yy);
 #define log2(xx,yy,zz) printf(xx " (from "__FUNCTION__ ")\n",yy,zz);
 #define log3(xx,yy,gg) printf(xx " (from "__FUNCTION__ ")\n",yy,zz,gg);
+
+extern bool render_end_pending;
+extern u32 render_end_pending_cycles;

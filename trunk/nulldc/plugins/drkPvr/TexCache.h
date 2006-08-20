@@ -113,3 +113,11 @@ class TexCacheList
 			texture->prev->next=texture->next;
 	}
 };
+
+void fastcall argb1555to8888(u32* p_out,u16* p_in,u32 Width,u32 Height);
+void fastcall argb565to8888(u32* p_out,u16* p_in,u32 Width,u32 Height);
+void fastcall argb4444to8888(u32* p_out,u16* p_in,u32 Width,u32 Height);
+
+void fastcall argb1555to8888_TW(u32* p_out,u16* p_in,u32 Width,u32 Height,u32 U);
+void fastcall argb565to8888_TW(u32* p_out,u16* p_in,u32 Width,u32 Height,u32 U);
+void fastcall argb4444to8888_TW(u32* p_out,u16* p_in,u32 Width,u32 Height,u32 U);

@@ -35,9 +35,11 @@ void WritePvrRegister(u32 addr,u32 data,u32 size)
 		//start render
 		renderer->StartRender();
 		//TODO : fix that mess
-		RaiseInterrupt(InterruptID::holly_RENDER_DONE);
-		RaiseInterrupt(InterruptID::holly_RENDER_DONE_isp);
-		RaiseInterrupt(InterruptID::holly_RENDER_DONE_vd);
+		
+		//RaiseInterrupt(InterruptID::holly_RENDER_DONE);
+		//RaiseInterrupt(InterruptID::holly_RENDER_DONE_isp);
+		//RaiseInterrupt(InterruptID::holly_RENDER_DONE_vd);
+		render_end_pending=true;
 		return;
 	}
 

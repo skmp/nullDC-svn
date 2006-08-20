@@ -20,10 +20,22 @@ u8 VblankInfo()
 	else
 		return 0;
 }
-
+bool render_end_pending=false;
+u32 render_end_pending_cycles;
 //called from sh4 context , should update pvr/ta state and evereything else
 void spgUpdatePvr(u32 cycles)
 {
+	if (render_end_pending)
+	{
+		if (render_end_pending_cycles<cycles)
+		{
+			render_end_pending=false;
+			RaiseInterrupt(InterruptID::holly_RENDER_DONE);
+			RaiseInterrupt(InterruptID::holly_RENDER_DONE_isp);
+			RaiseInterrupt(InterruptID::holly_RENDER_DONE_vd);
+		}
+		render_end_pending_cycles-=cycles;
+	}
 	/*
 	clcount+=cycles;
 	if (clcount>dc)
