@@ -17,7 +17,6 @@ u32 ReadPvrRegister(u32 addr,u32 size)
 
 	return PvrReg(addr);
 }
-extern u32 FrameCount;
 
 void WritePvrRegister(u32 addr,u32 data,u32 size)
 {
@@ -36,7 +35,6 @@ void WritePvrRegister(u32 addr,u32 data,u32 size)
 		//start render
 		renderer->StartRender();
 		//TODO : fix that mess
-		FrameCount++;
 		RaiseInterrupt(InterruptID::holly_RENDER_DONE);
 		RaiseInterrupt(InterruptID::holly_RENDER_DONE_isp);
 		RaiseInterrupt(InterruptID::holly_RENDER_DONE_vd);
@@ -47,7 +45,7 @@ void WritePvrRegister(u32 addr,u32 data,u32 size)
 	{
 		if (data>>31)
 		{
-			Ta_ListInit();
+			renderer->Ta_ListInit();
 			data=0;
 		}
 	}
@@ -57,7 +55,7 @@ void WritePvrRegister(u32 addr,u32 data,u32 size)
 		if (data!=0)
 		{
 			if (data&1)
-				Ta_SoftReset();
+				renderer->Ta_SoftReset();
 			data=0;
 		}
 	}
@@ -65,7 +63,7 @@ void WritePvrRegister(u32 addr,u32 data,u32 size)
 	if ((addr&RegMask)==TA_LIST_CONT_addr)
 	{
 		//a write of anything works ?
-		Ta_ListCont();
+		renderer->Ta_ListCont();
 	}
 
 	PvrReg(addr)=data;

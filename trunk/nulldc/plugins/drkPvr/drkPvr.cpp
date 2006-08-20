@@ -59,7 +59,7 @@ EXPORT void dcGetPvrInfo(pvr_plugin_if* info)
 	info->InterfaceVersion.full=PVR_PLUGIN_I_F_VERSION;
 
 	info->UpdatePvr=spgUpdatePvr;
-	info->TaFIFO=TADma;
+	info->TaFIFO=TASplitter::Dma;
 	info->ReadReg=ReadPvrRegister;
 	info->WriteReg=WritePvrRegister;
 }
@@ -81,10 +81,6 @@ void dcInitPvr(void* aparam,PluginType type)
 	{
 		//failed
 	}
-	if (!Ta_Init())
-	{
-		//failed
-	}
 	if (!spg_Init())
 	{
 		//failed
@@ -100,17 +96,15 @@ void dcTermPvr(PluginType type)
 {
 	rend_if_Term();
 	spg_Term();
-	Ta_Term();
 	Regs_Term();
 }
 
 //It's suposed to reset anything but vram (vram is set to 0 by emu)
 void dcResetPvr(bool Manual,PluginType type)
 {
-	rend_if_Reset(Manual);
 	Regs_Reset(Manual);
-	Ta_Reset(Manual);
 	spg_Reset(Manual);
+	rend_if_Reset(Manual);
 }
 
 //called when entering sh4 thread , from the new thread context (for any thread speciacific init)

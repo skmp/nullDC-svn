@@ -8,8 +8,7 @@ u32 clc_pvr_scanline;
 u32 pvr_numscanlines=512;
 u32 prv_cur_scanline=-1;
 u32 vblk_cnt=0;
-u32 FrameCount=0;
-u32 VertexCount=0;
+
 u32 last_fps=0;
 u8 VblankInfo()
 {
@@ -85,15 +84,15 @@ void spgUpdatePvr(u32 cycles)
 
 			if ((timeGetTime()-last_fps)>800)
 			{
-				double spd_fps=(double)FrameCount/(double)((double)(timeGetTime()-(double)last_fps)/1000);
+				double spd_fps=(double)(*renderer->FrameCount)/(double)((double)(timeGetTime()-(double)last_fps)/1000);
 				double spd_cpu=(double)vblk_cnt/(double)((double)(timeGetTime()-(double)last_fps)/1000);
 				spd_cpu*=Frame_Cycles;
 				spd_cpu/=1000000;	//mrhz kthx
 				double fullfps=(spd_fps/spd_cpu)*200;
-				double mv=VertexCount/1000000.0;
-				VertexCount=0;
+				double mv=(*renderer->VertexCount) /1000000.0;
+				(*renderer->VertexCount)=0;
 				last_fps=timeGetTime();
-				FrameCount=0;
+				(*renderer->FrameCount)=0;
 				vblk_cnt=0;
 
 				char fpsStr[256];

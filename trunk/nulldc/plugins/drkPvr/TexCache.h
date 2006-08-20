@@ -12,7 +12,8 @@ class TexCacheList
 		{
 			prev=prevt;
 			next=nextt;
-			text=*textt;
+			if (textt)
+				data=*textt;
 		}
 		TexCacheEntry* prev;
 		TexCacheEntry* next;

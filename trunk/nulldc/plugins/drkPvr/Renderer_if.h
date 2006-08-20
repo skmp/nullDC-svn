@@ -14,7 +14,7 @@ typedef void ResetRendererFP(bool Manual);
 typedef void PresentFBFP();
 
 typedef void StartRenderFP();
-
+typedef void voidFunctRetvoid();
 //Renderer interface
 struct rend_if
 {
@@ -29,9 +29,15 @@ struct rend_if
 	PresentFBFP*	PresentFB;
 	StartRenderFP*	StartRender;
 
+	voidFunctRetvoid* Ta_ListInit;
+	voidFunctRetvoid* Ta_SoftReset;
+	voidFunctRetvoid* Ta_ListCont;
+
 	//misc data
 	bool Inited;
 	void* Window;
+	u32* VertexCount;
+	u32* FrameCount;
 };
 
 //GetInterface

@@ -3,7 +3,7 @@
 #define LIST_MAX_ALLOC_CHUNK ((1024*1024*4)/sizeof(T))	//max 4 mb alloc
 #define LIST_FREE_STEP_CHUNK ((1024*128)/sizeof(T))		//128 kb steps for free :)
 
-template <class T>
+template <class T,u32 MaxAllocChunk=LIST_MAX_ALLOC_CHUNK,u32 FreeStepChunk=LIST_FREE_STEP_CHUNK>
 class List
 {
 public :
@@ -19,8 +19,8 @@ public :
 	{
 		u32 new_size=used+4;
 		//MAX 4mb increase each time :)
-		if (new_size>(LIST_MAX_ALLOC_CHUNK))
-			new_size=LIST_MAX_ALLOC_CHUNK;
+		if (new_size>(MaxAllocChunk))
+			new_size=MaxAllocChunk;
 		resize(used +new_size);
 	}
 	void resize(u32 new_size)
@@ -66,16 +66,16 @@ public :
 
 		u32 real_avg=avg_sz/8;
 
-		u32 avg_chunk_avg=real_avg/LIST_FREE_STEP_CHUNK;
-		u32 used_chunk_avg=used/LIST_FREE_STEP_CHUNK;
+		u32 avg_chunk_avg=real_avg/FreeStepChunk;
+		u32 used_chunk_avg=used/FreeStepChunk;
 
 
 		if (avg_chunk_avg<=used_chunk_avg)//try to free olny if we used less items this time (if not , we propably start an increase period)
 		{
-			u32 allocated_chunk=size/LIST_FREE_STEP_CHUNK;
+			u32 allocated_chunk=size/FreeStepChunk;
 			avg_chunk_avg++;
 			if (allocated_chunk>avg_chunk_avg)
-				resize(avg_chunk_avg*LIST_FREE_STEP_CHUNK);
+				resize(avg_chunk_avg*FreeStepChunk);
 		}
 
 		used=0;
