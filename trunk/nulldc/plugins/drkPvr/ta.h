@@ -567,6 +567,9 @@ namespace TASplitter
 			TA_VertexParam* vp=(TA_VertexParam*)data;
 			u32 rv=0;
 
+			if (part==2)
+				TaCmd=ta_main;
+
 			switch (poly_type)
 			{
 #define ver_32B_def(num) \
@@ -588,124 +591,21 @@ namespace TASplitter
 
 #undef ver_32B_def
 
-				/*
-				case 0:	//(Non-Textured, Packed Color)
-				{
-				ver_32B_def;
-				cv->col[0]	= (255 & (vp->vtx0.BaseCol >> 16)) / 255.f;
-				cv->col[1]	= (255 & (vp->vtx0.BaseCol >> 8))  / 255.f;
-				cv->col[2]	= (255 & (vp->vtx0.BaseCol >> 0))  / 255.f;
-				cv->col[3]	= (255 & (vp->vtx0.BaseCol >> 24)) / 255.f;
-				}
-				break;
-				case 1: //(Non-Textured, Floating Color)
-				{
-				ver_32B_def;
-				cv->col[0]	= vp->vtx1.BaseR;
-				cv->col[1]	= vp->vtx1.BaseG;
-				cv->col[2]	= vp->vtx1.BaseB;
-				cv->col[3]	= vp->vtx1.BaseA;
-				}
-				break;
-				case 2: //(Non-Textured, Intensity)
-				{
-				ver_32B_def;//(Non-Textured, Intensity)
-				cv->col[0]	= vp->vtx2.BaseInt;
-				cv->col[1]	= vp->vtx2.BaseInt;
-				cv->col[2]	= vp->vtx2.BaseInt;
-				cv->col[3]	= vp->vtx2.BaseInt;
-				}
-				break;
-				case 3: //(Textured, Packed Color)
-				{
-				ver_32B_def;
-				//(Textured, Packed Color)
-				cv->col[0]	= (255 & (vp->vtx3.BaseCol >> 16)) / 255.f;
-				cv->col[1]	= (255 & (vp->vtx3.BaseCol >> 8))  / 255.f;
-				cv->col[2]	= (255 & (vp->vtx3.BaseCol >> 0))  / 255.f;
-				cv->col[3]	= (255 & (vp->vtx3.BaseCol >> 24)) / 255.f;
-
-				cv->uv[0]	= vp->vtx3.u;
-				cv->uv[1]	= vp->vtx3.v;
-				}
-				break;
-				case 4://(Textured, Packed Color, 16bit UV)
-				{
-				ver_32B_def;
-				cv->col[0]	= (255 & (vp->vtx4.BaseCol >> 16)) / 255.f;
-				cv->col[1]	= (255 & (vp->vtx4.BaseCol >> 8))  / 255.f;
-				cv->col[2]	= (255 & (vp->vtx4.BaseCol >> 0))  / 255.f;
-				cv->col[3]	= (255 & (vp->vtx4.BaseCol >> 24)) / 255.f;
-
-				cv->uv[0]	= f16(vp->vtx4.u);
-				cv->uv[1]	= f16(vp->vtx4.v);
-				}
-				break;
-				case 7://(Textured, Intensity)
-				{
-				ver_32B_def;
-				cv->col[0]	= vp->vtx7.BaseInt;
-				cv->col[1]	= vp->vtx7.BaseInt;
-				cv->col[2]	= vp->vtx7.BaseInt;
-				cv->col[3]	= vp->vtx7.BaseInt;
-
-				cv->uv[0]	= vp->vtx7.u;
-				cv->uv[1]	= vp->vtx7.v;
-				}
-				break;
-				case 8://(Textured, Intensity, 16bit UV)
-				{
-				ver_32B_def;
-				cv->col[0]	= vp->vtx8.BaseInt;
-				cv->col[1]	= vp->vtx8.BaseInt;
-				cv->col[2]	= vp->vtx8.BaseInt;
-				cv->col[3]	= vp->vtx8.BaseInt;
-
-				cv->uv[0]	= f16(vp->vtx8.u);
-				cv->uv[1]	= f16(vp->vtx8.v);
-				}
-				break;
-				case 9://(Non-Textured, Packed Color, with Two Volumes)
-				{
-				ver_32B_def;
-				cv->col[0]	= (255 & (vp->vtx9.BaseCol0 >> 16)) / 255.f;
-				cv->col[1]	= (255 & (vp->vtx9.BaseCol0 >> 8))  / 255.f;
-				cv->col[2]	= (255 & (vp->vtx9.BaseCol0 >> 0))  / 255.f;
-				cv->col[3]	= (255 & (vp->vtx9.BaseCol0 >> 24)) / 255.f;
-				}
-				break;
-				case 10://(Non-Textured, Intensity,	with Two Volumes)
-				{
-				ver_32B_def;
-				cv->col[0]	= vp->vtx10.BaseInt0;
-				cv->col[1]	= vp->vtx10.BaseInt0;
-				cv->col[2]	= vp->vtx10.BaseInt0;
-				cv->col[3]	= vp->vtx10.BaseInt0;
-				}
-				break;
-				*/
-
-
-
-
-
 #define ver_64B_def(num) \
 	case num : {\
-	if (part==2) \
-	TaCmd=ta_main;		/*return to main handling :)*/	\
 	/*process first half*/	\
-	if (part!=2)	\
-				{	\
-				rv+=SZ32;	\
-				TA_decoder::AppendPolyVertex##num##A(&vp->vtx##num##A);\
-				}	\
-				/*process second half*/	\
-				if (part!=1)	\
-				{	\
-				TA_decoder::AppendPolyVertex##num##B(&vp->vtx##num##B);\
-				rv+=SZ32;	\
-				} }\
-				break;
+		if (part!=2)	\
+		{	\
+		rv+=SZ32;	\
+		TA_decoder::AppendPolyVertex##num##A(&vp->vtx##num##A);\
+		}	\
+		/*process second half*/	\
+		if (part!=1)	\
+		{	\
+		TA_decoder::AppendPolyVertex##num##B(&vp->vtx##num##B);\
+		rv+=SZ32;	\
+		} }\
+		break;
 
 
 				//64b , may be on 2 pass
@@ -716,84 +616,6 @@ namespace TASplitter
 				ver_64B_def(13);//(Textured, Intensity,	with Two Volumes)
 				ver_64B_def(14);//(Textured, Intensity, 16bit UV, with Two Volumes)
 #undef ver_64B_def
-
-				/*
-				case 5://(Textured, Floating Color)
-				{
-				ver_64B_def;
-				cv->col[0]	= vp->vtx5.BaseR;
-				cv->col[1]	= vp->vtx5.BaseG;
-				cv->col[2]	= vp->vtx5.BaseB;
-				cv->col[3]	= vp->vtx5.BaseA;
-
-				cv->uv[0]	= vp->vtx5.u;
-				cv->uv[1]	= vp->vtx5.v;
-				}
-				break;
-				case 6://(Textured, Floating Color, 16bit UV)
-				{
-				ver_64B_def;
-				cv->col[0]	= vp->vtx6.BaseR;
-				cv->col[1]	= vp->vtx6.BaseG;
-				cv->col[2]	= vp->vtx6.BaseB;
-				cv->col[3]	= vp->vtx6.BaseA;
-
-				cv->uv[0]	= f16(vp->vtx6.u);
-				cv->uv[1]	= f16(vp->vtx6.v);
-				}
-				break;
-				case 11://(Textured, Packed Color,	with Two Volumes)	
-				{
-				ver_64B_def;
-				cv->col[0]	= (255 & (vp->vtx11.BaseCol0 >> 16)) / 255.f;
-				cv->col[1]	= (255 & (vp->vtx11.BaseCol0 >> 8))  / 255.f;
-				cv->col[2]	= (255 & (vp->vtx11.BaseCol0 >> 0))  / 255.f;
-				cv->col[3]	= (255 & (vp->vtx11.BaseCol0 >> 24)) / 255.f;
-
-				cv->uv[0]	= vp->vtx11.u0;
-				cv->uv[1]	= vp->vtx11.v0;
-				}
-				break;
-				case 12://(Textured, Packed Color, 16bit UV, with Two Volumes)
-				{
-				ver_64B_def;
-				cv->col[0]	= (255 & (vp->vtx12.BaseCol0 >> 16)) / 255.f;
-				cv->col[1]	= (255 & (vp->vtx12.BaseCol0 >> 8))  / 255.f;
-				cv->col[2]	= (255 & (vp->vtx12.BaseCol0 >> 0))  / 255.f;
-				cv->col[3]	= (255 & (vp->vtx12.BaseCol0 >> 24)) / 255.f;
-
-				cv->uv[0]	= f16(vp->vtx12.u0);
-				cv->uv[1]	= f16(vp->vtx12.v0);
-				}
-				break;
-				case 13://(Textured, Intensity,	with Two Volumes)
-				{
-				ver_64B_def;
-				cv->col[0]	= vp->vtx13.BaseInt0;
-				cv->col[1]	= vp->vtx13.BaseInt0;
-				cv->col[2]	= vp->vtx13.BaseInt0;
-				cv->col[3]	= vp->vtx13.BaseInt0;
-
-				cv->uv[0]	= vp->vtx13.u0;
-				cv->uv[1]	= vp->vtx13.v0;
-				cv->uv[2]=1;
-			cv->uv[3]=invW;
-				}
-				break;
-				case 14://(Textured, Intensity, 16bit UV, with Two Volumes)
-				{
-				ver_64B_def;
-				cv->col[0]	= vp->vtx14.BaseInt0;
-				cv->col[1]	= vp->vtx14.BaseInt0;
-				cv->col[2]	= vp->vtx14.BaseInt0;
-				cv->col[3]	= vp->vtx14.BaseInt0;
-
-				cv->uv[0]	= f16(vp->vtx14.u0);
-				cv->uv[1]	= f16(vp->vtx14.v0);
-				}
-				break;
-				*/
-
 			}
 			return rv;
 		};
