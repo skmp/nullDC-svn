@@ -15,6 +15,7 @@ typedef void PresentFBFP();
 
 typedef void StartRenderFP();
 typedef void voidFunctRetvoid();
+typedef void VramLockedWriteFP(vram_block* bl);
 //Renderer interface
 struct rend_if
 {
@@ -32,7 +33,8 @@ struct rend_if
 	voidFunctRetvoid* Ta_ListInit;
 	voidFunctRetvoid* Ta_SoftReset;
 	voidFunctRetvoid* Ta_ListCont;
-
+	VramLockedWriteFP* VramLockedWrite;
+	
 	//misc data
 	bool Inited;
 	void* Window;

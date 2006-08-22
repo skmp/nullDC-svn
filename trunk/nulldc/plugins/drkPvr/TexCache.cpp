@@ -16,10 +16,37 @@ u32 unpack_5_to_8[32] =
 	28<<3,29<<3,30<<3,31<<3,
 };
 
+u32 unpack_6_to_8[64] = 
+{
+	//low 16
+	0<<2,1<<2,2<<2,3<<2,
+	4<<2,5<<2,6<<2,7<<2,
+	8<<2,9<<2,10<<2,11<<2,
+	12<<2,13<<2,14<<2,15<<2,
+
+	//hi 16
+	16<<2,17<<2,18<<2,19<<2,
+	20<<2,21<<2,22<<2,23<<2,
+	24<<2,25<<2,26<<2,27<<2,
+	28<<2,29<<2,30<<2,31<<2,
+
+	//low 16
+	32<<2,33<<2,34<<2,35<<2,
+	36<<2,37<<2,38<<2,39<<2,
+	40<<2,41<<2,42<<2,43<<2,
+	44<<2,45<<2,46<<2,47<<2,
+
+	//hi 16
+	48<<2,49<<2,50<<2,51<<2,
+	52<<2,53<<2,54<<2,55<<2,
+	56<<2,57<<2,58<<2,59<<2,
+	60<<2,61<<2,62<<2,63<<2,
+};
+
 u32 unpack_1_to_8[2]={0,0xFF};
 
 #define ARGB8888(A,R,G,B) \
-	( ((A)<<24) | ((R)<<16) | ((G)<<8) | ((B)<<0))
+	( ((A)<<24) | ((R)<<0) | ((G)<<8) | ((B)<<16))
 
 #define ARGB1555( word )	\
 	ARGB8888(unpack_1_to_8[word>>15],unpack_5_to_8[(word>>10) & 0x1F],	\
@@ -27,7 +54,7 @@ u32 unpack_1_to_8[2]={0,0xFF};
 
 #define ARGB565( word )		\
 	ARGB8888(0xFF,unpack_5_to_8[(word>>11) & 0x1F],	\
-	unpack_5_to_8[(word>>5) & 0x3F],unpack_5_to_8[word&0x1F])
+	unpack_6_to_8[(word>>5) & 0x3F],unpack_5_to_8[word&0x1F])
 	//( 0xFF000000 | unpack_5_to_8[(word>>11) & 0x1F] | unpack_5_to_8[(word>>5) & 0x3F]<<8 | unpack_5_to_8[word&0x1F]<<16 )
 
 #define ARGB4444( word )	\
@@ -59,53 +86,134 @@ twiddle_optimiz3d(u32 value, int n)
 
 # define twop( val, n )	twiddle_optimiz3d( (val), (n) )
 
-void fastcall argb4444to8888(u32* p_out,u16* p_in,u32 Width,u32 Height)
+void fastcall argb4444to8888(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height)
 {
-	for(u32 p=0; p<(Width * Height); p++)
+	for (u32 y=0;y<Height;y++)
 	{
-		u16 pval = p_in[p];
-		p_out[p] = ARGB4444(pval) ;
+		for (u32 x=0;x<Width;x++)
+		{
+			u16 pval = *p_in++;
+			pb->SetLinePixel(x,ARGB4444(pval));
+		}
+		pb->NextLine();
 	}
 }
-void fastcall argb1555to8888(u32* p_out,u16* p_in,u32 Width,u32 Height)
+void fastcall argb1555to8888(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height)
 {
-	for(u32 p=0; p<(Width * Height); p++)
+	for (u32 y=0;y<Height;y++)
 	{
-		u16 pval = p_in[p];
-		p_out[p] = ARGB1555(pval) ;
+		for (u32 x=0;x<Width;x++)
+		{
+			u16 pval = *p_in++;
+			pb->SetLinePixel(x,ARGB1555(pval));
+		}
+		pb->NextLine();
 	}
 }
-void fastcall argb565to8888(u32* p_out,u16* p_in,u32 Width,u32 Height)
+void fastcall argb565to8888(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height)
 {
-	for(u32 p=0; p<(Width * Height); p++)
+	for (u32 y=0;y<Height;y++)
 	{
-		u16 pval = p_in[p];
-		p_out[p] = ARGB565(pval) ;
+		for (u32 x=0;x<Width;x++)
+		{
+			u16 pval = *p_in++;
+			pb->SetLinePixel(x,ARGB565(pval));
+		}
+		pb->NextLine();
 	}
 }
 
 
-void fastcall argb4444to8888_TW(u32* p_out,u16* p_in,u32 Width,u32 Height,u32 U)
+void fastcall argb4444to8888_TW(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height,u32 U)
 {
-	for(u32 p=0; p<(Width * Height); p++)
+	u32 p=0;
+	for (u32 y=0;y<Height;y++)
 	{
-		u16 pval = p_in[twop(p,U)];
-		p_out[p] = ARGB4444(pval) ;
+		for (u32 x=0;x<Width;x++)
+		{
+			u16 pval = p_in[twop(p++,U)];
+			pb->SetLinePixel(x,ARGB4444(pval));
+		}
+		pb->NextLine();
 	}
 }
-void fastcall argb1555to8888_TW(u32* p_out,u16* p_in,u32 Width,u32 Height,u32 U)
+void fastcall argb1555to8888_TW(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height,u32 U)
 {
-	for(u32 p=0; p<(Width * Height); p++)
+	u32 p=0;
+	for (u32 y=0;y<Height;y++)
 	{
-		u16 pval = p_in[twop(p,U)];
-		p_out[p] = ARGB1555(pval) ;
+		for (u32 x=0;x<Width;x++)
+		{
+			u16 pval = p_in[twop(p++,U)];
+			pb->SetLinePixel(x,ARGB1555(pval));
+		}
+		pb->NextLine();
 	}
 }
-void fastcall argb565to8888_TW(u32* p_out,u16* p_in,u32 Width,u32 Height,u32 U)
+void fastcall argb565to8888_TW(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height,u32 U)
 {
-	for(u32 p=0; p<(Width * Height); p++)
+	u32 p=0;
+	for (u32 y=0;y<Height;y++)
 	{
-		u16 pval = p_in[twop(p,U)];
-		p_out[p] = ARGB565(pval) ;
+		for (u32 x=0;x<Width;x++)
+		{
+			u16 pval = p_in[twop(p++,U)];
+			pb->SetLinePixel(x,ARGB565(pval));
+		}
+		pb->NextLine();
+	}
+}
+
+
+u32 vq_codebook[256][4];
+void fastcall vq_codebook_argb565(u16* p_in)
+{
+	for( u32 i=0; i<256;i++) 
+	{
+		for( u32 j=0; j<4; j++ )
+		{
+			vq_codebook[i][j] = ARGB565(*p_in);
+			p_in++;
+		}
+	}
+}
+void fastcall vq_codebook_argb1555(u16* p_in)
+{
+	for( u32 i=0; i<256;i++) 
+	{
+		for( u32 j=0; j<4; j++ )
+		{
+			vq_codebook[i][j] = ARGB1555(*p_in);
+			p_in++;
+		}
+	}
+}
+void fastcall vq_codebook_argb4444(u16* p_in)
+{
+	for( u32 i=0; i<256;i++) 
+	{
+		for( u32 j=0; j<4; j++ )
+		{
+			vq_codebook[i][j] = ARGB4444(*p_in);
+			p_in++;
+		}
+	}
+}
+
+void fastcall vq_TW(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height,u32 U)
+{
+	p_in+=256*4*2;
+	u32 p=0;
+	U-=1;//half the height , b/c VQ is 2 pix/ 1 byte on each direction ;)
+	for (u32 y=0;y<(Height>>1);y++)
+	{
+		for (u32 x=0;x<(Width>>1);x++)
+		{
+			u8 pval = p_in[twop(p++,U)];
+			pb->SetPixel(x*2,y*2	,	vq_codebook[pval][0]);
+			pb->SetPixel(x*2,y*2+1	,	vq_codebook[pval][1]);
+			pb->SetPixel(x*2+1,y*2	,	vq_codebook[pval][2]);
+			pb->SetPixel(x*2+1,y*2+1,	vq_codebook[pval][3]);
+		}
 	}
 }

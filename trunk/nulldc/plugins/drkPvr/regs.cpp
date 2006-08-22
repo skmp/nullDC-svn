@@ -17,7 +17,83 @@ u32 ReadPvrRegister(u32 addr,u32 size)
 
 	return PvrReg(addr);
 }
+union FB_R_CTRL_type
+{
+	struct
+	{
+		u32 fb_enable:1;			//0
+		u32 fb_line_double:1;		//1
+		u32 fb_depth:2;			//3-2
+		u32 fb_concat:3;			//6-4
+		u32 R:1;					//7
+		u32 fb_chroma_threshold:8;	//15-8
+		u32 fb_stripsize:6;		//21-16
+		u32 fb_strip_buf_en:1;		//22
+		u32 vclk_div:1;	//		23
+		u32 Reserved:8;	//		bit 31-24
+	};
+	u32 full;
+};
 
+union SPG_CONTROL_type
+{
+	struct
+	{
+		u32 mhsync_pol:1;			//0
+		u32 mvsync_pol:1;			//1
+		u32 mcsync_pol:1;			//2
+		u32 spg_lock:1;			//3
+		u32 interlace:1;			//4
+		u32 force_field2:1;		//5
+		u32 NTSC:1;				//6
+		u32 PAL	:1;				//7
+		u32 sync_direction:1;		//8
+		u32 csync_on_h:1;			//9
+		u32 Reserved:22;			//31-10
+	};
+	u32 full;
+};
+
+union SPG_LOAD_type
+{
+	struct
+	{
+		u32 hcount : 10;//9-0
+		u32 res : 6 ;	//15-10	
+		u32 vcount : 10;//25-16
+		u32 res1 : 6 ;	//31-26
+	};
+	u32 full;
+};
+
+
+void PrintfInfo()
+{
+	FB_R_CTRL_type FB_R_CTRL_data;
+	FB_R_CTRL_data.full=FB_R_CTRL;
+	printf("FB_R_CTRL : fb_enable %x ,fb_line_double %x,fb_depth %x,fb_concat %x,fb_chroma_threshold %x,fb_stripsize %x,fb_strip_buf_en %x,vclk_div %x\n",
+		FB_R_CTRL_data.fb_enable,FB_R_CTRL_data.fb_line_double,FB_R_CTRL_data.fb_depth,FB_R_CTRL_data.fb_concat
+		,FB_R_CTRL_data.fb_chroma_threshold,FB_R_CTRL_data.fb_stripsize,FB_R_CTRL_data.fb_strip_buf_en,
+		FB_R_CTRL_data.vclk_div);
+
+	SPG_CONTROL_type spg_c;
+	spg_c.full=SPG_CONTROL;
+
+	printf("spg_c : interlace %x ,force_field2 %x,NTSC %x,PAL %x,sync_direction %x\n",
+		spg_c.interlace,spg_c.force_field2,spg_c.NTSC,spg_c.PAL
+		,spg_c.sync_direction);
+
+	SPG_LOAD_type spg_l;
+	spg_l.full=SPG_LOAD;
+	printf("spg_l : hcount %x ,vcount %x\n",
+		spg_l.hcount,spg_l.vcount);
+
+
+	SPG_LOAD_type spg_vbl;
+	spg_vbl.full=SPG_VBLANK_INT ;
+		printf("spg_vbl : vbi %x ,vbo %x\n",
+		spg_vbl.hcount,spg_vbl.vcount);
+}
 void WritePvrRegister(u32 addr,u32 data,u32 size)
 {
 	if (size!=4)
@@ -34,7 +110,8 @@ void WritePvrRegister(u32 addr,u32 data,u32 size)
 	{
 		//start render
 		renderer->StartRender();
-		//TODO : fix that mess
+		//PrintfInfo();
+		//TODO : fix that mess -- now uses hacksync ;) later will be async too :P:P
 		
 		//RaiseInterrupt(InterruptID::holly_RENDER_DONE);
 		//RaiseInterrupt(InterruptID::holly_RENDER_DONE_isp);

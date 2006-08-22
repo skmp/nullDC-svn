@@ -93,25 +93,28 @@ namespace TASplitter
 
 	//// TSP Instruction Word
 
-	struct TSP
+	union TSP
 	{
-		u32 TexV		: 3;
-		u32 TexU		: 3;
-		u32 ShadInstr	: 2;
-		u32 MipMapD		: 4;
-		u32 SupSample	: 1;
-		u32 FilterMode	: 2;
-		u32 ClampUV		: 2;
-		u32 FlipUV		: 2;
-		u32 IgnoreTexA	: 1;
-		u32 UseAlpha	: 1;
-		u32 ColorClamp	: 1;
-		u32 FogCtrl		: 2;
-		u32 DstSelect	: 1;	// Secondary Accum
-		u32 SrcSelect	: 1;	// Primary Accum
-		u32 DstInstr	: 3;
-		u32 SrcInstr	: 3;
-
+		struct 
+		{
+			u32 TexV		: 3;
+			u32 TexU		: 3;
+			u32 ShadInstr	: 2;
+			u32 MipMapD		: 4;
+			u32 SupSample	: 1;
+			u32 FilterMode	: 2;
+			u32 ClampUV		: 2;
+			u32 FlipUV		: 2;
+			u32 IgnoreTexA	: 1;
+			u32 UseAlpha	: 1;
+			u32 ColorClamp	: 1;
+			u32 FogCtrl		: 2;
+			u32 DstSelect	: 1;	// Secondary Accum
+			u32 SrcSelect	: 1;	// Primary Accum
+			u32 DstInstr	: 3;
+			u32 SrcInstr	: 3;
+		};
+		u32 full;
 	} ;
 
 

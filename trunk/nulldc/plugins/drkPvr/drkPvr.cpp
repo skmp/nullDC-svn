@@ -13,6 +13,9 @@ RaiseInterruptFP* RaiseInterrupt;
 void* Hwnd;
 
 u8*	vram_64;
+vramlock_Lock_32FP* lock32;
+vramlock_Lock_64FP* lock64;
+vramlock_Unlock_blockFP* unlock;
 
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
@@ -53,6 +56,10 @@ EXPORT void dcGetPluginInfo(plugin_info* info)
 	info->ShowConfig=dcShowConfig;
 }
 
+void vramLockCB (vram_block* block,u32 addr)
+{
+	renderer->VramLockedWrite(block);
+}
 //Give to the emu pointers for the PowerVR interface
 EXPORT void dcGetPvrInfo(pvr_plugin_if* info)
 {
@@ -62,6 +69,7 @@ EXPORT void dcGetPvrInfo(pvr_plugin_if* info)
 	info->TaFIFO=TASplitter::Dma;
 	info->ReadReg=ReadPvrRegister;
 	info->WriteReg=WritePvrRegister;
+	info->LockedBlockWrite=vramLockCB;
 }
 
 
@@ -69,11 +77,16 @@ EXPORT void dcGetPvrInfo(pvr_plugin_if* info)
 void dcInitPvr(void* aparam,PluginType type)
 {
 	pvr_init_params* param=(pvr_init_params*)aparam;
-
-	vram_64=param->vram;
-	Hwnd=param->WindowHandle;
-	RaiseInterrupt=param->RaiseInterrupt;
 	
+	Hwnd=param->WindowHandle;
+	
+	vram_64=param->vram;
+
+	lock32 = param->vram_lock_32;
+	lock64 = param->vram_lock_64;
+	unlock = param->vram_unlock;
+
+	RaiseInterrupt=param->RaiseInterrupt;
 
 	SetRenderer(RendererType::Hw_OGL,Hwnd);
 

@@ -58,3 +58,7 @@ float GetSeconds();
 
 extern bool render_end_pending;
 extern u32 render_end_pending_cycles;
+
+extern vramlock_Lock_32FP* lock32;
+extern vramlock_Lock_64FP* lock64;
+extern vramlock_Unlock_blockFP* unlock;
