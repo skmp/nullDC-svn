@@ -638,7 +638,14 @@ namespace TASplitter
 				return SZ64;
 			}
 		}
-		static u32 fastcall ta_sprite_data(Ta_Dma* data,u32 size)
+		static u32 fastcall ta_sprite1B_data(Ta_Dma* data,u32 size)
+		{
+			//32B more needed , 32B done :)
+			TaCmd=ta_main;
+			TA_decoder::AppendSpriteVertex1N((TA_Sprite1B*)data);
+			return SZ32;
+		}
+		static u32 fastcall ta_sprite1_data(Ta_Dma* data,u32 size)
 		{
 			if (size==1)
 			{
@@ -648,6 +655,9 @@ namespace TASplitter
 			}
 			else
 			{
+				TA_VertexParam* vp=(TA_VertexParam*)data;
+				TA_decoder::AppendSpriteVertex1A(&vp->spr1A);
+				TA_decoder::AppendSpriteVertex1B(&vp->spr1B);
 				//all 64B done
 				return SZ64;
 			}
@@ -891,7 +901,8 @@ strip_end:
 					//Sets Sprite info , and switches to ta_sprite_data function
 				case ParamType_Sprite:
 					{
-						VerxexDataFP=ta_sprite_data;
+						VerxexDataFP=ta_sprite1_data;
+						TA_decoder::AppendSpriteParam((TA_SpriteParam*)data);
 						data+=SZ32;
 						size-=SZ32;
 					}
