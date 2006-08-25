@@ -1,192 +1,136 @@
-#ifdef _CDI_
+#include "nullGDR.h"
 #include "cdi.h"
-#define BYTE u8
-#define WORD u16
-#define DWORD u32
-#include "pfctoc.h"
 
-// int main(int, char*)
-// {
-//   SPfcToc* pstToc;
-//   DWORD dwSize;
-// 
-//   DWORD dwErr = PfcGetToc(_T("C:\\TEMP\\IMAGE1.CDI"), pstToc, dwSize);
-//   if (dwErr == PFCTOC_OK) {
-//     assert(IsBadReadPtr(pstToc, dwSize) == FALSE);
-// 
-//     //
-//     // Do something with the TOC
-//     //
-// 
-//     dwErr = PfcFreeToc(pstToc);
-//   }
-// 
-//   return ((int)dwErr);
+// Global variables
 
-SPfcToc* pstToc;
-SessionInfo cdi_ses;
-TocInfo cdi_toc;
-DiskType cdi_disktype;
-int TrackCount;
-void cdi_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
+unsigned long temp_value;
+
+
+/////////////////////////////////////////////////////////////////////////////
+
+
+unsigned long ask_type(FILE *fsource, long header_position)
 {
-	printf("GDR->Read : Sector %d , size %d , mode %d \n",StartSector,SectorCount,secsz);
-}
 
-void cdi_DriveGetTocInfo(TocInfo& toc,DiskArea area)
-{
-	toc=cdi_toc;
-	/*
-	//Send a fake a$$ toc
-	//toc->last.full		= toc->first.full	= CTOC_TRACK(1);
-	toc->first.number=1;
-	toc->last.number=TrackCount;
+unsigned char filename_length;
+unsigned long track_mode;
 
-	toc->first.ControlInfo=Tracks[0].bCtrl;
-	toc->last.ControlInfo=Tracks[TrackCount-1].bCtrl;
-
-	toc->first.Addr=0;
-	toc->last.Addr=0;
-
-	toc->lba_leadout.full=0;
-	toc->lba_leadout.FAD=pstToc->dwOuterLeadOut;
-
- 	//toc->entry[0].full	= CTOC_LBA(150) | CTOC_ADR(0) | CTOC_CTRL(4);
-	toc->entry[0].Addr=0;
-	toc->entry[0].ControlInfo=4;
-	//toc->entry[1].Addr=0;
-	//toc->entry[1].ControlInfo=4;
-
-	u32 lba_start=0;
-	for (int i=0;i<TrackCount;i++)
-	{
-		toc->entry[i].Addr=0;
-		toc->entry[i].ControlInfo=Tracks[i].bCtrl;
-		if (Tracks[i].dwIndexCount!=2)
-			printf("Tracks[i].dwIndexCount!=2\n");
-		toc->entry[i].FAD=lba_start;
-		lba_start+=Tracks[i].pdwIndex[1];
-	}
-	toc->entry[2].FAD=45000;
-
-	for (int i=TrackCount;i<99;i++)
-	{
-		toc->entry[i].full=0xFFFFFFFF;
-	}*/
-	
-}
-//TODO : fix up
-DiskType cdi_DriveGetDiskType()
-{
-	return cdi_disktype;
+    fseek(fsource, header_position, SEEK_SET);
+    fread(&temp_value, 4, 1, fsource);
+    if (temp_value != 0)
+       fseek(fsource, 8, SEEK_CUR); // extra data (DJ 3.00.780 and up)
+    fseek(fsource, 24, SEEK_CUR);
+    fread(&filename_length, 1, 1, fsource);
+    fseek(fsource, filename_length, SEEK_CUR);
+    fseek(fsource, 19, SEEK_CUR);
+    fread(&temp_value, 4, 1, fsource);
+       if (temp_value == 0x80000000)
+          fseek(fsource, 8, SEEK_CUR); // DJ4
+    fseek(fsource, 16, SEEK_CUR);
+    fread(&track_mode, 4, 1, fsource);
+    fseek(fsource, header_position, SEEK_SET);
+    return (track_mode);
 }
 
 
-void CreateToc()
-{
-	int track=0;
-	bool CD_DA=false;
-	bool CD_M1=false;
-	bool CD_M2=false;
+/////////////////////////////////////////////////////////////////////////////
 
-	cdi_ses.SessionCount=pstToc->dwSessionCount;
-	cdi_ses.SessionsEndFAD=pstToc->dwOuterLeadOut;
-	
-	//0xFF sesion/toc
-	for (int i=0;i<99;i++)
-		cdi_ses.SessionFAD[i]=0xFFFFFFFF;
 
-	for (int i=0;i<99;i++)
-	{
-		cdi_toc.tracks[i].Addr=0xFF;
-		cdi_toc.tracks[i].Control=0xFF;
-		cdi_toc.tracks[i].FAD=0xFFFFFFFF;
-		cdi_toc.tracks[i].Session=0xFF;
-	}
-
-	u32 last_FAD=0;
-	for (u32 s=0;s<pstToc->dwSessionCount;s++)
-	{
-		SPfcSession* ses=&pstToc->pstSession[s];
-
-		if (s!=0)
-			last_FAD+=11400;//sext session
-		cdi_ses.SessionFAD[s]=last_FAD;
-
-		for (u32 t=0;t< ses->dwTrackCount ;t++)
-		{
-			SPfcTrack* cdi_track=&ses->pstTrack[t];
-			track++;
-
-			if (cdi_track->bMode==2)
-				CD_M2=true;
-			if (cdi_track->bMode==1)
-				CD_M1=true;
-			if (cdi_track->bMode==0)
-				CD_DA=true;
-			
-			cdi_toc.tracks[track].Addr=0;//hmm is that ok ?
-			
-			cdi_toc.tracks[track].Control=cdi_track->bCtrl;
-			cdi_toc.tracks[track].FAD=last_FAD;
-
-			last_FAD+=cdi_track->pdwIndex[1];
-		}
-	}
-
-	if (CD_M1 && CD_DA==false)
-		cdi_disktype = DiskType::CdRom;
-	else if (CD_M2)
-		cdi_disktype = DiskType::CdRom_XA;
-	else if (CD_DA && CD_M1) 
-		cdi_disktype = DiskType::CdRom_Extra;
-	else
-		cdi_disktype=GdRom;//hmm?
-
-	TrackCount=track;
-}
-void cdi_init()
+void CDI_read_track (FILE *fsource, image_s *image, track_s *track)
 {
 
-	DWORD dwSize;//
-	DWORD dwErr = PfcGetToc("F:\\ct2\\Crazy_Taxi_2_Usa_Dc-HOOLiGANS\\adasdad\\STC-CT2U.CDI", pstToc, dwSize);
-    if (dwErr == PFCTOC_OK) 
-	{
-		CreateToc();
-    }
-	else
-	{
-		printf("Failed to open file , %d",dwErr);
-	}
+     char TRACK_START_MARK[10] = { 0, 0, 0x01, 0, 0, 0, (char)0xFF, (char)0xFF, (char)0xFF, (char)0xFF };
+     char current_start_mark[10];
 
-	DriveNotifyEvent(DriveEvent::DiskChange,0);
+         fread(&temp_value, 4, 1, fsource);
+         if (temp_value != 0)
+            fseek(fsource, 8, SEEK_CUR); // extra data (DJ 3.00.780 and up)
+
+         fread(&current_start_mark, 10, 1, fsource);
+         if (memcmp(TRACK_START_MARK, current_start_mark, 10)) error_exit(ERR_GENERIC, "Unsupported format: Could not find the track start mark");
+
+         fread(&current_start_mark, 10, 1, fsource);
+         if (memcmp(TRACK_START_MARK, current_start_mark, 10)) error_exit(ERR_GENERIC, "Unsupported format: Could not find the track start mark");
+
+         fseek(fsource, 4, SEEK_CUR);
+         fread(&track->filename_length, 1, 1, fsource);
+         fseek(fsource, track->filename_length, SEEK_CUR);
+         fseek(fsource, 11, SEEK_CUR);
+         fseek(fsource, 4, SEEK_CUR);
+         fseek(fsource, 4, SEEK_CUR);
+         fread(&temp_value, 4, 1, fsource);
+            if (temp_value == 0x80000000)
+               fseek(fsource, 8, SEEK_CUR); // DJ4
+         fseek(fsource, 2, SEEK_CUR);
+         fread(&track->pregap_length, 4, 1, fsource);
+         fread(&track->length, 4, 1, fsource);
+         fseek(fsource, 6, SEEK_CUR);
+         fread(&track->mode, 4, 1, fsource);
+         fseek(fsource, 12, SEEK_CUR);
+         fread(&track->start_lba, 4, 1, fsource);
+         fread(&track->total_length, 4, 1, fsource);
+         fseek(fsource, 16, SEEK_CUR);
+         fread(&track->sector_size_value, 4, 1, fsource);
+
+         switch(track->sector_size_value)
+               {
+               case 0 : track->sector_size = 2048; break;
+               case 1 : track->sector_size = 2336; break;
+               case 2 : track->sector_size = 2352; break;
+               default: error_exit(ERR_GENERIC, "Unsupported sector size");
+               }
+
+         if (track->mode > 2) error_exit(ERR_GENERIC, "Unsupported format: Track mode not supported");
+
+         fseek(fsource, 29, SEEK_CUR);
+         if (image->version != CDI_V2)
+            {
+            fseek(fsource, 5, SEEK_CUR);
+            fread(&temp_value, 4, 1, fsource);
+            if (temp_value == 0xffffffff)
+                fseek(fsource, 78, SEEK_CUR); // extra data (DJ 3.00.780 and up)
+            }
 }
 
-void cdi_term()
+
+void CDI_skip_next_session (FILE *fsource, image_s *image)
 {
-	if (pstToc)
-		PfcFreeToc(pstToc);
+     fseek(fsource, 4, SEEK_CUR);
+     fseek(fsource, 8, SEEK_CUR);
+     if (image->version != CDI_V2) fseek(fsource, 1, SEEK_CUR);
 }
 
-void cdi_GetSessionsInfo(SessionInfo& sessions)
+void CDI_get_tracks (FILE *fsource, image_s *image)
 {
-	sessions=cdi_ses;
-	//pout[0]=2;//standby
-	//pout[1]=0;//0's
-	/*
-	if (session==0)
-	{
-		pout[2]=2;//count of sessions
-		pout[3]=(ti.lba_leadout.FAD>>16)&0xFF;//fad is sessions end
-		pout[4]=(ti.lba_leadout.FAD>>8)&0xFF;
-		pout[5]=(ti.lba_leadout.FAD>>0)&0xFF;
-	}
-	else
-	{
-		pout[2]=1;//track count on this session
-		pout[3]=(ti.entry[session-1].FAD>>16)&0xFF;//fad is session start
-		pout[4]=(ti.entry[session-1].FAD>>8)&0xFF;
-		pout[5]=(ti.entry[session-1].FAD>>0)&0xFF;
-	}*/
+     fread(&image->tracks, 2, 1, fsource);
 }
+
+void CDI_init (FILE *fsource, image_s *image, const char *fsourcename)
+{
+     fseek(fsource, 0L, SEEK_END);
+     image->length = ftell(fsource);
+
+     if (image->length < 8) error_exit(ERR_GENERIC, "Image file is too short");
+
+     fseek(fsource, image->length-8, SEEK_SET);
+     fread(&image->version, 4, 1, fsource);
+     fread(&image->header_offset, 4, 1, fsource);
+
+     /*if (errno != 0) error_exit(ERR_READIMAGE, fsourcename);*/
+     if (image->header_offset == 0) error_exit(ERR_GENERIC, "Bad image format");
+}
+
+void CDI_get_sessions (FILE *fsource, image_s *image)
+{
+#ifndef DEBUG_CDI
+     if (image->version == CDI_V35)
+        fseek(fsource, (image->length - image->header_offset), SEEK_SET);
+     else
+        fseek(fsource, image->header_offset, SEEK_SET);
+
+#else
+     fseek(fsource, 0L, SEEK_SET);
 #endif
+     fread(&image->sessions, 2, 1, fsource);
+}
+
