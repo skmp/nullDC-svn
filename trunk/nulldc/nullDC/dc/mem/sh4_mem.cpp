@@ -723,6 +723,7 @@ bool WriteMem_DB(u32 addr,u32 data,u32 size )
 //For debugger(gdb) - dynarec
 u8* GetMemPtr(u32 Addr,u32 size)
 {
+	verify((((Addr>>29) &0x7)!=7));
 	switch ((Addr>>26)&0x7)
 	{
 		case 3:
