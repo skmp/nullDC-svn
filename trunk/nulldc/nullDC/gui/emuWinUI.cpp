@@ -150,7 +150,7 @@ u32 uiInit(void)
 
 	InitCommonControls();
 
-	g_hWnd = CreateWindow( "Debugger", " emu Debug Window", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+	g_hWnd = CreateWindow( "Debugger", "nullDC v1.0.0 beta", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
 		CW_USEDEFAULT, CW_USEDEFAULT, 640,480, NULL, NULL, g_hInst, NULL );
 	if( !IsWindow(g_hWnd) ) {
 		MessageBox( NULL, "Couldn't Create Debug Window!","ERROR",MB_ICONERROR );
@@ -301,6 +301,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 			 gdBootHLE();
 			 EnablePatch(patch_resets_Misc);//mwhaha
 			 sh4_cpu->Reset(false);//do a hard reset
+			 sh4_cpu->SetRegister(Sh4RegType::reg_sr,0x70000000);
 			 sh4_cpu->SetRegister(Sh4RegType::reg_gbr,0x8c000000);
 			 sh4_cpu->SetRegister(Sh4RegType::reg_pc,0x8c008300);
 			 Start_DC();
