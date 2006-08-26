@@ -897,8 +897,4 @@ void gdrom_reg_Reset(bool Manual)
 {
 	//huh?
 }
-
-void gdBootHLE()
-{
-}
 #endif

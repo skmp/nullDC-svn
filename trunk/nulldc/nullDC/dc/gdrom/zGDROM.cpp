@@ -10,6 +10,7 @@ using namespace std;
 #include "dc/sh4/dmac.h"
 #include "dc/sh4/sh4_if.h"
 #include "dc/mem/sh4_mem.h"
+#include "dc/mem/memutil.h"
 #include "dc/sh4/rec_v1/blockmanager.h"
 
 #ifdef ZGDROM
@@ -462,6 +463,7 @@ void ProcessSPI(void)
 	case SPI_CD_READ:	// dma or pio
 	case SPI_CD_READ2:
 	 {
+		 LoadSyscallHooks();
 		if(0x28 != cmd[1])
 			printf("(GD)\tSPI_CD_READ: Params: %02X Unhandled atm !\n\n", cmd[1]);
 
@@ -755,65 +757,11 @@ void logd(u32 rw, u32 addr, u32 data)
 
 
 
-
-
-
-
-
-
-
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
 
 /*
 **	HLE Section
 */
-
-void gdBootHLE(void)
-{
-	printf("\n~~~\tgdBootHLE()\n\n");
-
-	u32 toc[102];
-	libGDR->gdr_info.GetToc(&toc[0], (DiskArea)1);
-
-	int i=0;
-	for(i=98; i>=0; i--)
-	{
-		if (toc[i]!=0xFFFFFFFF)
-		{
-			if(4 == (toc[i]&4))
-				break;
-		}
-	}
-	if (i==-1) i=0;
-//	u32 addr = ((toc[i]&0xFF00)<<8) | ((toc[i]>>8)&0xFF00) | ((toc[i]>>24)&255);
-
-	///////////////////////////
-	u8 * pmem = &mem_b[0x8000];
-	libGDR->gdr_info.ReadSector(pmem, 0, 16, 2048);	// addr?
-
-	char bootfile[16] = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
-	for(i=0; i<16; i++) {
-		if(0x20 == pmem[0x60+i])
-			break;
-		bootfile[i] =  pmem[0x60+i];
-	}
-
-	printf("IP.BIN BootFile: %s\n", bootfile);
-
-}
-
-
-
-
-
-
-
-
-
 
 void gdop(u32 opcode)
 {
@@ -824,7 +772,6 @@ void gdop(u32 opcode)
 
 
 void gdop(u32 opcode) { printf("ERROR - (GD-HLE) OP IN NAOMI SECTION - !\n\n"); }
-void gdBootHLE(void) { printf("ERROR - (GD-HLE) BOOT IN NAOMI SECTION - !\n\n"); }
 
 void NotifyEvent_gdrom(DriveEvent info, void* param) { 
 	printf("ERROR - NotifyEvent_gdrom() IN NAOMI SECTION - !\n\n");
