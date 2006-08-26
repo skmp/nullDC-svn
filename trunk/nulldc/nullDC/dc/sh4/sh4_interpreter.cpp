@@ -156,7 +156,7 @@ u32 THREADCALL sh4_int_ThreadEntry(void* ptar)
 	{
 		return sh4_int_ThreadEntry_code(ptar);
 	}
-	__except( ExeptionHandler( GetExceptionCode(), (GetExceptionInformation())->ExceptionRecord ) )
+	__except( ExeptionHandler( GetExceptionCode(), (GetExceptionInformation()) ) )
 	{
 
 	}

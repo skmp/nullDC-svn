@@ -90,6 +90,20 @@ void ubc_Init()
 }
 void ubc_Reset(bool Manual)
 {
+	/*
+	BARA H'FF20 0000 H'1F20 0000 32 Undefined Held Held Held Iclk
+	UBC BAMRA H'FF20 0004 H'1F20 0004 8 Undefined Held Held Held Iclk
+	UBC BBRA H'FF20 0008 H'1F20 0008 16 H'0000 Held Held Held Iclk
+	UBC BARB H'FF20 000C H'1F20 000C 32 Undefined Held Held Held Iclk
+	UBC BAMRB H'FF20 0010 H'1F20 0010 8 Undefined Held Held Held Iclk
+	UBC BBRB H'FF20 0014 H'1F20 0014 16 H'0000 Held Held Held Iclk
+	UBC BDRB H'FF20 0018 H'1F20 0018 32 Undefined Held Held Held Iclk
+	UBC BDMRB H'FF20 001C H'1F20 001C 32 Undefined Held Held Held Iclk
+	UBC BRCR H'FF20 0020 H'1F20 0020 16 H'0000*2 Held Held Held Iclk
+	*/
+	UBC_BBRA = 0x0;
+	UBC_BBRB = 0x0;
+	UBC_BRCR = 0x0;
 }
 void ubc_Term()
 {

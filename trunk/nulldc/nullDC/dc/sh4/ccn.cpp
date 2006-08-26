@@ -144,7 +144,10 @@ void ccn_Init()
 
 void ccn_Reset(bool Manual)
 {
-	
+	CCN_TRA					= 0x0;
+	CCN_EXPEVT				= 0x0;
+	CCN_MMUCR.reg_data		= 0x0;
+	CCN_CCR.reg_data		= 0x0;
 }
 
 void ccn_Term()

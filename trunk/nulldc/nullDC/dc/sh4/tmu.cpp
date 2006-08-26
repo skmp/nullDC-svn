@@ -216,6 +216,7 @@ void tmu_Init()
 
 void tmu_Reset(bool Manual)
 {
+/*
 	tmu_cnt[0]=0;
 	tmu_cnt[1]=0;
 	tmu_cnt[2]=0;
@@ -223,6 +224,13 @@ void tmu_Reset(bool Manual)
 	tmu_cnt_max[0]=16;
 	tmu_cnt_max[1]=16;
 	tmu_cnt_max[2]=16;
+*/
+	TMU_TOCR=TMU_TSTR=0;
+	tmu_regs_COR[0] = tmu_regs_COR[1] = tmu_regs_COR[2] = 0xffffffff;
+	tmu_regs_CNT[0] = tmu_regs_CNT[1] = tmu_regs_CNT[2] = 0xffffffff;	
+	UpdateTMUCounts(0);
+	UpdateTMUCounts(1);
+	UpdateTMUCounts(2);
 }
 
 void tmu_Term()

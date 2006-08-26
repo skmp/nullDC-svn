@@ -194,6 +194,11 @@ void bsc_Init()
 	BSC[(BSC_GPIOIC_addr&0xFF)>>2].readFunction=0;
 	BSC[(BSC_GPIOIC_addr&0xFF)>>2].writeFunction=0;
 	BSC[(BSC_GPIOIC_addr&0xFF)>>2].data16=&BSC_GPIOIC.full;
+#ifdef BUILD_NAOMI
+	BSC_RFCR.full = 17;
+	BSC[(BSC_RFCR_addr&0xFF)>>2].flags=REG_16BIT_READWRITE | REG_READ_DATA ;//| REG_WRITE_DATA;
+#endif
+
 }
 
 
@@ -201,11 +206,45 @@ void bsc_Init()
 void bsc_Reset(bool Manual)
 {
 #ifndef BUILD_NAOMI
-
-#else
 	BSC_RFCR.full = 17;
-	BSC[(BSC_RFCR_addr&0xFF)>>2].flags=REG_16BIT_READWRITE | REG_READ_DATA ;//| REG_WRITE_DATA;
 #endif
+/*
+BSC BCR1 H'FF80 0000 H'1F80 0000 32 H'0000 0000*2 Held Held Held Bclk
+BSC BCR2 H'FF80 0004 H'1F80 0004 16 H'3FFC*2 Held Held Held Bclk
+BSC WCR1 H'FF80 0008 H'1F80 0008 32 H'7777 7777 Held Held Held Bclk
+BSC WCR2 H'FF80 000C H'1F80 000C 32 H'FFFE EFFF Held Held Held Bclk
+BSC WCR3 H'FF80 0010 H'1F80 0010 32 H'0777 7777 Held Held Held Bclk
+
+BSC MCR H'FF80 0014 H'1F80 0014 32 H'0000 0000 Held Held Held Bclk
+BSC PCR H'FF80 0018 H'1F80 0018 16 H'0000 Held Held Held Bclk
+BSC RTCSR H'FF80 001C H'1F80 001C 16 H'0000 Held Held Held Bclk
+BSC RTCNT H'FF80 0020 H'1F80 0020 16 H'0000 Held Held Held Bclk
+BSC RTCOR H'FF80 0024 H'1F80 0024 16 H'0000 Held Held Held Bclk
+BSC RFCR H'FF80 0028 H'1F80 0028 16 H'0000 Held Held Held Bclk
+BSC PCTRA H'FF80 002C H'1F80 002C 32 H'0000 0000 Held Held Held Bclk
+BSC PDTRA H'FF80 0030 H'1F80 0030 16 Undefined Held Held Held Bclk
+BSC PCTRB H'FF80 0040 H'1F80 0040 32 H'0000 0000 Held Held Held Bclk
+BSC PDTRB H'FF80 0044 H'1F80 0044 16 Undefined Held Held Held Bclk
+BSC GPIOIC H'FF80 0048 H'1F80 0048 16 H'0000 0000 Held Held Held Bclk
+BSC SDMR2 H'FF90 xxxx H'1F90 xxxx 8 Write-only Bclk
+BSC SDMR3 H'FF94 xxxx H'1F94 xxxx 8 Bclk
+	*/
+	BSC_BCR1.full=0x0;
+	BSC_BCR2.full=0x3FFC;
+	BSC_WCR1.full=0x77777777;
+	BSC_WCR2.full=0xFFFEEFFF;
+	BSC_WCR3.full=0x07777777;
+
+	BSC_MCR.full=0x0;
+	BSC_PCR.full=0x0;
+	BSC_RTCSR.full=0x0;
+	BSC_RTCNT.full=0x0;
+	BSC_RTCOR.full=0x0;
+	BSC_PCTRA.full=0x0;
+	//BSC_PDTRA.full; undef
+	BSC_PCTRB.full=0x0;
+	//BSC_PDTRB.full; undef
+	BSC_GPIOIC.full=0x0;
 }
 void bsc_Term()
 {

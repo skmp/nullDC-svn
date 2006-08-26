@@ -151,7 +151,7 @@ void OpDissCFS(char* text,const char* tx1,u32 pc,u16 opcode)
 			}
 			else if (strcmp2(tx1,"bdisp12>"))
 			{
-				text+=sprintf(text,"0x%X",((GetSImm12(opcode))*2 + 4 + pc));
+				text+=sprintf(text,"0x%X",((  ((s16)((GetImm12(opcode))<<4)) >>3)  + pc + 4));
 			}
 			else if (strcmp2(tx1,"imm8>"))
 			{

@@ -281,8 +281,13 @@ void intc_Init()
 
 void intc_Reset(bool Manual)
 {
+	INTC_ICR.reg_data = 0x0;
+	INTC_IPRA.reg_data = 0x0;
+	INTC_IPRB.reg_data = 0x0;
+	INTC_IPRC.reg_data = 0x0;
 }
 
 void intc_Term()
 {
+
 }
