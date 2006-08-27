@@ -146,7 +146,7 @@ int main(int argc, char* argv[])
 	{
 		main___(argc,argv);
 	}
-	__except( ExeptionHandler( GetExceptionCode(), (GetExceptionInformation())->ExceptionRecord ) )
+	__except( ExeptionHandler( GetExceptionCode(), (GetExceptionInformation()) ) )
 	{
 
 	}

@@ -171,7 +171,7 @@ T __fastcall ReadMem_P4(u32 addr)
 		//printf("Unhandled p4 read [Instruction TLB address array] 0x%x\n",addr);
 		{
 			u32 entry=(addr>>8)&3;
-			return ITLB[entry].Address.reg_data;
+			return ITLB[entry].Address.reg_data | (ITLB[entry].Data.V<<8);
 		}
 		break;
 
@@ -202,7 +202,10 @@ T __fastcall ReadMem_P4(u32 addr)
 		//printf("Unhandled p4 read [Unified TLB address array] 0x%x\n",addr);
 		{
 			u32 entry=(addr>>8)&63;
-			return UTLB[entry].Address.reg_data;
+			u32 rv=UTLB[entry].Address.reg_data;
+			rv|=UTLB[entry].Data.D<<9;
+			rv|=UTLB[entry].Data.V<<8;
+			return rv;
 		}
 		break;
 
@@ -259,7 +262,8 @@ void __fastcall WriteMem_P4(u32 addr,T data)
 		//printf("Unhandled p4 Write [Instruction TLB address array] 0x%x = %x\n",addr,data);
 		{
 			u32 entry=(addr>>8)&3;
-			ITLB[entry].Address.reg_data=data;
+			ITLB[entry].Address.reg_data=data & 0xFFFFFEFF;
+			ITLB[entry].Data.V=(data>>8) & 1;
 			ITLB_Sync(entry);
 			return;
 		}

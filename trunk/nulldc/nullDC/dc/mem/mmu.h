@@ -96,3 +96,4 @@ u32 __fastcall mmu_ReadMem32(u32 addr);
 void __fastcall mmu_WriteMem8(u32 addr,u8 data);
 void __fastcall mmu_WriteMem16(u32 addr,u16 data);
 void __fastcall mmu_WriteMem32(u32 addr,u32 data);
+bool __fastcall mmu_TranslateSQW(u32& addr);

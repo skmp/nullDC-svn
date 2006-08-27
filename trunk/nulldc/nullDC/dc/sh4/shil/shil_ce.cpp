@@ -192,7 +192,12 @@ void ce_SetConst(u8 reg,u32 value)
 {
 	if (ce_IsConst(reg))
 	{
-		shil_ce_gpr[reg].RegValue=value;
+		//shil_ce_gpr[reg].RegValue=value;
+		if (shil_ce_gpr[reg].RegValue!=value)
+		{
+			shil_ce_gpr[reg].IsRB=false;
+			shil_ce_gpr[reg].RegValue=value;
+		}
 	}
 	else
 		ce_die("ce_SetConst : can't set const when reg is not const");
@@ -209,7 +214,14 @@ void ce_MakeConst(u8 reg,u32 value)
 		}
 		else
 		{
-			shil_ce_gpr[reg].RegValue=value;
+			ce_die("ce_MakeConst : reg is allready const");
+			/*
+			if (shil_ce_gpr[reg].RegValue!=value)
+			{
+				shil_ce_gpr[reg].IsRB=false;
+				shil_ce_gpr[reg].RegValue=value;
+			}
+			*/
 		}
 	}
 	else
@@ -261,6 +273,12 @@ void ce_WriteBack(u8 reg,shil_stream* il)
 	}
 }
 
+void ce_WriteBack_all(shil_stream* il)
+{
+	for (u8 i=0;i<160;i++)
+		ce_WriteBack(i,il);
+}
+
 void ce_WriteBack_aks(u8 reg,shil_stream* il)
 {
 	ce_WriteBack(reg,il);
@@ -310,6 +328,9 @@ u32 shil_optimise_pass_ce_main(BasicBlock* bb)
 		{
 			ce_WriteBack_aks(i,&bb->ilst);
 		}
+		ce_WriteBack_aks(reg_mach,&bb->ilst);
+		ce_WriteBack_aks(reg_macl,&bb->ilst);
+		
 		bb->ilst.op_count=(u32)bb->ilst.opcodes.size();
 	}
 
@@ -447,7 +468,10 @@ shilh(mov)
 		//reg1 gets a known value
 		if (ce_CanBeConst(op->reg1))
 		{
-			ce_MakeConst(op->reg1,op->imm1);
+			if (ce_IsConst(op->reg1))
+				ce_SetConst(op->reg1,op->imm1);
+			else
+				ce_MakeConst(op->reg1,op->imm1);
 			rv=true;
 		}
 		else
@@ -496,16 +520,18 @@ shilh(rcr)
 	return false;
 }
 //ReadMem 
-u32 GetRamReadAdr(shil_opcode* op)
+bool GetRamReadAdr(shil_opcode* op,u32* addr)
 {
 	if ((op->flags & (FLAG_R0|FLAG_GBR|FLAG_REG2))==0)
 	{//[imm] form
+		verify((op->flags & (~(3|FLAG_SX))) == (FLAG_IMM1|FLAG_REG1));
 		if (IsOnRam(op->imm1))
 		{
-			return op->imm1;
+			*addr= op->imm1;
+			return true;
 		}
 	}
-	return 0xFFFFFFFF;
+	return false;
 }
 bool ce_ReadWriteParams(shil_opcode* op)
 {
@@ -564,35 +590,52 @@ shilh(readm)
 {
 	bool rv=ce_ReadWriteParams(op);
 
-	u32 addr=GetRamReadAdr(op);
-	if (addr!=0xFFFFFFFF && bb->IsMemLocked(addr))
+	u32 addr;
+	
+	if (GetRamReadAdr(op,&addr))
 	{
 		u32 size=op->flags&3;
-		u32 data=0;
-		if (size==FLAG_64)
-			__asm int 3;
-		if (size==0)
+		if (bb->IsMemLocked(addr) && (size!=FLAG_64))
 		{
-			data=(u32)(s32)(s8)ReadMem8(addr);
-		}
-		else if (size==1)
-		{
-			data=(u32)(s32)(s16)ReadMem16(addr);
-		}
-		else
-		{
-			data=ReadMem32(addr);
-		}
+			u32 data=0;
+			
+			if (size==0)
+			{
+				verify(op->flags & FLAG_SX);
+				data=(u32)(s32)(s8)ReadMem8(addr);
+			}
+			else if (size==1)
+			{
+				verify(op->flags & FLAG_SX);
+				data=(u32)(s32)(s16)ReadMem16(addr);
+			}
+			else
+			{
+				verify((op->flags & FLAG_SX)==0);
+				data=ReadMem32(addr);
+			}
 
-		if (ce_CanBeConst(op->reg1))
-		{
-			ce_MakeConst(op->reg1,data);
-		}
-		else
-			il->mov((Sh4RegType)op->reg1,data);
+			bb->locked.push_back(addr);
+			bb->locked.push_back(data);
 
-		ce_re_run=true;
-		return true;
+			if (ce_CanBeConst(op->reg1))
+			{
+				if (ce_IsConst(op->reg1))
+				{
+					ce_SetConst(op->reg1,data);
+				}
+				else
+					ce_MakeConst(op->reg1,data);
+			}
+			else
+			{	
+				il->mov((Sh4RegType)op->reg1,data);
+			}
+				//ce_die("shilh(readm) : ce_CanBeConst(op->reg1)==false");//il->mov((Sh4RegType)op->reg1,data);
+
+			ce_re_run=true;
+			return true;
+		}
 	}
 
 	//even if we did optimise smth , a readback may be needed
@@ -610,6 +653,7 @@ shilh(writem)
 	bool rv=ce_ReadWriteParams(op);
 	//even if we did optimise smth , a readback may be needed
 	//since it uses opcode flags to decode what to write back , it should't cause any non needed write backs ;)
+	ce_WriteBack_all(il);
 	DefHanlder(op,bb,il);
 
 	//we did chainge smth :0

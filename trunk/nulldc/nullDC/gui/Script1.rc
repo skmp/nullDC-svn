@@ -274,7 +274,8 @@ BEGIN
         MENUITEM "&Open bin/elf",               ID_FILE_OPENBIN
         MENUITEM "Load bin/elf",                ID_FILE_LOADBIN
         MENUITEM SEPARATOR
-        MENUITEM "Boot GDRom (HLE)",            ID_FILE_BOOTHLE
+        MENUITEM "Normal Boot",                 ID_FILE_NORMALBOOT
+        MENUITEM "HLE GDRom Boot",              ID_FILE_BOOTHLE
         MENUITEM SEPARATOR
         MENUITEM "E&xit",                       ID_FILE_EXIT
     END

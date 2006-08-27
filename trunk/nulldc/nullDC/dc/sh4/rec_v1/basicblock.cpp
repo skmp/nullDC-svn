@@ -182,20 +182,21 @@ CompiledSuperBlockInfo* CompiledBlockInfo::GetSP()
 //Basic Block
 bool BasicBlock::IsMemLocked(u32 adr)
 {
-	if (flags.ProtectionType==BLOCK_PROTECTIONTYPE_MANUAL)
+	if (IsOnRam(adr)==false)
 		return false;
 
-	if (IsOnRam(adr)==false)
+	if (flags.ProtectionType==BLOCK_PROTECTIONTYPE_MANUAL)
 		return false;
 
 	//if block isnt on ram , then there's no way to tell if its locked (well , bios mem is allways locked :p)
 	if (OnRam()==false)
 		return false;
 
-	
+	verify(page_start()<=page_end());
+
 	u32 adrP=GetRamPageFromAddress(adr);
 
-	return (page_start() <=adrP) && (page_end()>=adrP);
+	return (page_start() <=adrP) && (adrP<=page_end());
 }
 
 void BasicBlock::SetCompiledBlockInfo(CompiledBasicBlock* cBl)

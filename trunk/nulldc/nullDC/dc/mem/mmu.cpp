@@ -105,22 +105,8 @@ u32 fast_reg_lut[8]=
 	,1		//P4
 };
 
-//Do a full lookup on the UTLB entry's
-u32 mmu_full_lookup(u32 va,u32& rv,u32 translation_type)
+u32 mmu_full_SQ(u32 va,u32& rv,u32 translation_type)
 {
-	if ((sr.MD==0) && (va&0x80000000)!=0)
-	{
-		//if SQ disabled , or if if SQ on but out of SQ mem then BAD ADDR ;)
-		if (CCN_MMUCR.SQMD==0 || (va&0xFC000000)!=0xE0000000)
-			return MMU_ERROR_BADADDR;
-	}
-
-	if ((CCN_MMUCR.AT==0) || (fast_reg_lut[va>>29]!=0))
-	{
-		rv=va;
-		return MMU_ERROR_NONE;
-	}
-	
 	/*if (va==0xC0C110)
 	{
 		__asm int 3;
@@ -193,6 +179,94 @@ u32 mmu_full_lookup(u32 va,u32& rv,u32 translation_type)
 	return MMU_ERROR_NONE;
 }
 
+//Do a full lookup on the UTLB entry's
+u32 mmu_full_lookup(u32 va,u32& rv,u32 translation_type)
+{
+	if ((sr.MD==0) && (va&0x80000000)!=0)
+	{
+		//if SQ disabled , or if if SQ on but out of SQ mem then BAD ADDR ;)
+		if (CCN_MMUCR.SQMD==0 || (va&0xFC000000)!=0xE0000000)
+			return MMU_ERROR_BADADDR;
+	}
+
+	if ((CCN_MMUCR.AT==0) || (fast_reg_lut[va>>29]!=0))
+	{
+		rv=va;
+		return MMU_ERROR_NONE;
+	}
+	
+	CCN_MMUCR.URC++;
+	if (CCN_MMUCR.URB==CCN_MMUCR.URC)
+		CCN_MMUCR.URC=0;
+	
+
+	u32 entry=0;
+	u32 nom=0;
+
+
+	for (u32 i=0;i<64;i++)
+	{
+		if (UTLB[i].Data.V==0)
+			continue;
+		u32 sz=UTLB[i].Data.SZ1*2+UTLB[i].Data.SZ0;
+		u32 mask=mmu_mask[sz];
+
+		if ( (((UTLB[i].Address.VPN<<10)&mask)==(va&mask)) )
+		{
+			bool asid_match = (sr.MD==0) || ( (UTLB[i].Data.SH==0)  && (CCN_MMUCR.SV == 0 ) );
+
+			if ( ( asid_match==false ) || (UTLB[i].Address.ASID==CCN_PTEH.ASID) )
+			{
+				entry=i;
+				nom++;
+				//VPN->PPN | low bits
+				rv=((UTLB[i].Data.PPN<<10)&mask) | (va&(~mask));
+			}
+		}
+	}
+
+	if (nom!=1)
+	{
+		if (nom)
+		{
+			return MMU_ERROR_TLB_MHIT;
+		}
+		else
+		{
+			return MMU_ERROR_TLB_MISS;
+		}
+	}
+
+	u32 md=UTLB[entry].Data.PR>>1;
+	
+	//0X  & User mode-> protection violation
+	//Priv mode protection
+	if ((md==0) && sr.MD==0)
+	{
+		if (translation_type==MMU_TT_IREAD)
+			return MMU_ERROR_EXECPROT;
+		else
+			return MMU_ERROR_PROTECTED;
+	}
+
+	//X0 -> read olny
+	//X1 -> read/write , can be FW
+
+	//Write Protection (Lock or FW)
+	if (translation_type==MMU_TT_DWRITE)
+	{
+		if ((UTLB[entry].Data.PR&1)==0)
+			return MMU_ERROR_PROTECTED;
+		else if (UTLB[entry].Data.D==0)
+			return MMU_ERROR_FIRSTWRITE;
+	}
+	
+	return MMU_ERROR_NONE;
+}
+
+u32 mmu_data_translation(u32 va,u32& rv,u32 translation_type)
+{
+}
 void MMU_Init()
 {
 }
@@ -300,4 +374,22 @@ void __fastcall mmu_WriteMem32(u32 addr,u32 data)
 	}
 	else
 		mmu_raise_exeption(tv,addr,MMU_TT_DWRITE);
+}
+
+bool __fastcall mmu_TranslateSQW(u32& addr)
+{
+	/*
+	if (addr&0x1f)
+	{
+		mmu_raise_exeption(MMU_ERROR_BADADDR,addr,MMU_TT_DWRITE);
+		return true;
+	}*/
+	u32 tv=mmu_full_SQ(addr,addr,MMU_TT_DWRITE);
+	if (tv!=0)
+	{
+		mmu_raise_exeption(tv,addr,MMU_TT_DWRITE);
+		return true;
+	}
+
+	return false;
 }

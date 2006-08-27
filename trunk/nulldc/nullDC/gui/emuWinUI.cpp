@@ -269,7 +269,8 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 			}
 			//add warn message
 			return 0;
-			case ID_FILE_LOADBIN:
+
+		case ID_FILE_LOADBIN:
 			//if (!sh4_cpu->IsCpuRunning())	//if cpu is stoped
 			{
 				ZeroMemory(&ofn, sizeof(OPENFILENAME));
@@ -313,6 +314,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 			return 0;
 
 			///////// SYSTEM MENU
+		case ID_FILE_NORMALBOOT:
 		case ID_SYSTEM_START:
 			Start_DC();
 			return 0;

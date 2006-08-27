@@ -655,4 +655,4 @@ public:
     }
 };
 
-int ExeptionHandler(u32 dwCode, void* pExceptionRecord);
+int ExeptionHandler(u32 dwCode, void* pExceptionPointers);

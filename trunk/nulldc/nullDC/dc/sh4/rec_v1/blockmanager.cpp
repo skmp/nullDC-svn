@@ -472,8 +472,28 @@ void UnRegisterBlock(CompiledBlockInfo* block)
 
 //suspend/ free related ;)
 //called to suspend a block
-//can be called from a mem invalidation , or directly from a manualy invalidated block
-void CBBs_BlockSuspended(CompiledBlockInfo* block);
+//can be called from a mem invalidation
+void CBBs_BlockSuspended(CompiledBlockInfo* block,u32* sp);
+void __fastcall SuspendBlock_exept(CompiledBlockInfo* block,u32* sp)
+{
+	//remove the block from :
+	//
+	//not full block list , its removed from here olny when deleted (thats why its "full block" list ..)
+	//page block list
+	//look up block list
+	//Look up guess block list
+	//unregisting a block does exactly all that :)
+
+	verify(block!=BLOCK_NONE);
+	UnRegisterBlock(block);
+	block->Suspend();
+	CBBs_BlockSuspended(block,sp);
+
+	//
+	//add it to the "to be suspended" list
+	SuspendedBlocks.Add(block);
+}
+//called from a manualy invalidated block
 void __fastcall SuspendBlock(CompiledBlockInfo* block)
 {
 	//remove the block from :
@@ -487,7 +507,7 @@ void __fastcall SuspendBlock(CompiledBlockInfo* block)
 	verify(block!=BLOCK_NONE);
 	UnRegisterBlock(block);
 	block->Suspend();
-	CBBs_BlockSuspended(block);
+	CBBs_BlockSuspended(block,0);
 
 	//
 	//add it to the "to be suspended" list
@@ -503,7 +523,7 @@ void FreeBlock(CompiledBlockInfo* block)
 	DeleteBlock(block);
 }
 
-bool RamLockedWrite(u8* address)
+bool RamLockedWrite(u8* address,u32* sp)
 {
 	size_t offset=address-mem_b.data;
 
@@ -518,7 +538,7 @@ bool RamLockedWrite(u8* address)
 		//	if ((*list)[i])
 		//	{
 		while(list->ItemCount)
-			SuspendBlock((*list)[list->ItemCount-1]);
+			SuspendBlock_exept((*list)[list->ItemCount-1],sp);
 		//	}
 		//}
 		//list->clear();

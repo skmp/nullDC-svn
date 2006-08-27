@@ -3,7 +3,7 @@
 
 #include "gdrom_if.h"
 
-#ifndef ZGDROM
+#ifdef OLD_GDROM
 #include "types.h"
 #include "plugins/plugin_manager.h"
 
@@ -840,6 +840,7 @@ void gd_DoDMA()
 	// Setup some of the regs so it thinks we've finished DMA
 
 	SB_GDLEN = 0x00000000;
+	SB_GDLEND=len;
 	SB_GDSTAR = (src + len);
 	SB_GDST=0;//done
 

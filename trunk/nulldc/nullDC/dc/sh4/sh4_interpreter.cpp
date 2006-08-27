@@ -445,6 +445,17 @@ bool ExecuteDelayslot()
 
 	return true;
 }
+bool ExecuteDelayslot_RTE()
+{
+	exec_cycles+=CPU_RATIO;
+
+	pc+=2;
+	u32 op=ReadMem16(pc);
+	sr.SetFull(ssr);
+	ExecuteOpcode(op);
+
+	return true;
+}
 
 #include "ccn.h"
 
@@ -458,6 +469,7 @@ u32 shitaaa=0;
 u32 gcp_timer=0;
 u32 gpc_counter=0;
 #define cpu_ratio 100
+
 int __fastcall UpdateSystem(u32 Cycles)
 {
 	Cycles=Cycles*100/cpu_ratio;

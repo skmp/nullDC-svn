@@ -16,7 +16,6 @@ using namespace std;
 #ifdef ZGDROM
 #ifndef BUILD_NAOMI
 
-
 // A few vectors or lists for our shitt
 vector<u16> cmdbuff;	// max 16 bytes
 vector<u16> databuff;	// max ???
@@ -617,6 +616,7 @@ void DMAC_Ch3St(u32 data)
 		printf("\n!\tGDROM: SB_GDDIR %X (TO AICA WAVE MEM?) !\n\n", SB_GDDIR);
 
 	SB_GDLEN = 0x00000000;
+	SB_GDLEND=len;
 	SB_GDSTAR = (src + len);
 	SB_GDST=0;//done
 

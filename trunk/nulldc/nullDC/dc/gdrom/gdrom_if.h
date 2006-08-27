@@ -8,10 +8,14 @@
 #include "plugins/plugin_manager.h"
 
 #define ZGDROM
+//#define OLD_GDROM
+//#define TEST_GDROM
 
-#ifndef ZGDROM
+#ifdef OLD_GDROM
 #include "gdromv2_old.h"
-#else
+#endif
+
+#ifdef ZGDROM
 #include "zGDROM.h"
 #endif
 
@@ -23,6 +27,7 @@ void gdrom_reg_Reset(bool Manual);
 u32  ReadMem_gdrom(u32 Addr, u32 sz);
 void WriteMem_gdrom(u32 Addr, u32 data, u32 sz);
 void NotifyEvent_gdrom(DriveEvent info,void* param);
+
 void gdBootHLE();// Load Scrambled binary off of Current CD Media and boot ip.bin
 
 

@@ -28,9 +28,9 @@ sh4op(i0000_nnnn_0010_0011)
  sh4op(i0000_0000_0010_1011)
 {
 	//iNimp("rte");
-	sr.SetFull(ssr);
+	//sr.SetFull(ssr);
 	u32 newpc = spc;//+2 is added after instruction
-	ExecuteDelayslot();
+	ExecuteDelayslot_RTE();
 	pc = newpc -2;
 	RemoveCall(spc,1);
 	if (UpdateSR())

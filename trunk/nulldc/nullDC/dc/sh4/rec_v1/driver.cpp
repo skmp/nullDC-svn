@@ -159,6 +159,7 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 			push edi
 			push ebx
 			push ebp
+			mov block_stack_pointer,esp;
 		}
 
 		fp();
@@ -221,7 +222,7 @@ u32 THREADCALL rec_sh4_int_ThreadEntry_stub(void* ptar)
 	{
 		return rec_sh4_int_ThreadEntry(ptar);
 	}
-	__except( ExeptionHandler( GetExceptionCode(), (GetExceptionInformation())->ExceptionRecord ) )
+	__except( ExeptionHandler( GetExceptionCode(), (GetExceptionInformation()) ) )
 	{
 
 	}

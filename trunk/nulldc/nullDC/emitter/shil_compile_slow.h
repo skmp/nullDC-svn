@@ -17,6 +17,7 @@ struct shil_scs
 
 extern shil_scs shil_compile_slow_settings;
 
+extern u32* block_stack_pointer;
 void CompileBasicBlock_slow(BasicBlock* block); 
 void bb_link_compile_inject_TF_stub(CompiledBlockInfo* ptr);
 void bb_link_compile_inject_TT_stub(CompiledBlockInfo* ptr);

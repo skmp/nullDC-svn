@@ -185,6 +185,7 @@ class BasicBlock: public CodeRegion
 {
 	public :
 
+	vector<u32> locked;
 	BasicBlock(CodeRegion& cregion):CodeRegion(cregion)
 	{
 		flags.full=0;

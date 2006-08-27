@@ -2045,8 +2045,25 @@ extern u32 rec_cycles;
 u32 call_ret_address=0xFFFFFFFF;//holds teh return address of the previus call ;)
 CompiledBlockInfo* pcall_ret_address=0;//holds teh return address of the previus call ;)
 
-void CBBs_BlockSuspended(CompiledBlockInfo* block)
+CompiledBlockInfo* p_current;
+u32* block_stack_pointer;
+//sp is 0 if manual discard
+void CBBs_BlockSuspended(CompiledBlockInfo* block,u32* sp)
 {
+	u32* sp_inblock=block_stack_pointer-1;
+
+	if(sp_inblock==sp)
+	{
+		//printf("Exeption within the same block !\n");
+	}
+	else
+	{
+		if (sp!=0)
+		{
+			//printf("Exeption possibly within the same block ; 0x%X\n",sp_inblock[-1]);
+			//printf("Block EP : 0x%X , sz : 0x%X\n",block->Code,block->size);
+		}
+	}
 	if (pcall_ret_address == block)
 	{
 		call_ret_address=0xFFFFFFFF;
@@ -2072,6 +2089,7 @@ void CompileBasicBlock_slow(BasicBlock* block)
 
 	//perform constan elimination on this block :)
 	shil_optimise_pass_ce_driver(block);
+	block->flags.DisableHS=1;
 
 
 	x86e=new emitter<>();
@@ -2118,6 +2136,8 @@ void CompileBasicBlock_slow(BasicBlock* block)
 			x86e->x86SetJ8(patch);
 		}
 	}
+
+	
 	
 	if (do_hs)
 	{
@@ -2427,6 +2447,7 @@ void CompileBasicBlock_slow(BasicBlock* block)
 
 	block_count++;
 	
+	/*
 	if ((block_count%512)==128)
 	{
 		printf("Recompiled %d blocks\n",block_count);
@@ -2437,7 +2458,7 @@ void CompileBasicBlock_slow(BasicBlock* block)
 			printf("Native/Fallback ratio : %d:%d [%d:%d]\n",native,fallbacks,native,fallbacks);
 		printf("Average block size : %d opcodes ; ",(fallbacks+native)/block_count);
 	//	printf("%d const hits and %d const misses\n",const_hit,non_const_hit);
-	}
+	}*/
 	
 	delete fra;
 	delete ira;
