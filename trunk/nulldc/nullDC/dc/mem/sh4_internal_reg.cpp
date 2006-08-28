@@ -157,14 +157,17 @@ T __fastcall ReadMem_P4(u32 addr)
 	case 0xE2:
 	case 0xE3:
 		printf("Unhandled p4 read [Store queue] 0x%x\n",addr);
+		return 0;
 		break;
 
 	case 0xF0:
-		printf("Unhandled p4 read [Instruction cache address array] 0x%x\n",addr);
+		//printf("Unhandled p4 read [Instruction cache address array] 0x%x\n",addr);
+		return 0;
 		break;
 
 	case 0xF1:
-		printf("Unhandled p4 read [Instruction cache data array] 0x%x\n",addr);
+		//printf("Unhandled p4 read [Instruction cache data array] 0x%x\n",addr);
+		return 0;
 		break;
 
 	case 0xF2:
@@ -195,7 +198,8 @@ T __fastcall ReadMem_P4(u32 addr)
 		break;
 
 	case 0xF5:
-		printf("Unhandled p4 read [Operand cache data array] 0x%x",addr);
+		//printf("Unhandled p4 read [Operand cache data array] 0x%x",addr);
+		return 0;
 		break;
 
 	case 0xF6:
@@ -251,11 +255,13 @@ void __fastcall WriteMem_P4(u32 addr,T data)
 		break;
 
 	case 0xF0:
-		printf("Unhandled p4 Write [Instruction cache address array] 0x%x = %x\n",addr,data);
+		//printf("Unhandled p4 Write [Instruction cache address array] 0x%x = %x\n",addr,data);
+		return;
 		break;
 
 	case 0xF1:
-		printf("Unhandled p4 Write [Instruction cache data array] 0x%x = %x\n",addr,data);
+		//printf("Unhandled p4 Write [Instruction cache data array] 0x%x = %x\n",addr,data);
+		return;
 		break;
 
 	case 0xF2:
@@ -291,14 +297,15 @@ void __fastcall WriteMem_P4(u32 addr,T data)
 		break;
 
 	case 0xF5:
-		printf("Unhandled p4 Write [Operand cache data array] 0x%x = %x\n",addr,data);
+		//printf("Unhandled p4 Write [Operand cache data array] 0x%x = %x\n",addr,data);
+		return;
 		break;
 
 	case 0xF6:
 		{
 			if (addr&0x80)
 			{
-			//	printf("Unhandled p4 Write [Unified TLB address array , Associative Write] 0x%x = %x\n",addr,data);
+				printf("Unhandled p4 Write [Unified TLB address array , Associative Write] 0x%x = %x\n",addr,data);
 				CCN_PTEH_type t;
 				t.reg_data=data;
 				
@@ -308,6 +315,11 @@ void __fastcall WriteMem_P4(u32 addr,T data)
 					{
 						UTLB[i].Data.V=((u32)data>>8)&1;
 						UTLB[i].Data.D=((u32)data>>9)&1;
+					}
+					if ((ITLB[i].Address.VPN==t.VPN) && (ITLB[i].Address.ASID == t.ASID))
+					{
+						ITLB[i].Data.V=((u32)data>>8)&1;
+						ITLB[i].Data.D=((u32)data>>9)&1;
 					}
 				}
 			}

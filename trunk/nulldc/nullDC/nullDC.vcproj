@@ -729,14 +729,6 @@
 				<File
 					RelativePath=".\dc\mem\mmu.cpp"
 					>
-					<FileConfiguration
-						Name="Release-NoTrace|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="0"
-						/>
-					</FileConfiguration>
 				</File>
 				<File
 					RelativePath=".\dc\mem\mmu.h"

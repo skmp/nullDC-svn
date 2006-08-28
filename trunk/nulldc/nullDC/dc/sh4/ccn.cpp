@@ -39,7 +39,13 @@ void CCN_MMUCR_write(u32 value)
 	
 	if (temp.TI)
 	{
+		printf("TI , invalidating *TBL\n");
 		temp.TI=0;
+
+		for (u32 i=0;i<4;i++)
+		{
+			ITLB[i].Data.V=0;
+		}
 
 		for (u32 i=0;i<64;i++)
 		{

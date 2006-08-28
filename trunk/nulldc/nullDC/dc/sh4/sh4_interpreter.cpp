@@ -440,7 +440,8 @@ bool ExecuteDelayslot()
 	exec_cycles+=CPU_RATIO;
 
 	pc+=2;
-	u32 op=ReadMem16(pc);
+	u32 op=IReadMem16(pc);
+	verify(sh4_exept_raised==false);
 	ExecuteOpcode(op);
 
 	return true;
@@ -450,7 +451,7 @@ bool ExecuteDelayslot_RTE()
 	exec_cycles+=CPU_RATIO;
 
 	pc+=2;
-	u32 op=ReadMem16(pc);
+	u32 op=IReadMem16(pc);
 	sr.SetFull(ssr);
 	ExecuteOpcode(op);
 

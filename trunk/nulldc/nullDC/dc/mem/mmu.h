@@ -59,7 +59,7 @@ void ITLB_Sync(u32 entry);
 //Do a full lookup on the UTLB entry's
 //Return Values
 //Translation was sucessfull , rv contains return
-#define MMU_ERROR_NONE 0
+#define MMU_ERROR_NONE	   0
 //TLB miss
 #define MMU_ERROR_TLB_MISS 1
 //TLB Multyhit
@@ -80,8 +80,7 @@ void ITLB_Sync(u32 entry);
 #define MMU_TT_DWRITE 1
 //Data write
 #define MMU_TT_DREAD 2
-//Do an mmu lookup for va , returns translation status , if MMU_ERROR_NONE , rv is set to translated address
-u32 mmu_full_lookup(u32 va,u32& rv,u32 translation_type);
+//Do an mmu lookup for va , returns translation status , if MMU_ERROR_NONE , rv is set to translated index
 
 
 void MMU_Init();
