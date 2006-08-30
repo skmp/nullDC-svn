@@ -50,10 +50,9 @@ struct DriveIF
 	DriveGetSessionInfoModFP*GetSessionInfo;
 	InitFP*				Init;
 	TermFP*				Term;
-
-	bool Inited;
-	gd_drivers driver;
+	
 	char name[128];
+	bool Inited;
 };
 
 

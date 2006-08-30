@@ -74,7 +74,7 @@ bool ConvertSector(u8* in_buff , u8* out_buff , int from , int to,int sector)
 
 void InitDrive()
 {
-	char fn[512];
+	char fn[512]="";
 	GetFile(fn,"CD Images (*.cdi;*.mds) \0*.cdi;*.mds\0\0");
 
 	if (CurrDrive !=0 && CurrDrive->Inited==true)
@@ -91,7 +91,7 @@ void InitDrive()
 		if (drives[i].Init(fn))
 		{
 			CurrDrive=&drives[i];
-			printf("Using %s \n",CurrDrive->name);
+			printf("Using %s \n",CurrDrive->name);//wtf ? why is that 0 ?!?! vc bug ??
 			break;
 		}
 	}

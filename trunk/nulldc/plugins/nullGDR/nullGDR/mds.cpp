@@ -100,6 +100,7 @@ void mds_CreateToc()
 			if (c_track->mode==169)
 				CD_DA=true;
 			
+			verify((c_track->mode==236) || (c_track->mode==169))
 			
 
 			mds_toc.tracks[track].Addr=0;//hmm is that ok ?
@@ -142,7 +143,6 @@ bool mds_init(char* file)
 
 	GetFile(fn,"mds images (*.mds) \0*.mdf\0\0");
 	fp_mdf=fopen(fn,"rb");
-	
 	/*
 	for(int j=0;j<mds_nsessions;j++)
 	for(int i=0;i<sessions[j].ntracks;i++)
@@ -155,8 +155,8 @@ bool mds_init(char* file)
 			sessions[j].tracks[i].sector,
 			sessions[j].tracks[i].sectors,
 			sessions[j].tracks[i].offset);
-	}
-	*/
+	}*/
+	
 	mds_CreateToc();
 	return true;
 }
