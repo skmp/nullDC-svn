@@ -184,7 +184,7 @@ void gdReadTOC(DWORD * pTOC, DiskArea dwSection)
 				LBA += 0xB05E;
 			}
 			else {
-				if(4 == toc.Tracks[i].ADR)
+				//if(4 == toc.Tracks[i].ADR)
 					LBA += 150;
 			}
 
