@@ -221,6 +221,22 @@
 				>
 			</File>
 			<File
+				RelativePath=".\mds.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\mds.h"
+				>
+			</File>
+			<File
+				RelativePath=".\mds_reader.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\mds_reader.h"
+				>
+			</File>
+			<File
 				RelativePath=".\pfctoc.h"
 				>
 			</File>

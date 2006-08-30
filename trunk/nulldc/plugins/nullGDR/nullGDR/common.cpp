@@ -1,5 +1,6 @@
 #include "common.h"
 #include "cdi.h"
+#include "mds.h"
 #include "iso9660.h"
 #include <memory.h>
 
@@ -24,6 +25,15 @@ DriveIF drives[]=
 		cdi_init,
 		cdi_term
 	},
+	{
+		//cdi
+		mds_DriveReadSector,
+		mds_DriveGetTocInfo,
+		mds_DriveGetDiskType,
+		mds_GetSessionsInfo,
+		mds_init,
+		mds_term
+	},
 };
 
 DriveNotifyEventFP* DriveNotifyEvent;
@@ -42,8 +52,8 @@ bool ConvertSector(u8* in_buff , u8* out_buff , int from , int to,int sector)
 	case 2048:
 		{
 			verify(from>=2048);
-			verify((from==2352) || (from==2336));
-			if (from == 2352)
+			verify((from==2448) || (from==2352) || (from==2336));
+			if ((from == 2352) || (from == 2448))
 				memcpy(out_buff,&in_buff[0x18],2048);
 			else
 				memcpy(out_buff,&in_buff[0x8],2048);

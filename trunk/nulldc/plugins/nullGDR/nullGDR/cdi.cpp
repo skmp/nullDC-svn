@@ -1,4 +1,3 @@
-
 #include "cdi.h"
 #define BYTE u8
 #define WORD u16
@@ -69,18 +68,7 @@ void cdi_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 	}
 }
 
-void cdi_DriveGetTocInfo(TocInfo* toc,DiskArea area)
-{
-	verify(area==SingleDensity);
-	memcpy(toc,&cdi_toc,sizeof(TocInfo));
-}
-
-DiskType cdi_DriveGetDiskType()
-{
-	return cdi_disktype;
-}
-
-void CreateToc()
+void cdi_CreateToc()
 {
 	//clear structs to 0xFF :)
 	memset(Track,0xFF,sizeof(Track));
@@ -166,7 +154,7 @@ void CreateToc()
 		last_FAD+=11400-150;///next session
 	}
 
-	if (CD_M1 && CD_DA==false)
+	if ((CD_M1==true) && (CD_DA==false) && (CD_M2==false))
 		cdi_disktype = CdRom;
 	else if (CD_M2)
 		cdi_disktype = CdRom_XA;
@@ -197,7 +185,7 @@ void cdi_init()
 	DWORD dwErr = PfcGetToc(fn, pstToc, dwSize);
     if (dwErr == PFCTOC_OK) 
 	{
-		CreateToc();
+		cdi_CreateToc();
     }
 	else
 	{
@@ -215,6 +203,15 @@ void cdi_term()
 		FreeLibrary(pfctoc_mod);
 }
 
+DiskType cdi_DriveGetDiskType()
+{
+	return cdi_disktype;
+}
+void cdi_DriveGetTocInfo(TocInfo* toc,DiskArea area)
+{
+	verify(area==SingleDensity);
+	memcpy(toc,&cdi_toc,sizeof(TocInfo));
+}
 void cdi_GetSessionsInfo(SessionInfo* sessions)
 {
 	memcpy(sessions,&cdi_ses,sizeof(SessionInfo));

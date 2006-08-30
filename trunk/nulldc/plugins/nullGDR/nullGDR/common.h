@@ -38,6 +38,7 @@ enum gd_drivers
 	none=-1,
 	Iso=0,
 	cdi=1,
+	mds=2,
 };
 
 struct DriveIF
