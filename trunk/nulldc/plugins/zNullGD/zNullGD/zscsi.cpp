@@ -203,14 +203,6 @@ void scsiReadSector(mvSCSI_Dev * pDev, BYTE* pSecBuf, DWORD dwSecAddr)
 	}
 }
 
-
-
-
-
-
-
-
-
 //////// TEMP ?
 # define _LOG_ (1)
 

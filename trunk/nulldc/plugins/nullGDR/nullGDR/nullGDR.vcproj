@@ -201,11 +201,27 @@
 				>
 			</File>
 			<File
-				RelativePath=".\cdi_if.cpp"
+				RelativePath=".\common.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\cdi_if.h"
+				RelativePath=".\common.h"
+				>
+			</File>
+			<File
+				RelativePath=".\gd_driver.h"
+				>
+			</File>
+			<File
+				RelativePath=".\iso9660.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\iso9660.h"
+				>
+			</File>
+			<File
+				RelativePath=".\pfctoc.h"
 				>
 			</File>
 		</Filter>

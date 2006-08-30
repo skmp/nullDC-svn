@@ -1,68 +1,10 @@
-#ifndef __CDI_H__
-#define __CDI_H__
-#include "nullGDR.h"
-#define CDI_V2  0x80000004
-#define CDI_V3  0x80000005
-#define CDI_V35 0x80000006
 
-/* Error codes */
+#pragma once
+#include "common.h"
 
-#define ERR_GENERIC   0L
-#define ERR_OPENIMAGE 0x01
-#define ERR_SAVETRACK 0x02
-#define ERR_READIMAGE 0x03
-#define ERR_SAVEIMAGE 0x04
-#define ERR_PATH      0x05
-
-
-/* For Debug only! */
-
-// #define DEBUG_CDI
-
-
-
-/* Basic structures */
-
-typedef struct image_s
-       {
-       long               header_offset;
-       long               header_position;
-       long               length;
-       unsigned long      version;
-       unsigned short int sessions;
-       unsigned short int tracks;
-       unsigned short int remaining_sessions;
-       unsigned short int remaining_tracks;
-       unsigned short int global_current_session;
-       } image_s;
-
-typedef struct track_s
-       {
-       unsigned short int global_current_track;
-       unsigned short int number;
-       long               position;
-       unsigned long      mode;
-       unsigned long      sector_size;
-       unsigned long      sector_size_value;
-       long               length;
-       long               pregap_length;
-       long               total_length;
-       unsigned long      start_lba;
-       unsigned char      filename_length;
-       } track_s;
-
-
-/* Functions */
-
-void error_exit(long errcode, const char *string);
-
-
-unsigned long ask_type(FILE *fsource, long header_position);
-void CDI_init (FILE *fsource, image_s *image, const char *fsourcename);
-void CDI_get_sessions (FILE *fsource, image_s *image);
-void CDI_get_tracks (FILE *fsource, image_s *image);
-void CDI_read_track (FILE *fsource, image_s *image, track_s *track);
-void CDI_skip_next_session (FILE *fsource, image_s *image);
-
-#endif
-
+void cdi_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz);
+void cdi_DriveGetTocInfo(TocInfo* toc,DiskArea area);
+DiskType cdi_DriveGetDiskType();
+void cdi_init();
+void cdi_term();
+void cdi_GetSessionsInfo(SessionInfo* sessions);

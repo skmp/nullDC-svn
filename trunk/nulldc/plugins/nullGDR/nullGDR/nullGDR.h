@@ -11,6 +11,7 @@
 #define MINOR 0
 #define MAJOR 1
 
+
 void DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz);
 void DriveGetTocInfo(u32* toc,DiskArea area);
 DiskType DriveGetDiskType();
@@ -30,23 +31,5 @@ void dcThreadInitGDR(PluginType type);
 //called when exiting from sh4 thread , from the new thread context (for any thread speciacific de init) :P
 void dcThreadTermGDR(PluginType type);
 
-extern DriveNotifyEventFP* DriveNotifyEvent;
 
-
-#pragma pack(1)
-	struct TDriveTOC
-	{		
-		DWORD	entry[99];
-		DWORD	first, last;
-		DWORD	leadout_sector;		
-	};
-
-	struct TInfoSession
-	{
-		int iNumSessions;
-		DWORD uLeadOut;
-		DWORD aTrackStart[100];
-	};
-#pragma pack()
-
-void uiGetFN(TCHAR *szFileName, TCHAR *szParse);
+#define verify(x) if((x)==false){ printf("Verify Failed  : " #x "\n in %s -> %s : %d \n",__FUNCTION__,__FILE__,__LINE__); __asm {int 3}}

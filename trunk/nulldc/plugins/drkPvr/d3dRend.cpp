@@ -5,7 +5,7 @@
 #include "gl\gl.h"
 #include "regs.h"
 
-namespace NullRenderer
+namespace Direct3DRenderer
 {
 	
 	//use that someday
@@ -320,26 +320,26 @@ namespace NullRenderer
 }
 
 //Get null i/f
-void GetNullRenderer(rend_if* rif)
+void GetDirect3DRenderer(rend_if* rif)
 {
 	//general init/term/reset
-	rif->Init=NullRenderer::InitRenderer;
-	rif->Term=NullRenderer::TermRenderer;
-	rif->Reset=NullRenderer::ResetRenderer;
+	rif->Init=Direct3DRenderer::InitRenderer;
+	rif->Term=Direct3DRenderer::TermRenderer;
+	rif->Reset=Direct3DRenderer::ResetRenderer;
 	
 	//thread init/term
-	rif->ThreadStart=NullRenderer::ThreadStart;
-	rif->ThreadEnd=NullRenderer::ThreadEnd;
+	rif->ThreadStart=Direct3DRenderer::ThreadStart;
+	rif->ThreadEnd=Direct3DRenderer::ThreadEnd;
 
 	//drawing related functions :)
-	rif->PresentFB=NullRenderer::PresentFB;
-	rif->StartRender=NullRenderer::StartRender;
+	rif->PresentFB=Direct3DRenderer::PresentFB;
+	rif->StartRender=Direct3DRenderer::StartRender;
 	
 	//TA splitter i/f
-	rif->Ta_ListCont=NullRenderer::TileAccel.ListCont;
-	rif->Ta_ListInit=NullRenderer::TileAccel.ListInit;
-	rif->Ta_SoftReset=NullRenderer::TileAccel.SoftReset;
+	rif->Ta_ListCont=Direct3DRenderer::TileAccel.ListCont;
+	rif->Ta_ListInit=Direct3DRenderer::TileAccel.ListInit;
+	rif->Ta_SoftReset=Direct3DRenderer::TileAccel.SoftReset;
 
-	rif->VertexCount=&NullRenderer::VertexCount;
-	rif->FrameCount=&NullRenderer::FrameCount;
+	rif->VertexCount=&Direct3DRenderer::VertexCount;
+	rif->FrameCount=&Direct3DRenderer::FrameCount;
 }

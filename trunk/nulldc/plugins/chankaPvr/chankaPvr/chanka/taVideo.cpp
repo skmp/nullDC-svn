@@ -1956,6 +1956,21 @@ float Min3(float a, float b, float c)
 /// @fn      void DrawBackground()
 /// @brief
 ////////////////////////////////////////////////////////////////////////////////////////
+//Convert offset32 to offset64
+static DWORD drkConvOffset32toOffset64(DWORD offset32)
+{
+		//64b wide bus is archevied by interleaving the banks every 32 bits
+		//so bank is Address<<3
+		//bits <4 are <<1 to create space for bank num
+		//bank 1 is mapped at 400000 (32b offset) and after
+		DWORD bank=((offset32>>22)&0x1)<<2;//bank will be used ass uper offset too
+		DWORD lv=offset32&0x3; //these will survive
+		offset32<<=1;
+		//       |inbank offset    |       bank id        | lower 2 bits (not changed)
+		DWORD rv=  (offset32&(VRAM_MASK-7))|bank                  | lv;
+ 
+		return rv;
+}
 static void DrawBackground()
 {
   DWORD uValue = SH4HWRegistersGetValue(TPVR::PVR_BGPLANE_CFG);
@@ -1980,7 +1995,7 @@ static void DrawBackground()
 
   float zValue;
 
-  BYTE* pDataVideo =(BYTE* ) SH4GetVideoRAMPtr(uAddress + SH4VideoRAM_START);
+  BYTE* pDataVideo = (BYTE* ) SH4GetVideoRAMPtr(uAddress + SH4VideoRAM_START);
 
   if (!pDataVideo)
     return;

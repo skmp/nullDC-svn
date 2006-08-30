@@ -563,7 +563,7 @@ namespace TASplitter
 
 		//part : 0 fill all data , 1 fill upper 32B , 2 fill lower 32B
 		//Poly decoder , will be moved to pvr code
-		template <u32 poly_type,u32 part>
+		template <u32 poly_type,u32 part,bool StripEnd>
 		__forceinline
 		static u32 fastcall ta_handle_poly(Ta_Dma* data,u32 size)
 		{
@@ -620,6 +620,11 @@ namespace TASplitter
 				ver_64B_def(14);//(Textured, Intensity, 16bit UV, with Two Volumes)
 #undef ver_64B_def
 			}
+			if (StripEnd)
+			{
+				StripStarted=false;
+				TA_decoder::EndPolyStrip();
+			}
 			return rv;
 		};
 
@@ -671,7 +676,7 @@ namespace TASplitter
 			Ta_Dma* cdp=dt;
 			if (StripStarted==false)
 			{
-				TA_decoder::PolyStripStart();
+				TA_decoder::StartPolyStrip();
 				StripStarted=true;
 			}
 
@@ -681,7 +686,7 @@ namespace TASplitter
 
 				ci+=poly_size;
 				size-=poly_size;
-				ta_handle_poly<poly_type,0>(cdp,0);
+				ta_handle_poly<poly_type,0,false>(cdp,0);
 		
 				if (cdp->pcw.EndOfStrip)
 					goto strip_end;
@@ -690,21 +695,22 @@ namespace TASplitter
 			}
 
 			
-			if ((poly_size!=SZ32) && (size==SZ32))//(ie , 32B part of 64B ;p)
+			if ((poly_size!=SZ32) && (size==SZ32))//32B part of 64B
 			{
-				ta_handle_poly<poly_type,1>(cdp,0);
-				TaCmd=ta_handle_poly<poly_type,2>;
+				ta_handle_poly<poly_type,1,false>(cdp,0);
+				if (cdp->pcw.EndOfStrip)
+					TaCmd=ta_handle_poly<poly_type,2,true>;//end strip after part B is  done :)
+				else
+					TaCmd=ta_handle_poly<poly_type,2,false>;
 				ci+=SZ32;
 				size-=SZ32;//0'd
-				if (cdp->pcw.EndOfStrip)
-					goto strip_end;
 			}
 			
 			return ci;
 
 strip_end:
 			StripStarted=false;
-			TA_decoder::PolyStripEnd();
+			TA_decoder::EndPolyStrip();
 			return ci;
 		}
 
@@ -806,6 +812,7 @@ strip_end:
 		{
 			verify(ListIsFinished[new_list]==false);
 			CurrentList=new_list;
+			TA_decoder::StartList(CurrentList);
 		}
 
 		static u32 fastcall ta_main(Ta_Dma* data,u32 size)
@@ -821,6 +828,8 @@ strip_end:
 					{
 						if (CurrentList==ListType_None)
 							CurrentList=data->pcw.ListType;
+						else
+							TA_decoder::EndList(CurrentList);//end a list olny if it was realy started
 
 						RaiseInterrupt(ListEndInterrupt[CurrentList]);
 						ListIsFinished[CurrentList]=true;
@@ -854,7 +863,7 @@ strip_end:
 					{
 
 						if (CurrentList==ListType_None)
-							ta_list_start(data->pcw.ListType);
+							ta_list_start(data->pcw.ListType);	//start a list ;)
 
 						if (IsModVolList(CurrentList))
 						{	//accept mod data

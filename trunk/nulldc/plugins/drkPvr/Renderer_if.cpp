@@ -1,6 +1,7 @@
 #include "Renderer_if.h"
 #include "nullRend.h"
 #include "oglRend.h"
+#include "d3dRend.h"
 
 //current renderer (can't change after init)
 rend_if* renderer;
@@ -12,7 +13,7 @@ GetInterfaceFP* rend_list[4]=
 	GetNullRenderer,	//Sw_Null
 	GetNullRenderer,	//Sw_TileEmu
 	GetOpenGLRenderer,	//Hw_OGL
-	GetNullRenderer		//Hw_D3d
+	GetDirect3DRenderer		//Hw_D3d
 };
 
 bool SetRenderer(RendererType new_rend,void* Window)

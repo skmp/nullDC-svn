@@ -25,8 +25,6 @@ void iso_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 		StartSector-=150;
 
 
-
-	//StartSector-=45150;
 	if (StartSector<16)
 	{
 		FILE* fip=fopen("c:\\ip.bin","rb");
@@ -60,7 +58,7 @@ void iso_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 
 }
 
-void iso_DriveGetTocInfo(mmTocInfo& toc,DiskArea area)
+void iso_DriveGetTocInfo(TocInfo* toc,DiskArea area)
 {
 	printf("GDROM toc\n");
 /*	//Send a fake a$$ toc

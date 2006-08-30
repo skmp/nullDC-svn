@@ -228,6 +228,9 @@ void gdReadTOC(DWORD * pTOC, DiskArea dwSection)
 
 void gdReadSector(BYTE * pBuffer, DWORD dwSector, DWORD dwNumSectors, DWORD dwSize)
 {
+		static FILE* lf=fopen("c:\\ndc.txt","w");
+	fprintf(lf,"s %d,%d\r\n",dwSector,dwNumSectors);
+	fflush(lf);
 	lprintf("gdReadSector(%X, %X, %X)\n", dwSector, dwNumSectors, dwSize);
 
 	if(0x800 != dwSize)
