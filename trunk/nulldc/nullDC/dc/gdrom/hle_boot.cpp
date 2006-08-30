@@ -280,7 +280,7 @@ void gdBootHLE(void)
 	{
 		if (toc[i]!=0xFFFFFFFF)
 		{
-			if(4 == (toc[i]&4))
+			if(0x40 == (toc[i]&0x40))
 				break;
 		}
 	}
@@ -298,12 +298,15 @@ void gdBootHLE(void)
 		bootfile[i] =  pmem[0x60+i];
 	}
 
+	if (strlen(bootfile)==0)
+		strcpy(bootfile,"1ST_READ.BIN");
+
 	printf("IP.BIN BootFile: %s\n", bootfile);
 
-	u32 PVD_sec=FindPVD(addr);
+	u32 PVD_sec=FindPVD(addr+150);
 
 	u32 file_sector,file_len;
-	if (file_scan(PVD_sec,bootfile,&file_sector,&file_len,400)==false)
+	if (file_scan(PVD_sec+150,bootfile,&file_sector,&file_len,400)==false)
 	{
 		printf("File not found , scanning using data track offset\n");
 		if (file_scan(PVD_sec+addr,bootfile,&file_sector,&file_len,400)==false)
