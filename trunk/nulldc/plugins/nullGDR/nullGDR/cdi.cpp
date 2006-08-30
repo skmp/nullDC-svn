@@ -5,6 +5,9 @@
 #define DWORD u32
 #include "pfctoc.h"
 
+PfcFreeTocFP* PfcFreeToc;
+PfcGetTocFP*  PfcGetToc;
+
 // int main(int, char*)
 // {
 //   SPfcToc* pstToc;
@@ -36,7 +39,7 @@ struct file_TrackInfo
 
 file_TrackInfo Track[101];
 
-int TrackCount;
+u32 TrackCount;
 
 u8 SecTemp[2352];
 FILE* fp_cdi;
@@ -68,6 +71,7 @@ void cdi_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 
 void cdi_DriveGetTocInfo(TocInfo* toc,DiskArea area)
 {
+	verify(area==SingleDensity);
 	memcpy(toc,&cdi_toc,sizeof(TocInfo));
 }
 
@@ -78,8 +82,12 @@ DiskType cdi_DriveGetDiskType()
 
 void CreateToc()
 {
-	printf("TOC INFO\n");
+	//clear structs to 0xFF :)
 	memset(Track,0xFF,sizeof(Track));
+	memset(&cdi_ses,0xFF,sizeof(cdi_ses));
+	memset(&cdi_toc,0xFF,sizeof(cdi_toc));
+
+	printf("TOC INFO\n");
 	int track=0;
 	bool CD_DA=false;
 	bool CD_M1=false;
@@ -87,21 +95,13 @@ void CreateToc()
 
 	cdi_ses.SessionCount=pstToc->dwSessionCount;
 	cdi_ses.SessionsEndFAD=pstToc->dwOuterLeadOut;
-	
+	cdi_toc.LeadOut.FAD=pstToc->dwOuterLeadOut;
+	cdi_toc.LeadOut.Addr=0;
+	cdi_toc.LeadOut.Control=0;
+	cdi_toc.LeadOut.Session=0;
+
 	printf("Last Sector : %d\n",pstToc->dwOuterLeadOut);
 	printf("Session count : %d\n",pstToc->dwSessionCount);
-	
-	//0xFF sesion/toc
-	for (int i=0;i<99;i++)
-		cdi_ses.SessionFAD[i]=0xFFFFFFFF;
-
-	for (int i=0;i<99;i++)
-	{
-		cdi_toc.tracks[i].Addr=0xFF;
-		cdi_toc.tracks[i].Control=0xFF;
-		cdi_toc.tracks[i].FAD=0xFFFFFFFF;
-		cdi_toc.tracks[i].Session=0xFF;
-	}
 
 	cdi_toc.FistTrack=1;
 	u32 last_FAD=0;
@@ -141,7 +141,7 @@ void CreateToc()
 			
 
 			cdi_toc.tracks[track].Addr=0;//hmm is that ok ?
-			
+			cdi_toc.tracks[track].Session=s;
 			cdi_toc.tracks[track].Control=cdi_track->bCtrl;
 			cdi_toc.tracks[track].FAD=last_FAD;
 
@@ -179,8 +179,18 @@ void CreateToc()
 	cdi_toc.LastTrack=track;
 }
 
+HMODULE pfctoc_mod=NULL;
 void cdi_init()
 {
+	pfctoc_mod=LoadLibrary("plugins\\pfctoc.dll");
+	if (pfctoc_mod==NULL)
+		pfctoc_mod=LoadLibrary("pfctoc.dll");
+	verify(pfctoc_mod!=NULL);
+
+	PfcFreeTocFP* PfcFreeToc=(PfcFreeTocFP*)GetProcAddress(pfctoc_mod,"PfcFreeToc");
+	PfcGetTocFP*  PfcGetToc=(PfcGetTocFP*)GetProcAddress(pfctoc_mod,"PfcGetToc");
+	verify(PfcFreeToc!=NULL && PfcFreeToc!=NULL);
+
 	char fn[512]="";
 	GetFile(fn,"cdi images (*.cdi) \0*.cdi\0\0");
 	DWORD dwSize;//
@@ -201,6 +211,8 @@ void cdi_term()
 {
 	if (pstToc)
 		PfcFreeToc(pstToc);
+	if (pfctoc_mod)
+		FreeLibrary(pfctoc_mod);
 }
 
 void cdi_GetSessionsInfo(SessionInfo* sessions)
