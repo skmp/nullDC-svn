@@ -34,7 +34,7 @@ void mds_ReadSSect(u8* p_out,u32 sector,u32 secsz)
 }
 void mds_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 {
-	printf("MDS->Read : Sector %d , size %d , mode %d \n",StartSector,SectorCount,secsz);
+	printf("MDS/NRG->Read : Sector %d , size %d , mode %d \n",StartSector,SectorCount,secsz);
 	while(SectorCount--)
 	{
 		mds_ReadSSect(buff,StartSector,secsz);
@@ -56,9 +56,9 @@ void mds_CreateToc()
 	bool CD_M1=false;
 	bool CD_M2=false;
 
-	mds_strack* last_track=&sessions[mds_nsessions-1].tracks[sessions[mds_nsessions-1].ntracks-1];
+	strack* last_track=&sessions[nsessions-1].tracks[sessions[nsessions-1].ntracks-1];
 
-	mds_ses.SessionCount=mds_nsessions;
+	mds_ses.SessionCount=nsessions;
 	mds_ses.SessionsEndFAD=last_track->sector+last_track->sectors+150;
 	mds_toc.LeadOut.FAD=last_track->sector+last_track->sectors+150;
 	mds_toc.LeadOut.Addr=0;
@@ -71,15 +71,15 @@ void mds_CreateToc()
 	mds_toc.FistTrack=1;
 	
 
-	for (int s=0;s<mds_nsessions;s++)
+	for (int s=0;s<nsessions;s++)
 	{
 		printf("Session %d:\n",s);
-		mds_session* ses=&sessions[s];
+		session* ses=&sessions[s];
 
 		printf("  Track Count: %d\n",ses->ntracks);
 		for (int t=0;t< ses->ntracks ;t++)
 		{
-			mds_strack* c_track=&ses->tracks[t];
+			strack* c_track=&ses->tracks[t];
 
 			//pre gap
 			
@@ -91,30 +91,30 @@ void mds_CreateToc()
 
 			//verify(cdi_track->dwIndexCount==2);
 			printf("  track %d:\n",t);
-			printf("    Type : %d:\n",c_track->mode);
+			printf("    Type : %d\n",c_track->mode);
 
-			if (c_track->mode==236)
+			if (c_track->mode>=2)
 				CD_M2=true;
-			if (c_track->mode==236)
+			if (c_track->mode==1)
 				CD_M1=true;
-			if (c_track->mode==169)
+			if (c_track->mode==0)
 				CD_DA=true;
 			
-			verify((c_track->mode==236) || (c_track->mode==169))
+			//verify((c_track->mode==236) || (c_track->mode==169))
 			
 
 			mds_toc.tracks[track].Addr=0;//hmm is that ok ?
 			mds_toc.tracks[track].Session=s;
-			mds_toc.tracks[track].Control=c_track->mode==236?4:0;
+			mds_toc.tracks[track].Control=c_track->mode>0?4:0;//mode 1 , 2 , else are data , 0 is audio :)
 			mds_toc.tracks[track].FAD=c_track->sector+150;
 
 
 			mds_Track[track].FAD=mds_toc.tracks[track].FAD;
 			mds_Track[track].SectorSize=c_track->sectorsize;
 			mds_Track[track].Offset=(u32)c_track->offset;
-			printf("    Start FAD : %d:\n",mds_Track[track].FAD);
-			printf("    SectorSize : %d:\n",mds_Track[track].SectorSize);
-			printf("    File Offset : %d:\n",mds_Track[track].Offset);
+			printf("    Start FAD : %d\n",mds_Track[track].FAD);
+			printf("    SectorSize : %d\n",mds_Track[track].SectorSize);
+			printf("    File Offset : %d\n",mds_Track[track].Offset);
 
 			//main track data
 			track++;
@@ -138,13 +138,23 @@ bool mds_init(char* file)
 {
 	char fn[512]="";
 	
-	if (parse_mds(file,false)==false)
+	bool rv=false;
+	if (rv==false && parse_mds(file,false))
+	{
+		rv=true;
+		GetFile(fn,"mds images (*.mds) \0*.mdf\0\0");
+		fp_mdf=fopen(fn,"rb");
+	}
+	
+	if (rv==false && parse_nrg(file,false))
+	{
+		rv=true;
+		fp_mdf=fopen(file,"rb");
+	}
+	if (rv==false)
 		return false;
-
-	GetFile(fn,"mds images (*.mds) \0*.mdf\0\0");
-	fp_mdf=fopen(fn,"rb");
 	/*
-	for(int j=0;j<mds_nsessions;j++)
+	for(int j=0;j<nsessions;j++)
 	for(int i=0;i<sessions[j].ntracks;i++)
 	{
 		printf("Session %d Track %d mode %d/%d sector %d count %d offset %I64d\n",

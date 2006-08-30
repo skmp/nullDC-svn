@@ -67,4 +67,4 @@ void TermDrive();
 void ConvToc(u32* to,TocInfo* from);
 void GetDriveToc(u32* to,DiskArea area);
 void GetDriveSessionInfo(u8* to,u8 session);
-void GetFile(TCHAR *szFileName, TCHAR *szParse);
+bool GetFile(TCHAR *szFileName, TCHAR *szParse);

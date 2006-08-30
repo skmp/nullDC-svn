@@ -1,7 +1,7 @@
 // nullGDR.cpp : Defines the entry point for the DLL application.
 //
 
-#include "nullGDR.h"
+#include "ImgReader.h"
 //Get a copy of the operators for structs ... ugly , but works :)
 #include "common.h"
 
@@ -44,7 +44,7 @@ EXPORT void dcGetPluginInfo(plugin_info* info)
 
 void DriveReadSubChannel(u8 * buff, u32 format, u32 len)
 {
-	printf("SUB CODE READ DOES NOTHING : 0x%p,0x%X,%d\n",buff,format,len);
+//	printf("SUB CODE READ DOES NOTHING : 0x%p,0x%X,%d\n",buff,format,len);
 }
 //Give to the emu pointers for the gd rom interface
 EXPORT void dcGetGDRInfo(gdr_plugin_if* info)

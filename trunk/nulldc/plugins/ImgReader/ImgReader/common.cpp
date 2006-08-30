@@ -35,7 +35,7 @@ DriveIF drives[]=
 		mds_GetSessionsInfo,
 		mds_init,
 		mds_term,
-		"MDS/MDF reader"
+		"NRG/MDS/MDF reader"
 	},
 };
 
@@ -75,7 +75,11 @@ bool ConvertSector(u8* in_buff , u8* out_buff , int from , int to,int sector)
 void InitDrive()
 {
 	char fn[512]="";
-	GetFile(fn,"CD Images (*.cdi;*.mds) \0*.cdi;*.mds\0\0");
+	if (GetFile(fn,"CD Images (*.cdi;*.mds;*.nrg) \0*.cdi;*.mds;*.nrg\0\0")==false)
+	{
+		CurrDrive=&drives[Iso];
+		return;
+	}
 
 	if (CurrDrive !=0 && CurrDrive->Inited==true)
 	{
@@ -91,10 +95,12 @@ void InitDrive()
 		if (drives[i].Init(fn))
 		{
 			CurrDrive=&drives[i];
-			printf("Using %s \n",CurrDrive->name);//wtf ? why is that 0 ?!?! vc bug ??
-			break;
+			printf("Using %s \n",CurrDrive->name);
+			return;
 		}
 	}
+	printf("Can't open file , using no disk driver :p\n");
+	CurrDrive=&drives[Iso];
 }
 
 void TermDrive()
@@ -167,7 +173,7 @@ void GetDriveSessionInfo(u8* to,u8 session)
 }
 
 #include <windows.h>
-void GetFile(TCHAR *szFileName, TCHAR *szParse)
+bool GetFile(TCHAR *szFileName, TCHAR *szParse)
 {
 	static OPENFILENAME ofn;
 	static TCHAR szFile[MAX_PATH]="";    
@@ -184,5 +190,6 @@ void GetFile(TCHAR *szFileName, TCHAR *szParse)
 	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
 
 	if(GetOpenFileName(&ofn)<=0)
-		printf("GetISOfname() Failed !\n");
+		return false;
+	return true;
 }

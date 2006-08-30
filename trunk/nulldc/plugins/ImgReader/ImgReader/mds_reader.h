@@ -1,35 +1,46 @@
-#include "nullGDR.h"
+#pragma once
+#include "ImgReader.h"
 #include <stdio.h>
 #include <malloc.h>
 #include <string.h>
 
-struct mds_strack 
-{
+typedef struct _track {
 	int track;
 	int mode;
 	int flags;
+
+	int pmin;
+	int psec;
+	int pfrm;
+
 	int sectorsize;
 	int sector;
 	int sectors;
 	int pregap;
 	__int64 offset;
-};
+} strack;
 
-struct mds_session
+typedef struct _session
 {
-	int session_;
+	int session;
+	int pregap;
 	int sectors;
 	int datablocks;
 	int leadinblocks;
 	int last_track;
+
+	int something1;
+	int something2;
+
 	int datablocks_offset;
 	int extrablocks_offset;
 
-	mds_strack tracks[256];
+	strack tracks[256];
 	int ntracks;
-};
+} session;
 
-extern mds_session sessions[256];
-extern int mds_nsessions;
+extern session sessions[256];
+extern int nsessions;
 
 bool parse_mds(char *mds_filename,bool verbose);
+bool parse_nrg(char *nrg_filename,bool verbose);

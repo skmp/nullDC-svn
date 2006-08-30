@@ -5,7 +5,7 @@ FILE* f_iso;
 void iso_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 {
 	printf("GDR->Read : Sector %d , size %d , mode %d \n",StartSector,SectorCount,secsz);
-	
+	/*
 	if (StartSector>=45000)
 	{
 		if (inbios)
@@ -54,7 +54,7 @@ void iso_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 			printf("fread  failed ; managed to read %d sectors olny (%d bytes)\n",rd/2048,rd);
 			getc(stdin);
 		}
-	}
+	}*/
 
 }
 
@@ -94,7 +94,7 @@ void iso_DriveGetTocInfo(TocInfo* toc,DiskArea area)
 DiskType iso_DriveGetDiskType()
 {
 	return DiskType::GdRom;
-}
+} 
 
 
 bool iso_init(char* file)

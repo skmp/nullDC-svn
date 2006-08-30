@@ -117,7 +117,7 @@ void cdi_CreateToc()
 
 			verify(cdi_track->dwIndexCount==2);
 			printf("  track %d:\n",t);
-			printf("    Type : %d:\n",cdi_track->bMode);
+			printf("    Type : %d\n",cdi_track->bMode);
 
 			if (cdi_track->bMode==2)
 				CD_M2=true;
@@ -137,14 +137,14 @@ void cdi_CreateToc()
 			Track[track].FAD=cdi_toc.tracks[track].FAD;
 			Track[track].SectorSize=cdi_track->dwBlockSize;
 			Track[track].Offset=TrackOffset;
-			printf("    Start FAD : %d:\n",Track[track].FAD);
-			printf("    SectorSize : %d:\n",Track[track].SectorSize);
-			printf("    File Offset : %d:\n",Track[track].Offset);
+			printf("    Start FAD : %d\n",Track[track].FAD);
+			printf("    SectorSize : %d\n",Track[track].SectorSize);
+			printf("    File Offset : %d\n",Track[track].Offset);
 
 			printf("    %d indexes \n",cdi_track->dwIndexCount);
 			for (u32 i=0;i<cdi_track->dwIndexCount;i++)
 			{
-				printf("     index %d : %d \n",i,cdi_track->pdwIndex[i]);
+				printf("     index %d : %d\n",i,cdi_track->pdwIndex[i]);
 			}
 			//main track data
 			TrackOffset+=(cdi_track->pdwIndex[1])*cdi_track->dwBlockSize;
