@@ -28,7 +28,7 @@ u32  ReadMem_gdrom(u32 Addr, u32 sz);
 void WriteMem_gdrom(u32 Addr, u32 data, u32 sz);
 void NotifyEvent_gdrom(DriveEvent info,void* param);
 
-void gdBootHLE();// Load Scrambled binary off of Current CD Media and boot ip.bin
+bool gdBootHLE();// Load Scrambled binary off of Current CD Media and boot ip.bin
 
 
 

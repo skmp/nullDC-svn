@@ -299,7 +299,11 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 		 {
 			 Init_DC();
 			 Reset_DC(false);
-			 gdBootHLE();
+			 if (gdBootHLE()==false)
+			 {
+				 MessageBox(hWnd,"Failed to find ip.bin/bootfile\nTry to boot using the Normal boot method.","HLE Boot Error",MB_ICONEXCLAMATION | MB_OK);
+				 return 0;
+			 }
 			 EnablePatch(patch_resets_Misc);//mwhaha
 			 sh4_cpu->Reset(false);//do a hard reset
 			 sh4_cpu->SetRegister(Sh4RegType::reg_sr,0x70000000);

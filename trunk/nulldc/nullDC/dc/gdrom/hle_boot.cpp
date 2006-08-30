@@ -39,6 +39,7 @@ u32 FindPVD(u32 ss)
 				mov temp,eax;
 			}
 
+			temp+=150;
 			printf("RDR found At sector %d\n",temp);
 			return temp;
 
@@ -99,7 +100,7 @@ u32 FindPVD(u32 ss)
 	*/
 	}
 	printf("boot HLE : PVD NOT found\n");
-	return 23;//a guess :p
+	return 23+150;//a guess :p
 }
 
 bool compstr_fs(u8* buffer,char* str,u32 len)
@@ -194,7 +195,7 @@ bool file_scan(u32 sector,char* fn,u32* ssc,u32* fsz,u32 maxsec)
 		{
 			if (compstr_fs(&pvd_temp[i],fn,len))
 			{
-				if (pvd_temp[i-1]<len || (*(u32*)&pvd_temp[i-1-4]!=0x1000001))
+				if (pvd_temp[i-1]<len || ((*(u32*)&pvd_temp[i-1-4]!=0x1000001)&& (*(u32*)&pvd_temp[i-1-4]!=0x1)))
 				{
 					printf("Found @ %d:%d , but it is not a valid ISO9660 entry[%d,0x%X]\n",sector,i,pvd_temp[i-1],*(u32*)&pvd_temp[i-1-4]);
 				}
@@ -217,6 +218,7 @@ bool file_scan(u32 sector,char* fn,u32* ssc,u32* fsz,u32 maxsec)
 						bswap edx;
 						mov [ecx],edx;
 					};
+					*ssc+=150;
 					printf("sector : %d , size : %d\n",*ssc,*fsz);
 					printf("flags : 0x%X\n",pvd_temp[i-1-4-1-1-1]);
 
@@ -268,11 +270,56 @@ bool file_scan(u32 sector,char* fn,u32* ssc,u32* fsz,u32 maxsec)
 }
 
 
-void gdBootHLE(void)
+bool find_file_full(u32 PVD_sec,u32 addr,u32* file_sector,u32* file_len,char* file)
+{
+	if (file_scan(PVD_sec,file,file_sector,file_len,400)==false)
+	{
+		printf("File not found , scanning using data track offset\n");
+		if (file_scan(PVD_sec+addr-150,file,file_sector,file_len,400)==false)
+		{
+			printf("File not found , scanning using fixed offset(:p)\n");
+			if (file_scan(addr+23,file,file_sector,file_len,400)==false)
+			{
+				printf("File not found , scanning hole disk (:p)\n");
+				if (file_scan(0,file,file_sector,file_len,addr+ 0x80000)==false)
+				{
+					printf("File is not there after all ...\n");
+					return false;
+				}
+			}
+		}
+	}
+	return true;
+}
+bool load_ip_bin(u32 sector,char* bootfile)
+{
+	///////////////////////////
+	u8 * pmem = &mem_b[0x8000];
+	libGDR->gdr_info.ReadSector(pmem,sector, 16, 2048);	// addr?
+
+	
+	if (compstr_fs(pmem,"SEGA SEGAKATANA",15)==false)
+	{
+		printf("Game doesnt seem to have a valid ip.bin @ sector %d\n",sector);
+		return false;
+	}
+	for(u32 i=0; i<16; i++) {
+		if(0x20 == pmem[0x60+i])
+			break;
+		bootfile[i] =  pmem[0x60+i];
+	}
+	return true;
+}
+bool gdBootHLE()
 {
 	printf("\n~~~\tgdBootHLE()\n\n");
 
 	u32 toc[102];
+	if (libGDR->gdr_info.GetDiskType()==NoDisk)
+	{
+		printf("No disk on the drive , kinda impossible to boot you know ...\n");
+		return false;
+	}
 	if (libGDR->gdr_info.GetDiskType()==GdRom)
 		libGDR->gdr_info.GetToc(&toc[0], DoubleDensity);
 	else
@@ -289,50 +336,89 @@ void gdBootHLE(void)
 	}
 	if (i==-1) i=0;
 	u32 addr = ((toc[i]&0xFF00)<<8) | ((toc[i]>>8)&0xFF00) | ((toc[i]>>24)&0xFF);
-
-	///////////////////////////
-	u8 * pmem = &mem_b[0x8000];
-	libGDR->gdr_info.ReadSector(pmem,addr, 16, 2048);	// addr?
+	u8 session_info[6];
+	libGDR->gdr_info.GetSessionInfo(session_info,0);
+	bool SelfBoot=true;
+	if (session_info[2]==1)
+	{
+		printf("Session count is 1 , game propably is not selfboot\n");
+		SelfBoot=false;
+	}
+	else
+	{
+		libGDR->gdr_info.GetSessionInfo(session_info,2);
+		u32 addr_Ses = (session_info[3]<<16 ) | (session_info[4]<<8 ) | (session_info[5] );
+		if (addr_Ses!=addr)
+		{
+			printf("Warning : FAD of session 2 -> track 1 [%d] != FAD of session 2 [%d] , using session FAD\n",addr,addr_Ses);
+			addr=addr_Ses;
+		}
+	}
+	u32 PVD_sec=FindPVD(addr);
 
 	char bootfile[16] = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
-	for(i=0; i<16; i++) {
-		if(0x20 == pmem[0x60+i])
-			break;
-		bootfile[i] =  pmem[0x60+i];
+	if (load_ip_bin(addr,bootfile)==true)
+	{
+		if (SelfBoot==false)
+			printf("Game doesnt seem to be selfboot, but has a valid ip.bin , trying to boot using selfboot code\n");
+		SelfBoot=true;
 	}
+	else
+	{
+		if (SelfBoot==true)
+			printf("Game seems to be selfboot, but has a invalid ip.bin , trying to boot using non selfboot code\n");
+		SelfBoot=false;
 
-	if (strlen(bootfile)==0)
-		strcpy(bootfile,"1ST_READ.BIN");
+		u32 ip_bin_sec,file_len;
+		if ( (find_file_full(PVD_sec,addr,&ip_bin_sec,&file_len,"IP.BIN")==false) && 
+			 (find_file_full(PVD_sec,addr,&ip_bin_sec,&file_len,"IP.bin")==false) && 
+			 (find_file_full(PVD_sec,addr,&ip_bin_sec,&file_len,"ip.bin")==false) && 
+			 (find_file_full(PVD_sec,addr,&ip_bin_sec,&file_len,"Ip.bin")==false))
+		{
+			printf("Failed all tries to find ip.bin\n");
+			return false;
+		}
+		else
+		{
+			printf("Found ip.bin @ sector %d\n",ip_bin_sec);
+			if (load_ip_bin(ip_bin_sec,bootfile)==false)
+			{
+				printf("Failed all tries to load ip.bin\n");
+				return false;
+			}
+		}
+	}
+	
 
 	printf("IP.BIN BootFile: %s\n", bootfile);
 
-	u32 PVD_sec=FindPVD(addr);
+	
 
 	u32 file_sector,file_len;
-	if (file_scan(PVD_sec+150,bootfile,&file_sector,&file_len,400)==false)
+	
+	if (find_file_full(PVD_sec,addr,&file_sector,&file_len,bootfile)==false)
 	{
-		printf("File not found , scanning using data track offset\n");
-		if (file_scan(PVD_sec+addr,bootfile,&file_sector,&file_len,400)==false)
-		{
-			printf("File not found , scanning using fixed offset(:p)\n");
-			if (file_scan(addr+23,bootfile,&file_sector,&file_len,400)==false)
-			{
-				printf("File not found , scanning hole disk (:p)\n");
-				if (file_scan(0,bootfile,&file_sector,&file_len,addr+ 0x80000)==false)
-				{
-					printf("File is not there after all ...\n");
-					return;
-				}
-			}
-		}
+		printf("Failed to find bootfile \n");
+		return false;
 	}
 
 	u8* memptr= (u8*) malloc(((file_len/2048) +1)*2048);// 
 
-	libGDR->gdr_info.ReadSector(memptr,file_sector+150, (file_len/2048) +1, 2048);	// addr?
+	libGDR->gdr_info.ReadSector(memptr,file_sector, (file_len/2048) +1, 2048);	// addr?
 
-	load_file(memptr,GetMemPtr(0x8c010000,file_len),file_len);
+	if (SelfBoot)
+	{
+		printf("Descrambling %s and loading it to memory\n",bootfile);
+		load_file(memptr,GetMemPtr(0x8c010000,file_len),file_len);
+	}
+	else
+	{
+		printf("loading %s directly to memory(unscrabled bin)\n",bootfile);
+		memcpy(GetMemPtr(0x8c010000,file_len),memptr,file_len);
+	}
 	free(memptr);
+
+	return true;
 }
 
 
