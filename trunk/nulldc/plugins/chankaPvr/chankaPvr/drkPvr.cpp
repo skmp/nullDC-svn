@@ -99,7 +99,7 @@ void dcShowConfigDD(PluginType type,void* window)
 EXPORT void dcGetPluginInfo(plugin_info* info)
 {
 	info->InterfaceVersion.full=PLUGIN_I_F_VERSION;
-	strcpy(info->Name,"chanka video [port by drkIIraziel] (" __DATE__ ")");
+	strcpy(info->Name,"chanka's video [port by drk||Raziel] (" __DATE__ ")");
 	info->PluginVersion.full=NDC_MakeVersion(MAJOR,MINOR,BUILD);
 	
 

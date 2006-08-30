@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8,00"
-	Name="nullGDR"
+	Name="ImgReader"
 	ProjectGUID="{2415C385-C878-4D66-A097-FF25BCCDC1EB}"
 	RootNamespace="nullGDR"
 	Keyword="Win32Proj"
@@ -181,11 +181,11 @@
 			Name="plugin"
 			>
 			<File
-				RelativePath=".\nullGDR.cpp"
+				RelativePath=".\ImgReader.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\nullGDR.h"
+				RelativePath=".\ImgReader.h"
 				>
 			</File>
 		</Filter>

@@ -41,7 +41,7 @@ void dcShowConfig(PluginType type,void* window)
 EXPORT void dcGetPluginInfo(plugin_info* info)
 {
 	info->InterfaceVersion.full=PLUGIN_I_F_VERSION;
-	strcpy(info->Name,"drkIIRaziel's Pvr null renderer plugin");
+	strcpy(info->Name,"drkpvr -- OpenGL/Direct3D/Software PowerVR plugin");
 	info->PluginVersion.full=NDC_MakeVersion(MAJOR,MINOR,BUILD);
 	
 

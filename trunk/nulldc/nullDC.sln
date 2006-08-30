@@ -17,7 +17,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "drkMapleDevices", "plugins\
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "chankaPvr", "plugins\chankaPvr\chankaPvr\drkPvr.vcproj", "{0520BA33-1A98-4DDE-8B36-99F25EDC5BD6}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nullGDR", "plugins\nullGDR\nullGDR\nullGDR.vcproj", "{2415C385-C878-4D66-A097-FF25BCCDC1EB}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nullGDR", "plugins\nullGDR\ImgReader\ImgReader.vcproj", "{2415C385-C878-4D66-A097-FF25BCCDC1EB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -15,14 +15,14 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 
 void cfgdlg(PluginType type,void* window)
 {
-	printf("Chanka's AICA port [drkIIRaziel]:No config kthx\n");
+	printf("Chanka's AICA [port by drk||Raziel]:No config kthx\n");
 }
 
 //Give to the emu info for the plugin type
 EXPORT void dcGetPluginInfo(plugin_info* info)
 {
 	info->InterfaceVersion.full=PLUGIN_I_F_VERSION;
-	strcpy(info->Name,"Chanka's AICA port [drkIIRaziel](" __DATE__ ")");
+	strcpy(info->Name,"Chanka's AICA [port by drk||Raziel](" __DATE__ ")");
 	info->PluginVersion.full=NDC_MakeVersion(MAJOR,MINOR,BUILD);
 	
 
