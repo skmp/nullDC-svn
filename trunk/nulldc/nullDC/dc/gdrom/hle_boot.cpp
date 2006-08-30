@@ -273,7 +273,10 @@ void gdBootHLE(void)
 	printf("\n~~~\tgdBootHLE()\n\n");
 
 	u32 toc[102];
-	libGDR->gdr_info.GetToc(&toc[0], (DiskArea)1);
+	if (libGDR->gdr_info.GetDiskType()==GdRom)
+		libGDR->gdr_info.GetToc(&toc[0], DoubleDensity);
+	else
+		libGDR->gdr_info.GetToc(&toc[0], SingleDensity);
 
 	int i=0;
 	for(i=98; i>=0; i--)
@@ -303,7 +306,7 @@ void gdBootHLE(void)
 
 	printf("IP.BIN BootFile: %s\n", bootfile);
 
-	u32 PVD_sec=FindPVD(addr+150);
+	u32 PVD_sec=FindPVD(addr);
 
 	u32 file_sector,file_len;
 	if (file_scan(PVD_sec+150,bootfile,&file_sector,&file_len,400)==false)
