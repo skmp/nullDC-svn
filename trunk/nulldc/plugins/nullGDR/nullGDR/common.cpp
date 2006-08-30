@@ -14,7 +14,8 @@ DriveIF drives[]=
 		iso_DriveGetDiskType,
 		0,
 		iso_init,//these need to be filled
-		iso_term
+		iso_term,
+		"ISO reader"
 	},
 	{
 		//cdi
@@ -23,7 +24,8 @@ DriveIF drives[]=
 		cdi_DriveGetDiskType,
 		cdi_GetSessionsInfo,
 		cdi_init,
-		cdi_term
+		cdi_term,
+		"CDI reader"
 	},
 	{
 		//cdi
@@ -32,7 +34,8 @@ DriveIF drives[]=
 		mds_DriveGetDiskType,
 		mds_GetSessionsInfo,
 		mds_init,
-		mds_term
+		mds_term,
+		"MDS/MDF reader"
 	},
 };
 
@@ -69,26 +72,29 @@ bool ConvertSector(u8* in_buff , u8* out_buff , int from , int to,int sector)
 
 
 
-void SetDrive(gd_drivers driver)
+void InitDrive()
 {
+	char fn[512];
+	GetFile(fn,"CD Images (*.cdi;*.mds) \0*.cdi;*.mds\0\0");
+
 	if (CurrDrive !=0 && CurrDrive->Inited==true)
 	{
-		if (CurrDrive->driver==driver)
-			return;//no change
 		//Terminate
 		CurrDrive->Inited=false;
 		CurrDrive->Term();
 	}
 
-	if (driver==none)
+	CurrDrive=0;
+
+	for (u32 i=0;i<3;i++)
 	{
-		CurrDrive=0;
-		return;
+		if (drives[i].Init(fn))
+		{
+			CurrDrive=&drives[i];
+			printf("Using %s \n",CurrDrive->name);
+			break;
+		}
 	}
-
-	CurrDrive=&drives[driver];
-
-	CurrDrive->Init();
 }
 
 void TermDrive()

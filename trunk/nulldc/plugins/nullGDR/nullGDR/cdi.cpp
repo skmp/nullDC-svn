@@ -75,7 +75,7 @@ void cdi_CreateToc()
 	memset(&cdi_ses,0xFF,sizeof(cdi_ses));
 	memset(&cdi_toc,0xFF,sizeof(cdi_toc));
 
-	printf("TOC INFO\n");
+	printf("\n--GD toc info start--\n");
 	int track=0;
 	bool CD_DA=false;
 	bool CD_M1=false;
@@ -100,7 +100,7 @@ void cdi_CreateToc()
 		printf("Session %d:\n",s);
 		SPfcSession* ses=&pstToc->pstSession[s];
 
-		printf("\tTrack Count: %d\n",ses->dwTrackCount);
+		printf("  Track Count: %d\n",ses->dwTrackCount);
 		for (u32 t=0;t< ses->dwTrackCount ;t++)
 		{
 			SPfcTrack* cdi_track=&ses->pstTrack[t];
@@ -112,12 +112,12 @@ void cdi_CreateToc()
 			if (t==0)
 			{
 				cdi_ses.SessionFAD[s]=last_FAD;
-				printf("\tSession start FAD: %d\n",last_FAD);
+				printf("  Session start FAD: %d\n",last_FAD);
 			}
 
 			verify(cdi_track->dwIndexCount==2);
-			printf("\ttrack %d:\n",t);
-			printf("\t\t Type : %d:\n",cdi_track->bMode);
+			printf("  track %d:\n",t);
+			printf("    Type : %d:\n",cdi_track->bMode);
 
 			if (cdi_track->bMode==2)
 				CD_M2=true;
@@ -137,14 +137,14 @@ void cdi_CreateToc()
 			Track[track].FAD=cdi_toc.tracks[track].FAD;
 			Track[track].SectorSize=cdi_track->dwBlockSize;
 			Track[track].Offset=TrackOffset;
-			printf("\t\t Start FAD : %d:\n",Track[track].FAD);
-			printf("\t\t SectorSize : %d:\n",Track[track].SectorSize);
-			printf("\t\t File Offset : %d:\n",Track[track].Offset);
+			printf("    Start FAD : %d:\n",Track[track].FAD);
+			printf("    SectorSize : %d:\n",Track[track].SectorSize);
+			printf("    File Offset : %d:\n",Track[track].Offset);
 
-			printf("\t\t%d indexes \n",cdi_track->dwIndexCount);
+			printf("    %d indexes \n",cdi_track->dwIndexCount);
 			for (u32 i=0;i<cdi_track->dwIndexCount;i++)
 			{
-				printf("\t\t index %d : %d \n",i,cdi_track->pdwIndex[i]);
+				printf("     index %d : %d \n",i,cdi_track->pdwIndex[i]);
 			}
 			//main track data
 			TrackOffset+=(cdi_track->pdwIndex[1])*cdi_track->dwBlockSize;
@@ -165,10 +165,11 @@ void cdi_CreateToc()
 
 	TrackCount=track;
 	cdi_toc.LastTrack=track;
+	printf("--GD toc info end--\n\n");
 }
 
 HMODULE pfctoc_mod=NULL;
-void cdi_init()
+bool cdi_init(char* file)
 {
 	pfctoc_mod=LoadLibrary("plugins\\pfctoc.dll");
 	if (pfctoc_mod==NULL)
@@ -179,20 +180,22 @@ void cdi_init()
 	PfcGetTocFP*  PfcGetToc=(PfcGetTocFP*)GetProcAddress(pfctoc_mod,"PfcGetToc");
 	verify(PfcFreeToc!=NULL && PfcFreeToc!=NULL);
 
-	char fn[512]="";
-	GetFile(fn,"cdi images (*.cdi) \0*.cdi\0\0");
+	//char fn[512]="";
+	//GetFile(fn,"cdi images (*.cdi) \0*.cdi\0\0");
 	DWORD dwSize;//
-	DWORD dwErr = PfcGetToc(fn, pstToc, dwSize);
+	DWORD dwErr = PfcGetToc(file, pstToc, dwSize);
     if (dwErr == PFCTOC_OK) 
 	{
 		cdi_CreateToc();
     }
 	else
 	{
-		printf("Failed to open file , %d",dwErr);
+		return false;
+		//printf("Failed to open file , %d",dwErr);
 	}
-	fp_cdi=fopen(fn,"rb");
-	DriveNotifyEvent(DriveEvent::DiskChange,0);
+	fp_cdi=fopen(file,"rb");
+
+	return true;
 }
 
 void cdi_term()

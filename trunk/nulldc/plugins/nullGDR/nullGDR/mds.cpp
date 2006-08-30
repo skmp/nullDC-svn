@@ -50,7 +50,7 @@ void mds_CreateToc()
 	memset(&mds_ses,0xFF,sizeof(mds_ses));
 	memset(&mds_toc,0xFF,sizeof(mds_toc));
 
-	printf("TOC INFO\n");
+	printf("\n--GD toc info start--\n");
 	int track=0;
 	bool CD_DA=false;
 	bool CD_M1=false;
@@ -71,13 +71,13 @@ void mds_CreateToc()
 	mds_toc.FistTrack=1;
 	
 
-	for (u32 s=0;s<mds_nsessions;s++)
+	for (int s=0;s<mds_nsessions;s++)
 	{
 		printf("Session %d:\n",s);
 		mds_session* ses=&sessions[s];
 
-		printf("\tTrack Count: %d\n",ses->ntracks);
-		for (u32 t=0;t< ses->ntracks ;t++)
+		printf("  Track Count: %d\n",ses->ntracks);
+		for (int t=0;t< ses->ntracks ;t++)
 		{
 			mds_strack* c_track=&ses->tracks[t];
 
@@ -86,12 +86,12 @@ void mds_CreateToc()
 			if (t==0)
 			{
 				mds_ses.SessionFAD[s]=c_track->sector+150;
-				printf("\tSession start FAD: %d\n",mds_ses.SessionFAD[s]);
+				printf("  Session start FAD: %d\n",mds_ses.SessionFAD[s]);
 			}
 
 			//verify(cdi_track->dwIndexCount==2);
-			printf("\ttrack %d:\n",t);
-			printf("\t\t Type : %d:\n",c_track->mode);
+			printf("  track %d:\n",t);
+			printf("    Type : %d:\n",c_track->mode);
 
 			if (c_track->mode==236)
 				CD_M2=true;
@@ -110,10 +110,10 @@ void mds_CreateToc()
 
 			mds_Track[track].FAD=mds_toc.tracks[track].FAD;
 			mds_Track[track].SectorSize=c_track->sectorsize;
-			mds_Track[track].Offset=c_track->offset;
-			printf("\t\t Start FAD : %d:\n",mds_Track[track].FAD);
-			printf("\t\t SectorSize : %d:\n",mds_Track[track].SectorSize);
-			printf("\t\t File Offset : %d:\n",mds_Track[track].Offset);
+			mds_Track[track].Offset=(u32)c_track->offset;
+			printf("    Start FAD : %d:\n",mds_Track[track].FAD);
+			printf("    SectorSize : %d:\n",mds_Track[track].SectorSize);
+			printf("    File Offset : %d:\n",mds_Track[track].Offset);
 
 			//main track data
 			track++;
@@ -131,14 +131,19 @@ void mds_CreateToc()
 
 	mds_toc.LastTrack=track;
 	mds_TrackCount=track;
+	printf("--GD toc info end--\n\n");
 }
-void mds_init()
+bool mds_init(char* file)
 {
 	char fn[512]="";
-	GetFile(fn,"mds images (*.mds) \0*.mds\0\0");
-	parse_mds(fn,true);
+	
+	if (parse_mds(file,false)==false)
+		return false;
+
 	GetFile(fn,"mds images (*.mds) \0*.mdf\0\0");
 	fp_mdf=fopen(fn,"rb");
+	
+	/*
 	for(int j=0;j<mds_nsessions;j++)
 	for(int i=0;i<sessions[j].ntracks;i++)
 	{
@@ -151,7 +156,9 @@ void mds_init()
 			sessions[j].tracks[i].sectors,
 			sessions[j].tracks[i].offset);
 	}
+	*/
 	mds_CreateToc();
+	return true;
 }
 void mds_term()
 {

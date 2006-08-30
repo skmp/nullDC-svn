@@ -16,7 +16,7 @@ int flen(FILE*f)
 
 #define read_binary(type,source,offset) (*(type*)((source)+(offset)))
 
-void parse_mds(char *mds_filename,bool verbose)
+bool parse_mds(char *mds_filename,bool verbose)
 {
     /*"returns the supposable bin_filename and raw entries, if something went \
     wrong it throws an exception"*/
@@ -26,7 +26,7 @@ void parse_mds(char *mds_filename,bool verbose)
 	if(!mds_file)
 	{
         fprintf(stderr,"Could not open the mds-file <%s>\n",mds_filename);
-		return;
+		return false;
 	}
     
     int  mds_size = flen(mds_file);
@@ -36,7 +36,7 @@ void parse_mds(char *mds_filename,bool verbose)
 	{
         fprintf(stderr,"Could not allocate a buffer to read <%s>\n",mds_filename);
 		fclose(mds_file);
-		return;
+		return false;
 	}
 
 	fread(mds_content,mds_size,1,mds_file);
@@ -46,7 +46,7 @@ void parse_mds(char *mds_filename,bool verbose)
         fprintf(stderr,"Invalid data in <%s>. It is not an MDF/MDS file.\n",mds_filename);
 		free(mds_content);
 		fclose(mds_file);
-		return;
+		return false;
 	}
 
     // get some data from header
@@ -137,5 +137,5 @@ void parse_mds(char *mds_filename,bool verbose)
 	free(mds_content);
 	fclose(mds_file);
 
-    return;
+    return true;
 }

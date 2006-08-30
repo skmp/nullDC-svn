@@ -84,7 +84,7 @@ void dcInitGDR(void* param,PluginType type)
 {
 	gdr_init_params* ip=(gdr_init_params*)param;
 	DriveNotifyEvent=ip->DriveNotifyEvent;
-	SetDrive(gd_drivers::cdi);
+	InitDrive();
 	DriveNotifyEvent(DriveEvent::DiskChange,0);
 }
 

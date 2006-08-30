@@ -28,7 +28,8 @@ struct SessionInfo
 
 
 
-typedef void InitFP();
+typedef bool IsCompatableFileFP();
+typedef bool InitFP(char* file);
 typedef void TermFP();
 typedef void DriveGetTocInfoModFP(TocInfo* toc,DiskArea area);
 typedef void DriveGetSessionInfoModFP(SessionInfo* ses);
@@ -52,6 +53,7 @@ struct DriveIF
 
 	bool Inited;
 	gd_drivers driver;
+	char name[128];
 };
 
 
@@ -60,7 +62,7 @@ extern DriveNotifyEventFP* DriveNotifyEvent;
 
 bool ConvertSector(u8* in_buff , u8* out_buff , int from , int to,int sector);
 
-void SetDrive(gd_drivers driver);
+void InitDrive();
 void TermDrive();
 
 void ConvToc(u32* to,TocInfo* from);

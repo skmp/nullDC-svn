@@ -97,8 +97,9 @@ DiskType iso_DriveGetDiskType()
 }
 
 
-void iso_init()
+bool iso_init(char* file)
 {
+	return false;
 }
 
 void iso_term()

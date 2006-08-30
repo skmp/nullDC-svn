@@ -32,4 +32,4 @@ struct mds_session
 extern mds_session sessions[256];
 extern int mds_nsessions;
 
-void parse_mds(char *mds_filename,bool verbose);
+bool parse_mds(char *mds_filename,bool verbose);
