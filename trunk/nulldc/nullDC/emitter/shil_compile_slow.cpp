@@ -2078,6 +2078,12 @@ void __fastcall CheckBlock(CompiledBlockInfo* block)
 		__asm int 3;
 	}
 }
+void PatchDynamicLinkGeneric(void* ptr)
+{
+	emitter<>* x86e = new emitter<>();
+	x86e->x86Ptr=(s8*)ptr;
+
+}
 void CompileBasicBlock_slow(BasicBlock* block)
 {
 	//CompileBasicBlock_slow_c(block);
@@ -2261,13 +2267,8 @@ void CompileBasicBlock_slow(BasicBlock* block)
 				x86e->MOV32MtoR(EAX,GetRegPtr(reg_pc));
 				x86e->CMP32MtoR(EAX,&call_ret_address);
 				//je ok
-				u8* ok=x86e->JE8(0);
-				//save exit block 
-//				x86e->MOV32ItoM((u32*)&pExitBlock,(u32)block);
-				//ret
-				x86e->RET();
+				u8* not_ok=x86e->JNE8(0);
 				//ok:
-				x86e->x86SetJ8(ok);
 				//mov ecx , pcall_ret_address
 				x86e->MOV32MtoR(ECX,(u32*)&pcall_ret_address);
 				//mov eax,[pcall_ret_address+codeoffset]
@@ -2276,6 +2277,13 @@ void CompileBasicBlock_slow(BasicBlock* block)
 				x86e->MOV32RmtoR(EAX,EAX);//get ptr to compiled block/link stub
 				//jmp eax
 				x86e->JMP32R(EAX);	//jump to it
+
+				x86e->x86SetJ8(not_ok);
+				//not_ok
+				//save exit block 
+//				x86e->MOV32ItoM((u32*)&pExitBlock,(u32)block);
+				//ret
+				x86e->RET();
 				
 			}
 			else
@@ -2309,40 +2317,22 @@ void CompileBasicBlock_slow(BasicBlock* block)
 
 			x86e->CMP32ItoM(&rec_cycles,BLOCKLIST_MAX_CYCLES);
 			
-			u8* Link;
+			u8* Exit_Link;
 
 			if (BC_LINKING)
 			{
-				Link=x86e->JB8(0);
-			}
-
-			{
-				//If our cycle count is expired
-				//save the dest address to pc
-
-				x86e->MOV32MtoR(EAX,&T_jcond_value);
-				x86e->TEST32ItoR(EAX,1);//test for T
-				//see witch pc to set
-
-				x86e->MOV32ItoR(EAX,*TF_a);//==
-				//!=
-				x86e->CMOVNE32MtoR(EAX,TT_a);//!=
-				x86e->MOV32RtoM(GetRegPtr(reg_pc),EAX);
-
-				x86e->RET();//return to caller to check for interrupts
+				Exit_Link=x86e->JGE8(0);
 			}
 
 			if (BC_LINKING)
 			{
 				//Link:
 				//if we can execute more blocks
-				x86e->x86SetJ8(Link);
 				{
 					//for dynamic link!
 					x86e->MOV32ItoR(ECX,(u32)cBB);					//mov ecx , block
 					x86e->MOV32MtoR(EAX,&T_jcond_value);
 					x86e->TEST32ItoR(EAX,1);//test for T
-
 
 					/*
 					//link to next block :
@@ -2380,6 +2370,24 @@ void CompileBasicBlock_slow(BasicBlock* block)
 					x86e->JMP32R(EAX);		 //!=
 				}
 			}
+			x86e->x86SetJ8(Exit_Link);
+			{
+				//If our cycle count is expired
+				//save the dest address to pc
+
+				x86e->MOV32MtoR(EAX,&T_jcond_value);
+				x86e->TEST32ItoR(EAX,1);//test for T
+				//see witch pc to set
+
+				x86e->MOV32ItoR(EAX,*TF_a);//==
+				//!=
+				x86e->CMOVNE32MtoR(EAX,TT_a);//!=
+				x86e->MOV32RtoM(GetRegPtr(reg_pc),EAX);
+
+				x86e->RET();//return to caller to check for interrupts
+			}
+
+			
 		} 
 		break;
 
@@ -2395,23 +2403,17 @@ void CompileBasicBlock_slow(BasicBlock* block)
 		{
 			x86e->CMP32ItoM(&rec_cycles,BLOCKLIST_MAX_CYCLES);
 
-			u8* Link;
+			u8* No_Link;
 
 			if (BF_LINKING)
 			{
-				Link=x86e->JB8(0);
+				No_Link=x86e->JGE8(0);
 			}
-
-			//If our cycle count is expired
-			x86e->MOV32ItoM(GetRegPtr(reg_pc),cBB->ebi.TF_next_addr);
-			x86e->RET();//return to caller to check for interrupts
-
 
 			if (BF_LINKING)
 			{
 				//Link:
 				//if we can execute more blocks
-				x86e->x86SetJ8(Link);
 				if (cBB->ebi.TF_next_addr==cBB->cbi.start)
 				{
 					//__asm int 03;
@@ -2423,6 +2425,10 @@ void CompileBasicBlock_slow(BasicBlock* block)
 				x86e->MOV32MtoR(EAX,(u32*)&(cBB->ebi.pTF_next_addr));	//mov eax , [pTF_next_addr]
 				x86e->JMP32R(EAX);									//jmp eax
 			}
+			x86e->x86SetJ8(No_Link);
+			//If our cycle count is expired
+			x86e->MOV32ItoM(GetRegPtr(reg_pc),cBB->ebi.TF_next_addr);
+			x86e->RET();//return to caller to check for interrupts
 			break;
 		}
 	}

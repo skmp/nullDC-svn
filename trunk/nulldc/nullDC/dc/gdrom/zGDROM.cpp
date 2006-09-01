@@ -552,7 +552,7 @@ dma_complete:
 }
 
 
-
+ 
 void NotifyEvent_gdrom(DriveEvent info, void* param)
 {
 	switch((GD_Notify)info)

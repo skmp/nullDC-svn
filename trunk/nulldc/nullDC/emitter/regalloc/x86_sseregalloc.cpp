@@ -13,7 +13,8 @@ x86SSERegType reg_to_alloc_xmm[7]=
 	XMM6,
 	XMM7,
 };
-
+u32 alb=0;
+	u32 nalb=0;
 
 struct fprinfo
 {
@@ -107,6 +108,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 			__asm int 3;
 	}
 	bool DoAlloc;
+	
 	//methods needed
 	//
 	//DoAllocation		: do allocation on the block
@@ -139,7 +141,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 				{
 					//both reads and writes , give it one more ;P
 					if ( curop->UpdatesReg((Sh4RegType) (fr_0+i)) )
-						used[i].cnt+=12;
+						used[i].cnt+=4;
 
 					if (curop->ReadsReg((Sh4RegType) (fr_0+i)))
 						used[i].cnt+=6;
@@ -153,16 +155,19 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 			u32 i;
 			for (i=0;i<REG_ALLOC_COUNT;i++)
 			{
-				if (used[i].cnt<14)
+				if (used[i].cnt<24)
 					break;
 				reginf[used[i].reg].reg=reg_to_alloc_xmm[i];
 			}
 			if (i)
 			{
-				//printf("Allocaded %d xmm regs\n",i);
+				alb++;
+				printf("Allocaded %d xmm regs, %d%%\n",i,alb*100/(alb+nalb));
 				//if (getchar()=='n')
 				//	memset(reginf,0xFF,sizeof(reginf));
 			}
+			else
+				nalb++;
 			//
 		}
 	}
@@ -173,7 +178,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 		{
 			if (IsRegAllocated(i+fr_0))
 			{
-				//GetRegister(XMM0,i+fr_0,RA_DEFAULT);
+				GetRegister(XMM0,i+fr_0,RA_DEFAULT);
 			}
 		}
 	}

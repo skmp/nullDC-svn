@@ -653,7 +653,6 @@ shilh(writem)
 	bool rv=ce_ReadWriteParams(op);
 	//even if we did optimise smth , a readback may be needed
 	//since it uses opcode flags to decode what to write back , it should't cause any non needed write backs ;)
-	ce_WriteBack_all(il);
 	DefHanlder(op,bb,il);
 
 	//we did chainge smth :0
