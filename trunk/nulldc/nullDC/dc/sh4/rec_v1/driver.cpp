@@ -317,6 +317,10 @@ void rec_Sh4_int_Init()
 	Sh4_int_Init();
 	InitAnalyser();
 	InitBlockManager();
+
+	ResetAnalyser();
+	ResetBlockManager();
+
 	printf("recSh4 Init\n");
 }
 

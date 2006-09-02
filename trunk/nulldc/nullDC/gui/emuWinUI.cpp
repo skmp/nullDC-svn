@@ -24,8 +24,8 @@
 
 
 /////////////////////////////
-#include "DBG\\CtrlMemView.h"
-#include "DBG\\CtrlDisAsmView.h"
+#include "DBG/CtrlMemView.h"
+#include "DBG/CtrlDisAsmView.h"
 //////////////////////////////////
 
 #include "screenshot.h"
@@ -440,7 +440,7 @@ INT_PTR CALLBACK DlgProcModal( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 		{
 			int tmp;
 			tmp=cfgLoadInt("nullDC","enable_recompiler");
-			CheckDlgButton(hWnd,IDC_REC,tmp==1?BST_CHECKED:BST_UNCHECKED);
+			CheckDlgButton(hWnd,IDC_REC,tmp!=0?BST_CHECKED:BST_UNCHECKED);
 		}
 		return true;
 
@@ -462,6 +462,7 @@ INT_PTR CALLBACK DlgProcModal( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 						//sh4_cpu->Stop();
 						Stop_DC();
 						bStart=true;
+						sh4_cpu->Term();
 					}
 				}
 				if(0 != cfgLoadInt("nullDC","enable_recompiler"))
@@ -478,6 +479,7 @@ INT_PTR CALLBACK DlgProcModal( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 				if (bStart)
 				{
 					sh4_cpu->Init();
+					//sh4_cpu->Reset(false);
 					//SwitchCPU_DC();
 					Start_DC();
 					//sh4_cpu->Run();
