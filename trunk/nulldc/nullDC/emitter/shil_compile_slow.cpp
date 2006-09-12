@@ -2086,21 +2086,17 @@ void PatchDynamicLinkGeneric(void* ptr)
 }
 void CompileBasicBlock_slow(BasicBlock* block)
 {
-	//CompileBasicBlock_slow_c(block);
 	if (!inited)
 	{
 		Init();
 		inited=true;
 	}
 
-	//perform constan elimination on this block :)
-	shil_optimise_pass_ce_driver(block);
-	block->flags.DisableHS=1;
-
-
 	x86e=new emitter<>();
 
 	CompiledBasicBlock* cBB;
+	
+	block->flags.DisableHS=1;
 
 	bool do_hs=(block->flags.ProtectionType!=BLOCK_PROTECTIONTYPE_MANUAL) && (block->flags.DisableHS==0) &&
 		(block->flags.ExitType!=BLOCK_EXITTYPE_DYNAMIC) && (block->flags.ExitType!=BLOCK_EXITTYPE_DYNAMIC_CALL);
@@ -2144,7 +2140,6 @@ void CompileBasicBlock_slow(BasicBlock* block)
 	}
 
 	
-	
 	if (do_hs)
 	{
 		//check for block promotion to superblock ;)
@@ -2183,7 +2178,6 @@ void CompileBasicBlock_slow(BasicBlock* block)
 	}
 
 	
-
 	//x86e->MOV32ItoR(ECX,(u32)block);
 	//x86e->CALLFunc(CheckBlock);
 	
@@ -2290,6 +2284,305 @@ void CompileBasicBlock_slow(BasicBlock* block)
 			{
 				//save exit block 
 //				x86e->MOV32ItoM((u32*)&pExitBlock,(u32)cBB);
+				x86e->RET();
+			}
+			break;
+		}
+
+	case BLOCK_EXITTYPE_COND:
+		{
+			//ok , handle COND here :)
+			//mem address
+			u32* TF_a=&cBB->ebi.TT_next_addr;
+			u32* TT_a=&cBB->ebi.TF_next_addr;
+			
+			//functions
+			u32* pTF_f=(u32*)&(cBB->ebi.pTT_next_addr);
+			u32* pTT_f=(u32*)&(cBB->ebi.pTF_next_addr);
+
+			x86e->CMP32ItoM(&rec_cycles,BLOCKLIST_MAX_CYCLES);
+			
+			u8* Exit_Link;
+
+			if (BC_LINKING)
+			{
+				Exit_Link=x86e->JGE8(0);
+			}
+
+			if (BC_LINKING)
+			{
+				//Link:
+				//if we can execute more blocks
+				{
+					//for dynamic link!
+					x86e->MOV32ItoR(ECX,(u32)cBB);					//mov ecx , block
+					x86e->MOV32MtoR(EAX,&T_jcond_value);
+					x86e->TEST32ItoR(EAX,1);//test for T
+
+					/*
+					//link to next block :
+					if (*TF_a==cBB->start)
+					{
+						//fast link (direct jmp to block start)
+						if (x86e->CanJ8(start_ptr))
+							x86e->JE8(start_ptr);
+						else
+							x86e->JE32(start_ptr);
+					}
+					else
+					{*/
+						x86e->MOV32MtoR(EAX,pTF_f);		//assume it's this condition , unless CMOV overwrites
+					/*}
+					//!=
+
+					if (*TT_a==cBB->start)
+					{
+						//fast link (direct jmp to block start)
+						if (x86e->CanJ8(start_ptr))
+							x86e->JNE8(start_ptr);
+						else
+							x86e->JNE32(start_ptr);
+					}
+					else
+					{
+						if (*TF_a==cBB->start)
+						{
+							x86e->MOV32MtoR(EAX,pTT_f);// ;)
+						}
+						else*/
+							x86e->CMOVNE32MtoR(EAX,pTT_f);	//overwrite the "other" pointer if needed
+					//}
+					x86e->JMP32R(EAX);		 //!=
+				}
+			}
+			x86e->x86SetJ8(Exit_Link);
+			{
+				//If our cycle count is expired
+				//save the dest address to pc
+
+				x86e->MOV32MtoR(EAX,&T_jcond_value);
+				x86e->TEST32ItoR(EAX,1);//test for T
+				//see witch pc to set
+
+				x86e->MOV32ItoR(EAX,*TF_a);//==
+				//!=
+				x86e->CMOVNE32MtoR(EAX,TT_a);//!=
+				x86e->MOV32RtoM(GetRegPtr(reg_pc),EAX);
+
+				x86e->RET();//return to caller to check for interrupts
+			}
+
+			
+		} 
+		break;
+
+	case BLOCK_EXITTYPE_FIXED_CALL:
+		//mov guess,pr
+		if (RET_PREDICTION)
+		{
+			x86e->MOV32ItoM(&call_ret_address,cBB->ebi.TT_next_addr);
+			//mov pguess,this
+			x86e->MOV32ItoM((u32*)&pcall_ret_address,(u32)(cBB));
+		}
+	case BLOCK_EXITTYPE_FIXED:
+		{
+			x86e->CMP32ItoM(&rec_cycles,BLOCKLIST_MAX_CYCLES);
+
+			u8* No_Link;
+
+			if (BF_LINKING)
+			{
+				No_Link=x86e->JGE8(0);
+			}
+
+			if (BF_LINKING)
+			{
+				//Link:
+				//if we can execute more blocks
+				if (cBB->ebi.TF_next_addr==cBB->cbi.start)
+				{
+					//__asm int 03;
+					printf("Fast Link possible\n");
+				}
+
+				//link to next block :
+				x86e->MOV32ItoR(ECX,(u32)cBB);					//mov ecx , cBB
+				x86e->MOV32MtoR(EAX,(u32*)&(cBB->ebi.pTF_next_addr));	//mov eax , [pTF_next_addr]
+				x86e->JMP32R(EAX);									//jmp eax
+			}
+			x86e->x86SetJ8(No_Link);
+			//If our cycle count is expired
+			x86e->MOV32ItoM(GetRegPtr(reg_pc),cBB->ebi.TF_next_addr);
+			x86e->RET();//return to caller to check for interrupts
+			break;
+		}
+	}
+
+	
+	ira->AfterTrail();
+	fra->AfterTrail();
+
+	x86e->GenCode();//heh
+
+
+	//block->compiled->Code=(BasicBlockEP*)x86e->GetCode();
+	//block->compiled->count=x86e->UsedBytes()/5;
+	//block->compiled->parent=block;
+	//block->compiled->size=x86e->UsedBytes();
+	cBB->cbi.Code=(BasicBlockEP*)x86e->GetCode();
+	cBB->cbi.size=x86e->UsedBytes();
+
+	//make it call the stubs , unless otherwise needed
+	cBB->ebi.pTF_next_addr=bb_link_compile_inject_TF_stub;
+	cBB->ebi.pTT_next_addr=bb_link_compile_inject_TT_stub;
+
+	block_count++;
+	
+	/*
+	if ((block_count%512)==128)
+	{
+		printf("Recompiled %d blocks\n",block_count);
+		u32 rat=native>fallbacks?fallbacks:native;
+		if (rat!=0)
+			printf("Native/Fallback ratio : %d:%d [%d:%d]\n",native,fallbacks,native/rat,fallbacks/rat);
+		else
+			printf("Native/Fallback ratio : %d:%d [%d:%d]\n",native,fallbacks,native,fallbacks);
+		printf("Average block size : %d opcodes ; ",(fallbacks+native)/block_count);
+	//	printf("%d const hits and %d const misses\n",const_hit,non_const_hit);
+	}*/
+	
+	delete fra;
+	delete ira;
+	delete x86e;
+}
+
+#ifdef lolen
+void CompileSuperBlock_slow(vector<SBL_BasicBlock>* block)
+{
+	if (!inited)
+	{
+		Init();
+		inited=true;
+	}
+
+
+	x86e=new emitter<>();
+
+	CompiledBasicBlock* cBB;
+
+	u32 b_type=0;
+	
+	if (PROFILE_BLOCK_CYCLES)
+		b_type|=COMPILED_BLOCK_NULLPROF;
+	
+	b_type|=COMPILED_SUPER_BLOCK;
+
+	cBB=(CompiledSuperBlock*)CreateBlock(b_type);
+
+	block->SetCompiledBlockInfo(cBB);
+	
+	//x86e->MOV32ItoR(ECX,(u32)block);
+	//x86e->CALLFunc(CheckBlock);
+	
+	s8* start_ptr;
+
+	if (PROFILE_BLOCK_CYCLES){
+		start_ptr=x86e->x86Ptr;
+		x86e->CALLFunc(dyna_profile_block_enter);
+	}
+
+	fra=GetFloatAllocator();
+	ira=GetGPRtAllocator();
+	
+	ira->DoAllocation(block[0],x86e);
+	fra->DoAllocation(block[0],x86e);
+	//AllocateRegisters(block);
+	
+	
+	//LoadRegisters();
+	ira->BeforeEmit();
+	fra->BeforeEmit();
+
+	if (PROFILE_BLOCK_CYCLES==false){
+		start_ptr=x86e->x86Ptr;
+	}
+
+	x86e->ADD32ItoM(&rec_cycles,block->cycles);
+	//x86e->MOV32ItoM((u32*)&pCurrentBlock,(u32)block);
+
+	u32 list_sz=(u32)block->ilst.opcodes.size();
+	for (u32 i=0;i<list_sz;i++)
+	{
+		shil_opcode* op=&block->ilst.opcodes[i];
+		if (op->opcode==shil_ifb)
+			fallbacks++;
+		else
+			native++;
+
+		if (op->opcode>(shil_opcodes::shil_count-1))
+		{
+			printf("SHIL COMPILER ERROR\n");
+		}
+		sclt[op->opcode](op,block);
+	}
+
+	
+	//FlushRegCache();//flush reg cache
+	ira->BeforeTrail();
+	fra->BeforeTrail();
+
+	if (PROFILE_BLOCK_CYCLES)
+	{
+		x86e->MOV32ItoR(ECX,(u32)(cBB->cbi.GetNP()));
+		x86e->CALLFunc(dyna_profile_block_exit_BasicBlock);
+	}
+
+	//end block acording to block type :)
+	switch(block->flags.ExitType)
+	{
+	
+	case BLOCK_EXITTYPE_DYNAMIC_CALL:
+		if (RET_PREDICTION)
+		{
+			//mov guess,pr
+			x86e->MOV32ItoM(&call_ret_address,cBB->ebi.TT_next_addr);
+			//mov pguess,this
+			x86e->MOV32ItoM((u32*)&pcall_ret_address,(u32)(cBB));
+		}
+	case BLOCK_EXITTYPE_DYNAMIC:
+		{
+			x86e->RET();
+			break;
+		}
+
+	case BLOCK_EXITTYPE_RET:
+		{
+			if (RET_PREDICTION)
+			{
+				//cmp pr,guess
+				x86e->MOV32MtoR(EAX,GetRegPtr(reg_pc));
+				x86e->CMP32MtoR(EAX,&call_ret_address);
+				//je ok
+				u8* not_ok=x86e->JNE8(0);
+				//ok:
+				//mov ecx , pcall_ret_address
+				x86e->MOV32MtoR(ECX,(u32*)&pcall_ret_address);
+				//mov eax,[pcall_ret_address+codeoffset]
+				x86e->MOV32RtoR(EAX,ECX);
+				x86e->ADD32ItoR(EAX,offsetof(CompiledBasicBlock,ebi.pTT_next_addr));
+				x86e->MOV32RmtoR(EAX,EAX);//get ptr to compiled block/link stub
+				//jmp eax
+				x86e->JMP32R(EAX);	//jump to it
+
+				x86e->x86SetJ8(not_ok);
+				//not_ok
+				//ret
+				x86e->RET();
+				
+			}
+			else
+			{
+				//save exit block 
 				x86e->RET();
 			}
 			break;
@@ -2471,7 +2764,7 @@ void CompileBasicBlock_slow(BasicBlock* block)
 	delete x86e;
 }
 
-//non x86 , no dynarec
+#endif
 
 
 //_vmem for dynarec ;)

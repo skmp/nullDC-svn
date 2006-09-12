@@ -220,11 +220,11 @@ class BasicBlock: public CodeRegion
 		{
 			#define BLOCK_EXITTYPE_DYNAMIC			(0)		//link end
 			#define BLOCK_EXITTYPE_FIXED			(1)		//call TF_next_addr
-			#define BLOCK_EXITTYPE_COND_0			(2)		//T==0
-			#define BLOCK_EXITTYPE_COND_1			(3)		//T==1
-			#define BLOCK_EXITTYPE_FIXED_CALL		(4)		//Set rv to known for rts handling
-			#define BLOCK_EXITTYPE_DYNAMIC_CALL		(5)		//Set rv to known for rts handling
-			#define BLOCK_EXITTYPE_RET				(6)		//Ends w/ ret ;)
+			#define BLOCK_EXITTYPE_COND				(2)		//T==0 -> TT , else TF
+			#define BLOCK_EXITTYPE_FIXED_CALL		(3)		//Set rv to known for rts handling
+			#define BLOCK_EXITTYPE_DYNAMIC_CALL		(4)		//Set rv to known for rts handling
+			#define BLOCK_EXITTYPE_RET				(5)		//Ends w/ ret ;)
+			#define BLOCK_EXITTYPE_FIXED_CSC		(6)		//Fixed , but we cant link due to cpu state change :)
 			#define BLOCK_EXITTYPE_RES_2			(7)		//Reserved
 			u32 ExitType:3;
 			//flags

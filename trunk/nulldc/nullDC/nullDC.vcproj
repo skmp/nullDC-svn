@@ -673,6 +673,14 @@
 						RelativePath=".\dc\sh4\rec_v1\sh4_cpu_shil.h"
 						>
 					</File>
+					<File
+						RelativePath=".\dc\sh4\rec_v1\superblock.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\dc\sh4\rec_v1\superblock.h"
+						>
+					</File>
 				</Filter>
 			</Filter>
 			<Filter

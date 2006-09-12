@@ -2,6 +2,9 @@
 #include "dc\mem\sh4_mem.h"
 
 
+u64 total_ops_removed=0;
+void CompileBasicBlock_slow_c(BasicBlock* block,u32 pass);
+u32 shil_optimise_pass_btp_main(BasicBlock* bb);
 
 #define shilh(name) bool __fastcall shil_ce_##name(shil_opcode* op,BasicBlock* bb,shil_stream* il)
 
@@ -99,7 +102,7 @@ struct RegData
 	bool IsRB;
 };
 
-RegData shil_ce_gpr[160];
+RegData shil_ce_gpr[sh4_reg_count];
 
 void Init_ce()
 {
@@ -237,7 +240,7 @@ void ce_KillConst(u8 reg)
 }
 bool ce_FindExistingConst(u32 value,u8* reg_num)
 {
-	for (u8 i=0;i<160;i++)
+	for (u8 i=0;i<sh4_reg_count;i++)
 	{
 		if (ce_IsConst(i))
 		{
@@ -275,7 +278,7 @@ void ce_WriteBack(u8 reg,shil_stream* il)
 
 void ce_WriteBack_all(shil_stream* il)
 {
-	for (u8 i=0;i<160;i++)
+	for (u8 i=0;i<sh4_reg_count;i++)
 		ce_WriteBack(i,il);
 }
 
@@ -286,6 +289,134 @@ void ce_WriteBack_aks(u8 reg,shil_stream* il)
 }
 bool ce_re_run;
 //Optimisation pass mainloop
+u32 shil_optimise_pass_ce_main(SBL_BasicBlock* bb)
+{
+	bool rv=false;
+	ce_re_run=false;
+	u32 opt=0;
+
+	Init_ce();
+	for (u32 i=0;i<sh4_reg_count;i++)
+	{
+		if (bb->in_info.reginfo[i].is_const)
+		{
+			ce_MakeConst(i,bb->in_info.reginfo[i].value);
+			shil_ce_gpr[i].IsRB=true;
+			shil_ce_gpr[i].RB_value=shil_ce_gpr[i].RegValue;
+		}
+	}
+
+	shil_stream il;
+
+	size_t old_Size=bb->ilst.opcodes.size();
+
+	bool old_re_run=ce_re_run;
+	for (size_t i=0;i<bb->ilst.opcodes.size();i++)
+	{
+		shil_opcode* op=&bb->ilst.opcodes[i];
+
+		old_re_run=ce_re_run;
+		if (shil_ce_lut[op->opcode](op,bb,&il)==false)
+			il.opcodes.push_back(*op);//emit the old opcode
+		else
+		{
+			opt++;
+			rv=true;
+		}
+	}
+
+	if (old_re_run!=ce_re_run)
+		ce_re_run=false;
+
+	if (rv)
+	{
+		bb->ilst.opcodes.clear();
+		
+		for (size_t i=0;i<il.opcodes.size();i++)
+			bb->ilst.opcodes.push_back(il.opcodes[i]);
+		
+		//no need to write back reg_pc_temp , it not used after block [its olny a temp reg]:)
+		for (u8 i=0;i<16;i++)
+		{
+			ce_WriteBack_aks(i,&bb->ilst);
+		}
+		ce_WriteBack_aks(reg_mach,&bb->ilst);
+		ce_WriteBack_aks(reg_macl,&bb->ilst);
+		
+		bb->ilst.op_count=(u32)bb->ilst.opcodes.size();
+	}
+
+	if (old_Size!=bb->ilst.opcodes.size())
+		ce_re_run = true;
+
+	return opt;
+}
+u32 shil_optimise_pass_ce_main_final(SBL_BasicBlock* bb)
+{
+	bool rv=false;
+	ce_re_run=false;
+	u32 opt=0;
+
+	Init_ce();
+	for (u32 i=0;i<sh4_reg_count;i++)
+	{
+		if (bb->in_info.reginfo[i].is_const)
+		{
+			ce_MakeConst(i,bb->in_info.reginfo[i].value);
+			shil_ce_gpr[i].IsRB=true;
+			shil_ce_gpr[i].RB_value=shil_ce_gpr[i].RegValue;
+		}
+	}
+
+	shil_stream il;
+
+	size_t old_Size=bb->ilst.opcodes.size();
+
+	bool old_re_run=ce_re_run;
+	for (size_t i=0;i<bb->ilst.opcodes.size();i++)
+	{
+		shil_opcode* op=&bb->ilst.opcodes[i];
+
+		old_re_run=ce_re_run;
+		if (shil_ce_lut[op->opcode](op,bb,&il)==false)
+			il.opcodes.push_back(*op);//emit the old opcode
+		else
+		{
+			opt++;
+			rv=true;
+		}
+	}
+
+	if (old_re_run!=ce_re_run)
+		ce_re_run=false;
+
+	bb->ilst.opcodes.clear();
+	for (size_t i=0;i<il.opcodes.size();i++)
+		bb->ilst.opcodes.push_back(il.opcodes[i]);
+
+	
+	
+	//no need to write back reg_pc_temp , it not used after block [its olny a temp reg]:)
+	for (u8 i=0;i<sh4_reg_count;i++)
+	{
+		bb->out_info.reginfo[i].can_be_const=true;
+		if (ce_IsConst(i) && i!=reg_pc_temp)
+		{
+			bb->out_info.reginfo[i].is_const=true;
+			bb->out_info.reginfo[i].value=ce_GetConst(i);
+			//ce_WriteBack_aks(i,&bb->ilst);
+		}
+		else
+			bb->out_info.reginfo[i].is_const=false;
+	}
+	
+	bb->ilst.op_count=(u32)bb->ilst.opcodes.size();
+
+	if (old_Size!=bb->ilst.opcodes.size())
+		ce_re_run = true;
+
+	return opt;
+}
 u32 shil_optimise_pass_ce_main(BasicBlock* bb)
 {
 	bool rv=false;
@@ -339,8 +470,7 @@ u32 shil_optimise_pass_ce_main(BasicBlock* bb)
 
 	return opt;
 }
-u32 shil_optimise_pass_btp_main(BasicBlock* bb);
-u64 total_ops_removed=0;
+
 void shil_optimise_pass_ce_driver(BasicBlock* bb)
 {
 	ce_re_run=true;
@@ -348,7 +478,7 @@ void shil_optimise_pass_ce_driver(BasicBlock* bb)
 	u32 pass=0;
 	size_t old_Size=bb->ilst.opcodes.size();
 
-	void CompileBasicBlock_slow_c(BasicBlock* block,u32 pass);
+	
 	//CompileBasicBlock_slow_c(bb,0);
 	while(ce_re_run)
 	{
@@ -364,6 +494,30 @@ void shil_optimise_pass_ce_driver(BasicBlock* bb)
 	//if (rv)
 	//	printf("Optimised block 0x%X , %d opts : %d passes ,delta=%d, total removed %d \n",bb->start,rv,pass,old_Size-bb->ilst.opcodes.size(),total_ops_removed);
 
+}
+void shil_optimise_pass_ce_driver(SBL_BasicBlock* bb)
+{
+	ce_re_run=true;
+	u32 rv=0;
+	u32 pass=0;
+	size_t old_Size=bb->ilst.opcodes.size();
+
+	
+	//CompileBasicBlock_slow_c(bb,0);
+	while(ce_re_run)
+	{
+		rv+=shil_optimise_pass_ce_main(bb);
+		pass++;
+		if (pass>10)
+			break;
+		//CompileBasicBlock_slow_c(bb,pass);
+	}
+
+	total_ops_removed+=old_Size-bb->ilst.opcodes.size();
+	
+	shil_optimise_pass_ce_main_final(bb);
+	//if (rv)
+	//	printf("Optimised block 0x%X , %d opts : %d passes ,delta=%d, total removed %d \n",bb->start,rv,pass,old_Size-bb->ilst.opcodes.size(),total_ops_removed);
 }
 //default thing to do :p
 void DefHanlder(shil_opcode* op,BasicBlock* bb,shil_stream* il)
@@ -787,10 +941,6 @@ shilh(mul)
 }
 shilh(div32)
 {
-	/*if (ce_IsConst((u8)op->imm1))
-	{
-		il->mov((Sh4RegType)(u8)op->imm1,ce_GetConst((u8)op->imm1));
-	}*/
 	ce_WriteBack_aks(op->reg1,il);
 	ce_WriteBack_aks(op->reg2,il);
 	ce_WriteBack_aks((u8)op->imm1,il);
@@ -873,7 +1023,7 @@ shilh(fsrra)
 	return false;
 }
 
-//works olny of moves
+//works olny for moves
 //a very limited form of dce pre scan ;)
 bool backscan_const(BasicBlock* bb,u8 reg,u32* rv)
 {
@@ -915,7 +1065,6 @@ bool backscan_const(BasicBlock* bb,u8 reg,u32* rv)
 
 u32 shil_optimise_pass_btp_main(BasicBlock* bb)
 {
-	bb->flags.DisableHS=1;
 	if (bb->flags.PerformModeLookup)
 		return 0;
 

@@ -106,6 +106,8 @@ enum Sh4RegType
 	reg_pc_temp=xd_7+1,
 	reg_sr_T=reg_pc_temp+1,
 
+	sh4_reg_count,
+
 	NoReg=-1
 };
 extern u8 GetSingleFromDouble(u8 dbl);

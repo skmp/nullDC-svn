@@ -1899,7 +1899,7 @@ sh4op(i0000_nnnn_0010_0011)
 	ilst->LoadT(jcond_flag);
 	
 	bb->flags.EndAnalyse=true;
-	bb->flags.ExitType=BLOCK_EXITTYPE_COND_0;
+	bb->flags.ExitType=BLOCK_EXITTYPE_COND;
 }
 
 
@@ -1927,7 +1927,7 @@ sh4op(i0000_nnnn_0010_0011)
 	ilst->LoadT(jcond_flag);
 	DoDslot(pc,bb);
 	bb->flags.EndAnalyse = true;
-	bb->flags.ExitType = BLOCK_EXITTYPE_COND_0;
+	bb->flags.ExitType = BLOCK_EXITTYPE_COND;
 }
 
 
@@ -1943,13 +1943,13 @@ sh4op(i0000_nnnn_0010_0011)
 	*/
 
 
-	bb->TF_next_addr=pc+2;
-	bb->TT_next_addr=(u32)((GetSImm8(op))*2 + 4 + pc );
+	bb->TF_next_addr=(u32)((GetSImm8(op))*2 + 4 + pc );
+	bb->TT_next_addr=pc+2;
 
 	ilst->LoadT(jcond_flag);
 	
 	bb->flags.EndAnalyse=true;
-	bb->flags.ExitType=BLOCK_EXITTYPE_COND_1;
+	bb->flags.ExitType=BLOCK_EXITTYPE_COND;
 }
 
 
@@ -1969,14 +1969,14 @@ sh4op(i0000_nnnn_0010_0011)
 	ilst->add(reg_pc,2);
 	return;*/
 
-	bb->TF_next_addr=pc+4;
-	bb->TT_next_addr=(u32)((GetSImm8(op))*2 + 4 + pc );
+	bb->TF_next_addr=(u32)((GetSImm8(op))*2 + 4 + pc );
+	bb->TT_next_addr=pc+4;
 
 	ilst->LoadT(jcond_flag);
 	DoDslot(pc,bb);
 	
 	bb->flags.EndAnalyse=true;
-	bb->flags.ExitType=BLOCK_EXITTYPE_COND_1;
+	bb->flags.ExitType=BLOCK_EXITTYPE_COND;
 }
 
 

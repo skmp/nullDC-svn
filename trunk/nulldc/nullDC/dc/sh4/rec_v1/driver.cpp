@@ -12,12 +12,14 @@
 #include "dc/sh4/tmu.h"
 #include "dc/sh4/sh4_cst.h"
 #include "dc/mem/sh4_mem.h"
+#include "dc/sh4/shil/shil_ce.h"
 
 #include "emitter/shil_compile_slow.h"
 
 #include "recompiler.h"
 #include "blockmanager.h"
 #include "analyser.h"
+#include "superblock.h"
 
 #include <time.h>
 #include <float.h>
@@ -41,8 +43,9 @@ u32 nb_count=0;
 void*  __fastcall CompileCode_SuperBlock(u32 pc)
 {
 	sb_count++;
-	printf("Zuperblock @ pc=0x%X , %d superblocks , %d%% of all blocks\n",pc,sb_count,sb_count*100/nb_count);
-
+	//printf("Superblock @ pc=0x%X , %d superblocks , %d%% of all blocks\n",pc,sb_count,sb_count*100/nb_count);
+	AnalyseCodeSuperBlock(pc);
+	
 	CompiledBlockInfo* cblock;
 	BasicBlock* block=new BasicBlock();
 	//scan code
@@ -72,6 +75,8 @@ CompiledBlockInfo*  __fastcall CompileCode(u32 pc)
 	FillBlockLockInfo(block);
 	//analyse code [generate il/block type]
 	AnalyseCode(block);
+	//optimise
+	shil_optimise_pass_ce_driver(block);
 	//Compile code
 	CompileBasicBlock_slow(block);
 	RegisterBlock(cblock=&block->cBB->cbi);
