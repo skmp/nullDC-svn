@@ -39,7 +39,7 @@ void CCN_MMUCR_write(u32 value)
 	
 	if (temp.TI)
 	{
-		printf("TI , invalidating *TBL\n");
+		printf("TI , invalidating *TLB\n");
 		temp.TI=0;
 
 		for (u32 i=0;i<4;i++)

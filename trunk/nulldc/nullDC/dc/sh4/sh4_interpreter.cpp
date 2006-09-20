@@ -19,7 +19,7 @@
 #include <float.h>
 
 #define CPU_TIMESLICE	(448)
-#define CPU_RATIO		(8)
+#define CPU_RATIO		(2)
 
 //uh uh 
 volatile bool  sh4_int_bCpuRun=false;
@@ -443,6 +443,8 @@ bool ExecuteDelayslot()
 	u32 op=IReadMem16(pc);
 	verify(sh4_exept_raised==false);
 	ExecuteOpcode(op);
+	if(sh4_exept_raised==true)
+		sh4_ex_SRC.pc=pc-2;
 
 	return true;
 }
@@ -453,7 +455,9 @@ bool ExecuteDelayslot_RTE()
 	pc+=2;
 	u32 op=IReadMem16(pc);
 	sr.SetFull(ssr);
+	verify(sh4_exept_raised==false);
 	ExecuteOpcode(op);
+	verify(sh4_exept_raised==false);
 
 	return true;
 }

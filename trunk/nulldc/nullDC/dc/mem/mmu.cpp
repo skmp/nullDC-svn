@@ -475,8 +475,8 @@ void __fastcall mmu_WriteMem32(u32 adr,u32 data)
 
 bool __fastcall mmu_TranslateSQW(u32& adr)
 {
-	/*
-	u32 addr;
+	
+	/*u32 addr;
 	u32 tv=mmu_full_SQ(adr,addr);
 	if (tv!=0)
 	{
