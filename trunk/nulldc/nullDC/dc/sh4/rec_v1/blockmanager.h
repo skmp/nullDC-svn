@@ -6,7 +6,10 @@
 
 //CompiledBlockInfo* __fastcall FindBlock(u32 address);
 #define FindBlock FindBlock_fast
+#define FindCode FindCode_fast
+
 INLINE CompiledBlockInfo* __fastcall FindBlock_fast(u32 address);
+BasicBlockEP* __fastcall FindCode_fast(u32 address);
 
 void RegisterBlock(CompiledBlockInfo* block);
 void UnRegisterBlock(CompiledBlockInfo* block);

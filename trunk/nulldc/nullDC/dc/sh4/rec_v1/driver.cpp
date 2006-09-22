@@ -85,7 +85,16 @@ CompiledBlockInfo*  __fastcall CompileCode(u32 pc)
 	//return pointer
 	return cblock;
 }
-INLINE CompiledBlockInfo* __fastcall GetRecompiledCode(u32 pc)
+BasicBlockEP* __fastcall CompileCodePtr()
+{
+	return CompileCode(pc)->Code;
+}
+INLINE BasicBlockEP * __fastcall GetRecompiledCodePointer(u32 pc)
+{
+	return FindCode(pc);
+}
+
+CompiledBlockInfo* FindOrRecompileCode(u32 pc)
 {
 	CompiledBlockInfo* cblock=FindBlock(pc);
 	
@@ -95,9 +104,13 @@ INLINE CompiledBlockInfo* __fastcall GetRecompiledCode(u32 pc)
 		return CompileCode(pc);
 }
 
-CompiledBlockInfo* FindOrRecompileCode(u32 pc)
+void naked CompileAndRunCode()
 {
-	return GetRecompiledCode(pc);
+	__asm 
+	{
+		call CompileCodePtr;
+		jmp eax;
+	}
 }
 
 //#define PROFILE_DYNAREC
@@ -147,14 +160,9 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 	SetFloatStatusReg();
 	while(true)
 	{
-		CompiledBlockInfo* currBlock=GetRecompiledCode(pc);
-		//rec_cycles+=currBlock->cycles;
-		BasicBlockEP* fp=currBlock->Code;
+		BasicBlockEP* fp=GetRecompiledCodePointer(pc);
 		
-#ifdef X86
 		//call block :)
-#ifndef PROFILE_DYNAREC_CALL
-		//DynaPrintLinkStart();
 		__asm
 		{
 			push esi;
@@ -166,7 +174,6 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 
 		fp();
 
-
 		__asm 
 		{
 			pop ebp
@@ -174,19 +181,6 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 			pop edi
 			pop esi;
 		}
-
-		//DynaPrintLinkEnd();
-#else	
-		//call it using a helper function
-		//so we can profile :)
-		__asm
-		{
-			mov ecx,fp;
-			call DoRunCode;
-		}
-#endif
-#endif
-
 #ifdef PROFILE_DYNAREC
 		calls++;
 		if ((calls & (0x80000-1))==(0x80000-1))//more ?

@@ -330,8 +330,9 @@ INLINE BlockList* GetLookupBlockList(u32 address)
 u32 luk=0;
 u32 r_value=0x112;
 
+void CompileAndRunCode();
 CompiledBlockInfo* __fastcall FindBlock_full(u32 address,CompiledBlockInfo* fastblock);
-
+//Block lookups
 INLINE CompiledBlockInfo* __fastcall FindBlock_fast(u32 address)
 {
 #ifdef BLOCK_LUT_GUESS
@@ -394,6 +395,72 @@ CompiledBlockInfo* __fastcall FindBlock_full(u32 address,CompiledBlockInfo* fast
 #endif
 	return thisblock;
 }
+
+BasicBlockEP* __fastcall FindCode_full(u32 address,CompiledBlockInfo* fastblock);
+//Code lookups
+BasicBlockEP* __fastcall FindCode_fast(u32 address)
+{
+#ifdef BLOCK_LUT_GUESS
+	CompiledBlockInfo* fastblock;
+
+	fastblock=BlockLookupGuess[GetLookupHash(address)];
+
+	if ((fastblock->start==address) && 
+		(fastblock->cpu_mode_tag ==fpscr.PR_SZ)
+		)
+	{
+		fastblock->lookups++;
+		return fastblock->Code;
+	}
+	else
+	{
+		return FindCode_full(address,fastblock);
+	}
+#else
+	return FindBlock_full(address,BLOCK_NONE);
+#endif
+
+}
+BasicBlockEP* __fastcall FindCode_full(u32 address,CompiledBlockInfo* fastblock)
+{
+	CompiledBlockInfo* thisblock;
+
+	BlockList* blklist = GetLookupBlockList(address);
+
+	//u32 listsz=(u32)blklist->size();
+	//for (u32 i=0;i<listsz;i++)
+	//{ 
+	//	thisblock=(*blklist)[i];
+	//	if (thisblock->start==address && thisblock->cpu_mode_tag==fpscr.PR_SZ)
+	//	{
+	//		thisblock->lookups++;
+	//		return thisblock;
+	//	}
+	//}
+
+#ifdef OPTIMISE_LUT_SORT
+	luk++;
+	if (luk==r_value)
+	{
+		luk=0;
+		r_value=(frand() & 0x1FF) + 0x800;
+		blklist->Optimise();
+	}
+#endif
+	thisblock=blklist->Find(address,fpscr.PR_SZ);
+	if (thisblock==0)
+		return CompileAndRunCode;
+
+	thisblock->lookups++;
+#ifdef BLOCK_LUT_GUESS
+	if (fastblock->lookups<=thisblock->lookups)
+	{
+		BlockLookupGuess[GetLookupHash(address)]=thisblock;
+	}
+#endif
+	return thisblock->Code;
+}
+
 
 void FillBlockLockInfo(BasicBlock* block)
 {
