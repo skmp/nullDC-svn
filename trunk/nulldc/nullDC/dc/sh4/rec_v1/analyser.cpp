@@ -155,7 +155,6 @@ void AnalyseCode(BasicBlock* to)
 				//printf("Syth opcode found at pc 0x%X , bytelen = 128+2 , skiping 130 bytes\n",pc);
 				pc+=128;
 				block_ops+=128>>1;
-				known_pl_cycles+=128>>1;
 				break;
 			
 			case BLOCK_SOM_RESERVED1:
@@ -172,30 +171,31 @@ void AnalyseCode(BasicBlock* to)
 		}
 
 		//if branch , then block end
-		if (OpTyp[opcode]&WritesPC)
+		verify((OpTyp[opcode]&WritesPC)==0);//must not happen as all calls/branches are emulated natively (338)
+		/*if (OpTyp[opcode]&WritesPC)
 		{
+			verify(false);
 			endpc=pc;
 			to->flags.ExitType =BLOCK_EXITTYPE_DYNAMIC;
 			break;
-		}
+		}*/
 
 		if ((OpTyp[opcode]&(WritesSR | WritesFPSCR)))
 		{
-			//block end , but b/c last opcode does not set PC
 			//after execution , resume to recompile from pc+2
-			//ilst->mov(reg_pc,pc);//save next opcode pc-2 , pc+2 is done after execution
-			//opcode is interpreter so pc is set , if update shit() is called , pc must remain
+			//opcode is interpreted so pc is set , if update shit() is called , pc must remain
 
 			endpc=pc;
-			to->flags.ExitType =BLOCK_EXITTYPE_DYNAMIC;
-			to->flags.PerformModeLookup=1;
+			to->flags.ExitType =BLOCK_EXITTYPE_FIXED_CSC;
+			//to->flags.PerformModeLookup=1; we use BLOCK_EXITTYPE_FIXED_CSC from now on 
 			ilst->add(reg_pc,2);
 			break;
 		}
 
 		if (block_ops>=(CPU_BASIC_BLOCK_SIZE))
 		{
-			ilst->mov(reg_pc,pc);//save next opcode pc-2 , pc+2 is done after execution
+			//This is no longer needed , was leftover from older code (338)
+			//ilst->mov(reg_pc,pc);//save next opcode pc-2 , pc+2 is done after execution
 			
 			to->flags.ExitType=BLOCK_EXITTYPE_FIXED;
 			endpc=pc;
@@ -207,17 +207,19 @@ void AnalyseCode(BasicBlock* to)
 	}
 
 	//clear flags that are used olny for analysis
-	to->flags.EndAnalyse = false;
-	
+	//to->flags.EndAnalyse = false; -> flags are gona be ingored from now on after this point
+	//								-> will be moved to other struct/palce
+
+	//Redutant code , leftover from when there was no scanner . It's buggy too (338)
+	/*
 	//add delayslot opcode :)
 	if (to->flags.HasDelaySlot)
 	{
 		endpc+=2;
 		u32 opcode=ReadMem16(to->end);
-		//block_size+=GetOpCycles(opcode);
 		StepPipeline(opcode);
 		block_ops++;
-	}
+	}*/
 
 #ifdef PROFILE_DYNAREC
 	if( (to->flags & BLOCK_TYPE_MASK)==BLOCK_TYPE_DYNAMIC)
@@ -228,11 +230,10 @@ void AnalyseCode(BasicBlock* to)
 	}
 #endif
 
-
-	verify(endpc==to->end);
+	//No longer works , removed checking code on scanner (338)
+	//verify(endpc==to->end);
 
 	to->ilst.op_count=(u32)to->ilst.opcodes.size();
-	
 	
 	//shil_opt_return srv;
 //	perform_shil_opt(shil_opt_ntc,to,srv);

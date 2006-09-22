@@ -2416,6 +2416,13 @@ void CompileBasicBlock_slow(BasicBlock* block)
 			x86e->RET();//return to caller to check for interrupts
 			break;
 		}
+	case BLOCK_EXITTYPE_FIXED_CSC:
+		{
+			//We have to exit , as we gota do mode lookup :)
+			//x86e->MOV32ItoM(GetRegPtr(reg_pc),cBB->ebi.TF_next_addr);
+			x86e->RET();//return to caller to check for interrupts
+			break;
+		}
 	}
 
 	

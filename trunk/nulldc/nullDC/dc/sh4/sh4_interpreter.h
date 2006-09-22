@@ -32,8 +32,6 @@ enum OpcodeType
 	Branch_rel_d=Delayslot|Branch_rel,	//relative (rg pc+=10);
 };
 
-
-
 //interface
 void Sh4_int_Run(ThreadCallbackFP* tcb);
 void Sh4_int_Stop();

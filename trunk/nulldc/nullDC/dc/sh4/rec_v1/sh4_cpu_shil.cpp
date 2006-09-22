@@ -1856,6 +1856,9 @@ sh4op(i0000_nnnn_0010_0011)
 	*/
 	shil_interpret(op);
 	ilst->add(reg_pc,2);
+	
+	bb->flags.EndAnalyse=true;
+	bb->flags.ExitType=BLOCK_EXITTYPE_DYNAMIC;
 	return;
 } 
 
@@ -2027,6 +2030,8 @@ sh4op(i1100_0011_iiii_iiii)
 	*/
 	shil_interpret(op);	
 	ilst->add(reg_pc,2);
+	bb->flags.EndAnalyse=true;
+	bb->flags.ExitType=BLOCK_EXITTYPE_DYNAMIC;
 	return;
 }
 //jmp @<REG_N>                  

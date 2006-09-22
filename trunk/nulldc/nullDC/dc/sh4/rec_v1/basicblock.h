@@ -218,6 +218,7 @@ class BasicBlock: public CodeRegion
 		u32 full;
 		struct 
 		{
+			//Exit type
 			#define BLOCK_EXITTYPE_DYNAMIC			(0)		//link end
 			#define BLOCK_EXITTYPE_FIXED			(1)		//call TF_next_addr
 			#define BLOCK_EXITTYPE_COND				(2)		//T==0 -> TT , else TF
@@ -227,28 +228,30 @@ class BasicBlock: public CodeRegion
 			#define BLOCK_EXITTYPE_FIXED_CSC		(6)		//Fixed , but we cant link due to cpu state change :)
 			#define BLOCK_EXITTYPE_RES_2			(7)		//Reserved
 			u32 ExitType:3;
-			//flags
-
+			
+			//Fpu mode type
 			#define BLOCK_FPUMODE_32_S32	(0)	//32 bit math , 32 bit reads/writes
 			#define BLOCK_FPUMODE_64_S32	(1)	//64 bit math , 32 bit reads/writes 
 			#define BLOCK_FPUMODE_32_S64	(2)	//32 bit math , 64 bit read/writes
 			#define BLOCK_FPUMODE_INVALID	(3)	//this mode is invalid
 			u32 FpuMode:2;
 
+			//Set if it contains any vector opcodes
 			u32 FpuIsVector:1;
 
+			//Protection Type flag
 			#define BLOCK_PROTECTIONTYPE_LOCK	(0)	//block checks are done by locking memory (no extra code needed)
 			#define BLOCK_PROTECTIONTYPE_MANUAL	(1)	//block checks if it's valid itself
 			u32 ProtectionType:1;
 
-			u32 HasDelaySlot:1;
-
 			//If set , this block wont be profiled and as a result it can't become a superblock 
 			u32 DisableHS:1;
 
-			u32 PerformModeLookup:1;
+			//Removed as of rev 338 , comment will be deleted later
+			//u32 PerformModeLookup:1;
 
 			//Analyse flags :)
+			//I realy need to find a better place for these
 			#define BLOCK_SOM_NONE		(0)			//NONE
 			#define BLOCK_SOM_SIZE_128	(1)			//DIV32U[Q|R]/DIV32S[Q|R]
 			#define BLOCK_SOM_RESERVED1	(2)			//RESERVED
@@ -256,6 +259,9 @@ class BasicBlock: public CodeRegion
 			u32 SynthOpcode:2;
 
 			u32 EndAnalyse:1;
+
+			//Set if it has delayslot
+			u32 HasDelaySlot:1;
 		};
 	}flags;	//compiled block flags :)
 

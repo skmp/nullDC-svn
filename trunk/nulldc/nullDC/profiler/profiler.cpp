@@ -34,31 +34,31 @@ void term_Profiler()
 
 void AnalyseTick(u32 pc,prof_info* to)
 {
-	u32 main_base=((u32)AnalyseTick) & 0xFF200000;
-	u32 aica_base=((u32)libAICA->info.Init) & 0xFF200000;
-	u32 pvr_base=((u32)libPvr->info.Init) & 0xFF200000;
-	u32 gdrom_base=((u32)libGDR->info.Init) & 0xFF200000;
+	u32 main_base=((u32)AnalyseTick) & 0xFFE00000;
+	u32 aica_base=((u32)libAICA->info.Init) & 0xFFE00000;
+	u32 pvr_base=((u32)libPvr->info.Init) & 0xFFE00000;
+	u32 gdrom_base=((u32)libGDR->info.Init) & 0xFFE00000;
 
 	//printf("0x%X 0x%X to 0x%X\n",pc,DynarecRam_Start,DynarecRam_End);
-	if ((pc>=DynarecRam_Start) && (pc<=(DynarecRam_End+4096)))
-	{
-		to->dyna_tick_count++;
-	}
-	else if (aica_base==(pc& 0xFF200000))
+	if (aica_base==(pc& 0xFFE00000))
 	{
 		to->aica_tick_count++;
 	}
-	else if (pvr_base==(pc& 0xFF200000))
+	else if (pvr_base==(pc& 0xFFE00000))
 	{
 		to->gfx_tick_count++;
 	}
-	else if (gdrom_base==(pc& 0xFF200000))
+	else if (gdrom_base==(pc& 0xFFE00000))
 	{
 		to->gdrom_tick_count++;
 	}
-	else if (main_base==(pc& 0xFF200000))
+	else if (main_base==(pc& 0xFFE00000))
 	{
 		to->main_tick_count++;
+	}
+	else if ((pc>=DynarecRam_Start) && (pc<=(DynarecRam_End+4096)))
+	{
+		to->dyna_tick_count++;
 	}
 	else
 		to->rest_tick_count++;

@@ -19,7 +19,7 @@
 #include <float.h>
 
 #define CPU_TIMESLICE	(448)
-#define CPU_RATIO		(2)
+#define CPU_RATIO		(1)
 
 //uh uh 
 volatile bool  sh4_int_bCpuRun=false;
@@ -27,12 +27,12 @@ cThread* sh4_int_thr_handle=0;
 
 u32 exec_cycles=0;
 time_t odtime=0;
-
+/*
 u32 opcode_fam_cycles[0x10]=
 {
  CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,
  CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO,CPU_RATIO
-};
+};*/
 
 u32 sh4_ex_ExeptionCode,sh4_ex_VectorAddress;
 Sh4RegContext sh4_ex_SRC;
@@ -473,11 +473,15 @@ u32 shitaaa=0;
 
 u32 gcp_timer=0;
 u32 gpc_counter=0;
-#define cpu_ratio 100
+
+//Will be added later as global var , comented out for now (338)
+//#define cpu_ratio 100
 
 int __fastcall UpdateSystem(u32 Cycles)
 {
+#ifdef cpu_ratio
 	Cycles=Cycles*100/cpu_ratio;
+#endif
 	//TODO : Add Update System implementation
 	aica_cycl+=Cycles;
 	if (aica_cycl>(200*1000*1000/(44100*3)))
