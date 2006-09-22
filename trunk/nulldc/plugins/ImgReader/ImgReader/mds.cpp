@@ -34,7 +34,7 @@ void mds_ReadSSect(u8* p_out,u32 sector,u32 secsz)
 }
 void mds_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 {
-	printf("MDS/NRG->Read : Sector %d , size %d , mode %d \n",StartSector,SectorCount,secsz);
+//	printf("MDS/NRG->Read : Sector %d , size %d , mode %d \n",StartSector,SectorCount,secsz);
 	while(SectorCount--)
 	{
 		mds_ReadSSect(buff,StartSector,secsz);

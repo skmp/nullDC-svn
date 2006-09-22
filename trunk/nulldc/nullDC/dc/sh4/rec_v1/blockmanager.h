@@ -24,3 +24,6 @@ void __fastcall SuspendBlock(CompiledBlockInfo* block);
 void InitBlockManager();
 void ResetBlockManager();
 void TermBlockManager();
+
+extern u32 DynarecRam_Start;
+extern u32 DynarecRam_End;

@@ -61,7 +61,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="winMM.lib  opengl32.lib  glu32.lib glaux.lib"
+				AdditionalDependencies="winMM.lib  opengl32.lib  glu32.lib glaux.lib d3d9.lib"
 				OutputFile="$(SolutionDir)\WorkDir\Plugins\$(ProjectName)_$(PlatformName).dll"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
@@ -142,7 +142,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="winMM.lib  opengl32.lib  glu32.lib"
+				AdditionalDependencies="winMM.lib  opengl32.lib  glu32.lib glaux.lib d3d9.lib"
 				OutputFile="$(SolutionDir)\WorkDir\Plugins\$(ProjectName)_$(PlatformName).dll"
 				LinkIncremental="1"
 				DelayLoadDLLs=""

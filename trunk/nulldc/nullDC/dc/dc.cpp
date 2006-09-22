@@ -8,8 +8,9 @@
 #include "maple/maple_if.h"
 #include "dc.h"
 #include "config/config.h"
-
+#include "profiler/profiler.h"
 #include <string.h>
+#include <windows.h>
 
 bool dc_inited=false;
 bool dc_reseted=false;
@@ -32,9 +33,23 @@ void ThreadCallback_DC(bool start)
 void cputhreadcb(bool shit)
 {
 	if (shit)
+	{
 		printf("+Sh4 thread started \n");
+		HANDLE hThreadreal;
+		DuplicateHandle(GetCurrentProcess(), 
+                    GetCurrentThread(), 
+                    GetCurrentProcess(),
+                    &hThreadreal, 
+                    0,
+                    FALSE,
+                    DUPLICATE_SAME_ACCESS);
+		init_Profiler(hThreadreal);
+	}
 	else
+	{
+		term_Profiler();
 		printf("-Sh4 thread stoped \n");
+	}
 	if (!dc_ingore_init)
 		ThreadCallback_DC(shit);
 	dc_ingore_init=false;

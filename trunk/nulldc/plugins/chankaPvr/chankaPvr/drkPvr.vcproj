@@ -149,6 +149,7 @@
 				AdditionalDependencies="winMM.lib opengl32.lib  glu32.lib d3d9.lib"
 				OutputFile="$(SolutionDir)\WorkDir\Plugins\$(ProjectName)_$(PlatformName).dll"
 				LinkIncremental="1"
+				TypeLibraryFile=""
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"

@@ -405,7 +405,7 @@ case COMPILED_##NAME##_BLOCK:\
 
 CompiledBlockInfo* CreateBlock(u32 type)
 {
-	CompiledBlockInfo* rv;
+	CompiledBlockInfo* rv=0;
 
 #define GENERIC_CASE(name,NAME)\
 case COMPILED_##NAME##_BLOCK:\

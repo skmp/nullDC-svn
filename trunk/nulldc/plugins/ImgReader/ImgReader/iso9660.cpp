@@ -1,10 +1,63 @@
 #include "iso9660.h"
 
 bool inbios=true;
-FILE* f_iso;
+FILE* f_1=0;
+FILE* f_2=0;
+struct tinfo
+{
+	FILE* file;
+	u32 SFAD;
+	u32 EFAD;
+};
+tinfo tracks[5];
+void rss(u8* buff,u32 ss,FILE* file)
+{
+	fseek(file,ss*2352+0x10,SEEK_SET);
+	fread(buff,2048,1,file);
+}
 void iso_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 {
+	if (f_1==0)
+	{
+		f_1 = fopen("D:/thps/45000to63139.bin","rb");
+		f_2 = fopen("D:/thps/69313to549150.bin","rb");
+	}
 	printf("GDR->Read : Sector %d , size %d , mode %d \n",StartSector,SectorCount,secsz);
+	if (StartSector>=69463)
+	{
+		StartSector-=69463;
+		for (u32 i = 0 ; i < SectorCount;i++)
+		{
+			rss(buff,StartSector+i,f_2);
+			buff+=2048;
+		}
+	}
+	else if (StartSector>=63438 )
+	{
+		StartSector-=63438 ;
+		for (u32 i = 0 ; i < SectorCount;i++)
+		{
+			printf("Unable to read %d\n",StartSector+i); 
+			buff+=2048;
+		}
+	}
+	else if (StartSector>=45150 )
+	{
+		StartSector-=45150 ;
+		for (u32 i = 0 ; i < SectorCount;i++)
+		{
+			rss(buff,StartSector+i,f_1);
+			buff+=2048;
+		}
+	}
+	else
+	{
+		for (u32 i = 0 ; i < SectorCount;i++)
+		{
+			printf("Unable to read %d\n",StartSector+i); 
+			buff+=2048;
+		}
+	}
 	/*
 	if (StartSector>=45000)
 	{

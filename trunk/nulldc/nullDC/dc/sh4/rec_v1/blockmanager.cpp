@@ -34,6 +34,11 @@
 //address (to keep the list size small so fast lookups).Also there is a cache list that holds a pointer
 //to the most commonly used block for that hash range.
 
+//Profile resuts :
+// Cache hits : 99.5% (ingame/menus)
+// Average list size : 3.4 blocks
+//
+
 #include <vector>
 #include <algorithm>
 using namespace std;
@@ -44,6 +49,9 @@ using namespace std;
 
 #define BLOCK_NONE (&BLOCK_NONE_B)
 CompiledBlockInfo BLOCK_NONE_B;
+
+u32 DynarecRam_Start;
+u32 DynarecRam_End;
 
 //helper list class
 int compare_BlockLookups(const void * a, const void * b)
@@ -378,7 +386,7 @@ CompiledBlockInfo* __fastcall FindBlock_full(u32 address,CompiledBlockInfo* fast
 		return 0;
 
 	thisblock->lookups++;
-#ifdef BLOCK_LUT_GUESS
+#ifdef BLOCK_NONE_B
 	if (fastblock->lookups<=thisblock->lookups)
 	{
 		BlockLookupGuess[GetLookupHash(address)]=thisblock;
@@ -414,6 +422,13 @@ void FillBlockLockInfo(BasicBlock* block)
 void RegisterBlock(CompiledBlockInfo* block)
 {
 	all_block_list.Add(block);
+	u32 code_addr=(u32)block->Code;
+
+	if (DynarecRam_Start>code_addr)
+		DynarecRam_Start=code_addr;
+
+	if (DynarecRam_End<code_addr)
+		DynarecRam_End=code_addr;
 
 	u32 start=(block->start&RAM_MASK)/PAGE_SIZE;
 	u32 end=(block->end&RAM_MASK)/PAGE_SIZE;
@@ -557,6 +572,8 @@ void InitBlockManager()
 }
 void ResetBlockManager()
 {
+	DynarecRam_Start=0xFFFFFFFF;
+	DynarecRam_End=0;
 	ResetBlocks();
 }
 void TermBlockManager()

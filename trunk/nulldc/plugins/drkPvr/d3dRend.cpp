@@ -1,13 +1,15 @@
 #include "nullRend.h"
 
-#include "oglRend.h"
+#include "d3dRend.h"
 #include "windows.h"
 #include "gl\gl.h"
 #include "regs.h"
+#include <d3d9.h>
 
 namespace Direct3DRenderer
 {
-	
+	IDirect3D9* d3d9;
+	IDirect3DDevice9* dev;
 	//use that someday
 	void PresentFB()
 	{
@@ -18,7 +20,6 @@ namespace Direct3DRenderer
 
 	void StartRender()
 	{
-		
 		render_end_pending_cycles=100000;
 		if (FB_W_SOF1 & 0x1000000)
 			return;
@@ -293,6 +294,22 @@ namespace Direct3DRenderer
 
 	bool InitRenderer(void* window)
 	{
+		d3d9 = Direct3DCreate9(D3D_SDK_VERSION);
+
+		D3DPRESENT_PARAMETERS ppar;
+		memset(&ppar,0,sizeof(ppar));
+		
+		ppar.MultiSampleType = D3DMULTISAMPLE_NONE;
+		ppar.BackBufferCount=3;
+		ppar.PresentationInterval=D3DPRESENT_INTERVAL_IMMEDIATE;
+		ppar.AutoDepthStencilFormat = D3DFMT_D24S8;
+		ppar.BackBufferFormat = D3DFMT_R8G8B8;
+		ppar.EnableAutoDepthStencil=true;
+		ppar.hDeviceWindow=(HWND)Hwnd;
+
+		
+		verifyc(d3d9->CreateDevice(0,D3DDEVTYPE_HAL,(HWND)Hwnd,D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_FPU_PRESERVE,&ppar,&dev));
+
 		return TileAccel.Init();
 	}
 

@@ -960,10 +960,6 @@
 				</File>
 			</Filter>
 			<Filter
-				Name="arm7"
-				>
-			</Filter>
-			<Filter
 				Name="maple"
 				>
 				<File
@@ -1329,6 +1325,18 @@
 			</File>
 			<File
 				RelativePath=".\config\config.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="Profiler"
+			>
+			<File
+				RelativePath=".\profiler\profiler.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\profiler\profiler.h"
 				>
 			</File>
 		</Filter>
