@@ -386,7 +386,7 @@ CompiledBlockInfo* __fastcall FindBlock_full(u32 address,CompiledBlockInfo* fast
 		return 0;
 
 	thisblock->lookups++;
-#ifdef BLOCK_NONE_B
+#ifdef BLOCK_LUT_GUESS
 	if (fastblock->lookups<=thisblock->lookups)
 	{
 		BlockLookupGuess[GetLookupHash(address)]=thisblock;
