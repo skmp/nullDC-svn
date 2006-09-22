@@ -22,27 +22,17 @@ shil_scs shil_compile_slow_settings=
 	true,	//Inline Const Mem reads
 	true,	//Inline normal mem reads
 	false	//Inline mem writes
-	//true	//Predict returns (needs a bit debuggin)	-> Allways enabled from now on (339).Will be removed.
 };
 
 cDllHandler profiler_dll;
 
 #define REG_ALLOC_COUNT			 (shil_compile_slow_settings.RegAllocCount)
-//Allways enabled , done on a different way.Will be removed (339)
-//#define REG_ALLOC_T_BIT_SEPERATE (shil_compile_slow_settings.TBitsperate)
 #define REG_ALLOC_X86			 (shil_compile_slow_settings.RegAllocX86)
 #define REG_ALLOC_XMM			 (shil_compile_slow_settings.RegAllocXMM)
 
 #define INLINE_MEM_READ_CONST   (shil_compile_slow_settings.InlineMemRead_const)
 #define INLINE_MEM_READ			(shil_compile_slow_settings.InlineMemRead)
 #define INLINE_MEM_WRITE		(shil_compile_slow_settings.InlineMemWrite)
-
-//Allways enabled from now on (339)
-/*
-#define RET_PREDICTION			(shil_compile_slow_settings.RetPrediction)
-#define BC_LINKING				(true)		//link conditional branches
-#define BF_LINKING				(true)		//link fixed branches
-*/
 
 bool nullprof_enabled=false;
 
@@ -54,9 +44,6 @@ bool inited=false;
 int fallbacks=0;
 int native=0;
 u32 T_jcond_value;
-
-//redutant T reg alloc code , will be removed (339)
-//bool T_Edited;
 
 u32 reg_pc_temp_value;
 
@@ -271,30 +258,6 @@ void sse_RLF(u32 reg)
 #define LoadReg_nodata(to,reg) ira->GetRegister(to,reg,RA_NODATA)
 #define SaveReg(reg,from)	ira->SaveRegister(reg,from)
 
-//Original :
-	/*
-	assert(FLAG_32==(op->flags & 3));//32b olny
-
-
-	assert(0==(op->flags & (FLAG_IMM2)));//no imm2
-	assert(op->flags & FLAG_REG1);//reg1
-
-	if (op->flags & FLAG_IMM1)
-	{
-		assert(0==(op->flags & FLAG_REG2));//no reg2
-		LoadReg(EAX,op->reg1);
-		x86e->SUB32ItoR(EAX,op->imm1);
-		SaveReg(op->reg1,EAX);
-	}
-	else
-	{
-		assert(op->flags & FLAG_REG2);//reg2
-
-		LoadReg(EAX,op->reg1);
-		x86e->SUB32MtoR(EAX,GetRegPtr(op->reg2));
-		SaveReg(op->reg1,EAX);
-	}*/
-
 //intel sugest not to use the ItoM forms for some reason .. speed diference isnt big .. < 1%
 //Macro :
 #define OP_MoRtR_ItR(_MtR_,_RtR_,_ItR_,_ItM_,_RtM_)	assert(FLAG_32==(op->flags & 3));\
@@ -345,17 +308,6 @@ void sse_RLF(u32 reg)
 
 #define OP_RegToReg_simple(opcd) OP_MoRtR_ItR(opcd##MtoR,opcd##RtoR,opcd##ItoR,opcd##ItoM,opcd##RtoM);
 
-//original
-/*
-	assert(FLAG_32==(op->flags & 3));//32b olny	
-
-	assert(op->flags & FLAG_IMM1);//reg1
-	assert(0==(op->flags & (FLAG_IMM2)));//no imms2
-	assert(op->flags & FLAG_REG1);//reg1 
-	assert(0==(op->flags & FLAG_REG2));//no reg2
-
-	x86e->SHR32ItoM(GetRegPtr(op->reg1),(u8)op->imm1);
-*/
 #define OP_ItMoR(_ItM_,_ItR_,_Imm_)	assert(FLAG_32==(op->flags & 3));\
 	assert(op->flags & FLAG_IMM1);\
 	assert(0==(op->flags & (FLAG_IMM2)));\
@@ -595,7 +547,7 @@ void __fastcall shil_compile_mov(shil_opcode* op,BasicBlock* block)
 }
 
 
-//mnnn movex !! wowhoo
+//mnnn movex !! woohoo
 void __fastcall shil_compile_movex(shil_opcode* op,BasicBlock* block)
 {
 	u32 size=op->flags&3;
@@ -1104,54 +1056,6 @@ void __fastcall shil_compile_jcond(shil_opcode* op,BasicBlock* block)
 {
 	printf("jcond ... heh not implemented\n");
 	assert(false);
-/*
-	x86e->MOV32MtoR(EAX,&T_jcond_value);
-	x86e->TEST32ItoR(EAX,1);//test for T
-	emitter<>* x86e_b=x86e;
-
-	u32 pre_cbup=pre_cycles_on_block;
-	assert(block->TF_next);
-	assert(block->TT_next);
-
-	//if (block->TF_next->compiled==0)
-		CompileBasicBlock_slow(block->TF_next,pre_cycles_on_block);
-	//else
-	//	printf("COMPILE HIT!\n");
-
-	//if (block->TT_next->compiled==0)
-		CompileBasicBlock_slow(block->TT_next,pre_cycles_on_block);
-	//else
-	//	printf("COMPILE HIT!\n");
-
-	pre_cycles_on_block=pre_cbup;
-	x86e=x86e_b;
-
-	assert(op->flags & FLAG_IMM1);
-	assert((op->imm1==1) || (op->imm1==0));
-
-	if (op->imm1==0)
-	{
-		x86e->JNE32(block->TF_next->compiled->Code);//!=
-		x86e->JMP(block->TT_next->compiled->Code);		 //==
-	}
-	else
-	{
-		x86e->JNE32(block->TT_next->compiled->Code);//!=
-		x86e->JMP(block->TF_next->compiled->Code);		 //==
-	}
-
-	if (block->TT_next->flags & BLOCK_TEMP)
-	{
-		delete block->TT_next->compiled;
-		delete block->TT_next;
-		//printf("Deleted temp block \n");
-	}
-	if (block->TF_next->flags & BLOCK_TEMP)
-	{
-		delete block->TF_next->compiled;
-		delete block->TF_next;
-		//printf("Deleted temp block \n");
-	}*/
 }
 void __fastcall shil_compile_jmp(shil_opcode* op,BasicBlock* block)
 {
@@ -1952,8 +1856,7 @@ void Init()
 void* __fastcall bb_link_compile_inject_TF(CompiledBlockInfo* ptr)
 {
 	CompiledBlockInfo* target= FindOrRecompileCode(ptr->GetBB()->TF_next_addr);
-	
-	
+
 	//if current block is Discared , we must not add any chain info , just jump to the new one :)
 	if (ptr->Discarded==false)
 	{
@@ -1980,7 +1883,6 @@ void* __fastcall bb_link_compile_inject_TT(CompiledBlockInfo* ptr)
 	return target->Code;
 } 
 
-
 //call link_compile_inject_TF , and jump to code
 void naked bb_link_compile_inject_TF_stub(CompiledBlockInfo* ptr)
 {
@@ -1991,7 +1893,6 @@ void naked bb_link_compile_inject_TF_stub(CompiledBlockInfo* ptr)
 	}
 }
 
-
 void naked bb_link_compile_inject_TT_stub(CompiledBlockInfo* ptr)
 {
 	__asm
@@ -2001,14 +1902,10 @@ void naked bb_link_compile_inject_TT_stub(CompiledBlockInfo* ptr)
 	}
 }
 
-
 extern u32 rec_cycles;
 
 u32 call_ret_address=0xFFFFFFFF;//holds teh return address of the previus call ;)
 CompiledBlockInfo* pcall_ret_address=0;//holds teh return address of the previus call ;)
-
-//redutant, to be removed (340)
-//CompiledBlockInfo* p_current;
 
 u32* block_stack_pointer;
 //sp is 0 if manual discard
@@ -2079,7 +1976,6 @@ void CompileBasicBlock_slow(BasicBlock* block)
 
 	block->SetCompiledBlockInfo(cBB);
 	
-
 	if (block->flags.ProtectionType==BLOCK_PROTECTIONTYPE_MANUAL)
 	{
 		int sz=block->end-block->start;
@@ -2103,12 +1999,11 @@ void CompileBasicBlock_slow(BasicBlock* block)
 		}
 	}
 
-	
 	if (do_hs)
 	{
 		//check for block promotion to superblock ;)
 		x86e->DEC32M(&cBB->cbi.GetHS()->bpm_ticks);
-		//u8* not_zero2=0;
+		
 		u8* not_zero=x86e->JNZ8(0);
 		{
 			//yay , 0 , see if it needs promotion kkthxdie
@@ -2125,14 +2020,12 @@ void CompileBasicBlock_slow(BasicBlock* block)
 				x86e->MOV32ItoR(ECX,(u32)cBB->cbi.start);
 				x86e->CALLFunc(CompileCode_SuperBlock);
 				x86e->JMP32R(EAX);
-				//not_zero2=x86e->JMP8(0);
 			}
 			x86e->x86SetJ8(no_promote);
 			x86e->ADD32RtoM(&cBB->cbi.GetHS()->gcp_lasttimer,EAX);//last+now-last=now ;)
 			x86e->MOV32ItoM(&cBB->cbi.GetHS()->bpm_ticks,3022);
 		}
 		x86e->x86SetJ8(not_zero);
-		//x86e->x86SetJ8(not_zero2);
 
 		//16 ticks or more to convert to zuper block
 		//16 ticks -> 241760hrz /8 ~=30220 blocks
@@ -2140,10 +2033,6 @@ void CompileBasicBlock_slow(BasicBlock* block)
 		cBB->cbi.GetHS()->gcp_lasttimer=gcp_timer;
 		cBB->cbi.GetHS()->bpm_ticks=3022*2;
 	}
-
-	
-	//x86e->MOV32ItoR(ECX,(u32)block);
-	//x86e->CALLFunc(CheckBlock);
 	
 	s8* start_ptr;
 
@@ -2157,10 +2046,7 @@ void CompileBasicBlock_slow(BasicBlock* block)
 	
 	ira->DoAllocation(block,x86e);
 	fra->DoAllocation(block,x86e);
-	//AllocateRegisters(block);
-	
-	
-	//LoadRegisters();
+
 	ira->BeforeEmit();
 	fra->BeforeEmit();
 
@@ -2169,7 +2055,6 @@ void CompileBasicBlock_slow(BasicBlock* block)
 	}
 
 	x86e->ADD32ItoM(&rec_cycles,block->cycles);
-	//x86e->MOV32ItoM((u32*)&pCurrentBlock,(u32)block);
 
 	u32 list_sz=(u32)block->ilst.opcodes.size();
 	for (u32 i=0;i<list_sz;i++)
@@ -2187,8 +2072,6 @@ void CompileBasicBlock_slow(BasicBlock* block)
 		sclt[op->opcode](op,block);
 	}
 
-	
-	//FlushRegCache();//flush reg cache
 	ira->BeforeTrail();
 	fra->BeforeTrail();
 
@@ -2211,7 +2094,6 @@ void CompileBasicBlock_slow(BasicBlock* block)
 		}
 	case BLOCK_EXITTYPE_DYNAMIC:
 		{
-//			x86e->MOV32ItoM((u32*)&pExitBlock,(u32)cBB);
 			x86e->RET();
 			break;
 		}
@@ -2235,8 +2117,7 @@ void CompileBasicBlock_slow(BasicBlock* block)
 
 			x86e->x86SetJ8(not_ok);
 			//not_ok
-			//save exit block 
-			//				x86e->MOV32ItoM((u32*)&pExitBlock,(u32)block);
+
 			//ret
 			x86e->RET();
 
@@ -2260,10 +2141,7 @@ void CompileBasicBlock_slow(BasicBlock* block)
 
 			
 			Exit_Link=x86e->JGE8(0);
-			
 
-			
-			
 			//Link:
 			//if we can execute more blocks
 			{
@@ -2324,8 +2202,6 @@ void CompileBasicBlock_slow(BasicBlock* block)
 
 				x86e->RET();//return to caller to check for interrupts
 			}
-
-			
 		} 
 		break;
 
@@ -2378,17 +2254,11 @@ void CompileBasicBlock_slow(BasicBlock* block)
 		}
 	}
 
-	
 	ira->AfterTrail();
 	fra->AfterTrail();
 
 	x86e->GenCode();//heh
 
-
-	//block->compiled->Code=(BasicBlockEP*)x86e->GetCode();
-	//block->compiled->count=x86e->UsedBytes()/5;
-	//block->compiled->parent=block;
-	//block->compiled->size=x86e->UsedBytes();
 	cBB->cbi.Code=(BasicBlockEP*)x86e->GetCode();
 	cBB->cbi.size=x86e->UsedBytes();
 
@@ -2408,7 +2278,6 @@ void CompileBasicBlock_slow(BasicBlock* block)
 		else
 			printf("Native/Fallback ratio : %d:%d [%d:%d]\n",native,fallbacks,native,fallbacks);
 		printf("Average block size : %d opcodes ; ",(fallbacks+native)/block_count);
-	//	printf("%d const hits and %d const misses\n",const_hit,non_const_hit);
 	}*/
 	
 	delete fra;
@@ -2564,7 +2433,6 @@ void emit_vmem_op(emitter<>* x86e,
 		}
 	}
 	x86e->x86SetJ8(op_end);
-
 }
 
 //this is P4 optimised (its faster olny when shr takes a bit :) )

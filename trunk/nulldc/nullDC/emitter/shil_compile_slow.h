@@ -8,11 +8,9 @@ struct shil_scs
 	bool RegAllocX86;
 	u32  RegAllocCount;//max 4 atm
 	bool RegAllocXMM;
-	//bool RegAllocx87; //redutant ? x87 doesn't seem to be used atm :P  -> 339: comment to be removed
 	bool InlineMemRead_const;
 	bool InlineMemRead;
 	bool InlineMemWrite;
-	//bool RetPrediction; -> 339 : Ret Prediction is allways on
 };
 
 extern shil_scs shil_compile_slow_settings;

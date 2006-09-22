@@ -127,7 +127,6 @@ u32 list_sz=(u32)block->ilst.opcodes.size();
 				//x86e->MOV32RtoM(GetRegPtr(reg_pc),EAX);
 
 				//save exit block 
-//				x86e->MOV32ItoM((u32*)&pExitBlock,(u32)block);
 				//x86e->RET();//return to caller to check for interrupts
 				fprintf(to,"//BLOCK_TYPE_COND_0/1 \n");
 				fprintf(to,"if (T_jcond_value==0) \n{ pc=0x%x}\n",*TF_a);
@@ -144,7 +143,6 @@ u32 list_sz=(u32)block->ilst.opcodes.size();
 			//If our cycle count is expired
 			//x86e->MOV32ItoM(GetRegPtr(reg_pc),block->TF_next_addr);
 			//save exit block 
-//			x86e->MOV32ItoM((u32*)&pExitBlock,(u32)block);
 			//x86e->RET();//return to caller to check for interrupts
 			fprintf(to,"//BLOCK_TYPE_FIXED[CALL] \n");
 			fprintf(to,"pc=0x%x\n",block->TF_next_addr);

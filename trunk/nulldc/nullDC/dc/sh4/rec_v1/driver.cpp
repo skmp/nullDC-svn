@@ -143,8 +143,6 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 
 	ptr(true);//call the callback to init
 	
-	
-//	pExitBlock=0;
 	rec_cycles=0;
 	SetFloatStatusReg();
 	while(true)

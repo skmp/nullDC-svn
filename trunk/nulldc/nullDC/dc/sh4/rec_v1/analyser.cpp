@@ -170,15 +170,8 @@ void AnalyseCode(BasicBlock* to)
 			break;
 		}
 
-		//if branch , then block end
-		verify((OpTyp[opcode]&WritesPC)==0);//must not happen as all calls/branches are emulated natively (338)
-		/*if (OpTyp[opcode]&WritesPC)
-		{
-			verify(false);
-			endpc=pc;
-			to->flags.ExitType =BLOCK_EXITTYPE_DYNAMIC;
-			break;
-		}*/
+		//must not happen as all calls/branches are emulated natively (338)
+		verify((OpTyp[opcode]&WritesPC)==0);
 
 		if ((OpTyp[opcode]&(WritesSR | WritesFPSCR)))
 		{
@@ -194,9 +187,6 @@ void AnalyseCode(BasicBlock* to)
 
 		if (block_ops>=(CPU_BASIC_BLOCK_SIZE))
 		{
-			//This is no longer needed , was leftover from older code (338)
-			//ilst->mov(reg_pc,pc);//save next opcode pc-2 , pc+2 is done after execution
-			
 			to->flags.ExitType=BLOCK_EXITTYPE_FIXED;
 			endpc=pc;
 			to->TF_next_addr=pc+2;
@@ -229,9 +219,6 @@ void AnalyseCode(BasicBlock* to)
 		printf("Dynamic block ending at %s\n",temp);
 	}
 #endif
-
-	//No longer works , removed checking code on scanner (338)
-	//verify(endpc==to->end);
 
 	to->ilst.op_count=(u32)to->ilst.opcodes.size();
 	

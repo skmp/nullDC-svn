@@ -247,9 +247,6 @@ class BasicBlock: public CodeRegion
 			//If set , this block wont be profiled and as a result it can't become a superblock 
 			u32 DisableHS:1;
 
-			//Removed as of rev 338 , comment will be deleted later
-			//u32 PerformModeLookup:1;
-
 			//Analyse flags :)
 			//I realy need to find a better place for these
 			#define BLOCK_SOM_NONE		(0)			//NONE

@@ -1065,10 +1065,6 @@ bool backscan_const(BasicBlock* bb,u8 reg,u32* rv)
 
 u32 shil_optimise_pass_btp_main(BasicBlock* bb)
 {
-	//We use BLOCK_EXITTYPE_FIXED_CSC from now on (338)
-	/*if (bb->flags.PerformModeLookup)
-		return 0;*/
-
 	if ((bb->flags.ExitType==BLOCK_EXITTYPE_DYNAMIC) ||
 		(bb->flags.ExitType==BLOCK_EXITTYPE_DYNAMIC_CALL))
 	{
