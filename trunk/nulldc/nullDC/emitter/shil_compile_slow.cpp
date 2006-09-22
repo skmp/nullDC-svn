@@ -2007,7 +2007,9 @@ extern u32 rec_cycles;
 u32 call_ret_address=0xFFFFFFFF;//holds teh return address of the previus call ;)
 CompiledBlockInfo* pcall_ret_address=0;//holds teh return address of the previus call ;)
 
-CompiledBlockInfo* p_current;
+//redutant, to be removed (340)
+//CompiledBlockInfo* p_current;
+
 u32* block_stack_pointer;
 //sp is 0 if manual discard
 void CBBs_BlockSuspended(CompiledBlockInfo* block,u32* sp)
@@ -2201,7 +2203,6 @@ void CompileBasicBlock_slow(BasicBlock* block)
 	{
 	
 	case BLOCK_EXITTYPE_DYNAMIC_CALL:
-		if (RET_PREDICTION)
 		{
 			//mov guess,pr
 			x86e->MOV32ItoM(&call_ret_address,cBB->ebi.TT_next_addr);
@@ -2217,37 +2218,28 @@ void CompileBasicBlock_slow(BasicBlock* block)
 
 	case BLOCK_EXITTYPE_RET:
 		{
-			if (RET_PREDICTION)
-			{
-				//cmp pr,guess
-				x86e->MOV32MtoR(EAX,GetRegPtr(reg_pc));
-				x86e->CMP32MtoR(EAX,&call_ret_address);
-				//je ok
-				u8* not_ok=x86e->JNE8(0);
-				//ok:
-				//mov ecx , pcall_ret_address
-				x86e->MOV32MtoR(ECX,(u32*)&pcall_ret_address);
-				//mov eax,[pcall_ret_address+codeoffset]
-				x86e->MOV32RtoR(EAX,ECX);
-				x86e->ADD32ItoR(EAX,offsetof(CompiledBasicBlock,ebi.pTT_next_addr));
-				x86e->MOV32RmtoR(EAX,EAX);//get ptr to compiled block/link stub
-				//jmp eax
-				x86e->JMP32R(EAX);	//jump to it
+			//cmp pr,guess
+			x86e->MOV32MtoR(EAX,GetRegPtr(reg_pc));
+			x86e->CMP32MtoR(EAX,&call_ret_address);
+			//je ok
+			u8* not_ok=x86e->JNE8(0);
+			//ok:
+			//mov ecx , pcall_ret_address
+			x86e->MOV32MtoR(ECX,(u32*)&pcall_ret_address);
+			//mov eax,[pcall_ret_address+codeoffset]
+			x86e->MOV32RtoR(EAX,ECX);
+			x86e->ADD32ItoR(EAX,offsetof(CompiledBasicBlock,ebi.pTT_next_addr));
+			x86e->MOV32RmtoR(EAX,EAX);//get ptr to compiled block/link stub
+			//jmp eax
+			x86e->JMP32R(EAX);	//jump to it
 
-				x86e->x86SetJ8(not_ok);
-				//not_ok
-				//save exit block 
-//				x86e->MOV32ItoM((u32*)&pExitBlock,(u32)block);
-				//ret
-				x86e->RET();
-				
-			}
-			else
-			{
-				//save exit block 
-//				x86e->MOV32ItoM((u32*)&pExitBlock,(u32)cBB);
-				x86e->RET();
-			}
+			x86e->x86SetJ8(not_ok);
+			//not_ok
+			//save exit block 
+			//				x86e->MOV32ItoM((u32*)&pExitBlock,(u32)block);
+			//ret
+			x86e->RET();
+
 			break;
 		}
 
@@ -2339,7 +2331,6 @@ void CompileBasicBlock_slow(BasicBlock* block)
 
 	case BLOCK_EXITTYPE_FIXED_CALL:
 		//mov guess,pr
-		if (RET_PREDICTION)
 		{
 			x86e->MOV32ItoM(&call_ret_address,cBB->ebi.TT_next_addr);
 			//mov pguess,this
@@ -2375,8 +2366,14 @@ void CompileBasicBlock_slow(BasicBlock* block)
 	case BLOCK_EXITTYPE_FIXED_CSC:
 		{
 			//We have to exit , as we gota do mode lookup :)
-			//x86e->MOV32ItoM(GetRegPtr(reg_pc),cBB->ebi.TF_next_addr);
-			x86e->RET();//return to caller to check for interrupts
+			//We also have to reset return cache to ensure its ok
+
+			//call_ret_address=0xFFFFFFFF;
+			x86e->MOV32ItoM(&call_ret_address,0xFFFFFFFF);
+			//pcall_ret_address=0;
+			x86e->MOV32ItoM((u32*)&pcall_ret_address,0);
+			//Good , now return to caller :)
+			x86e->RET();
 			break;
 		}
 	}
