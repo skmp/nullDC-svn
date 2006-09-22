@@ -21,13 +21,14 @@ shil_scs shil_compile_slow_settings=
 	false,	//and on XMM
 	true,	//Inline Const Mem reads
 	true,	//Inline normal mem reads
-	false,	//Inline mem writes
-	true	//Predict returns (needs a bit debuggin)	
+	false	//Inline mem writes
+	//true	//Predict returns (needs a bit debuggin)	-> Allways enabled from now on (339).Will be removed.
 };
 
 cDllHandler profiler_dll;
 
 #define REG_ALLOC_COUNT			 (shil_compile_slow_settings.RegAllocCount)
+//Allways enabled , done on a different way.Will be removed (339)
 //#define REG_ALLOC_T_BIT_SEPERATE (shil_compile_slow_settings.TBitsperate)
 #define REG_ALLOC_X86			 (shil_compile_slow_settings.RegAllocX86)
 #define REG_ALLOC_XMM			 (shil_compile_slow_settings.RegAllocXMM)
@@ -36,9 +37,12 @@ cDllHandler profiler_dll;
 #define INLINE_MEM_READ			(shil_compile_slow_settings.InlineMemRead)
 #define INLINE_MEM_WRITE		(shil_compile_slow_settings.InlineMemWrite)
 
+//Allways enabled from now on (339)
+/*
 #define RET_PREDICTION			(shil_compile_slow_settings.RetPrediction)
 #define BC_LINKING				(true)		//link conditional branches
 #define BF_LINKING				(true)		//link fixed branches
+*/
 
 bool nullprof_enabled=false;
 
@@ -51,7 +55,8 @@ int fallbacks=0;
 int native=0;
 u32 T_jcond_value;
 
-bool T_Edited;
+//redutant T reg alloc code , will be removed (339)
+//bool T_Edited;
 
 u32 reg_pc_temp_value;
 
@@ -265,7 +270,7 @@ void sse_RLF(u32 reg)
 #define LoadReg_force(to,reg) ira->GetRegister(to,reg,RA_FORCE)
 #define LoadReg_nodata(to,reg) ira->GetRegister(to,reg,RA_NODATA)
 #define SaveReg(reg,from)	ira->SaveRegister(reg,from)
-//#define MarkDirty_(reg) ira->MarkDirty(reg);
+
 //Original :
 	/*
 	assert(FLAG_32==(op->flags & 3));//32b olny
@@ -401,10 +406,11 @@ void __fastcall shil_compile_mov(shil_opcode* op,BasicBlock* block)
 	u32 size=op->flags&3;
 	assert(op->flags & FLAG_REG1);//reg1 has to be used on mov :)
 	
+	if (op->reg1==op->reg2)
+			return;
+
 	if (size==FLAG_32)
 	{
-		if (op->reg1==op->reg2)
-			return;
 		//sse_WBF(op->reg2);//write back possibly readed reg
 		//OP_RegToReg_simple(MOV32);
 		//sse_RLF(op->reg1);//reload writen reg
@@ -701,75 +707,62 @@ void __fastcall shil_compile_swap(shil_opcode* op,BasicBlock* block)
 		x86e->ROR32ItoR(r1,16);
 		SaveReg(op->reg1,r1);
 	}
-	//MarkDirty(op->reg1);
 }
 
 void __fastcall shil_compile_shl(shil_opcode* op,BasicBlock* block)
 {
 	OP_ItMoR(SHL32ItoM,SHL32ItoR,(u8)op->imm1);
-	//MarkDirty(op->reg1);
 }
 
 void __fastcall shil_compile_shr(shil_opcode* op,BasicBlock* block)
 {
 	OP_ItMoR(SHR32ItoM,SHR32ItoR,(u8)op->imm1);
-	//MarkDirty(op->reg1);
 }
 
 void __fastcall shil_compile_sar(shil_opcode* op,BasicBlock* block)
 {
 	OP_ItMoR(SAR32ItoM,SAR32ItoR,(u8)op->imm1);
-	//MarkDirty(op->reg1);
 }
 
 //rotates
 void __fastcall shil_compile_rcl(shil_opcode* op,BasicBlock* block)
 {
 	OP_NtMoR_noimm(RCL321toM,RCL321toR);
-	//MarkDirty(op->reg1);
 }
 void __fastcall shil_compile_rcr(shil_opcode* op,BasicBlock* block)
 {
 	OP_NtR_noimm(RCR321toR);
-	//MarkDirty(op->reg1);
 }
 void __fastcall shil_compile_ror(shil_opcode* op,BasicBlock* block)
 {
 	OP_NtR_noimm(ROR321toR);
-	//MarkDirty(op->reg1);
 }
 void __fastcall shil_compile_rol(shil_opcode* op,BasicBlock* block)
 {
 	OP_NtR_noimm(ROL321toR);
-	//MarkDirty(op->reg1);
 }
 //neg
 void __fastcall shil_compile_neg(shil_opcode* op,BasicBlock* block)
 {
 	OP_NtR_noimm(NEG32R);
-	//MarkDirty(op->reg1);
 }
 //not
 void __fastcall shil_compile_not(shil_opcode* op,BasicBlock* block)
 {
 	OP_NtR_noimm(NOT32R);
-	//MarkDirty(op->reg1);
 }
 //or xor and
 void __fastcall shil_compile_xor(shil_opcode* op,BasicBlock* block)
 {
 	OP_RegToReg_simple(XOR32);
-	//MarkDirty(op->reg1);
 }
 void __fastcall shil_compile_or(shil_opcode* op,BasicBlock* block)
 {
 	OP_RegToReg_simple(OR32);
-	//MarkDirty(op->reg1);
 }
 void __fastcall shil_compile_and(shil_opcode* op,BasicBlock* block)
 {
 	OP_RegToReg_simple(AND32);
-	//MarkDirty(op->reg1);
 }
 //read-write
 void readwrteparams(shil_opcode* op)
@@ -869,8 +862,6 @@ void readwrteparams(shil_opcode* op)
 	}*/
 }
 
-//u32 const_hit=0;
-//u32 non_const_hit=0;
 
 void emit_vmem_op_compat(emitter<>* x86e,x86IntRegType ra,
 					  x86IntRegType ro,
@@ -905,7 +896,6 @@ void __fastcall shil_compile_readm(shil_opcode* op,BasicBlock* block)
 				emit_vmem_op_compat_const(x86e,op->imm1,EAX,rall,true,m_unpack_sz[size],0);
 				fra->SaveRegister(op->reg1,rall);
 			}
-			//MarkDirty(op->reg1);
 			return;
 		}
 	}
@@ -938,7 +928,6 @@ void __fastcall shil_compile_readm(shil_opcode* op,BasicBlock* block)
 	{
 		SaveReg(op->reg1,EAX);//save return value
 	}
-	//MarkDirty(op->reg1);
 }
 void __fastcall shil_compile_writem(shil_opcode* op,BasicBlock* block)
 {
@@ -1100,17 +1089,14 @@ void __fastcall shil_compile_test(shil_opcode* op,BasicBlock* block)
 void __fastcall shil_compile_add(shil_opcode* op,BasicBlock* block)
 {
 	OP_RegToReg_simple(ADD32);
-	//MarkDirty(op->reg1);
 }
 void __fastcall shil_compile_adc(shil_opcode* op,BasicBlock* block)
 {
 	OP_RegToReg_simple(ADC32);
-	//MarkDirty(op->reg1);
 }
 void __fastcall shil_compile_sub(shil_opcode* op,BasicBlock* block)
 {
 	OP_RegToReg_simple(SUB32);
-	//MarkDirty(op->reg1);
 }
 
 //**
@@ -1243,7 +1229,6 @@ void __fastcall shil_compile_mul(shil_opcode* op,BasicBlock* block)
 			x86e->MUL32R(ECX);
 		
 		SaveReg((u8)reg_macl,EAX);
-		//MarkDirty(reg_macl);
 	}
 	else
 	{
@@ -1264,8 +1249,6 @@ void __fastcall shil_compile_mul(shil_opcode* op,BasicBlock* block)
 
 		SaveReg((u8)reg_macl,EAX);
 		SaveReg((u8)reg_mach,EDX);
-		//MarkDirty(reg_macl);
-		//MarkDirty(reg_mach);
 	}
 }
 
@@ -1362,8 +1345,6 @@ void __fastcall shil_compile_div32(shil_opcode* op,BasicBlock* block)
 	//WARNING--JUMP--
 	x86e->x86SetJ8(j2);
 
-	//MarkDirty(rDividend);
-	//MarkDirty(rQuotient);
 	ira->MarkDirty(rDividend);
 	ira->MarkDirty(rQuotient);
 }
@@ -1507,9 +1488,6 @@ void __fastcall shil_compile_fdiv(shil_opcode* op,BasicBlock* block)
 //binary opcodes
 void __fastcall shil_compile_fneg(shil_opcode* op,BasicBlock* block)
 {
-
-	
-//IsSSEAllocReg
 	assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2|FLAG_REG2)));
 	u32 sz=op->flags & 3;
 	if (sz==FLAG_32)
@@ -1576,9 +1554,6 @@ void __fastcall shil_compile_fcmp(shil_opcode* op,BasicBlock* block)
 		assert(!IsReg64((Sh4RegType)op->reg1));
 		assert(Ensure32());
 
-		//sse_WBF(op->reg1);
-		//sse_WBF(op->reg2);
-
 		//x86e->SSE_MOVSS_M32_to_XMM(XMM0,GetRegPtr(op->reg1));
 		x86SSERegType fr1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
 		
@@ -1609,10 +1584,6 @@ void __fastcall shil_compile_fmac(shil_opcode* op,BasicBlock* block)
 		assert(!IsReg64((Sh4RegType)op->reg1));
 		//fr[n] += fr[0] * fr[m];
 		assert(Ensure32());
-
-		//sse_WBF(fr_0);
-		//sse_WBF(op->reg2);
-		//sse_WBF(op->reg1);
 
 		//x86e->SSE_MOVSS_M32_to_XMM(XMM0,GetRegPtr(fr_0));		//xmm0=fr[0]
 		x86SSERegType fr0=fra->GetRegister(XMM0,fr_0,RA_FORCE);
@@ -1645,8 +1616,6 @@ void __fastcall shil_compile_fmac(shil_opcode* op,BasicBlock* block)
 		
 		//x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),XMM0);	//fr[n]=xmm0
 		fra->SaveRegister(op->reg1,fr0);
-
-		//sse_RLF(op->reg1);
 	}
 	else
 	{
@@ -1667,12 +1636,10 @@ void __fastcall shil_compile_fsqrt(shil_opcode* op,BasicBlock* block)
 		//RSQRT vs SQRTSS -- why rsqrt no workie ? :P -> RSQRT = 1/SQRTSS
 		if (fra->IsRegAllocated(op->reg1))
 		{
-			//sse_WBF(op->reg1);
 			x86SSERegType fr1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
 			assert(fr1!=XMM0);
 			x86e->SSE_SQRTSS_XMM_to_XMM(fr1,fr1);
 			fra->SaveRegister(op->reg1,fr1);
-			//sse_RLF(op->reg1);
 		}
 		else
 		{
@@ -1707,7 +1674,6 @@ void __fastcall shil_compile_fsrra(shil_opcode* op,BasicBlock* block)
 
 		if (fra->IsRegAllocated(op->reg1))
 		{
-			//sse_WBF(op->reg1);
 			x86SSERegType fr1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
 			verify(fr1!=XMM0);
 #ifdef _FAST_fssra
@@ -1719,7 +1685,6 @@ void __fastcall shil_compile_fsrra(shil_opcode* op,BasicBlock* block)
 			x86e->SSE_DIVSS_XMM_to_XMM(fr1,XMM0);				//fr1=1/XMM0
 #endif
 			fra->SaveRegister(op->reg1,fr1);
-			//sse_RLF(op->reg1);
 		}
 		else
 		{
@@ -1755,7 +1720,6 @@ void __fastcall shil_compile_floatfpul(shil_opcode* op,BasicBlock* block)
 		x86SSERegType r1=fra->GetRegister(XMM0,op->reg1,RA_NODATA);
 		x86e->SSE_CVTSI2SS_M32_To_XMM(r1,GetRegPtr(reg_fpul));
 		//x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),XMM0);
-		//sse_RLF(op->reg1);
 		fra->SaveRegister(op->reg1,r1);
 		
 	}
@@ -1776,12 +1740,10 @@ void __fastcall shil_compile_ftrc(shil_opcode* op,BasicBlock* block)
 		//TODO : This is not entietly correct , sh4 saturates too
 		//GOTA UNFUCK THE x86 EMITTER
 		//EAX=(int)fr[n]
-		//sse_WBF(op->reg1);
 		if (fra->IsRegAllocated(op->reg1))
 		{
 			x86SSERegType r1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
 			assert(r1!=XMM0);
-			//x86e->INT3();
 			x86e->SSE_CVTTSS2SI_XMM_To_R32(EAX,r1);
 		}
 		else
@@ -2304,57 +2266,56 @@ void CompileBasicBlock_slow(BasicBlock* block)
 			
 			u8* Exit_Link;
 
-			if (BC_LINKING)
-			{
-				Exit_Link=x86e->JGE8(0);
-			}
+			
+			Exit_Link=x86e->JGE8(0);
+			
 
-			if (BC_LINKING)
+			
+			
+			//Link:
+			//if we can execute more blocks
 			{
-				//Link:
-				//if we can execute more blocks
+				//for dynamic link!
+				x86e->MOV32ItoR(ECX,(u32)cBB);					//mov ecx , block
+				x86e->MOV32MtoR(EAX,&T_jcond_value);
+				x86e->TEST32ItoR(EAX,1);//test for T
+
+				/*
+				//link to next block :
+				if (*TF_a==cBB->start)
 				{
-					//for dynamic link!
-					x86e->MOV32ItoR(ECX,(u32)cBB);					//mov ecx , block
-					x86e->MOV32MtoR(EAX,&T_jcond_value);
-					x86e->TEST32ItoR(EAX,1);//test for T
-
-					/*
-					//link to next block :
-					if (*TF_a==cBB->start)
-					{
-						//fast link (direct jmp to block start)
-						if (x86e->CanJ8(start_ptr))
-							x86e->JE8(start_ptr);
-						else
-							x86e->JE32(start_ptr);
-					}
-					else
-					{*/
-						x86e->MOV32MtoR(EAX,pTF_f);		//assume it's this condition , unless CMOV overwrites
-					/*}
-					//!=
-
-					if (*TT_a==cBB->start)
-					{
-						//fast link (direct jmp to block start)
-						if (x86e->CanJ8(start_ptr))
-							x86e->JNE8(start_ptr);
-						else
-							x86e->JNE32(start_ptr);
-					}
-					else
-					{
-						if (*TF_a==cBB->start)
-						{
-							x86e->MOV32MtoR(EAX,pTT_f);// ;)
-						}
-						else*/
-							x86e->CMOVNE32MtoR(EAX,pTT_f);	//overwrite the "other" pointer if needed
-					//}
-					x86e->JMP32R(EAX);		 //!=
+				//fast link (direct jmp to block start)
+				if (x86e->CanJ8(start_ptr))
+				x86e->JE8(start_ptr);
+				else
+				x86e->JE32(start_ptr);
 				}
+				else
+				{*/
+				x86e->MOV32MtoR(EAX,pTF_f);		//assume it's this condition , unless CMOV overwrites
+				/*}
+				//!=
+
+				if (*TT_a==cBB->start)
+				{
+				//fast link (direct jmp to block start)
+				if (x86e->CanJ8(start_ptr))
+				x86e->JNE8(start_ptr);
+				else
+				x86e->JNE32(start_ptr);
+				}
+				else
+				{
+				if (*TF_a==cBB->start)
+				{
+				x86e->MOV32MtoR(EAX,pTT_f);// ;)
+				}
+				else*/
+				x86e->CMOVNE32MtoR(EAX,pTT_f);	//overwrite the "other" pointer if needed
+				//}
+				x86e->JMP32R(EAX);		 //!=
 			}
+			
 			x86e->x86SetJ8(Exit_Link);
 			{
 				//If our cycle count is expired
@@ -2390,26 +2351,21 @@ void CompileBasicBlock_slow(BasicBlock* block)
 
 			u8* No_Link;
 
-			if (BF_LINKING)
+			No_Link=x86e->JGE8(0);
+
+			//Link:
+			//if we can execute more blocks
+			if (cBB->ebi.TF_next_addr==cBB->cbi.start)
 			{
-				No_Link=x86e->JGE8(0);
+				//__asm int 03;
+				printf("Fast Link possible\n");
 			}
 
-			if (BF_LINKING)
-			{
-				//Link:
-				//if we can execute more blocks
-				if (cBB->ebi.TF_next_addr==cBB->cbi.start)
-				{
-					//__asm int 03;
-					printf("Fast Link possible\n");
-				}
+			//link to next block :
+			x86e->MOV32ItoR(ECX,(u32)cBB);					//mov ecx , cBB
+			x86e->MOV32MtoR(EAX,(u32*)&(cBB->ebi.pTF_next_addr));	//mov eax , [pTF_next_addr]
+			x86e->JMP32R(EAX);									//jmp eax
 
-				//link to next block :
-				x86e->MOV32ItoR(ECX,(u32)cBB);					//mov ecx , cBB
-				x86e->MOV32MtoR(EAX,(u32*)&(cBB->ebi.pTF_next_addr));	//mov eax , [pTF_next_addr]
-				x86e->JMP32R(EAX);									//jmp eax
-			}
 			x86e->x86SetJ8(No_Link);
 			//If our cycle count is expired
 			x86e->MOV32ItoM(GetRegPtr(reg_pc),cBB->ebi.TF_next_addr);
@@ -2462,317 +2418,6 @@ void CompileBasicBlock_slow(BasicBlock* block)
 	delete ira;
 	delete x86e;
 }
-
-#ifdef lolen
-void CompileSuperBlock_slow(vector<SBL_BasicBlock>* block)
-{
-	if (!inited)
-	{
-		Init();
-		inited=true;
-	}
-
-
-	x86e=new emitter<>();
-
-	CompiledBasicBlock* cBB;
-
-	u32 b_type=0;
-	
-	if (PROFILE_BLOCK_CYCLES)
-		b_type|=COMPILED_BLOCK_NULLPROF;
-	
-	b_type|=COMPILED_SUPER_BLOCK;
-
-	cBB=(CompiledSuperBlock*)CreateBlock(b_type);
-
-	block->SetCompiledBlockInfo(cBB);
-	
-	//x86e->MOV32ItoR(ECX,(u32)block);
-	//x86e->CALLFunc(CheckBlock);
-	
-	s8* start_ptr;
-
-	if (PROFILE_BLOCK_CYCLES){
-		start_ptr=x86e->x86Ptr;
-		x86e->CALLFunc(dyna_profile_block_enter);
-	}
-
-	fra=GetFloatAllocator();
-	ira=GetGPRtAllocator();
-	
-	ira->DoAllocation(block[0],x86e);
-	fra->DoAllocation(block[0],x86e);
-	//AllocateRegisters(block);
-	
-	
-	//LoadRegisters();
-	ira->BeforeEmit();
-	fra->BeforeEmit();
-
-	if (PROFILE_BLOCK_CYCLES==false){
-		start_ptr=x86e->x86Ptr;
-	}
-
-	x86e->ADD32ItoM(&rec_cycles,block->cycles);
-	//x86e->MOV32ItoM((u32*)&pCurrentBlock,(u32)block);
-
-	u32 list_sz=(u32)block->ilst.opcodes.size();
-	for (u32 i=0;i<list_sz;i++)
-	{
-		shil_opcode* op=&block->ilst.opcodes[i];
-		if (op->opcode==shil_ifb)
-			fallbacks++;
-		else
-			native++;
-
-		if (op->opcode>(shil_opcodes::shil_count-1))
-		{
-			printf("SHIL COMPILER ERROR\n");
-		}
-		sclt[op->opcode](op,block);
-	}
-
-	
-	//FlushRegCache();//flush reg cache
-	ira->BeforeTrail();
-	fra->BeforeTrail();
-
-	if (PROFILE_BLOCK_CYCLES)
-	{
-		x86e->MOV32ItoR(ECX,(u32)(cBB->cbi.GetNP()));
-		x86e->CALLFunc(dyna_profile_block_exit_BasicBlock);
-	}
-
-	//end block acording to block type :)
-	switch(block->flags.ExitType)
-	{
-	
-	case BLOCK_EXITTYPE_DYNAMIC_CALL:
-		if (RET_PREDICTION)
-		{
-			//mov guess,pr
-			x86e->MOV32ItoM(&call_ret_address,cBB->ebi.TT_next_addr);
-			//mov pguess,this
-			x86e->MOV32ItoM((u32*)&pcall_ret_address,(u32)(cBB));
-		}
-	case BLOCK_EXITTYPE_DYNAMIC:
-		{
-			x86e->RET();
-			break;
-		}
-
-	case BLOCK_EXITTYPE_RET:
-		{
-			if (RET_PREDICTION)
-			{
-				//cmp pr,guess
-				x86e->MOV32MtoR(EAX,GetRegPtr(reg_pc));
-				x86e->CMP32MtoR(EAX,&call_ret_address);
-				//je ok
-				u8* not_ok=x86e->JNE8(0);
-				//ok:
-				//mov ecx , pcall_ret_address
-				x86e->MOV32MtoR(ECX,(u32*)&pcall_ret_address);
-				//mov eax,[pcall_ret_address+codeoffset]
-				x86e->MOV32RtoR(EAX,ECX);
-				x86e->ADD32ItoR(EAX,offsetof(CompiledBasicBlock,ebi.pTT_next_addr));
-				x86e->MOV32RmtoR(EAX,EAX);//get ptr to compiled block/link stub
-				//jmp eax
-				x86e->JMP32R(EAX);	//jump to it
-
-				x86e->x86SetJ8(not_ok);
-				//not_ok
-				//ret
-				x86e->RET();
-				
-			}
-			else
-			{
-				//save exit block 
-				x86e->RET();
-			}
-			break;
-		}
-
-	case BLOCK_EXITTYPE_COND_0:
-	case BLOCK_EXITTYPE_COND_1:
-		{
-			//ok , handle COND_0/COND_1 here :)
-			//mem address
-			u32* TT_a=&cBB->ebi.TT_next_addr;
-			u32* TF_a=&cBB->ebi.TF_next_addr;
-			//functions
-			u32* pTF_f=(u32*)&(cBB->ebi.pTF_next_addr);
-			u32* pTT_f=(u32*)&(cBB->ebi.pTT_next_addr);
-			
-			if (block->flags.ExitType==BLOCK_EXITTYPE_COND_0)
-			{
-				TT_a=&cBB->ebi.TF_next_addr;
-				TF_a=&cBB->ebi.TT_next_addr;
-				pTF_f=(u32*)&(cBB->ebi.pTT_next_addr);
-				pTT_f=(u32*)&(cBB->ebi.pTF_next_addr);
-			}
-
-
-			x86e->CMP32ItoM(&rec_cycles,BLOCKLIST_MAX_CYCLES);
-			
-			u8* Exit_Link;
-
-			if (BC_LINKING)
-			{
-				Exit_Link=x86e->JGE8(0);
-			}
-
-			if (BC_LINKING)
-			{
-				//Link:
-				//if we can execute more blocks
-				{
-					//for dynamic link!
-					x86e->MOV32ItoR(ECX,(u32)cBB);					//mov ecx , block
-					x86e->MOV32MtoR(EAX,&T_jcond_value);
-					x86e->TEST32ItoR(EAX,1);//test for T
-
-					/*
-					//link to next block :
-					if (*TF_a==cBB->start)
-					{
-						//fast link (direct jmp to block start)
-						if (x86e->CanJ8(start_ptr))
-							x86e->JE8(start_ptr);
-						else
-							x86e->JE32(start_ptr);
-					}
-					else
-					{*/
-						x86e->MOV32MtoR(EAX,pTF_f);		//assume it's this condition , unless CMOV overwrites
-					/*}
-					//!=
-
-					if (*TT_a==cBB->start)
-					{
-						//fast link (direct jmp to block start)
-						if (x86e->CanJ8(start_ptr))
-							x86e->JNE8(start_ptr);
-						else
-							x86e->JNE32(start_ptr);
-					}
-					else
-					{
-						if (*TF_a==cBB->start)
-						{
-							x86e->MOV32MtoR(EAX,pTT_f);// ;)
-						}
-						else*/
-							x86e->CMOVNE32MtoR(EAX,pTT_f);	//overwrite the "other" pointer if needed
-					//}
-					x86e->JMP32R(EAX);		 //!=
-				}
-			}
-			x86e->x86SetJ8(Exit_Link);
-			{
-				//If our cycle count is expired
-				//save the dest address to pc
-
-				x86e->MOV32MtoR(EAX,&T_jcond_value);
-				x86e->TEST32ItoR(EAX,1);//test for T
-				//see witch pc to set
-
-				x86e->MOV32ItoR(EAX,*TF_a);//==
-				//!=
-				x86e->CMOVNE32MtoR(EAX,TT_a);//!=
-				x86e->MOV32RtoM(GetRegPtr(reg_pc),EAX);
-
-				x86e->RET();//return to caller to check for interrupts
-			}
-
-			
-		} 
-		break;
-
-	case BLOCK_EXITTYPE_FIXED_CALL:
-		//mov guess,pr
-		if (RET_PREDICTION)
-		{
-			x86e->MOV32ItoM(&call_ret_address,cBB->ebi.TT_next_addr);
-			//mov pguess,this
-			x86e->MOV32ItoM((u32*)&pcall_ret_address,(u32)(cBB));
-		}
-	case BLOCK_EXITTYPE_FIXED:
-		{
-			x86e->CMP32ItoM(&rec_cycles,BLOCKLIST_MAX_CYCLES);
-
-			u8* No_Link;
-
-			if (BF_LINKING)
-			{
-				No_Link=x86e->JGE8(0);
-			}
-
-			if (BF_LINKING)
-			{
-				//Link:
-				//if we can execute more blocks
-				if (cBB->ebi.TF_next_addr==cBB->cbi.start)
-				{
-					//__asm int 03;
-					printf("Fast Link possible\n");
-				}
-
-				//link to next block :
-				x86e->MOV32ItoR(ECX,(u32)cBB);					//mov ecx , cBB
-				x86e->MOV32MtoR(EAX,(u32*)&(cBB->ebi.pTF_next_addr));	//mov eax , [pTF_next_addr]
-				x86e->JMP32R(EAX);									//jmp eax
-			}
-			x86e->x86SetJ8(No_Link);
-			//If our cycle count is expired
-			x86e->MOV32ItoM(GetRegPtr(reg_pc),cBB->ebi.TF_next_addr);
-			x86e->RET();//return to caller to check for interrupts
-			break;
-		}
-	}
-
-	
-	ira->AfterTrail();
-	fra->AfterTrail();
-
-	x86e->GenCode();//heh
-
-
-	//block->compiled->Code=(BasicBlockEP*)x86e->GetCode();
-	//block->compiled->count=x86e->UsedBytes()/5;
-	//block->compiled->parent=block;
-	//block->compiled->size=x86e->UsedBytes();
-	cBB->cbi.Code=(BasicBlockEP*)x86e->GetCode();
-	cBB->cbi.size=x86e->UsedBytes();
-
-	//make it call the stubs , unless otherwise needed
-	cBB->ebi.pTF_next_addr=bb_link_compile_inject_TF_stub;
-	cBB->ebi.pTT_next_addr=bb_link_compile_inject_TT_stub;
-
-	block_count++;
-	
-	/*
-	if ((block_count%512)==128)
-	{
-		printf("Recompiled %d blocks\n",block_count);
-		u32 rat=native>fallbacks?fallbacks:native;
-		if (rat!=0)
-			printf("Native/Fallback ratio : %d:%d [%d:%d]\n",native,fallbacks,native/rat,fallbacks/rat);
-		else
-			printf("Native/Fallback ratio : %d:%d [%d:%d]\n",native,fallbacks,native,fallbacks);
-		printf("Average block size : %d opcodes ; ",(fallbacks+native)/block_count);
-	//	printf("%d const hits and %d const misses\n",const_hit,non_const_hit);
-	}*/
-	
-	delete fra;
-	delete ira;
-	delete x86e;
-}
-
-#endif
-
 
 //_vmem for dynarec ;)
 //included @ shil_compile_slow.cpp
