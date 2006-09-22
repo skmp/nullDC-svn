@@ -97,7 +97,6 @@ INLINE CompiledBlockInfo* __fastcall GetRecompiledCode(u32 pc)
 
 CompiledBlockInfo* FindOrRecompileCode(u32 pc)
 {
-	
 	return GetRecompiledCode(pc);
 }
 

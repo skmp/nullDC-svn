@@ -32,8 +32,8 @@ void CCN_MMUCR_write(u32 value)
 #ifdef NO_MMU
 	if ((temp.AT!=CCN_MMUCR.AT) && (temp.AT==1))
 	{
-		printf("MMU Enabled\n");
-		getchar();
+		printf("<*******>MMU Enabled , OLNY SQ remaps work<*******>\n");
+		//getchar();
 	}
 #endif
 	

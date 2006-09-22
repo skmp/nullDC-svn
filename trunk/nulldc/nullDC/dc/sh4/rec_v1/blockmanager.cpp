@@ -45,8 +45,6 @@ using namespace std;
 #define BLOCK_NONE (&BLOCK_NONE_B)
 CompiledBlockInfo BLOCK_NONE_B;
 
-//BasicBlock* Blockz[RAM_SIZE>>1];
-//
 //helper list class
 int compare_BlockLookups(const void * a, const void * b)
 {
@@ -425,7 +423,6 @@ void RegisterBlock(CompiledBlockInfo* block)
 
 	if (((block->start >>26)&0x7)==3)
 	{	//Care about invalidates olny if on ram
-		//Blockz[((block->start&RAM_MASK)>>1)]=block;
 		for (u32 i=start;i<=end;i++)
 		{
 			if (PageInfo[i].flags.ManualCheck==0)
@@ -453,7 +450,6 @@ void UnRegisterBlock(CompiledBlockInfo* block)
 
 	if (block->OnRam())
 	{	//Care about invalidates olny if on ram
-		//Blockz[((block->start&RAM_MASK)>>1)]=0;
 		for (u32 i=start;i<=end;i++)
 		{
 			if (PageInfo[i].flags.ManualCheck==0)

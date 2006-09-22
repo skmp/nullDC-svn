@@ -101,6 +101,8 @@
 //sugest
 #define SINLINE __inline
 #endif
+//no inline :)
+#define NOINLINE __declspec(noinline)
 
 #ifdef MEM_ERROR_BREAK
 	#ifdef X86
@@ -180,4 +182,4 @@ struct RegisterStruct
 	u32 flags;					//flags for read/write
 };
 
-//#define NO_MMU
+#define NO_MMU
