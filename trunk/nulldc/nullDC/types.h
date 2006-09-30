@@ -22,7 +22,7 @@
 #include "basic_types.h"
 #include <vector>
 
-//#define No_gdb_stub
+#define No_gdb_stub
 //#define DEBUG_DLL
 
 //Do not complain when i use enum::member

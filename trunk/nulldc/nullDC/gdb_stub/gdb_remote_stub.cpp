@@ -994,7 +994,7 @@ void StartGDBSession()
         break;
     }
 
-	gdb_stub_exept_filter(0x160,0x20<<2);
+	//gdb_stub_exept_filter(0x160,0x20<<2);
 
 } 
 
@@ -1014,6 +1014,6 @@ void OnProgramBoot()
 		else
 			bgdb_active=false;
 	}
-	else
-		gdb_stub_exept_filter(0x160,0x20<<2);
+	//else
+	//	gdb_stub_exept_filter(0x160,0x20<<2);
 }
