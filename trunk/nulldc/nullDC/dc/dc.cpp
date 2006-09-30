@@ -11,6 +11,7 @@
 #include "profiler/profiler.h"
 #include <string.h>
 #include <windows.h>
+#include "gdb_stub/gdb_stub.h"
 
 bool dc_inited=false;
 bool dc_reseted=false;
@@ -22,6 +23,7 @@ void ThreadCallback_DC(bool start)
 	if (start)
 	{
 		plugins_ThreadInit();
+		GDB_BOOT_TEST();
 	}
 	//call Thread terminators
 	else

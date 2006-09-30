@@ -164,7 +164,7 @@ bool gdb_stub_exept_filter(int info,int trp);
 void OnProgramBoot();
 
 #define GDB_EXEPTION_FILTER(expt_info) (gdb_stub_exept_filter(expt_info,CCN_TRA))
-#define GDB_BOOT_TEST() {if ((pc&0x1FFFFFFF)==(0x8C010000&0x1FFFFFFF)) { OnProgramBoot();}}
+#define GDB_BOOT_TEST() {OnProgramBoot();}
 
 //#define SSTEP_INSTR    (0xc320)
 
