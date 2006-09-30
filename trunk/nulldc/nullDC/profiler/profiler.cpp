@@ -1,3 +1,10 @@
+/*
+				--nullDC Runtime profiler--
+	The runtime profiler is a mini-sampling profiler.
+	A background thread collects samples of EIP , and it determines
+	in witch dll the EIP points to.After we have some samples (MAX_TICK_COUNT)
+	we print the usage statistics on the console and reset the counters
+*/
 #include "profiler.h"
 #include "dc\sh4\rec_v1\blockmanager.h"
 #include "plugins/plugin_manager.h"

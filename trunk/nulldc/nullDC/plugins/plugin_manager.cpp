@@ -1,3 +1,8 @@
+/*
+			--nullDC plugin managment code--
+	Does plugin enumeration and handles dynamic lib loading.
+	Also has code for plugin init/reset/term calls :).
+*/
 #include "types.h"
 #include "plugin_manager.h"
 #include "dc/pvr/pvr_if.h"
