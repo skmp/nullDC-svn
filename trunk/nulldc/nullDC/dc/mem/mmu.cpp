@@ -63,12 +63,11 @@ void UTLB_Sync(u32 entry)
 //sync mem mapping to mmu , suspend compiled blocks if needed.entry is a ITLB entry # , -1 is for full sync
 void ITLB_Sync(u32 entry)
 {
-	
+	printf("ITLB MEM remap %d : 0x%X to 0x%X\n",entry,ITLB[entry].Address.VPN<<10,ITLB[entry].Data.PPN<<10);
 }
 
 void fastcall mmu_raise_exeption(u32 mmu_error,u32 address,u32 am)
 {
-	verify( 0x1E392E8!=pc);
 	printf("pc = 0x%X : ",pc);
 	CCN_TEA=address;
 	CCN_PTEH.VPN=address>>10;
@@ -78,6 +77,7 @@ void fastcall mmu_raise_exeption(u32 mmu_error,u32 address,u32 am)
 	//No error
 	case MMU_ERROR_NONE:
 		printf("Error : mmu_raise_exeption(MMU_ERROR_NONE)\n");
+		getc(stdin);
 		break;
 
 	//TLB miss
@@ -111,6 +111,7 @@ void fastcall mmu_raise_exeption(u32 mmu_error,u32 address,u32 am)
 	//Mem is write protected , firstwrite
 	case MMU_ERROR_FIRSTWRITE :
 		printf("MMU_ERROR_FIRSTWRITE\n");
+		getc(stdin);
 		break;
 
 	//data read/write missasligned
@@ -475,8 +476,8 @@ void __fastcall mmu_WriteMem32(u32 adr,u32 data)
 
 bool __fastcall mmu_TranslateSQW(u32& adr)
 {
-	
-	/*u32 addr;
+#ifndef NO_MMU
+	u32 addr;
 	u32 tv=mmu_full_SQ(adr,addr);
 	if (tv!=0)
 	{
@@ -484,9 +485,11 @@ bool __fastcall mmu_TranslateSQW(u32& adr)
 		return true;
 	}
 
-	adr=addr;*/
+	adr=addr;
+#else
 	//This will olny work for 1 mb pages .. hopefully nothing else is used
 	//*FIXME* to work for all page sizes !!
 	adr=sq_remap[(adr>>20)&0x3F] | (adr & 0xFFFFF);
+#endif
 	return false;
 }

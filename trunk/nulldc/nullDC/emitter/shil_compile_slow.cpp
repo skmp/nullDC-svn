@@ -625,6 +625,7 @@ void __fastcall shil_compile_shil_ifb(shil_opcode* op,BasicBlock* block)
 		SaveReg(reg_pc,op->imm2);
 	
 	ira->FlushRegCache();
+	fra->FlushRegCache();
 	//FlushRegCache();
 
 	x86e->MOV32ItoR(ECX,op->imm1);
@@ -928,22 +929,14 @@ void __fastcall shil_compile_SaveT(shil_opcode* op,BasicBlock* block)
 	assert(op->flags & FLAG_IMM1);//imm1
 	assert(0==(op->flags & (FLAG_IMM2|FLAG_REG1|FLAG_REG2)));//no imm2/r1/r2
 
-
-	//x86e->XOR32RtoR(EAX,EAX);
+	//hmm guess 32b stores are faster or smth ????
 
 	//x86e->SETcc8M(GetRegPtr(reg_sr_T),op->imm1);//imm1 :P
-	x86e->SETcc8R(EAX,op->imm1);
-	x86e->MOVZX32R8toR(EAX,EAX);		//clear rest of eax (to remove partial depency on 32:8)
-	x86e->MOV32RtoM(GetRegPtr(reg_sr_T),EAX);
-
-	//x86e->AND32ItoM(GetRegPtr(reg_sr),(u32)~1);
-	//x86e->MOVZX32R8toR(EAX,EAX);//clear rest of eax (to remove partial depency on 32:8)
-	//x86e->OR32RtoM(GetRegPtr(reg_sr),EAX);
-	//LoadReg_force(ECX,reg_sr);			//ecx=sr(~1)|T
-	//x86e->AND32ItoR(ECX,(u32)~1);
-	//x86e->OR32RtoR(ECX,EAX);
-	//SaveReg(reg_sr,ECX);
 	
+	x86e->SETcc8R(EAX,op->imm1);
+	x86e->MOVZX32R8toR(EAX,EAX);				//zero out rest of eax
+	x86e->MOV32RtoM(GetRegPtr(reg_sr_T),EAX);
+		
 }
 void __fastcall shil_compile_LoadT(shil_opcode* op,BasicBlock* block)
 {

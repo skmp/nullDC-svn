@@ -115,6 +115,7 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 	{
 		int cnt;
 		int reg;
+		bool no_load;
 	};
 
 	//ebx, ebp, esi, and edi are preserved
@@ -166,6 +167,7 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 		{
 			used[i].cnt=0;
 			used[i].reg=r0+i;
+			used[i].no_load=false;
 			r_alloced[i].x86reg=GPR_Error;
 			r_alloced[i].InReg=false;
 			r_alloced[i].Dirty=false;
@@ -179,15 +181,18 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 			curop=&block->ilst.opcodes[j];
 			for (int i = 0;i<16;i++)
 			{
+				Sh4RegType reg=(Sh4RegType)(r0+i);
+				if ((curop->WritesReg(reg)==true) && (curop->ReadsReg(reg)==false) && (used[i].cnt==0))
+				{
+					used[i].no_load=true;
+				}
 				//both reads and writes , give it one more ;P
 				if ( curop->UpdatesReg((Sh4RegType) (r0+i)) )
-					used[i].cnt+=12;
-
-				if (curop->ReadsReg((Sh4RegType) (r0+i)))
-					used[i].cnt+=6;
-
-				if (curop->WritesReg((Sh4RegType) (r0+i)))
-					used[i].cnt+=9;
+					used[i].cnt+=12;	//3 +rw (9)
+				else if (curop->ReadsReg((Sh4RegType) (r0+i)))
+					used[i].cnt+=6;		//3 +r (3)
+				else if (curop->WritesReg((Sh4RegType) (r0+i)))
+					used[i].cnt+=9;		//3 +w (6)
 			}
 		}
 
@@ -195,9 +200,14 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 
 		for (u32 i=0;i<REG_ALLOC_COUNT;i++)
 		{
-			if (used[i].cnt<14)
+			if (used[i].cnt<14)	//3+3+3+6
 				break;
 			r_alloced[used[i].reg].x86reg=reg_to_alloc[i];
+			if (used[i].no_load)
+			{
+				r_alloced[used[i].reg].InReg=true;
+				r_alloced[used[i].reg].Dirty=false;
+			}
 		}
 	}
 	//BeforeEmit		: generate any code needed before the main emittion begins (other register allocators may have emited code tho)

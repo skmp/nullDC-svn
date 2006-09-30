@@ -3,7 +3,7 @@
 #include "plugins/plugin_manager.h"
 #include <windows.h>
 
-#define MAX_TICK_COUNT 100
+#define MAX_TICK_COUNT 300
 
 prof_info profile_info;
 
@@ -95,7 +95,7 @@ void AnalyseTick(u32 pc,prof_info* to)
 		 }
 
 		 //Sleep , so we dont realy use the cpu much
-		 Sleep(10);
+		 Sleep(1);
 	 }
 
 	 CloseHandle((HANDLE)param);

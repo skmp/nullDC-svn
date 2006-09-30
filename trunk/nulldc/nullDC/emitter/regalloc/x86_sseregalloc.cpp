@@ -1,7 +1,7 @@
 #include "x86_sseregalloc.h"
 #include <assert.h>
 
-#define REG_ALLOC_COUNT (0)
+#define REG_ALLOC_COUNT (6)
 //xmm0 is reserved for math/temp
 x86SSERegType reg_to_alloc_xmm[7]=
 {
@@ -59,6 +59,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 	{
 		int cnt;
 		int reg;
+		bool no_load;
 	};
 
 	//ebx, ebp, esi, and edi are preserved
@@ -124,6 +125,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 		{
 			used[i].cnt=0;
 			used[i].reg=r0+i;
+			used[i].no_load=false;
 			reginf[i].reg=XMM_Error;
 			reginf[i].Loaded=false;
 			reginf[i].WritenBack=false;
@@ -139,15 +141,19 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 				curop=&block->ilst.opcodes[j];
 				for (int i = 0;i<16;i++)
 				{
+					Sh4RegType reg = (Sh4RegType) (fr_0+i);
+
+					if ((curop->WritesReg(reg)==true) && (curop->ReadsReg(reg)==false) && (used[i].cnt==0) )
+					{
+						used[i].no_load=true;
+					}
 					//both reads and writes , give it one more ;P
-					if ( curop->UpdatesReg((Sh4RegType) (fr_0+i)) )
-						used[i].cnt+=4;
-
-					if (curop->ReadsReg((Sh4RegType) (fr_0+i)))
-						used[i].cnt+=6;
-
-					if (curop->WritesReg((Sh4RegType) (fr_0+i)))
-						used[i].cnt+=9;
+					if ( curop->UpdatesReg(reg) )
+						used[i].cnt+=12;	//3+mem rw latency (9)
+					else if (curop->ReadsReg(reg))
+						used[i].cnt+=6;		//3 + mem latecny  (3)
+					else if (curop->WritesReg(reg))
+						used[i].cnt+=9;		//3 + mem w latency (6)
 				}
 			}
 
@@ -155,9 +161,15 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 			u32 i;
 			for (i=0;i<REG_ALLOC_COUNT;i++)
 			{
-				if (used[i].cnt<24)
+				//reg alloc minimum cost is 1 read + 1 write = 6+9=15, so <14
+				if (used[i].cnt<14)
 					break;
 				reginf[used[i].reg].reg=reg_to_alloc_xmm[i];
+				if (used[i].no_load)
+				{
+					reginf[used[i].reg].Loaded = true;
+					reginf[used[i].reg].WritenBack = true;
+				}
 			}
 			if (i)
 			{

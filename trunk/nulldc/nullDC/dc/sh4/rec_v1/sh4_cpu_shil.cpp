@@ -2118,6 +2118,8 @@ sh4op(sh4_bpt_op)
 	*/
 	shil_interpret(op);	
 	ilst->add(reg_pc,2);
+	bb->flags.EndAnalyse=true;
+	bb->flags.ExitType=BLOCK_EXITTYPE_DYNAMIC;
 	return;
 } 
 

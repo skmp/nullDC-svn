@@ -2,15 +2,12 @@
 #include "sh4_registers.h"
 
 __declspec(align(32)) u32 r[16];
-//u32* ro=r;
 
 __declspec(align(32)) u32 r_bank[8];
-//u32* rb=r_bank;
 
 u32 gbr,ssr,spc,sgr,dbr,vbr;
 u32 mach,macl,pr,fpul;
 u32 pc;
-//u16* pc_ptr;
 
 StatusReg sr;
 
@@ -110,7 +107,7 @@ INLINE void ChangeFP()
 }
 
 #include "sh4_cst.h"
-//called when sr is changed and we must check for rom banks ect.. , returns true if interrupts got 
+//called when sr is changed and we must check for reg banks ect.. , returns true if interrupts got 
 bool UpdateSR()
 {
 	if (sr.MD)
@@ -168,15 +165,13 @@ void SetFloatStatusReg()
 
 		if (fpscr.DN)		//denormals are considered 0
 			temp|=(1<<15);
-#ifdef X86
 		_asm 
 		{
 			ldmxcsr temp;	//load the float status :)
 		}
-#endif
 	}
 }
-//called when fpscr is changed and we must check for rom banks ect..
+//called when fpscr is changed and we must check for reg banks ect..
 void UpdateFPSCR()
 {
 	if (fpscr.FR !=old_fpscr.FR)
