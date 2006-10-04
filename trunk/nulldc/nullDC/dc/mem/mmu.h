@@ -82,6 +82,7 @@ void ITLB_Sync(u32 entry);
 #define MMU_TT_DREAD 2
 //Do an mmu lookup for va , returns translation status , if MMU_ERROR_NONE , rv is set to translated index
 
+extern u32 mmu_error_TT;
 
 void MMU_Init();
 void MMU_Reset(bool Manual);

@@ -123,10 +123,9 @@
 	//iNimp("mov.b <REG_M>,@(R0,<REG_N>)");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
-	//u8 valor = (u8)(R(m) & 0xFF);
+
 	WriteMemBOU8(r[0],r[n], r[m]);
 	//WriteMem8(r[0] + r[n], (u8)r[m]);
-	//WriteMemoryB(R(0) + R(n), &valor);
 }
 
 
@@ -637,7 +636,6 @@
 	ReadMemU32(r[n],r[m]);
 	if (n != m)
 		r[m] += 4;
-
 } 
 
 //

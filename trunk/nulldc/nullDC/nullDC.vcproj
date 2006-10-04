@@ -697,6 +697,14 @@
 				<File
 					RelativePath=".\dc\pvr\pvr_sb_regs.cpp"
 					>
+					<FileConfiguration
+						Name="Release-NoTrace|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"
+						/>
+					</FileConfiguration>
 				</File>
 				<File
 					RelativePath=".\dc\pvr\pvr_sb_regs.h"

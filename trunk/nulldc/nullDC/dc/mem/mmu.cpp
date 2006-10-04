@@ -53,24 +53,30 @@ void UTLB_Sync(u32 entry)
 	
 	if ((UTLB[entry].Address.VPN & (0xFC000000>>10)) == (0xE0000000>>10))
 	{
+		#ifdef NO_MMU
 		u32 vpn_sq=((UTLB[entry].Address.VPN & 0x7FFFF)>>10) &0x3F;//upper bits are allways known [0xE0/E1/E2/E3]
 		sq_remap[vpn_sq]=UTLB[entry].Data.PPN<<10;
 		printf("SQ remap %d : 0x%X to 0x%X\n",entry,UTLB[entry].Address.VPN<<10,UTLB[entry].Data.PPN<<10);
+		#endif
 	}
 	else
-		printf("MEM remap %d : 0x%X to 0x%X\n",entry,UTLB[entry].Address.VPN<<10,UTLB[entry].Data.PPN<<10);
+		;//printf("MEM remap %d : 0x%X to 0x%X\n",entry,UTLB[entry].Address.VPN<<10,UTLB[entry].Data.PPN<<10);
 }
 //sync mem mapping to mmu , suspend compiled blocks if needed.entry is a ITLB entry # , -1 is for full sync
 void ITLB_Sync(u32 entry)
 {
-	printf("ITLB MEM remap %d : 0x%X to 0x%X\n",entry,ITLB[entry].Address.VPN<<10,ITLB[entry].Data.PPN<<10);
+	//printf("ITLB MEM remap %d : 0x%X to 0x%X\n",entry,ITLB[entry].Address.VPN<<10,ITLB[entry].Data.PPN<<10);
 }
 
+u32 mmu_error_TT;
 void fastcall mmu_raise_exeption(u32 mmu_error,u32 address,u32 am)
 {
-	printf("pc = 0x%X : ",pc);
+	//printf("pc = 0x%X : ",pc);
 	CCN_TEA=address;
 	CCN_PTEH.VPN=address>>10;
+
+	//save translation type error :)
+	mmu_error_TT=am;
 
 	switch(mmu_error)
 	{
@@ -82,7 +88,7 @@ void fastcall mmu_raise_exeption(u32 mmu_error,u32 address,u32 am)
 
 	//TLB miss
 	case MMU_ERROR_TLB_MISS :
-		printf("MMU_ERROR_UTLB_MISS 0x%X, handled\n",address);
+		//printf("MMU_ERROR_UTLB_MISS 0x%X, handled\n",address);
 		if (am==MMU_TT_DWRITE)			//WTLBMISS - Write Data TLB Miss Exception
 			sh4_cpu->RaiseExeption(0x60,0x400);
 		else if (am==MMU_TT_DREAD)		//RTLBMISS - Read Data TLB Miss Exception
@@ -100,7 +106,7 @@ void fastcall mmu_raise_exeption(u32 mmu_error,u32 address,u32 am)
 
 	//Mem is read/write protected (depends on translation type)
 	case MMU_ERROR_PROTECTED :
-		printf("MMU_ERROR_PROTECTED 0x%X, handled\n",address);
+		//printf("MMU_ERROR_PROTECTED 0x%X, handled\n",address);
 		if (am==MMU_TT_DWRITE)			//WRITEPROT - Write Data TLB Protection Violation Exception
 			sh4_cpu->RaiseExeption(0xC0,0x100);
 		else if (am==MMU_TT_DREAD)		//READPROT - Data TLB Protection Violation Exception
@@ -116,7 +122,7 @@ void fastcall mmu_raise_exeption(u32 mmu_error,u32 address,u32 am)
 
 	//data read/write missasligned
 	case MMU_ERROR_BADADDR :
-		printf("MMU_ERROR_BADADDR 0x%X, handled\n",address);
+		//printf("MMU_ERROR_BADADDR 0x%X, handled\n",address);
 		if (am==MMU_TT_DWRITE)			//WADDERR - Write Data Address Error
 			sh4_cpu->RaiseExeption(0x100,0x100);
 		else if (am==MMU_TT_DREAD)		//RADDERR - Read Data Address Error
@@ -128,7 +134,7 @@ void fastcall mmu_raise_exeption(u32 mmu_error,u32 address,u32 am)
 
 	//Can't Execute
 	case MMU_ERROR_EXECPROT :
-		printf("MMU_ERROR_EXECPROT 0x%X, handled\n",address);
+		//printf("MMU_ERROR_EXECPROT 0x%X, handled\n",address);
 		//EXECPROT - Instruction TLB Protection Violation Exception
 		sh4_cpu->RaiseExeption(0xA0,0x100);
 		return;
@@ -223,7 +229,7 @@ u32 fastcall mmu_data_translation(u32 va,u32& rv)
 	if ((sr.MD==0) && (va&0x80000000)!=0)
 	{
 		//if SQ disabled , or if if SQ on but out of SQ mem then BAD ADDR ;)
-		if (CCN_MMUCR.SQMD==0 || (va&0xFC000000)!=0xE0000000)
+		if ( ((va&0xFC000000)!=0xE0000000) ||  (CCN_MMUCR.SQMD==1) )
 			return MMU_ERROR_BADADDR;
 	}
 

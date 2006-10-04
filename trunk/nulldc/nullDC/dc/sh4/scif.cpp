@@ -1,6 +1,7 @@
 #include "types.h"
 #include "dc/mem/sh4_internal_reg.h"
 #include "scif.h"
+#include "serial_ipc/serial_ipc_client.h"
 
 //SCIF SCSMR2 0xFFE80000 0x1FE80000 16 0x0000 0x0000 Held Held Pclk
 SCSMR2_type SCIF_SCSMR2;
@@ -35,17 +36,39 @@ SCSPTR2_type SCIF_SCSPTR2;
 SCLSR2_type SCIF_SCLSR2;
 
 
-
 void SerialWrite(u32 data)
 {
-	putc(data,stdout);
+	WriteSerial((u8)data);
+	//putc(data,stdout);
 }
 
-//SCFSR2 read
+//SCIF_SCFSR2 read
 u32 ReadSerialStatus()
 {
+	if (PendingSerialData())
+	{
+		return 0x60 | 2;
+	}
+	else
+	{
+		return 0x60| 0;
+	}
+	/*
 	//TODO : Add status for serial input
 	return 0x60;//hackish but works !
+	*/
+}
+
+//SCIF_SCFDR2 - 16b
+u32 Read_SCFDR2()
+{
+	return 0;
+}
+//SCIF_SCFRDR2
+u32 ReadSerialData()
+{
+	s32 rd=ReadSerial();
+	return (u8)rd ;
 }
 
 //Init term res
@@ -89,9 +112,9 @@ void scif_Init()
 
 	//READ OLNY
 	//SCIF SCFRDR2 0xFFE80014 0x1FE80014 8 Undefined Undefined Held Held Pclk
-	SCIF[(SCIF_SCFRDR2_addr&0xFF)>>2].flags=REG_8BIT_READWRITE | REG_READ_DATA ;
+	SCIF[(SCIF_SCFRDR2_addr&0xFF)>>2].flags=REG_8BIT_READWRITE ;
 	SCIF[(SCIF_SCFRDR2_addr&0xFF)>>2].NextCange=0;
-	SCIF[(SCIF_SCFRDR2_addr&0xFF)>>2].readFunction=0;
+	SCIF[(SCIF_SCFRDR2_addr&0xFF)>>2].readFunction=ReadSerialData;
 	SCIF[(SCIF_SCFRDR2_addr&0xFF)>>2].writeFunction=0;
 	SCIF[(SCIF_SCFRDR2_addr&0xFF)>>2].data8=&SCIF_SCFRDR2;
 
@@ -104,9 +127,9 @@ void scif_Init()
 
 	//Read OLNY
 	//SCIF SCFDR2 0xFFE8001C 0x1FE8001C 16 0x0000 0x0000 Held Held Pclk
-	SCIF[(SCIF_SCFDR2_addr&0xFF)>>2].flags=REG_16BIT_READWRITE | REG_READ_DATA;
+	SCIF[(SCIF_SCFDR2_addr&0xFF)>>2].flags=REG_16BIT_READWRITE;
 	SCIF[(SCIF_SCFDR2_addr&0xFF)>>2].NextCange=0;
-	SCIF[(SCIF_SCFDR2_addr&0xFF)>>2].readFunction=0;
+	SCIF[(SCIF_SCFDR2_addr&0xFF)>>2].readFunction=Read_SCFDR2;
 	SCIF[(SCIF_SCFDR2_addr&0xFF)>>2].writeFunction=0;
 	SCIF[(SCIF_SCFDR2_addr&0xFF)>>2].data16=&SCIF_SCFDR2.full;
 

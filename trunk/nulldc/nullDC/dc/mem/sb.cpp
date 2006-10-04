@@ -37,7 +37,10 @@ Array<RegisterStruct> sb_regs(0x540);
  u32 SB_SDLAS;
 //0x005F6820	SB_SDST	RW	Sort-DMA start 
  u32 SB_SDST;
-			
+		
+//0x005F6860 SB_SDDIV R(?) Sort-DMA LAT index (guess)
+u32 SB_SDDIV;
+
 //0x005F6840	SB_DBREQM	RW	DBREQ# signal mask control 
  u32 SB_DBREQM;
 //0x005F6844	SB_BAVLWC	RW	BAVL# signal wait count 
@@ -526,6 +529,13 @@ void sb_Init()
 	sb_regs[((SB_SDST_addr-SB_BASE))>>2].readFunction=0;
 	sb_regs[((SB_SDST_addr-SB_BASE))>>2].writeFunction=0;
 	sb_regs[((SB_SDST_addr-SB_BASE))>>2].data32=&SB_SDST;
+
+	//0x005F6820	SB_SDST	RW	Sort-DMA start
+	sb_regs[((SB_SDDIV_addr-SB_BASE))>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA;
+	sb_regs[((SB_SDDIV_addr-SB_BASE))>>2].NextCange=0;
+	sb_regs[((SB_SDDIV_addr-SB_BASE))>>2].readFunction=0;
+	sb_regs[((SB_SDDIV_addr-SB_BASE))>>2].writeFunction=0;
+	sb_regs[((SB_SDDIV_addr-SB_BASE))>>2].data32=&SB_SDDIV;
 
 
 				
@@ -1509,6 +1519,7 @@ void sb_Init()
 	
 	SB_SBREV=0xB;
 	SB_G2ID=0x12;
+	SB_G1SYSM=(0x0<<4) | (0xC);
 
 	asic_reg_Init();
 	gdrom_reg_Init();

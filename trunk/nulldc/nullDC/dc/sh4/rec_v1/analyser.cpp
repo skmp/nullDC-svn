@@ -98,7 +98,7 @@ void ScanCode(u32 pc,CodeRegion* to)
 	while(stop==false)
 	{
 		op_count++;
-		u32 opcode=ReadMem16(pc);
+		u32 opcode=IReadMem16(pc);
 		StepPipeline(opcode);
 
 		if (Scanner_FindSOM(opcode,pc,&SOM))
@@ -143,7 +143,7 @@ void AnalyseCode(BasicBlock* to)
 	u32 endpc;
 	while (true)
 	{
-		u32 opcode=ReadMem16(pc);
+		u32 opcode=IReadMem16(pc);
 		block_ops++;
 		RecOpPtr[opcode](opcode,pc,to);
 

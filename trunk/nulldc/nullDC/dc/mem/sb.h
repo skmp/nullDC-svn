@@ -37,6 +37,8 @@ extern Array<RegisterStruct> sb_regs;
 #define SB_SDLAS_addr 0x005F681C
 //0x005F6820	SB_SDST	RW	Sort-DMA start 
 #define SB_SDST_addr 0x005F6820
+//0x005F6860 SB_SDDIV R(?) Sort-DMA LAT index (guess)
+#define SB_SDDIV_addr 0x005F6860
 			
 //0x005F6840	SB_DBREQM	RW	DBREQ# signal mask control 
 #define SB_DBREQM_addr 0x005F6840
@@ -326,6 +328,8 @@ extern u32 SB_SDWLT;
 extern u32 SB_SDLAS;
 //0x005F6820	SB_SDST	RW	Sort-DMA start 
 extern u32 SB_SDST;
+//0x005F6860 SB_SDDIV R(?) Sort-DMA LAT index (guess)
+extern u32 SB_SDDIV;
 			
 //0x005F6840	SB_DBREQM	RW	DBREQ# signal mask control 
 extern u32 SB_DBREQM;

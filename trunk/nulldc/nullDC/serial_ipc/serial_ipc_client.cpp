@@ -26,39 +26,75 @@ void PrintSerialIPUsage(int argc, char *argv[])
 {
 	if (argc==1)
 	{
-		printf("If you want to use serial port ipc redirection use -slave piperead pipewrite \n");
+		printf("If you want to use serial port ipc redirection use -slave piperead pipewrite/-serial FILE_NAME \n");
 		//StartGDBSession();
 		return;
 	}
 
-	if (argc!=4)
+	if (argc!=4 && argc!=3)
 	{
 		printf("Serial port pipe redirection version %s\n",sipcver);
-		printf("Wrong number of parameters , expecting  nulldc -slave piperead pipewrite \n");
+		printf("Wrong number of parameters , expecting  nulldc -slave piperead pipewrite/-serial FILE_NAME \n");
 		printf("redirection disabled");
 		//StartGDBSession();
 		return;
 	}
 	
-	if (strcmp(argv[1],"-slave")!=0)
+	if (strcmp(argv[1],"-slave")==0)
+	{
+		//TODO : how to do on 64b compatable code ?
+		HANDLE laddWrSlave = (HANDLE)(u64)atoi(argv[2]);
+		HANDLE laddRdSlave = (HANDLE)(u64)atoi(argv[3]);
+		printf("Value of write handle to pipe1: %p\n",laddWrSlave);
+		printf("Value of read handle to pipe2 : %p\n",laddRdSlave);
+
+		//this warning can't be fixed can it ?
+		writep = laddWrSlave;
+		readp = laddRdSlave;
+	}
+	else if (strcmp(argv[1],"-serial")==0)
+	{
+		printf("Serial port to \"%s\" redirection version %s\n",argv[2],sipcver);
+		writep = CreateFile(argv[2],GENERIC_READ | GENERIC_WRITE,0,NULL,OPEN_EXISTING , FILE_ATTRIBUTE_NORMAL ,NULL );
+		if (writep==INVALID_HANDLE_VALUE)
+		{
+			printf("Unable to open \"%\" \n",argv[2]);
+			writep=NULL;
+			return;
+		}
+		DCB dcbConfig;
+
+		if(GetCommState(writep, &dcbConfig))
+		{
+			dcbConfig.BaudRate = 115200;
+			dcbConfig.ByteSize = 8;
+			dcbConfig.Parity = NOPARITY;
+			dcbConfig.StopBits = ONESTOPBIT;
+			dcbConfig.fBinary = TRUE;
+			dcbConfig.fParity = TRUE;
+		}
+
+		SetCommState(writep, &dcbConfig);
+
+		COMMTIMEOUTS to;
+		GetCommTimeouts(writep,&to);
+		to.ReadIntervalTimeout=MAXDWORD;
+		to.ReadTotalTimeoutConstant=0;
+		to.ReadTotalTimeoutMultiplier=0;
+
+		to.WriteTotalTimeoutConstant=1000000;
+		to.WriteTotalTimeoutMultiplier=5;
+		
+		SetCommTimeouts(writep,&to);
+
+		readp=writep;
+	}
+	else
 	{
 		printf("Serial port pipe redirection version %s\n",sipcver);
-		printf("Wrong type of parameters , expecting  nulldc -slave piperead pipewrite \n");
+		printf("Wrong type of parameters , expecting  nulldc -slave piperead pipewrite/-serial FILE_NAME \n");
 		printf("redirection disabled");
-		//StartGDBSession();
-		return;
 	}
-
-	//TODO : how to do on 64b compatable code ?
-	HANDLE laddWrSlave = (HANDLE)(u64)atoi(argv[2]);
-	HANDLE laddRdSlave = (HANDLE)(u64)atoi(argv[3]);
-	printf("Value of write handle to pipe1: %p\n",laddWrSlave);
-	printf("Value of read handle to pipe2 : %p\n",laddRdSlave);
-
-	//this warning can't be fixed can it ?
-	writep = laddWrSlave;
-	readp = laddRdSlave;
-
 }
 void WriteBlockSerial(u8* blk,u32 size,u8* sum)
 {
@@ -85,11 +121,11 @@ void WriteBlockSerial(u8* blk,u32 size,u8* sum)
 void WriteSerial(u8 data)
 {
 	serial_TxBytes++;
-	if (!writep)
-	{
-		putc(data,stdout);
+
+	putc(data,stdout);
+
+	if (!writep)	
 		return;
-	}
 
 	//printf("Write IPC not implemented");
 	DWORD dwWritten=0;
@@ -101,7 +137,7 @@ void WriteSerial(u8 data)
 		printf("IPC error");
 }
 
-int i=0;
+int pend_temp=0;
 bool PendingSerialData()
 {
 	if(!readp)
@@ -109,9 +145,27 @@ bool PendingSerialData()
 
 	if (readind==0)
 	{
-		DWORD tba=0;
+		/*pend_temp++;
+		if ((pend_temp%8)!=0)
+			return false;*/
+		
+		/*
+		
 		if (((i++)%256)==0)
 			PeekNamedPipe(readp,NULL,NULL,NULL,&tba,NULL);
+		*/
+
+		DWORD tba=0;
+		//ReadFile(readp, &ReadBuff, 0, &tba, NULL);
+		if(ReadFile(readp, &ReadBuff, buff_size, &tba, NULL) != 0)
+        {
+            if(tba > 0)
+            {
+				ReadSz=tba;
+				readind=tba;
+            }
+        }
+		/*
 		if (tba!=0)
 		{
 			readind=tba;
@@ -121,6 +175,7 @@ bool PendingSerialData()
 			if (readind!=tba)
 				printf("IPC ERROR \n");
 		}
+		*/
 		return tba!=0;
 	}
 	else

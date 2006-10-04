@@ -9,7 +9,8 @@
 #include "config/config.h"
 
 #include <windows.h>
-#include "plugins\plugin_manager.h"
+#include "plugins/plugin_manager.h"
+#include "serial_ipc/serial_ipc_client.h"
 
 int RunGui(int argc, char* argv[])
 {
@@ -102,6 +103,7 @@ void EnumPlugins()
 
 int main___(int argc,char* argv[])
 {
+	PrintSerialIPUsage(argc,argv);
 	char * currpath=GetEmuPath("");
 	SetCurrentDirectoryA(currpath);
 	free(currpath);

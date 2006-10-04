@@ -37,10 +37,67 @@ u32 opcode_fam_cycles[0x10]=
 u32 sh4_ex_ExeptionCode,sh4_ex_VectorAddress;
 Sh4RegContext sh4_ex_SRC;
 
+
+#define GetN(str) ((str>>8) & 0xf)
+#define GetM(str) ((str>>4) & 0xf)
+bool exept_was_dslot=false;
 void sh4_int_restore_reg_cnt()
 {
 	//restore reg context
 	LoadSh4Regs(&sh4_ex_SRC);
+	//fix certain registers that may need fixing
+	if (mmu_error_TT!=MMU_TT_IREAD)
+	{
+		//if the error was on IREAD no need for any fixing :)
+		//this should realy not raise any exeptions :p
+		u16 op = IReadMem16(pc);
+		u32 n = GetN(op);
+		u32 m = GetM(op);
+		switch(OpDesc[op]->ex_fixup)
+		{
+		case rn_4:
+			{
+				r[n]+=4;
+			}
+			break;
+		case rn_fpu_4:
+			{
+				r[n]+=4;
+				//8 byte fixup if on double mode
+				if (fpscr.SZ)
+					r[n]+=4;
+			}
+			break;
+
+		case rn_opt_1:
+			{
+				if (n!=m)
+					r[n]+=2;
+			}
+			break;
+
+		case rn_opt_2:
+			{
+				if (n!=m)
+					r[n]+=2;
+			}
+			break;
+
+		case rn_opt_4:
+			{
+				if (n!=m)
+					r[n]+=4;
+			}
+			break;
+
+		case fix_none:
+			break;
+		}
+
+	}
+	if (exept_was_dslot)
+		pc-=2;
+	exept_was_dslot=false;
 	//raise exeption
 	RaiseExeption(sh4_ex_ExeptionCode,sh4_ex_VectorAddress);
 	sh4_exept_raised=false;
@@ -58,7 +115,12 @@ void __fastcall sh4_int_RaiseExeption(u32 ExeptionCode,u32 VectorAddress)
 {
 	//if (sh4_exept_raised)
 	//	return;
-	verify(sh4_exept_raised==false);
+	//verify(sh4_exept_raised==false);
+	if (sh4_exept_raised)
+	{
+		printf("WARNING : DOUBLE EXEPTION RAISED , IGNORING SECOND EXEPTION\n");
+		return;
+	}
 	sh4_exept_raised=true;
 	*sh4_exept_ssp=(u32)sh4_int_exept_hook;
 
@@ -441,10 +503,15 @@ bool ExecuteDelayslot()
 
 	pc+=2;
 	u32 op=IReadMem16(pc);
-	verify(sh4_exept_raised==false);
+	if (sh4_exept_raised)
+	{
+		exept_was_dslot=true;
+		return true;
+	}
+	//verify(sh4_exept_raised==false);
 	ExecuteOpcode(op);
 	if(sh4_exept_raised==true)
-		sh4_ex_SRC.pc=pc-2;
+		exept_was_dslot=true;
 
 	return true;
 }

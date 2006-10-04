@@ -43,6 +43,11 @@ void iNimp(char*str);
 #define WriteMemBOU16(addr,offset,data)		WriteMemU16(addr+offset,data)
 #define WriteMemBOU8(addr,offset,data)		WriteMemU8(addr+offset,data)
 
+#ifdef NO_MMU
+#define EXEPT_EXIT()
+#else
+#define EXEPT_EXIT() if (sex) return;
+#endif
 INLINE void Denorm32(float &value)
 {
 	if (fpscr.DN)

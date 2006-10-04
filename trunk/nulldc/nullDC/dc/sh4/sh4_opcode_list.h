@@ -20,6 +20,17 @@ enum sh4_eu
 	MA,
 	sh4_eu_max
 };
+
+//exeption fixup needed , added it to fix exeption on opcodes that modify before exept :)
+enum sh4_exept_fixup
+{
+	fix_none,
+	rn_opt_1,	//1 if n!=m
+	rn_opt_2,	//2 if n!=m
+	rn_opt_4,	//4 if n!=m
+	rn_4,		//allwways 4 from rn
+	rn_fpu_4,	//4 or 8 , acording to fpu size
+};
 struct sh4_opcodelistentry
 {
 	RecOpCallFP* rec_oph;
@@ -32,7 +43,7 @@ struct sh4_opcodelistentry
 	u8 IssueCycles;
 	u8 LatencyCycles;
 	sh4_eu unit;
-
+	sh4_exept_fixup ex_fixup;
 	void Dissasemble(char* strout,u32 pc , u16 params) const
 	{
 		dissasm(strout,&disasm1[0],pc,params);
