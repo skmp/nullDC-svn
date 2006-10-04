@@ -10,6 +10,7 @@
 #include "dc/mem/sh4_internal_reg.h"
 #include "gdb_stub/gdb_stub.h"
 #include "dc/asic/asic.h"
+#include "dc/maple/maple_if.h"
 
 /*
 	Now .. here is some text to keep you busy :D
@@ -110,6 +111,7 @@ void RaiseExeption(u32 code,u32 vector)
 	pc = vbr + vector;
 	UpdateSR();
 }
+
 void RaiseInterrupt(InterruptID intr)
 {
 	intr_l=intr;
@@ -129,6 +131,8 @@ void RaiseInterrupt(InterruptID intr)
 			break;
 
 		case holly_nrm:
+			if (intr==holly_SCANINT2)
+				maple_vblank();
 			RaiseAsicNormal(intr);
 			break;
 

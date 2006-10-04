@@ -19,3 +19,4 @@ void maple_Term();
 void maple_plugins_Term();
 void maple_plugins_Init();
 void maple_plugins_enum_devices();
+void maple_vblank();

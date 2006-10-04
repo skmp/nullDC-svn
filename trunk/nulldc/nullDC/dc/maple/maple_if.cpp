@@ -72,7 +72,16 @@ void DoMapleDma();
 
 void testJoy_GotData(u32 header1,u32 header2,u32*data,u32 datalen);
 
-
+//realy hackish
+//misses delay , and stop/start implementation
+void maple_vblank()
+{
+	if (SB_MDTSEL&1)
+	{
+		printf("DDT vblank\n");
+		DoMapleDma();
+	}
+}
 void maple_SB_MDST_Write(u32 data)
 {
 	#ifdef BUILD_NAOMI
