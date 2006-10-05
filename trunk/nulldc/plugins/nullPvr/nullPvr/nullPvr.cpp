@@ -46,7 +46,7 @@ EXPORT void dcGetPluginInfo(plugin_info* info)
 {
 	info->InterfaceVersion.full=PLUGIN_I_F_VERSION;
 	LoadIcPvrDll("plugins\\icarus\\gfxEctorD3D.dll");//gfxEctorD3D//IcGfxDX.dll
-	sprintf(info->Name,"Icarus plugin converter (" __DATE__ ") [using %s]",GetName());
+//	sprintf(info->Name,"Icarus plugin converter (" __DATE__ ") [using %s]",GetName());
 	info->PluginVersion.full=NDC_MakeVersion(MAJOR,MINOR,BUILD);
 	
 

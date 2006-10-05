@@ -1037,21 +1037,21 @@ TexID TextureCache::GetTexture(PolyParam *pp)
 
 
 
-	case 0x01:		// 1555 (Illegal Twiddle/Stride)
-	case 0x05:		// 565 (Illegal Twiddle/Stride)
-	case 0x09:		// 4444 (Illegal Twiddle/Stride)
-	case 0x0D:		// YUV422 (Illegal Twiddle/Stride)
-	case 0x11:		// Bump (Illegal Twiddle/Stride)
+	case 0x01:		// 1555				(Illegal Twiddle/Stride)
+	case 0x05:		// 565				(Illegal Twiddle/Stride)
+	case 0x09:		// 4444				(Illegal Twiddle/Stride)
+	case 0x0D:		// YUV422			(Illegal Twiddle/Stride)
+	case 0x11:		// Bump				(Illegal Twiddle/Stride)
 	case 0x1C:		// Reserved
 	case 0x1D:		// Reserved
 	case 0x1E:		// Reserved
 	case 0x1F:		// Reserved
-	case 0x21:		// 1555 + VQ (Illegal Twiddle/Stride)
-	case 0x25:		// 565 + VQ (Illegal Twiddle/Stride)
-	case 0x29:		// 4444 + VQ (Illegal Twiddle/Stride)
-	case 0x41:		// 1555 + MipMap (Illegal Twiddle/Stride)
-	case 0x45:		// 565 + MipMap (Illegal Twiddle/Stride)
-	case 0x49:		// 4444 + MipMap (Illegal Twiddle/Stride)
+	case 0x21:		// 1555 + VQ		(Illegal Twiddle/Stride)
+	case 0x25:		// 565 + VQ			(Illegal Twiddle/Stride)
+	case 0x29:		// 4444 + VQ		(Illegal Twiddle/Stride)
+	case 0x41:		// 1555 + MipMap	(Illegal Twiddle/Stride)
+	case 0x45:		// 565 + MipMap		(Illegal Twiddle/Stride)
+	case 0x49:		// 4444 + MipMap	(Illegal Twiddle/Stride)
 	default:
 		goto unhandled_fmt;
 	}
@@ -1101,8 +1101,9 @@ void vramLockCB(vram_block *bl, u32 addr)
 	}*/
 	TexCacheList::TexCacheEntry* tce=(TexCacheList::TexCacheEntry*)bl->userdata;
 
-	PvrIf->InvList.push_back(tce->text.texID);
-	PvrIf->TexList.Remove(tce);
+			///// **FIXME** //////
+/*	PvrIf->InvList.push_back(tce->text.texID);
+	PvrIf->TexList.Remove(tce);*/
 	delete tce;
 	emuIf.vramUnlock(bl);
 }

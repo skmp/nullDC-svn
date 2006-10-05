@@ -10,6 +10,12 @@
 #include <d3d9.h>
 
 
+#include "zNullPvr.h"
+
+#include "TA_Regs.h"
+#include "TA_Param.h"
+#include "TA_Texture.h"
+
 
 extern float fMaxW;
 extern D3DCAPS9 d3dcaps;
@@ -19,13 +25,7 @@ extern IDirect3DDevice9 *g_pDev;			// D3D Device
 extern IDirect3DVertexBuffer9 *g_pVB;		// Vertex Buffer
 extern IDirect3DVertexDeclaration9 *g_pVD;	// Vertex Decl.
 
-
-#include "zNullPvr.h"
-
-#include "TA_Regs.h"
-#include "TA_Param.h"
-#include "TA_Texture.h"
-
+/*
 extern 
 class PowerVR2_D3D : public PowerVR2
 {
@@ -37,21 +37,16 @@ class PowerVR2_D3D : public PowerVR2
 
 private:
 
-#ifndef USE_STD_VECTOR
-	void RenderSprites(zector<Vertex> &vl);
-	void RenderStripList(zector<Vertex> &vl);
-#else
 	void RenderSprites(vector<Vertex> &vl);
 	void RenderStripList(vector<Vertex> &vl);
 //	void RenderStripListRev(vector<Vertex> &vl);
 //	void RenderStripListArray(vector<Vertex> &vl);
-#endif
 
 	void SetRenderMode(u32 ParamID, u32 TexID);
 	void SetRenderModeSpr(u32 ParamID, u32 TexID);
 
 } PvrIfD3D;
-
+*/
 
 const static D3DVERTEXELEMENT9 vertel[] =
 {

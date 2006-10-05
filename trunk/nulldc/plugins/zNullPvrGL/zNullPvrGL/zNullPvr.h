@@ -22,7 +22,22 @@ typedef unsigned __int64 u64;
 typedef float f32;
 typedef double f64;
 
+enum memSizes
+{
+	SZ_1KB		= (1024),
+	SZ_8KB		= (SZ_1KB*8),
+	SZ_32KB		= (SZ_1KB*32),
+	SZ_128KB	= (SZ_1KB*128),
+	SZ_256KB	= (SZ_1KB*256),
+	SZ_512KB	= (SZ_1KB*512),
 
+	SZ_1MB		= (1048576),
+	SZ_2MB		= (SZ_1MB*2),
+	SZ_4MB		= (SZ_1MB*4),
+	SZ_8MB		= (SZ_1MB*8),
+	SZ_16MB		= (SZ_1MB*16),
+	SZ_32MB		= (SZ_1MB*32),
+};
 
 
 

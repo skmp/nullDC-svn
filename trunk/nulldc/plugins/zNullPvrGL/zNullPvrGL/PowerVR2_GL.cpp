@@ -1,14 +1,28 @@
 /*
-**	PowerVR2_GL.cpp	- David Miller 2006 -
+**	PvrIf.cpp	- David Miller 2006 -
 */
 #include "PowerVR2.h"
 
-PowerVR2_GL PvrIfGl;
+using namespace PvrIf;
 
 
-__inline 
-void PowerVR2_GL::SetRenderMode(u32 ParamID, u32 TexID)
+
+
+	HDC hDC;
+	HGLRC hRC;
+
+
+
+
+
+
+//PvrIf PvrIfGl;
+
+
+//__inline PvrIf::
+void SetRenderMode(u32 ParamID, u32 TexID)
 {
+
 /*#ifndef DEBUG_LIB
 	static u32 lParam = ~0;
 
@@ -31,7 +45,7 @@ void PowerVR2_GL::SetRenderMode(u32 ParamID, u32 TexID)
 
 
 	ASSERT_T(gp->param0.tsp.DstSelect && gp->param0.tsp.SrcSelect, "Src/Dst Select Both Selected !");
-
+/*
 	if(gp->param0.tsp.DstSelect)
 	{
 		glClear(GL_ACCUM_BUFFER_BIT);
@@ -41,12 +55,11 @@ void PowerVR2_GL::SetRenderMode(u32 ParamID, u32 TexID)
 	{
 		ASSERT_T((gp->isp.Texture || gp->pcw.Texture),"SrcSelect on Textured Poly!");
 		glAccum(GL_RETURN, 1.f);
-	}
+	}*/
 	if((gp->isp.Texture || gp->pcw.Texture) && !gp->param0.tsp.SrcSelect)
 	{
 		glEnable(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, TexID);
-
 
 #ifdef DEBUG_LIB
 		int tw=0,th=0;
@@ -167,9 +180,10 @@ void PowerVR2_GL::SetRenderMode(u32 ParamID, u32 TexID)
 }
 
 
-__inline 
-void PowerVR2_GL::SetRenderModeSpr(u32 ParamID, u32 TexID)
+//__inline PvrIf::
+void SetRenderModeSpr(u32 ParamID, u32 TexID)
 {
+
 	GlobalParam * gp = &GlobalParams[ParamID];
 
 	// PCW Settings
@@ -228,99 +242,243 @@ void PowerVR2_GL::SetRenderModeSpr(u32 ParamID, u32 TexID)
 }
 
 
+#ifdef USE_DISPLAY_LISTS
 
-
-
-__inline 
-#ifndef USE_STD_VECTOR
-void PowerVR2_GL::RenderStripList(zector<Vertex> &vl)
-#else
-void PowerVR2_GL::RenderStripList(vector<Vertex> &vl)
-#endif
+//__inline PvrIf::
+void SetRenderModeDirect(GlobalParam *gp)
 {
-	for(u32 p=0; p<vl.size(); p++)
+
+	// PCW Settings
+	glShadeModel(gp->pcw.Gouraud ? GL_SMOOTH : GL_FLAT);
+
+	// ISP Settings
+	glDepthFunc(DepthModeGL[gp->isp.DepthMode]);
+	glDepthMask(gp->isp.ZWriteDis ? GL_FALSE : GL_TRUE);
+
+	//	glEnable(GL_DEPTH_TEST);
+
+
+	ASSERT_T(gp->param0.tsp.DstSelect && gp->param0.tsp.SrcSelect, "Src/Dst Select Both Selected !");
+
+	if(gp->param0.tsp.DstSelect)
 	{
-		SetRenderMode(vl[p].ParamID, vl[p].TexID);
+		glClear(GL_ACCUM_BUFFER_BIT);
+		glAccum(GL_ACCUM, 1.f);
+	}
+	if(gp->param0.tsp.SrcSelect)
+	{
+		ASSERT_T((gp->isp.Texture || gp->pcw.Texture),"SrcSelect on Textured Poly!");
+		glAccum(GL_RETURN, 1.f);
+	}
+	if((gp->isp.Texture || gp->pcw.Texture) && !gp->param0.tsp.SrcSelect)
+	{
+		glEnable(GL_TEXTURE_2D);
+	//	glBindTexture(GL_TEXTURE_2D, TexID);
+
+
+		// TSP Settings
+		// these should be correct now except for offset color 
+		switch( gp->param0.tsp.ShadInstr )
+		{
+		case 1:	DC_TexEnv_Modulate();	break;
+		case 2:	DC_TexEnv_DecalAlpha();	break;
+		case 0:	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);		break;
+		case 3:	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);	break;
+		default: printf("~<PVR>ERROR: SetRenderMode->TSP.ShadInstr is INVALID !!"); return;
+		}
+		CheckErrorsGL("RenderSceneGL()->RenderLists()->SetRenderMode() TEX ENV");
+
+		// GL_ARB_texture_mirrored_repeat 
+		//	if( vParam[StripID].param0.tsp.FlipUV )
+		//u32 Clamp = gp->param0.tsp.ClampUV;
+		//	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, ((Clamp&1) ? GL_CLAMP : GL_REPEAT) );
+		//	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, ((Clamp&2) ? GL_CLAMP : GL_REPEAT) );
+
+		switch(gp->param0.tsp.FilterMode)
+		{
+		case 0:	TexFilterGL(GL_NEAREST);	break;
+		case 1:	TexFilterGL(GL_LINEAR);		break;
+		case 2:
+		case 3:
+			//	if( gp->param0.tcw.MipMapped ) {
+			//		TexFilterGL( GL_LINEAR_MIPMAP_LINEAR );
+			//	} else {
+			TexFilterGL( GL_LINEAR );
+			//	} 
+			break;
+		default: printf("~<PVR>ERROR: Unknown Tex Filter Type in SetRenderMode() !!"); break;
+		}
+
+	} else {
+		glDisable(GL_TEXTURE_2D);
+	}
+
+	// ListType Specific
+
+	CheckErrorsGL("RenderSceneGL()->RenderLists()->SetRenderMode() TEX");
+	/*	list type dependant shit ...
+	*	blending :
+	*	Opaque: "1" must be SRC instruction and "0" must be DST instruction.
+	*	PunchThrough: "4" (SRC Alpha) SRC and "5" (Inverse SRC Alpha)  DST
+	*/
+	switch( gp->pcw.ListType )
+	{
+	case LT_Opaque:
+		glDisable(GL_BLEND);
+		glDisable(GL_ALPHA_TEST);
+
+		CheckErrorsGL("RenderSceneGL()->RenderLists()->SetRenderMode(LT_OPQ)");
+		break;
+
+	case LT_Translucent:
+		// don't know if this is right .. supposed to enable/disable vtx alpha
+		// could always use this at the vtx cmd level but thats a bitch
+		if( gp->param0.tsp.UseAlpha )
+			glEnable(GL_BLEND);
+		else
+			glDisable(GL_BLEND);
+
+		//	glDisable(GL_DEPTH_TEST);
+		glDepthMask(GL_TRUE);		// no zbuffering for transparencies
+
+		if(!gp->param0.tsp.IgnoreTexA)
+		{
+			glEnable(GL_ALPHA_TEST);
+			glAlphaFunc(GL_GREATER, 0.f);
+		}
+		else {
+			glDisable(GL_ALPHA_TEST);
+		}
+
+		// this has got to be all fucked up ...
+		//	if( gp->param0.tsp.SrcSelect ) glAccum( GL_RETURN, 0.f ) ;
+		//	if( gp->param0.tsp.DstSelect ) glAccum( GL_LOAD, 0.f ) ;
+
+		glBlendFunc(SrcBlendGL[gp->param0.tsp.SrcInstr], DstBlendGL[gp->param0.tsp.DstInstr]);
+		CheckErrorsGL("RenderSceneGL()->RenderLists()->SetRenderMode(LT_TRS)");
+		break;
+
+		// PUNCH THRU is NOTHING BUT NON BLENDED / ALPHA TESTED TRIS
+	case LT_PunchThrough:	
+		if(!gp->param0.tsp.IgnoreTexA)
+		{
+			glEnable(GL_ALPHA_TEST);
+			glAlphaFunc(GL_GEQUAL, (float)(*pPT_ALPHA_REF &0xFF)/255.f);
+		}
+		else {
+			glDisable(GL_ALPHA_TEST);
+		}
+
+		glDisable(GL_BLEND);
+
+		// This should look nicer, could be trouble with somethings..
+		//	glEnable(GL_BLEND);
+		//	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);	// ...
+
+		CheckErrorsGL("RenderSceneGL()->RenderLists()->SetRenderMode(LT_PTHRU)");
+		break;
+
+	case LT_OpaqueMod:return;		// don't care yet
+	case LT_TransMod: return;		// don't care yet
+	case LT_Reserved:	ASSERT_T((1),"BOGUS LIST TYPE IN SetRenderMode()");	return;
+	}
+}
+
+u32 PvrIf::CreateDispList(GlobalParam *gp)
+{
+	GLuint dlid = glGenLists(1);
+	glNewList(dlid, GL_COMPILE);
+	SetRenderModeDirect(gp);
+	glEndList();
+	return dlid;
+}
+
+void PvrIf::DeleteDispList(u32 dlid)
+{
+	glDeleteLists(dlid,1);
+}
+#endif
+
+
+//__inline PvrIf::
+void RenderStripList(Vertex *pVList)
+{
+
+//	lprintf("RenderStripList() - OpqStrips: %X\n", nOpqStrips);
+
+	for(u32 p=0; p<nOpqStrips; p++)
+	{
+		Vertex * vp = &pVList[p];
+
+
+#ifndef USE_DISPLAY_LISTS
+		SetRenderMode(vp->ParamID, vp->TexID);
+#else
+		glCallList(DLists[vp->ParamID]);
+		glBindTexture(GL_TEXTURE_2D, vp->TexID);
+#endif
+
+//		lprintf("\nVList: %X : size: %d\n", p, vp->Size);
 
 		glBegin(GL_TRIANGLE_STRIP);
-		for(u32 v=0; v<vl[p].List.size(); v++)
+		for(u32 v=0; v<vp->Size; v++)
 		{
-			glColor4ubv((u8*)&vl[p].List[v].col);
-			glTexCoord4fv(vl[p].List[v].uv);
-			glVertex3fv(vl[p].List[v].xyz);
+//			lprintf("VList[%02X] v(%.3f, %.3f, %.3f) vc(%.3f, %.3f) c: %08X \n",
+//				v,	vp->List[v].xyz[0],	vp->List[v].xyz[1],	vp->List[v].xyz[2],
+//					vp->List[v].uv[0],	vp->List[v].uv[1],	vp->List[v].col);
+
+			glColor4ubv((u8*)&vp->List[v].col);
+			glTexCoord4fv(vp->List[v].uv);
+			glVertex3fv(vp->List[v].xyz);
 		}
+	//	lprintf("\n", p);
 		glEnd();
 	}
 }
-__inline 
-#ifndef USE_STD_VECTOR
-void PowerVR2_GL::RenderStripListRev(zector<Vertex> &vl)
-#else
-void PowerVR2_GL::RenderStripListRev(vector<Vertex> &vl)
-#endif
+
+
+
+//__inline PvrIf::
+void RenderStripListArray(vector<Vertex> &vl)
 {
 	for(u32 p=0; p<vl.size(); p++)
 	{
+#ifndef USE_DISPLAY_LISTS
 		SetRenderMode(vl[p].ParamID, vl[p].TexID);
-
-		glBegin(GL_TRIANGLE_STRIP);
-		for(s32 v=vl[p].List.size()-1; v>=0; v--)
-		{
-			glColor4ubv((u8*)&vl[p].List[v].col);
-			glTexCoord4fv(vl[p].List[v].uv);
-			glVertex3fv(vl[p].List[v].xyz);
-		}
-		glEnd();
-	}
-}
-
-__inline 
-#ifndef USE_STD_VECTOR
-void PowerVR2_GL::RenderStripListArray(zector<Vertex> &vl)
 #else
-void PowerVR2_GL::RenderStripListArray(vector<Vertex> &vl)
+		glCallList(DLists[vl[p].ParamID]);
+		glBindTexture(GL_TEXTURE_2D, vl[p].TexID);
 #endif
-{
-	for(u32 p=0; p<vl.size(); p++)
-	{
-		SetRenderMode(vl[p].ParamID, vl[p].TexID);
 
 #ifdef USE_VERTEX_PROGRAMS
 		glColorPointer(4, GL_FLOAT, sizeof(Vert), vl[p].List[0].col);
 		glTexCoordPointer(2, GL_FLOAT, sizeof(Vert), vl[p].List[0].uv);
 
-		glEnableVertexAttribArray(2);
-	//	glBindAttribLocation(cgVProgram, 2, "Offset");
-		glVertexAttribPointer(2, 4, GL_FLOAT, true, sizeof(Vert), vl[p].List[0].offset);
+		glVertexAttrib4fv(0, vl[p].List[0].offset);
 
+	//	glEnableVertexAttribArray(2);
+	//	glBindAttribLocation(cgVProgram, 2, "Offset");
+	//	glVertexAttribPointer(2, 4, GL_FLOAT, true, sizeof(Vert), vl[p].List[0].offset);
 #else
 		glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(Vert), &vl[p].List[0].col);
 		glTexCoordPointer(4, GL_FLOAT, sizeof(Vert), vl[p].List[0].uv);
 #endif
 
 		glVertexPointer(3, GL_FLOAT, sizeof(Vert), vl[p].List[0].xyz);
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, (GLsizei)vl[p].List.size());
-
-#ifdef USE_VERTEX_PROGRAMS
-		glDisableVertexAttribArray(2);
-#endif
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, (GLsizei)vl[p].Size);
 	}
 }
 
 
-__inline 
-#ifndef USE_STD_VECTOR
-void PowerVR2_GL::RenderSprites(zector<Vertex> &vl)
-#else
-void PowerVR2_GL::RenderSprites(vector<Vertex> &vl)
-#endif
+//__inline PvrIf::
+void RenderSprites(vector<Vertex> &vl)
 {
 	for(u32 p=0; p<vl.size(); p++)
 	{
 		SetRenderModeSpr(vl[p].ParamID, vl[p].TexID);
 
 		glBegin(GL_QUADS);
-		for(u32 v=0; v<vl[p].List.size(); v++)
+		for(u32 v=0; v<vl[p].Size; v++)
 		{
 			glColor4ubv((u8*)&vl[p].List[v].col);
 			glTexCoord4fv(vl[p].List[v].uv);
@@ -331,9 +489,9 @@ void PowerVR2_GL::RenderSprites(vector<Vertex> &vl)
 }
 
 
-void PowerVR2_GL::Render()
+void PvrIf::Render()
 {
-	FrameCount++;
+//	FrameCount++;
 	glFlush();
 	Resize();
 
@@ -346,8 +504,8 @@ void PowerVR2_GL::Render()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // | GL_ACCUM_BUFFER_BIT);
 	////////////////////////////////////////////////////
 
-
-#define USE_VERTEX_ARRAYS
+	RenderStripList((Vertex*)opq);
+/*
 #ifndef USE_VERTEX_ARRAYS
 	RenderStripList(OpaqueVerts);
 	RenderStripList(TranspVerts);
@@ -383,7 +541,7 @@ void PowerVR2_GL::Render()
 #endif
 
 	RenderSprites(Sprites);
-
+*/
 
 
 
@@ -407,24 +565,32 @@ void PowerVR2_GL::Render()
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_TEXTURE_2D);
-
+*//*
 	cgGLDisableProfile(cgVProfile);
 	checkForCgError("disabling v profile");
-*/
 
-
+#ifdef USE_DISPLAY_LISTS
+	for(int i=0; i<DLists.size(); i++)
+		PvrIf->DeleteDispList(DLists[i]);
+	DLists.clear();
+#endif
+*/	
 	ClearDCache();
-	ClearTInvalids();
+//	ClearTInvalids();
+
+	
+
+	
 	SwapBuffers(hDC);
 	CheckErrorsGL("RenderSceneGL()");
 
-	//printf(" ----- End Render -------\n");
+//	lprintf(" ----- End Render -------\n");
 }
 
 
 
 
-void PowerVR2_GL::Resize()
+void PvrIf::Resize()
 {
 	RECT rClient;
 	GetClientRect((HWND)emuIf.handle,&rClient);
@@ -442,7 +608,7 @@ void PowerVR2_GL::Resize()
 }
 
 
-bool PowerVR2_GL::Init()
+bool PvrIf::Init()
 {
 	GLuint	PixelFormat;
 
@@ -511,9 +677,9 @@ bool PowerVR2_GL::Init()
 	glClearColor(1.f, 1.f, 1.f, 0.f);
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-	InitCg();
+/*	InitCg();
 	LoadVProgram("VProgram.cg","PVR_VertexInput");
-	LoadFProgram("FProgram.cg","PVR_FragmentInput");
+	LoadFProgram("FProgram.cg","PVR_FragmentInput");	*/
 
 	Resize();
 	Render();
@@ -521,10 +687,12 @@ bool PowerVR2_GL::Init()
 	return true;
 }
 
-void PowerVR2_GL::Term()
+void PvrIf::Term()
 {
-	ClearTCache();		// Textures
-	ClearDCache();
+
+		// *FIXME* re-enable these
+//	ClearTCache();		// Textures
+//	ClearDCache();
 
 	if (hRC && (!wglMakeCurrent(NULL,NULL)) || (!wglDeleteContext(hRC)) ) {
 		MessageBox((HWND)emuIf.handle, "Release Rendering Context Failed.","SHUTDOWN ERROR",MB_ICONERROR);
@@ -537,8 +705,8 @@ void PowerVR2_GL::Term()
 }
 
 
-
-GLvoid PowerVR2_GL::CheckErrorsGL( char *szFunc )
+//PvrIf::
+GLvoid CheckErrorsGL( char *szFunc )
 {
 	GLenum err;
 	const GLubyte *pszErrStr;

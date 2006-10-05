@@ -66,14 +66,16 @@ void pvrWriteReg(u32 addr,u32 data,u32 size)
 
 		case STARTRENDER:
 			if(0 != data) {
-		//		lprintf(")>\tSTART RENDER !\n");
-				PvrIf->Render();
+			//	lprintf(")>\tSTART RENDER !\n");
+
+			// *FIXME*
+				PvrIf::Render();
 				emuIf.RaiseInterrupt(holly_RENDER_DONE);
 				emuIf.RaiseInterrupt(holly_RENDER_DONE_vd);
 				emuIf.RaiseInterrupt(holly_RENDER_DONE_isp);
 				return;
 			}
-			lprintf(")>\tSTART RENDER ! Write Zero: %X\n",data);
+			//lprintf(")>\tSTART RENDER ! Write Zero: %X\n",data);
 			return;
 		}
 		//lprintf("<PVR>\t pvrWriteReg: @ %08X <= %X Unhandled!\n", addr, data);

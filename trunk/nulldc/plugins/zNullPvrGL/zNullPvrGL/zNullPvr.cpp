@@ -13,13 +13,16 @@ pvrInitParams emuIf;
 
 ConfigLoadStrFP	* ConfigLoadStr;
 ConfigSaveStrFP	* ConfigSaveStr;
-
+/*
 CGcontext PowerVR2::cgContext;
 CGprofile PowerVR2::cgVProfile;
 CGprogram PowerVR2::cgVProgram;
 CGprofile PowerVR2::cgFProfile;
 CGprogram PowerVR2::cgFProgram;
+*/
 
+TextureCache PvrIf::TCache;
+vector<GlobalParam> PvrIf::GlobalParams;
 
 HINSTANCE hInst=NULL;
 
@@ -55,7 +58,7 @@ void dcGetPluginInfo(ndcPluginIf *If)
 	If->IfVersion	= 0x00020000;	// double check with nullgdr
 	If->LibVersion= 0x01;			// 
 	If->PluginType= 0x01;			// 1=PowerVR2
-	strcpy_s(If->szName, "zNullPvr, OpenGL/D3D PowerVR2 Plugin By ZeZu - (David Miller)[" __DATE__ "]");
+	strcpy_s(If->szName, "zNullPvr, OpenGL PowerVR2 Plugin By ZeZu - (David Miller)[" __DATE__ "]");
 
 	If->Init		= pvrInit;
 	If->Term		= pvrTerm;
@@ -99,7 +102,9 @@ void pvrInit(void *params, u32 PluginType)
 	char ConfigStr[512];
 	ConfigLoadStr("zNullPvr","RenderAPI", ConfigStr);
 	pvrOpts.GfxApi = (0==strcmp("D3D",ConfigStr)) ? 1 : 0 ;
-	PvrIf = (0==pvrOpts.GfxApi) ? ((PowerVR2*)&PvrIfGl) : ((PowerVR2*)&PvrIfD3D);
+
+
+//	PvrIf = (0==pvrOpts.GfxApi) ? ((PowerVR2*)&PvrIfGl) : ((PowerVR2*)&PvrIfD3D);
 
 //	ConfigLoadStr("zNullPvr","VShader", ConfigStr);
 //	ConfigLoadStr("zNullPvr","PShader", ConfigStr);
@@ -118,14 +123,14 @@ void pvrThreadInit(u32 PluginType)
 {
 	printf("pvrThreadInit()\n");
 
-	PvrIf->Init();
+	PvrIf::Init();
 }
 
 void pvrThreadTerm(u32 PluginType)
 {
 	printf("pvrThreadTerm()\n");
 
-	PvrIf->Term();
+	PvrIf::Term();
 }
 
 
@@ -153,20 +158,21 @@ void pvrConfig(u32 PluginType, void* whoknows)
 u32 vblState=0;
 u32 vblCount=0;
 u32 last_fps=0;
+u32 FrameCount=0;
 
 void vblank_done()
 {
 	vblCount++;
 	if ((timeGetTime()-(double)last_fps)>800)
 	{
-		double spd_fps=(double)PvrIf->FrameCount/(double)((double)(timeGetTime()-(double)last_fps)/1000);
+		double spd_fps=(double)FrameCount/(double)((double)(timeGetTime()-(double)last_fps)/1000);
 		double spd_cpu=(double)vblCount/(double)((double)(timeGetTime()-(double)last_fps)/1000);
 		spd_cpu*=VSYNC_WRAP;
 		spd_cpu/=1000000;	//mrhz kthx
 		double fullfps=(spd_fps/spd_cpu)*200;
 
 		last_fps=timeGetTime();
-		PvrIf->FrameCount=0;
+		FrameCount=0;
 		vblCount=0;
 
 		char fpsStr[256];

@@ -5,12 +5,9 @@
 #ifndef __TAPARAM_H__
 #define __TAPARAM_H__
 
-#define USE_STD_VECTOR
-
-#ifdef USE_STD_VECTOR
 #include <vector>
 using namespace std;
-#endif
+
 
 typedef struct ParameterControlWord
 {
@@ -635,113 +632,6 @@ struct ParamBase
 
 
 
-#define USE_ALT_VECTOR
-
-
-#ifndef USE_ALT_VECTOR
-template <class T>
-class zector
-{
-	T* data;
-	int msize, idx;
-
-public:
-
-	zector()
-	{
-		msize=0;
-		data=NULL;
-	}
-	~zector()
-	{
-		if(data)
-			free(data);
-		msize=0;
-		data=NULL;
-	}
-
-	void clear() {
-		idx = 0;
-	}
-	int size() {
-		return idx;
-	}
-
-	void push_back(T& item)
-	{
-		if(0 == msize) {
-			msize = 256;
-			data  = (T*)malloc(msize*sizeof(T));
-		}
-		if(idx >= msize) {
-			msize *= 4;
-			data  = (T*)realloc(data,msize*sizeof(T));
-		}
-		data[idx++] = item;
-	}
-
-	T& operator [](const int i)
-    {
-		ASSERT_T((i>=idx),"zector::operator [], i >= idx!");
-		return data[i];
-    }
-
-};
-#else
-
-template <class T>
-class zector
-{
-	T* data;
-	int msize, idx;
-
-public:
-
-	zector()
-	{
-		msize=0;
-		data=NULL;
-	}
-	~zector()
-	{
-		if(data)
-			free(data);
-		msize=0;
-		data=NULL;
-	}
-
-	void clear() {
-		idx = 0;
-	}
-	int size() {
-		return idx;
-	}
-
-	void push_back(T& item)
-	{
-		if(0 == msize) {
-			msize = 256;
-			data  = (T*)malloc(msize*sizeof(T));
-		}
-		if(idx >= msize) {
-			msize *= 4;
-			data  = (T*)realloc(data,msize*sizeof(T));
-		}
-		data[idx++] = item;
-	}
-
-	T& operator [](const int i)
-    {
-		ASSERT_T((i>=idx),"zector::operator [], i >= idx!");
-		return data[i];
-    }
-
-};
-
-#endif
-
-
-
 
 struct Vert
 {
@@ -763,20 +653,19 @@ struct Vertex
 	u32 TexID;
 	u32 ParamID;
 
-#ifndef USE_STD_VECTOR
-	zector<Vert> List;
-#else
-	vector<Vert> List;
-#endif
+	Vert List[6] ;
+	u32  Size;
+//	vector<Vert> List;
 };
 
 
+extern u32 nOpqStrips;
+extern u8 opq[SZ_2MB];
 
 
-
-
-
-
+void FlushFifo();
+void ClearTCache();
+void ClearDCache();
 
 
 
@@ -786,7 +675,7 @@ struct Vertex
 **			states in display lists, and possibly some geometry
 */
 
-
+/*
 class PrimConverter
 {
 public:
@@ -800,16 +689,7 @@ public:
 
 //private:	// i dont like inheritance rules like this ...
 
-#ifndef USE_STD_VECTOR
-	zector<Vertex> Sprites;
-	zector<Vertex> OpaqueMods;
-	zector<Vertex> TranspMods;
-	zector<Vertex> OpaqueVerts;
-	zector<Vertex> TranspVerts;
-	zector<Vertex> PunchtVerts;
 
-	zector<GlobalParam> GlobalParams;
-#else
 	vector<Vertex> Sprites;
 	vector<Vertex> OpaqueMods;
 	vector<Vertex> TranspMods;
@@ -818,6 +698,10 @@ public:
 	vector<Vertex> PunchtVerts;
 
 	vector<GlobalParam> GlobalParams;
+
+
+#ifdef USE_DISPLAY_LISTS
+	vector<u32> DLists;
 #endif
 
 	void ClearDCache() {
@@ -831,7 +715,7 @@ public:
 	}
 
 };
-
+*/
 
 
 #endif //__TAPARAM_H__

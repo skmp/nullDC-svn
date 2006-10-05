@@ -9,7 +9,7 @@
 #include <GL/glew.h>
 #include <GL/gl.h>
 #include <GL/glu.h>
-#include <cg/cggl.h>													// NEW: Cg OpenGL Specific Header
+//#include <cg/cggl.h>													// NEW: Cg OpenGL Specific Header
 
 #include "zNullPvr.h"
 
@@ -17,6 +17,8 @@
 #include "TA_Param.h"
 #include "TA_Texture.h"
 
+
+/*
 extern 
 class PowerVR2_GL : public PowerVR2
 {
@@ -25,19 +27,20 @@ class PowerVR2_GL : public PowerVR2
 	void Term();
 	void Render();
 	void Resize();
+
+#ifdef USE_DISPLAY_LISTS
+	void DeleteDispList(u32 dlid);
+	u32 CreateDispList(GlobalParam *gp);
+	void SetRenderModeDirect(GlobalParam *gp);
+#endif
+
 private:
 
-#ifndef USE_STD_VECTOR
-	void RenderSprites(zector<Vertex> &vl);
-	void RenderStripList(zector<Vertex> &vl);
-	void RenderStripListRev(zector<Vertex> &vl);
-	void RenderStripListArray(zector<Vertex> &vl);
-#else
 	void RenderSprites(vector<Vertex> &vl);
 	void RenderStripList(vector<Vertex> &vl);
 	void RenderStripListRev(vector<Vertex> &vl);
 	void RenderStripListArray(vector<Vertex> &vl);
-#endif
+
 
 	void SetRenderMode(u32 ParamID, u32 TexID);
 	void SetRenderModeSpr(u32 ParamID, u32 TexID);
@@ -75,10 +78,11 @@ private:
 	void CheckErrorsGL(char *szFunc);
 
 } PvrIfGl;
+*/
 
 
 
-
+void CheckErrorsGL(char *szFunc);
 
 
 __inline static void TexFilterGL( GLuint filter )
