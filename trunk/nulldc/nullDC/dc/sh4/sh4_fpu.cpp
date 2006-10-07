@@ -601,34 +601,27 @@ sh4op(i1111_nnmm_1110_1101)
 //fldi0 <FREG_N>           
 sh4op(i1111_nnnn_1000_1101)
 {
-	if (fpscr.PR==0)
-	{
-		//iNimp("fldi0 <FREG_N>");
-		u32 n = GetN(op);
-
-		fr[n] = 0.0f;
-	}
-	else
-	{
+	if (fpscr.PR!=0)
 		iNimp("fldi0 <Dreg_N>");
-	}
+
+	//iNimp("fldi0 <FREG_N>");
+	u32 n = GetN(op);
+
+	fr[n] = 0.0f;
+
 }
 
 
 //fldi1 <FREG_N>           
 sh4op(i1111_nnnn_1001_1101)
 {
-	if (fpscr.PR==0)
-	{
-		//iNimp("fldi1 <FREG_N>");
-		u32 n = GetN(op);
-
-		fr[n] = 1.0f;
-	}
-	else
-	{
+	if (fpscr.PR!=0)
 		iNimp("fldi1 <Dreg_N>");
-	}
+
+	//iNimp("fldi1 <FREG_N>");
+	u32 n = GetN(op);
+
+	fr[n] = 1.0f;
 }
 
 
@@ -636,16 +629,12 @@ sh4op(i1111_nnnn_1001_1101)
 sh4op(i1111_nnnn_0001_1101)
 {
 	//iNimp("flds <FREG_N>,FPUL");
-	if (fpscr.PR == 0)
-	{
-		u32 n = GetN(op);
-
-		fpul = fr_hex[n];
-	}
-	else
-	{
+	if (fpscr.PR != 0)
 		iNimp("flds <DREG_N>,FPUL");
-	}
+
+	u32 n = GetN(op);
+
+	fpul = fr_hex[n];
 }
 
 
@@ -706,13 +695,19 @@ sh4op(i1111_nnnn_0110_1101)
 		//iNimp("fsqrt <FREG_N>");
 		u32 n = GetN(op);
 
-		fr[n] = (float)sqrt((double)fr[n]);
+		fr[n] = sqrt(fr[n]);
 		CHECK_FPU_32(fr[n]);
 	}
 	else
 	{
 		//Operation _can_ be done on sh4
+		u32 n = GetN(op)>>1;
+
+		START64();
+		SetDR(n,sqrt(GetDR(n)));
+		//CHECK_FPU_32(fr[n]);
 		iNimp("fsqrt <DREG_N>");
+		END64();
 	}
 }
 
@@ -739,15 +734,11 @@ sh4op(i1111_nnnn_0011_1101)
 sh4op(i1111_nnnn_0000_1101)
 {
 	//iNimp("fsts FPUL,<FREG_N>");
-	if (fpscr.PR == 0)
-	{
-		u32 n = GetN(op);
-		fr_hex[n] = fpul;
-	}
-	else
-	{
+	if (fpscr.PR != 0)
 		iNimp("fsts FPUL,<DREG_N>");
-	}
+
+	u32 n = GetN(op);
+	fr_hex[n] = fpul;
 }
 
 

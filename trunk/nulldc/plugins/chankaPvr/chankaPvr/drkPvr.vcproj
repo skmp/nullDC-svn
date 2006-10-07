@@ -4,7 +4,7 @@
 	Version="8,00"
 	Name="chankaPvr"
 	ProjectGUID="{0520BA33-1A98-4DDE-8B36-99F25EDC5BD6}"
-	RootNamespace="drkPvr"
+	RootNamespace="chankaPvr"
 	Keyword="Win32Proj"
 	>
 	<Platforms>

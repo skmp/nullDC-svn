@@ -74,13 +74,34 @@ void testJoy_GotData(u32 header1,u32 header2,u32*data,u32 datalen);
 
 //realy hackish
 //misses delay , and stop/start implementation
+bool maple_ddt_pending_reset=false;
 void maple_vblank()
 {
 	if (SB_MDTSEL&1)
 	{
-		printf("DDT vblank\n");
-		DoMapleDma();
+		if (maple_ddt_pending_reset)
+		{
+			printf("DDT vblank ; reset pending\n");
+		}
+		else
+		{
+			printf("DDT vblank\n");
+			//DoMapleDma();
+			if ((SB_MSYS>>12)&1)
+			{
+				maple_ddt_pending_reset=true;
+			}
+		}
 	}
+	else
+	{
+		maple_ddt_pending_reset=false;
+	}
+}
+void maple_SB_MSHTCL_Write(u32 data)
+{
+	if (data&1)
+		maple_ddt_pending_reset=false;
 }
 void maple_SB_MDST_Write(u32 data)
 {
@@ -418,6 +439,10 @@ void maple_Init()
 {
 	sb_regs[(SB_MDST_addr-SB_BASE)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA;
 	sb_regs[(SB_MDST_addr-SB_BASE)>>2].writeFunction=maple_SB_MDST_Write;
+
+	sb_regs[(SB_MSHTCL_addr-SB_BASE)>>2].flags=REG_32BIT_READWRITE;
+	sb_regs[(SB_MSHTCL_addr-SB_BASE)>>2].writeFunction=maple_SB_MSHTCL_Write;
+
 	maple_plugins_create_list();
 
 	#ifdef BUILD_NAOMI

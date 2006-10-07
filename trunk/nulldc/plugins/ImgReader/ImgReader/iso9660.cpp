@@ -85,7 +85,9 @@ void iso_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 		size_t rd=fread(buff,1,SectorCount*2048,fip);
 		fclose(fip);
 		return;
-	}
+	}*/
+	/*
+	StartSector-=45150;
 	if (f_iso)
 	{
 		fseek(f_iso,StartSector*2048,SEEK_SET);
@@ -98,7 +100,10 @@ void iso_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 	}
 	else
 	{
-		f_iso=fopen("f:\\ninjax.iso","rb");
+		char fn[512]="";
+		if(GetFile(fn,"FILE0003.DUP \0FILE0003.DUP\0\0")==false)
+			return;
+		f_iso=fopen(fn,"rb");
 		
 		fseek(f_iso,StartSector*2048,SEEK_SET);
 		size_t rd=fread(buff,1,SectorCount*2048,f_iso);
@@ -114,6 +119,7 @@ void iso_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 void iso_DriveGetTocInfo(TocInfo* toc,DiskArea area)
 {
 	printf("GDROM toc\n");
+	memset(toc,0,sizeof(TocInfo));
 /*	//Send a fake a$$ toc
 	//toc->last.full		= toc->first.full	= CTOC_TRACK(1);
 	toc->first.number=1;
