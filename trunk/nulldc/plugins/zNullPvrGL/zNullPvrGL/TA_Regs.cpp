@@ -60,7 +60,7 @@ void pvrWriteReg(u32 addr,u32 data,u32 size)
 			break;	// write it
 
 		case TA_LIST_INIT:
-			combine_ac();
+		//	combine_ac();
 		//	lprintf("\n**************** TA_LIST_INIT ****************\n\n");
 			break;
 

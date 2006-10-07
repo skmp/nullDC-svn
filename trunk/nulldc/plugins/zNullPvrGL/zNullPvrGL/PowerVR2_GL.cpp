@@ -2,14 +2,14 @@
 **	PvrIf.cpp	- David Miller 2006 -
 */
 #include "PowerVR2.h"
+#include "TA_Param.h"
 
 using namespace PvrIf;
 
 
 
-
-	HDC hDC;
-	HGLRC hRC;
+HDC hDC;
+HGLRC hRC;
 
 
 
@@ -401,8 +401,16 @@ void PvrIf::DeleteDispList(u32 dlid)
 
 
 //__inline PvrIf::
-void RenderStripList(Vertex *pVList)
+void RenderStripList(TA_ListType lType)
 {
+	int nStrips = 0;
+	Vertex * pVList = NULL;
+
+	switch(lType)	{
+	case LT_Opaque:			nStrips=nOpqStrips;	pVList=(Vertex*)opq;	break;
+	case LT_Translucent:	nStrips=nTrsStrips;	pVList=(Vertex*)trs;	break;
+	case LT_PunchThrough:	nStrips=nPtuStrips;	pVList=(Vertex*)ptu;	break;
+	}
 
 //	lprintf("RenderStripList() - OpqStrips: %X\n", nOpqStrips);
 
@@ -439,12 +447,24 @@ void RenderStripList(Vertex *pVList)
 
 
 //__inline PvrIf::
-void RenderStripListArray(vector<Vertex> &vl)
+void RenderStripListArray(TA_ListType lType)
 {
-	for(u32 p=0; p<vl.size(); p++)
+	int nStrips = 0;
+	Vertex * pVList = NULL;
+
+	switch(lType)	{
+	case LT_Opaque:			nStrips=nOpqStrips;	pVList=(Vertex*)opq;	break;
+	case LT_Translucent:	nStrips=nTrsStrips;	pVList=(Vertex*)trs;	break;
+	case LT_PunchThrough:	nStrips=nPtuStrips;	pVList=(Vertex*)ptu;	break;
+	}
+
+	for(u32 p=0; p<nOpqStrips; p++)
 	{
+		Vertex * vp = &pVList[p];
+
+
 #ifndef USE_DISPLAY_LISTS
-		SetRenderMode(vl[p].ParamID, vl[p].TexID);
+		SetRenderMode(vp->ParamID, vp->TexID);
 #else
 		glCallList(DLists[vl[p].ParamID]);
 		glBindTexture(GL_TEXTURE_2D, vl[p].TexID);
@@ -460,12 +480,12 @@ void RenderStripListArray(vector<Vertex> &vl)
 	//	glBindAttribLocation(cgVProgram, 2, "Offset");
 	//	glVertexAttribPointer(2, 4, GL_FLOAT, true, sizeof(Vert), vl[p].List[0].offset);
 #else
-		glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(Vert), &vl[p].List[0].col);
-		glTexCoordPointer(4, GL_FLOAT, sizeof(Vert), vl[p].List[0].uv);
+		glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(Vert), &vp->List[0].col);
+		glTexCoordPointer(4, GL_FLOAT, sizeof(Vert), &vp->List[0].uv);
 #endif
 
-		glVertexPointer(3, GL_FLOAT, sizeof(Vert), vl[p].List[0].xyz);
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, (GLsizei)vl[p].Size);
+		glVertexPointer(3, GL_FLOAT, sizeof(Vert), &vp->List[0].xyz);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, (GLsizei)vp->Size);
 	}
 }
 
@@ -504,81 +524,32 @@ void PvrIf::Render()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // | GL_ACCUM_BUFFER_BIT);
 	////////////////////////////////////////////////////
 
-	RenderStripList((Vertex*)opq);
-/*
 #ifndef USE_VERTEX_ARRAYS
-	RenderStripList(OpaqueVerts);
-	RenderStripList(TranspVerts);
-	RenderStripList(PunchtVerts);
+	RenderStripList(LT_Opaque);
+	RenderStripList(LT_Translucent);
+	RenderStripList(LT_PunchThrough);
 #else
 	glPushClientAttrib(GL_CLIENT_VERTEX_ARRAY_BIT);
 	glEnableClientState(GL_COLOR_ARRAY);
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
-
-#ifdef  USE_VERTEX_PROGRAMS
-	cgGLBindProgram(cgVProgram);
-	checkForCgError("binding v program");
-
-	cgGLEnableProfile(cgVProfile);
-	checkForCgError("enabling v profile");
-#endif
-
-	RenderStripListArray(OpaqueVerts);
-	RenderStripListArray(TranspVerts);	//Sprites
-	RenderStripListArray(PunchtVerts);
-
-#ifdef  USE_VERTEX_PROGRAMS
-	cgGLDisableProfile(cgVProfile);
-	checkForCgError("disabling v profile");
-#endif
-
-
-
+	RenderStripListArray(LT_Opaque);
+	RenderStripListArray(LT_Translucent);	//Sprites
+	RenderStripListArray(LT_PunchThrough);
 
 	glPopClientAttrib();
 #endif
-
-	RenderSprites(Sprites);
-*/
-
-
-
-	///////////// TEST
 /*
-	cgGLBindProgram(cgVProgram);
-	checkForCgError("binding v program");
-
-	cgGLEnableProfile(cgVProfile);
-	checkForCgError("enabling v profile");
-
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_TEXTURE_2D);
-
-	glBegin(GL_TRIANGLES);
-		glColor3f(1.f, 0.f, 0.5f);
-		glVertex3f(50,280,0.5f);
-		glVertex3f(70,150,0.5f);
-		glVertex3f(90,280,0.5f);
-	glEnd();
-
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_TEXTURE_2D);
-*//*
-	cgGLDisableProfile(cgVProfile);
-	checkForCgError("disabling v profile");
-
 #ifdef USE_DISPLAY_LISTS
 	for(int i=0; i<DLists.size(); i++)
 		PvrIf->DeleteDispList(DLists[i]);
 	DLists.clear();
 #endif
 */	
-	ClearDCache();
-//	ClearTInvalids();
 
-	
+	ClearDCache();
+	TCache.ClearTInvalids();
 
 	
 	SwapBuffers(hDC);

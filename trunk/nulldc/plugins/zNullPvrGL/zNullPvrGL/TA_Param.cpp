@@ -22,10 +22,12 @@ TA_PolyMode PolyMode;
 **	could return true, but realistically be the second 32Bytes
 **	of data for a 64Byte list.
 */
+#define FIFO_SIZE	SZ_4MB
 
 static u32 FifoSize = 0;
-static u8  FIFO_BUFF[SZ_2MB];
+static u8  FIFO_BUFF[FIFO_SIZE];
 
+void DumpFifo(u32 address, u32* data, u32 size);
 
 void ProcessFifo()
 {
@@ -34,13 +36,12 @@ void ProcessFifo()
 	bool EndOfList=false;
 	ParamBase * pb= NULL;
 
-
 	do {
 
 		PSize = 0;	// Error Handler (debug)
 		pb = (ParamBase*)&FIFO_BUFF[FifoPos];
 
-	//	lprintf("Processing List Type: %X\n", pb->Base.pcw.ParaType);
+		lprintf("Processing List Type: %X\n", pb->Base.pcw.ParaType);
 
 		switch(pb->Base.pcw.ParaType)
 		{
@@ -48,7 +49,7 @@ void ProcessFifo()
 			PolyMode = PM_None;
 			EndOfList=true;
 
-		//	lprintf("EOL\n");
+//			lprintf("EOL\n");
 
 			if(GlobalParams.size() > 0)
 			{
@@ -84,6 +85,8 @@ void ProcessFifo()
 		case PT_Vertex:			// Vertex Parameter
 			ASSERT_T((PM_None==PolyMode),		"<PVR> Vertex Recieved After Object List Ended !");
 
+			if(PM_None==PolyMode) PolyMode = PM_Vertex;	// HACK 
+
 			if(PM_Vertex == PolyMode) {
 				PSize = PvrIf::AppendStrip((VertexParam*)pb);
 			}
@@ -99,6 +102,8 @@ void ProcessFifo()
 				ASSERT_T((1), "PT_Vertex: Reached const. return value (ERROR)!");
 				PSize = isVert64Byte((PCW*)pb)?64:32;
 			}
+
+//			lprintf("PT_Vertex: PolyMode: %d  PSize: %d\n", PolyMode, PSize);
 			break;
 
 		case PT_UserTileClip:	// Control: User Tile Clip	*FIXME*
@@ -110,9 +115,10 @@ void ProcessFifo()
 		}
 
 		FifoPos += PSize;
-		ASSERT_T((0==PSize),"PSize is Zero !");
+		ASSERT_T((0==PSize),"PSize is Zero!");
 		ASSERT_T((1==PSize),"PSize is One !");
 		ASSERT_T((2==PSize),"PSize is Two !");
+		ASSERT_T((PSize&31),"PSize Invalid!");
 
 	} while((FifoPos<FifoSize) && !EndOfList);
 
@@ -121,12 +127,13 @@ void ProcessFifo()
 	{
 		lprintf(" FIFO !EOL - Pos: %d / Size: %d \n", FifoPos, FifoSize);
 		ASSERT_T((1),"FiFo Processed, No EndOfList!");
+		DumpFifo(0, (u32*)FIFO_BUFF, (FifoPos>FifoSize)? ((FifoPos>FIFO_SIZE) ? FIFO_SIZE : FifoPos) : FifoSize );
 	}
 
 	// Check to make sure we didn't end on start of 64B list, (shouldn't be possible!)
 	ASSERT_T((FifoPos>FifoSize),"FiFo Pos>Size!");
 
-//	lprintf("FifoSize: %X  Pos: %X\n", FifoSize, FifoPos);
+	lprintf("FifoSize: %X  Pos: %X\n", FifoSize, FifoPos);
 
 	// Once EndOfList is processed, do not process the rest !
 	if((FifoSize-FifoPos) > 0)
@@ -142,12 +149,17 @@ void ProcessFifo()
 		FifoSize = 0;
 	}
 
-//	lprintf("FifoSize: %X \n", FifoSize);
+	lprintf("FifoSize: %X \n", FifoSize);
 }
 
 void TaFifo(u32 address, u32* data, u32 size)
 {
-	if(SZ_2MB > (FifoSize+(size<<5)))
+#ifdef DEBUG_LIB	// _DEBUG
+	if(0==FifoSize)
+		memset(FIFO_BUFF, 0x00, FIFO_SIZE);
+#endif
+
+	if(FIFO_SIZE > (FifoSize+(size<<5)))
 	{
 		memcpy(&FIFO_BUFF[FifoSize], data, (size<<5));
 		FifoSize += (size<<5);
@@ -155,15 +167,49 @@ void TaFifo(u32 address, u32* data, u32 size)
 	else
 	{
 		ASSERT_T((1),"FIFO BUFFER OVERFLOW!");
+		lprintf("FIFO BUFFER OVERFLOW!\n");
 		FifoSize=0;
 	}
 	for(u32 i=0; i<size; i++)
 	{
 		if(PT_EndOfList == ((ParamBase*)data)[i].Base.pcw.ParaType)
 		{
-		//	lprintf("@@@@@@@@@@@@@ Processing Fifo: Size: %d @@@@@@@@@@@@@@@@@\n\n", FifoSize);
-			ProcessFifo();
-		//	lprintf("----------- finished processing fifo -------------\n\n");
+//#ifdef DEBUG_LIB
+			u32 * pshit = (u32*)&((ParamBase*)data)[i];
+
+			lprintf("EOL Bytes: %08X %08X %08X %08X\n\n", 
+				pshit[0], pshit[1], pshit[2], pshit[3]);
+
+			if(0==pshit[0] && 0==pshit[1] && 0==pshit[2] && 0==pshit[3])
+			{
+				lprintf("@@@@@@@@@@@@@ Processing Fifo: Size: %d @@@@@@@@@@@@@@@@@\n\n", FifoSize);
+				ProcessFifo();
+				lprintf("----------- finished processing fifo -------------\n\n");
+			}
+			else
+			{	
+
+			}
+		}
+	}
+
+scan:
+	// This is probably needed for some games ..
+	if(FifoSize > (FIFO_SIZE>>1))
+	{
+		lprintf("Scanning Fifo for EOL's !\n");
+
+		for(s32 fp=FifoSize-32; fp>0; fp-=32)
+		{
+			if(	0 == *(u32*)&FIFO_BUFF[fp+0] && 
+				0 == *(u32*)&FIFO_BUFF[fp+4] && 
+				0 == *(u32*)&FIFO_BUFF[fp+8] && 
+				0 == *(u32*)&FIFO_BUFF[fp+12] )
+			{
+				lprintf("Processing Fifo after Write !\n");
+				ProcessFifo();
+				goto scan;
+			}
 		}
 	}
 }
@@ -238,18 +284,34 @@ __forceinline static u8 NFloat2UB(float NCF)
 
 /////////// *TEMP* *FIXME* //////////
 
-u32 opos=0;
-u32 nOpqStrips=0;
-u8 opq[SZ_2MB];
+u8 opq[SZ_2MB], trs[SZ_2MB], ptu[SZ_2MB];
+
+u32 opos=0, tpos=0, ppos=0;
+u32 nOpqStrips=0, nTrsStrips=0, nPtuStrips=0;
 
 //__inline static
 u8 * GetVBufferPtr(u32 which, u32 *pBytesLeft)	// which buffer, bytes left in buffer
 {
-	if(1==which)
+	switch(which)
 	{
+	case LT_Opaque:
 		*pBytesLeft = (SZ_2MB-opos);
 		return &opq[opos];
+
+	case LT_Translucent:
+		*pBytesLeft = (SZ_2MB-tpos);
+		return &trs[tpos];
+
+	case LT_PunchThrough:
+		*pBytesLeft = (SZ_2MB-ppos);
+		return &ptu[ppos];
+
+//	case LT_OpaqueMod:
+//	case LT_TransMod:
+//	case LT_Reserved:
+	default: break;
 	}
+
 	*pBytesLeft=0;
 	return NULL;
 }
@@ -257,9 +319,16 @@ u8 * GetVBufferPtr(u32 which, u32 *pBytesLeft)	// which buffer, bytes left in bu
 //__inline static
 u32 UpdateVBuffer(u32 which, u32 written)	
 {
-	if(1==which)
-		return SZ_2MB - (opos += written) ;
-	
+	switch(which)
+	{
+	case LT_Opaque:			return SZ_2MB - (opos += written) ;
+	case LT_Translucent:	return SZ_2MB - (tpos += written) ;
+	case LT_PunchThrough:	return SZ_2MB - (ppos += written) ;
+//	case LT_OpaqueMod:
+//	case LT_TransMod:
+//	case LT_Reserved:
+	default: break;
+	}
 	return 0;
 }
 
@@ -271,8 +340,10 @@ u32 UpdateVBuffer(u32 which, u32 written)
 void ClearDCache()
 {
 	FifoSize = 0;
-
 	nOpqStrips = opos = 0;
+	nTrsStrips = tpos = 0;
+	nPtuStrips = ppos = 0;
+	GlobalParams.clear();
 }
 
 
@@ -358,13 +429,12 @@ S_INLINE void DecodeStrip3(u32 idx, u8 * pVB, VertexParam *vp)
 
 		((Vertex*)pVB)->List[idx].uv[0] = vp->vtx3.u;
 		((Vertex*)pVB)->List[idx].uv[1] = vp->vtx3.v;
-
-		((Vertex*)pVB)->List[idx].col = vp->vtx3.BaseCol;
-
 		((Vertex*)pVB)->List[idx].uv[2] =  ((float)0.f);
 		((Vertex*)pVB)->List[idx].uv[3] =  ((Vertex*)pVB)->List[idx].xyz[2];
 		((Vertex*)pVB)->List[idx].uv[0] *= ((Vertex*)pVB)->List[idx].xyz[2];
 		((Vertex*)pVB)->List[idx].uv[1] *= ((Vertex*)pVB)->List[idx].xyz[2];
+
+		((Vertex*)pVB)->List[idx].col = vp->vtx3.BaseCol;
 	}
 }
 
@@ -380,13 +450,12 @@ S_INLINE void DecodeStrip4(u32 idx, u8 * pVB, VertexParam *vp)
 
 		((Vertex*)pVB)->List[idx].uv[0] = f16(vp->vtx4.u);
 		((Vertex*)pVB)->List[idx].uv[1] = f16(vp->vtx4.v);
-
-		((Vertex*)pVB)->List[idx].col = vp->vtx4.BaseCol;
-
 		((Vertex*)pVB)->List[idx].uv[2] =  ((float)0.f);
 		((Vertex*)pVB)->List[idx].uv[3] =  ((Vertex*)pVB)->List[idx].xyz[2];
 		((Vertex*)pVB)->List[idx].uv[0] *= ((Vertex*)pVB)->List[idx].xyz[2];
 		((Vertex*)pVB)->List[idx].uv[1] *= ((Vertex*)pVB)->List[idx].xyz[2];
+
+		((Vertex*)pVB)->List[idx].col = vp->vtx4.BaseCol;
 	}
 }
 
@@ -402,17 +471,15 @@ S_INLINE void DecodeStrip5(u32 idx, u8 * pVB, VertexParam *vp)
 
 		((Vertex*)pVB)->List[idx].uv[0] = vp->vtx5.u;
 		((Vertex*)pVB)->List[idx].uv[1] = vp->vtx5.v;
-
-		((Vertex*)pVB)->List[idx].col		=	NFloat2UB(vp->vtx5.BaseA) << 24;
-		((Vertex*)pVB)->List[idx].col		|=	NFloat2UB(vp->vtx5.BaseR) << 0;
-		((Vertex*)pVB)->List[idx].col		|=	NFloat2UB(vp->vtx5.BaseG) << 8;
-		((Vertex*)pVB)->List[idx].col		|=	NFloat2UB(vp->vtx5.BaseB) << 16;
-
 		((Vertex*)pVB)->List[idx].uv[2] =  ((float)0.f);
 		((Vertex*)pVB)->List[idx].uv[3] =  ((Vertex*)pVB)->List[idx].xyz[2];
 		((Vertex*)pVB)->List[idx].uv[0] *= ((Vertex*)pVB)->List[idx].xyz[2];
 		((Vertex*)pVB)->List[idx].uv[1] *= ((Vertex*)pVB)->List[idx].xyz[2];
 
+		((Vertex*)pVB)->List[idx].col		=	NFloat2UB(vp->vtx5.BaseA) << 24;
+		((Vertex*)pVB)->List[idx].col		|=	NFloat2UB(vp->vtx5.BaseR) << 0;
+		((Vertex*)pVB)->List[idx].col		|=	NFloat2UB(vp->vtx5.BaseG) << 8;
+		((Vertex*)pVB)->List[idx].col		|=	NFloat2UB(vp->vtx5.BaseB) << 16;
 	}
 }
 
@@ -428,16 +495,15 @@ S_INLINE void DecodeStrip6(u32 idx, u8 * pVB, VertexParam *vp)
 
 		((Vertex*)pVB)->List[idx].uv[0] = f16(vp->vtx6.u);
 		((Vertex*)pVB)->List[idx].uv[1] = f16(vp->vtx6.v);
+		((Vertex*)pVB)->List[idx].uv[2] =  ((float)0.f);
+		((Vertex*)pVB)->List[idx].uv[3] =  ((Vertex*)pVB)->List[idx].xyz[2];
+		((Vertex*)pVB)->List[idx].uv[0] *= ((Vertex*)pVB)->List[idx].xyz[2];
+		((Vertex*)pVB)->List[idx].uv[1] *= ((Vertex*)pVB)->List[idx].xyz[2];
 
 		((Vertex*)pVB)->List[idx].col		=	NFloat2UB(vp->vtx6.BaseA) << 24;
 		((Vertex*)pVB)->List[idx].col		|=	NFloat2UB(vp->vtx6.BaseR) << 0;
 		((Vertex*)pVB)->List[idx].col		|=	NFloat2UB(vp->vtx6.BaseG) << 8;
 		((Vertex*)pVB)->List[idx].col		|=	NFloat2UB(vp->vtx6.BaseB) << 16;
-
-		((Vertex*)pVB)->List[idx].uv[2] =  ((float)0.f);
-		((Vertex*)pVB)->List[idx].uv[3] =  ((Vertex*)pVB)->List[idx].xyz[2];
-		((Vertex*)pVB)->List[idx].uv[0] *= ((Vertex*)pVB)->List[idx].xyz[2];
-		((Vertex*)pVB)->List[idx].uv[1] *= ((Vertex*)pVB)->List[idx].xyz[2];
 	}
 }
 
@@ -453,14 +519,13 @@ S_INLINE void DecodeStrip7(u32 idx, u8 * pVB, VertexParam *vp)
 
 		((Vertex*)pVB)->List[idx].uv[0] = vp->vtx7.u;
 		((Vertex*)pVB)->List[idx].uv[1] = vp->vtx7.v;
-
-		u8 tcol							= NFloat2UB(vp->vtx7.BaseInt);
-		((Vertex*)pVB)->List[idx].col	= tcol | tcol<<8 | tcol<<16 | tcol<<24 ;
-
 		((Vertex*)pVB)->List[idx].uv[2] =  ((float)0.f);
 		((Vertex*)pVB)->List[idx].uv[3] =  ((Vertex*)pVB)->List[idx].xyz[2];
 		((Vertex*)pVB)->List[idx].uv[0] *= ((Vertex*)pVB)->List[idx].xyz[2];
 		((Vertex*)pVB)->List[idx].uv[1] *= ((Vertex*)pVB)->List[idx].xyz[2];
+
+		u8 tcol							= NFloat2UB(vp->vtx7.BaseInt);
+		((Vertex*)pVB)->List[idx].col	= tcol | tcol<<8 | tcol<<16 | tcol<<24 ;
 	}
 }
 
@@ -476,14 +541,13 @@ S_INLINE void DecodeStrip8(u32 idx, u8 * pVB, VertexParam *vp)
 
 		((Vertex*)pVB)->List[idx].uv[0] = f16(vp->vtx8.u);
 		((Vertex*)pVB)->List[idx].uv[1] = f16(vp->vtx8.v);
-
-		u8 tcol							= NFloat2UB(vp->vtx8.BaseInt);
-		((Vertex*)pVB)->List[idx].col	= tcol | tcol<<8 | tcol<<16 | tcol<<24 ;
-
 		((Vertex*)pVB)->List[idx].uv[2] =  ((float)0.f);
 		((Vertex*)pVB)->List[idx].uv[3] =  ((Vertex*)pVB)->List[idx].xyz[2];
 		((Vertex*)pVB)->List[idx].uv[0] *= ((Vertex*)pVB)->List[idx].xyz[2];
 		((Vertex*)pVB)->List[idx].uv[1] *= ((Vertex*)pVB)->List[idx].xyz[2];
+
+		u8 tcol							= NFloat2UB(vp->vtx8.BaseInt);
+		((Vertex*)pVB)->List[idx].col	= tcol | tcol<<8 | tcol<<16 | tcol<<24 ;
 	}
 }
 
@@ -538,13 +602,12 @@ S_INLINE void DecodeStripB(u32 idx, u8 * pVB, VertexParam *vp)
 
 		((Vertex*)pVB)->List[idx].uv[0] = vp->vtx11.u0;
 		((Vertex*)pVB)->List[idx].uv[1] = vp->vtx11.v0;
-
-		((Vertex*)pVB)->List[idx].col = vp->vtx11.BaseCol0;
-
 		((Vertex*)pVB)->List[idx].uv[2] =  ((float)0.f);
 		((Vertex*)pVB)->List[idx].uv[3] =  ((Vertex*)pVB)->List[idx].xyz[2];
 		((Vertex*)pVB)->List[idx].uv[0] *= ((Vertex*)pVB)->List[idx].xyz[2];
 		((Vertex*)pVB)->List[idx].uv[1] *= ((Vertex*)pVB)->List[idx].xyz[2];
+
+		((Vertex*)pVB)->List[idx].col = vp->vtx11.BaseCol0;
 	}
 }
 
@@ -579,14 +642,13 @@ S_INLINE void DecodeStripD(u32 idx, u8 * pVB, VertexParam *vp)
 
 		((Vertex*)pVB)->List[idx].uv[0] = vp->vtx13.u0;
 		((Vertex*)pVB)->List[idx].uv[1] = vp->vtx13.v0;
-
-		u8 tcol							= NFloat2UB(vp->vtx13.BaseInt0);
-		((Vertex*)pVB)->List[idx].col	= tcol | tcol<<8 | tcol<<16 | tcol<<24 ;
-
 		((Vertex*)pVB)->List[idx].uv[2] =  ((float)0.f);
 		((Vertex*)pVB)->List[idx].uv[3] =  ((Vertex*)pVB)->List[idx].xyz[2];
 		((Vertex*)pVB)->List[idx].uv[0] *= ((Vertex*)pVB)->List[idx].xyz[2];
 		((Vertex*)pVB)->List[idx].uv[1] *= ((Vertex*)pVB)->List[idx].xyz[2];
+
+		u8 tcol							= NFloat2UB(vp->vtx13.BaseInt0);
+		((Vertex*)pVB)->List[idx].col	= tcol | tcol<<8 | tcol<<16 | tcol<<24 ;
 	}
 }
 
@@ -600,16 +662,15 @@ S_INLINE void DecodeStripE(u32 idx, u8 * pVB, VertexParam *vp)
 		((Vertex*)pVB)->List[idx].xyz[1] = vp->vtx14.xyz[1];
 		((Vertex*)pVB)->List[idx].xyz[2] = (vp->vtx14.xyz[2]>1.f) ? vp->vtx14.xyz[2]/256.f : vp->vtx14.xyz[2];
 
-		((Vertex*)pVB)->List[idx].uv[0] = f16(vp->vtx14.u0);
-		((Vertex*)pVB)->List[idx].uv[1] = f16(vp->vtx14.v0);
-
-		u8 tcol							= NFloat2UB(vp->vtx14.BaseInt0);
-		((Vertex*)pVB)->List[idx].col	= tcol | tcol<<8 | tcol<<16 | tcol<<24 ;
-
+		((Vertex*)pVB)->List[idx].uv[0] =  f16(vp->vtx14.u0);
+		((Vertex*)pVB)->List[idx].uv[1] =  f16(vp->vtx14.v0);
 		((Vertex*)pVB)->List[idx].uv[2] =  ((float)0.f);
 		((Vertex*)pVB)->List[idx].uv[3] =  ((Vertex*)pVB)->List[idx].xyz[2];
 		((Vertex*)pVB)->List[idx].uv[0] *= ((Vertex*)pVB)->List[idx].xyz[2];
 		((Vertex*)pVB)->List[idx].uv[1] *= ((Vertex*)pVB)->List[idx].xyz[2];
+
+		u8 tcol							= NFloat2UB(vp->vtx14.BaseInt0);
+		((Vertex*)pVB)->List[idx].col	= tcol | tcol<<8 | tcol<<16 | tcol<<24 ;
 	}
 }
 
@@ -617,34 +678,47 @@ S_INLINE void DecodeStripE(u32 idx, u8 * pVB, VertexParam *vp)
 
 
 // *FIXME* shouldn't really need both idx and retsize but for now ....
-#define LoopAndDecodeVerts(DecoderFunction)				\
-	u32 idx=0;											\
-	u32 retsize = 0;									\
-	u32 BytesRemain = 0;								\
-	VertexParam* ovp= vp;								\
-	u8 * pVBuf = GetVBufferPtr(1,&BytesRemain);			\
+//	vp->pcw.ListType should be the same for all ... 
+#define LoopAndDecodeVerts(DecoderFunction)								\
+	u32 idx=0;															\
+	u32 retsize = 0;													\
+	u32 BytesRemain = 0;												\
+	u32 ListType = vp->pcw.ListType;									\
+	VertexParam* ovp= vp;												\
+	u8 * pVBuf = GetVBufferPtr(vp->pcw.ListType,&BytesRemain);			\
 	ParamSize VSize = isVert64Byte((PCW*)&pp->pcw) ? (PS64) : (PS32);	\
-	do													\
-	{													\
-		vp = (VertexParam*)((u32)ovp + retsize*32);		\
-														\
-		/* Push it on list*/							\
-		DecoderFunction(idx, pVBuf, (VertexParam*)vp);	\
-														\
-		idx++;											\
-		retsize += VSize;								\
-														\
-	} while(!vp->pcw.EndOfStrip && 6>idx);				\
-														\
-	nOpqStrips++;										\
-	if(idx>6) { idx=5; }								\
+	do																	\
+	{																	\
+		vp = (VertexParam*)((u32)ovp + retsize*32);						\
+		ASSERT_F((ListType == vp->pcw.ListType),"Loop&Decode LT BAD!");	\
+																		\
+		/* Push it on list*/											\
+		DecoderFunction(idx, pVBuf, (VertexParam*)vp);					\
+																		\
+		idx++;															\
+		retsize += VSize;												\
+																		\
+	} while(!vp->pcw.EndOfStrip && 6>idx);								\
+																		\
+	if(idx>6) { idx=5; }												\
 	((Vertex*)pVBuf)->Size = idx;										\
 	((Vertex*)pVBuf)->TexID = (u32)PvrIf::TCache.GetTexture(pp);		\
 	((Vertex*)pVBuf)->ParamID = (u32)(GlobalParams.size()-1);			\
-	UpdateVBuffer(1, sizeof(Vertex));									\
+																		\
+	switch(ListType) {													\
+	case LT_Opaque:			nOpqStrips++;	break;						\
+	case LT_Translucent:	nTrsStrips++;	break;						\
+	case LT_PunchThrough:	nPtuStrips++;	break;						\
+	case LT_OpaqueMod:		__noop;			break;						\
+	case LT_TransMod:		__noop;			break;						\
+	default: ASSERT_F((0),"LoopAndDecode: ListType default !");	break;	\
+	}																	\
+	UpdateVBuffer(ListType, sizeof(Vertex));							\
 	return (retsize*32)
 
 
+//	if(!(ListType == vp->pcw.ListType))								
+//		break;														
 /*
 **	Note: remember to use color in third vertex for bump/flat shading 
 */
@@ -1633,6 +1707,11 @@ int PrimConverter::AppendSprite(VertexParam *vp)
 
 
 
+#endif // use old code
+
+
+
+
 
 
 	/*
@@ -1678,9 +1757,4 @@ void DumpFifo(u32 address, u32* data, u32 size)
 	}
 	fclose(f);
 }
-
-
-
-
-#endif // use old code
 

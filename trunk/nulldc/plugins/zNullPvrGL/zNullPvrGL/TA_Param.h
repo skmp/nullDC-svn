@@ -659,9 +659,8 @@ struct Vertex
 };
 
 
-extern u32 nOpqStrips;
-extern u8 opq[SZ_2MB];
-
+extern u32 nOpqStrips, nTrsStrips, nPtuStrips;
+extern u8 opq[SZ_2MB], trs[SZ_2MB], ptu[SZ_2MB];
 
 void FlushFifo();
 void ClearTCache();
