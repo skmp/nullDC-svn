@@ -478,14 +478,15 @@ void d1111_nnnn_1001_1101(char* text,const char* tx1,u32 pc,u16 opcode)
 //flds <FREG_N>,FPUL
 void d1111_nnnn_0001_1101(char* text,const char* tx1,u32 pc,u16 opcode)
 {
-	if (Get_fpscr().PR==0)
+	//if (Get_fpscr().PR==0)
 	{
 		OpDissCFS(text,"flds <FREG_N>,FPUL",pc,opcode);
 	}
+	/*
 	else
 	{
 		OpDissCFS(text,"flds <DFREG_N>,FPUL",pc,opcode);
-	}
+	}*/
 }
 //float FPUL,<FREG_N>
 void d1111_nnnn_0010_1101(char* text,const char* tx1,u32 pc,u16 opcode)
@@ -542,14 +543,15 @@ void d1111_nnnn_0011_1101(char* text,const char* tx1,u32 pc,u16 opcode)
 //fsts FPUL,<FREG_N>
 void d1111_nnnn_0000_1101(char* text,const char* tx1,u32 pc,u16 opcode)
 {
+	/*
 	if (Get_fpscr().PR==0)
-	{
+	{*/
 		OpDissCFS(text,"fsts FPUL,<FREG_N>",pc,opcode);
-	}
+	/*}
 	else
 	{
 		OpDissCFS(text,"fsts FPUL,<DFREG_N>",pc,opcode);
-	}
+	}*/
 }
 //ftrv xmtrx,<FV_N>
 void OpDissftrv(char* text,const char* tx1,u32 pc,u16 opcode)
@@ -826,7 +828,7 @@ sh4_opcodelistentry opcodes[]=
 	
 	//HLE ops
 	{0								,gdrom_hle_op			,Mask_none	,GDROM_OPCODE,ReadWritePC	,dissasm_GDROM},
-	{rec_shil_sh4_bpt_op					,sh4_bpt_op				,Mask_none	,BPT_OPCODE	 ,ReadWritePC	,dissasm_Break},
+	{rec_shil_sh4_bpt_op			,sh4_bpt_op				,Mask_none	,BPT_OPCODE	 ,ReadWritePC	,dissasm_Break},
 
 	//end of list
 	{0,0,0,0,ReadWritePC}//Branch in order to stop the block and save pc ect :)
@@ -961,5 +963,4 @@ void* GenerateAsm(u32 AndValue,u32 s_v,u32 Table)
 	asm_p=(u8*)(((u32)asm_p&(~0xF)) +0x10);
 	return ps;
 }
-
 */

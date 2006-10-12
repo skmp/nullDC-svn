@@ -86,7 +86,7 @@ void maple_vblank()
 		else
 		{
 			printf("DDT vblank\n");
-			//DoMapleDma();
+			DoMapleDma();
 			if ((SB_MSYS>>12)&1)
 			{
 				maple_ddt_pending_reset=true;
@@ -170,6 +170,8 @@ u32 GetConnectedDevices(u32 Port)
 u32 dmacount=0;
 void DoMapleDma()
 {
+	if ((SB_MDEN &1)==0)
+		return;
 #if debug_maple
 	printf("Maple :DoMapleDma\n");
 #endif

@@ -169,12 +169,10 @@ sh4op(i1111_nnnn_mmmm_0011)
 	{
 		u32 n = GetN(op);
 		u32 m = GetM(op);
-		//if(0==fr[m])
-			//printf("\n\n\tDIV by ZERO!\n\n"); // ifdef _DEBUG ?
-		//else
-			fr[n] /= fr[m];
-		//fr[n] /= fr[m];
-			CHECK_FPU_32(fr[n]);
+		
+		fr[n] /= fr[m];
+		
+		CHECK_FPU_32(fr[n]);
 	}
 	else
 	{
@@ -556,7 +554,7 @@ sh4op(i1111_nnmm_1110_1101)
 		fr[n+3]=idp;
 	}
 	else
-		printf("FIPR Precision=1");
+		iNimp("FIPR Precision=1");
 
 	/*
 	u32 n = (op >> 8) & 0xC;
@@ -629,14 +627,23 @@ sh4op(i1111_nnnn_1001_1101)
 sh4op(i1111_nnnn_0001_1101)
 {
 	//iNimp("flds <FREG_N>,FPUL");
-	if (fpscr.PR != 0)
-		iNimp("flds <DREG_N>,FPUL");
+	/*if (fpscr.PR != 0)
+		iNimp("flds <DREG_N>,FPUL");*/
 
 	u32 n = GetN(op);
 
 	fpul = fr_hex[n];
 }
+//fsts FPUL,<FREG_N>       
+sh4op(i1111_nnnn_0000_1101)
+{
+	//iNimp("fsts FPUL,<FREG_N>");
+	/*if (fpscr.PR != 0)
+		iNimp("fsts FPUL,<DREG_N>");*/
 
+	u32 n = GetN(op);
+	fr_hex[n] = fpul;
+}
 
 //float FPUL,<FREG_N>      
 sh4op(i1111_nnnn_0010_1101)
@@ -706,7 +713,7 @@ sh4op(i1111_nnnn_0110_1101)
 		START64();
 		SetDR(n,sqrt(GetDR(n)));
 		//CHECK_FPU_32(fr[n]);
-		iNimp("fsqrt <DREG_N>");
+		//iNimp("fsqrt <DREG_N>");
 		END64();
 	}
 }
@@ -730,16 +737,6 @@ sh4op(i1111_nnnn_0011_1101)
 }
 
 
-//fsts FPUL,<FREG_N>       
-sh4op(i1111_nnnn_0000_1101)
-{
-	//iNimp("fsts FPUL,<FREG_N>");
-	if (fpscr.PR != 0)
-		iNimp("fsts FPUL,<DREG_N>");
-
-	u32 n = GetN(op);
-	fr_hex[n] = fpul;
-}
 
 
 //fmac <FREG_0>,<FREG_M>,<FREG_N> 

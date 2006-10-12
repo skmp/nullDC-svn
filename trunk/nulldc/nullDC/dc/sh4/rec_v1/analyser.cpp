@@ -42,7 +42,6 @@ void plSubCycles(u32 cycles)
 			execution_groop_busy[i]-=cycles;
 			if (execution_groop_busy[i]<0)
 				execution_groop_busy[i]=0;
-
 		}
 	}
 }

@@ -910,6 +910,8 @@ bool gdb_stub_exept_filter(int info,int trp)
 	if (!bgdb_active)
 		return false;
 
+	printf("gdb_stub_exept_filter()\n");
+
 	//edit pc if needed
 	//call gdb_handle_exception
 	if (info==0x160)
@@ -968,14 +970,14 @@ void StartGDBSession()
 
     service.sin_family = AF_INET;
     service.sin_addr.s_addr = inet_addr( "127.0.0.1" );
-    service.sin_port = htons( 4222 );
+    service.sin_port = htons( 2491 );
 
     if ( bind( m_socket, (SOCKADDR*) &service, sizeof(service) ) == SOCKET_ERROR ) {
         printf( "bind() failed.\n" );
         closesocket(m_socket);
         return;
     }
-    
+     
     // Listen on the socket.
     if ( listen( m_socket, 1 ) == SOCKET_ERROR )
         printf( "Error listening on socket.\n");
@@ -983,7 +985,7 @@ void StartGDBSession()
     // Accept connections.
     SOCKET AcceptSocket;
 
-    printf( "Waiting for a client to connect...\n" );
+    printf( "Waiting for a client to connect... at port %d\n",htons( service.sin_port)  );
     while (b_waitforgdb_connection) {
         AcceptSocket = (SOCKET)SOCKET_ERROR;
         while ( AcceptSocket == (SOCKET)SOCKET_ERROR ) {
