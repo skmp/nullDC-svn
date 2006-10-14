@@ -648,6 +648,31 @@ void TermBlockManager()
 	ResetBlocks();
 }
 
+void DumpBlockMappings()
+{
+	FILE* out=fopen("C:\\blk.txt","wb");
+	printf("nullDC block manager stats : tracing %d blocks\n",all_block_list.ItemCount);
+
+	for (int i=0;i<all_block_list.ItemCount;i++)
+	{
+		fprintf(out,"block :0x%08X\t[%d]\n{\n",all_block_list[i]->start,i);
+		{
+			fprintf(out,"\tCode         : 0x%p\n",all_block_list[i]->Code);
+			fprintf(out,"\tLookup count : %d\n",all_block_list[i]->lookups);
+			fprintf(out,"\tSh4 size     : %d\n",all_block_list[i]->Size());
+			fprintf(out,"\tx86 size     : %d\n",all_block_list[i]->size);
+			
+			if (all_block_list[i]->GetBB()->TF_next_addr!=0xFFFFFFFF)
+				fprintf(out,"\tLink 1 : 0x%08X\t[%d]\n",all_block_list[i]->GetBB()->TF_next_addr,i);
+
+			if (all_block_list[i]->GetBB()->TT_next_addr!=0xFFFFFFFF)
+				fprintf(out,"\tLink 2 : 0x%08X\t[%d]\n",all_block_list[i]->GetBB()->TT_next_addr,i);
+
+			fprintf(out,"}\n");
+		}
+	}
+	fclose(out);
+}
 ///////////////////////////////////////////////
 //			nullProf implementation			 //
 ///////////////////////////////////////////////

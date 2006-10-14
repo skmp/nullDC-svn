@@ -29,10 +29,14 @@ void* EmitAlloc(u32 minsize)
 		return alloced_ptr; 
 	}*/
 }
-
+u32 total_size=0;
+u32 alloc_count=0;
 void EmitAllocSet(void * ptr,u32 usedsize)
 {
+	alloc_count+=1;
+	total_size+=usedsize;
 	realloc(ptr,usedsize);
+	printf("Used Mem : %d KB, %d bytes/alloc\n",total_size/1024,total_size/alloc_count);
 	/*alloced_free-=usedsize;
 	alloced_ptr+=usedsize;
 	u8* oldtr=alloced_ptr;
@@ -41,3 +45,31 @@ void EmitAllocSet(void * ptr,u32 usedsize)
 	if (alloced_free<0)
 		alloced_free=0;*/
 }
+
+//ok! let's see
+//Dynarec mem allocator
+//This is non portable code
+//Comited page size  : 4kb (x86)
+//Internal page size : 1kb
+/*
+	Memory is reserved using Virtual Alloc on init , but not commited.
+*/
+
+void recAllocInit()
+{
+}
+
+//start size is rounded up to 1kb
+//At least start_size continius bytes are allocated
+void recAllocCode(u32 start_size)
+{
+}
+
+//Ensure we have size bytes allocated.If not , we allocate another slice , and emit a jmp to it :)
+void recEnsureSize(u32 size)
+{
+}
+/*
+void rec
+
+*/
