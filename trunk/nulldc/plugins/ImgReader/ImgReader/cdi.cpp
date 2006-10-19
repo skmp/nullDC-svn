@@ -174,7 +174,8 @@ bool cdi_init(char* file)
 	pfctoc_mod=LoadLibrary("plugins\\pfctoc.dll");
 	if (pfctoc_mod==NULL)
 		pfctoc_mod=LoadLibrary("pfctoc.dll");
-	verify(pfctoc_mod!=NULL);
+	if(pfctoc_mod==NULL)
+		return false;
 
 	PfcFreeTocFP* PfcFreeToc=(PfcFreeTocFP*)GetProcAddress(pfctoc_mod,"PfcFreeToc");
 	PfcGetTocFP*  PfcGetToc=(PfcGetTocFP*)GetProcAddress(pfctoc_mod,"PfcGetToc");

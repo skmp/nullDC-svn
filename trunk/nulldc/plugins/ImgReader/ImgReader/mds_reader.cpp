@@ -32,7 +32,7 @@ int mds_mode(int mode)
 	if(mode>0xa9)
 		return mode - 0xa9;
 	printf("Unkown track mode %d , guessing audio ....\nPress Any Key To Continue\n",mode);
-	getchar();
+	//getchar();
 	return 0;
 }
 
@@ -45,7 +45,7 @@ int nrg_mode(int mode)
 	if(mode == 0x03) return 2;//mode2 form 1
 	if(mode == 0x06) return 2;
 	printf("Unkown track mode %d , guessing audio ....\nPress Any Key To Continue\n",mode);
-	getchar();
+	//getchar();
 	return 0;
 } 
 
@@ -260,6 +260,7 @@ bool parse_nrg(char*nrg_filename,bool verbose)
         else
 		{
             fprintf(stderr,"Invalid data in <%s>. It is not an NRG file.",nrg_filename);
+			return false;
 		}
 	}
     fseek(nrg_file,nrg_trailer_offset, SEEK_SET);

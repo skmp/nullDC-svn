@@ -81,11 +81,11 @@ void maple_vblank()
 	{
 		if (maple_ddt_pending_reset)
 		{
-			printf("DDT vblank ; reset pending\n");
+			//printf("DDT vblank ; reset pending\n");
 		}
 		else
 		{
-			printf("DDT vblank\n");
+			//printf("DDT vblank\n");
 			DoMapleDma();
 			if ((SB_MSYS>>12)&1)
 			{

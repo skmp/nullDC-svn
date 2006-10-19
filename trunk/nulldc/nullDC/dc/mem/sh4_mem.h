@@ -81,8 +81,26 @@ u8* GetMemPtr(u32 Addr,u32 size);
 
 //Get infomation about an area , eg ram /size /anything
 //For dynarec - needs to be done
-void GetMemInfo(u32 addr,u32 size);
+struct MemInfo
+{
+	//MemType:
+	//Direct ptr   , just read/write to the ptr
+	//Direct call  , just call for read , ecx=data on write (no address)
+	//Generic call , ecx=addr , call for read , edx=data for write
+	u32 MemType;		
+	
+	//todo
+	u32 Flags;
+
+	void* read_ptr;
+	void* write_ptr;
+};
+
+void GetMemInfo(u32 addr,u32 size,MemInfo* meminfo);
+
 bool IsOnRam(u32 addr);
+
+
 u32 __fastcall GetRamPageFromAddress(u32 RamAddress);
 
 #define 	ReadMemArrRet(arr,addr,sz)				\

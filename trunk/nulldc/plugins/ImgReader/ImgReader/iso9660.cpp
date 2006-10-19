@@ -17,6 +17,7 @@ void rss(u8* buff,u32 ss,FILE* file)
 }
 void iso_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 {
+	/*
 	if (f_1==0)
 	{
 		f_1 = fopen("D:/thps/45000to63139.bin","rb");
@@ -57,7 +58,7 @@ void iso_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 			printf("Unable to read %d\n",StartSector+i); 
 			buff+=2048;
 		}
-	}
+	}*/
 	/*
 	if (StartSector>=45000)
 	{

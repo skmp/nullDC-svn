@@ -33,10 +33,10 @@ u32 total_size=0;
 u32 alloc_count=0;
 void EmitAllocSet(void * ptr,u32 usedsize)
 {
-	alloc_count+=1;
-	total_size+=usedsize;
+	//alloc_count+=1;
+	//total_size+=usedsize;
 	realloc(ptr,usedsize);
-	printf("Used Mem : %d KB, %d bytes/alloc\n",total_size/1024,total_size/alloc_count);
+	//printf("Used Mem : %d KB, %d bytes/alloc\n",total_size/1024,total_size/alloc_count);
 	/*alloced_free-=usedsize;
 	alloced_ptr+=usedsize;
 	u8* oldtr=alloced_ptr;

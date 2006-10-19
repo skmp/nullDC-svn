@@ -12,7 +12,7 @@ u32 vblk_cnt=0;
 u32 last_fps=0;
 u8 VblankInfo()
 {
-	u32 data = SPG_VBLANK_INT;
+	u32 data = SPG_VBLANK;
 	if (data==0)
 		return 0;
 	if (((data & 0x3FFF) <= prv_cur_scanline) || (((data >> 16) & 0x3FFF) <= prv_cur_scanline))

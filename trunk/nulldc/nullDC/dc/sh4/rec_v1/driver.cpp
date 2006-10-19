@@ -212,6 +212,35 @@ u32 THREADCALL rec_sh4_int_ThreadEntry_normal(void* ptar)
 }
 
 //asm version
+#define LOOKUP_HASH_SIZE	0x4000
+#define LOOKUP_HASH_MASK	(LOOKUP_HASH_SIZE-1)
+extern CompiledBlockInfo*			BlockLookupGuess[LOOKUP_HASH_SIZE];
+
+/*
+	block:
+	entry:
+	...
+
+	exit :
+	sub [rec_cycles],value
+	jo forced_exit;
+	normal exit code ..
+	forced_exit:
+	exit that needs update code ..
+
+	//boo
+	mainloop :
+	lookup pc;
+	jmp lookup;
+
+	DoUpdate:
+	mov eax,[rec_cycles]
+	neg eax,
+	add eax,const
+	call update
+	jmp mainloop;
+*/
+
 u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 {
 	//just cast it
@@ -232,6 +261,35 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 		//we can freely use eax,ecx,edx,esi,edi,ebp,ebx here:p
 main_loop:
 
+/*
+		//fastblock=BlockLookupGuess[GetLookupHash(address)];
+		mov ecx,pc;
+		mov edx,ecx;
+		and ecx,(LOOKUP_HASH_MASK<<2);
+		mov eax,[ecx + BlockLookupGuess];
+		//edx = pc
+		//eax = block ptr
+		//ecx=hash
+
+		//if ((fastblock->start==address) && 
+		//(fastblock->cpu_mode_tag ==fpscr.PR_SZ)
+		//)
+		//{
+		cmp edx,[eax]
+		jne full_lookup;
+		inc [eax+100];
+		call [eax+10]
+		
+		//fastblock->lookups++;
+		//return fastblock->Code;
+		//}
+		//else
+		//{
+		//return FindCode_full(address,fastblock);
+		//}
+		
+*/
+		//no inline version (slower)
 		mov ecx, pc;
 		call GetRecompiledCodePointer;
 
@@ -241,7 +299,7 @@ main_loop:
 		//if (rec_cycles>(CPU_TIMESLICE*9/10))
 		cmp rec_cycles,(CPU_TIMESLICE*9/10);
 		//if no update needed , goto jump to main loop
-		jl outer_loop;
+		jb main_loop;
 		
 		//Update is needed
 		//param #1
@@ -250,69 +308,20 @@ main_loop:
 		mov rec_cycles,0;
 		//call update (fastcall , ecx=cycles)
 		call UpdateSystem;
-		//Is cpu stoped ? , if so exit from loop
-		cmp rec_sh4_int_bCpuRun,0;
-		je exit_function;
-		
-		//if not , goto main loop
-		jmp outer_loop;
 
-		//resture used regs
+		//Is cpu stoped ?
+		cmp rec_sh4_int_bCpuRun,0;
+		//if not , goto main loop
+		jne main_loop;
+		
+		//restore used regs
 exit_function:
 		pop ebp;
 		pop ebx;
 		pop edi;
 		pop esi;
 	}
-	/*
-	while(true)
-	{
-		BasicBlockEP* fp=GetRecompiledCodePointer(pc);
-		
-		//call block :)
-		__asm
-		{
-			push esi;
-			push edi
-			push ebx
-			push ebp
-			mov block_stack_pointer,esp;
-		}
-
-		fp();
-
-		__asm 
-		{
-			pop ebp
-			pop ebx
-			pop edi
-			pop esi;
-		}
-#ifdef PROFILE_DYNAREC
-		calls++;
-		if ((calls & (0x80000-1))==(0x80000-1))//more ?
-		{
-			//void PrintSortedBlocks(FILE* to,u32 count);
-			printf("Dynarec Stats : average link cycles : %d \n",(u32)(total_cycles/calls));
-			//PrintSortedBlocks(stdout,40);
-			//printf("Dynarec Stats : average link cycles : %d , ifb opcodes : %d%% [%d]\n",(u32)(total_cycles/calls),(u32)(ifb_calls*100/total_cycles),ifb_calls);
-			calls=total_cycles=0;//ifb_calls
-			//printprofile();
-		}
-#endif
-
-		if (rec_cycles>(CPU_TIMESLICE*9/10))
-		{
-			UpdateSystem(rec_cycles);
-#ifdef PROFILE_DYNAREC
-			total_cycles+=rec_cycles;
-#endif
-			if (rec_sh4_int_bCpuRun==false)
-				break;
-			rec_cycles=0;
-		}
-	}
-	*/
+	
 	ptr(false);//call the callback
 
 	return 0;
