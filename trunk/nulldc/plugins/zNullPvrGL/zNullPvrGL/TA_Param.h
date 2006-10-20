@@ -620,8 +620,7 @@ struct ParamBase
 		{
 			PCW pcw;
 			u8  Raw[32-4];
-
-		} Base;
+		};
 
 		u8 Full[32];
 	};
