@@ -3,7 +3,7 @@
 
 #define REG_ALLOC_COUNT (6)
 //xmm0 is reserved for math/temp
-x86SSERegType reg_to_alloc_xmm[7]=
+x86_sse_reg reg_to_alloc_xmm[7]=
 {
 	XMM1,
 	XMM2,
@@ -18,7 +18,7 @@ u32 alb=0;
 
 struct fprinfo
 {
-	x86SSERegType reg;
+	x86_sse_reg reg;
 	bool Loaded;
 	bool WritenBack;
 };
@@ -85,7 +85,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 
 
 
-	emitter<>* x86e;
+	x86_block* x86e;
 	fprinfo reginf[16];
 	
 
@@ -94,7 +94,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 		reg-=fr_0;
 		if (reg<16)
 		{
-			if (reginf[reg].reg!=XMM_Error)
+			if (reginf[reg].reg!=REG_ERROR)
 			{
 				return &reginf[reg];
 			}
@@ -113,7 +113,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 	//methods needed
 	//
 	//DoAllocation		: do allocation on the block
-	virtual void DoAllocation(BasicBlock* block,emitter<>* x86e)
+	virtual void DoAllocation(BasicBlock* block,x86_block* x86e)
 	{
 		SimpleSSERegAlloc_init();
 
@@ -126,7 +126,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 			used[i].cnt=0;
 			used[i].reg=r0+i;
 			used[i].no_load=false;
-			reginf[i].reg=XMM_Error;
+			reginf[i].reg=REG_ERROR;
 			reginf[i].Loaded=false;
 			reginf[i].WritenBack=false;
 		}
@@ -174,7 +174,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 			if (i)
 			{
 				alb++;
-				printf("Allocaded %d xmm regs, %d%%\n",i,alb*100/(alb+nalb));
+				//printf("Allocaded %d xmm regs, %d%%\n",i,alb*100/(alb+nalb));
 				//if (getchar()=='n')
 				//	memset(reginf,0xFF,sizeof(reginf));
 			}
@@ -212,7 +212,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 	}
 	//Carefull w/ register state , we may need to implement state push/pop
 	//GetRegister		: Get the register , needs flag for mode
-	virtual x86SSERegType GetRegister(x86SSERegType d_reg,u32 reg,u32 mode)
+	virtual x86_sse_reg GetRegister(x86_sse_reg d_reg,u32 reg,u32 mode)
 	{
 		ensure_valid(reg);
 		if (IsRegAllocated(reg))
@@ -222,7 +222,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 			{
 				if ((mode & RA_NODATA)==0)
 				{
-					x86e->SSE_MOVSS_M32_to_XMM(r1->reg,GetRegPtr(reg));
+					x86e->Emit(op_movss,r1->reg,GetRegPtr(reg));
 					r1->WritenBack=true;//data on reg is same w/ data on mem
 				}
 				else
@@ -235,7 +235,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 			if (mode & RA_FORCE)
 			{
 				if ((mode & RA_NODATA)==0)
-					x86e->SSE_MOVSS_XMM_to_XMM(d_reg,r1->reg);
+					x86e->Emit(op_movss,d_reg,r1->reg);
 				return d_reg;
 			}
 			else
@@ -247,14 +247,14 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 		else
 		{
 			if ((mode & RA_NODATA)==0)
-				x86e->SSE_MOVSS_M32_to_XMM(d_reg,GetRegPtr(reg));
+				x86e->Emit(op_movss,d_reg,GetRegPtr(reg));
 			return d_reg;
 		}
 //		__asm int 3;
 		//return XMM_Error;
 	}
 	//Save registers
-	virtual void SaveRegister(u32 reg,x86SSERegType from)
+	virtual void SaveRegister(u32 reg,x86_sse_reg from)
 	{
 		ensure_valid(reg);
 		if (IsRegAllocated(reg))
@@ -264,10 +264,10 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 			r1->WritenBack=false;
 			
 			if (r1->reg!=from)
-				x86e->SSE_MOVSS_XMM_to_XMM(r1->reg,from);
+				x86e->Emit(op_movss,r1->reg,from);
 		}
 		else
-			x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(reg),from);
+			x86e->Emit(op_movss,GetRegPtr(reg),from);
 	}
 	
 	virtual void SaveRegister(u32 reg,float* from)
@@ -278,12 +278,12 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 			fprinfo* r1=  GetInfo(reg);
 			r1->Loaded=true;
 			r1->WritenBack=false;
-			x86e->SSE_MOVSS_M32_to_XMM(r1->reg,(u32*)from);
+			x86e->Emit(op_movss,r1->reg,(u32*)from);
 		}
 		else
 		{
-			x86e->SSE_MOVSS_M32_to_XMM(XMM0,(u32*)from);
-			x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(reg),XMM0);
+			x86e->Emit(op_movss,XMM0,(u32*)from);
+			x86e->Emit(op_movss,GetRegPtr(reg),XMM0);
 		}
 	}
 	//FlushRegister		: write reg to reg location , and reload it on next use that needs reloading
@@ -296,7 +296,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 			ReloadRegister(reg);
 		}
 	}
-	virtual void FlushRegister_xmm(x86SSERegType reg)
+	virtual void FlushRegister_xmm(x86_sse_reg reg)
 	{
 		for (int i=0;i<16;i++)
 		{
@@ -323,7 +323,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 			{
 				if (r1->WritenBack==false)
 				{
-					x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(reg),r1->reg);
+					x86e->Emit(op_movss,GetRegPtr(reg),r1->reg);
 					r1->WritenBack=true;
 				}
 			}
@@ -339,49 +339,50 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 			r1->Loaded=false;
 		}
 	}
-	virtual void SaveRegisterGPR(u32 to,x86IntRegType from)
+	virtual void SaveRegisterGPR(u32 to,x86_gpr_reg from)
 	{
 		if (IsRegAllocated(to))
 		{
 			if (SimpleSSERegAlloc_sse2)
 			{
-				x86SSERegType freg=GetRegister(XMM0,to,RA_NODATA);
+				x86_sse_reg freg=GetRegister(XMM0,to,RA_NODATA);
 				assert(freg!=XMM0);
-				//
-				x86e->SSE2_MOVD_32R_to_XMM(freg,from);
+				//x86e->Emit(op_int3);
+				//x86e->SSE2_MOVD_32R_to_XMM(freg,from);
+				x86e->Emit(op_movd_xmm_from_r32,freg,from);
 			}
 			else
 			{
-				x86e->MOV32RtoM(GetRegPtr(to),from);
+				x86e->Emit(op_mov32,GetRegPtr(to),from);
 				ReloadRegister(to);
 			}
 		}
 		else
 		{
-			x86e->MOV32RtoM(GetRegPtr(to),from);
+			x86e->Emit(op_mov32,GetRegPtr(to),from);
 		}
 	}
-	virtual void LoadRegisterGPR(x86IntRegType to,u32 from)
+	virtual void LoadRegisterGPR(x86_gpr_reg to,u32 from)
 	{
 		if (IsRegAllocated(from))
 		{
 			fprinfo* r1=  GetInfo(from);
 			if ((SimpleSSERegAlloc_sse2==true) &&  (r1->Loaded==true) && (r1->WritenBack==false))
 			{
-				x86SSERegType freg=GetRegister(XMM0,to,RA_DEFAULT);
+				x86_sse_reg freg=GetRegister(XMM0,to,RA_DEFAULT);
 				assert(freg!=XMM0);
-				x86e->INT3();
-				x86e->SSE2_MOVD_XMM_to_32R(to,freg);
+				x86e->Emit(op_int3);
+				x86e->Emit(op_movd_xmm_to_r32,to,freg);
 			}
 			else
 			{
 				WriteBackRegister(from);
-				x86e->MOV32MtoR(to,GetRegPtr(from));
+				x86e->Emit(op_mov32,to,GetRegPtr(from));
 			}
 		}
 		else
 		{
-			x86e->MOV32MtoR(to,GetRegPtr(from));
+			x86e->Emit(op_mov32,to,GetRegPtr(from));
 		}
 	}
 };

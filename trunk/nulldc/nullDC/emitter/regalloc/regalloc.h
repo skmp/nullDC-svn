@@ -13,9 +13,9 @@
 class IntegerRegAllocator
 {
 	public :
-#define T x86IntRegType
+#define T x86_reg
 	//DoAllocation		: do allocation on the block
-	virtual void DoAllocation(BasicBlock* bb,emitter<>* x86e)=0;
+	virtual void DoAllocation(BasicBlock* bb,x86_block* x86e)=0;
 	//BeforeEmit		: generate any code needed before the main emittion begins (other register allocators may have emited code tho)
 	virtual void BeforeEmit()=0;
 	//BeforeTrail		: generate any code needed after the main emittion has ended (other register allocators may emit code after that tho)
@@ -50,9 +50,9 @@ class IntegerRegAllocator
 class FloatRegAllocator
 {
 public :
-#define T x86SSERegType
+#define T x86_sse_reg
 	//DoAllocation		: do allocation on the block
-	virtual void DoAllocation(BasicBlock* bb,emitter<>* x86e)=0;
+	virtual void DoAllocation(BasicBlock* bb,x86_block* x86e)=0;
 	//BeforeEmit		: generate any code needed before the main emittion begins (other register allocators may have emited code tho)
 	virtual void BeforeEmit()=0;
 	//BeforeTrail		: generate any code needed after the main emittion has ended (other register allocators may emit code after that tho)
@@ -75,9 +75,9 @@ public :
 	//ReloadRegister	: read reg from reg location , discard old result
 	virtual void ReloadRegister(u32 sh4_reg)=0;
 	virtual void SaveRegister(u32 to,float* from)=0;
-	virtual void FlushRegister_xmm(x86SSERegType reg)=0;
-	virtual void SaveRegisterGPR(u32 to,x86IntRegType from)=0;
-	virtual void LoadRegisterGPR(x86IntRegType to,u32 from)=0;
+	virtual void FlushRegister_xmm(x86_sse_reg reg)=0;
+	virtual void SaveRegisterGPR(u32 to,x86_reg from)=0;
+	virtual void LoadRegisterGPR(x86_reg to,u32 from)=0;
 #undef T
 };
 u32* GetRegPtr(u32 reg);

@@ -145,8 +145,13 @@
 #define MINOR_VER 1
 
 #define VER_STRING "pre release alpha"
+
+#define dbgbreak __asm {int 3}
+
 #define fastcall __fastcall
-#define verify(x) if((x)==false){ printf("Verify Failed  : " #x "\n in %s -> %s : %d \n",__FUNCTION__,__FILE__,__LINE__); __asm {int 3}}
+#define verify(x) if((x)==false){ printf("Verify Failed  : " #x "\n in %s -> %s : %d \n",__FUNCTION__,__FILE__,__LINE__); dbgbreak;}
+#define die(reason) { printf("Fatal error : %s\n in %s -> %s : %d \n",reason,__FUNCTION__,__FILE__,__LINE__); dbgbreak;}
+#define fverify verify
 
 //will be removed sometime soon
 //This shit needs to be moved to proper headers

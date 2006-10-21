@@ -83,7 +83,7 @@ u32 list_sz=(u32)block->ilst.opcodes.size();
 	case BLOCK_EXITTYPE_DYNAMIC:
 		{
 			fprintf(to,"//BLOCK_TYPE_DYNAMIC[CALL] \n");
-			//x86e->RET();
+			//x86e->Emit(op_ret);
 			break;
 		}
 
@@ -117,17 +117,17 @@ u32 list_sz=(u32)block->ilst.opcodes.size();
 				//If our cycle count is expired
 				//save the dest address to pc
 
-				//x86e->MOV32MtoR(EAX,&T_jcond_value);
+				//x86e->Emit(op_mov32,EAX,&T_jcond_value);
 				//x86e->TEST32ItoR(EAX,1);//test for T
 				//see witch pc to set
 
-				//x86e->MOV32ItoR(EAX,*TF_a);//==
+				//x86e->Emit(op_mov32,EAX,*TF_a);//==
 				//!=
 				//x86e->CMOVNE32MtoR(EAX,TT_a);//!=
-				//x86e->MOV32RtoM(GetRegPtr(reg_pc),EAX);
+				//x86e->Emit(op_mov32,GetRegPtr(reg_pc),EAX);
 
 				//save exit block 
-				//x86e->RET();//return to caller to check for interrupts
+				//x86e->Emit(op_ret);//return to caller to check for interrupts
 				fprintf(to,"//BLOCK_TYPE_COND_0/1 \n");
 				fprintf(to,"if (T_jcond_value==0) \n{ pc=0x%x}\n",*TF_a);
 				fprintf(to,"else \n{ pc=0x%x}\n",*TT_a);
@@ -141,9 +141,9 @@ u32 list_sz=(u32)block->ilst.opcodes.size();
 		{
 
 			//If our cycle count is expired
-			//x86e->MOV32ItoM(GetRegPtr(reg_pc),block->TF_next_addr);
+			//x86e->Emit(op_mov32,GetRegPtr(reg_pc),block->TF_next_addr);
 			//save exit block 
-			//x86e->RET();//return to caller to check for interrupts
+			//x86e->Emit(op_ret);//return to caller to check for interrupts
 			fprintf(to,"//BLOCK_TYPE_FIXED[CALL] \n");
 			fprintf(to,"pc=0x%x\n",block->TF_next_addr);
 		}

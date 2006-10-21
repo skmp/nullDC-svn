@@ -13,7 +13,7 @@
 FloatRegAllocator*		fra;
 IntegerRegAllocator*	ira;
 //TEMP!!!
-emitter<>* x86e;
+x86_block* x86e;
 shil_scs shil_compile_slow_settings=
 {
 	true,	//do Register allocation for x86
@@ -24,6 +24,42 @@ shil_scs shil_compile_slow_settings=
 	false	//Inline mem writes
 };
 
+x86_opcode_class SetCC[] =
+{
+	op_seto ,//r/m8 = 0F 90 /0
+	op_setno ,//r/m8 = 0F 91 /0
+	op_setb ,//r/m8 = 0F 92 /0
+	op_setae ,//r/m8 = 0F 93 /0
+	op_sete ,//r/m8 = 0F 94 /0
+	op_setnz ,//r/m8 = 0F 95 /0
+	op_setna ,//r/m8 = 0F 96 /0
+	op_seta ,//r/m8 = 0F 97 /0
+	op_sets ,//r/m8 = 0F 98 /0
+	op_setns ,//r/m8 = 0F 99 /0
+	op_setp ,//r/m8 = 0F 9A /0
+	op_setnp ,//r/m8 = 0F 9B /0
+	op_setl ,//r/m8 = 0F 9C /0
+	op_setge ,//r/m8 = 0F 9D /0
+	op_setle ,//r/m8 = 0F 9E /0
+	op_setg ,//r/m8 = 0F 9F /0
+	/*
+	op_SETBE r/m8 = 0F 96 /0
+	op_SETC r/m8 = 0F 92 /0
+
+	op_SETNAE r/m8 = 0F 92 /0
+	op_SETNB r/m8 = 0F 93 /0
+	op_SETNBE r/m8 = 0F 97 /0
+	op_SETNC r/m8 = 0F 93 /0
+	op_SETNE r/m8 = 0F 95 /0
+	op_SETNG r/m8 = 0F 9E /0
+	op_SETNGE r/m8 = 0F 9C /0
+	op_SETNL r/m8 = 0F 9D /0
+	op_SETNLE r/m8 = 0F 9F /0
+	op_SETPE r/m8 = 0F 9A /0
+	op_SETPO r/m8 = 0F 9B /0
+	op_SETZ r/m8 = 0F 94 /0
+	*/
+};
 cDllHandler profiler_dll;
 
 #define REG_ALLOC_COUNT			 (shil_compile_slow_settings.RegAllocCount)
@@ -55,7 +91,7 @@ int block_count=0;
 
 struct temporal_reg_cache_entry
 {
-	x86IntRegType reg;
+	x86_gpr_reg reg;
 	u32 am;		//0 == no alloc , 1 == spare reg , 2 == temporal cache , 3 == locked temporal cache
 
 	u32 creation_time;	//relative position on x86 stream that the reg was alloated 
@@ -71,7 +107,7 @@ temporal_reg_cache_entry trc [3]=
 	{EDX,0,0,0}
 };
 /*
-x86IntRegType GetTemporalRegCache(u32 sh4_reg)
+x86_gpr_reg GetTemporalRegCache(u32 sh4_reg)
 {
 	for (u32 i=0;i<3;i++)
 	{
@@ -85,7 +121,7 @@ x86IntRegType GetTemporalRegCache(u32 sh4_reg)
 	return GPR_Error;
 }
 
-x86IntRegType GetSpareReg()
+x86_gpr_reg GetSpareReg()
 {
 	for (u32 i=0;i<3;i++)
 	{
@@ -103,7 +139,7 @@ x86IntRegType GetSpareReg()
 			return temporal_reg_cache_entry[i].reg;
 		}
 	}
-	printf("dynarec :: x86IntRegType GetSpareReg() -> cant find spare reg");
+	printf("dynarec :: x86_gpr_reg GetSpareReg() -> cant find spare reg");
 	__asm int 3;
 	return GPR_Error;
 }
@@ -213,7 +249,7 @@ void c_Ensure32()
 //emit a call to c_Ensure32 
 bool Ensure32()
 {
-	x86e->CALLFunc(c_Ensure32);
+	x86e->Emit(op_call,x86_ptr_imm(c_Ensure32));
 	return true;
 }
 
@@ -260,7 +296,7 @@ void sse_RLF(u32 reg)
 
 //intel sugest not to use the ItoM forms for some reason .. speed diference isnt big .. < 1%
 //Macro :
-#define OP_MoRtR_ItR(_MtR_,_RtR_,_ItR_,_ItM_,_RtM_)	assert(FLAG_32==(op->flags & 3));\
+#define OP_MoRtR_ItR(op_cl)	assert(FLAG_32==(op->flags & 3));\
 	assert(0==(op->flags & (FLAG_IMM2)));\
 	assert(op->flags & FLAG_REG1);\
 	if (op->flags & FLAG_IMM1)\
@@ -268,16 +304,16 @@ void sse_RLF(u32 reg)
 		assert(0==(op->flags & FLAG_REG2));\
 		if (ira->IsRegAllocated(op->reg1))\
 		{\
-			x86IntRegType r1 = LoadReg(EAX,op->reg1);\
+			x86_gpr_reg r1 = LoadReg(EAX,op->reg1);\
 			assert(r1!=EAX);\
-			x86e-> _ItR_ (r1,op->imm1);\
+			x86e-> Emit(op_cl,r1,op->imm1);\
 			SaveReg(op->reg1,r1);\
 		}\
 		else\
 		{\
 			/*x86e-> _ItM_ (GetRegPtr(op->reg1),op->imm1);*/\
-			x86e->MOV32ItoR(EAX,op->imm1);\
-			x86e->_RtM_(GetRegPtr(op->reg1),EAX);\
+			x86e->Emit(op_mov32,EAX,op->imm1);\
+			x86e->Emit(op_cl,GetRegPtr(op->reg1),EAX);\
 		}\
 	}\
 	else\
@@ -285,68 +321,68 @@ void sse_RLF(u32 reg)
 		assert(op->flags & FLAG_REG2);\
 		if (ira->IsRegAllocated(op->reg1))\
 		{\
-			x86IntRegType r1 = LoadReg(EAX,op->reg1);\
+			x86_gpr_reg r1 = LoadReg(EAX,op->reg1);\
 			assert(r1!=EAX);\
 			if (ira->IsRegAllocated(op->reg2))\
 			{\
-				x86IntRegType r2 = LoadReg(EAX,op->reg2);\
+				x86_gpr_reg r2 = LoadReg(EAX,op->reg2);\
 				assert(r2!=EAX);\
-				x86e-> _RtR_ (r1,r2);\
+				x86e-> Emit(op_cl,r1,r2);\
 			}\
 			else\
 			{\
-				x86e-> _MtR_ (r1,GetRegPtr(op->reg2));\
+				x86e-> Emit(op_cl,r1,GetRegPtr(op->reg2));\
 			}\
 			SaveReg(op->reg1,r1);\
 		}\
 		else\
 		{\
-			x86IntRegType r2 = LoadReg(EAX,op->reg2);\
-			x86e-> _RtM_(GetRegPtr(op->reg1),r2);\
+			x86_gpr_reg r2 = LoadReg(EAX,op->reg2);\
+			x86e-> Emit(op_cl,GetRegPtr(op->reg1),r2);\
 		}\
 	}
 
-#define OP_RegToReg_simple(opcd) OP_MoRtR_ItR(opcd##MtoR,opcd##RtoR,opcd##ItoR,opcd##ItoM,opcd##RtoM);
+#define OP_RegToReg_simple(opcd) OP_MoRtR_ItR(opcd);
 
-#define OP_ItMoR(_ItM_,_ItR_,_Imm_)	assert(FLAG_32==(op->flags & 3));\
+#define OP_ItMoR(op_cl,_Imm_)	assert(FLAG_32==(op->flags & 3));\
 	assert(op->flags & FLAG_IMM1);\
 	assert(0==(op->flags & (FLAG_IMM2)));\
 	assert(op->flags & FLAG_REG1);\
 	assert(0==(op->flags & FLAG_REG2));\
 	if (ira->IsRegAllocated(op->reg1))\
 	{\
-		x86IntRegType r1=LoadReg(EAX,op->reg1);\
+		x86_gpr_reg r1=LoadReg(EAX,op->reg1);\
 		assert(r1!=EAX);\
-		x86e->_ItR_(r1,_Imm_);\
+		x86e->Emit(op_cl,r1,_Imm_);\
 		SaveReg(op->reg1,r1);\
 	}\
 	else\
-		x86e->_ItM_(GetRegPtr(op->reg1),_Imm_);
+		x86e->Emit(op_cl,GetRegPtr(op->reg1),_Imm_);
 
-#define OP_NtMoR_noimm(_ItM_,_ItR_)	assert(FLAG_32==(op->flags & 3));\
+#define OP_NtMoR_noimm(op_cl)	assert(FLAG_32==(op->flags & 3));\
 	assert(0==(op->flags & FLAG_IMM1));\
 	assert(0==(op->flags & (FLAG_IMM2)));\
 	assert(op->flags & FLAG_REG1);\
 	assert(0==(op->flags & FLAG_REG2));\
 	if (ira->IsRegAllocated(op->reg1))\
 	{\
-		x86IntRegType r1=LoadReg(EAX,op->reg1);\
+		x86_gpr_reg r1=LoadReg(EAX,op->reg1);\
 		assert(r1!=EAX);\
-		x86e->_ItR_(r1);\
+		x86e->Emit(op_cl,r1);\
 		SaveReg(op->reg1,r1);\
 	}\
 	else\
-		x86e->_ItM_(GetRegPtr(op->reg1));
-
-#define OP_NtR_noimm(_ItR_)	assert(FLAG_32==(op->flags & 3));\
+		x86e->Emit(op_cl,x86_ptr(GetRegPtr(op->reg1)));
+/*
+#define OP_NtR_noimm(op_cl)	assert(FLAG_32==(op->flags & 3));\
 	assert(0==(op->flags & FLAG_IMM1));\
 	assert(0==(op->flags & (FLAG_IMM2)));\
 	assert(op->flags & FLAG_REG1);\
 	assert(0==(op->flags & FLAG_REG2));\
-	x86IntRegType r1= LoadReg(EAX,op->reg1);\
-	x86e->_ItR_(r1);\
+	x86_gpr_reg r1= LoadReg(EAX,op->reg1);\
+	x86e->Emit(op_cl,r1);\
 	SaveReg(op->reg1,r1);
-
+*/
 //shil compilation
 void __fastcall shil_compile_nimp(shil_opcode* op,BasicBlock* block)
 {
@@ -407,8 +443,8 @@ void __fastcall shil_compile_mov(shil_opcode* op,BasicBlock* block)
 		#define IMMtoGPR (mov_flag_GRP_1 | mov_flag_imm_2)
 		#define IMMtoM32 (mov_flag_M32_1 | mov_flag_imm_2)
 		
-		x86SSERegType sse1=XMM_Error;
-		x86SSERegType sse2=XMM_Error;
+		x86_sse_reg sse1=REG_ERROR;
+		x86_sse_reg sse2=REG_ERROR;
 		if (flags & mov_flag_XMM_1)
 		{
 			sse1=fra->GetRegister(XMM0,op->reg1,RA_NODATA);
@@ -421,8 +457,8 @@ void __fastcall shil_compile_mov(shil_opcode* op,BasicBlock* block)
 			assert(sse2!=XMM0);
 		}
 
-		x86IntRegType gpr1=GPR_Error;
-		x86IntRegType gpr2=GPR_Error;
+		x86_gpr_reg gpr1=REG_ERROR;
+		x86_gpr_reg gpr2=REG_ERROR;
 
 		if (flags & mov_flag_GRP_1)
 		{
@@ -441,14 +477,14 @@ void __fastcall shil_compile_mov(shil_opcode* op,BasicBlock* block)
 		{
 		case XMMtoXMM:
 			{
-				x86e->SSE_MOVSS_XMM_to_XMM(sse1,sse2);
+				x86e->Emit(op_movss,sse1,sse2);
 				fra->SaveRegister(op->reg1,sse1);
 			}
 			break;
 		case XMMtoGPR:
 			{
 				//write back to mem location
-				x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),sse2);
+				x86e->Emit(op_movss,GetRegPtr(op->reg1),sse2);
 				//mark that the register has to be reloaded from there
 				ira->ReloadRegister(op->reg1);
 			}
@@ -456,46 +492,46 @@ void __fastcall shil_compile_mov(shil_opcode* op,BasicBlock* block)
 		case XMMtoM32:
 			{
 				//copy to mem location
-				x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),sse2);
+				x86e->Emit(op_movss,GetRegPtr(op->reg1),sse2);
 			}
 			break;
 
 		case GPRtoXMM:		
 			{
 				//write back to ram
-				x86e->MOV32RtoM(GetRegPtr(op->reg1),gpr2);
+				x86e->Emit(op_mov32,GetRegPtr(op->reg1),gpr2);
 				//mark reload on next use
 				fra->ReloadRegister(op->reg1);
 			}
 			break;
 		case GPRtoGPR:
 			{
-				x86e->MOV32RtoR(gpr1,gpr2);
+				x86e->Emit(op_mov32,gpr1,gpr2);
 				ira->SaveRegister(op->reg1,gpr1);
 			}
 			break;
 		case GPRtoM32:
 			{
 				//copy to ram
-				x86e->MOV32RtoM(GetRegPtr(op->reg1),gpr2);
+				x86e->Emit(op_mov32,GetRegPtr(op->reg1),gpr2);
 			}
 			break;
 		case M32toXMM:
 			{
-				x86e->SSE_MOVSS_M32_to_XMM(sse1,GetRegPtr(op->reg2));
+				x86e->Emit(op_movss,sse1,GetRegPtr(op->reg2));
 				fra->SaveRegister(op->reg1,sse1);
 			}
 			break;
 		case M32toGPR:
 			{
-				x86e->MOV32MtoR(gpr1,GetRegPtr(op->reg2));
+				x86e->Emit(op_mov32,gpr1,GetRegPtr(op->reg2));
 				ira->SaveRegister(op->reg1,gpr1);
 			}
 			break;
 		case M32toM32:
 			{
-				x86e->MOV32MtoR(EAX,GetRegPtr(op->reg2));
-				x86e->MOV32RtoM(GetRegPtr(op->reg1),EAX);
+				x86e->Emit(op_mov32,EAX,GetRegPtr(op->reg2));
+				x86e->Emit(op_mov32,GetRegPtr(op->reg1),EAX);
 			}
 			break;
 		case IMMtoXMM:
@@ -503,7 +539,7 @@ void __fastcall shil_compile_mov(shil_opcode* op,BasicBlock* block)
 				//printf("impossible mov IMMtoXMM [%X]\n",flags);
 				//__asm int 3;
 				//write back to ram
-				x86e->MOV32ItoM(GetRegPtr(op->reg1),op->imm1);
+				x86e->Emit(op_mov32,GetRegPtr(op->reg1),op->imm1);
 				//mark reload on next use
 				fra->ReloadRegister(op->reg1);
 			}
@@ -511,14 +547,14 @@ void __fastcall shil_compile_mov(shil_opcode* op,BasicBlock* block)
 
 		case IMMtoGPR:
 			{
-				x86e->MOV32ItoR(gpr1,op->imm1);
+				x86e->Emit(op_mov32,gpr1,op->imm1);
 				ira->SaveRegister(op->reg1,gpr1);
 			}
 			break;
 
 		case IMMtoM32:
 			{
-				x86e->MOV32ItoM(GetRegPtr(op->reg1),op->imm1);
+				x86e->Emit(op_mov32,GetRegPtr(op->reg1),op->imm1);
 			}
 			break;
 
@@ -536,13 +572,13 @@ void __fastcall shil_compile_mov(shil_opcode* op,BasicBlock* block)
 		u8 dest=GetSingleFromDouble(op->reg1);
 		u8 source=GetSingleFromDouble(op->reg2);
 
-		//x86e->MOV32MtoR(EAX,GetRegPtr(source));
-		//x86e->MOV32MtoR(ECX,GetRegPtr(source+1));
-		x86e->SSE_MOVLPS_M64_to_XMM(XMM0,GetRegPtr(source));
+		//x86e->Emit(op_mov32,EAX,GetRegPtr(source));
+		//x86e->Emit(op_mov32,ECX,GetRegPtr(source+1));
+		x86e->Emit(op_movlps,XMM0,GetRegPtr(source));
 
-		//x86e->MOV32RtoM(GetRegPtr(dest),EAX);
-		//x86e->MOV32RtoM(GetRegPtr(dest+1),ECX);
-		x86e->SSE_MOVLPS_XMM_to_M64(GetRegPtr(dest),XMM0);
+		//x86e->Emit(op_mov32,GetRegPtr(dest),EAX);
+		//x86e->Emit(op_mov32,GetRegPtr(dest+1),ECX);
+		x86e->Emit(op_movlps,GetRegPtr(dest),XMM0);
 	}
 }
 
@@ -558,16 +594,16 @@ void __fastcall shil_compile_movex(shil_opcode* op,BasicBlock* block)
 	{//8 bit
 		if (op->flags & FLAG_SX)
 		{//SX 8
-			x86IntRegType r2= LoadReg_force(EAX,op->reg2);
-			x86IntRegType r1= LoadReg_nodata(ECX,op->reg1);//if same reg (so data is needed) that is done by the above op
-			x86e->MOVSX32R8toR(r1,r2);
+			x86_gpr_reg r2= LoadReg_force(EAX,op->reg2);
+			x86_gpr_reg r1= LoadReg_nodata(ECX,op->reg1);//if same reg (so data is needed) that is done by the above op
+			x86e->Emit(op_movsx8to32, r1,r2);
 			SaveReg(op->reg1,r1);
 		}
 		else
 		{//ZX 8
-			x86IntRegType r2= LoadReg_force(EAX,op->reg2);
-			x86IntRegType r1= LoadReg_nodata(ECX,op->reg1);//if same reg (so data is needed) that is done by the above op
-			x86e->MOVZX32R8toR(r1,r2);
+			x86_gpr_reg r2= LoadReg_force(EAX,op->reg2);
+			x86_gpr_reg r1= LoadReg_nodata(ECX,op->reg1);//if same reg (so data is needed) that is done by the above op
+			x86e->Emit(op_movzx8to32, r1,r2);
 			SaveReg(op->reg1,r1);
 		}
 	}
@@ -575,7 +611,7 @@ void __fastcall shil_compile_movex(shil_opcode* op,BasicBlock* block)
 	{//16 bit
 		if (op->flags & FLAG_SX)
 		{//SX 16
-			x86IntRegType r1;
+			x86_gpr_reg r1;
 			if (op->reg1!=op->reg2)
 				r1= LoadReg_nodata(ECX,op->reg1);	//get a spare reg , or the allocated one. Data will be overwriten
 			else
@@ -583,19 +619,19 @@ void __fastcall shil_compile_movex(shil_opcode* op,BasicBlock* block)
 
 			if (ira->IsRegAllocated(op->reg2))
 			{
-				x86IntRegType r2= LoadReg(EAX,op->reg2);
+				x86_gpr_reg r2= LoadReg(EAX,op->reg2);
 				assert(r2!=EAX);//reg 2 must be allocated
-				x86e->MOVSX32R16toR(r1,r2);
+				x86e->Emit(op_movsx16to32, r1,r2);
 			}
 			else
 			{
-				x86e->MOVSX32M16toR(r1,(u16*)GetRegPtr(op->reg2));
+				x86e->Emit(op_movsx16to32, r1,(u16*)GetRegPtr(op->reg2));
 			}
 			SaveReg(op->reg1,r1);	//ensure it is saved
 		}
 		else
 		{//ZX 16
-			x86IntRegType r1;
+			x86_gpr_reg r1;
 			if (op->reg1!=op->reg2)
 				r1= LoadReg_nodata(ECX,op->reg1);	//get a spare reg , or the allocated one. Data will be overwriten
 			else
@@ -603,13 +639,13 @@ void __fastcall shil_compile_movex(shil_opcode* op,BasicBlock* block)
 
 			if (ira->IsRegAllocated(op->reg2))
 			{
-				x86IntRegType r2= LoadReg(EAX,op->reg2);
+				x86_gpr_reg r2= LoadReg(EAX,op->reg2);
 				assert(r2!=EAX);//reg 2 must be allocated
-				x86e->MOVZX32R16toR(r1,r2);
+				x86e->Emit(op_movzx16to32, r1,r2);
 			}
 			else
 			{
-				x86e->MOVZX32M16toR(r1,(u16*)GetRegPtr(op->reg2));
+				x86e->Emit(op_movzx16to32, r1,(u16*)GetRegPtr(op->reg2));
 			}
 			SaveReg(op->reg1,r1);	//ensure it is saved
 		}
@@ -628,8 +664,8 @@ void __fastcall shil_compile_shil_ifb(shil_opcode* op,BasicBlock* block)
 	fra->FlushRegCache();
 	//FlushRegCache();
 
-	x86e->MOV32ItoR(ECX,op->imm1);
-	x86e->CALLFunc(OpPtr[op->imm1]);
+	x86e->Emit(op_mov32,ECX,op->imm1);
+	x86e->Emit(op_call,x86_ptr_imm(OpPtr[op->imm1]));
 
 	//x86e->CALLFunc(profile_ifb_call);
 
@@ -646,8 +682,8 @@ void __fastcall shil_compile_swap(shil_opcode* op,BasicBlock* block)
 
 	if (size==FLAG_8)
 	{
-		x86IntRegType r1 = LoadReg_force(EAX,op->reg1);
-		x86e->XCHG8RtoR(Reg_AH,Reg_AL);//ror16 ?
+		x86_gpr_reg r1 = LoadReg_force(EAX,op->reg1);
+		x86e->Emit(op_xchg8,AH,AL);//ror16 ?
 		SaveReg(op->reg1,r1);
 	}
 	else
@@ -656,66 +692,66 @@ void __fastcall shil_compile_swap(shil_opcode* op,BasicBlock* block)
 		//printf("Shil : wswap not implemented\n");
 		
 		//use rotate ?
-		x86IntRegType r1 = LoadReg(EAX,op->reg1);
-		x86e->ROR32ItoR(r1,16);
+		x86_gpr_reg r1 = LoadReg(EAX,op->reg1);
+		x86e->Emit(op_ror32,r1,16);
 		SaveReg(op->reg1,r1);
 	}
 }
 
 void __fastcall shil_compile_shl(shil_opcode* op,BasicBlock* block)
 {
-	OP_ItMoR(SHL32ItoM,SHL32ItoR,(u8)op->imm1);
+	OP_ItMoR(op_shl32,(u8)op->imm1);
 }
 
 void __fastcall shil_compile_shr(shil_opcode* op,BasicBlock* block)
 {
-	OP_ItMoR(SHR32ItoM,SHR32ItoR,(u8)op->imm1);
+	OP_ItMoR(op_shr32,(u8)op->imm1);
 }
 
 void __fastcall shil_compile_sar(shil_opcode* op,BasicBlock* block)
 {
-	OP_ItMoR(SAR32ItoM,SAR32ItoR,(u8)op->imm1);
+	OP_ItMoR(op_sar32,(u8)op->imm1);
 }
 
 //rotates
 void __fastcall shil_compile_rcl(shil_opcode* op,BasicBlock* block)
 {
-	OP_NtMoR_noimm(RCL321toM,RCL321toR);
+	OP_NtMoR_noimm(op_rcl32);
 }
 void __fastcall shil_compile_rcr(shil_opcode* op,BasicBlock* block)
 {
-	OP_NtR_noimm(RCR321toR);
+	OP_NtMoR_noimm(op_rcr32);
 }
 void __fastcall shil_compile_ror(shil_opcode* op,BasicBlock* block)
 {
-	OP_NtR_noimm(ROR321toR);
+	OP_NtMoR_noimm(op_ror32);
 }
 void __fastcall shil_compile_rol(shil_opcode* op,BasicBlock* block)
 {
-	OP_NtR_noimm(ROL321toR);
+	OP_NtMoR_noimm(op_rol32);
 }
 //neg
 void __fastcall shil_compile_neg(shil_opcode* op,BasicBlock* block)
 {
-	OP_NtR_noimm(NEG32R);
+	OP_NtMoR_noimm(op_neg32);
 }
 //not
 void __fastcall shil_compile_not(shil_opcode* op,BasicBlock* block)
 {
-	OP_NtR_noimm(NOT32R);
+	OP_NtMoR_noimm(op_not32);
 }
 //or xor and
 void __fastcall shil_compile_xor(shil_opcode* op,BasicBlock* block)
 {
-	OP_RegToReg_simple(XOR32);
+	OP_RegToReg_simple(op_xor32);
 }
 void __fastcall shil_compile_or(shil_opcode* op,BasicBlock* block)
 {
-	OP_RegToReg_simple(OR32);
+	OP_RegToReg_simple(op_or32);
 }
 void __fastcall shil_compile_and(shil_opcode* op,BasicBlock* block)
 {
-	OP_RegToReg_simple(AND32);
+	OP_RegToReg_simple(op_and32);
 }
 //read-write
 void readwrteparams(shil_opcode* op)
@@ -737,33 +773,33 @@ void readwrteparams(shil_opcode* op)
 	if (op->flags & FLAG_IMM1)
 	{
 		Loaded=true;
-		x86e->MOV32ItoR(ECX,op->imm1);
+		x86e->Emit(op_mov32,ECX,op->imm1);
 	}
 	if (op->flags & FLAG_REG2)
 	{
-		x86IntRegType r1=LoadReg(EAX,op->reg2);
+		x86_gpr_reg r1=LoadReg(EAX,op->reg2);
 		if (Loaded)
-			x86e->ADD32RtoR(ECX,r1);
+			x86e->Emit(op_add32,ECX,r1);
 		else
-			x86e->MOV32RtoR(ECX,r1);
+			x86e->Emit(op_mov32,ECX,r1);
 		Loaded=true;
 	}
 	if (op->flags & FLAG_R0)
 	{
-		x86IntRegType r1=LoadReg(EAX,r0);
+		x86_gpr_reg r1=LoadReg(EAX,r0);
 		if (Loaded)
-			x86e->ADD32RtoR(ECX,r1);
+			x86e->Emit(op_add32,ECX,r1);
 		else
-			x86e->MOV32RtoR(ECX,r1);
+			x86e->Emit(op_mov32,ECX,r1);
 		Loaded=true;
 	}
 	if (op->flags & FLAG_GBR)
 	{
-		x86IntRegType r1=LoadReg(EAX,reg_gbr);
+		x86_gpr_reg r1=LoadReg(EAX,reg_gbr);
 		if (Loaded)
-			x86e->ADD32RtoR(ECX,r1);
+			x86e->Emit(op_add32,ECX,r1);
 		else
-			x86e->MOV32RtoR(ECX,r1);
+			x86e->Emit(op_mov32,ECX,r1);
 		Loaded=true;
 	}
 	
@@ -782,7 +818,7 @@ void readwrteparams(shil_opcode* op)
 		else
 		{	//[imm1]
 			assert(0==(op->flags & FLAG_REG2));
-			x86e->MOV32ItoR(ECX,op->imm1);
+			x86e->Emit(op_mov32,ECX,op->imm1);
 		}
 	}
 	else
@@ -801,7 +837,7 @@ void readwrteparams(shil_opcode* op)
 		{
 			if (ira->IsRegAllocated(op->reg2))
 			{
-				x86IntRegType r2=LoadReg(EAX,op->reg2);
+				x86_gpr_reg r2=LoadReg(EAX,op->reg2);
 				assert(r2!=EAX);
 				x86e->ADD32RtoR(ECX,r2);
 			}
@@ -816,12 +852,12 @@ void readwrteparams(shil_opcode* op)
 }
 
 
-void emit_vmem_op_compat(emitter<>* x86e,x86IntRegType ra,
-					  x86IntRegType ro,
+void emit_vmem_op_compat(x86_block* x86e,x86_gpr_reg ra,
+					  x86_gpr_reg ro,
 					  u32 sz,u32 rw);
 
-void emit_vmem_op_compat_const(emitter<>* x86e,u32 ra,
-							   x86IntRegType ro,x86SSERegType ro_sse,bool sse,
+void emit_vmem_op_compat_const(x86_block* x86e,u32 ra,
+							   x86_gpr_reg ro,x86_sse_reg ro_sse,bool sse,
 								u32 sz,u32 rw);
 u32 m_unpack_sz[3]={1,2,4};
 void __fastcall shil_compile_readm(shil_opcode* op,BasicBlock* block)
@@ -839,13 +875,13 @@ void __fastcall shil_compile_readm(shil_opcode* op,BasicBlock* block)
 			//[imm1] form
 			if (!IsSSEAllocReg(op->reg1))
 			{
-				x86IntRegType rall=LoadReg_nodata(EDX,op->reg1);
+				x86_gpr_reg rall=LoadReg_nodata(EDX,op->reg1);
 				emit_vmem_op_compat_const(x86e,op->imm1,rall,XMM0,false,m_unpack_sz[size],0);
 				SaveReg(op->reg1,rall);
 			}
 			else
 			{
-				x86SSERegType rall=fra->GetRegister(XMM0,op->reg1,RA_NODATA);
+				x86_sse_reg rall=fra->GetRegister(XMM0,op->reg1,RA_NODATA);
 				emit_vmem_op_compat_const(x86e,op->imm1,EAX,rall,true,m_unpack_sz[size],0);
 				fra->SaveRegister(op->reg1,rall);
 			}
@@ -860,11 +896,11 @@ void __fastcall shil_compile_readm(shil_opcode* op,BasicBlock* block)
 	//movsx [if needed]
 	if (size==0)
 	{
-		x86e->MOVSX32R8toR(EAX,EAX);	//se8
+		x86e->Emit(op_movsx8to32, EAX,EAX);	//se8
 	}
 	else if (size==1)
 	{
-		x86e->MOVSX32R16toR(EAX,EAX);	//se16
+		x86e->Emit(op_movsx16to32, EAX,EAX);	//se16
 	}
 	else if (size==2)
 	{
@@ -895,12 +931,12 @@ void __fastcall shil_compile_writem(shil_opcode* op,BasicBlock* block)
 		//[imm1] form
 		if (!IsSSEAllocReg(op->reg1))
 		{
-			x86IntRegType rall=LoadReg(EDX,op->reg1);
+			x86_gpr_reg rall=LoadReg(EDX,op->reg1);
 			emit_vmem_op_compat_const(x86e,op->imm1,rall,XMM0,false,m_unpack_sz[size],1);
 		}
 		else
 		{
-			x86SSERegType rall=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
+			x86_sse_reg rall=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
 			emit_vmem_op_compat_const(x86e,op->imm1,EAX,rall,true,m_unpack_sz[size],1);
 		}
 		return;
@@ -911,7 +947,7 @@ void __fastcall shil_compile_writem(shil_opcode* op,BasicBlock* block)
 	//ECX is address
 
 	//so it's sure loaded (if from reg cache)
-	x86IntRegType r1;
+	x86_gpr_reg r1;
 	if (IsSSEAllocReg(op->reg1))
 	{
 		r1=EDX;
@@ -933,9 +969,9 @@ void __fastcall shil_compile_SaveT(shil_opcode* op,BasicBlock* block)
 
 	//x86e->SETcc8M(GetRegPtr(reg_sr_T),op->imm1);//imm1 :P
 	
-	x86e->SETcc8R(EAX,op->imm1);
-	x86e->MOVZX32R8toR(EAX,EAX);				//zero out rest of eax
-	x86e->MOV32RtoM(GetRegPtr(reg_sr_T),EAX);
+	x86e->Emit(SetCC[op->imm1],EAX);
+	x86e->Emit(op_movzx8to32, EAX,EAX);				//zero out rest of eax
+	x86e->Emit(op_mov32,GetRegPtr(reg_sr_T),EAX);
 		
 }
 void __fastcall shil_compile_LoadT(shil_opcode* op,BasicBlock* block)
@@ -949,12 +985,12 @@ void __fastcall shil_compile_LoadT(shil_opcode* op,BasicBlock* block)
 	if (op->imm1==x86_flags::jcond_flag)
 	{
 		LoadReg_force(EAX,reg_sr_T);
-		x86e->MOV32RtoM(&T_jcond_value,EAX);//T_jcond_value;
+		x86e->Emit(op_mov32,&T_jcond_value,EAX);//T_jcond_value;
 	}
 	else
 	{
 		LoadReg_force(EAX,reg_sr_T);
-		x86e->SHR32ItoR(EAX,1);//heh T bit is there now :P CF
+		x86e->Emit(op_shr32,EAX,1);//heh T bit is there now :P CF
 	}
 }
 //cmp-test
@@ -967,12 +1003,12 @@ void __fastcall shil_compile_cmp(shil_opcode* op,BasicBlock* block)
 		assert(0==(op->flags & (FLAG_REG2|FLAG_IMM2)));
 		if (ira->IsRegAllocated(op->reg1))
 		{
-			x86IntRegType r1 = LoadReg(EAX,op->reg1);
-			x86e->CMP32ItoR(r1,op->imm1);
+			x86_gpr_reg r1 = LoadReg(EAX,op->reg1);
+			x86e->Emit(op_cmp32,r1,op->imm1);
 		}
 		else
 		{
-			x86e->CMP32ItoM(GetRegPtr(op->reg1),op->imm1);
+			x86e->Emit(op_cmp32,GetRegPtr(op->reg1),op->imm1);
 		}
 		//eflags is used w/ combination of SaveT
 	}
@@ -981,15 +1017,15 @@ void __fastcall shil_compile_cmp(shil_opcode* op,BasicBlock* block)
 		assert(0==(op->flags & FLAG_IMM2));
 		assert(op->flags & FLAG_REG2);
 
-		x86IntRegType r1 = LoadReg(EAX,op->reg1);
+		x86_gpr_reg r1 = LoadReg(EAX,op->reg1);
 		if (ira->IsRegAllocated(op->reg2))
 		{
-			x86IntRegType r2 = LoadReg(ECX,op->reg2);
-			x86e->CMP32RtoR(r1,r2);//rm,rn
+			x86_gpr_reg r2 = LoadReg(ECX,op->reg2);
+			x86e->Emit(op_cmp32,r1,r2);//rm,rn
 		}
 		else
 		{
-			x86e->CMP32MtoR(r1,GetRegPtr(op->reg2));//rm,rn
+			x86e->Emit(op_cmp32,r1,GetRegPtr(op->reg2));//rm,rn
 		}
 		//eflags is used w/ combination of SaveT
 	}
@@ -1002,12 +1038,12 @@ void __fastcall shil_compile_test(shil_opcode* op,BasicBlock* block)
 		assert(0==(op->flags & (FLAG_REG2|FLAG_IMM2)));
 		if (ira->IsRegAllocated(op->reg1))
 		{
-			x86IntRegType r1 = LoadReg(EAX,op->reg1);
-			x86e->TEST32ItoR(r1,op->imm1);
+			x86_gpr_reg r1 = LoadReg(EAX,op->reg1);
+			x86e->Emit(op_test32,r1,op->imm1);
 		}
 		else
 		{
-			x86e->TEST32ItoM(GetRegPtr(op->reg1),op->imm1);
+			x86e->Emit(op_test32,GetRegPtr(op->reg1),op->imm1);
 		}
 		//eflags is used w/ combination of SaveT
 	}
@@ -1016,15 +1052,15 @@ void __fastcall shil_compile_test(shil_opcode* op,BasicBlock* block)
 		assert(0==(op->flags & FLAG_IMM2));
 		assert(op->flags & FLAG_REG2);
 
-		x86IntRegType r1 = LoadReg(EAX,op->reg1);
+		x86_gpr_reg r1 = LoadReg(EAX,op->reg1);
 		if (ira->IsRegAllocated(op->reg2))
 		{
-			x86IntRegType r2 = LoadReg(ECX,op->reg2);
-			x86e->TEST32RtoR(r1,r2);//rm,rn
+			x86_gpr_reg r2 = LoadReg(ECX,op->reg2);
+			x86e->Emit(op_test32,r1,r2);//rm,rn
 		}
 		else
 		{
-			x86e->TEST32MtoR(r1,GetRegPtr(op->reg2));//rm,rn
+			x86e->Emit(op_test32,r1,GetRegPtr(op->reg2));//rm,rn
 		}
 		//eflags is used w/ combination of SaveT
 	}
@@ -1033,15 +1069,15 @@ void __fastcall shil_compile_test(shil_opcode* op,BasicBlock* block)
 //add-sub
 void __fastcall shil_compile_add(shil_opcode* op,BasicBlock* block)
 {
-	OP_RegToReg_simple(ADD32);
+	OP_RegToReg_simple(op_add32);
 }
 void __fastcall shil_compile_adc(shil_opcode* op,BasicBlock* block)
 {
-	OP_RegToReg_simple(ADC32);
+	OP_RegToReg_simple(op_adc32);
 }
 void __fastcall shil_compile_sub(shil_opcode* op,BasicBlock* block)
 {
-	OP_RegToReg_simple(SUB32);
+	OP_RegToReg_simple(op_sub32);
 }
 
 //**
@@ -1055,26 +1091,26 @@ void __fastcall shil_compile_jmp(shil_opcode* op,BasicBlock* block)
 	printf("jmp ... heh not implemented\n");
 }
 
-void load_with_se16(x86IntRegType to,u8 from)
+void load_with_se16(x86_gpr_reg to,u8 from)
 {
 	if (ira->IsRegAllocated(from))
 	{
-		x86IntRegType r1=LoadReg(EAX,from);
-		x86e->MOVSX32R16toR(to,r1);
+		x86_gpr_reg r1=LoadReg(EAX,from);
+		x86e->Emit(op_movsx16to32, to,r1);
 	}
 	else
-		x86e->MOVSX32M16toR(to,(u16*)GetRegPtr(from));
+		x86e->Emit(op_movsx16to32, to,(u16*)GetRegPtr(from));
 }
 
-void load_with_ze16(x86IntRegType to,u8 from)
+void load_with_ze16(x86_gpr_reg to,u8 from)
 {
 	if (ira->IsRegAllocated(from))
 	{
-		x86IntRegType r1=LoadReg(EAX,from);
-		x86e->MOVZX32R16toR(to,r1);
+		x86_gpr_reg r1=LoadReg(EAX,from);
+		x86e->Emit(op_movzx16to32, to,r1);
 	}
 	else
-		x86e->MOVZX32M16toR(to,(u16*)GetRegPtr(from));
+		x86e->Emit(op_movzx16to32, to,(u16*)GetRegPtr(from));
 }
 
 void __fastcall shil_compile_mul(shil_opcode* op,BasicBlock* block)
@@ -1091,7 +1127,7 @@ void __fastcall shil_compile_mul(shil_opcode* op,BasicBlock* block)
 
 	if (sz!=FLAG_64)
 	{
-		x86IntRegType r1,r2;
+		x86_gpr_reg r1,r2;
 		if (sz==FLAG_16)
 		{
 			//FlushRegCache_reg(op->reg1);
@@ -1099,31 +1135,31 @@ void __fastcall shil_compile_mul(shil_opcode* op,BasicBlock* block)
 
 			if (op->flags & FLAG_SX)
 			{
-				//x86e->MOVSX32M16toR(EAX,(u16*)GetRegPtr(op->reg1));
+				//x86e->Emit(op_movsx16to32, EAX,(u16*)GetRegPtr(op->reg1));
 				load_with_se16(EAX,op->reg1);
-				//x86e->MOVSX32M16toR(ECX,(u16*)GetRegPtr(op->reg2));
+				//x86e->Emit(op_movsx16to32, ECX,(u16*)GetRegPtr(op->reg2));
 				load_with_se16(ECX,op->reg2);
 			}
 			else
 			{
-				//x86e->MOVZX32M16toR(EAX,(u16*)GetRegPtr(op->reg1));
+				//x86e->Emit(op_movzx16to32, EAX,(u16*)GetRegPtr(op->reg1));
 				load_with_ze16(EAX,op->reg1);
-				//x86e->MOVZX32M16toR(ECX,(u16*)GetRegPtr(op->reg2));
+				//x86e->Emit(op_movzx16to32, ECX,(u16*)GetRegPtr(op->reg2));
 				load_with_ze16(ECX,op->reg2);
 			}
 		}
 		else
 		{
-			//x86e->MOV32MtoR(EAX,GetRegPtr(op->reg1));
-			//x86e->MOV32MtoR(ECX,GetRegPtr(op->reg2));
+			//x86e->Emit(op_mov32,EAX,GetRegPtr(op->reg1));
+			//x86e->Emit(op_mov32,ECX,GetRegPtr(op->reg2));
 			r1=LoadReg_force(EAX,op->reg1);
 			r2=LoadReg_force(ECX,op->reg2);
 		}
 
 		if (op->flags & FLAG_SX)
-			x86e->IMUL32RtoR(EAX,ECX);
+			x86e->Emit(op_imul32,EAX,ECX);
 		else
-			x86e->MUL32R(ECX);
+			x86e->Emit(op_mul32,ECX);
 		
 		SaveReg((u8)reg_macl,EAX);
 	}
@@ -1137,12 +1173,12 @@ void __fastcall shil_compile_mul(shil_opcode* op,BasicBlock* block)
 		ira->FlushRegister(op->reg1);
 		ira->FlushRegister(op->reg2);
 
-		x86e->MOV32MtoR(EAX,GetRegPtr(op->reg1));
+		x86e->Emit(op_mov32,EAX,GetRegPtr(op->reg1));
 
 		if (op->flags & FLAG_SX)
-			x86e->IMUL32M(GetRegPtr(op->reg2));
+			x86e->Emit(op_imul32,x86_ptr(GetRegPtr(op->reg2)));
 		else
-			x86e->MUL32M(GetRegPtr(op->reg2));
+			x86e->Emit(op_mul32,x86_ptr(GetRegPtr(op->reg2)));
 
 		SaveReg((u8)reg_macl,EAX);
 		SaveReg((u8)reg_mach,EDX);
@@ -1154,61 +1190,64 @@ void __fastcall shil_compile_div32(shil_opcode* op,BasicBlock* block)
 {
 	assert(0==(op->flags & (FLAG_IMM2)));
 
+	//x86e->Emit(op_int3);
 	u8 rQuotient=op->reg1;
 	u8 rDivisor=op->reg2;
 	u8 rDividend=(u8)op->imm1;
 
 
-	x86IntRegType Quotient=LoadReg_force(EAX,rQuotient);
+	x86_gpr_reg Quotient=LoadReg_force(EAX,rQuotient);
 
 
 
-	x86IntRegType Dividend=LoadReg_force(EDX,rDividend);
+	x86_gpr_reg Dividend=LoadReg_force(EDX,rDividend);
 
 
 	if (ira->IsRegAllocated(rDivisor))
 	{
-		x86IntRegType Divisor=LoadReg(EAX,rDivisor);
+		x86_gpr_reg Divisor=LoadReg(EAX,rDivisor);
 		if (op->flags & FLAG_SX)
 		{
-			x86e->IDIV32R(Divisor);
+			x86e->Emit(op_idiv32,Divisor);
 		}
 		else
 		{
-			x86e->DIV32R(Divisor);
+			x86e->Emit(op_div32,Divisor);
 		}
 	}
 	else
 	{
 		if (op->flags & FLAG_SX)
 		{
-			x86e->IDIV32M((s32*)GetRegPtr(rDivisor));
+			x86e->Emit(op_idiv32,x86_ptr(GetRegPtr(rDivisor)));
 		}
 		else
 		{
-			x86e->DIV32M(GetRegPtr(rDivisor));
+			x86e->Emit(op_div32,x86_ptr(GetRegPtr(rDivisor)));
 		}
 	}
 
 	if (op->flags & FLAG_SX)
 	{
-		x86e->SAR32ItoR(EAX,1);
+		x86e->Emit(op_sar32 ,EAX,1);
 	}
 	else
 	{
-		x86e->SHR32ItoR(EAX,1);
+		x86e->Emit(op_shr32 ,EAX,1);
 	}
 
 	//set T
 	//WTF ? why doing both is faster?!?!?! WTFHH ?H?H?HH?H?H
 	//TODO : Add an option for this :)
-	x86e->SETcc8M(GetRegPtr(reg_sr_T),(u8)CC_B);
+	x86e->Emit(op_setb,x86_ptr(GetRegPtr(reg_sr_T)));
+	/*
 	x86e->SETcc8R(ECX,CC_B);
-	x86e->MOVZX32R8toR(ECX,ECX);		//clear rest of eax (to remove partial depency on 32:8)
-	x86e->MOV32RtoM(GetRegPtr(reg_sr_T),ECX);
+	x86e->Emit(op_movzx8to32, ECX,ECX);		//clear rest of eax (to remove partial depency on 32:8)
+	x86e->Emit(op_mov32,GetRegPtr(reg_sr_T),ECX);
+	*/
 
 	//x86e->AND32ItoM(GetRegPtr(reg_sr),~1);
-	//x86e->MOVZX32R8toR(ECX,ECX);
+	//x86e->Emit(op_movzx8to32, ECX,ECX);
 	//x86e->OR32RtoM(GetRegPtr(reg_sr),ECX);
 
 
@@ -1216,31 +1255,39 @@ void __fastcall shil_compile_div32(shil_opcode* op,BasicBlock* block)
 
 	//WARNING--JUMP--
 	//thanks to teh way i save sr , test has to be re-done here
-	x86e->TEST32RtoR(ECX,ECX);
-	u8* j1=x86e->JNZ8(0);
+	//->x86e->Emit(op_test32,ECX,ECX);
+
+	x86_Label* exit =x86e->CreateLabel(false);
+	x86_Label* no_fixup =x86e->CreateLabel(false);
+
+	//u8* j1=x86e->JNZ8(0);
+	x86e->Emit(op_jb ,no_fixup);
 
 	if (ira->IsRegAllocated(rDivisor))
 	{	//safe to do here b/c rDivisor was loaded to reg above (if reg cached)
-		x86IntRegType t=LoadReg(EAX,rDivisor);
-		x86e->SUB32RtoR(EDX,t);
+		x86_gpr_reg t=LoadReg(EAX,rDivisor);
+		x86e->Emit(op_sub32 ,EDX,t);
 	}
 	else
 	{
-		x86e->SUB32MtoR(EDX,GetRegPtr(rDivisor));
+		x86e->Emit(op_sub32 ,EDX,GetRegPtr(rDivisor));
 	}
 
 	SaveReg(rDividend,Dividend);
 
 	//WARNING--JUMP--
 
-	u8* j2=x86e->JMP8(0);
+	//u8* j2=x86e->JMP8(0);
+	x86e->Emit(op_jmp ,exit);
 
-	x86e->x86SetJ8(j1);
+	//x86e->x86SetJ8(j1);
+	x86e->MarkLabel(no_fixup);
 
 	SaveReg(rDividend,Dividend);
 
 	//WARNING--JUMP--
-	x86e->x86SetJ8(j2);
+	//x86e->x86SetJ8(j2);
+	x86e->MarkLabel(exit);
 
 	ira->MarkDirty(rDividend);
 	ira->MarkDirty(rQuotient);
@@ -1273,47 +1320,47 @@ __declspec(align(32)) u32 ps_and_data[4]={0x7FFFFFFF,0x7FFFFFFF,0x7FFFFFFF,0x7FF
 __declspec(align(32)) float mm_1[4]={1.0f,1.0f,1.0f,1.0f};
 __declspec(align(32)) float fsca_fpul_adj[4]={((2*pi)/65536.0f),((2*pi)/65536.0f),((2*pi)/65536.0f),((2*pi)/65536.0f)};
 
-#define SSE_SS_OP(op,RtR,RtM)\
+#define SSE_SS_OP(op,op_cl)\
 	switch (frs(op))\
 	{\
 	case fa_r1r2:\
 		{\
-			x86SSERegType r1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);\
-			x86SSERegType r2=fra->GetRegister(XMM0,op->reg2,RA_DEFAULT);\
+			x86_sse_reg r1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);\
+			x86_sse_reg r2=fra->GetRegister(XMM0,op->reg2,RA_DEFAULT);\
 			assert(r1!=XMM0 && r2!=XMM0);\
-			x86e->RtR(r1,r2);\
+			x86e->Emit(op_cl,r1,r2);\
 			fra->SaveRegister(op->reg1,r1);\
 		}\
 		break;\
 	case fa_r1m2:\
 		{\
-			x86SSERegType r1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);\
+			x86_sse_reg r1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);\
 			assert(r1!=XMM0);\
-			x86e->RtM(r1,GetRegPtr(op->reg2));\
+			x86e->Emit(op_cl,r1,x86_ptr(GetRegPtr(op->reg2)));\
 			fra->SaveRegister(op->reg1,r1);\
 		}\
 		break;\
 	case fa_m1r2:\
 		{\
-			x86SSERegType r1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);\
-			x86SSERegType r2=fra->GetRegister(XMM0,op->reg2,RA_DEFAULT);\
+			x86_sse_reg r1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);\
+			x86_sse_reg r2=fra->GetRegister(XMM0,op->reg2,RA_DEFAULT);\
 			assert(r1==XMM0);\
 			assert(r2!=XMM0);\
-			x86e->RtR(r1,r2);\
+			x86e->Emit(op_cl,r1,r2);\
 			fra->SaveRegister(op->reg1,r1);\
 		}\
 		break;\
 	case fa_m1m2:\
 		{\
-			x86SSERegType r1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);\
+			x86_sse_reg r1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);\
 			assert(r1==XMM0);\
-			x86e->RtM(r1,GetRegPtr(op->reg2));\
+			x86e->Emit(op_cl,r1,x86_ptr(GetRegPtr(op->reg2)));\
 			fra->SaveRegister(op->reg1,r1);\
 		}\
 		break;\
 	}
 
-#define SSE_s(op,sseop) SSE_SS_OP(op,sseop##_XMM_to_XMM,sseop##_M32_to_XMM);
+#define SSE_s(op,sseop) SSE_SS_OP(op,sseop);
 //simple opcodes
 void __fastcall shil_compile_fadd(shil_opcode* op,BasicBlock* block)
 {
@@ -1324,7 +1371,7 @@ void __fastcall shil_compile_fadd(shil_opcode* op,BasicBlock* block)
 		assert(!IsReg64((Sh4RegType)op->reg1));
 		assert(Ensure32());
 
-		SSE_s(op,SSE_ADDSS);
+		SSE_s(op,op_addss);
 	}
 	else
 	{
@@ -1340,7 +1387,7 @@ void __fastcall shil_compile_fsub(shil_opcode* op,BasicBlock* block)
 		assert(!IsReg64((Sh4RegType)op->reg1));
 		assert(Ensure32());
 		
-		SSE_s(op,SSE_SUBSS);
+		SSE_s(op,op_subss);
 	}
 	else
 	{
@@ -1357,7 +1404,7 @@ void __fastcall shil_compile_fmul(shil_opcode* op,BasicBlock* block)
 		assert(!IsReg64((Sh4RegType)op->reg1));
 		assert(Ensure32());
 
-		SSE_s(op,SSE_MULSS);
+		SSE_s(op,op_mulss);
 	}
 	else
 	{
@@ -1374,7 +1421,7 @@ void __fastcall shil_compile_fdiv(shil_opcode* op,BasicBlock* block)
 		assert(!IsReg64((Sh4RegType)op->reg1));
 		assert(Ensure32());
 
-		SSE_s(op,SSE_DIVSS);
+		SSE_s(op,op_divss);
 	}
 	else
 	{
@@ -1392,14 +1439,14 @@ void __fastcall shil_compile_fneg(shil_opcode* op,BasicBlock* block)
 		assert(!IsReg64 ((Sh4RegType)op->reg1));
 		if (IsInFReg(op->reg1))
 		{
-			x86SSERegType r1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
+			x86_sse_reg r1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
 			assert(r1!=XMM0);
-			x86e->SSE_XORPS_M128_to_XMM(r1,ps_not_data);
+			x86e->Emit(op_xorps,r1,ps_not_data);
 			fra->SaveRegister(op->reg1,r1);
 		}
 		else
 		{
-			x86e->XOR32ItoM(GetRegPtr(op->reg1),0x80000000);
+			x86e->Emit(op_xor32,GetRegPtr(op->reg1),0x80000000);
 		}
 	}
 	else
@@ -1407,7 +1454,7 @@ void __fastcall shil_compile_fneg(shil_opcode* op,BasicBlock* block)
 		assert(sz==FLAG_64);
 		assert(IsReg64((Sh4RegType)op->reg1));
 		u32 reg=GetSingleFromDouble(op->reg1);
-		x86e->XOR32ItoM(GetRegPtr(reg+1),0x80000000);
+		x86e->Emit(op_xor32,GetRegPtr(reg+1),0x80000000);
 	}
 }
 
@@ -1420,14 +1467,14 @@ void __fastcall shil_compile_fabs(shil_opcode* op,BasicBlock* block)
 		assert(!IsReg64((Sh4RegType)op->reg1));
 		if (IsInFReg(op->reg1))
 		{
-			x86SSERegType r1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
+			x86_sse_reg r1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
 			assert(r1!=XMM0);
-			x86e->SSE_ANDPS_M128_to_XMM(r1,ps_and_data);
+			x86e->Emit(op_andps,r1,ps_and_data);
 			fra->SaveRegister(op->reg1,r1);
 		}
 		else
 		{
-			x86e->AND32ItoM(GetRegPtr(op->reg1),0x7FFFFFFF);
+			x86e->Emit(op_and32,GetRegPtr(op->reg1),0x7FFFFFFF);
 		}
 	}
 	else
@@ -1435,7 +1482,7 @@ void __fastcall shil_compile_fabs(shil_opcode* op,BasicBlock* block)
 		assert(sz==FLAG_64);
 		assert(IsReg64((Sh4RegType)op->reg1));
 		u32 reg=GetSingleFromDouble(op->reg1);
-		x86e->AND32ItoM(GetRegPtr(reg+1),0x7FFFFFFF);
+		x86e->Emit(op_and32,GetRegPtr(reg+1),0x7FFFFFFF);
 	}
 }
 
@@ -1451,19 +1498,19 @@ void __fastcall shil_compile_fcmp(shil_opcode* op,BasicBlock* block)
 		assert(!IsReg64((Sh4RegType)op->reg1));
 		assert(Ensure32());
 
-		//x86e->SSE_MOVSS_M32_to_XMM(XMM0,GetRegPtr(op->reg1));
-		x86SSERegType fr1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
+		//x86e->Emit(op_movss,XMM0,GetRegPtr(op->reg1));
+		x86_sse_reg fr1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
 		
 		//x86e->SSE_UCOMISS_M32_to_XMM(XMM0,GetRegPtr(op->reg2));
 		if (fra->IsRegAllocated(op->reg2))
 		{
-			x86SSERegType fr2=fra->GetRegister(XMM0,op->reg2,RA_DEFAULT);
+			x86_sse_reg fr2=fra->GetRegister(XMM0,op->reg2,RA_DEFAULT);
 			assert(fr2!=XMM0);
-			x86e->SSE_UCOMISS_XMM_to_XMM(fr1,fr2);
+			x86e->Emit(op_ucomiss, fr1,fr2);
 		}
 		else
 		{
-			x86e->SSE_UCOMISS_M32_to_XMM(fr1,GetRegPtr(op->reg2));
+			x86e->Emit(op_ucomiss ,fr1,GetRegPtr(op->reg2));
 		}
 	}
 	else
@@ -1482,36 +1529,36 @@ void __fastcall shil_compile_fmac(shil_opcode* op,BasicBlock* block)
 		//fr[n] += fr[0] * fr[m];
 		assert(Ensure32());
 
-		//x86e->SSE_MOVSS_M32_to_XMM(XMM0,GetRegPtr(fr_0));		//xmm0=fr[0]
-		x86SSERegType fr0=fra->GetRegister(XMM0,fr_0,RA_FORCE);
+		//x86e->Emit(op_movss,XMM0,GetRegPtr(fr_0));		//xmm0=fr[0]
+		x86_sse_reg fr0=fra->GetRegister(XMM0,fr_0,RA_FORCE);
 		assert(fr0==XMM0);
 		
 		//x86e->SSE_MULSS_M32_to_XMM(XMM0,GetRegPtr(op->reg2));	//xmm0*=fr[m]
 		if (fra->IsRegAllocated(op->reg2))
 		{
-			x86SSERegType frm=fra->GetRegister(XMM0,op->reg2,RA_DEFAULT);
+			x86_sse_reg frm=fra->GetRegister(XMM0,op->reg2,RA_DEFAULT);
 			assert(frm!=XMM0);
-			x86e->SSE_MULSS_XMM_to_XMM(fr0,frm);
+			x86e->Emit(op_mulss ,fr0,frm);
 		}
 		else
 		{
-			x86e->SSE_MULSS_M32_to_XMM(XMM0,GetRegPtr(op->reg2));
+			x86e->Emit(op_mulss ,XMM0,GetRegPtr(op->reg2));
 		}
 
 		//x86e->SSE_ADDSS_M32_to_XMM(XMM0,GetRegPtr(op->reg1));	//xmm0+=fr[n] 
 		if (fra->IsRegAllocated(op->reg1))
 		{
-			x86SSERegType frn=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
+			x86_sse_reg frn=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
 			assert(frn!=XMM0);
-			x86e->SSE_ADDSS_XMM_to_XMM(fr0,frn);
+			x86e->Emit(op_addss ,fr0,frn);
 		}
 		else
 		{
-			x86e->SSE_ADDSS_M32_to_XMM(fr0,GetRegPtr(op->reg1));
+			x86e->Emit(op_addss ,fr0,GetRegPtr(op->reg1));
 		}
 		
 		
-		//x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),XMM0);	//fr[n]=xmm0
+		//x86e->Emit(op_movss,GetRegPtr(op->reg1),XMM0);	//fr[n]=xmm0
 		fra->SaveRegister(op->reg1,fr0);
 	}
 	else
@@ -1533,15 +1580,15 @@ void __fastcall shil_compile_fsqrt(shil_opcode* op,BasicBlock* block)
 		//RSQRT vs SQRTSS -- why rsqrt no workie ? :P -> RSQRT = 1/SQRTSS
 		if (fra->IsRegAllocated(op->reg1))
 		{
-			x86SSERegType fr1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
+			x86_sse_reg fr1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
 			assert(fr1!=XMM0);
-			x86e->SSE_SQRTSS_XMM_to_XMM(fr1,fr1);
+			x86e->Emit(op_sqrtss ,fr1,fr1);
 			fra->SaveRegister(op->reg1,fr1);
 		}
 		else
 		{
-			x86e->SSE_SQRTSS_M32_to_XMM(XMM0,GetRegPtr(op->reg1));
-			x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),XMM0);
+			x86e->Emit(op_sqrtss ,XMM0,GetRegPtr(op->reg1));
+			x86e->Emit(op_movss,GetRegPtr(op->reg1),XMM0);
 		}
 		
 	}
@@ -1562,7 +1609,7 @@ void __fastcall shil_compile_fsrra(shil_opcode* op,BasicBlock* block)
 		//-> no , it wasn that , rcp=1/x , RSQRT=1/srqt tho
 
 		//x86e->SSE_SQRTSS_M32_to_XMM(XMM1,GetRegPtr(op->reg1));	//XMM1=sqrt
-		//x86e->SSE_MOVSS_M32_to_XMM(XMM0,(u32*)mm_1);			//XMM0=1
+		//x86e->Emit(op_movss,XMM0,(u32*)mm_1);			//XMM0=1
 		//x86e->SSE_DIVSS_XMM_to_XMM(XMM0,XMM1);					//XMM0=1/sqrt
 		//or
 		//x86e->SSE_RSQRTSS_M32_to_XMM(XMM0,GetRegPtr(op->reg1));//XMM0=APPR(1/sqrt(fr1))
@@ -1571,15 +1618,15 @@ void __fastcall shil_compile_fsrra(shil_opcode* op,BasicBlock* block)
 
 		if (fra->IsRegAllocated(op->reg1))
 		{
-			x86SSERegType fr1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
+			x86_sse_reg fr1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
 			verify(fr1!=XMM0);
 #ifdef _FAST_fssra
 			x86e->SSE_RSQRTSS_XMM_to_XMM(fr1,fr1);
 #else
 			//fra->FlushRegister_xmm(XMM7);
-			x86e->SSE_SQRTSS_XMM_to_XMM(XMM0,fr1);				//XMM0=sqrt(fr1)
-			x86e->SSE_MOVSS_M32_to_XMM(fr1,(u32*)mm_1);			//fr1=1
-			x86e->SSE_DIVSS_XMM_to_XMM(fr1,XMM0);				//fr1=1/XMM0
+			x86e->Emit(op_sqrtss ,XMM0,fr1);				//XMM0=sqrt(fr1)
+			x86e->Emit(op_movss,fr1,(u32*)mm_1);			//fr1=1
+			x86e->Emit(op_divss,fr1,XMM0);				//fr1=1/XMM0
 #endif
 			fra->SaveRegister(op->reg1,fr1);
 		}
@@ -1589,11 +1636,11 @@ void __fastcall shil_compile_fsrra(shil_opcode* op,BasicBlock* block)
 			x86e->SSE_RSQRTSS_M32_to_XMM(XMM0,GetRegPtr(op->reg1));//XMM0=APPR(1/sqrt(fr1))
 			#else
 			fra->FlushRegister_xmm(XMM7);
-			x86e->SSE_SQRTSS_M32_to_XMM(XMM7,GetRegPtr(op->reg1));	//XMM7=sqrt(fr1)
-			x86e->SSE_MOVSS_M32_to_XMM(XMM0,(u32*)mm_1);			//XMM0=1
-			x86e->SSE_DIVSS_XMM_to_XMM(XMM0,XMM7);					//XMM0=1/XMM7
+			x86e->Emit(op_sqrtss ,XMM7,GetRegPtr(op->reg1));	//XMM7=sqrt(fr1)
+			x86e->Emit(op_movss ,XMM0,(u32*)mm_1);			//XMM0=1
+			x86e->Emit(op_divss ,XMM0,XMM7);					//XMM0=1/XMM7
 			#endif
-			x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),XMM0);	//fr1=XMM0
+			x86e->Emit(op_movss ,GetRegPtr(op->reg1),XMM0);	//fr1=XMM0
 		}
 		
 	}
@@ -1614,9 +1661,9 @@ void __fastcall shil_compile_floatfpul(shil_opcode* op,BasicBlock* block)
 
 		//TODO : This is not entietly correct , sh4 rounds too [need to set MXCSR]
 		//GOTA UNFUCK THE x86 EMITTER
-		x86SSERegType r1=fra->GetRegister(XMM0,op->reg1,RA_NODATA);
-		x86e->SSE_CVTSI2SS_M32_To_XMM(r1,GetRegPtr(reg_fpul));
-		//x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1),XMM0);
+		x86_sse_reg r1=fra->GetRegister(XMM0,op->reg1,RA_NODATA);
+		x86e->Emit(op_cvtsi2ss ,r1,GetRegPtr(reg_fpul));
+		//x86e->Emit(op_movss,GetRegPtr(op->reg1),XMM0);
 		fra->SaveRegister(op->reg1,r1);
 		
 	}
@@ -1639,13 +1686,13 @@ void __fastcall shil_compile_ftrc(shil_opcode* op,BasicBlock* block)
 		//EAX=(int)fr[n]
 		if (fra->IsRegAllocated(op->reg1))
 		{
-			x86SSERegType r1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
+			x86_sse_reg r1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
 			assert(r1!=XMM0);
-			x86e->SSE_CVTTSS2SI_XMM_To_R32(EAX,r1);
+			x86e->Emit(op_cvttss2si, EAX,r1);
 		}
 		else
 		{
-			x86e->SSE_CVTTSS2SI_M32_To_R32(EAX,GetRegPtr(op->reg1));
+			x86e->Emit(op_cvttss2si, EAX,GetRegPtr(op->reg1));
 		}
 		//fpul=EAX
 		SaveReg(reg_fpul,EAX);
@@ -1668,12 +1715,12 @@ void __fastcall shil_compile_fsca(shil_opcode* op,BasicBlock* block)
 		assert(!IsReg64((Sh4RegType)op->reg1));
 		//float real_pi=(((float)(s32)fpul)/65536)*(2*pi);
 		//real_pi=(s32)fpul * ((2*pi)/65536.0f);
-		x86e->FILD32(GetRegPtr(reg_fpul));		//st(0)=(s32)fpul
-		x86e->FMUL32((u32*)fsca_fpul_adj);			//st(0)=(s32)fpul * ((2*pi)/65536.0f)
-		x86e->FSINCOS();						//st(0)=sin , st(1)=cos
+		x86e->Emit(op_fild32i,x86_ptr(GetRegPtr(reg_fpul)));		//st(0)=(s32)fpul
+		x86e->Emit(op_fmul32f,x86_ptr(fsca_fpul_adj));			//st(0)=(s32)fpul * ((2*pi)/65536.0f)
+		x86e->Emit(op_fsincos);						//st(0)=sin , st(1)=cos
 		
-		x86e->FSTP32(GetRegPtr(op->reg1 +1));	//Store cos to reg+1
-		x86e->FSTP32(GetRegPtr(op->reg1));		//store sin to reg
+		x86e->Emit(op_fstp32f,x86_ptr(GetRegPtr(op->reg1 +1)));	//Store cos to reg+1
+		x86e->Emit(op_fstp32f,x86_ptr(GetRegPtr(op->reg1)));		//store sin to reg
 
 		fra->ReloadRegister(op->reg1+1);
 		fra->ReloadRegister(op->reg1);
@@ -1694,25 +1741,25 @@ void __fastcall shil_compile_ftrv(shil_opcode* op,BasicBlock* block)
 		assert(!IsReg64((Sh4RegType)op->reg1));
 		assert(Ensure32());
 
-		x86e->SSE_MOVAPS_M128_to_XMM(XMM0,GetRegPtr(op->reg1));
-		x86e->SSE_MOVAPS_XMM_to_XMM(XMM3,XMM0);
-		x86e->SSE_SHUFPS_XMM_to_XMM(XMM0,XMM0,0);
-		x86e->SSE_MOVAPS_XMM_to_XMM(XMM1,XMM3);
-		x86e->SSE_MOVAPS_XMM_to_XMM(XMM2,XMM3);
-		x86e->SSE_SHUFPS_XMM_to_XMM(XMM1,XMM1,0x55);
-		x86e->SSE_SHUFPS_XMM_to_XMM(XMM2,XMM2,0xaa);
-		x86e->SSE_SHUFPS_XMM_to_XMM(XMM3,XMM3,0xff);
+		x86e->Emit(op_movaps ,XMM0,GetRegPtr(op->reg1));
+		x86e->Emit(op_movaps ,XMM3,XMM0);
+		x86e->Emit(op_shufps ,XMM0,XMM0,0);
+		x86e->Emit(op_movaps ,XMM1,XMM3);
+		x86e->Emit(op_movaps ,XMM2,XMM3);
+		x86e->Emit(op_shufps ,XMM1,XMM1,0x55);
+		x86e->Emit(op_shufps ,XMM2,XMM2,0xaa);
+		x86e->Emit(op_shufps ,XMM3,XMM3,0xff);
 
-		x86e->SSE_MULPS_M128_to_XMM(XMM0,GetRegPtr(xf_0));
-		x86e->SSE_MULPS_M128_to_XMM(XMM1,GetRegPtr(xf_4));
-		x86e->SSE_MULPS_M128_to_XMM(XMM2,GetRegPtr(xf_8));
-		x86e->SSE_MULPS_M128_to_XMM(XMM3,GetRegPtr(xf_12));
+		x86e->Emit(op_mulps ,XMM0,GetRegPtr(xf_0));
+		x86e->Emit(op_mulps ,XMM1,GetRegPtr(xf_4));
+		x86e->Emit(op_mulps ,XMM2,GetRegPtr(xf_8));
+		x86e->Emit(op_mulps ,XMM3,GetRegPtr(xf_12));
 
-		x86e->SSE_ADDPS_XMM_to_XMM(XMM0,XMM1);
-		x86e->SSE_ADDPS_XMM_to_XMM(XMM2,XMM3);
-		x86e->SSE_ADDPS_XMM_to_XMM(XMM0,XMM2);
+		x86e->Emit(op_addps ,XMM0,XMM1);
+		x86e->Emit(op_addps ,XMM2,XMM3);
+		x86e->Emit(op_addps ,XMM0,XMM2);
 
-		x86e->SSE_MOVAPS_XMM_to_M128(GetRegPtr(op->reg1),XMM0);
+		x86e->Emit(op_movaps ,GetRegPtr(op->reg1),XMM0);
 	}
 	else
 	{
@@ -1728,14 +1775,14 @@ void __fastcall shil_compile_fipr(shil_opcode* op,BasicBlock* block)
 	{
 		assert(Ensure32());
 
-		x86e->SSE_MOVAPS_M128_to_XMM(XMM0,GetRegPtr(op->reg1));
-		x86e->SSE_MULPS_M128_to_XMM(XMM0,GetRegPtr(op->reg2));
-		x86e->SSE_MOVHLPS_XMM_to_XMM(XMM1,XMM0);
-		x86e->SSE_ADDPS_XMM_to_XMM(XMM0,XMM1);
-		x86e->SSE_MOVAPS_XMM_to_XMM(XMM1,XMM0);
-		x86e->SSE_SHUFPS_XMM_to_XMM(XMM1,XMM1,1);
-		x86e->SSE_ADDSS_XMM_to_XMM(XMM0,XMM1);
-		x86e->SSE_MOVSS_XMM_to_M32(GetRegPtr(op->reg1+3),XMM0);
+		x86e->Emit(op_movaps ,XMM0,GetRegPtr(op->reg1));
+		x86e->Emit(op_mulps ,XMM0,GetRegPtr(op->reg2));
+		x86e->Emit(op_movhlps ,XMM1,XMM0);
+		x86e->Emit(op_addps ,XMM0,XMM1);
+		x86e->Emit(op_movaps ,XMM1,XMM0);
+		x86e->Emit(op_shufps ,XMM1,XMM1,1);
+		x86e->Emit(op_addss ,XMM0,XMM1);
+		x86e->Emit(op_movss,GetRegPtr(op->reg1+3),XMM0);
 	}
 	else
 	{
@@ -1934,8 +1981,9 @@ void __fastcall CheckBlock(CompiledBlockInfo* block)
 }
 void PatchDynamicLinkGeneric(void* ptr)
 {
-	emitter<>* x86e = new emitter<>();
-	x86e->x86Ptr=(s8*)ptr;
+	/*
+	x86_block* x86e = new x86_block();
+	x86e->x86Ptr=(s8*)ptr;*/
 
 }
 void CompileBasicBlock_slow(BasicBlock* block)
@@ -1946,7 +1994,10 @@ void CompileBasicBlock_slow(BasicBlock* block)
 		inited=true;
 	}
 
-	x86e=new emitter<>();
+	x86e=new x86_block();
+	
+	x86e->Init();
+	//x86e->Emit(op_int3);
 
 	CompiledBasicBlock* cBB;
 	
@@ -1973,6 +2024,8 @@ void CompileBasicBlock_slow(BasicBlock* block)
 	{
 		int sz=block->end-block->start;
 		//check at least 4 bytes
+		sz=(sz +3) & (~3);
+
 		if (sz<4)
 			sz=1;
 		else
@@ -1980,43 +2033,60 @@ void CompileBasicBlock_slow(BasicBlock* block)
 		//sz++;
 		int i=0;
 		//that can be optimised a lota :p
+		
+		x86_Label* exit_discard_block= x86e->CreateLabel(false);
+		x86_Label* execute_block= x86e->CreateLabel(false);
+
 		for (i=0;i<sz;i++)
 		{
 			u32* pmem=(u32*)GetMemPtr(block->start+i*4,4);
-			x86e->CMP32ItoM((u32*)GetMemPtr(block->start+i*4,4),*pmem);
-			u8* patch=x86e->JE8(0);
-			x86e->MOV32ItoR(ECX,(u32)cBB);
-			x86e->MOV32ItoM(GetRegPtr(reg_pc),block->start);
-			x86e->JMP(SuspendBlock);
-			x86e->x86SetJ8(patch);
+			x86e->Emit(op_cmp32 ,GetMemPtr(block->start+i*4,4),*pmem);
+			//u8* patch=x86e->JE8(0);
+			//x86e->x86SetJ8(patch);
+			if (i!=(sz-1))
+			{
+				x86e->Emit(op_jne ,exit_discard_block);
+			}
+			else
+			{
+				x86e->Emit(op_je ,execute_block);
+			}
 		}
+
+		x86e->MarkLabel(exit_discard_block);
+		x86e->Emit(op_mov32,ECX,(u32)cBB);
+		x86e->Emit(op_mov32,GetRegPtr(reg_pc),block->start);
+		x86e->Emit(op_jmp,x86_ptr_imm(SuspendBlock));
+		x86e->MarkLabel(execute_block);
 	}
 
+	verify(do_hs==false);
+	/*
 	if (do_hs)
 	{
 		//check for block promotion to superblock ;)
-		x86e->DEC32M(&cBB->cbi.GetHS()->bpm_ticks);
+		x86e->Emit(op_dec32 ,&cBB->cbi.GetHS()->bpm_ticks);
 		
 		u8* not_zero=x86e->JNZ8(0);
 		{
 			//yay , 0 , see if it needs promotion kkthxdie
-			x86e->MOV32MtoR(EAX,&gcp_timer);//now
+			x86e->Emit(op_mov32,EAX,&gcp_timer);//now
 			x86e->SUB32MtoR(EAX,&cBB->cbi.GetHS()->gcp_lasttimer);//now-last
 			x86e->CMP32ItoR(EAX,16);
 			//if it took more that 16 ticks , then its less that 10% , no promotion
 			u8*no_promote= x86e->JBE8(0);
 			{
 				//suspend block
-				x86e->MOV32ItoR(ECX,(u32)cBB);
-				x86e->CALLFunc(SuspendBlock);
+				x86e->Emit(op_mov32,ECX,(u32)cBB);
+				x86e->Emit(op_call,x86_ptr_imm(SuspendBlock));
 				void*  __fastcall CompileCode_SuperBlock(u32 pc);
-				x86e->MOV32ItoR(ECX,(u32)cBB->cbi.start);
-				x86e->CALLFunc(CompileCode_SuperBlock);
+				x86e->Emit(op_mov32,ECX,(u32)cBB->cbi.start);
+				x86e->Emit(op_call,x86_ptr_imm(CompileCode_SuperBlock));
 				x86e->JMP32R(EAX);
 			}
 			x86e->x86SetJ8(no_promote);
 			x86e->ADD32RtoM(&cBB->cbi.GetHS()->gcp_lasttimer,EAX);//last+now-last=now ;)
-			x86e->MOV32ItoM(&cBB->cbi.GetHS()->bpm_ticks,3022);
+			x86e->Emit(op_mov32,&cBB->cbi.GetHS()->bpm_ticks,3022);
 		}
 		x86e->x86SetJ8(not_zero);
 
@@ -2026,12 +2096,16 @@ void CompileBasicBlock_slow(BasicBlock* block)
 		cBB->cbi.GetHS()->gcp_lasttimer=gcp_timer;
 		cBB->cbi.GetHS()->bpm_ticks=3022*2;
 	}
+	*/
 	
-	s8* start_ptr;
+	//s8* start_ptr;
+	x86_Label* block_start = x86e->CreateLabel(false);
 
-	if (PROFILE_BLOCK_CYCLES){
-		start_ptr=x86e->x86Ptr;
-		x86e->CALLFunc(dyna_profile_block_enter);
+	if (PROFILE_BLOCK_CYCLES)
+	{
+		//start_ptr=x86e->x86Ptr;
+		x86e->MarkLabel(block_start);
+		x86e->Emit(op_call,x86_ptr_imm(dyna_profile_block_enter));
 	}
 
 	fra=GetFloatAllocator();
@@ -2043,11 +2117,13 @@ void CompileBasicBlock_slow(BasicBlock* block)
 	ira->BeforeEmit();
 	fra->BeforeEmit();
 
-	if (PROFILE_BLOCK_CYCLES==false){
-		start_ptr=x86e->x86Ptr;
+	if (PROFILE_BLOCK_CYCLES==false)
+	{
+		//start_ptr=x86e->x86Ptr;
+		x86e->MarkLabel(block_start);
 	}
 
-	x86e->ADD32ItoM(&rec_cycles,block->cycles);
+	x86e->Emit(op_add32 ,&rec_cycles,block->cycles);
 
 	u32 list_sz=(u32)block->ilst.opcodes.size();
 	for (u32 i=0;i<list_sz;i++)
@@ -2070,8 +2146,8 @@ void CompileBasicBlock_slow(BasicBlock* block)
 
 	if (PROFILE_BLOCK_CYCLES)
 	{
-		x86e->MOV32ItoR(ECX,(u32)(cBB->cbi.GetNP()));
-		x86e->CALLFunc(dyna_profile_block_exit_BasicBlock);
+		x86e->Emit(op_mov32,ECX,(u32)(cBB->cbi.GetNP()));
+		x86e->Emit(op_call,x86_ptr_imm(dyna_profile_block_exit_BasicBlock));
 	}
 
 	//end block acording to block type :)
@@ -2081,38 +2157,44 @@ void CompileBasicBlock_slow(BasicBlock* block)
 	case BLOCK_EXITTYPE_DYNAMIC_CALL:
 		{
 			//mov guess,pr
-			x86e->MOV32ItoM(&call_ret_address,cBB->ebi.TT_next_addr);
+			x86e->Emit(op_mov32,&call_ret_address,cBB->ebi.TT_next_addr);
 			//mov pguess,this
-			x86e->MOV32ItoM((u32*)&pcall_ret_address,(u32)(cBB));
+			x86e->Emit(op_mov32,(u32*)&pcall_ret_address,(u32)(cBB));
 		}
 	case BLOCK_EXITTYPE_DYNAMIC:
 		{
-			x86e->RET();
+			x86e->Emit(op_ret);
 			break;
 		}
 
 	case BLOCK_EXITTYPE_RET:
 		{
+			x86_Label* not_ok=x86e->CreateLabel(false);
+
 			//cmp pr,guess
-			x86e->MOV32MtoR(EAX,GetRegPtr(reg_pc));
-			x86e->CMP32MtoR(EAX,&call_ret_address);
+			x86e->Emit(op_mov32 ,EAX,GetRegPtr(reg_pc));
+			x86e->Emit(op_cmp32 ,EAX,&call_ret_address);
 			//je ok
-			u8* not_ok=x86e->JNE8(0);
+			x86e->Emit(op_jne ,not_ok);
 			//ok:
 			//mov ecx , pcall_ret_address
-			x86e->MOV32MtoR(ECX,(u32*)&pcall_ret_address);
+			x86e->Emit(op_mov32 ,ECX,(u32*)&pcall_ret_address);
 			//mov eax,[pcall_ret_address+codeoffset]
-			x86e->MOV32RtoR(EAX,ECX);
-			x86e->ADD32ItoR(EAX,offsetof(CompiledBasicBlock,ebi.pTT_next_addr));
+			x86e->Emit(op_jmp32,x86_mrm::create(ECX,x86_ptr::create(offsetof(CompiledBasicBlock,ebi.pTT_next_addr))));
+			/*
+			x86e->Emit(op_mov32 ,EAX,ECX);
+			x86e->Emit(op_add32 ,EAX,);
 			x86e->MOV32RmtoR(EAX,EAX);//get ptr to compiled block/link stub
 			//jmp eax
 			x86e->JMP32R(EAX);	//jump to it
+			*/
 
-			x86e->x86SetJ8(not_ok);
+			//x86e->x86SetJ8(not_ok);
+			x86e->MarkLabel(not_ok);
 			//not_ok
 
 			//ret
-			x86e->RET();
+			x86e->Emit(op_ret);
 
 			break;
 		}
@@ -2128,21 +2210,20 @@ void CompileBasicBlock_slow(BasicBlock* block)
 			u32* pTF_f=(u32*)&(cBB->ebi.pTT_next_addr);
 			u32* pTT_f=(u32*)&(cBB->ebi.pTF_next_addr);
 
-			x86e->CMP32ItoM(&rec_cycles,BLOCKLIST_MAX_CYCLES);
+			x86e->Emit(op_cmp32 ,&rec_cycles,BLOCKLIST_MAX_CYCLES);
 			
-			u8* Exit_Link;
+			x86_Label* Exit_Link = x86e->CreateLabel(false);
 
 			
-			Exit_Link=x86e->JGE8(0);
+			x86e->Emit(op_jge ,Exit_Link);
 
 			//Link:
 			//if we can execute more blocks
 			{
 				//for dynamic link!
-				x86e->MOV32ItoR(ECX,(u32)cBB);					//mov ecx , block
-				x86e->MOV32MtoR(EAX,&T_jcond_value);
-				x86e->TEST32ItoR(EAX,1);//test for T
-
+				x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , block
+				x86e->Emit(op_test32,&T_jcond_value,1);
+				//x86e->TEST32ItoR(EAX,1);//test for T
 				/*
 				//link to next block :
 				if (*TF_a==cBB->start)
@@ -2155,7 +2236,7 @@ void CompileBasicBlock_slow(BasicBlock* block)
 				}
 				else
 				{*/
-				x86e->MOV32MtoR(EAX,pTF_f);		//assume it's this condition , unless CMOV overwrites
+				x86e->Emit(op_mov32,EAX,pTF_f);		//assume it's this condition , unless CMOV overwrites
 				/*}
 				//!=
 
@@ -2171,29 +2252,31 @@ void CompileBasicBlock_slow(BasicBlock* block)
 				{
 				if (*TF_a==cBB->start)
 				{
-				x86e->MOV32MtoR(EAX,pTT_f);// ;)
+				x86e->Emit(op_mov32,EAX,pTT_f);// ;)
 				}
 				else*/
-				x86e->CMOVNE32MtoR(EAX,pTT_f);	//overwrite the "other" pointer if needed
+				x86e->Emit(op_cmovne32 ,EAX,pTT_f);	//overwrite the "other" pointer if needed
 				//}
-				x86e->JMP32R(EAX);		 //!=
+				x86e->Emit(op_jmp32,EAX);		 //!=
 			}
 			
-			x86e->x86SetJ8(Exit_Link);
+			x86e->MarkLabel(Exit_Link);
 			{
 				//If our cycle count is expired
 				//save the dest address to pc
-
-				x86e->MOV32MtoR(EAX,&T_jcond_value);
+				/*
+				x86e->Emit(op_mov32,EAX,&T_jcond_value);
 				x86e->TEST32ItoR(EAX,1);//test for T
+				*/
+				x86e->Emit(op_test32,&T_jcond_value,1);
 				//see witch pc to set
 
-				x86e->MOV32ItoR(EAX,*TF_a);//==
+				x86e->Emit(op_mov32,EAX,*TF_a);//==
 				//!=
-				x86e->CMOVNE32MtoR(EAX,TT_a);//!=
-				x86e->MOV32RtoM(GetRegPtr(reg_pc),EAX);
+				x86e->Emit(op_cmovne32 ,EAX,TT_a);//!=
+				x86e->Emit(op_mov32,GetRegPtr(reg_pc),EAX);
 
-				x86e->RET();//return to caller to check for interrupts
+				x86e->Emit(op_ret);//return to caller to check for interrupts
 			}
 		} 
 		break;
@@ -2201,17 +2284,17 @@ void CompileBasicBlock_slow(BasicBlock* block)
 	case BLOCK_EXITTYPE_FIXED_CALL:
 		//mov guess,pr
 		{
-			x86e->MOV32ItoM(&call_ret_address,cBB->ebi.TT_next_addr);
+			x86e->Emit(op_mov32,&call_ret_address,cBB->ebi.TT_next_addr);
 			//mov pguess,this
-			x86e->MOV32ItoM((u32*)&pcall_ret_address,(u32)(cBB));
+			x86e->Emit(op_mov32,(u32*)&pcall_ret_address,(u32)(cBB));
 		}
 	case BLOCK_EXITTYPE_FIXED:
 		{
-			x86e->CMP32ItoM(&rec_cycles,BLOCKLIST_MAX_CYCLES);
+			x86e->Emit(op_cmp32 ,&rec_cycles,BLOCKLIST_MAX_CYCLES);
 
-			u8* No_Link;
+			x86_Label* No_Link = x86e->CreateLabel(false);
 
-			No_Link=x86e->JGE8(0);
+			x86e->Emit(op_jge ,No_Link);
 
 			//Link:
 			//if we can execute more blocks
@@ -2222,14 +2305,15 @@ void CompileBasicBlock_slow(BasicBlock* block)
 			}
 
 			//link to next block :
-			x86e->MOV32ItoR(ECX,(u32)cBB);					//mov ecx , cBB
-			x86e->MOV32MtoR(EAX,(u32*)&(cBB->ebi.pTF_next_addr));	//mov eax , [pTF_next_addr]
-			x86e->JMP32R(EAX);									//jmp eax
+			x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , cBB
+			x86e->Emit(op_mov32,EAX,(u32*)&(cBB->ebi.pTF_next_addr));	//mov eax , [pTF_next_addr]
+			x86e->Emit(op_jmp32 ,EAX);									//jmp eax
 
-			x86e->x86SetJ8(No_Link);
+			//x86e->x86SetJ8(No_Link);
+			x86e->MarkLabel(No_Link);
 			//If our cycle count is expired
-			x86e->MOV32ItoM(GetRegPtr(reg_pc),cBB->ebi.TF_next_addr);
-			x86e->RET();//return to caller to check for interrupts
+			x86e->Emit(op_mov32,GetRegPtr(reg_pc),cBB->ebi.TF_next_addr);
+			x86e->Emit(op_ret);//return to caller to check for interrupts
 			break;
 		}
 	case BLOCK_EXITTYPE_FIXED_CSC:
@@ -2238,11 +2322,11 @@ void CompileBasicBlock_slow(BasicBlock* block)
 			//We also have to reset return cache to ensure its ok
 
 			//call_ret_address=0xFFFFFFFF;
-			x86e->MOV32ItoM(&call_ret_address,0xFFFFFFFF);
+			x86e->Emit(op_mov32,&call_ret_address,0xFFFFFFFF);
 			//pcall_ret_address=0;
-			x86e->MOV32ItoM((u32*)&pcall_ret_address,0);
+			x86e->Emit(op_mov32,(u32*)&pcall_ret_address,0);
 			//Good , now return to caller :)
-			x86e->RET();
+			x86e->Emit(op_ret);
 			break;
 		}
 	}
@@ -2250,10 +2334,10 @@ void CompileBasicBlock_slow(BasicBlock* block)
 	ira->AfterTrail();
 	fra->AfterTrail();
 
-	x86e->GenCode();//heh
+	void* codeptr=x86e->Generate(0,0);//heh
 
-	cBB->cbi.Code=(BasicBlockEP*)x86e->GetCode();
-	cBB->cbi.size=x86e->UsedBytes();
+	cBB->cbi.Code=(BasicBlockEP*)codeptr;
+	cBB->cbi.size=x86e->x86_indx;
 
 	//make it call the stubs , unless otherwise needed
 	cBB->ebi.pTF_next_addr=bb_link_compile_inject_TF_stub;
@@ -2275,6 +2359,7 @@ void CompileBasicBlock_slow(BasicBlock* block)
 	
 	delete fra;
 	delete ira;
+	x86e->Free();
 	delete x86e;
 }
 
@@ -2327,18 +2412,20 @@ extern void* _vmem_MemInfo[0x10000];
 
 //sz is 1,2,4,8
 //8 reads are assumed to be on same map (8 byte allign should ensure this , i dunoo -> it does)
-void emit_vmem_op(emitter<>* x86e,
-				  u32 ma,x86IntRegType ra,u32* pa,u32 amode,
-				  x86IntRegType ro,x86SSERegType xo,u32 omode,
+#ifdef OLD_VMEM
+void emit_vmem_op(x86_block* x86e,
+				  u32 ma,x86_gpr_reg ra,u32* pa,u32 amode,
+				  x86_gpr_reg ro,x86_sse_reg xo,u32 omode,
 				  u32 sz,u32 rw)
 {
 	u8* direct=0;
 	u8* op_end=0;
 	u32 index=0;
 	u32 rb=0;
+
 	if (amode==2)//pointer to ram to read
 	{
-		x86e->MOV32MtoR(ECX,pa);
+		x86e->Emit(op_mov32,ECX,pa);
 		amode=1;
 		ra=ECX;
 	}
@@ -2346,14 +2433,14 @@ void emit_vmem_op(emitter<>* x86e,
 	if (amode==1)
 	{
 		
-		x86e->MOV32RtoR(EAX,ra);
-		x86e->SHR32ItoR(EAX,16);
+		x86e->Emit(op_mov32,EAX,ra);
+		x86e->Emit(op_shr32,EAX,16);
 		if (ra!=ECX)
-			x86e->MOV32RtoR(ECX,ra);
+			x86e->Emit(op_mov32,ECX,ra);
 		if (rw==0)//olny on read
 		{
-		x86e->MOV32RtoR(EDX,ECX);
-		x86e->AND32ItoR(EDX,0xFFFF);
+		x86e->Emit(op_mov32,EDX,ECX);
+		x86e->Emit(op_and32,EDX,0xFFFF);
 		}
 		//_vmem_MemInfo
 		//mov eax,[_vmem_MemInfo+eax*4];
@@ -2364,17 +2451,17 @@ void emit_vmem_op(emitter<>* x86e,
 		x86e->write32((u32)&_vmem_MemInfo[0]);
 
 		//test eax,0xFFFF0000;
-		x86e->TEST32ItoR(EAX,0xFFFF0000);
+		x86e->Emit(op_test32 ,EAX,0xFFFF0000);
 	}
 	else if (amode == 0)
 	{
 		index=ma>>16;
 		rb=ma&0xFFFF;
-		//x86e->MOV32MtoR(EAX,0/*_vmem_MemInfo*/+index*4);
+		//x86e->Emit(op_mov32,EAX,0/*_vmem_MemInfo*/+index*4);
 	}
 	direct=x86e->JNZ8(0);
 	
-	//x86e->MOV32MtoR(EAX,
+	//x86e->Emit(op_mov32,EAX,
 	//	mov eax , [_vmem_WF8+eax];
 	//jmp eax;
 	x86e->CALL32R(EAX);
@@ -2428,15 +2515,45 @@ void emit_vmem_op(emitter<>* x86e,
 	x86e->x86SetJ8(op_end);
 }
 
+#endif
 //this is P4 optimised (its faster olny when shr takes a bit :) )
 //on AMD we can move the shr just before the read , and do the edx work after the read
 //so we cover the read stall :)
 //corrupts ecx,eax,edx; preserves all else (fastcall + xmm safe + xmm fpstatus safe)
-void emit_vmem_op_compat(emitter<>* x86e,x86IntRegType ra,
-					  x86IntRegType ro,
+void emit_vmem_op_compat(x86_block* x86e,x86_gpr_reg ra,
+					  x86_gpr_reg ro,
 					  u32 sz,u32 rw)
 {
+	if (rw==0)
+	{
+		x86e->Emit(op_mov32,ECX,ra);
+	
+		if (sz==1)
+			x86e->Emit(op_call,x86_ptr_imm(ReadMem8));
+		else if (sz==2)
+			x86e->Emit(op_call,x86_ptr_imm(ReadMem16));
+		else if (sz==4)
+			x86e->Emit(op_call,x86_ptr_imm(ReadMem32));
+
+		x86e->Emit(op_mov32,ro,EAX);
+	}
+	else
+	{
+		x86e->Emit(op_mov32,ECX,ra);
+		x86e->Emit(op_mov32,EDX,ro);
+
+		if (sz==1)
+			x86e->Emit(op_call,x86_ptr_imm(WriteMem8));
+		else if (sz==2)
+			x86e->Emit(op_call,x86_ptr_imm(WriteMem16));
+		else if (sz==4)
+			x86e->Emit(op_call,x86_ptr_imm(WriteMem32));
+	}
+#if NOT_DEFINED
 	u32 p_RWF_table=0;
+	x86_Label* direct=x86e->CreateLabel(false);
+	x86_Label* rw_end=x86e->CreateLabel(false);
+
 	if (rw==0)
 	{
 		if (sz==1)
@@ -2457,114 +2574,132 @@ void emit_vmem_op_compat(emitter<>* x86e,x86IntRegType ra,
 	}
 	////copy address
 	//mov eax,ecx;
-	x86e->MOV32RtoR(EAX,ra);
+	x86e->Emit(op_mov32,EAX,ra);
 	////shr 14 + and vs shr16 + mov eax,[_vmem_MemInfo+eax*4];
 	////after testing , shr16+mov complex is faster , both on amd (a64 x2) and intel (northwood)
 
 	////get upper 16 bits
 	//shr eax,16;
-	x86e->SHR32ItoR(EAX,16);
+	x86e->Emit(op_shr32 ,EAX,16);
 	
 	//read olny
 	if (rw==0)
 	{
 		//mov edx,ecx;//this is done here , among w/ the and , it should be possible to fully execute it on paraler (no depency)
-		x86e->MOV32RtoR(EDX,ra);
+		x86e->Emit(op_mov32,EDX,ra);
 	}
 
 	//read mem info
 	//mov eax,[_vmem_MemInfo+eax*4];
 	//8B 04 85 base_address
+	x86e->Emit(op_mov32, EAX,x86_mrm::create(EAX,sib_scale_4,_vmem_MemInfo));
+	/*
 	x86e->write8(0x8B);
 	x86e->write8(0x04);
 	x86e->write8(0x85);
 	x86e->write32((u32)&_vmem_MemInfo[0]);
+	*/
 
 	//olny on read
 	if (rw==0)
 	{
 		//read is gona stall , even if 1 cycle ;
 		//and edx,0xFFFF;//lower 16b of address
-		x86e->AND32ItoR(EDX,0xFFFF);
+		x86e->Emit(op_and32 ,EDX,0xFFFF);
 	}
 
 	//ra may be another reg :)
 	if (ra!=ECX)
-		x86e->MOV32RtoR(ECX,ra);
+		x86e->Emit(op_mov32,ECX,ra);
 
 	//test eax,0xFFFF0000;
-	x86e->TEST32ItoR(EAX,0xFFFF0000);
+	x86e->Emit(op_test32 ,EAX,0xFFFF0000);
 
 	if (rw==1)
 	{
 		if (ro!=EDX)
-			x86e->MOV32RtoR(EDX,ro);
+			x86e->Emit(op_mov32,EDX,ro);
 	}
 
 	//jnz direct;
-	u8* direct=x86e->JNZ8(0);
+	x86e->Emit(op_jnz , direct);
 	
 	////get function pointer
 	//mov eax , [_vmem_RF8+eax];
 	//0040FF23 8B 80 18 28 5A 02 mov         eax,dword ptr _vmem_WF32 (25A2818h)[eax] 
-	x86e->write8(0x8B);
+	/*x86e->write8(0x8B);
 	x86e->write8(0x80);
-	x86e->write32(p_RWF_table);
+	x86e->write32(p_RWF_table);*/
 
-
+	// -> x86e->Emit(op_mov32,EAX,x86_mrm::create(mod_RI_disp,EAX,sib_scale_1,REG_NONE,_vmem_RF8));
 	//jmp eax;
-	x86e->CALL32R(EAX);
+	//x86e->CALL32R(EAX);
+	x86e->Emit(op_call32,x86_mrm::create(EAX,_vmem_RF8));
+
 	if (rw==0)
 	{
 		if (ro!=EAX)
-			x86e->MOV32RtoR(ro,EAX);
+			x86e->Emit(op_mov32,ro,EAX);
 	}
-	u8* rw_end=x86e->JMP8(0);
+	x86e->Emit(op_jmp,rw_end);
 
 //direct:
-	x86e->x86SetJ8(direct);
+	x86e->MarkLabel(direct);
 	//write olny
 	if (rw==1)
 	{
 		//and edx,0xFFFF;//lower 16b of address
-		x86e->AND32ItoR(ECX,0xFFFF);
+		x86e->Emit(op_and32 ,ECX,0xFFFF);
 		//write to [eax+ecx]
 		if (sz==1)
 		{	//, dl
+			x86e->Emit(op_mov8,x86_mrm::create(EAX,ECX),DL);
+			/*
 			x86e->write8(0x88);
 			x86e->write8(0x14);
 			x86e->write8(0x08);
+			*/
 		}
 		else if (sz==2)
 		{	//,dx
+			x86e->Emit(op_mov16,x86_mrm::create(EAX,ECX),DX);
+			/*
 			x86e->write8(0x66);
 			x86e->write8(0x89);
 			x86e->write8(0x14);
 			x86e->write8(0x08);
+			*/
 		}
 		else if (sz==4)
 		{	//,edx
+			x86e->Emit(op_mov32,x86_mrm::create(EAX,ECX),EDX);
+			/*
 			x86e->write8(0x89);
 			x86e->write8(0x14);
 			x86e->write8(0x08);
+			*/
 		}
 	}
 	else
 	{
 		//mov eax,[eax+edx];	//note : upper bits dont matter , so i do 32b read here ;) (to get read of partial register stalls)
 		//0040FE43 8B 04 10         mov         eax,dword ptr [eax+edx] 
+		/*
 		x86e->write8(0x8B);
 		x86e->write8(0x04);
 		x86e->write8(0x10);
-		if (ro!=EAX)
-			x86e->MOV32RtoR(ro,EAX);
+		*/
+		x86e->Emit(op_mov32,ro,x86_mrm::create(EAX,EDX));
+		//if (ro!=EAX)
+		//	x86e->Emit(op_mov32,ro,EAX);
 	}
 	//ret;
-	x86e->x86SetJ8(rw_end);
+	x86e->MarkLabel(rw_end);
+#endif
 }
 
-void emit_vmem_op_compat_const(emitter<>* x86e,u32 ra,
-							   x86IntRegType ro,x86SSERegType ro_sse,bool sse,
+void emit_vmem_op_compat_const(x86_block* x86e,u32 ra,
+							   x86_gpr_reg ro,x86_sse_reg ro_sse,bool sse,
 								u32 sz,u32 rw)
 {
 	void* p_RWF_table=0;
@@ -2606,29 +2741,29 @@ void emit_vmem_op_compat_const(emitter<>* x86e,u32 ra,
 			else
 			{
 				if (ro!=EDX)
-					x86e->MOV32RtoR(EDX,ro);
+					x86e->Emit(op_mov32,EDX,ro);
 			}
 		}
 
-		x86e->MOV32ItoR(ECX,ra);
+		x86e->Emit(op_mov32,ECX,ra);
 
 		u32 entry=((u32)t)>>2;
 
-		x86e->CALLFunc(((u32**)p_RWF_table)[entry]);
+		x86e->Emit(op_call , x86_ptr_imm(((u32**)p_RWF_table)[entry]));
 		if (rw==0)
 		{
 			if (sz==1)
 			{
-				x86e->MOVSX32R8toR(ro,EAX);
+				x86e->Emit(op_movsx8to32, ro,EAX);
 			}
 			else if (sz==2)
 			{
-				x86e->MOVSX32R16toR(ro,EAX);
+				x86e->Emit(op_movsx16to32, ro,EAX);
 			}
 			else if (sz==4)
 			{
 				if (ro!=EAX)
-					x86e->MOV32RtoR(ro,EAX);
+					x86e->Emit(op_mov32,ro,EAX);
 			}
 		}
 	}
@@ -2641,21 +2776,21 @@ void emit_vmem_op_compat_const(emitter<>* x86e,u32 ra,
 			if (sz==1)
 			{	//copy to eax :p
 				if (ro!=EDX)
-					x86e->MOV32RtoR(EDX,ro);
-				x86e->MOV8RtoM((u8*)paddr,EDX);
+					x86e->Emit(op_mov32,EDX,ro);
+				x86e->Emit(op_mov8 ,(u8*)paddr,EDX);
 			}
 			else if (sz==2)
 			{	//,dx
-				x86e->MOV16RtoM((u16*)paddr,ro);
+				x86e->Emit(op_mov16 ,(u16*)paddr,ro);
 			}
 			else if (sz==4)
 			{	//,edx
 				if (sse)
 				{
-					x86e->SSE_MOVSS_XMM_to_M32((u32*)paddr,ro_sse);
+					x86e->Emit(op_movss,(u32*)paddr,ro_sse);
 				}
 				else
-					x86e->MOV32RtoM((u32*)paddr,ro);
+					x86e->Emit(op_mov32,(u32*)paddr,ro);
 			}
 		}
 		else
@@ -2663,20 +2798,20 @@ void emit_vmem_op_compat_const(emitter<>* x86e,u32 ra,
 			void* paddr=&((u8*)t)[lower];
 			if (sz==1)
 			{
-				x86e->MOVSX32M8toR(ro,(u8*)paddr);
+				x86e->Emit(op_movsx8to32, ro,(u8*)paddr);
 			}
 			else if (sz==2)
 			{
-				x86e->MOVSX32M16toR(ro,(u16*)paddr);
+				x86e->Emit(op_movsx16to32, ro,(u16*)paddr);
 			}
 			else if (sz==4)
 			{
 				if (sse)
 				{
-					x86e->SSE_MOVSS_M32_to_XMM(ro_sse,(u32*)paddr);
+					x86e->Emit(op_movss,ro_sse,(u32*)paddr);
 				}
 				else
-					x86e->MOV32MtoR(ro,(u32*)paddr);
+					x86e->Emit(op_mov32,ro,(u32*)paddr);
 			}
 		}
 	}

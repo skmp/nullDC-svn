@@ -17,36 +17,36 @@
 //ReloadRegister	: read reg from reg location , discard old result
 
 //more helpers
-x86IntRegType LoadReg_force(x86IntRegType to,u8 reg)
+x86_gpr_reg LoadReg_force(x86_gpr_reg to,u8 reg)
 {
 	if(REG_ALLOC_X86)
 	{
 		if (reg>r15 || (!IsRegCached(reg)))
 		{
-			x86e->MOV32MtoR(to,GetRegPtr(reg));
+			x86e->Emit(op_mov32,to,GetRegPtr(reg));
 		}
 		else
 		{
-			x86IntRegType x86reg=LoadRegCache_reg(reg);
+			x86_gpr_reg x86reg=LoadRegCache_reg(reg);
 			if (!(to==x86reg))
-				x86e->MOV32RtoR(to,x86reg);
+				x86e->Emit(op_mov32,to,x86reg);
 		}
 	}
 	else
 	{
-		x86e->MOV32MtoR(to,GetRegPtr(reg));
+		x86e->Emit(op_mov32,to,GetRegPtr(reg));
 	}
 
 	return to;
 }
 
-x86IntRegType LoadReg(x86IntRegType to,u8 reg)
+x86_gpr_reg LoadReg(x86_gpr_reg to,u8 reg)
 {
 	if(REG_ALLOC_X86)
 	{
 		if (reg>r15 || (!IsRegCached(reg)))
 		{
-			x86e->MOV32MtoR(to,GetRegPtr(reg));
+			x86e->Emit(op_mov32,to,GetRegPtr(reg));
 			//return to;
 		}
 		else
@@ -56,20 +56,20 @@ x86IntRegType LoadReg(x86IntRegType to,u8 reg)
 	}
 	else
 	{
-		x86e->MOV32MtoR(to,GetRegPtr(reg));
+		x86e->Emit(op_mov32,to,GetRegPtr(reg));
 		//return to;
 	}
 
 	return to;
 }
 
-x86IntRegType LoadReg_nodata(x86IntRegType to,u8 reg)
+x86_gpr_reg LoadReg_nodata(x86_gpr_reg to,u8 reg)
 {
 	if(REG_ALLOC_X86)
 	{
 		if (reg>r15 || (!IsRegCached(reg)))
 		{
-			//x86e->MOV32MtoR(to,GetRegPtr(reg)); -> do nothin :P
+			//x86e->Emit(op_mov32,to,GetRegPtr(reg)); -> do nothin :P
 			return to;
 		}
 		else
@@ -86,7 +86,7 @@ x86IntRegType LoadReg_nodata(x86IntRegType to,u8 reg)
 
 u32 ssenoalloc=0;
 u32 ssealloc=0;
-x86IntRegType reg_to_alloc[4]=
+x86_gpr_reg reg_to_alloc[4]=
 {
 	EBX,
 	EBP,
@@ -102,11 +102,11 @@ x86IntRegType reg_to_alloc[4]=
 class SimpleGPRAlloc : public IntegerRegAllocator
 {
 
-	emitter<>* x86e;
+	x86_block* x86e;
 	//helpers & misc shit
 	struct RegAllocInfo
 	{
-		x86IntRegType x86reg;
+		x86_gpr_reg x86reg;
 		bool InReg;
 		bool Dirty;
 	};
@@ -159,7 +159,7 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 	}
 	//reg alloc interface :)
 	//DoAllocation		: do allocation on the block
-	virtual void DoAllocation(BasicBlock* block,emitter<>* x86e)
+	virtual void DoAllocation(BasicBlock* block,x86_block* x86e)
 	{
 		this->x86e=x86e;
 		sort_temp used[16];
@@ -168,7 +168,7 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 			used[i].cnt=0;
 			used[i].reg=r0+i;
 			used[i].no_load=false;
-			r_alloced[i].x86reg=GPR_Error;
+			r_alloced[i].x86reg=REG_ERROR;
 			r_alloced[i].InReg=false;
 			r_alloced[i].Dirty=false;
 		}
@@ -235,13 +235,13 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 	{
 		checkvr(sh4_reg);
 		if (sh4_reg<=r15)
-			return r_alloced[sh4_reg].x86reg!=GPR_Error;
+			return r_alloced[sh4_reg].x86reg!=REG_ERROR;
 		else 
 			return false;
 	}
 	//Carefull w/ register state , we may need to implement state push/pop
 	//GetRegister		: Get the register , needs flag for mode
-	virtual x86IntRegType GetRegister(x86IntRegType d_reg,u32 sh4_reg,u32 mode)
+	virtual x86_gpr_reg GetRegister(x86_gpr_reg d_reg,u32 sh4_reg,u32 mode)
 	{
 		checkvr(sh4_reg);
 		//No move , or RtR move + reload
@@ -252,7 +252,7 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 				if ((mode & RA_NODATA)==0)
 				{
 					//if we must load , and its not loaded
-					x86e->MOV32MtoR(r_alloced[sh4_reg].x86reg,GetRegPtr(sh4_reg));
+					x86e->Emit(op_mov32,r_alloced[sh4_reg].x86reg,GetRegPtr(sh4_reg));
 					r_alloced[sh4_reg].Dirty=false;//not dirty .ffs, we just loaded it....
 				}
 				else
@@ -268,7 +268,7 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 			{
 				//move to forced reg , if needed
 				if ((r_alloced[sh4_reg].x86reg!=d_reg) && ((mode & RA_NODATA)==0))
-					x86e->MOV32RtoR(d_reg,r_alloced[sh4_reg].x86reg);
+					x86e->Emit(op_mov32,d_reg,r_alloced[sh4_reg].x86reg);
 				return d_reg;
 			}
 			else
@@ -281,7 +281,7 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 		{
 			//MtoR move , force has no effect (allways forced) ;)
 			if (0==(mode & RA_NODATA))
-				x86e->MOV32MtoR(d_reg,GetRegPtr(sh4_reg));
+				x86e->Emit(op_mov32,d_reg,GetRegPtr(sh4_reg));
 			return d_reg;
 		}
 
@@ -290,18 +290,18 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 		//return EAX;
 	}
 	//Save registers
-	virtual void SaveRegister(u32 reg,x86IntRegType from)
+	virtual void SaveRegister(u32 reg,x86_gpr_reg from)
 	{
 		checkvr(reg);
 		if (!IsRegAllocated(reg))
 		{
-			x86e->MOV32RtoM(GetRegPtr(reg),from);
+			x86e->Emit(op_mov32,GetRegPtr(reg),from);
 		}
 		else
 		{
-			x86IntRegType x86reg=GetRegister(EAX,reg,RA_NODATA);
+			x86_gpr_reg x86reg=GetRegister(EAX,reg,RA_NODATA);
 			if (x86reg!=from)
-				x86e->MOV32RtoR(x86reg,from);
+				x86e->Emit(op_mov32,x86reg,from);
 		}
 		MarkDirty(reg);
 	}
@@ -310,12 +310,12 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 		checkvr(reg);
 		if (!IsRegAllocated(reg))
 		{
-			x86e->MOV32ItoM(GetRegPtr(reg),from);
+			x86e->Emit(op_mov32,GetRegPtr(reg),from);
 		}
 		else
 		{
-			x86IntRegType x86reg=GetRegister(EAX,reg,RA_NODATA);
-			x86e->MOV32ItoR(x86reg,from);
+			x86_gpr_reg x86reg=GetRegister(EAX,reg,RA_NODATA);
+			x86e->Emit(op_mov32,x86reg,from);
 		}
 		MarkDirty(reg);
 	}
@@ -324,13 +324,13 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 		checkvr(reg);
 		if (!IsRegAllocated(reg))
 		{
-			x86e->MOV32MtoR(ECX,from);
-			x86e->MOV32RtoM(GetRegPtr(reg),ECX);
+			x86e->Emit(op_mov32,ECX,from);
+			x86e->Emit(op_mov32,GetRegPtr(reg),ECX);
 		}
 		else
 		{
-			x86IntRegType x86reg=GetRegister(EAX,reg,RA_NODATA);
-			x86e->MOV32MtoR(x86reg,from);
+			x86_gpr_reg x86reg=GetRegister(EAX,reg,RA_NODATA);
+			x86e->Emit(op_mov32,x86reg,from);
 		}
 		MarkDirty(reg);
 	}
@@ -339,13 +339,13 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 		checkvr(reg);
 		if (!IsRegAllocated(reg))
 		{
-			x86e->MOVSX32M16toR(ECX,(u16*)from);
-			x86e->MOV32RtoM(GetRegPtr(reg),ECX);
+			x86e->Emit(op_movsx16to32,ECX,(u16*)from);
+			x86e->Emit(op_mov32,GetRegPtr(reg),ECX);
 		}
 		else
 		{
-			x86IntRegType x86reg=GetRegister(EAX,reg,RA_NODATA);
-			x86e->MOVSX32M16toR(x86reg,(u16*)from);
+			x86_gpr_reg x86reg=GetRegister(EAX,reg,RA_NODATA);
+			x86e->Emit(op_movsx16to32, x86reg,(u16*)from);
 		}
 		MarkDirty(reg);
 	}
@@ -354,13 +354,13 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 		checkvr(reg);
 		if (!IsRegAllocated(reg))
 		{
-			x86e->MOVSX32M8toR(ECX,(u8*)from);
-			x86e->MOV32RtoM(GetRegPtr(reg),ECX);
+			x86e->Emit(op_movsx8to32, ECX,(u8*)from);
+			x86e->Emit(op_mov32,GetRegPtr(reg),ECX);
 		}
 		else
 		{
-			x86IntRegType x86reg=GetRegister(EAX,reg,RA_NODATA);
-			x86e->MOVSX32M8toR(x86reg,(u8*)from);
+			x86_gpr_reg x86reg=GetRegister(EAX,reg,RA_NODATA);
+			x86e->Emit(op_movsx8to32, x86reg,(u8*)from);
 		}
 		MarkDirty(reg);
 	}
@@ -372,7 +372,7 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 		if (IsRegAllocated(reg) && r_alloced[reg].InReg)
 		{
 			if (r_alloced[reg].Dirty)
-				x86e->MOV32RtoM(GetRegPtr(reg),r_alloced[reg].x86reg);
+				x86e->Emit(op_mov32,GetRegPtr(reg),r_alloced[reg].x86reg);
 			r_alloced[reg].InReg=false;
 			r_alloced[reg].Dirty=false;
 		}
@@ -392,7 +392,7 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 		if (IsRegAllocated(reg) && r_alloced[reg].InReg && r_alloced[reg].Dirty)
 		{
 			r_alloced[reg].Dirty=false;
-			x86e->MOV32RtoM(GetRegPtr(reg),r_alloced[reg].x86reg);
+			x86e->Emit(op_mov32,GetRegPtr(reg),r_alloced[reg].x86reg);
 		}
 	}
 	//ReloadRegister	: read reg from reg location , discard old result
@@ -402,7 +402,7 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 		if (IsRegAllocated(reg) && r_alloced[reg].InReg)
 		{
 			//r_alloced[reg].Dirty=false;
-			//x86e->MOV32MtoR(r_alloced[reg].x86reg,GetRegPtr(reg));
+			//x86e->Emit(op_mov32,r_alloced[reg].x86reg,GetRegPtr(reg));
 			r_alloced[reg].InReg=false;
 		}
 	}
