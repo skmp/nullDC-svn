@@ -44,7 +44,7 @@ IDirect3DVertexDeclaration9 *g_pVD;	// Vertex Decl.
 
 
 
-__inline 
+INLINE 
 void PowerVR2_D3D::SetRenderMode(u32 ParamID, u32 TexID)
 {
 	GlobalParam * gp = &GlobalParams[ParamID];
@@ -167,7 +167,7 @@ void PowerVR2_D3D::SetRenderMode(u32 ParamID, u32 TexID)
 }
 
 
-__inline 
+INLINE 
 void PowerVR2_D3D::SetRenderModeSpr(u32 ParamID, u32 TexID)
 {
 	GlobalParam * gp = &GlobalParams[ParamID];
@@ -252,7 +252,7 @@ void PowerVR2_D3D::SetRenderModeSpr(u32 ParamID, u32 TexID)
 
 
 
-__inline 
+INLINE 
 void PowerVR2_D3D::RenderStripList(vector<Vertex> &vl)
 {
 	for(u32 p=0; p<vl.size(); p++) {
@@ -261,7 +261,7 @@ void PowerVR2_D3D::RenderStripList(vector<Vertex> &vl)
 		g_pDev->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, vl[p].List.size()-2, &vl[p].List[0].xyz, sizeof(Vert));
 	}
 }
-__inline 
+INLINE 
 void PowerVR2_D3D::RenderSprites(vector<Vertex> &vl)
 {
 	for(u32 p=0; p<vl.size(); p++) {

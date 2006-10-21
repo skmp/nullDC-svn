@@ -574,7 +574,7 @@ enum ParamSize
 };
 
 
-__inline static bool isPoly64Byte(PCW * pcw)
+S_INLINE bool isPoly64Byte(PCW * pcw)
 {
 	if((CT_Intensity1 == pcw->Col_Type) && pcw->Offset)
 		return true;
@@ -584,7 +584,7 @@ __inline static bool isPoly64Byte(PCW * pcw)
 	return false;
 }
 
-__inline static bool isVert64Byte(PCW * pcw)
+S_INLINE bool isVert64Byte(PCW * pcw)
 {
 	if((PM_Sprite==PolyMode) || (PM_Modifier==PolyMode))
 		return true;
@@ -600,7 +600,7 @@ __inline static bool isVert64Byte(PCW * pcw)
 	return false;
 }
 
-__inline static ParamSize GetParamSize(PCW * pcw)
+S_INLINE ParamSize GetParamSize(PCW * pcw)
 {
 	if(PT_Vertex  == pcw->ParaType && isVert64Byte(pcw))
 		return PS64;
@@ -646,26 +646,73 @@ struct Vert
 #endif
 };
 
+#define MAX_VERTS	32
 
 struct Vertex
 {
 	u32 TexID;
 	u32 ParamID;
 
-	Vert List[6] ;
+	Vert List[MAX_VERTS] ;
 	u32  Size;
 //	vector<Vert> List;
 };
 
+#define DCACHE_SIZE	SZ_4MB
 
 extern u32 nOpqStrips, nTrsStrips, nPtuStrips;
-extern u8 opq[SZ_2MB], trs[SZ_2MB], ptu[SZ_2MB];
+extern u8 opq[DCACHE_SIZE], trs[DCACHE_SIZE], ptu[DCACHE_SIZE];
 
 void FlushFifo();
 void ClearTCache();
 void ClearDCache();
 
 
+# define stype(a, b) (((a)<<16) | ((b)&0xFFFF))
+
+S_INLINE u32 PolyType( PCW *pcw )
+{
+	//	if( (pcw->ListType == LT_OpaqueMod) || (pcw->ListType == LT_TransMod) )
+	//		return 0x0600FF;	// mod volume
+
+	if( !pcw->Texture ) {
+		if( !pcw->Volume ) {
+			switch( pcw->Col_Type ) {
+			case 0:		return stype(0,0);
+			case 1:		return stype(0,1);
+			case 2:		return stype(1,2);
+			case 3:		return stype(0,2);
+			}
+		} else {
+			switch( pcw->Col_Type ) {
+			case 0:		return stype(3,9);
+			case 1:		return 0xFFFFFFFF;
+			case 2:		return stype(4,10);
+			case 3:		return stype(3,10);
+			}
+		}
+	} else {
+		if( !pcw->Volume ) {
+			switch( pcw->Col_Type ) {
+			case 0:		return pcw->UVFormat ? stype(0,4) : stype(0,3);
+			case 1:		return pcw->UVFormat ? stype(0,6) : stype(0,5);
+			case 2:
+				if( pcw->Offset )	{ return pcw->UVFormat ? stype(2,8) : stype(2,7) ; }
+				else				{ return pcw->UVFormat ? stype(1,8) : stype(1,7) ; }
+
+			case 3:		return pcw->UVFormat ? stype(0,8) : stype(0,7);
+			}
+		} else {
+			switch( pcw->Col_Type ) {
+			case 0:		return pcw->UVFormat ? stype(3,12) : stype(3,11);
+			case 1:		return 0xFFFFFFFF;
+			case 2:		return pcw->UVFormat ? stype(4,14) : stype(4,13);
+			case 3:		return pcw->UVFormat ? stype(3,14) : stype(3,13);
+			}
+		}
+	}
+	return 0xFFFFFFFF;	// fucked
+}
 
 /*
 **	Todo: Test Speed on this thing, and add a State format for ogl

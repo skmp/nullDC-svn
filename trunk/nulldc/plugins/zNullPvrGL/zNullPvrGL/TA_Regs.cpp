@@ -43,6 +43,7 @@ u32  pvrReadReg(u32 addr,u32 size)
 	return 0;
 }
 
+extern u32 IsProcessing;
 
 void pvrWriteReg(u32 addr,u32 data,u32 size)
 {
@@ -51,6 +52,8 @@ void pvrWriteReg(u32 addr,u32 data,u32 size)
 
 	if(addr>=TA_REG_START && TA_REG_END>=addr)
 	{
+		ASSERT_T(IsProcessing,"Write to Regs While Processing Fifo");
+
 		switch(addr &0xFFF)
 		{
 		case TA_ALLOC_CTRL:	break;	// useless to do anything until after write, use eol instead

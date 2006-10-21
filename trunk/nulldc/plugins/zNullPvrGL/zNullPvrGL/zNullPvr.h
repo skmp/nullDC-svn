@@ -46,12 +46,18 @@ enum memSizes
 //#endif
 
 #ifdef DEBUG_LIB
+#define INLINE		inline
+#define S_INLINE	static inline
 #define ASSERT_T(cond,str) if((cond)) printf("#!\tERROR: ASSERTION FAILED: %s !\n", str);
 #define ASSERT_F(cond,str) if(!(cond)) printf("#!\tERROR: ASSERTION FAILED: %s !\n", str);
 #else
+#define INLINE		__forceinline
+#define S_INLINE	static __forceinline
 #define ASSERT_T(cond,str)
 #define ASSERT_F(cond,str)
 #endif
+
+
 
 extern bool bLogEnabled;
 extern u32  DebugOptions;

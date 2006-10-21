@@ -11,26 +11,26 @@ using namespace PvrIf;
 HDC hDC;
 HGLRC hRC;
 
-
-
+#ifdef USE_VBOS
+UINT vbo_ptr[3] = { 0, 0, 0 };
+#endif
 
 
 
 //PvrIf PvrIfGl;
 
 
-//__inline PvrIf::
-void SetRenderMode(u32 ParamID, u32 TexID)
+//INLINE PvrIf::
+S_INLINE void SetRenderMode(u32 ParamID, u32 TexID)
 {
-
-/*#ifndef DEBUG_LIB
+//#ifndef DEBUG_LIB
 	static u32 lParam = ~0;
 
 	if(ParamID == lParam)
 		return;
 	else
 		lParam = ParamID;
-#endif*/
+//#endif
 
 	GlobalParam * gp = &GlobalParams[ParamID];
 
@@ -38,10 +38,10 @@ void SetRenderMode(u32 ParamID, u32 TexID)
 	glShadeModel(gp->pcw.Gouraud ? GL_SMOOTH : GL_FLAT);
 
 	// ISP Settings
+//	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(DepthModeGL[gp->isp.DepthMode]);
 	glDepthMask(gp->isp.ZWriteDis ? GL_FALSE : GL_TRUE);
 
-//	glEnable(GL_DEPTH_TEST);
 
 
 	ASSERT_T(gp->param0.tsp.DstSelect && gp->param0.tsp.SrcSelect, "Src/Dst Select Both Selected !");
@@ -65,10 +65,10 @@ void SetRenderMode(u32 ParamID, u32 TexID)
 		int tw=0,th=0;
 		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH,  &tw);
 		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &th);
-		ASSERT_F(glIsTexture(TexID),"Textures Enabled, and Texture is Invalid!");
+	//	ASSERT_F(glIsTexture(TexID),"Textures Enabled, and Texture is Invalid!");
 		ASSERT_T(gp->param0.tsp.SrcSelect,"SrcSelect in Texture Settings!");
-		ASSERT_T((0==tw), "OpenGL TexWidth  is Zero!");
-		ASSERT_T((0==th), "OpenGL TexHeight is Zero!");
+	//	ASSERT_T((0==tw), "OpenGL TexWidth  is Zero!");
+	//	ASSERT_T((0==th), "OpenGL TexHeight is Zero!");
 #endif
 
 		// TSP Settings
@@ -81,7 +81,7 @@ void SetRenderMode(u32 ParamID, u32 TexID)
 		case 3:	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);	break;
 		default: printf("~<PVR>ERROR: SetRenderMode->TSP.ShadInstr is INVALID !!"); return;
 		}
-		CheckErrorsGL("RenderSceneGL()->RenderLists()->SetRenderMode() TEX ENV");
+//		CheckErrorsGL("RenderSceneGL()->RenderLists()->SetRenderMode() TEX ENV");
 
 		// GL_ARB_texture_mirrored_repeat 
 		//	if( vParam[StripID].param0.tsp.FlipUV )
@@ -110,7 +110,7 @@ void SetRenderMode(u32 ParamID, u32 TexID)
 
 	// ListType Specific
 
-	CheckErrorsGL("RenderSceneGL()->RenderLists()->SetRenderMode() TEX");
+//	CheckErrorsGL("RenderSceneGL()->RenderLists()->SetRenderMode() TEX");
 	/*	list type dependant shit ...
 	*	blending :
 	*	Opaque: "1" must be SRC instruction and "0" must be DST instruction.
@@ -122,7 +122,7 @@ void SetRenderMode(u32 ParamID, u32 TexID)
 		glDisable(GL_BLEND);
 		glDisable(GL_ALPHA_TEST);
 
-		CheckErrorsGL("RenderSceneGL()->RenderLists()->SetRenderMode(LT_OPQ)");
+//		CheckErrorsGL("RenderSceneGL()->RenderLists()->SetRenderMode(LT_OPQ)");
 		break;
 
 	case LT_Translucent:
@@ -150,7 +150,7 @@ void SetRenderMode(u32 ParamID, u32 TexID)
 		//	if( gp->param0.tsp.DstSelect ) glAccum( GL_LOAD, 0.f ) ;
 
 		glBlendFunc(SrcBlendGL[gp->param0.tsp.SrcInstr], DstBlendGL[gp->param0.tsp.DstInstr]);
-		CheckErrorsGL("RenderSceneGL()->RenderLists()->SetRenderMode(LT_TRS)");
+//		CheckErrorsGL("RenderSceneGL()->RenderLists()->SetRenderMode(LT_TRS)");
 		break;
 
 		// PUNCH THRU is NOTHING BUT NON BLENDED / ALPHA TESTED TRIS
@@ -170,7 +170,7 @@ void SetRenderMode(u32 ParamID, u32 TexID)
 	//	glEnable(GL_BLEND);
 	//	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);	// ...
 
-		CheckErrorsGL("RenderSceneGL()->RenderLists()->SetRenderMode(LT_PTHRU)");
+//		CheckErrorsGL("RenderSceneGL()->RenderLists()->SetRenderMode(LT_PTHRU)");
 		break;
 
 	case LT_OpaqueMod:return;		// don't care yet
@@ -180,8 +180,8 @@ void SetRenderMode(u32 ParamID, u32 TexID)
 }
 
 
-//__inline PvrIf::
-void SetRenderModeSpr(u32 ParamID, u32 TexID)
+//INLINE PvrIf::
+S_INLINE void SetRenderModeSpr(u32 ParamID, u32 TexID)
 {
 
 	GlobalParam * gp = &GlobalParams[ParamID];
@@ -224,7 +224,7 @@ void SetRenderModeSpr(u32 ParamID, u32 TexID)
 		case 3:	glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );	break;
 		default: printf("~<PVR>ERROR: SetRenderMode->TSP.ShadInstr is INVALID !!"); return;
 		}
-		CheckErrorsGL("SetRenderModeSpr() TEX ENV");
+		//CheckErrorsGL("SetRenderModeSpr() TEX ENV");
 
 		if(gp->param0.tsp.FilterMode == 0)
 			TexFilterGL( GL_NEAREST );
@@ -244,7 +244,7 @@ void SetRenderModeSpr(u32 ParamID, u32 TexID)
 
 #ifdef USE_DISPLAY_LISTS
 
-//__inline PvrIf::
+//INLINE PvrIf::
 void SetRenderModeDirect(GlobalParam *gp)
 {
 
@@ -400,8 +400,8 @@ void PvrIf::DeleteDispList(u32 dlid)
 #endif
 
 
-//__inline PvrIf::
-void RenderStripList(TA_ListType lType)
+//INLINE PvrIf::
+S_INLINE void RenderStripList(TA_ListType lType)
 {
 	int nStrips = 0;
 	Vertex * pVList = NULL;
@@ -446,8 +446,8 @@ void RenderStripList(TA_ListType lType)
 
 
 
-//__inline PvrIf::
-void RenderStripListArray(TA_ListType lType)
+//INLINE PvrIf::
+S_INLINE void RenderStripListArray(TA_ListType lType)
 {
 	int nStrips = 0;
 	Vertex * pVList = NULL;
@@ -490,8 +490,8 @@ void RenderStripListArray(TA_ListType lType)
 }
 
 
-//__inline PvrIf::
-void RenderSprites(vector<Vertex> &vl)
+//INLINE PvrIf::
+S_INLINE void RenderSprites(vector<Vertex> &vl)
 {
 	for(u32 p=0; p<vl.size(); p++)
 	{
@@ -512,7 +512,7 @@ void RenderSprites(vector<Vertex> &vl)
 void PvrIf::Render()
 {
 //	FrameCount++;
-	glFlush();
+//	glFlush();
 	Resize();
 
 	u32 dwValue = *pVO_BORDER_COL;
@@ -553,7 +553,7 @@ void PvrIf::Render()
 
 	
 	SwapBuffers(hDC);
-	CheckErrorsGL("RenderSceneGL()");
+	//CheckErrorsGL("RenderSceneGL()");
 
 //	lprintf(" ----- End Render -------\n");
 }
@@ -650,7 +650,23 @@ bool PvrIf::Init()
 
 /*	InitCg();
 	LoadVProgram("VProgram.cg","PVR_VertexInput");
-	LoadFProgram("FProgram.cg","PVR_FragmentInput");	*/
+	LoadFProgram("FProgram.cg","PVR_FragmentInput");	*/\
+
+#ifdef USE_VBOS
+
+	glGenBuffers(3, vbo_ptr);
+	if(0==vbo_ptr[0] || 0==vbo_ptr[1] || 0==vbo_ptr[2])
+		return false;
+
+	glBindBuffer(GL_ARRAY_BUFFER_ARB, vbo_ptr[vbo_opq]);
+	glBufferData(GL_ARRAY_BUFFER_ARB, DCACHE_SIZE, NULL, GL_DYNAMIC_DRAW_ARB);
+	glBindBuffer(GL_ARRAY_BUFFER_ARB, vbo_ptr[vbo_trs]);
+	glBufferData(GL_ARRAY_BUFFER_ARB, DCACHE_SIZE, NULL, GL_DYNAMIC_DRAW_ARB);
+	glBindBuffer(GL_ARRAY_BUFFER_ARB, vbo_ptr[vbo_ptu]);
+	glBufferData(GL_ARRAY_BUFFER_ARB, DCACHE_SIZE, NULL, GL_DYNAMIC_DRAW_ARB);
+	CheckErrorsGL("InitGL()->Creating VBOs");
+
+#endif
 
 	Resize();
 	Render();

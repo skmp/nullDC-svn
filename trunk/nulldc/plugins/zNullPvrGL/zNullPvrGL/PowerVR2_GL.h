@@ -18,6 +18,15 @@
 #include "TA_Texture.h"
 
 
+#define USE_VBOS
+//#define USE_VERTEX_ARRAYS
+
+enum {
+	vbo_opq=0,
+	vbo_trs,
+	vbo_ptu
+};
+
 /*
 extern 
 class PowerVR2_GL : public PowerVR2
@@ -85,13 +94,13 @@ private:
 void CheckErrorsGL(char *szFunc);
 
 
-__inline static void TexFilterGL( GLuint filter )
+INLINE static void TexFilterGL( GLuint filter )
 {
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter );
 }
 
-__inline static void DC_TexEnv_Modulate(void)
+INLINE static void DC_TexEnv_Modulate(void)
 {
 	glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
 
@@ -110,7 +119,7 @@ __inline static void DC_TexEnv_Modulate(void)
 	glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA_ARB,	GL_SRC_ALPHA);
 }
 
-__inline static void DC_TexEnv_DecalAlpha(void)
+INLINE static void DC_TexEnv_DecalAlpha(void)
 {
 	glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
 

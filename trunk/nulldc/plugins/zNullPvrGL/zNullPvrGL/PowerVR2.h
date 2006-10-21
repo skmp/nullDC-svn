@@ -49,7 +49,6 @@ namespace PvrIf
 
 #define FULL_LIST	// process all verts at once, should be faster
 //#define USE_DISPLAY_LISTS
-//#define USE_VERTEX_ARRAYS
 //#define USE_VERTEX_PROGRAMS
 //#define USE_FRAGMENT_PROGRAMS
 
