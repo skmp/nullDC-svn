@@ -295,84 +295,102 @@ void sse_RLF(u32 reg)
 #define SaveReg(reg,from)	ira->SaveRegister(reg,from)
 
 //intel sugest not to use the ItoM forms for some reason .. speed diference isnt big .. < 1%
-//Macro :
-#define OP_MoRtR_ItR(op_cl)	assert(FLAG_32==(op->flags & 3));\
-	assert(0==(op->flags & (FLAG_IMM2)));\
-	assert(op->flags & FLAG_REG1);\
-	if (op->flags & FLAG_IMM1)\
-	{\
-		assert(0==(op->flags & FLAG_REG2));\
-		if (ira->IsRegAllocated(op->reg1))\
-		{\
-			x86_gpr_reg r1 = LoadReg(EAX,op->reg1);\
-			assert(r1!=EAX);\
-			x86e-> Emit(op_cl,r1,op->imm1);\
-			SaveReg(op->reg1,r1);\
-		}\
-		else\
-		{\
-			/*x86e-> _ItM_ (GetRegPtr(op->reg1),op->imm1);*/\
-			x86e->Emit(op_mov32,EAX,op->imm1);\
-			x86e->Emit(op_cl,GetRegPtr(op->reg1),EAX);\
-		}\
-	}\
-	else\
-	{\
-		assert(op->flags & FLAG_REG2);\
-		if (ira->IsRegAllocated(op->reg1))\
-		{\
-			x86_gpr_reg r1 = LoadReg(EAX,op->reg1);\
-			assert(r1!=EAX);\
-			if (ira->IsRegAllocated(op->reg2))\
-			{\
-				x86_gpr_reg r2 = LoadReg(EAX,op->reg2);\
-				assert(r2!=EAX);\
-				x86e-> Emit(op_cl,r1,r2);\
-			}\
-			else\
-			{\
-				x86e-> Emit(op_cl,r1,GetRegPtr(op->reg2));\
-			}\
-			SaveReg(op->reg1,r1);\
-		}\
-		else\
-		{\
-			x86_gpr_reg r2 = LoadReg(EAX,op->reg2);\
-			x86e-> Emit(op_cl,GetRegPtr(op->reg1),r2);\
-		}\
+
+void fastcall op_reg_to_reg(shil_opcode* op,x86_opcode_class op_cl)
+{
+	assert(FLAG_32==(op->flags & 3));
+	assert(0==(op->flags & (FLAG_IMM2)));
+	assert(op->flags & FLAG_REG1);
+	if (op->flags & FLAG_IMM1)
+	{
+		assert(0==(op->flags & FLAG_REG2));
+		if (ira->IsRegAllocated(op->reg1))
+		{
+			x86_gpr_reg r1 = LoadReg(EAX,op->reg1);
+			assert(r1!=EAX);
+			x86e-> Emit(op_cl,r1,op->imm1);
+			SaveReg(op->reg1,r1);
+		}
+		else
+		{
+			/*x86e-> _ItM_ (GetRegPtr(op->reg1),op->imm1);*/
+			x86e->Emit(op_mov32,EAX,op->imm1);
+			x86e->Emit(op_cl,GetRegPtr(op->reg1),EAX);
+		}
 	}
+	else
+	{
+		assert(op->flags & FLAG_REG2);
+		if (ira->IsRegAllocated(op->reg1))\
+		{
+			x86_gpr_reg r1 = LoadReg(EAX,op->reg1);
+			assert(r1!=EAX);
+			if (ira->IsRegAllocated(op->reg2))
+			{
+				x86_gpr_reg r2 = LoadReg(EAX,op->reg2);
+				assert(r2!=EAX);
+				x86e-> Emit(op_cl,r1,r2);
+			}
+			else
+			{
+				x86e-> Emit(op_cl,r1,GetRegPtr(op->reg2));
+			}
+			SaveReg(op->reg1,r1);
+		}
+		else
+		{
+			x86_gpr_reg r2 = LoadReg(EAX,op->reg2);
+			x86e->Emit(op_cl,GetRegPtr(op->reg1),r2);
+		}
+	}
+}
+//Macro :
+/*
+#define OP_MoRtR_ItR(op_cl)	
+*/
+#define OP_RegToReg_simple(opcd) op_reg_to_reg(op,opcd);
 
-#define OP_RegToReg_simple(opcd) OP_MoRtR_ItR(opcd);
-
-#define OP_ItMoR(op_cl,_Imm_)	assert(FLAG_32==(op->flags & 3));\
-	assert(op->flags & FLAG_IMM1);\
-	assert(0==(op->flags & (FLAG_IMM2)));\
-	assert(op->flags & FLAG_REG1);\
-	assert(0==(op->flags & FLAG_REG2));\
-	if (ira->IsRegAllocated(op->reg1))\
-	{\
-		x86_gpr_reg r1=LoadReg(EAX,op->reg1);\
-		assert(r1!=EAX);\
-		x86e->Emit(op_cl,r1,_Imm_);\
-		SaveReg(op->reg1,r1);\
-	}\
+void fastcall op_imm_to_reg(shil_opcode* op,x86_opcode_class op_cl)
+{
+	assert(FLAG_32==(op->flags & 3));
+	assert(op->flags & FLAG_IMM1);
+	assert(0==(op->flags & (FLAG_IMM2)));
+	assert(op->flags & FLAG_REG1);
+	assert(0==(op->flags & FLAG_REG2));
+	if (ira->IsRegAllocated(op->reg1))
+	{
+		x86_gpr_reg r1=LoadReg(EAX,op->reg1);
+		assert(r1!=EAX);
+		x86e->Emit(op_cl,r1,op->imm1);
+		SaveReg(op->reg1,r1);
+	}
 	else\
-		x86e->Emit(op_cl,GetRegPtr(op->reg1),_Imm_);
-
-#define OP_NtMoR_noimm(op_cl)	assert(FLAG_32==(op->flags & 3));\
-	assert(0==(op->flags & FLAG_IMM1));\
-	assert(0==(op->flags & (FLAG_IMM2)));\
-	assert(op->flags & FLAG_REG1);\
-	assert(0==(op->flags & FLAG_REG2));\
-	if (ira->IsRegAllocated(op->reg1))\
-	{\
-		x86_gpr_reg r1=LoadReg(EAX,op->reg1);\
-		assert(r1!=EAX);\
-		x86e->Emit(op_cl,r1);\
-		SaveReg(op->reg1,r1);\
-	}\
-	else\
+		x86e->Emit(op_cl,GetRegPtr(op->reg1),op->imm1);
+}
+/*
+#define OP_ItMoR(op_cl,_Imm_)
+*/
+	
+void fastcall op_reg(shil_opcode* op,x86_opcode_class op_cl)
+{
+	assert(FLAG_32==(op->flags & 3));
+	assert(0==(op->flags & FLAG_IMM1));
+	assert(0==(op->flags & (FLAG_IMM2)));
+	assert(op->flags & FLAG_REG1);
+	assert(0==(op->flags & FLAG_REG2));
+	if (ira->IsRegAllocated(op->reg1))
+	{
+		x86_gpr_reg r1=LoadReg(EAX,op->reg1);
+		assert(r1!=EAX);
+		x86e->Emit(op_cl,r1);
+		SaveReg(op->reg1,r1);
+	}
+	else
 		x86e->Emit(op_cl,x86_ptr(GetRegPtr(op->reg1)));
+}
+/*
+#define OP_NtMoR_noimm(op_cl)	
+*/
 /*
 #define OP_NtR_noimm(op_cl)	assert(FLAG_32==(op->flags & 3));\
 	assert(0==(op->flags & FLAG_IMM1));\
@@ -700,45 +718,45 @@ void __fastcall shil_compile_swap(shil_opcode* op,BasicBlock* block)
 
 void __fastcall shil_compile_shl(shil_opcode* op,BasicBlock* block)
 {
-	OP_ItMoR(op_shl32,(u8)op->imm1);
+	op_imm_to_reg(op,op_shl32);
 }
 
 void __fastcall shil_compile_shr(shil_opcode* op,BasicBlock* block)
 {
-	OP_ItMoR(op_shr32,(u8)op->imm1);
+	op_imm_to_reg(op,op_shr32);
 }
 
 void __fastcall shil_compile_sar(shil_opcode* op,BasicBlock* block)
 {
-	OP_ItMoR(op_sar32,(u8)op->imm1);
+	op_imm_to_reg(op,op_sar32);
 }
 
 //rotates
 void __fastcall shil_compile_rcl(shil_opcode* op,BasicBlock* block)
 {
-	OP_NtMoR_noimm(op_rcl32);
+	op_reg(op,op_rcl32);
 }
 void __fastcall shil_compile_rcr(shil_opcode* op,BasicBlock* block)
 {
-	OP_NtMoR_noimm(op_rcr32);
+	op_reg(op,op_rcr32);
 }
 void __fastcall shil_compile_ror(shil_opcode* op,BasicBlock* block)
 {
-	OP_NtMoR_noimm(op_ror32);
+	op_reg(op,op_ror32);
 }
 void __fastcall shil_compile_rol(shil_opcode* op,BasicBlock* block)
 {
-	OP_NtMoR_noimm(op_rol32);
+	op_reg(op,op_rol32);
 }
 //neg
 void __fastcall shil_compile_neg(shil_opcode* op,BasicBlock* block)
 {
-	OP_NtMoR_noimm(op_neg32);
+	op_reg(op,op_neg32);
 }
 //not
 void __fastcall shil_compile_not(shil_opcode* op,BasicBlock* block)
 {
-	OP_NtMoR_noimm(op_not32);
+	op_reg(op,op_not32);
 }
 //or xor and
 void __fastcall shil_compile_xor(shil_opcode* op,BasicBlock* block)
@@ -753,8 +771,101 @@ void __fastcall shil_compile_and(shil_opcode* op,BasicBlock* block)
 {
 	OP_RegToReg_simple(op_and32);
 }
+
+void readwrteparams1(u8 reg1,u32 imm)
+{
+	if (ira->IsRegAllocated(reg1))
+	{
+		//lea ecx,[reg1+imm]
+		x86_reg reg=LoadReg(ECX,reg1);
+		assert(reg!=ECX);
+		x86e->Emit(op_lea32 ,ECX, x86_mrm::create(reg,x86_ptr::create(imm)));
+	}
+	else
+	{
+		//mov ecx,imm
+		//add ecx,reg1
+		x86e->Emit(op_mov32,ECX,imm);
+		x86e->Emit(op_add32,ECX,GetRegPtr(reg1));
+	}
+}
+void readwrteparams2(u8 reg1,u8 reg2)
+{
+	if (ira->IsRegAllocated(reg1))
+	{
+		x86_reg r1=LoadReg(ECX,reg1);
+		assert(r1!=ECX);
+		
+		if (ira->IsRegAllocated(reg2))
+		{
+			//lea ecx,[reg1+reg2]
+			x86_reg r2=LoadReg(ECX,reg2);
+			assert(r2!=ECX);
+			x86e->Emit(op_lea32,ECX,x86_mrm::create(r1,r2));
+		}
+		else
+		{
+			//mov ecx,reg1
+			//add ecx,[reg2]
+			x86e->Emit(op_mov32,ECX,r1);
+			x86e->Emit(op_add32,ECX,GetRegPtr(reg2));
+		}
+	}
+	else
+	{
+		if (ira->IsRegAllocated(reg2))
+		{
+			readwrteparams2(reg2,reg1);
+		}
+		else
+		{
+			//mov ecx,[reg1]
+			//add ecx,[reg2]
+			x86e->Emit(op_mov32,ECX,GetRegPtr(reg1));
+			x86e->Emit(op_add32,ECX,GetRegPtr(reg2));
+		}
+	}
+}
+void readwrteparams3(u8 reg1,u8 reg2,u32 imm)
+{
+	if (ira->IsRegAllocated(reg1))
+	{
+		x86_reg r1=LoadReg(ECX,reg1);
+		assert(r1!=ECX);
+		
+		if (ira->IsRegAllocated(reg2))
+		{
+			//lea ecx,[reg1+reg2]
+			x86_reg r2=LoadReg(ECX,reg2);
+			assert(r2!=ECX);
+			x86e->Emit(op_lea32,ECX,x86_mrm::create(r1,r2,sib_scale_1,x86_ptr::create(imm)));
+		}
+		else
+		{
+			//lea ecx,[reg1+imm]
+			//add ecx,[reg2]
+			x86e->Emit(op_lea32,ECX,x86_mrm::create(r1,x86_ptr::create(imm)));
+			x86e->Emit(op_add32,ECX,GetRegPtr(reg2));
+		}
+	}
+	else
+	{
+		if (ira->IsRegAllocated(reg2))
+		{
+			readwrteparams3(reg2,reg1,imm);
+		}
+		else
+		{
+			//mov ecx,[reg1]
+			//add ecx,[reg2]
+			x86e->Emit(op_mov32,ECX,GetRegPtr(reg1));
+			x86e->Emit(op_add32,ECX,imm);
+			x86e->Emit(op_add32,ECX,GetRegPtr(reg2));
+		}
+	}
+}
 //read-write
-void readwrteparams(shil_opcode* op)
+x86_reg  readwrteparams(shil_opcode* op)
 	{
 	assert(0==(op->flags & FLAG_IMM2));
 	assert(op->flags & FLAG_REG1);
@@ -763,47 +874,132 @@ void readwrteparams(shil_opcode* op)
 
 	//can use
 	//mov ecx,imm
-	//mov ecx,r0/gbr
-	//mov ecx,r[2]
 	//lea ecx[r[2]+imm]
 	//lea ecx[r0/gbr+imm]
+	//mov ecx,r0/gbr
+	//mov ecx,r[2]
 	//lea ecx[r0/gbr+r[2]*1]
 	//lea ecx,[r0/gbr+r[2]*1+imm] ;)
-	//
+	
+	u32 flags=0;
+	#define flag_imm 1
+	#define flag_r2 2
+	#define flag_r0 4
+	#define flag_gbr 8
+
 	if (op->flags & FLAG_IMM1)
 	{
+		if (op->imm1!=0)	//gota do that on const elimiation pass :D
+			flags|=flag_imm;
+		/*
 		Loaded=true;
 		x86e->Emit(op_mov32,ECX,op->imm1);
+		*/
 	}
 	if (op->flags & FLAG_REG2)
 	{
+		flags|=flag_r2;
+		/*
 		x86_gpr_reg r1=LoadReg(EAX,op->reg2);
 		if (Loaded)
 			x86e->Emit(op_add32,ECX,r1);
 		else
 			x86e->Emit(op_mov32,ECX,r1);
 		Loaded=true;
+		*/
 	}
 	if (op->flags & FLAG_R0)
 	{
+		flags|=flag_r0;
+		/*
 		x86_gpr_reg r1=LoadReg(EAX,r0);
 		if (Loaded)
 			x86e->Emit(op_add32,ECX,r1);
 		else
 			x86e->Emit(op_mov32,ECX,r1);
 		Loaded=true;
+		*/
 	}
 	if (op->flags & FLAG_GBR)
 	{
+		flags|=flag_gbr;
+		/*
 		x86_gpr_reg r1=LoadReg(EAX,reg_gbr);
 		if (Loaded)
 			x86e->Emit(op_add32,ECX,r1);
 		else
 			x86e->Emit(op_mov32,ECX,r1);
 		Loaded=true;
+		*/
 	}
 	
+	verify(flags!=0);
+	x86_reg reg=REG_ERROR;
 
+	switch(flags)
+	{
+		//1 olny
+	case flag_imm:
+		x86e->Emit(op_mov32,ECX,op->imm1);
+		reg=ECX;
+		break;
+
+	case flag_r2:
+		reg=LoadReg(ECX,op->reg2);
+		break;
+
+	case flag_r0:
+		reg=LoadReg(ECX,r0);
+		break;
+
+	case flag_gbr:
+		reg=LoadReg(ECX,reg_gbr);
+		break;
+
+		//2 olny
+	case flag_imm | flag_r2:
+		readwrteparams1(op->reg2,op->imm1);
+		reg=ECX;
+		break;
+
+	case flag_imm | flag_r0:
+		readwrteparams1((u8)r0,op->imm1);
+		reg=ECX;
+		break;
+
+	case flag_imm | flag_gbr:
+		readwrteparams1((u8)reg_gbr,op->imm1);
+		reg=ECX;
+		break;
+
+	case flag_r2 | flag_r0:
+		readwrteparams2(op->reg2,(u8)r0);
+		reg=ECX;
+		break;
+
+	case flag_r2 | flag_gbr:
+		readwrteparams2(op->reg2,(u8)reg_gbr);
+		reg=ECX;
+		break;
+
+		//3 olny
+	case flag_imm | flag_r2 | flag_gbr:
+		readwrteparams3(op->reg2,(u8)reg_gbr,op->imm1);
+		reg=ECX;
+		break;
+
+	case flag_imm | flag_r2 | flag_r0:
+		readwrteparams3(op->reg2,(u8)r0,op->imm1);
+		reg=ECX;
+		break;
+
+	default:
+		die("Unable to compute readwrteparams");
+		break;
+	}
+
+	verify(reg!=REG_ERROR);
+	return reg;
 	/*if (!(op->flags & (FLAG_R0|FLAG_GBR)))
 	{//[reg2] form
 		assert(op->flags & FLAG_IMM1);
@@ -889,9 +1085,9 @@ void __fastcall shil_compile_readm(shil_opcode* op,BasicBlock* block)
 		}
 	}
 
-	readwrteparams(op);
+	x86_reg reg_addr = readwrteparams(op);
 
-	emit_vmem_op_compat(x86e,ECX,EAX,m_unpack_sz[size],0);
+	emit_vmem_op_compat(x86e,reg_addr,EAX,m_unpack_sz[size],0);
 	
 	//movsx [if needed]
 	if (size==0)
@@ -942,7 +1138,7 @@ void __fastcall shil_compile_writem(shil_opcode* op,BasicBlock* block)
 		return;
 	}
 
-	readwrteparams(op);
+	x86_reg reg_addr = readwrteparams(op);
 
 	//ECX is address
 
@@ -956,7 +1152,7 @@ void __fastcall shil_compile_writem(shil_opcode* op,BasicBlock* block)
 	else
 		r1=LoadReg(EDX,op->reg1);
 	
-	emit_vmem_op_compat(x86e,ECX,r1,m_unpack_sz[size],1);
+	emit_vmem_op_compat(x86e,reg_addr,r1,m_unpack_sz[size],1);
 }
 
 //save-loadT
@@ -2526,7 +2722,8 @@ void emit_vmem_op_compat(x86_block* x86e,x86_gpr_reg ra,
 {
 	if (rw==0)
 	{
-		x86e->Emit(op_mov32,ECX,ra);
+		if (ra!=ECX)
+			x86e->Emit(op_mov32,ECX,ra);
 	
 		if (sz==1)
 			x86e->Emit(op_call,x86_ptr_imm(ReadMem8));
@@ -2535,12 +2732,15 @@ void emit_vmem_op_compat(x86_block* x86e,x86_gpr_reg ra,
 		else if (sz==4)
 			x86e->Emit(op_call,x86_ptr_imm(ReadMem32));
 
-		x86e->Emit(op_mov32,ro,EAX);
+		if (ro!=EAX)
+			x86e->Emit(op_mov32,ro,EAX);
 	}
 	else
 	{
-		x86e->Emit(op_mov32,ECX,ra);
-		x86e->Emit(op_mov32,EDX,ro);
+		if (ra!=ECX)
+			x86e->Emit(op_mov32,ECX,ra);
+		if (ro!=EDX)
+			x86e->Emit(op_mov32,EDX,ro);
 
 		if (sz==1)
 			x86e->Emit(op_call,x86_ptr_imm(WriteMem8));

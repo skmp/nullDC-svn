@@ -316,7 +316,10 @@ x86_mrm x86_mrm::create(x86_reg base,x86_reg index,x86_sib_scale scale,x86_ptr d
 		else if (base == EBP)
 		{
 			//special encoding
-			verify(false);
+			//verify(false);
+			rv.modrm = make_modrm(0,base);
+
+			rv.modrm |= EncodeDisp(disp.ptr_int,&rv,3);	//32 or 16 bit disp
 		}
 		else if (base == REG_NONE)
 		{
@@ -344,10 +347,10 @@ x86_mrm x86_mrm::create(x86_reg base,x86_reg index,x86_sib_scale scale,x86_ptr d
 		bool force_disp=0;
 		u8 disp_sz=3;
 
-		if (index==EBP)
+		
+		if (base==EBP)
 			force_disp=1;
-
-
+		
 		if (base==REG_NONE)
 		{
 			rv.sib=make_sib(scale,index,EBP);
