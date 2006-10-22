@@ -369,9 +369,8 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 			fprinfo* r1=  GetInfo(from);
 			if ((SimpleSSERegAlloc_sse2==true) &&  (r1->Loaded==true) && (r1->WritenBack==false))
 			{
-				x86_sse_reg freg=GetRegister(XMM0,to,RA_DEFAULT);
+				x86_sse_reg freg=GetRegister(XMM0,from,RA_DEFAULT);
 				assert(freg!=XMM0);
-				x86e->Emit(op_int3);
 				x86e->Emit(op_movd_xmm_to_r32,to,freg);
 			}
 			else

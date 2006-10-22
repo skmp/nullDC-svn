@@ -143,8 +143,8 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 	//check
 	void checkvr(u32 reg)
 	{
-		if (reg>=fr_0 && reg<=fr_15 )
-			__asm int 3;
+		//if (reg>=fr_0 && reg<=fr_15 )
+		//	__asm int 3;
 	//	if (reg>=xf_0 && reg<=xf_15 )
 		//	__asm int 3; 
 	}

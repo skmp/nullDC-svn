@@ -272,6 +272,17 @@ bool IsSSEAllocReg(u32 reg)
 {
 	return (reg >=fr_0 && reg<=fr_15);
 }
+//FPU !!! YESH
+u32 IsInFReg(u32 reg)
+{
+	if (IsSSEAllocReg(reg))
+	{
+		if (fra->IsRegAllocated(reg))
+			return 1;
+	}
+	return 0;
+}
+/*
 //write back float
 void sse_WBF(u32 reg)
 {
@@ -288,6 +299,7 @@ void sse_RLF(u32 reg)
 		fra->ReloadRegister(reg);
 	}
 }
+*/
 //REGISTER ALLOCATION
 #define LoadReg(to,reg) ira->GetRegister(to,reg,RA_DEFAULT)
 #define LoadReg_force(to,reg) ira->GetRegister(to,reg,RA_FORCE)
@@ -416,10 +428,10 @@ void __fastcall shil_compile_mov(shil_opcode* op,BasicBlock* block)
 		if (op->flags & FLAG_IMM1)
 			flags|=mov_flag_imm_2;
 
-		if (IsSSEAllocReg(op->reg1) && fra->IsRegAllocated(op->reg1))
+		if (IsInFReg(op->reg1))
 			flags|=mov_flag_XMM_1;
 		
-		if (((op->flags & FLAG_IMM1)==0) && IsSSEAllocReg(op->reg2) && fra->IsRegAllocated(op->reg2))
+		if (((op->flags & FLAG_IMM1)==0) && IsInFReg(op->reg2))
 			flags|=mov_flag_XMM_2;
 
 		if (IsSSEAllocReg(op->reg1)==false && ira->IsRegAllocated(op->reg1))
@@ -1030,16 +1042,12 @@ x86_reg  readwrteparams(shil_opcode* op)
 	}*/
 }
 
-
-void emit_vmem_op_compat(x86_block* x86e,x86_gpr_reg ra,
-					  x86_gpr_reg ro,
-					  u32 sz,u32 rw);
-
 void emit_vmem_op_compat_const(x86_block* x86e,u32 ra,
 							   x86_gpr_reg ro,x86_sse_reg ro_sse,bool sse,
 								u32 sz,u32 rw);
 u32 m_unpack_sz[3]={1,2,4};
 void emit_vmem_read(x86_reg reg_addr,u8 reg_out,u32 sz);
+void emit_vmem_write(x86_reg reg_addr,u8 reg_data,u32 sz);
 void __fastcall shil_compile_readm(shil_opcode* op,BasicBlock* block)
 {
 	u32 size=op->flags&3;
@@ -1053,7 +1061,7 @@ void __fastcall shil_compile_readm(shil_opcode* op,BasicBlock* block)
 		{//[reg2+imm] form
 			assert(op->flags & FLAG_IMM1);
 			//[imm1] form
-			if (!IsSSEAllocReg(op->reg1))
+			if (!IsInFReg(op->reg1))
 			{
 				x86_gpr_reg rall=LoadReg_nodata(EDX,op->reg1);
 				emit_vmem_op_compat_const(x86e,op->imm1,rall,XMM0,false,m_unpack_sz[size],0);
@@ -1102,7 +1110,7 @@ void __fastcall shil_compile_readm(shil_opcode* op,BasicBlock* block)
 }
 void __fastcall shil_compile_writem(shil_opcode* op,BasicBlock* block)
 {
-	sse_WBF(op->reg1);//Write back possibly readed reg
+	//sse_WBF(op->reg1);//Write back possibly readed reg
 	u32 size=op->flags&3;
 
 	//if constant read , and on ram area , make it a direct mem access
@@ -1111,7 +1119,7 @@ void __fastcall shil_compile_writem(shil_opcode* op,BasicBlock* block)
 	{//[reg2+imm] form
 		assert(op->flags & FLAG_IMM1);
 		//[imm1] form
-		if (!IsSSEAllocReg(op->reg1))
+		if (!IsInFReg(op->reg1))
 		{
 			x86_gpr_reg rall=LoadReg(EDX,op->reg1);
 			emit_vmem_op_compat_const(x86e,op->imm1,rall,XMM0,false,m_unpack_sz[size],1);
@@ -1129,7 +1137,7 @@ void __fastcall shil_compile_writem(shil_opcode* op,BasicBlock* block)
 	//ECX is address
 
 	//so it's sure loaded (if from reg cache)
-	x86_gpr_reg r1;
+	/*x86_gpr_reg r1;
 	if (IsSSEAllocReg(op->reg1))
 	{
 		r1=EDX;
@@ -1138,7 +1146,8 @@ void __fastcall shil_compile_writem(shil_opcode* op,BasicBlock* block)
 	else
 		r1=LoadReg(EDX,op->reg1);
 	
-	emit_vmem_op_compat(x86e,reg_addr,r1,m_unpack_sz[size],1);
+	emit_vmem_op_compat(x86e,reg_addr,r1,m_unpack_sz[size],1);*/
+	emit_vmem_write(reg_addr,op->reg1,m_unpack_sz[size]);
 }
 
 //save-loadT
@@ -1477,16 +1486,7 @@ void __fastcall shil_compile_div32(shil_opcode* op,BasicBlock* block)
 
 
 
-//FPU !!! YESH
-u32 IsInFReg(u32 reg)
-{
-	if (IsSSEAllocReg(reg))
-	{
-		if (fra->IsRegAllocated(reg))
-			return 1;
-	}
-	return 0;
-}
+
 //Fpu alloc helpers
 #define fa_r1r2 (1|2)
 #define fa_r1m2 (1|0)
@@ -2727,7 +2727,6 @@ void emit_vmem_op_compat(x86_block* x86e,x86_gpr_reg ra,
 {
 	if (rw==0)
 	{
-		verify(false);
 		if (ra!=ECX)
 			x86e->Emit(op_mov32,ECX,ra);
 	
@@ -3027,7 +3026,7 @@ void emit_vmem_op_compat_const(x86_block* x86e,u32 ra,
 //reg_addr : either ECX , either allocated
 void emit_vmem_read(x86_reg reg_addr,u8 reg_out,u32 sz)
 {
-	bool sse=IsSSEAllocReg(reg_out);
+	bool sse=IsInFReg(reg_out);
 	if (sse)
 		verify(sz==4);
 
@@ -3117,6 +3116,102 @@ void emit_vmem_read(x86_reg reg_addr,u8 reg_out,u32 sz)
 		x86e->Emit(op_movss, writereg,x86_mrm::create(EAX,EDX));
 		
 		fra->SaveRegister(reg_out,writereg);
+	}
+	x86e->MarkLabel(end);
+}
+//SSE valid olny for sz=4
+//reg_addr : either ECX , either allocated
+void emit_vmem_write(x86_reg reg_addr,u8 reg_data,u32 sz)
+{
+	bool sse=IsInFReg(reg_data);
+	if (sse)
+	{
+		verify(sz==4);
+		if (fra->IsRegAllocated(reg_data))
+			fra->GetRegister(XMM0,reg_data,RA_DEFAULT);
+	}
+	else
+	{
+		if (ira->IsRegAllocated(reg_data))
+			ira->GetRegister(EAX,reg_data,RA_DEFAULT);
+	}
+
+	x86_ptr p_WF_table(0);
+	x86_Label* direct=x86e->CreateLabel(false);
+	x86_Label* end=x86e->CreateLabel(false);
+
+	if (sz==1)
+		p_WF_table=&_vmem_WF8[0];
+	else if (sz==2)
+		p_WF_table=&_vmem_WF16[0];
+	else if (sz==4)
+		p_WF_table=&_vmem_WF32[0];
+
+	//x86e->Emit(op_int3);
+	//copy address
+	//this is done here , among w/ the and , it should be possible to fully execute it on paraler (no depency)
+	x86e->Emit(op_mov32,EDX,reg_addr);
+	x86e->Emit(op_mov32,EAX,reg_addr);
+	//lower 16b of address
+	x86e->Emit(op_and32,EDX,0xFFFF);
+	//x86e->Emit(op_movzx16to32,EDX,EDX);
+	//get upper 16 bits
+	x86e->Emit(op_shr32,EAX,16);
+	//read mem info
+	//mov eax,[_vmem_MemInfo+eax*4];
+	x86e->Emit(op_mov32,EAX,x86_mrm::create(EAX,sib_scale_4,_vmem_MemInfo));
+
+	//test eax,0xFFFF0000;
+	x86e->Emit(op_test32,EAX,0xFFFF0000);
+	//jnz direct;
+	x86e->Emit(op_jnz,direct);
+	//--other read---
+	if (reg_addr!=ECX)
+		x86e->Emit(op_mov32,ECX,reg_addr);
+
+	//load reg
+	if (!sse)
+	{
+		LoadReg_force(EDX,reg_data);
+	}
+	else
+	{	
+		fra->LoadRegisterGPR(EDX,reg_data);
+	}
+
+	//Get function pointer and call it
+	x86e->Emit(op_call32,x86_mrm::create(EAX,p_WF_table));
+
+
+	x86e->Emit(op_jmp,end);
+//direct:
+	x86e->MarkLabel(direct);
+//	mov [eax+edx],reg;	//note : upper bits dont matter , so i do 32b read here ;) (to get read of partial register stalls)
+	//x86e->Emit(op_int3);
+	if (!sse)
+	{
+		
+		if (sz==1)
+		{
+			x86_reg readreg= LoadReg_force(ECX,reg_data);
+			x86e->Emit(op_mov8, x86_mrm::create(EAX,EDX),readreg);
+		}
+		else if (sz==2)
+		{
+			x86_reg readreg= LoadReg(ECX,reg_data);
+			x86e->Emit(op_mov16, x86_mrm::create(EAX,EDX),readreg);
+		}
+		else
+		{
+			x86_reg readreg= LoadReg(ECX,reg_data);
+			x86e->Emit(op_mov32, x86_mrm::create(EAX,EDX),readreg);
+		}
+	}
+	else
+	{
+		x86_reg readreg= fra->GetRegister(XMM0,reg_data,RA_DEFAULT);
+		
+		x86e->Emit(op_movss, x86_mrm::create(EAX,EDX),readreg);
 	}
 	x86e->MarkLabel(end);
 }
