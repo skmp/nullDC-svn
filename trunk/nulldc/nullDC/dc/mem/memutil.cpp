@@ -71,10 +71,12 @@ bool LoadFileToSh4Bootrom(char *szFile)
 	int flen = ftell(fd);	// tell file position (size)
 	fseek(fd, 0, SEEK_SET);	// to beginning of file
 
+#ifndef BUILD_DEV_UNIT
 	if( flen > (1024 * 1024 * 2) ) {
 		printf("LoadFileToSh4Bootrom: can't load file \"%s\", Too Large! size(%d bytes)\n", szFile, flen);
 		return false;
 	}
+#endif
 
 	char buf = 'Z';
 	for( int i=0; i<flen; i++ )	{

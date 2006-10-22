@@ -131,11 +131,18 @@ void LoadBiosFiles()
 	char* temp_path=GetEmuPath("data\\");
 	u32 pl=(u32)strlen(temp_path);
 
-	//mwhahaha
-#ifndef BUILD_NAOMI
+
+#ifdef BUILD_DREAMCAST
 	strcat(temp_path,"dc_boot.bin");
+#elif	BUILD_NAOMI
+	strcat(temp_path,"naomi_boot.bin");
+#else	//BUILD_DEV_UNIT
+	strcat(temp_path,"hkt_boot.bin");
+#endif
+
 	LoadFileToSh4Bootrom(temp_path);
 
+#ifndef BUILD_NAOMI
 	temp_path[pl]=0;
 	//try to load saved flash
 	strcat(temp_path,"dc_flash_wb.bin");
@@ -156,11 +163,8 @@ void LoadBiosFiles()
 	strcat(temp_path,"IP.bin");
 	LoadFileToSh4Mem(0x08000, temp_path);
 	temp_path[pl]=0;
+#endif
 
-#else
-	strcat(temp_path,"naomi_boot.bin");
-	LoadFileToSh4Bootrom(temp_path);
-#endif	
 	free(temp_path);
 }
 

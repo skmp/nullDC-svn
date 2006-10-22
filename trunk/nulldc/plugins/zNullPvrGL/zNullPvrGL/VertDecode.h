@@ -65,7 +65,7 @@ S_INLINE void DecodeStrip2(Vert *pVert, VertexParam *vp)	// Intensity
 	pVert->xyz[2]	= (vp->vtx2.xyz[2]>1.f) ? vp->vtx2.xyz[2]/256.f : vp->vtx2.xyz[2];
 
 	memset(pVert->uv, 0, sizeof(float)*4);
-)
+
 	u8 tcol			= NFloat2UB(vp->vtx2.BaseInt);
 	pVert->col		= LastInt = tcol | (tcol<<8) | (tcol<<16) | (tcol<<24) ;
 }
