@@ -417,7 +417,7 @@ BasicBlockEP* __fastcall FindCode_fast(u32 address)
 		return FindCode_full(address,fastblock);
 	}
 #else
-	return FindBlock_full(address,BLOCK_NONE);
+	return FindCode_full(address,BLOCK_NONE);
 #endif
 
 }

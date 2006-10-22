@@ -223,7 +223,7 @@ u32 THREADCALL rec_sh4_int_ThreadEntry_normal(void* ptar)
 #define LOOKUP_HASH_SIZE	0x4000
 #define LOOKUP_HASH_MASK	(LOOKUP_HASH_SIZE-1)
 extern CompiledBlockInfo*			BlockLookupGuess[LOOKUP_HASH_SIZE];
-
+BasicBlockEP* __fastcall FindCode_full(u32 address,CompiledBlockInfo* fastblock);
 
 
 void naked NormalMainLoop()
@@ -244,9 +244,55 @@ void naked NormalMainLoop()
 		mov rec_cycles,(CPU_TIMESLICE*9/10);
 
 no_update:
+		/*
 		//called if no update is needed
-		mov ecx,pc;
+		
 		call GetRecompiledCodePointer;
+		*/
+		
+		/*
+		#define LOOKUP_HASH_SIZE	0x4000
+		#define LOOKUP_HASH_MASK	(LOOKUP_HASH_SIZE-1)
+		#define GetLookupHash(addr) ((addr>>2)&LOOKUP_HASH_MASK)
+
+		*/
+		/*
+		CompiledBlockInfo* fastblock;
+		fastblock=BlockLookupGuess[GetLookupHash(address)];
+		*/
+		mov ecx,pc;
+		mov edx,ecx;
+		and edx,(LOOKUP_HASH_MASK<<2);
+
+		mov edx,[BlockLookupGuess + edx]
+		
+
+		/*
+		if ((fastblock->start==address) && 
+			(fastblock->cpu_mode_tag ==fpscr.PR_SZ)
+			)
+		{
+			fastblock->lookups++;
+			return fastblock->Code;
+		}*/
+		
+		mov eax,fpscr;
+		cmp [edx],ecx;
+		jne full_lookup;
+		
+		shr eax,19;
+		and eax,0x3;
+		cmp [edx+12],eax;
+		jne full_lookup;
+		inc [edx+16];
+		jmp [edx+8];
+		/*
+		else
+		{
+			return FindCode_full(address,fastblock);
+		}*/
+full_lookup:
+		call FindCode_full
 		jmp eax;
 
 do_update:
