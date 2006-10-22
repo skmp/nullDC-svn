@@ -1039,11 +1039,12 @@ void emit_vmem_op_compat_const(x86_block* x86e,u32 ra,
 							   x86_gpr_reg ro,x86_sse_reg ro_sse,bool sse,
 								u32 sz,u32 rw);
 u32 m_unpack_sz[3]={1,2,4};
+void emit_vmem_read(x86_reg reg_addr,u8 reg_out,u32 sz);
 void __fastcall shil_compile_readm(shil_opcode* op,BasicBlock* block)
 {
 	u32 size=op->flags&3;
 
-	sse_RLF(op->reg1);//reload possibly readed reg
+	//sse_RLF(op->reg1);//reload possibly readed reg
 	if (INLINE_MEM_READ_CONST)
 	{
 		//if constant read , and on ram area , make it a direct mem access
@@ -1070,8 +1071,9 @@ void __fastcall shil_compile_readm(shil_opcode* op,BasicBlock* block)
 
 	x86_reg reg_addr = readwrteparams(op);
 
-	emit_vmem_op_compat(x86e,reg_addr,EAX,m_unpack_sz[size],0);
+	emit_vmem_read(reg_addr,op->reg1,m_unpack_sz[size]);
 	
+	/*
 	//movsx [if needed]
 	if (size==0)
 	{
@@ -1096,6 +1098,7 @@ void __fastcall shil_compile_readm(shil_opcode* op,BasicBlock* block)
 	{
 		SaveReg(op->reg1,EAX);//save return value
 	}
+	*/
 }
 void __fastcall shil_compile_writem(shil_opcode* op,BasicBlock* block)
 {
@@ -2724,6 +2727,7 @@ void emit_vmem_op_compat(x86_block* x86e,x86_gpr_reg ra,
 {
 	if (rw==0)
 	{
+		verify(false);
 		if (ra!=ECX)
 			x86e->Emit(op_mov32,ECX,ra);
 	
@@ -3017,4 +3021,102 @@ void emit_vmem_op_compat_const(x86_block* x86e,u32 ra,
 			}
 		}
 	}
+}
+
+//sz : 1,2 -> sign extended , 4 fully loaded.SSE valid olny for sz=4
+//reg_addr : either ECX , either allocated
+void emit_vmem_read(x86_reg reg_addr,u8 reg_out,u32 sz)
+{
+	bool sse=IsSSEAllocReg(reg_out);
+	if (sse)
+		verify(sz==4);
+
+	x86_ptr p_RF_table(0);
+	x86_Label* direct=x86e->CreateLabel(false);
+	x86_Label* end=x86e->CreateLabel(false);
+
+	if (sz==1)
+		p_RF_table=&_vmem_RF8[0];
+	else if (sz==2)
+		p_RF_table=&_vmem_RF16[0];
+	else if (sz==4)
+		p_RF_table=&_vmem_RF32[0];
+
+	//x86e->Emit(op_int3);
+	//copy address
+	//this is done here , among w/ the and , it should be possible to fully execute it on paraler (no depency)
+	x86e->Emit(op_mov32,EDX,reg_addr);
+	x86e->Emit(op_mov32,EAX,reg_addr);
+	//lower 16b of address
+	x86e->Emit(op_and32,EDX,0xFFFF);
+	//x86e->Emit(op_movzx16to32,EDX,EDX);
+	//get upper 16 bits
+	x86e->Emit(op_shr32,EAX,16);
+	//read mem info
+	//mov eax,[_vmem_MemInfo+eax*4];
+	x86e->Emit(op_mov32,EAX,x86_mrm::create(EAX,sib_scale_4,_vmem_MemInfo));
+
+	//test eax,0xFFFF0000;
+	x86e->Emit(op_test32,EAX,0xFFFF0000);
+	//jnz direct;
+	x86e->Emit(op_jnz,direct);
+	//--other read---
+	if (reg_addr!=ECX)
+		x86e->Emit(op_mov32,ECX,reg_addr);
+	//Get function pointer and call it
+	x86e->Emit(op_call32,x86_mrm::create(EAX,p_RF_table));
+
+	//save reg
+	if (!sse)
+	{
+		x86_reg writereg= LoadReg_nodata(EAX,reg_out);
+		if (sz==1)
+		{
+			x86e->Emit(op_movsx8to32, writereg,EAX);
+		}
+		else if (sz==2)
+		{
+			x86e->Emit(op_movsx16to32, writereg,EAX);
+		}
+		else
+		{
+			x86e->Emit(op_mov32, writereg,EAX);
+		}
+		SaveReg(reg_out,writereg);
+	}
+	else
+	{	
+		fra->SaveRegisterGPR(reg_out,EAX);
+	}
+
+	x86e->Emit(op_jmp,end);
+//direct:
+	x86e->MarkLabel(direct);
+//	mov eax,[eax+edx];	//note : upper bits dont matter , so i do 32b read here ;) (to get read of partial register stalls)
+	if (!sse)
+	{
+		x86_reg writereg= LoadReg_nodata(EAX,reg_out);
+		if (sz==1)
+		{
+			x86e->Emit(op_movsx8to32, writereg,x86_mrm::create(EAX,EDX));
+		}
+		else if (sz==2)
+		{
+			x86e->Emit(op_movsx16to32, writereg,x86_mrm::create(EAX,EDX));
+		}
+		else
+		{
+			x86e->Emit(op_mov32, writereg,x86_mrm::create(EAX,EDX));
+		}
+		SaveReg(reg_out,writereg);
+	}
+	else
+	{
+		x86_reg writereg= fra->GetRegister(XMM0,reg_out,RA_NODATA);
+		
+		x86e->Emit(op_movss, writereg,x86_mrm::create(EAX,EDX));
+		
+		fra->SaveRegister(reg_out,writereg);
+	}
+	x86e->MarkLabel(end);
 }
