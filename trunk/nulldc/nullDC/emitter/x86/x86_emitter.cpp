@@ -37,16 +37,21 @@ x86_ptr_imm x86_ptr_imm::create(unat ptr)
 }
 //x86_block
 //init things
-/*
+
 const char Names[op_count][64] =
 {
 	#include "generated_class_names_string.h"
 };
-*/
+
+
+void* x86_Label::GetPtr()
+{
+	return owner->x86_buff + this->target_opcode;
+}
 
 const char* DissasmClass(x86_opcode_class opcode)
 {
-	return "NoDissasm";//Names[opcode];
+	return Names[opcode];
 }
 void x86_block::Init()
 {
@@ -59,20 +64,35 @@ void x86_block::Init()
 //and user_data is set to the first byte of em.Allways 16 byte alligned
 void* x86_block::Generate(void** user_data,u32 user_data_size)
 {
+	u32 user_data_start;
+
 	if (user_data_size)
 	{
 		x86_indx+=32;
 		x86_indx&=~31;
+		user_data_start=x86_indx;
+		x86_indx+=user_data_size;
 	}
 
-	realloc(x86_buff,x86_indx+user_data_size);
+	realloc(x86_buff,x86_indx);
 
 	if (user_data_size)
-		*user_data=(void*)&x86_buff[x86_indx];
+		*user_data=(void*)&x86_buff[user_data_start];
 
 	ApplyPatches(x86_buff);
 
 	return &x86_buff[0];
+}
+void x86_block::CopyTo(void* to)
+{
+	memcpy(to,x86_buff,x86_indx);
+	free(x86_buff);
+	//u8* old=x86_buff;
+	x86_buff=(u8*)to;
+
+	ApplyPatches(x86_buff);
+	
+	//x86_buff=old;
 }
 
 //wut ?
@@ -86,7 +106,12 @@ void x86_block::ApplyPatches(u8* base)
 		u8* diff_offset=code_offset+(patches[i].type&0xF);
 
 		if (patches[i].type&16)
-			dest=patches[i].lbl->owner->x86_buff + patches[i].lbl->target_opcode;
+		{
+			if (patches[i].lbl->owner==this)
+				dest = base + patches[i].lbl->target_opcode;
+			else
+				dest = patches[i].lbl->owner->x86_buff + patches[i].lbl->target_opcode;
+		}
 
 		u32 diff=(u32)(dest-diff_offset);
 		if ((patches[i].type&0xF)==1)
@@ -102,8 +127,6 @@ void x86_block::ApplyPatches(u8* base)
 			*(u32*)code_offset=(u32)diff;
 		}
 	}
-
-	patches.clear();
 }
 x86_block::~x86_block()
 {
@@ -158,7 +181,7 @@ void x86_block::MarkLabel(x86_Label* lbl)
 
 x86_mrm c_mrm(x86_ptr mem)
 {
-	return x86_mrm::create(REG_NONE,mem);
+	return x86_mrm::create(NO_REG,mem);
 }
 //no param
 void x86_block::Emit(x86_opcode_class op)
@@ -282,15 +305,15 @@ u8 EncodeDisp(u32 disp,x86_mrm* to,u8 flags)
 }
 x86_mrm x86_mrm::create(x86_reg base)
 {
-	return x86_mrm::create(base,REG_NONE,sib_scale_1,0);
+	return x86_mrm::create(base,NO_REG,sib_scale_1,0);
 }
 x86_mrm x86_mrm::create(x86_reg base,x86_ptr disp)
 {
-	return x86_mrm::create(base,REG_NONE,sib_scale_1,disp);
+	return x86_mrm::create(base,NO_REG,sib_scale_1,disp);
 }
 x86_mrm x86_mrm::create(x86_reg index,x86_sib_scale scale,x86_ptr disp)
 {
-	return x86_mrm::create(REG_NONE,index,scale,disp);
+	return x86_mrm::create(NO_REG,index,scale,disp);
 }
 x86_mrm x86_mrm::create(x86_reg base,x86_reg index)
 {
@@ -305,7 +328,7 @@ x86_mrm x86_mrm::create(x86_reg base,x86_reg index,x86_sib_scale scale,x86_ptr d
 
 	verify(index!=ESP);//cant be used
 
-	if(index==REG_NONE)
+	if(index==NO_REG)
 	{
 		//no index , ingore scale
 		if (base==ESP)
@@ -321,7 +344,7 @@ x86_mrm x86_mrm::create(x86_reg base,x86_reg index,x86_sib_scale scale,x86_ptr d
 
 			rv.modrm |= EncodeDisp(disp.ptr_int,&rv,3);	//32 or 16 bit disp
 		}
-		else if (base == REG_NONE)
+		else if (base == NO_REG)
 		{
 			//[disp32]
 			//special encoding
@@ -344,14 +367,14 @@ x86_mrm x86_mrm::create(x86_reg base,x86_reg index,x86_sib_scale scale,x86_ptr d
 		rv.modrm = make_modrm(0,ESP);//ESP means sib
 		rv.flags|=1;
 
-		bool force_disp=0;
+		bool force_disp=false;
 		u8 disp_sz=3;
 
 		
 		if (base==EBP)
-			force_disp=1;
+			force_disp=true;
 		
-		if (base==REG_NONE)
+		if (base==NO_REG)
 		{
 			rv.sib=make_sib(scale,index,EBP);
 			disp_sz=2|4;//olny 32b disp , return 0 on mrm type
@@ -407,8 +430,8 @@ x86_mrm x86_mrm::create(x86_reg base,x86_reg index,x86_sib_scale scale,x86_ptr d
 		{
 			//[reg1*scale+reg2]:
 			//reg1{EAX,ECX,EDX,EBX,EBP,EDI,ESI}
-			//scale{scale_1,scale_2,scale_4,scale_8} , if reg2==REG_NONE then scale_1 is invalid
-			//reg2{EAX,ECX,EDX,EBX,ESP,EDI,ESI,REG_NONE}
+			//scale{scale_1,scale_2,scale_4,scale_8} , if reg2==NO_REG then scale_1 is invalid
+			//reg2{EAX,ECX,EDX,EBX,ESP,EDI,ESI,NO_REG}
 
 			//reg1 gpr,!ESP
 			verify(reg1!=ESP);
@@ -416,7 +439,7 @@ x86_mrm x86_mrm::create(x86_reg base,x86_reg index,x86_sib_scale scale,x86_ptr d
 			verify(reg2!=EBP);
 
 			if (scale==sib_scale_1)
-				verify(reg2!=REG_NONE);
+				verify(reg2!=NO_REG);
 
 
 			//We want simple SIB
@@ -429,14 +452,14 @@ x86_mrm x86_mrm::create(x86_reg base,x86_reg index,x86_sib_scale scale,x86_ptr d
 		{
 			//[reg1*scale+reg2+disp]:
 			//reg1{EAX,ECX,EDX,EBX,EBP,EDI,ESI}
-			//scale{scale_1,scale_2,scale_4,scale_8} , if reg2==REG_NONE then scale_1 is invalid
-			//reg2{EAX,ECX,EDX,EBX,ESP,EDI,ESI,REG_NONE}
+			//scale{scale_1,scale_2,scale_4,scale_8} , if reg2==NO_REG then scale_1 is invalid
+			//reg2{EAX,ECX,EDX,EBX,ESP,EDI,ESI,NO_REG}
 
 			//disp !=0
 			//reg1 gpr,!ESP
 			//reg2 gpr,!EBP
 			if (scale==sib_scale_1)
-				verify(reg2!=REG_NONE);
+				verify(reg2!=NO_REG);
 			//We want Complex SIB
 			rv.modrm=(2<<6) | (4) | (0<<3);
 			rv.sib = ( scale <<6) | (reg1<<3) | (reg2<<0);

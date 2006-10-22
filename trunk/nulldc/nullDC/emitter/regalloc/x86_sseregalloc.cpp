@@ -94,7 +94,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 		reg-=fr_0;
 		if (reg<16)
 		{
-			if (reginf[reg].reg!=REG_ERROR)
+			if (reginf[reg].reg!=ERROR_REG)
 			{
 				return &reginf[reg];
 			}
@@ -126,7 +126,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 			used[i].cnt=0;
 			used[i].reg=r0+i;
 			used[i].no_load=false;
-			reginf[i].reg=REG_ERROR;
+			reginf[i].reg=ERROR_REG;
 			reginf[i].Loaded=false;
 			reginf[i].WritenBack=false;
 		}

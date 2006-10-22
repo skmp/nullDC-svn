@@ -344,10 +344,7 @@ void fastcall op_reg_to_reg(shil_opcode* op,x86_opcode_class op_cl)
 		}
 	}
 }
-//Macro :
-/*
-#define OP_MoRtR_ItR(op_cl)	
-*/
+
 #define OP_RegToReg_simple(opcd) op_reg_to_reg(op,opcd);
 
 void fastcall op_imm_to_reg(shil_opcode* op,x86_opcode_class op_cl)
@@ -367,9 +364,7 @@ void fastcall op_imm_to_reg(shil_opcode* op,x86_opcode_class op_cl)
 	else\
 		x86e->Emit(op_cl,GetRegPtr(op->reg1),op->imm1);
 }
-/*
-#define OP_ItMoR(op_cl,_Imm_)
-*/
+
 	
 void fastcall op_reg(shil_opcode* op,x86_opcode_class op_cl)
 {
@@ -388,19 +383,7 @@ void fastcall op_reg(shil_opcode* op,x86_opcode_class op_cl)
 	else
 		x86e->Emit(op_cl,x86_ptr(GetRegPtr(op->reg1)));
 }
-/*
-#define OP_NtMoR_noimm(op_cl)	
-*/
-/*
-#define OP_NtR_noimm(op_cl)	assert(FLAG_32==(op->flags & 3));\
-	assert(0==(op->flags & FLAG_IMM1));\
-	assert(0==(op->flags & (FLAG_IMM2)));\
-	assert(op->flags & FLAG_REG1);\
-	assert(0==(op->flags & FLAG_REG2));\
-	x86_gpr_reg r1= LoadReg(EAX,op->reg1);\
-	x86e->Emit(op_cl,r1);\
-	SaveReg(op->reg1,r1);
-*/
+
 //shil compilation
 void __fastcall shil_compile_nimp(shil_opcode* op,BasicBlock* block)
 {
@@ -461,8 +444,8 @@ void __fastcall shil_compile_mov(shil_opcode* op,BasicBlock* block)
 		#define IMMtoGPR (mov_flag_GRP_1 | mov_flag_imm_2)
 		#define IMMtoM32 (mov_flag_M32_1 | mov_flag_imm_2)
 		
-		x86_sse_reg sse1=REG_ERROR;
-		x86_sse_reg sse2=REG_ERROR;
+		x86_sse_reg sse1=ERROR_REG;
+		x86_sse_reg sse2=ERROR_REG;
 		if (flags & mov_flag_XMM_1)
 		{
 			sse1=fra->GetRegister(XMM0,op->reg1,RA_NODATA);
@@ -475,8 +458,8 @@ void __fastcall shil_compile_mov(shil_opcode* op,BasicBlock* block)
 			assert(sse2!=XMM0);
 		}
 
-		x86_gpr_reg gpr1=REG_ERROR;
-		x86_gpr_reg gpr2=REG_ERROR;
+		x86_gpr_reg gpr1=ERROR_REG;
+		x86_gpr_reg gpr2=ERROR_REG;
 
 		if (flags & mov_flag_GRP_1)
 		{
@@ -934,7 +917,7 @@ x86_reg  readwrteparams(shil_opcode* op)
 	}
 	
 	verify(flags!=0);
-	x86_reg reg=REG_ERROR;
+	x86_reg reg=ERROR_REG;
 
 	switch(flags)
 	{
@@ -998,7 +981,7 @@ x86_reg  readwrteparams(shil_opcode* op)
 		break;
 	}
 
-	verify(reg!=REG_ERROR);
+	verify(reg!=ERROR_REG);
 	return reg;
 	/*if (!(op->flags & (FLAG_R0|FLAG_GBR)))
 	{//[reg2] form
@@ -2142,6 +2125,7 @@ extern u32 rec_cycles;
 
 u32 call_ret_address=0xFFFFFFFF;//holds teh return address of the previus call ;)
 CompiledBlockInfo* pcall_ret_address=0;//holds teh return address of the previus call ;)
+CompiledBasicBlock* Curr_block;
 
 u32* block_stack_pointer;
 //sp is 0 if manual discard
@@ -2193,7 +2177,6 @@ void CompileBasicBlock_slow(BasicBlock* block)
 	x86e=new x86_block();
 	
 	x86e->Init();
-	//x86e->Emit(op_int3);
 
 	CompiledBasicBlock* cBB;
 	
@@ -2215,7 +2198,11 @@ void CompileBasicBlock_slow(BasicBlock* block)
 	cBB=(CompiledBasicBlock*)CreateBlock(b_type);
 
 	block->SetCompiledBlockInfo(cBB);
-	
+
+	/*
+	//that is a realy nice debug helper :)
+	x86e->Emit(op_mov32,&Curr_block,(u32)cBB);
+	*/
 	if (block->flags.ProtectionType==BLOCK_PROTECTIONTYPE_MANUAL)
 	{
 		int sz=block->end-block->start;
@@ -2252,7 +2239,8 @@ void CompileBasicBlock_slow(BasicBlock* block)
 		x86e->MarkLabel(exit_discard_block);
 		x86e->Emit(op_mov32,ECX,(u32)cBB);
 		x86e->Emit(op_mov32,GetRegPtr(reg_pc),block->start);
-		x86e->Emit(op_jmp,x86_ptr_imm(SuspendBlock));
+		x86e->Emit(op_call,x86_ptr_imm(SuspendBlock));
+		x86e->Emit(op_jmp,x86_ptr_imm(Dynarec_Mainloop_no_update));
 		x86e->MarkLabel(execute_block);
 	}
 
@@ -2319,8 +2307,6 @@ void CompileBasicBlock_slow(BasicBlock* block)
 		x86e->MarkLabel(block_start);
 	}
 
-	x86e->Emit(op_add32 ,&rec_cycles,block->cycles);
-
 	u32 list_sz=(u32)block->ilst.opcodes.size();
 	for (u32 i=0;i<list_sz;i++)
 	{
@@ -2359,19 +2345,25 @@ void CompileBasicBlock_slow(BasicBlock* block)
 		}
 	case BLOCK_EXITTYPE_DYNAMIC:
 		{
-			x86e->Emit(op_ret);
+			x86e->Emit(op_sub32 ,&rec_cycles,block->cycles);
+			x86e->Emit(op_jns,x86_ptr_imm(Dynarec_Mainloop_no_update));
+			x86e->Emit(op_jmp,x86_ptr_imm(Dynarec_Mainloop_do_update));
 			break;
 		}
 
 	case BLOCK_EXITTYPE_RET:
 		{
-			x86_Label* not_ok=x86e->CreateLabel(false);
+			//x86_Label* not_ok=x86e->CreateLabel(false);
+
+			//link end ?
+			x86e->Emit(op_sub32 ,&rec_cycles,block->cycles);
+			x86e->Emit(op_js,x86_ptr_imm(Dynarec_Mainloop_do_update));
 
 			//cmp pr,guess
 			x86e->Emit(op_mov32 ,EAX,GetRegPtr(reg_pc));
 			x86e->Emit(op_cmp32 ,EAX,&call_ret_address);
 			//je ok
-			x86e->Emit(op_jne ,not_ok);
+			x86e->Emit(op_jne ,x86_ptr_imm(Dynarec_Mainloop_no_update));
 			//ok:
 			//mov ecx , pcall_ret_address
 			x86e->Emit(op_mov32 ,ECX,(u32*)&pcall_ret_address);
@@ -2385,12 +2377,13 @@ void CompileBasicBlock_slow(BasicBlock* block)
 			x86e->JMP32R(EAX);	//jump to it
 			*/
 
+			//never gets here :D
 			//x86e->x86SetJ8(not_ok);
-			x86e->MarkLabel(not_ok);
+			//x86e->MarkLabel(not_ok);
 			//not_ok
 
 			//ret
-			x86e->Emit(op_ret);
+			//x86e->Emit(op_ret);
 
 			break;
 		}
@@ -2406,12 +2399,12 @@ void CompileBasicBlock_slow(BasicBlock* block)
 			u32* pTF_f=(u32*)&(cBB->ebi.pTT_next_addr);
 			u32* pTT_f=(u32*)&(cBB->ebi.pTF_next_addr);
 
-			x86e->Emit(op_cmp32 ,&rec_cycles,BLOCKLIST_MAX_CYCLES);
+			x86e->Emit(op_sub32 ,&rec_cycles,block->cycles);
 			
 			x86_Label* Exit_Link = x86e->CreateLabel(false);
 
 			
-			x86e->Emit(op_jge ,Exit_Link);
+			x86e->Emit(op_js ,Exit_Link);
 
 			//Link:
 			//if we can execute more blocks
@@ -2472,7 +2465,9 @@ void CompileBasicBlock_slow(BasicBlock* block)
 				x86e->Emit(op_cmovne32 ,EAX,TT_a);//!=
 				x86e->Emit(op_mov32,GetRegPtr(reg_pc),EAX);
 
-				x86e->Emit(op_ret);//return to caller to check for interrupts
+				//return to caller to check for interrupts
+				x86e->Emit(op_jmp,x86_ptr_imm(Dynarec_Mainloop_do_update));
+				//x86e->Emit(op_ret);
 			}
 		} 
 		break;
@@ -2486,11 +2481,13 @@ void CompileBasicBlock_slow(BasicBlock* block)
 		}
 	case BLOCK_EXITTYPE_FIXED:
 		{
-			x86e->Emit(op_cmp32 ,&rec_cycles,BLOCKLIST_MAX_CYCLES);
+			//
+			//x86e->Emit(op_cmp32 ,&rec_cycles,BLOCKLIST_MAX_CYCLES);
 
+			x86e->Emit(op_sub32 ,&rec_cycles,block->cycles);
 			x86_Label* No_Link = x86e->CreateLabel(false);
 
-			x86e->Emit(op_jge ,No_Link);
+			x86e->Emit(op_js ,No_Link);
 
 			//Link:
 			//if we can execute more blocks
@@ -2502,14 +2499,15 @@ void CompileBasicBlock_slow(BasicBlock* block)
 
 			//link to next block :
 			x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , cBB
-			x86e->Emit(op_mov32,EAX,(u32*)&(cBB->ebi.pTF_next_addr));	//mov eax , [pTF_next_addr]
-			x86e->Emit(op_jmp32 ,EAX);									//jmp eax
+			x86e->Emit(op_jmp32,x86_ptr((u32*)&(cBB->ebi.pTF_next_addr)));	//mov eax , [pTF_next_addr]
+			//x86e->Emit(op_jmp32 ,EAX);									//jmp eax
 
-			//x86e->x86SetJ8(No_Link);
-			x86e->MarkLabel(No_Link);
 			//If our cycle count is expired
+			x86e->MarkLabel(No_Link);
+			//save pc
 			x86e->Emit(op_mov32,GetRegPtr(reg_pc),cBB->ebi.TF_next_addr);
-			x86e->Emit(op_ret);//return to caller to check for interrupts
+			//and return to caller to check for interrupts
+			x86e->Emit(op_jmp,x86_ptr_imm(Dynarec_Mainloop_do_update));
 			break;
 		}
 	case BLOCK_EXITTYPE_FIXED_CSC:
@@ -2517,12 +2515,15 @@ void CompileBasicBlock_slow(BasicBlock* block)
 			//We have to exit , as we gota do mode lookup :)
 			//We also have to reset return cache to ensure its ok
 
+			x86e->Emit(op_sub32 ,&rec_cycles,block->cycles);
 			//call_ret_address=0xFFFFFFFF;
 			x86e->Emit(op_mov32,&call_ret_address,0xFFFFFFFF);
 			//pcall_ret_address=0;
 			x86e->Emit(op_mov32,(u32*)&pcall_ret_address,0);
 			//Good , now return to caller :)
-			x86e->Emit(op_ret);
+			//x86e->Emit(op_ret);
+			x86e->Emit(op_jns,x86_ptr_imm(Dynarec_Mainloop_no_update));
+			x86e->Emit(op_jmp,x86_ptr_imm(Dynarec_Mainloop_do_update));
 			break;
 		}
 	}
@@ -2530,6 +2531,7 @@ void CompileBasicBlock_slow(BasicBlock* block)
 	ira->AfterTrail();
 	fra->AfterTrail();
 
+	x86e->Emit(op_int3);
 	void* codeptr=x86e->Generate(0,0);//heh
 
 	cBB->cbi.Code=(BasicBlockEP*)codeptr;
@@ -2831,7 +2833,7 @@ void emit_vmem_op_compat(x86_block* x86e,x86_gpr_reg ra,
 	x86e->write8(0x80);
 	x86e->write32(p_RWF_table);*/
 
-	// -> x86e->Emit(op_mov32,EAX,x86_mrm::create(mod_RI_disp,EAX,sib_scale_1,REG_NONE,_vmem_RF8));
+	// -> x86e->Emit(op_mov32,EAX,x86_mrm::create(mod_RI_disp,EAX,sib_scale_1,NO_REG,_vmem_RF8));
 	//jmp eax;
 	//x86e->CALL32R(EAX);
 	x86e->Emit(op_call32,x86_mrm::create(EAX,_vmem_RF8));

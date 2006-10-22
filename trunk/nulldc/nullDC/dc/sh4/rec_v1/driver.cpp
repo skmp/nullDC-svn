@@ -15,6 +15,7 @@
 #include "dc/sh4/shil/shil_ce.h"
 
 #include "emitter/shil_compile_slow.h"
+#include "emitter/emitter.h"
 
 #include "recompiler.h"
 #include "blockmanager.h"
@@ -39,6 +40,14 @@ u32 avg_bc=0;
 
 u32 sb_count=0;
 u32 nb_count=0;
+u32 rec_cycles=0;
+
+void* Dynarec_Mainloop_no_update;
+void* Dynarec_Mainloop_do_update;
+
+void DynaPrintLinkStart();
+void DynaPrintLinkEnd();
+void DumpBlockMappings();
 
 void*  __fastcall CompileCode_SuperBlock(u32 pc)
 {
@@ -146,10 +155,9 @@ void naked __fastcall DoRunCode(void * code)
 void __fastcall rec_sh4_int_RaiseExeption(u32 ExeptionCode,u32 VectorAddress)
 {
 }
-void DynaPrintLinkStart();
-void DynaPrintLinkEnd();
-u32 rec_cycles=0;
-void DumpBlockMappings();
+
+
+
 u32 THREADCALL rec_sh4_int_ThreadEntry_normal(void* ptar)
 {
 	//just cast it
@@ -216,31 +224,50 @@ u32 THREADCALL rec_sh4_int_ThreadEntry_normal(void* ptar)
 #define LOOKUP_HASH_MASK	(LOOKUP_HASH_SIZE-1)
 extern CompiledBlockInfo*			BlockLookupGuess[LOOKUP_HASH_SIZE];
 
-/*
-	block:
-	entry:
-	...
 
-	exit :
-	sub [rec_cycles],value
-	jo forced_exit;
-	normal exit code ..
-	forced_exit:
-	exit that needs update code ..
 
-	//boo
-	mainloop :
-	lookup pc;
-	jmp lookup;
+void naked NormalMainLoop()
+{
+	__asm
+	{
+		//save corrupted regs
+		push esi;
+		push edi;
+		push ebx;
+		push ebp;
 
-	DoUpdate:
-	mov eax,[rec_cycles]
-	neg eax,
-	add eax,const
-	call update
-	jmp mainloop;
-*/
+		//misc pointers needed
+		mov block_stack_pointer,esp;
+		mov Dynarec_Mainloop_no_update,offset no_update;
+		mov Dynarec_Mainloop_do_update,offset do_update;
+		//Max cycle count :)
+		mov rec_cycles,(CPU_TIMESLICE*9/10);
 
+no_update:
+		//called if no update is needed
+		mov ecx,pc;
+		call GetRecompiledCodePointer;
+		jmp eax;
+
+do_update:
+		//called if update is needed
+		mov ecx,CPU_TIMESLICE;
+		add rec_cycles,ecx;
+		//ecx=cycles
+		call UpdateSystem;
+
+		//check for exit
+		cmp rec_sh4_int_bCpuRun,0;
+		jne no_update;
+
+		//exit from function
+		pop ebp;
+		pop ebx;
+		pop edi;
+		pop esi;
+		ret;
+	}
+}
 u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 {
 	//just cast it
@@ -250,87 +277,17 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 	
 	rec_cycles=0;
 	SetFloatStatusReg();
-	__asm
-	{
-		push esi;
-		push edi;
-		push ebx;
-		push ebp;
-		mov block_stack_pointer,esp;
+	NormalMainLoop();
 
-		//we can freely use eax,ecx,edx,esi,edi,ebp,ebx here:p
-main_loop:
 
-/*
-		//fastblock=BlockLookupGuess[GetLookupHash(address)];
-		mov ecx,pc;
-		mov edx,ecx;
-		and ecx,(LOOKUP_HASH_MASK<<2);
-		mov eax,[ecx + BlockLookupGuess];
-		//edx = pc
-		//eax = block ptr
-		//ecx=hash
-
-		//if ((fastblock->start==address) && 
-		//(fastblock->cpu_mode_tag ==fpscr.PR_SZ)
-		//)
-		//{
-		cmp edx,[eax]
-		jne full_lookup;
-		inc [eax+100];
-		call [eax+10]
-		
-		//fastblock->lookups++;
-		//return fastblock->Code;
-		//}
-		//else
-		//{
-		//return FindCode_full(address,fastblock);
-		//}
-		
-*/
-		//no inline version (slower)
-		mov ecx, pc;
-		call GetRecompiledCodePointer;
-
-		//call the block
-		call eax;
-
-		//if (rec_cycles>(CPU_TIMESLICE*9/10))
-		cmp rec_cycles,(CPU_TIMESLICE*9/10);
-		//if no update needed , goto jump to main loop
-		jb main_loop;
-		
-		//Update is needed
-		//param #1
-		mov ecx,rec_cycles;
-		//zero out cycles
-		mov rec_cycles,0;
-		//call update (fastcall , ecx=cycles)
-		call UpdateSystem;
-
-		//Is cpu stoped ?
-		cmp rec_sh4_int_bCpuRun,0;
-		//if not , goto main loop
-		jne main_loop;
-		
-		//restore used regs
-exit_function:
-		pop ebp;
-		pop ebx;
-		pop edi;
-		pop esi;
-	}
-	
 	ptr(false);//call the callback
 
 	return 0;
 }
-
-
 //setup the SEH handler here so it doesnt fuq us (vc realy likes not to optimise SEH enabled functions)
 u32 THREADCALL rec_sh4_int_ThreadEntry_stub(void* ptar)
 {
+	//GenerateMainLoop();
 	__try
 	{
 		return rec_sh4_int_ThreadEntry(ptar);

@@ -63,8 +63,8 @@ enum x86_reg
 	MM7,
 
 	//misc :p
-	REG_NONE,
-	REG_ERROR,
+	NO_REG,
+	ERROR_REG,
 };
 #define x86_sse_reg x86_reg
 #define x86_gpr_reg x86_reg
@@ -77,6 +77,7 @@ struct x86_Label
 	u32 target_opcode;
 	x86_block* owner;
 	bool marked;
+	void* GetPtr();
 };
 //An empty type that we will use as ptr type.This is ptr-reference
 struct x86_ptr
@@ -113,8 +114,8 @@ enum x86_mrm_mod
 	mod_RI_disp,	//[reg+disp]
 	mod_DISP,		//[disp]
 	mod_REG,		//reg
-	mod_SIB,		//[reg1*scale+reg2], reg2 can be reg_none , reg1 can't
-	mod_SIB_disp	//[(reg1*scale+reg2)+disp], reg2 can be reg_none , reg1 can't
+	mod_SIB,		//[reg1*scale+reg2], reg2 can be NO_REG , reg1 can't
+	mod_SIB_disp	//[(reg1*scale+reg2)+disp], reg2 can be NO_REG , reg1 can't
 };
 enum x86_sib_scale
 {
@@ -174,6 +175,7 @@ public:
 	//Generates code.if user_data is non zero , user_data_size bytes are allocated after the executable code
 	//and user_data is set to the first byte of em.Allways 16 byte alligned
 	void* Generate(void** user_data,u32 user_data_size);
+	void CopyTo(void* to);
 
 	//Will free any used resources exept generated code
 	void Free();

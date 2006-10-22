@@ -168,7 +168,7 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 			used[i].cnt=0;
 			used[i].reg=r0+i;
 			used[i].no_load=false;
-			r_alloced[i].x86reg=REG_ERROR;
+			r_alloced[i].x86reg=ERROR_REG;
 			r_alloced[i].InReg=false;
 			r_alloced[i].Dirty=false;
 		}
@@ -235,7 +235,7 @@ class SimpleGPRAlloc : public IntegerRegAllocator
 	{
 		checkvr(sh4_reg);
 		if (sh4_reg<=r15)
-			return r_alloced[sh4_reg].x86reg!=REG_ERROR;
+			return r_alloced[sh4_reg].x86reg!=ERROR_REG;
 		else 
 			return false;
 	}
