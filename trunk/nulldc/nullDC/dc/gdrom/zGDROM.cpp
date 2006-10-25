@@ -133,7 +133,32 @@ void gdrom_reg_Reset(bool Manual)
 	gdSR.iDevType	= (u8)((u32)libGDR->gdr_info.GetDiskType() | GDSTATE_STANDBY);
 }
 
-
+u32 bts_to_read=0;
+bool SetByteCount()
+{
+	//if (databuff.size()>0)
+	{
+		if ((databuff.size()*2)>0xFFFE)
+		{
+			gdSR.ByteCount=0xFFFE;
+			//printf("Gdrom Pio continue (?) %d\n",databuff.size()*2);
+			//getc(stdin);
+			//__asm int 3;
+		}
+		else
+		{
+			gdSR.ByteCount=(databuff.size()*2);
+			//printf("Gdrom Pio continue,Last  %d\n",databuff.size()*2);
+		}
+		bts_to_read=gdSR.ByteCount;
+		if (bts_to_read==0)
+		{
+			databuff.clear();
+			return true;
+		}
+		return false;
+	}
+}
 
 u32  ReadMem_gdrom(u32 Addr, u32 sz)
 {
@@ -180,21 +205,31 @@ u32  ReadMem_gdrom(u32 Addr, u32 sz)
 			{
 				u16 tdata = databuff.back();
 				databuff.pop_back();
-			//	gdSR.ByteCount -= 2;
+				//gdSR.ByteCount -= 2;
+				bts_to_read-=2;
 
-				if(0 == databuff.size())
+
+				if(0 == bts_to_read)
 				{
+					//verify(gdSR.ByteCount==0);
 					// If chain dma or more data to send in bursts, 
 					// reset to RECV_CMD and issue another DMA and reset bytecnt
 					lprintf("(GD)\tData Buffer Read Complete !\n");
 
-					rSTATUS.BSY = 0;
-					rSTATUS.DRDY = 1;
-					gdSetSR(GD_STATUS_OK);
-					RaiseInterrupt(InterruptID::holly_GDROM_CMD);
 					
-					databuff.clear();
-					gdSR.ByteCount = 0;
+					if (SetByteCount())
+					{
+						gdSetSR(GD_STATUS_OK);
+						rSTATUS.BSY = 0;
+						rSTATUS.DRDY = 1;
+						RaiseInterrupt(InterruptID::holly_GDROM_CMD);
+					}
+					else
+						verify(GD_RECV_DATA == gdSR.iStatus);
+					
+					
+					//gdSR.ByteCount = 0;
+					
 				}
 				return tdata;
 			}
@@ -205,7 +240,7 @@ u32  ReadMem_gdrom(u32 Addr, u32 sz)
 				lprintf("\n!(GD)\tERROR: Read from GDROM DATA REG When EMPTY!\n\n");
 			}
 		}
-
+		getc(stdin);
 		printf("!(GD)\tERROR: Read from GDROM DATA REG!\n");
 		lprintf("!(GD)\tERROR: Read from GDROM DATA REG!\n");
 		return 0;
@@ -540,6 +575,7 @@ complete:
 	return;
 
 pio_complete:
+	SetByteCount();
 	rSTATUS.BSY = 0;
 	gdSetSR(GD_RECV_DATA);
 	RaiseInterrupt(InterruptID::holly_GDROM_CMD);
