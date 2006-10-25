@@ -19,6 +19,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ImgReader", "plugins\ImgRea
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "drkPvr", "plugins\drkPvr\drkPvr.vcproj", "{0520BA33-1A98-4DDE-8B36-99F25EDC5BD6}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zNullMaple", "plugins\zNullMaple\zNullMaple.vcproj", "{B44CF6A8-A9AB-4C80-8A20-D4BFC2687FCC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -137,6 +139,18 @@ Global
 		{0520BA33-1A98-4DDE-8B36-99F25EDC5BD6}.Release-NoTrace|Win32.Build.0 = Release|Win32
 		{0520BA33-1A98-4DDE-8B36-99F25EDC5BD6}.Release-Trace|Win32.ActiveCfg = Release|Win32
 		{0520BA33-1A98-4DDE-8B36-99F25EDC5BD6}.Release-Trace|Win32.Build.0 = Release|Win32
+		{B44CF6A8-A9AB-4C80-8A20-D4BFC2687FCC}.Debug|Win32.ActiveCfg = Debug|Win32
+		{B44CF6A8-A9AB-4C80-8A20-D4BFC2687FCC}.Debug|Win32.Build.0 = Debug|Win32
+		{B44CF6A8-A9AB-4C80-8A20-D4BFC2687FCC}.Debug-NoTrace|Win32.ActiveCfg = Debug|Win32
+		{B44CF6A8-A9AB-4C80-8A20-D4BFC2687FCC}.Debug-NoTrace|Win32.Build.0 = Debug|Win32
+		{B44CF6A8-A9AB-4C80-8A20-D4BFC2687FCC}.Debug-Trace|Win32.ActiveCfg = Debug|Win32
+		{B44CF6A8-A9AB-4C80-8A20-D4BFC2687FCC}.Debug-Trace|Win32.Build.0 = Debug|Win32
+		{B44CF6A8-A9AB-4C80-8A20-D4BFC2687FCC}.Release|Win32.ActiveCfg = Release|Win32
+		{B44CF6A8-A9AB-4C80-8A20-D4BFC2687FCC}.Release|Win32.Build.0 = Release|Win32
+		{B44CF6A8-A9AB-4C80-8A20-D4BFC2687FCC}.Release-NoTrace|Win32.ActiveCfg = Release|Win32
+		{B44CF6A8-A9AB-4C80-8A20-D4BFC2687FCC}.Release-NoTrace|Win32.Build.0 = Release|Win32
+		{B44CF6A8-A9AB-4C80-8A20-D4BFC2687FCC}.Release-Trace|Win32.ActiveCfg = Release|Win32
+		{B44CF6A8-A9AB-4C80-8A20-D4BFC2687FCC}.Release-Trace|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

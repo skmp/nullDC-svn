@@ -27,8 +27,40 @@ S_INLINE u8 NFloat2UB(float NCF)
 #endif
 }
 
+S_INLINE u32 PackedCol(u32 col)
+{
+	if(R_OPENGL==pvrOpts.GfxApi)
+		return  (col &0xFF00FF00) | ((col&255)<<16) | ((col>>16)&255) ;
+	else
+		return  (col);
+}
 
+S_INLINE u32 _Float2PackedCol(f32 cols[4])
+{
+	u32 col = 0;
 
+	//if(R_OPENGL==pvrOpts.GfxApi) {
+		col		=	NFloat2UB(cols[0]) << 24;	// *FIXME*
+		col		|=	NFloat2UB(cols[1]) << 0;
+		col		|=	NFloat2UB(cols[2]) << 8;
+		col		|=	NFloat2UB(cols[3]) << 16;
+	/*} else {
+		col		=	NFloat2UB(vp->vtx1.BaseA) << 24;
+		col		|=	NFloat2UB(vp->vtx1.BaseR) << 0;
+		col		|=	NFloat2UB(vp->vtx1.BaseG) << 8;
+		col		|=	NFloat2UB(vp->vtx1.BaseB) << 16;
+	}*/
+
+	col = PackedCol(col);	// temp 
+	return col;
+}
+
+S_INLINE u32 Float2PackedCol(f32 A, f32 R, f32 G, f32 B)	// *FIXME* this is even more bogus hehe
+{
+	float colors[4] = { A,R,G,B };
+
+	return _Float2PackedCol(colors);
+}
 
 S_INLINE void DecodeStrip0(Vert *pVert, VertexParam *vp)
 {
@@ -38,7 +70,7 @@ S_INLINE void DecodeStrip0(Vert *pVert, VertexParam *vp)
 
 	memset(pVert->uv, 0, sizeof(float)*4);
 
-	pVert->col		= vp->vtx0.BaseCol;
+	pVert->col		= PackedCol(vp->vtx0.BaseCol);
 }
 
 
@@ -50,10 +82,7 @@ S_INLINE void DecodeStrip1(Vert *pVert, VertexParam *vp)
 
 	memset(pVert->uv, 0, sizeof(float)*4);
 
-	pVert->col		=	NFloat2UB(vp->vtx1.BaseA) << 24;
-	pVert->col		|=	NFloat2UB(vp->vtx1.BaseR) << 0;
-	pVert->col		|=	NFloat2UB(vp->vtx1.BaseG) << 8;
-	pVert->col		|=	NFloat2UB(vp->vtx1.BaseB) << 16;
+	pVert->col		=	Float2PackedCol(vp->vtx1.BaseA, vp->vtx1.BaseR, vp->vtx1.BaseG, vp->vtx1.BaseB);
 }
 
 S_INLINE void DecodeStrip2(Vert *pVert, VertexParam *vp)	// Intensity
@@ -81,7 +110,7 @@ S_INLINE void DecodeStrip3(Vert *pVert, VertexParam *vp)
 	pVert->uv[0]	= vp->vtx3.u * pVert->xyz[2];
 	pVert->uv[1]	= vp->vtx3.v * pVert->xyz[2];
 
-	pVert->col		= vp->vtx3.BaseCol;
+	pVert->col		= PackedCol(vp->vtx3.BaseCol);
 }
 
 S_INLINE void DecodeStrip4(Vert *pVert, VertexParam *vp)
@@ -109,10 +138,7 @@ S_INLINE void DecodeStrip5(Vert *pVert, VertexParam *vp)
 	pVert->uv[0]	= vp->vtx5.u * pVert->xyz[2];
 	pVert->uv[1]	= vp->vtx5.v * pVert->xyz[2];
 
-	pVert->col		=	NFloat2UB(vp->vtx5.BaseA) << 24;
-	pVert->col		|=	NFloat2UB(vp->vtx5.BaseR) << 0;
-	pVert->col		|=	NFloat2UB(vp->vtx5.BaseG) << 8;
-	pVert->col		|=	NFloat2UB(vp->vtx5.BaseB) << 16;
+	pVert->col		=	Float2PackedCol(vp->vtx5.BaseA, vp->vtx5.BaseR, vp->vtx5.BaseG, vp->vtx5.BaseB);
 }
 
 S_INLINE void DecodeStrip6(Vert *pVert, VertexParam *vp)
@@ -126,10 +152,7 @@ S_INLINE void DecodeStrip6(Vert *pVert, VertexParam *vp)
 	pVert->uv[0]	= f16(vp->vtx6.u) * pVert->xyz[2];
 	pVert->uv[1]	= f16(vp->vtx6.v) * pVert->xyz[2];
 
-	pVert->col		=	NFloat2UB(vp->vtx6.BaseA) << 24;
-	pVert->col		|=	NFloat2UB(vp->vtx6.BaseR) << 0;
-	pVert->col		|=	NFloat2UB(vp->vtx6.BaseG) << 8;
-	pVert->col		|=	NFloat2UB(vp->vtx6.BaseB) << 16;
+	pVert->col		=	Float2PackedCol(vp->vtx6.BaseA, vp->vtx6.BaseR, vp->vtx6.BaseG, vp->vtx6.BaseB);
 }
 
 S_INLINE void DecodeStrip7(Vert *pVert, VertexParam *vp)	// Intensity

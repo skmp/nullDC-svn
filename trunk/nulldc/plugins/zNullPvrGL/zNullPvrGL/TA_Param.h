@@ -714,54 +714,6 @@ S_INLINE u32 PolyType( PCW *pcw )
 	return 0xFFFFFFFF;	// fucked
 }
 
-/*
-**	Todo: Test Speed on this thing, and add a State format for ogl
-**			then add some caching so we can (possibly) save at least
-**			states in display lists, and possibly some geometry
-*/
-
-/*
-class PrimConverter
-{
-public:
-	 PrimConverter() { ClearDCache(); }
-	~PrimConverter() { ClearDCache(); }
-
-	int AppendVert(VertexParam *vp);
-	int AppendParam(GlobalParam *gp);
-	int AppendSprite(VertexParam *vp);
-
-
-//private:	// i dont like inheritance rules like this ...
-
-
-	vector<Vertex> Sprites;
-	vector<Vertex> OpaqueMods;
-	vector<Vertex> TranspMods;
-	vector<Vertex> OpaqueVerts;
-	vector<Vertex> TranspVerts;
-	vector<Vertex> PunchtVerts;
-
-	vector<GlobalParam> GlobalParams;
-
-
-#ifdef USE_DISPLAY_LISTS
-	vector<u32> DLists;
-#endif
-
-	void ClearDCache() {
-		Sprites.clear();
-		OpaqueMods.clear();
-		TranspMods.clear();
-		OpaqueVerts.clear();
-		TranspVerts.clear();
-		PunchtVerts.clear();
-		GlobalParams.clear();
-	}
-
-};
-*/
-
 
 #endif //__TAPARAM_H__
 

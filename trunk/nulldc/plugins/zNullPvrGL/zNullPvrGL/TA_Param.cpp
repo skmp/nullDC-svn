@@ -108,9 +108,10 @@ void TaFifo(u32 address, u32* data, u32 size)
 //		*(u32*)&data[0], *(u32*)&data[4], *(u32*)&data[8], *(u32*)&data[12]);
 
 	if(WritePend) {
-		lprintf("*FIXME* WRITEPEND !\n\n");
-		ASSERT_T((1),"*FIXME* WRITEPEND");
-		return;
+		memcpy(&FifoBuff[32], &data[0], 32);
+		ProcessParam((ParamBase *)FifoBuff);
+		WritePend = false;
+		sz -= 32;
 	}
 
 	while(sz>0)
@@ -118,7 +119,7 @@ void TaFifo(u32 address, u32* data, u32 size)
 		ASSERT_T((sz&31),"Illegal TaFifo sz!");
 		pb = (ParamBase *)&data[((s32)size-sz)>>2];
 
-// 		lprintf("-\tpb: %p :: sz: %d\n", pb, sz);
+ //		lprintf("-\tpb: %p :: sz: %d\n", pb, sz);
 
 		u32 PSize = 32 ;
 		if(PT_Vertex  == pb->pcw.ParaType) { if(isVert64Byte(&pb->pcw)) { PSize = 64; } }

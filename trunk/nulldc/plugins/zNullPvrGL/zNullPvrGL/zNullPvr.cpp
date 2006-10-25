@@ -13,16 +13,18 @@ pvrInitParams emuIf;
 
 ConfigLoadStrFP	* ConfigLoadStr;
 ConfigSaveStrFP	* ConfigSaveStr;
-/*
-CGcontext PowerVR2::cgContext;
-CGprofile PowerVR2::cgVProfile;
-CGprogram PowerVR2::cgVProgram;
-CGprofile PowerVR2::cgFProfile;
-CGprogram PowerVR2::cgFProgram;
-*/
 
+
+u32 PvrIf::FrameCount;
 TextureCache PvrIf::TCache;
 vector<GlobalParam> PvrIf::GlobalParams;
+
+bPvrCallFP	* PvrIf::Init;
+PvrCallFP	* PvrIf::Term;
+PvrCallFP	* PvrIf::Render;
+PvrCallFP	* PvrIf::Resize;
+
+
 
 HINSTANCE hInst=NULL;
 
@@ -102,6 +104,29 @@ void pvrInit(void *params, u32 PluginType)
 	char ConfigStr[512];
 	ConfigLoadStr("zNullPvr","RenderAPI", ConfigStr);
 	pvrOpts.GfxApi = (0==strcmp("D3D",ConfigStr)) ? 1 : 0 ;
+
+
+	switch((RendAPI)pvrOpts.GfxApi)
+	{
+	case R_OPENGL:
+		PvrIf::Init		=	(bPvrCallFP*)InitGL;
+		PvrIf::Term		=	(PvrCallFP *)TermGL;
+		PvrIf::Resize	=	(PvrCallFP *)ResizeGL;
+		PvrIf::Render	=	(PvrCallFP *)RenderGL;
+	break;
+
+	case R_DIRECTX:
+		PvrIf::Init		=	(bPvrCallFP*)InitD3D;
+		PvrIf::Term		=	(PvrCallFP *)TermD3D;
+		PvrIf::Resize	=	(PvrCallFP *)ResizeD3D;
+		PvrIf::Render	=	(PvrCallFP *)RenderD3D;
+	break;
+
+	case R_OTHER:
+	default:
+		ASSERT_T((1),"Unhandled Gfx Api Aplied, Crash Pending");
+		return;
+	}
 
 
 //	PvrIf = (0==pvrOpts.GfxApi) ? ((PowerVR2*)&PvrIfGl) : ((PowerVR2*)&PvrIfD3D);
@@ -299,12 +324,27 @@ BOOL CALLBACK cfgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 u32  DebugOptions=0;
 bool bLogEnabled=true;
 
+void lprintf(char * file, char* szFmt, ... )
+{
+	if(bLogEnabled)
+	{
+		FILE * f;// = 
+		fopen_s(&f, file,"a+t");
+
+		va_list va;
+		va_start(va, szFmt);
+		vfprintf_s(f,szFmt,va);
+		va_end(va);
+
+		fclose(f);
+	}
+}
 void lprintf(char* szFmt, ... )
 {
 	if(bLogEnabled)
 	{
 		FILE * f;// = 
-		fopen_s(&f, "zNullPVR.txt","a+t");
+		fopen_s(&f, "zNullPvr.txt","a+t");
 
 		va_list va;
 		va_start(va, szFmt);

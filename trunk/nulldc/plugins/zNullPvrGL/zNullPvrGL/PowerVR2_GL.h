@@ -18,7 +18,7 @@
 #include "TA_Texture.h"
 
 
-#define USE_VBOS
+//#define USE_VBOS
 //#define USE_VERTEX_ARRAYS
 
 enum {
@@ -27,80 +27,23 @@ enum {
 	vbo_ptu
 };
 
-/*
-extern 
-class PowerVR2_GL : public PowerVR2
-{
-
-	bool Init();
-	void Term();
-	void Render();
-	void Resize();
-
-#ifdef USE_DISPLAY_LISTS
-	void DeleteDispList(u32 dlid);
-	u32 CreateDispList(GlobalParam *gp);
-	void SetRenderModeDirect(GlobalParam *gp);
-#endif
-
-private:
-
-	void RenderSprites(vector<Vertex> &vl);
-	void RenderStripList(vector<Vertex> &vl);
-	void RenderStripListRev(vector<Vertex> &vl);
-	void RenderStripListArray(vector<Vertex> &vl);
 
 
-	void SetRenderMode(u32 ParamID, u32 TexID);
-	void SetRenderModeSpr(u32 ParamID, u32 TexID);
-
-	static void LoadVProgram(char *filename, char *prgname)
-	{
-		cgVProfile = cgGLGetLatestProfile(CG_GL_VERTEX);
-		cgGLSetOptimalOptions(cgVProfile);
-		checkForCgError("selecting vertex profile");
-
-		cgVProgram =
-			cgCreateProgramFromFile(cgContext, CG_SOURCE, filename, cgVProfile, prgname, NULL);
-		checkForCgError("creating vertex program from file");
-
-		cgGLLoadProgram(cgVProgram);
-		checkForCgError("loading vertex program");
-	}
-
-	static void LoadFProgram(char *filename, char *prgname)
-	{
-		cgFProfile = cgGLGetLatestProfile(CG_GL_FRAGMENT);
-		cgGLSetOptimalOptions(cgFProfile);
-		checkForCgError("selecting fragment profile");
-
-		cgFProgram =
-			cgCreateProgramFromFile(cgContext, CG_SOURCE, filename, cgFProfile, prgname, NULL);
-		checkForCgError("creating fragment program from file");
-
-		cgGLLoadProgram(cgFProgram);
-		checkForCgError("loading fragment program");
-	}
-
-	HDC hDC;
-	HGLRC hRC;
-	void CheckErrorsGL(char *szFunc);
-
-} PvrIfGl;
-*/
-
-
+bool InitGL();
+void TermGL();
+void ResizeGL();
+void RenderGL();
 
 void CheckErrorsGL(char *szFunc);
 
 
-INLINE static void TexFilterGL( GLuint filter )
+S_INLINE void TexFilterGL( GLuint filter )
 {
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter );
 }
 
-INLINE static void DC_TexEnv_Modulate(void)
+S_INLINE void DC_TexEnv_Modulate(void)
 {
 	glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
 
@@ -119,7 +62,7 @@ INLINE static void DC_TexEnv_Modulate(void)
 	glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA_ARB,	GL_SRC_ALPHA);
 }
 
-INLINE static void DC_TexEnv_DecalAlpha(void)
+S_INLINE void DC_TexEnv_DecalAlpha(void)
 {
 	glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
 

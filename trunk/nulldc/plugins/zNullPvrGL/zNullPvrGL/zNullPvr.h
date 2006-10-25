@@ -64,6 +64,7 @@ extern u32  DebugOptions;
 
 
 void lprintf(char* szFmt, ... );
+void lprintf(char * file, char* szFmt, ... );
 
 
 /*

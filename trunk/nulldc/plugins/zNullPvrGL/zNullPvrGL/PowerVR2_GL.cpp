@@ -1,5 +1,5 @@
 /*
-**	PvrIf.cpp	- David Miller 2006 -
+**	PowerVR2_GL.cpp	- David Miller 2006 -
 */
 #include "PowerVR2.h"
 #include "TA_Param.h"
@@ -17,10 +17,6 @@ UINT vbo_ptr[3] = { 0, 0, 0 };
 
 
 
-//PvrIf PvrIfGl;
-
-
-//INLINE PvrIf::
 S_INLINE void SetRenderMode(u32 ParamID, u32 TexID)
 {
 //#ifndef DEBUG_LIB
@@ -180,7 +176,6 @@ S_INLINE void SetRenderMode(u32 ParamID, u32 TexID)
 }
 
 
-//INLINE PvrIf::
 S_INLINE void SetRenderModeSpr(u32 ParamID, u32 TexID)
 {
 
@@ -244,7 +239,6 @@ S_INLINE void SetRenderModeSpr(u32 ParamID, u32 TexID)
 
 #ifdef USE_DISPLAY_LISTS
 
-//INLINE PvrIf::
 void SetRenderModeDirect(GlobalParam *gp)
 {
 
@@ -400,7 +394,6 @@ void PvrIf::DeleteDispList(u32 dlid)
 #endif
 
 
-//INLINE PvrIf::
 S_INLINE void RenderStripList(TA_ListType lType)
 {
 	int nStrips = 0;
@@ -412,19 +405,11 @@ S_INLINE void RenderStripList(TA_ListType lType)
 	case LT_PunchThrough:	nStrips=nPtuStrips;	pVList=(Vertex*)ptu;	break;
 	}
 
-//	lprintf("RenderStripList() - OpqStrips: %X\n", nOpqStrips);
 
-	for(u32 p=0; p<nOpqStrips; p++)
+	for(u32 p=0; p<nStrips; p++)
 	{
 		Vertex * vp = &pVList[p];
-
-
-#ifndef USE_DISPLAY_LISTS
 		SetRenderMode(vp->ParamID, vp->TexID);
-#else
-		glCallList(DLists[vp->ParamID]);
-		glBindTexture(GL_TEXTURE_2D, vp->TexID);
-#endif
 
 //		lprintf("\nVList: %X : size: %d\n", p, vp->Size);
 
@@ -446,7 +431,6 @@ S_INLINE void RenderStripList(TA_ListType lType)
 
 
 
-//INLINE PvrIf::
 S_INLINE void RenderStripListArray(TA_ListType lType)
 {
 	int nStrips = 0;
@@ -458,42 +442,22 @@ S_INLINE void RenderStripListArray(TA_ListType lType)
 	case LT_PunchThrough:	nStrips=nPtuStrips;	pVList=(Vertex*)ptu;	break;
 	}
 
-	for(u32 p=0; p<nOpqStrips; p++)
+	for(u32 p=0; p<nStrips; p++)
 	{
 		Vertex * vp = &pVList[p];
-
-
-#ifndef USE_DISPLAY_LISTS
 		SetRenderMode(vp->ParamID, vp->TexID);
-#else
-		glCallList(DLists[vl[p].ParamID]);
-		glBindTexture(GL_TEXTURE_2D, vl[p].TexID);
-#endif
 
-#ifdef USE_VERTEX_PROGRAMS
-		glColorPointer(4, GL_FLOAT, sizeof(Vert), vl[p].List[0].col);
-		glTexCoordPointer(2, GL_FLOAT, sizeof(Vert), vl[p].List[0].uv);
-
-		glVertexAttrib4fv(0, vl[p].List[0].offset);
-
-	//	glEnableVertexAttribArray(2);
-	//	glBindAttribLocation(cgVProgram, 2, "Offset");
-	//	glVertexAttribPointer(2, 4, GL_FLOAT, true, sizeof(Vert), vl[p].List[0].offset);
-#else
 		glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(Vert), &vp->List[0].col);
-		glTexCoordPointer(4, GL_FLOAT, sizeof(Vert), &vp->List[0].uv);
-#endif
-
-		glVertexPointer(3, GL_FLOAT, sizeof(Vert), &vp->List[0].xyz);
+		glTexCoordPointer(4, GL_FLOAT, sizeof(Vert), &vp->List[0].uv[0]);
+		glVertexPointer(3, GL_FLOAT, sizeof(Vert), &vp->List[0].xyz[0]);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, (GLsizei)vp->Size);
 	}
 }
 
 
-//INLINE PvrIf::
 S_INLINE void RenderSprites(vector<Vertex> &vl)
 {
-	for(u32 p=0; p<vl.size(); p++)
+/*	for(u32 p=0; p<vl.size(); p++)
 	{
 		SetRenderModeSpr(vl[p].ParamID, vl[p].TexID);
 
@@ -505,11 +469,11 @@ S_INLINE void RenderSprites(vector<Vertex> &vl)
 			glVertex3fv(vl[p].List[v].xyz);
 		}
 		glEnd();
-	}
+	}*/
 }
 
 
-void PvrIf::Render()
+void RenderGL()
 {
 //	FrameCount++;
 //	glFlush();
@@ -561,7 +525,7 @@ void PvrIf::Render()
 
 
 
-void PvrIf::Resize()
+void ResizeGL()
 {
 	RECT rClient;
 	GetClientRect((HWND)emuIf.handle,&rClient);
@@ -579,7 +543,7 @@ void PvrIf::Resize()
 }
 
 
-bool PvrIf::Init()
+bool InitGL()
 {
 	GLuint	PixelFormat;
 
@@ -674,12 +638,12 @@ bool PvrIf::Init()
 	return true;
 }
 
-void PvrIf::Term()
+void TermGL()
 {
 
 		// *FIXME* re-enable these
-//	ClearTCache();		// Textures
-//	ClearDCache();
+	ClearDCache();
+	TCache.ClearTCache();		// Textures
 
 	if (hRC && (!wglMakeCurrent(NULL,NULL)) || (!wglDeleteContext(hRC)) ) {
 		MessageBox((HWND)emuIf.handle, "Release Rendering Context Failed.","SHUTDOWN ERROR",MB_ICONERROR);

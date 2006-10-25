@@ -2,32 +2,12 @@
 **	PowerVR2_D3D.cpp	- David Miller 2006 -
 */
 #include "PowerVR2.h"
+#include "TA_Param.h"
 
-
-IDirect3D9 *g_pD3D;					// D3D Object Pointer
-IDirect3DDevice9 *g_pDev;			// D3D Device
-IDirect3DVertexBuffer9 *g_pVB;		// Vertex Buffer
-IDirect3DVertexDeclaration9 *g_pVD;	// Vertex Decl.
+using namespace PvrIf;
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#ifdef USE_OLD_CODE
-PowerVR2_D3D PvrIfD3D;
 
 
 
@@ -44,8 +24,7 @@ IDirect3DVertexDeclaration9 *g_pVD;	// Vertex Decl.
 
 
 
-INLINE 
-void PowerVR2_D3D::SetRenderMode(u32 ParamID, u32 TexID)
+S_INLINE void SetRenderMode(u32 ParamID, u32 TexID)
 {
 	GlobalParam * gp = &GlobalParams[ParamID];
 
@@ -167,8 +146,7 @@ void PowerVR2_D3D::SetRenderMode(u32 ParamID, u32 TexID)
 }
 
 
-INLINE 
-void PowerVR2_D3D::SetRenderModeSpr(u32 ParamID, u32 TexID)
+S_INLINE void SetRenderModeSpr(u32 ParamID, u32 TexID)
 {
 	GlobalParam * gp = &GlobalParams[ParamID];
 
@@ -251,30 +229,39 @@ void PowerVR2_D3D::SetRenderModeSpr(u32 ParamID, u32 TexID)
 
 
 
-
-INLINE 
-void PowerVR2_D3D::RenderStripList(vector<Vertex> &vl)
+S_INLINE void RenderStripList(TA_ListType lType)
 {
-	for(u32 p=0; p<vl.size(); p++) {
-		SetRenderMode(vl[p].ParamID, vl[p].TexID);
-		g_pDev->SetTexture(0, (IDirect3DTexture9*)vl[p].TexID);
-		g_pDev->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, vl[p].List.size()-2, &vl[p].List[0].xyz, sizeof(Vert));
+	int nStrips = 0;
+	Vertex * pVList = NULL;
+
+	switch(lType)	{
+	case LT_Opaque:			nStrips=nOpqStrips;	pVList=(Vertex*)opq;	break;
+	case LT_Translucent:	nStrips=nTrsStrips;	pVList=(Vertex*)trs;	break;
+	case LT_PunchThrough:	nStrips=nPtuStrips;	pVList=(Vertex*)ptu;	break;
+	}
+
+	for(u32 p=0; p<nStrips; p++)
+	{
+		Vertex * vp = &pVList[p];
+		SetRenderMode(vp->ParamID, vp->TexID);
+		g_pDev->SetTexture(0, (IDirect3DTexture9*)vp->TexID);
+		g_pDev->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, vp->Size-2, &vp->List[0].xyz, sizeof(Vert));
 	}
 }
-INLINE 
-void PowerVR2_D3D::RenderSprites(vector<Vertex> &vl)
+
+S_INLINE void RenderSprites(vector<Vertex> &vl)
 {
-	for(u32 p=0; p<vl.size(); p++) {
+/*	for(u32 p=0; p<vl.size(); p++) {
 		SetRenderModeSpr(vl[p].ParamID, vl[p].TexID);
 		g_pDev->SetTexture(0, (IDirect3DTexture9*)vl[p].TexID);
 		g_pDev->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, vl[p].List.size()-2, &vl[p].List[0].xyz, sizeof(Vert));
-	}
+	}*/
 }
 
 
-void PowerVR2_D3D::Render()
+void RenderD3D()
 {
-	FrameCount++;
+//	FrameCount++;
 
 	u32 dwValue = *pVO_BORDER_COL;
 	u32	R=((dwValue>>0x10)&0xFF),
@@ -288,22 +275,22 @@ void PowerVR2_D3D::Render()
 	g_pDev->SetVertexDeclaration(g_pVD);
 //	g_pDev->SetStreamSource(0, g_pVB, 0, sizeof(Vertex));
 
-	RenderStripList(OpaqueVerts);
-	RenderStripList(TranspVerts);
-	RenderStripList(PunchtVerts);
-	RenderSprites(Sprites);
+	RenderStripList(LT_Opaque);
+	RenderStripList(LT_Translucent);
+	RenderStripList(LT_PunchThrough);
+//	RenderSprites(Sprites);
 
 	g_pDev->EndScene();
 	g_pDev->Present(NULL,NULL,NULL,NULL);
 
 	ClearDCache();
-	ClearTInvalids();
+	TCache.ClearTInvalids();
 }
 
 
 
 
-void PowerVR2_D3D::Resize()
+void ResizeD3D()
 {
 }
 
@@ -311,7 +298,7 @@ void PowerVR2_D3D::Resize()
 
 #define MAX_VB_SIZE 100000		// *FIXME* shouldn't need this shit now, or ..
 
-bool PowerVR2_D3D::Init()
+bool InitD3D()
 {
 	if(FAILED(g_pD3D = Direct3DCreate9(D3D_SDK_VERSION)))
 		goto fail;
@@ -372,20 +359,15 @@ fail:
 	return false;
 }
 
-void PowerVR2_D3D::Term()
+void TermD3D()
 {
     if(g_pDev != NULL)	g_pDev->Release();
 	if(g_pD3D != NULL)	g_pD3D->Release();
 	if(g_pVB  != NULL)	g_pVB->Release();
 
-	ClearTCache();		// Textures
 	ClearDCache();
+	TCache.ClearTCache();		// Textures
 }
 
 
-
-
-
-
-#endif // use old code
 

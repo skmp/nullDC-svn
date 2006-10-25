@@ -25,28 +25,11 @@ extern IDirect3DDevice9 *g_pDev;			// D3D Device
 extern IDirect3DVertexBuffer9 *g_pVB;		// Vertex Buffer
 extern IDirect3DVertexDeclaration9 *g_pVD;	// Vertex Decl.
 
-/*
-extern 
-class PowerVR2_D3D : public PowerVR2
-{
+bool InitD3D();
+void TermD3D();
+void RenderD3D();
+void ResizeD3D();
 
-	bool Init();
-	void Term();
-	void Render();
-	void Resize();
-
-private:
-
-	void RenderSprites(vector<Vertex> &vl);
-	void RenderStripList(vector<Vertex> &vl);
-//	void RenderStripListRev(vector<Vertex> &vl);
-//	void RenderStripListArray(vector<Vertex> &vl);
-
-	void SetRenderMode(u32 ParamID, u32 TexID);
-	void SetRenderModeSpr(u32 ParamID, u32 TexID);
-
-} PvrIfD3D;
-*/
 
 const static D3DVERTEXELEMENT9 vertel[] =
 {

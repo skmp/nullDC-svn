@@ -59,7 +59,8 @@ void pvrWriteReg(u32 addr,u32 data,u32 size)
 		case TA_ALLOC_CTRL:	break;	// useless to do anything until after write, use eol instead
 
 		case TA_LIST_CONT:
-			printf(")>\tPVR2: TA_LIST_CONT Write <= %X\n", data);
+			printf( ")>\tPVR2: TA_LIST_CONT Write <= %X\n", data);
+			lprintf(")>\tPVR2: TA_LIST_CONT Write <= %X\n", data);
 			break;	// write it
 
 		case TA_LIST_INIT:
@@ -78,7 +79,7 @@ void pvrWriteReg(u32 addr,u32 data,u32 size)
 				emuIf.RaiseInterrupt(holly_RENDER_DONE_isp);
 				return;
 			}
-			//lprintf(")>\tSTART RENDER ! Write Zero: %X\n",data);
+			lprintf(")>\tSTART RENDER ! Write Zero: %X\n",data);
 			return;
 		}
 		//lprintf("<PVR>\t pvrWriteReg: @ %08X <= %X Unhandled!\n", addr, data);
