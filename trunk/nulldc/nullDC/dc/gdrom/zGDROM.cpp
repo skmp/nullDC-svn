@@ -147,7 +147,7 @@ bool SetByteCount()
 		}
 		else
 		{
-			gdSR.ByteCount=(databuff.size()*2);
+			gdSR.ByteCount=(databuff.size()*2); 
 			//printf("Gdrom Pio continue,Last  %d\n",databuff.size()*2);
 		}
 		bts_to_read=gdSR.ByteCount;
