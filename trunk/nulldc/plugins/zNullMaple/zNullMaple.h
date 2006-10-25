@@ -3,8 +3,12 @@
 */
 #pragma once
 
-typedef unsigned int u32;
-typedef unsigned char u8;
+typedef signed __int8		s8;
+typedef signed __int16		s16;
+typedef signed __int32		s32;
+typedef unsigned __int32	u32;
+typedef unsigned __int16	u16;
+typedef unsigned __int8		u8;
 
 
 
@@ -69,8 +73,8 @@ struct MapleDevInst
 
 
 struct MapleDev;
-typedef void MapleCreateInstFP(MapleDev *pDev, MapleDevInst& pDevInst, u8 port);
-typedef void MapleDestroyInstFP(MapleDev*pDev, MapleDevInst& pDevInst);
+typedef void MapleCreateInstFP(MapleDev *pDev, MapleDevInst& DevInst, u8 port);
+typedef void MapleDestroyInstFP(MapleDev*pDev, MapleDevInst& DevInst);
 
 struct MapleDev
 {
@@ -115,12 +119,17 @@ void mplThreadInit(DWORD);
 void mplThreadTerm(DWORD);
 void mplConfig(DWORD,void*);
 
+
+void CreateInstance(MapleDev *pDev, MapleDevInst& pDevInst, u8 port);
+void DestroyInstance(MapleDev*pDev, MapleDevInst& pDevInst);
+
+
 extern ConfigLoadStrFP	* ConfigLoadStr;
 extern ConfigSaveStrFP	* ConfigSaveStr;
 
-
-
-
+void MapleDevDMA(MapleDevInst* pDevInst, u32 Command,
+					u32* buffer_in,  u32 buffer_in_len,
+					u32* buffer_out, u32& buffer_out_len, u32& responce);
 
 
 
