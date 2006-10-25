@@ -1448,8 +1448,8 @@ void __fastcall shil_compile_div32(shil_opcode* op,BasicBlock* block)
 	//thanks to teh way i save sr , test has to be re-done here
 	//->x86e->Emit(op_test32,ECX,ECX);
 
-	x86_Label* exit =x86e->CreateLabel(false);
-	x86_Label* no_fixup =x86e->CreateLabel(false);
+	x86_Label* exit =x86e->CreateLabel(false,8);
+	x86_Label* no_fixup =x86e->CreateLabel(false,8);
 
 	//u8* j1=x86e->JNZ8(0);
 	x86e->Emit(op_jb ,no_fixup);
@@ -2220,8 +2220,8 @@ void CompileBasicBlock_slow(BasicBlock* block)
 		int i=0;
 		//that can be optimised a lota :p
 		
-		x86_Label* exit_discard_block= x86e->CreateLabel(false);
-		x86_Label* execute_block= x86e->CreateLabel(false);
+		x86_Label* exit_discard_block= x86e->CreateLabel(false,0);
+		x86_Label* execute_block= x86e->CreateLabel(false,0);
 
 		for (i=0;i<sz;i++)
 		{
@@ -2286,7 +2286,7 @@ void CompileBasicBlock_slow(BasicBlock* block)
 	*/
 	
 	//s8* start_ptr;
-	x86_Label* block_start = x86e->CreateLabel(false);
+	x86_Label* block_start = x86e->CreateLabel(false,0);
 
 	if (PROFILE_BLOCK_CYCLES)
 	{
@@ -2404,7 +2404,7 @@ void CompileBasicBlock_slow(BasicBlock* block)
 
 			x86e->Emit(op_sub32 ,&rec_cycles,block->cycles);
 			
-			x86_Label* Exit_Link = x86e->CreateLabel(false);
+			x86_Label* Exit_Link = x86e->CreateLabel(false,8);
 
 			
 			x86e->Emit(op_js ,Exit_Link);
@@ -2488,7 +2488,7 @@ void CompileBasicBlock_slow(BasicBlock* block)
 			//x86e->Emit(op_cmp32 ,&rec_cycles,BLOCKLIST_MAX_CYCLES);
 
 			x86e->Emit(op_sub32 ,&rec_cycles,block->cycles);
-			x86_Label* No_Link = x86e->CreateLabel(false);
+			x86_Label* No_Link = x86e->CreateLabel(false,8);
 
 			x86e->Emit(op_js ,No_Link);
 
@@ -3031,8 +3031,8 @@ void emit_vmem_read(x86_reg reg_addr,u8 reg_out,u32 sz)
 		verify(sz==4);
 
 	x86_ptr p_RF_table(0);
-	x86_Label* direct=x86e->CreateLabel(false);
-	x86_Label* end=x86e->CreateLabel(false);
+	x86_Label* direct=x86e->CreateLabel(false,8);
+	x86_Label* end=x86e->CreateLabel(false,8);
 
 	if (sz==1)
 		p_RF_table=&_vmem_RF8[0];
@@ -3137,8 +3137,8 @@ void emit_vmem_write(x86_reg reg_addr,u8 reg_data,u32 sz)
 	}
 
 	x86_ptr p_WF_table(0);
-	x86_Label* direct=x86e->CreateLabel(false);
-	x86_Label* end=x86e->CreateLabel(false);
+	x86_Label* direct=x86e->CreateLabel(false,8);
+	x86_Label* end=x86e->CreateLabel(false,8);
 
 	if (sz==1)
 		p_WF_table=&_vmem_WF8[0];

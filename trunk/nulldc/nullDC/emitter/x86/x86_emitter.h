@@ -75,6 +75,7 @@ class x86_block;
 struct x86_Label
 {
 	u32 target_opcode;
+	u8 patch_sz;
 	x86_block* owner;
 	bool marked;
 	void* GetPtr();
@@ -182,9 +183,9 @@ public:
 
 	//Label related code
 	//NOTE : Label position in mem must not chainge
-	void CreateLabel(x86_Label* lbl,bool mark);
+	void CreateLabel(x86_Label* lbl,bool mark,u32 sz);
 	//Allocate a label and create it :).Will be delete'd when calling free and/or dtor
-	x86_Label* CreateLabel(bool mark);
+	x86_Label* CreateLabel(bool mark,u32 sz);
 	void MarkLabel(x86_Label* lbl);
 
 	//When we want to keep info to mark opcodes dead , there is no need to create labels :p

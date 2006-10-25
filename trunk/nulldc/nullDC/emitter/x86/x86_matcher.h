@@ -25,7 +25,10 @@ encoded_type __fastcall param_type(x86_Label* lbl)
 	encoded_type rv;
 	//Return pg_MEM_Rel32/pg_MEM_Rel16/pg_MEM_Rel8
 	//we do need some more info on this :P
-	rv.type=pg_MEM_Rel32;
+	if (lbl->patch_sz==8)
+		rv.type=pg_MEM_Rel8;
+	else
+		rv.type=pg_MEM_Rel32;
 	rv.ptr=lbl;
 	rv.ptr_type=1;
 	return rv;
@@ -68,10 +71,12 @@ encoded_type __fastcall param_type(u32 imm)
 	rv.imm=imm;
 	//later : detect u8/s8/s16/s32 encodings :)
 	
-	if ((imm & (~0xFF))==0)
-		rv.type=pg_IMM_U8;
+	if (IsS8(imm))
+		rv.type=pg_IMM_S8;
+	else if ((imm & (~0xFF))==0)
+		rv.type=pg_IMM_U8;/*
 	else if ((imm & (~0xFFFF))==0)
-		rv.type=pg_IMM_U16;
+		rv.type=pg_IMM_U16;*/
 	else
 		rv.type=pg_IMM_U32;
 

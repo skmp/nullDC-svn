@@ -1172,6 +1172,14 @@
 				<File
 					RelativePath=".\emitter\x86\x86_emitter.cpp"
 					>
+					<FileConfiguration
+						Name="Release-NoTrace|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="2"
+						/>
+					</FileConfiguration>
 				</File>
 				<File
 					RelativePath=".\emitter\x86\x86_emitter.h"

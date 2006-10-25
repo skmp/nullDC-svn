@@ -2,7 +2,16 @@
 #pragma warning(disable:4127)
 #pragma warning(disable:4244)
 #pragma warning(disable:4245)
+
 #include "x86_emitter.h"
+bool IsS8(u32 value)
+{
+	if (((value&0xFFFFFF80)==0xFFFFFF80) ||
+		(value&0xFFFFFF80)==0  )
+		return true;
+	else
+		return false;
+}
 #include "x86_op_encoder.h"
 #include "x86_matcher.h"
 //x86_Label 
@@ -111,11 +120,13 @@ void x86_block::ApplyPatches(u8* base)
 				dest = base + patches[i].lbl->target_opcode;
 			else
 				dest = patches[i].lbl->owner->x86_buff + patches[i].lbl->target_opcode;
+
 		}
 
 		u32 diff=(u32)(dest-diff_offset);
 		if ((patches[i].type&0xF)==1)
 		{
+			verify(IsS8(diff));
 			*code_offset=(u8)diff;
 		}
 		else if ((patches[i].type&0xF)==2)
@@ -153,19 +164,20 @@ void x86_block::x86_buffer_ensure(u32 size)
 //Label related code
 
 //NOTE : Label position in mem must not chainge
-void x86_block::CreateLabel(x86_Label* lbl,bool mark)
+void x86_block::CreateLabel(x86_Label* lbl,bool mark,u32 sz)
 {
 	memset(lbl,0xFFFFFFFF,sizeof(x86_Label));
 	lbl->owner=this;
 	lbl->marked=false;
+	lbl->patch_sz=sz;
 	if (mark)
 		MarkLabel(lbl);
 }
 //Allocate a label and create it :).Will be delete'd when calling free and/or dtor
-x86_Label* x86_block::CreateLabel(bool mark)
+x86_Label* x86_block::CreateLabel(bool mark,u32 sz)
 {
 	x86_Label* lbl = new x86_Label();
-	CreateLabel(lbl,mark);
+	CreateLabel(lbl,mark,sz);
 	labels.push_back(lbl);
 	return lbl;
 }
@@ -292,6 +304,18 @@ u8 EncodeDisp(u32 disp,x86_mrm* to,u8 flags)
 {
 	//[reg+sdisp8] or [reg+sdisp32]
 	//sdisp32 support olny for now , sdisp8 for later
+	if (flags&1)
+	{
+		if (IsS8(disp))
+		{
+			to->flags|=2;
+			to->disp=disp;
+			if (flags&4)
+				return 0;
+			else
+				return make_modrm(1,0);
+		}
+	}
 	if (flags&2)
 	{
 		to->flags|=4;
