@@ -14,15 +14,6 @@ FloatRegAllocator*		fra;
 IntegerRegAllocator*	ira;
 //TEMP!!!
 x86_block* x86e;
-shil_scs shil_compile_slow_settings=
-{
-	true,	//do Register allocation for x86
-	4,		//on 4 regisers
-	false,	//and on XMM
-	true,	//Inline Const Mem reads
-	true,	//Inline normal mem reads
-	false	//Inline mem writes
-};
 
 x86_opcode_class SetCC[] =
 {
@@ -62,13 +53,14 @@ x86_opcode_class SetCC[] =
 };
 cDllHandler profiler_dll;
 
-#define REG_ALLOC_COUNT			 (shil_compile_slow_settings.RegAllocCount)
-#define REG_ALLOC_X86			 (shil_compile_slow_settings.RegAllocX86)
-#define REG_ALLOC_XMM			 (shil_compile_slow_settings.RegAllocXMM)
-
+//#define REG_ALLOC_COUNT			 (shil_compile_slow_settings.RegAllocCount)
+//#define REG_ALLOC_X86			 (shil_compile_slow_settings.RegAllocX86)
+//#define REG_ALLOC_XMM			 (shil_compile_slow_settings.RegAllocXMM)
+/*
 #define INLINE_MEM_READ_CONST   (shil_compile_slow_settings.InlineMemRead_const)
 #define INLINE_MEM_READ			(shil_compile_slow_settings.InlineMemRead)
 #define INLINE_MEM_WRITE		(shil_compile_slow_settings.InlineMemWrite)
+*/
 
 bool nullprof_enabled=false;
 
@@ -282,24 +274,7 @@ u32 IsInFReg(u32 reg)
 	}
 	return 0;
 }
-/*
-//write back float
-void sse_WBF(u32 reg)
-{
-	if (IsSSEAllocReg(reg))
-	{
-		fra->WriteBackRegister(reg);
-	}
-}
-//reaload float
-void sse_RLF(u32 reg)
-{
-	if (IsSSEAllocReg(reg))
-	{
-		fra->ReloadRegister(reg);
-	}
-}
-*/
+
 //REGISTER ALLOCATION
 #define LoadReg(to,reg) ira->GetRegister(to,reg,RA_DEFAULT)
 #define LoadReg_force(to,reg) ira->GetRegister(to,reg,RA_FORCE)
@@ -766,7 +741,7 @@ void __fastcall shil_compile_and(shil_opcode* op,BasicBlock* block)
 {
 	OP_RegToReg_simple(op_and32);
 }
-
+//wut ! optimised address calculation ftw
 void readwrteparams1(u8 reg1,u32 imm)
 {
 	if (ira->IsRegAllocated(reg1))
@@ -1053,7 +1028,6 @@ void __fastcall shil_compile_readm(shil_opcode* op,BasicBlock* block)
 	u32 size=op->flags&3;
 
 	//sse_RLF(op->reg1);//reload possibly readed reg
-	if (INLINE_MEM_READ_CONST)
 	{
 		//if constant read , and on ram area , make it a direct mem access
 		//_watch_ mmu
@@ -2162,12 +2136,50 @@ void __fastcall CheckBlock(CompiledBlockInfo* block)
 		__asm int 3;
 	}
 }
-void PatchDynamicLinkGeneric(void* ptr)
-{
-	/*
-	x86_block* x86e = new x86_block();
-	x86e->x86Ptr=(s8*)ptr;*/
 
+void RewriteBasicBlockCond(CompiledBasicBlock* cBB)
+{
+	u32 flags=0;
+	if (cBB->ebi.TT_block)
+		flags|=1;
+	if (cBB->ebi.TF_block)
+		flags|=2;
+
+	if (flags==1)
+	{
+		x86e->Emit(op_jne,x86_ptr_imm(cBB->ebi.TT_block->Code));
+		x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , block
+		x86e->Emit(op_jmp,x86_ptr_imm(bb_link_compile_inject_TF_stub));
+	}
+	else if  (flags==2)
+	{
+		x86e->Emit(op_je,x86_ptr_imm(cBB->ebi.TF_block->Code));
+		x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , block
+		x86e->Emit(op_jmp,x86_ptr_imm(bb_link_compile_inject_TT_stub));
+	}
+	else  if  (flags==3)
+	{
+		x86e->Emit(op_je,x86_ptr_imm(cBB->ebi.TF_block->Code));
+		x86e->Emit(op_jmp,x86_ptr_imm(cBB->ebi.TT_block->Code));
+	}
+	else
+	{
+		x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , block
+		x86e->Emit(op_je,x86_ptr_imm(bb_link_compile_inject_TF_stub));
+		x86e->Emit(op_jmp,x86_ptr_imm(bb_link_compile_inject_TT_stub));
+	}
+}
+void RewriteBasicBlockFixed(CompiledBasicBlock* cBB)
+{
+	if (cBB->ebi.TF_block)
+	{
+		x86e->Emit(op_jmp,x86_ptr_imm(cBB->ebi.TF_block->Code));
+	}
+	else
+	{
+		x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , cBB
+		x86e->Emit(op_jmp,x86_ptr_imm((u32*)&(cBB->ebi.pTF_next_addr)));	//mov eax , [pTF_next_addr]
+	}
 }
 void CompileBasicBlock_slow(BasicBlock* block)
 {
@@ -2206,6 +2218,8 @@ void CompileBasicBlock_slow(BasicBlock* block)
 	//that is a realy nice debug helper :)
 	x86e->Emit(op_mov32,&Curr_block,(u32)cBB);
 	*/
+	x86_Label* block_start = x86e->CreateLabel(true,0);
+	//x86e->MarkLabel(block_start);
 	if (block->flags.ProtectionType==BLOCK_PROTECTIONTYPE_MANUAL)
 	{
 		int sz=block->end-block->start;
@@ -2286,12 +2300,11 @@ void CompileBasicBlock_slow(BasicBlock* block)
 	*/
 	
 	//s8* start_ptr;
-	x86_Label* block_start = x86e->CreateLabel(false,0);
+	
 
 	if (PROFILE_BLOCK_CYCLES)
 	{
 		//start_ptr=x86e->x86Ptr;
-		x86e->MarkLabel(block_start);
 		x86e->Emit(op_call,x86_ptr_imm(dyna_profile_block_enter));
 	}
 
@@ -2304,11 +2317,7 @@ void CompileBasicBlock_slow(BasicBlock* block)
 	ira->BeforeEmit();
 	fra->BeforeEmit();
 
-	if (PROFILE_BLOCK_CYCLES==false)
-	{
-		//start_ptr=x86e->x86Ptr;
-		x86e->MarkLabel(block_start);
-	}
+	
 
 	u32 list_sz=(u32)block->ilst.opcodes.size();
 	for (u32 i=0;i<list_sz;i++)
@@ -2338,23 +2347,21 @@ void CompileBasicBlock_slow(BasicBlock* block)
 	//end block acording to block type :)
 	switch(block->flags.ExitType)
 	{
-	
-	case BLOCK_EXITTYPE_DYNAMIC_CALL:
+	case BLOCK_EXITTYPE_DYNAMIC_CALL:	//same as below , sets call guess
 		{
 			//mov guess,pr
 			x86e->Emit(op_mov32,&call_ret_address,cBB->ebi.TT_next_addr);
 			//mov pguess,this
 			x86e->Emit(op_mov32,(u32*)&pcall_ret_address,(u32)(cBB));
 		}
-	case BLOCK_EXITTYPE_DYNAMIC:
+	case BLOCK_EXITTYPE_DYNAMIC:		//not guess 
 		{
 			x86e->Emit(op_sub32 ,&rec_cycles,block->cycles);
 			x86e->Emit(op_jns,x86_ptr_imm(Dynarec_Mainloop_no_update));
 			x86e->Emit(op_jmp,x86_ptr_imm(Dynarec_Mainloop_do_update));
-			break;
 		}
-
-	case BLOCK_EXITTYPE_RET:
+		break;
+	case BLOCK_EXITTYPE_RET:			//guess
 		{
 			//x86_Label* not_ok=x86e->CreateLabel(false);
 
@@ -2387,11 +2394,9 @@ void CompileBasicBlock_slow(BasicBlock* block)
 
 			//ret
 			//x86e->Emit(op_ret);
-
-			break;
 		}
-
-	case BLOCK_EXITTYPE_COND:
+		break;
+	case BLOCK_EXITTYPE_COND:			//linkable
 		{
 			//ok , handle COND here :)
 			//mem address
@@ -2412,44 +2417,27 @@ void CompileBasicBlock_slow(BasicBlock* block)
 			//Link:
 			//if we can execute more blocks
 			{
-				//for dynamic link!
-				x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , block
 				x86e->Emit(op_test32,&T_jcond_value,1);
-				//x86e->TEST32ItoR(EAX,1);//test for T
-				/*
-				//link to next block :
-				if (*TF_a==cBB->start)
+				if (*TT_a==cBB->cbi.start)
 				{
-				//fast link (direct jmp to block start)
-				if (x86e->CanJ8(start_ptr))
-				x86e->JE8(start_ptr);
-				else
-				x86e->JE32(start_ptr);
+					x86e->Emit(op_jne,block_start);
+					x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , block
+					x86e->Emit(op_jmp32,x86_ptr(pTF_f));
 				}
-				else
-				{*/
-				x86e->Emit(op_mov32,EAX,pTF_f);		//assume it's this condition , unless CMOV overwrites
-				/*}
-				//!=
-
-				if (*TT_a==cBB->start)
+				else if  (*TF_a==cBB->cbi.start)
 				{
-				//fast link (direct jmp to block start)
-				if (x86e->CanJ8(start_ptr))
-				x86e->JNE8(start_ptr);
-				else
-				x86e->JNE32(start_ptr);
+					x86e->Emit(op_je,block_start);
+					x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , block
+					x86e->Emit(op_jmp32,x86_ptr(pTT_f));
 				}
 				else
 				{
-				if (*TF_a==cBB->start)
-				{
-				x86e->Emit(op_mov32,EAX,pTT_f);// ;)
+					x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , block
+					x86e->Emit(op_mov32,EAX,pTF_f);
+					x86e->Emit(op_cmovne32 ,EAX,pTT_f);
+					x86e->Emit(op_jmp32,EAX);
 				}
-				else*/
-				x86e->Emit(op_cmovne32 ,EAX,pTT_f);	//overwrite the "other" pointer if needed
-				//}
-				x86e->Emit(op_jmp32,EAX);		 //!=
+				
 			}
 			
 			x86e->MarkLabel(Exit_Link);
@@ -2474,15 +2462,14 @@ void CompileBasicBlock_slow(BasicBlock* block)
 			}
 		} 
 		break;
-
-	case BLOCK_EXITTYPE_FIXED_CALL:
-		//mov guess,pr
+	case BLOCK_EXITTYPE_FIXED_CALL:		//same as below
 		{
+			//mov guess,pr
 			x86e->Emit(op_mov32,&call_ret_address,cBB->ebi.TT_next_addr);
 			//mov pguess,this
 			x86e->Emit(op_mov32,(u32*)&pcall_ret_address,(u32)(cBB));
 		}
-	case BLOCK_EXITTYPE_FIXED:
+	case BLOCK_EXITTYPE_FIXED:			//linkable
 		{
 			//
 			//x86e->Emit(op_cmp32 ,&rec_cycles,BLOCKLIST_MAX_CYCLES);
@@ -2511,9 +2498,9 @@ void CompileBasicBlock_slow(BasicBlock* block)
 			x86e->Emit(op_mov32,GetRegPtr(reg_pc),cBB->ebi.TF_next_addr);
 			//and return to caller to check for interrupts
 			x86e->Emit(op_jmp,x86_ptr_imm(Dynarec_Mainloop_do_update));
-			break;
 		}
-	case BLOCK_EXITTYPE_FIXED_CSC:
+		break;
+	case BLOCK_EXITTYPE_FIXED_CSC:		//forced lookup , possible state chainge
 		{
 			//We have to exit , as we gota do mode lookup :)
 			//We also have to reset return cache to ensure its ok
@@ -2524,11 +2511,10 @@ void CompileBasicBlock_slow(BasicBlock* block)
 			//pcall_ret_address=0;
 			x86e->Emit(op_mov32,(u32*)&pcall_ret_address,0);
 			//Good , now return to caller :)
-			//x86e->Emit(op_ret);
 			x86e->Emit(op_jns,x86_ptr_imm(Dynarec_Mainloop_no_update));
 			x86e->Emit(op_jmp,x86_ptr_imm(Dynarec_Mainloop_do_update));
-			break;
 		}
+		break;
 	}
 
 	ira->AfterTrail();
@@ -2543,7 +2529,7 @@ void CompileBasicBlock_slow(BasicBlock* block)
 	//make it call the stubs , unless otherwise needed
 	cBB->ebi.pTF_next_addr=bb_link_compile_inject_TF_stub;
 	cBB->ebi.pTT_next_addr=bb_link_compile_inject_TT_stub;
-
+	//cBB->ebi
 	block_count++;
 	
 	/*
@@ -2613,110 +2599,7 @@ extern void* _vmem_MemInfo[0x10000];
 
 //sz is 1,2,4,8
 //8 reads are assumed to be on same map (8 byte allign should ensure this , i dunoo -> it does)
-#ifdef OLD_VMEM
-void emit_vmem_op(x86_block* x86e,
-				  u32 ma,x86_gpr_reg ra,u32* pa,u32 amode,
-				  x86_gpr_reg ro,x86_sse_reg xo,u32 omode,
-				  u32 sz,u32 rw)
-{
-	u8* direct=0;
-	u8* op_end=0;
-	u32 index=0;
-	u32 rb=0;
 
-	if (amode==2)//pointer to ram to read
-	{
-		x86e->Emit(op_mov32,ECX,pa);
-		amode=1;
-		ra=ECX;
-	}
-
-	if (amode==1)
-	{
-		
-		x86e->Emit(op_mov32,EAX,ra);
-		x86e->Emit(op_shr32,EAX,16);
-		if (ra!=ECX)
-			x86e->Emit(op_mov32,ECX,ra);
-		if (rw==0)//olny on read
-		{
-		x86e->Emit(op_mov32,EDX,ECX);
-		x86e->Emit(op_and32,EDX,0xFFFF);
-		}
-		//_vmem_MemInfo
-		//mov eax,[_vmem_MemInfo+eax*4];
-		//8B 04 85 base_address
-		x86e->write8(0x8b);
-		x86e->write8(0x04);
-		x86e->write8(0x85);
-		x86e->write32((u32)&_vmem_MemInfo[0]);
-
-		//test eax,0xFFFF0000;
-		x86e->Emit(op_test32 ,EAX,0xFFFF0000);
-	}
-	else if (amode == 0)
-	{
-		index=ma>>16;
-		rb=ma&0xFFFF;
-		//x86e->Emit(op_mov32,EAX,0/*_vmem_MemInfo*/+index*4);
-	}
-	direct=x86e->JNZ8(0);
-	
-	//x86e->Emit(op_mov32,EAX,
-	//	mov eax , [_vmem_WF8+eax];
-	//jmp eax;
-	x86e->CALL32R(EAX);
-	//mov rdest,EAX
-	op_end=x86e->JMP8(0);
-
-	//direct:
-	x86e->x86SetJ8(direct);
-	if (amode==1)
-	{
-		if (rw==1)
-		{
-			//and ecx,0xFFFF;//lower 16b of address
-			x86e->AND32ItoR(ECX,0xFFFF);
-			if (sz==1)
-			{
-				//mov [eax+ecx],dl;
-			}
-			else if (sz==2)
-			{
-				//mov [eax+ecx],dh;
-			}
-			else if (sz==4)
-			{
-				//mov [eax+ecx],edx;
-			}
-			else if (sz==8)
-			{
-			}
-		}
-		else
-		{
-			//x86e->SSE_MOVSS_M32_to_XMM
-			//mov edx,[eax+ecx];
-		}
-	}
-	else
-	{
-		if (rw==1)
-		{
-			//mov [eax+rb],dl;
-		}
-		else
-		{
-			if (sz<=4)
-				;//mov edx,[eax+rb];
-			else	//8 bytes read , olny possible to mem/ a pair of xmm registers
-				;
-		}
-	}
-	x86e->x86SetJ8(op_end);
-}
-
-#endif
 //this is P4 optimised (its faster olny when shr takes a bit :) )
 //on AMD we can move the shr just before the read , and do the edx work after the read
 //so we cover the read stall :)
@@ -3182,12 +3065,10 @@ void emit_vmem_write(x86_reg reg_addr,u8 reg_data,u32 sz)
 	//Get function pointer and call it
 	x86e->Emit(op_call32,x86_mrm::create(EAX,p_WF_table));
 
-
 	x86e->Emit(op_jmp,end);
 //direct:
 	x86e->MarkLabel(direct);
 //	mov [eax+edx],reg;	//note : upper bits dont matter , so i do 32b read here ;) (to get read of partial register stalls)
-	//x86e->Emit(op_int3);
 	if (!sse)
 	{
 		
