@@ -735,7 +735,7 @@ EXPORT void dcGetMapleInfo(maple_plugin_if* info)
 	info->Devices[2].CreateInstance=CreateInstance;
 	info->Devices[2].DestroyInstance=DestroyInstance;
 	info->Devices[2].type=0;//Controller
-	info->Devices[2].id=0;
+	info->Devices[2].id=2;
 	strcpy(info->Devices[2].name,"nullDC DC controller [no input](" __DATE__ ")");
 
 	info->Devices[3].CreateInstance=0;
