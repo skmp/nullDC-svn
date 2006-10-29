@@ -41,7 +41,6 @@
 
 #include <vector>
 #include <algorithm>
-using namespace std;
 
 #define BLOCK_LUT_GUESS
 //#define DEBUG_BLOCKLIST
@@ -52,6 +51,8 @@ CompiledBlockInfo BLOCK_NONE_B;
 
 u32 DynarecRam_Start;
 u32 DynarecRam_End;
+
+u32* block_stack_pointer;
 
 //helper list class
 int compare_BlockLookups(const void * a, const void * b)
@@ -208,7 +209,7 @@ public :
 		if (size())
 		{
 			//using a specialised routine is gona be faster .. bah
-			qsort(_Myfirst, ItemCount, sizeof(BasicBlock*), compare_BlockLookups);
+			qsort(_Myfirst, ItemCount, sizeof(CompiledBlockInfo*), compare_BlockLookups);
 			//sort(begin(), end());
 			/*u32 max=_Myfirst[0]->lookups/100;
 			//if (max==0)
@@ -225,21 +226,6 @@ public :
 	}
 };
 //page info
-
-#define PAGE_MANUALCHECK 1
-struct pginfo
-{
-	u32 invalidates;
-	union
-	{
-		struct
-		{
-			u32 ManualCheck:1;	//bit 0 :1-> manual check , 0 -> locked check
-			u32 reserved:31;	//bit 1-31: reserved
-		};
-		u32 full;
-	} flags;
-};
 
 pginfo PageInfo[RAM_SIZE/PAGE_SIZE];
 
@@ -461,7 +447,23 @@ BasicBlockEP* __fastcall FindCode_full(u32 address,CompiledBlockInfo* fastblock)
 	return thisblock->Code;
 }
 
-
+pginfo GetPageInfo(u32 address)
+{
+	
+	if (IsOnRam(address))
+	{
+		return PageInfo[GetRamPageFromAddress(address)];
+	}
+	else
+	{
+		pginfo rv;
+		rv.flags.full=0;
+		rv.flags.ManualCheck=0;
+		rv.invalidates=0;
+		return rv;
+	}
+}
+/*
 void FillBlockLockInfo(BasicBlock* block)
 {
 	if (block->OnRam())
@@ -484,7 +486,7 @@ void FillBlockLockInfo(BasicBlock* block)
 	{
 		block->flags.ProtectionType=BLOCK_PROTECTIONTYPE_LOCK;
 	}
-}
+}*/
 
 void RegisterBlock(CompiledBlockInfo* block)
 {
@@ -653,7 +655,7 @@ void DumpBlockMappings()
 	FILE* out=fopen("C:\\blk.txt","wb");
 	printf("nullDC block manager stats : tracing %d blocks\n",all_block_list.ItemCount);
 
-	for (int i=0;i<all_block_list.ItemCount;i++)
+	for (u32 i=0;i<all_block_list.ItemCount;i++)
 	{
 		fprintf(out,"block :0x%08X\t[%d]\n{\n",all_block_list[i]->start,i);
 		{
@@ -784,11 +786,11 @@ void nullprof_GetBlocks(nullprof_blocklist* to, u32 type,u32 count)
 		to->blocks=(nullprof_block_info*)malloc(count*sizeof(nullprof_block_info));
 
 		if (type==PSLOW_BLOCKS)
-			qsort(&(used_blocks[0]), used_blocks.ItemCount, sizeof(BasicBlock*), compare_usage_g);
+			qsort(&(used_blocks[0]), used_blocks.ItemCount, sizeof(CompiledBlockInfo*), compare_usage_g);
 		else if (type==PTIME_BLOCKS)
-			qsort(&(used_blocks[0]), used_blocks.ItemCount, sizeof(BasicBlock*), compare_time_g);
+			qsort(&(used_blocks[0]), used_blocks.ItemCount, sizeof(CompiledBlockInfo*), compare_time_g);
 		else if (type==PCALL_BLOCKS)
-			qsort(&(used_blocks[0]), used_blocks.ItemCount, sizeof(BasicBlock*), compare_calls_g);
+			qsort(&(used_blocks[0]), used_blocks.ItemCount, sizeof(CompiledBlockInfo*), compare_calls_g);
 
 
 		for (u32 i=0;i<count;i++)

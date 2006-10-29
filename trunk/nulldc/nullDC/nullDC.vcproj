@@ -616,6 +616,18 @@
 						RelativePath=".\dc\sh4\shil\shil_ce.h"
 						>
 					</File>
+					<Filter
+						Name="compiler"
+						>
+						<File
+							RelativePath=".\dc\sh4\shil\Compiler\shil_compiler_base.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\dc\sh4\shil\Compiler\shil_compiler_base.h"
+							>
+						</File>
+					</Filter>
 				</Filter>
 				<Filter
 					Name="rec_v1"
@@ -626,14 +638,6 @@
 					</File>
 					<File
 						RelativePath=".\dc\sh4\rec_v1\analyser.h"
-						>
-					</File>
-					<File
-						RelativePath=".\dc\sh4\rec_v1\basicblock.cpp"
-						>
-					</File>
-					<File
-						RelativePath=".\dc\sh4\rec_v1\basicblock.h"
 						>
 					</File>
 					<File
@@ -672,14 +676,42 @@
 						RelativePath=".\dc\sh4\rec_v1\sh4_cpu_shil.h"
 						>
 					</File>
-					<File
-						RelativePath=".\dc\sh4\rec_v1\superblock.cpp"
+					<Filter
+						Name="blocks"
 						>
-					</File>
-					<File
-						RelativePath=".\dc\sh4\rec_v1\superblock.h"
-						>
-					</File>
+						<File
+							RelativePath=".\dc\sh4\rec_v1\basicblock.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\dc\sh4\rec_v1\basicblock.h"
+							>
+						</File>
+						<File
+							RelativePath=".\dc\sh4\rec_v1\codespan.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\dc\sh4\rec_v1\codespan.h"
+							>
+						</File>
+						<File
+							RelativePath=".\dc\sh4\rec_v1\compiledblock.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\dc\sh4\rec_v1\compiledblock.h"
+							>
+						</File>
+						<File
+							RelativePath=".\dc\sh4\rec_v1\superblock.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\dc\sh4\rec_v1\superblock.h"
+							>
+						</File>
+					</Filter>
 				</Filter>
 			</Filter>
 			<Filter
@@ -1209,22 +1241,6 @@
 			<Filter
 				Name="shil_compiler"
 				>
-				<File
-					RelativePath=".\emitter\shil_compile_slow.cpp"
-					>
-					<FileConfiguration
-						Name="Release-NoTrace|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="2"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath=".\emitter\shil_compile_slow.h"
-					>
-				</File>
 				<File
 					RelativePath=".\emitter\shil_to_text.cpp"
 					>

@@ -1,7 +1,10 @@
 #pragma once
 #include "types.h"
 #include "sh4_interpreter.h"
-#include "dc\sh4\rec_v1\BasicBlock.h"
+//#include "dc\sh4\rec_v1\BasicBlock.h"
+
+class BasicBlock;
+typedef void (__fastcall RecOpCallFP) (u32 op,u32 pc,BasicBlock* bb);
 
 extern OpCallFP* OpPtr[0x10000];
 extern RecOpCallFP* RecOpPtr[0x10000];

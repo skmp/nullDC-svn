@@ -13,8 +13,6 @@
 #include "dc/sh4/sh4_cst.h"
 #include "dc/mem/sh4_mem.h"
 
-#include "emitter/shil_compile_slow.h"
-
 #include "recompiler.h"
 #include "blockmanager.h"
 #include "analyser.h"
@@ -43,7 +41,8 @@ SBL_BasicBlock* SBL_AnalyseOrFindBB(u32 pc)
 	//scan code
 	ScanCode(pc,block);
 	//Fill block lock type info
-	FillBlockLockInfo(block);
+	block->CalculateLockFlags();
+
 	if (block->flags.ProtectionType==BLOCK_PROTECTIONTYPE_MANUAL)
 	{
 		delete block;
@@ -58,7 +57,6 @@ SBL_BasicBlock* SBL_AnalyseOrFindBB(u32 pc)
 	block->in_info.Init();
 
 	shil_optimise_pass_ce_driver(block);
-	
 	
 	return block;
 }
@@ -229,3 +227,61 @@ void fastcall AnalyseCodeSuperBlock(u32 pc)
 	//compile code
 	//return pointer
 }
+
+//A tree , made by many BasicBlocks
+class SuperBlock
+{
+public:
+	BasicBlock* rootblock;
+	vector<BasicBlock*> blocks;
+	//vector<BasicBlock> blocks;
+	u32* LockPointCache;
+
+	u32* CalculateLockPoints()
+	{
+		if (blocks.size()==0)
+			return 0;
+
+		CodeSpan sbspan;
+
+		sbspan.start=blocks[0]->start;
+		sbspan.end=blocks[0]->end;
+
+		for (u32 i=1;i<blocks.size();i++)
+			blocks[i]->Union(&sbspan);
+
+		u8* temp_map=(u8*)malloc(sbspan.PageCount());
+		memset(temp_map,0,sbspan.PageCount()*sizeof(temp_map[0]));
+
+		u32 c_page=(sbspan.page_start()*PAGE_SIZE)+(PAGE_SIZE>>1);
+		u32 lock_count=0;
+		for (u32 i=0;i<sbspan.PageCount();i++)
+		{
+			u32 j=0;
+			while(temp_map[i]==0 && j<blocks.size())
+			{
+				temp_map[i]|=(u8)blocks[j]->ContainsPage(c_page);
+			}	
+			if (temp_map[i])
+				lock_count++;
+			c_page+=PAGE_SIZE;
+		}
+
+		u32* lock_map=(u32*)malloc(lock_count*sizeof(lock_map[0])+4);
+		
+		*lock_map=lock_count;
+		lock_map++;
+		u32 * rv=lock_map;
+
+		c_page=sbspan.page_start();
+		for (u32 i=0;i<sbspan.PageCount();i++)
+		{
+			if (lock_map[i])
+				*lock_map++=c_page+i;
+		}
+
+		free(temp_map);
+
+		return rv;
+	}
+};

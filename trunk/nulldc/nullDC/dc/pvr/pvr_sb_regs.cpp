@@ -62,7 +62,6 @@ void pvr_do_sort_dma()
 	//end of dma :)
 	SB_SDST=0;
 	RaiseInterrupt(holly_PVR_SortDMA);
-	//printf("Sort DMA -- simply ingored :p\n");
 }
 //auto sort dma :|
 void RegWrite_SB_SDST(u32 data)

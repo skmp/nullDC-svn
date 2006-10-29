@@ -1,9 +1,7 @@
 #pragma once
 #include "types.h"
 #include "dc\sh4\sh4_if.h"
-#include <Vector>
 
-using namespace std;
 
 #pragma pack (push,1)
 //16 byte il representation
@@ -237,7 +235,7 @@ enum cmd_cond
 {
 /* Condition codes */
 CC_O			=0,				// overflow (OF=1)
- CC_NO			=1,				// not overflow (OF=0)
+CC_NO			=1,				// not overflow (OF=0)
 CC_B			=2,				// below (CF=1)
 SaveCF			=CC_B,			//CF=1
 CC_NAE			=CC_B,			// 

@@ -14,7 +14,6 @@
 #include "dc/mem/sh4_mem.h"
 #include "dc/sh4/shil/shil_ce.h"
 
-#include "emitter/shil_compile_slow.h"
 #include "emitter/emitter.h"
 
 #include "recompiler.h"
@@ -60,12 +59,12 @@ void*  __fastcall CompileCode_SuperBlock(u32 pc)
 	//scan code
 	ScanCode(pc,block);
 	//Fill block lock type info
-	FillBlockLockInfo(block);
+	block->CalculateLockFlags();
 	//analyse code [generate il/block type]
 	AnalyseCode(block);
 	block->flags.DisableHS=true;
 	//Compile code
-	CompileBasicBlock_slow(block);
+	block->Compile();
 	RegisterBlock(cblock=&block->cBB->cbi);
 	delete block;
 	//compile code
@@ -81,13 +80,13 @@ CompiledBlockInfo*  __fastcall CompileCode(u32 pc)
 	//scan code
 	ScanCode(pc,block);
 	//Fill block lock type info
-	FillBlockLockInfo(block);
+	block->CalculateLockFlags();
 	//analyse code [generate il/block type]
 	AnalyseCode(block);
 	//optimise
 	shil_optimise_pass_ce_driver(block);
 	//Compile code
-	CompileBasicBlock_slow(block);
+	block->Compile();
 	RegisterBlock(cblock=&block->cBB->cbi);
 	delete block;
 	//compile code
@@ -103,7 +102,7 @@ INLINE BasicBlockEP * __fastcall GetRecompiledCodePointer(u32 pc)
 	return FindCode(pc);
 }
 
-CompiledBlockInfo* FindOrRecompileCode(u32 pc)
+CompiledBlockInfo* FindOrRecompileBlock(u32 pc)
 {
 	CompiledBlockInfo* cblock=FindBlock(pc);
 	
@@ -122,101 +121,8 @@ void naked CompileAndRunCode()
 	}
 }
 
-//#define PROFILE_DYNAREC
-#ifdef PROFILE_DYNAREC
-u64 calls=0;
-u64 total_cycles=0;
-extern u64 ifb_calls;
-#endif
-
-#ifdef PROFILE_DYNAREC_CALL
-void naked __fastcall DoRunCode(void * code)
-{
-#ifdef X86
-	__asm
-	{
-		push esi;
-		push edi;
-		push ebx;
-		push ebp;
-
-		call ecx;
-
-		pop ebp;
-		pop ebx;
-		pop edi;
-		pop esi;
-		ret;
-	}
-#endif
-}
-#endif
-
 void __fastcall rec_sh4_int_RaiseExeption(u32 ExeptionCode,u32 VectorAddress)
 {
-}
-
-
-
-u32 THREADCALL rec_sh4_int_ThreadEntry_normal(void* ptar)
-{
-	//just cast it
-	ThreadCallbackFP* ptr=(ThreadCallbackFP*) ptar;
-
-	ptr(true);//call the callback to init
-	
-	rec_cycles=0;
-	SetFloatStatusReg();
-	while(true)
-	{
-		BasicBlockEP* fp=GetRecompiledCodePointer(pc);
-		
-		//call block :)
-		__asm
-		{
-			push esi;
-			push edi
-			push ebx
-			push ebp
-			mov block_stack_pointer,esp;
-		}
-
-		fp();
-
-		__asm 
-		{
-			pop ebp
-			pop ebx
-			pop edi
-			pop esi;
-		}
-#ifdef PROFILE_DYNAREC
-		calls++;
-		if ((calls & (0x80000-1))==(0x80000-1))//more ?
-		{
-			//void PrintSortedBlocks(FILE* to,u32 count);
-			printf("Dynarec Stats : average link cycles : %d \n",(u32)(total_cycles/calls));
-			//PrintSortedBlocks(stdout,40);
-			//printf("Dynarec Stats : average link cycles : %d , ifb opcodes : %d%% [%d]\n",(u32)(total_cycles/calls),(u32)(ifb_calls*100/total_cycles),ifb_calls);
-			calls=total_cycles=0;//ifb_calls
-			//printprofile();
-		}
-#endif
-
-		if (rec_cycles>(CPU_TIMESLICE*9/10))
-		{
-			UpdateSystem(rec_cycles);
-#ifdef PROFILE_DYNAREC
-			total_cycles+=rec_cycles;
-#endif
-			if (rec_sh4_int_bCpuRun==false)
-				break;
-			rec_cycles=0;
-		}
-	}
-	ptr(false);//call the callback
-
-	return 0;
 }
 
 //asm version
@@ -226,7 +132,7 @@ extern CompiledBlockInfo*			BlockLookupGuess[LOOKUP_HASH_SIZE];
 BasicBlockEP* __fastcall FindCode_full(u32 address,CompiledBlockInfo* fastblock);
 
 
-void naked NormalMainLoop()
+void naked DynaMainLoop()
 {
 	__asm
 	{
@@ -323,9 +229,7 @@ u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 	
 	rec_cycles=0;
 	SetFloatStatusReg();
-	NormalMainLoop();
-
-
+	DynaMainLoop();
 	ptr(false);//call the callback
 
 	return 0;

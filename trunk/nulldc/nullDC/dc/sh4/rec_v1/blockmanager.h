@@ -1,9 +1,27 @@
 #pragma once
 #include "types.h"
 #include "recompiler.h"
-#include "BasicBlock.h"
+#include "compiledblock.h"
 
-//CompiledBlockInfo* __fastcall FindBlock(u32 address);
+struct pginfo
+{
+	u32 invalidates;
+	union
+	{
+		struct
+		{
+			u32 ManualCheck:1;	//bit 0 :1-> manual check , 0 -> locked check
+			u32 reserved:31;	//bit 1-31: reserved
+		};
+		u32 full;
+	} flags;
+};
+
+extern u32* block_stack_pointer;
+
+#define PAGE_MANUALCHECK 1
+pginfo GetPageInfo(u32 address);
+
 #define FindBlock FindBlock_fast
 #define FindCode FindCode_fast
 
@@ -13,14 +31,10 @@ BasicBlockEP* __fastcall FindCode_fast(u32 address);
 void RegisterBlock(CompiledBlockInfo* block);
 void UnRegisterBlock(CompiledBlockInfo* block);
 
-void FillBlockLockInfo(BasicBlock* block);
 
 void FreeSuspendedBlocks();
 
-
-BasicBlock* FindOrAnalyse(u32 pc);
-
-CompiledBlockInfo* FindOrRecompileCode(u32 pc);
+CompiledBlockInfo* FindOrRecompileBlock(u32 pc);
 void __fastcall SuspendBlock(CompiledBlockInfo* block);
 
 void InitBlockManager();

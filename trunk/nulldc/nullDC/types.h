@@ -1,6 +1,5 @@
 #pragma once
 
-
 //this looks like the main header ? -Z
 #define BUILD_DREAMCAST	(1)
 //#define BUILD_DEV_UNIT	(1)
@@ -23,6 +22,7 @@
 //Basic types :)
 #include "basic_types.h"
 #include <vector>
+using namespace std;
 
 #define No_gdb_stub
 //#define DEBUG_DLL
@@ -189,4 +189,4 @@ struct RegisterStruct
 	u32 flags;					//flags for read/write
 };
 
-#define NO_MMU 
+#define NO_MMU

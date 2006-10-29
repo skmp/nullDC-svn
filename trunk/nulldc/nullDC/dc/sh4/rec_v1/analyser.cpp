@@ -210,14 +210,15 @@ void AnalyseCode(BasicBlock* to)
 		block_ops++;
 	}*/
 
-#ifdef PROFILE_DYNAREC
+	/*
 	if( (to->flags & BLOCK_TYPE_MASK)==BLOCK_TYPE_DYNAMIC)
 	{
 		char temp[1000];
 		DissasembleOpcode(ReadMem16(to->end),to->end,temp);
 		printf("Dynamic block ending at %s\n",temp);
 	}
-#endif
+	*/
+
 
 	to->ilst.op_count=(u32)to->ilst.opcodes.size();
 	

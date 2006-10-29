@@ -1,4 +1,3 @@
-#include "shil_compile_slow.h"
 #include <assert.h>
 #include "emitter.h"
 
