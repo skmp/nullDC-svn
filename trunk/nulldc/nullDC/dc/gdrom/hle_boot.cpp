@@ -423,5 +423,5 @@ bool gdBootHLE()
 
 
 #else
-void gdBootHLE(void) { printf("ERROR - (GD-HLE) BOOT IN NAOMI SECTION - !\n\n"); }
+bool gdBootHLE(void) { printf("ERROR - (GD-HLE) BOOT IN NAOMI SECTION - !\n\n"); return false; }
 #endif

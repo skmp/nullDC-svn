@@ -8,6 +8,10 @@
 #include "dc/maple/maple_if.h"
 #include "dc/aica/aica_if.h"
 
+#ifdef BUILD_NAOMI
+#include "../../naomi/naomi.h"
+#endif
+
 Array<RegisterStruct> sb_regs(0x540);	
 
 //(addr>= 0x005F6800) && (addr<=0x005F7CFF) -> 0x1500 bytes -> 0x540 possible registers , 125 actualy exist olny
@@ -132,7 +136,11 @@ u32 SB_SDDIV;
  u32 SB_MRXDAD;
 //0x005F6CFC	SB_MRXDBD	R	Maple Rxd base address 
  u32 SB_MRXDBD;
-			
+
+
+
+
+
 //0x005F7404	SB_GDSTAR	RW	GD-DMA start address 
  u32 SB_GDSTAR;
 //0x005F7408	SB_GDLEN	RW	GD-DMA length 
@@ -862,8 +870,6 @@ void sb_Init()
 	sb_regs[((SB_MRXDBD_addr-SB_BASE))>>2].readFunction=0;
 	sb_regs[((SB_MRXDBD_addr-SB_BASE))>>2].writeFunction=0;
 	sb_regs[((SB_MRXDBD_addr-SB_BASE))>>2].data32=&SB_MRXDBD;
-
-
 				
 	//0x005F7404	SB_GDSTAR	RW	GD-DMA start address
 	sb_regs[((SB_GDSTAR_addr-SB_BASE))>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
@@ -1526,6 +1532,10 @@ void sb_Init()
 	pvr_sb_Init();
 	maple_Init();
 	aica_sb_Init();
+
+#ifdef BUILD_NAOMI
+	naomi_reg_Init();
+#endif
 }
 
 void sb_Reset(bool Manual)
@@ -1535,6 +1545,10 @@ void sb_Reset(bool Manual)
 	pvr_sb_Reset(Manual);
 	maple_Reset(Manual);
 	aica_sb_Reset(Manual);
+
+#ifdef BUILD_NAOMI
+	naomi_reg_Reset(Manual);
+#endif
 }
 
 void sb_Term()
@@ -1544,4 +1558,8 @@ void sb_Term()
 	pvr_sb_Term();
 	gdrom_reg_Term();
 	asic_reg_Term();
+
+#ifdef BUILD_NAOMI
+	naomi_reg_Term();
+#endif
 }

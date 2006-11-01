@@ -132,6 +132,11 @@ extern Array<RegisterStruct> sb_regs;
 //0x005F6CFC	SB_MRXDBD	R	Maple Rxd base address 
 #define SB_MRXDBD_addr 0x005F6CFC
 			
+
+
+
+
+
 //0x005F7404	SB_GDSTAR	RW	GD-DMA start address 
 #define SB_GDSTAR_addr 0x005F7404
 //0x005F7408	SB_GDLEN	RW	GD-DMA length 
@@ -422,6 +427,10 @@ extern u32 SB_MTXDAD;
 extern u32 SB_MRXDAD;
 //0x005F6CFC	SB_MRXDBD	R	Maple Rxd base address 
 extern u32 SB_MRXDBD;
+
+
+
+
 			
 //0x005F7404	SB_GDSTAR	RW	GD-DMA start address 
 extern u32 SB_GDSTAR;

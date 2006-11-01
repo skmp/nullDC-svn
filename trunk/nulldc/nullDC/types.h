@@ -1,9 +1,9 @@
 #pragma once
 
 //this looks like the main header ? -Z
-#define BUILD_DREAMCAST	(1)
+//#define BUILD_DREAMCAST	(1)
 //#define BUILD_DEV_UNIT	(1)
-//#define BUILD_NAOMI	(1)
+#define BUILD_NAOMI	(1)
 
 
 //SHUT UP M$ COMPILER !@#!@$#

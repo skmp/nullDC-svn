@@ -163,6 +163,11 @@ void LoadBiosFiles()
 	strcat(temp_path,"IP.bin");
 	LoadFileToSh4Mem(0x08000, temp_path);
 	temp_path[pl]=0;
+
+#else
+
+	// Add Xicor Flash when dumped and others ... 
+
 #endif
 
 	free(temp_path);
