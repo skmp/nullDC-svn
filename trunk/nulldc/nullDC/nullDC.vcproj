@@ -641,14 +641,6 @@
 						>
 					</File>
 					<File
-						RelativePath=".\dc\sh4\rec_v1\blockmanager.cpp"
-						>
-					</File>
-					<File
-						RelativePath=".\dc\sh4\rec_v1\blockmanager.h"
-						>
-					</File>
-					<File
 						RelativePath=".\dc\sh4\rec_v1\driver.cpp"
 						>
 					</File>
@@ -709,6 +701,26 @@
 						</File>
 						<File
 							RelativePath=".\dc\sh4\rec_v1\superblock.h"
+							>
+						</File>
+					</Filter>
+					<Filter
+						Name="blockmanager"
+						>
+						<File
+							RelativePath=".\dc\sh4\rec_v1\blockmanager.cpp"
+							>
+							<FileConfiguration
+								Name="Release-NoTrace|Win32"
+								>
+								<Tool
+									Name="VCCLCompilerTool"
+									Optimization="2"
+								/>
+							</FileConfiguration>
+						</File>
+						<File
+							RelativePath=".\dc\sh4\rec_v1\blockmanager.h"
 							>
 						</File>
 					</Filter>

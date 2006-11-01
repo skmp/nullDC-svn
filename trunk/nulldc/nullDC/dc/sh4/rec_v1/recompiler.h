@@ -13,6 +13,7 @@ typedef void BasicBlockEP();
 
 extern void* Dynarec_Mainloop_no_update;
 extern void* Dynarec_Mainloop_do_update;
+extern u32 rec_cycles;
 
 #define GET_CURRENT_FPU_MODE() (fpscr.PR_SZ)
 

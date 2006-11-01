@@ -44,6 +44,10 @@ x86_ptr_imm x86_ptr_imm::create(unat ptr)
 	return rv;
 #pragma warning(default:4312) 
 }
+//memory managment !
+void* dyna_malloc(u32 size);
+void* dyna_realloc(void*ptr,u32 oldsize,u32 newsize);
+void* dyna_finalize(void* ptr,u32 oldsize,u32 newsize);
 //x86_block
 //init things
 
@@ -67,42 +71,30 @@ void x86_block::Init()
 	x86_buff=0;
 	x86_indx=0;
 	x86_size=0;
+	do_realloc=true;
 }
 
 //Generates code.if user_data is non zero , user_data_size bytes are allocated after the executable code
 //and user_data is set to the first byte of em.Allways 16 byte alligned
-void* x86_block::Generate(void** user_data,u32 user_data_size)
+void* x86_block::Generate()
 {
-	u32 user_data_start;
-
-	if (user_data_size)
-	{
-		x86_indx+=32;
-		x86_indx&=~31;
-		user_data_start=x86_indx;
-		x86_indx+=user_data_size;
-	}
-
-	realloc(x86_buff,x86_indx);
-
-	if (user_data_size)
-		*user_data=(void*)&x86_buff[user_data_start];
+	if (do_realloc)
+		x86_buff=(u8*)dyna_finalize(x86_buff,x86_size,x86_indx);
 
 	ApplyPatches(x86_buff);
 
 	return &x86_buff[0];
 }
-void x86_block::CopyTo(void* to)
+#include "windows.h"
+/*void x86_block::CopyTo(void* to)
 {
 	memcpy(to,x86_buff,x86_indx);
 	free(x86_buff);
-	//u8* old=x86_buff;
 	x86_buff=(u8*)to;
 
 	ApplyPatches(x86_buff);
-	
-	//x86_buff=old;
 }
+*/
 
 //wut ?
 void x86_block::ApplyPatches(u8* base)
@@ -155,10 +147,33 @@ void x86_block::x86_buffer_ensure(u32 size)
 {
 	if (this->x86_size<(size+x86_indx))
 	{
-		x86_size+=4096;
+		verify(do_realloc!=false);
+		u32 old_size=x86_size;
+		x86_size+=128;
 		x86_size*=2;
-		x86_buff=(u8*)realloc(x86_buff,x86_size);
+		x86_buff=(u8*)dyna_realloc(x86_buff,old_size,x86_size);
 	}
+}
+void  x86_block::write8(u32 value)
+{
+	x86_buffer_ensure(15);
+	//printf("%02X ",value);
+	x86_buff[x86_indx]=value;
+	x86_indx+=1;
+}
+void  x86_block::write16(u32 value)
+{
+	x86_buffer_ensure(15);
+	//printf("%04X ",value);
+	*(u16*)&x86_buff[x86_indx]=value;
+	x86_indx+=2;
+}
+void  x86_block::write32(u32 value)
+{
+	x86_buffer_ensure(15);
+	//printf("%08X ",value);
+	*(u32*)&x86_buff[x86_indx]=value;
+	x86_indx+=4;
 }
 
 //Label related code

@@ -9,9 +9,12 @@
 
 #include "dc/sh4/rec_v1/blockmanager.h"
 
+int compiled_basicblock_count=0;
+
 //needed declarations
 void bb_link_compile_inject_TF_stub(CompiledBlockInfo* ptr);
 void bb_link_compile_inject_TT_stub(CompiledBlockInfo* ptr);
+void RewriteBasicBlockCond(CompiledBasicBlock* cBB);
 
 //BasicBlock I/F and compiler :)
 
@@ -45,12 +48,16 @@ void __fastcall basic_block_ClearBlock(CompiledBlockInfo* p_this,CompiledBlockIn
 	{
 		pthis->TF_block=0;
 		pthis->pTF_next_addr=bb_link_compile_inject_TF_stub;
+		if (pthis->RewriteType)
+			RewriteBasicBlockCond((CompiledBasicBlock*)p_this);
 	}
 
 	if (pthis->TT_block==block)
 	{
 		pthis->TT_block=0;
 		pthis->pTT_next_addr=bb_link_compile_inject_TT_stub;
+		if (pthis->RewriteType)
+			RewriteBasicBlockCond((CompiledBasicBlock*)p_this);
 	}
 }
 void __fastcall basic_block_Suspend(CompiledBlockInfo* p_this)
@@ -123,7 +130,88 @@ void BasicBlock::SetCompiledBlockInfo(CompiledBasicBlock* cBl)
 }
 //BasicBlock compiler :D
 
-int compiled_basicblock_count=0;
+
+void RewriteBasicBlockFixed(CompiledBasicBlock* cBB)
+{
+	u8 flags=0;
+	if  (cBB->ebi.TF_block)
+		flags=1;
+
+	if (cBB->ebi.LastRewrite==flags)
+		return;
+
+	x86_block* x86e = new x86_block();
+
+	x86e->Init();
+	x86e->do_realloc=false;
+	x86e->x86_buff=(u8*)cBB->cbi.Code + cBB->ebi.RewriteOffset;
+	x86e->x86_size=32;
+
+	cBB->ebi.LastRewrite=flags;
+
+	if  (cBB->ebi.TF_block)
+	{
+		x86e->Emit(op_jmp,x86_ptr_imm(cBB->ebi.TF_block->Code));
+	}
+	else
+	{
+		x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , block
+		x86e->Emit(op_jmp,x86_ptr_imm(bb_link_compile_inject_TF_stub));
+	}
+	x86e->Generate();
+}
+void RewriteBasicBlockCond(CompiledBasicBlock* cBB)
+{
+	if (cBB->ebi.RewriteType==2)
+	{
+		RewriteBasicBlockFixed(cBB);
+		return;
+	}
+
+	u8 flags=0;
+	if (cBB->ebi.TT_block!=0)
+		flags|=1;
+	if (cBB->ebi.TF_block)
+		flags|=2;
+
+	if (cBB->ebi.LastRewrite==flags)
+		return;
+
+	x86_block* x86e = new x86_block();
+	
+	x86e->Init();
+	x86e->do_realloc=false;
+	x86e->x86_buff=(u8*)cBB->cbi.Code + cBB->ebi.RewriteOffset;
+	x86e->x86_size=32;
+
+	cBB->ebi.LastRewrite=flags;
+
+	if (flags==1)
+	{
+		x86e->Emit(op_jne,x86_ptr_imm(cBB->ebi.TT_block->Code));
+		x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , block
+		x86e->Emit(op_jmp,x86_ptr_imm(bb_link_compile_inject_TF_stub));
+	}
+	else if  (flags==2)
+	{
+		x86e->Emit(op_je,x86_ptr_imm(cBB->ebi.TF_block->Code));
+		x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , block
+		x86e->Emit(op_jmp,x86_ptr_imm(bb_link_compile_inject_TT_stub));
+	}
+	else  if  (flags==3)
+	{
+		x86e->Emit(op_je,x86_ptr_imm(cBB->ebi.TF_block->Code));
+		x86e->Emit(op_jmp,x86_ptr_imm(cBB->ebi.TT_block->Code));
+	}
+	else
+	{
+		//x86e->Emit(op_int3);
+		x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , block
+		x86e->Emit(op_je,x86_ptr_imm(bb_link_compile_inject_TF_stub));
+		x86e->Emit(op_jmp,x86_ptr_imm(bb_link_compile_inject_TT_stub));
+	}
+	x86e->Generate();
+}
 
 //Compile block and return pointer to it's code
 void* __fastcall bb_link_compile_inject_TF(CompiledBlockInfo* ptr)
@@ -137,6 +225,8 @@ void* __fastcall bb_link_compile_inject_TF(CompiledBlockInfo* ptr)
 		target->AddRef(ptr);
 		ptr->GetBB()->TF_block=target;
 		ptr->GetBB()->pTF_next_addr=target->Code;
+		if (ptr->GetBB()->RewriteType)
+			RewriteBasicBlockCond((CompiledBasicBlock*)ptr);
 	}
 	return target->Code;
 }
@@ -152,6 +242,8 @@ void* __fastcall bb_link_compile_inject_TT(CompiledBlockInfo* ptr)
 		target->AddRef(ptr);
 		ptr->GetBB()->TT_block=target;
 		ptr->GetBB()->pTT_next_addr=target->Code;
+		if (ptr->GetBB()->RewriteType)
+			RewriteBasicBlockCond((CompiledBasicBlock*)ptr);
 	}
 	return target->Code;
 } 
@@ -174,8 +266,6 @@ void naked bb_link_compile_inject_TT_stub(CompiledBlockInfo* ptr)
 		jmp eax;
 	}
 }
-
-extern u32 rec_cycles;
 
 u32 call_ret_address=0xFFFFFFFF;//holds teh return address of the previus call ;)
 CompiledBlockInfo* pcall_ret_address=0;//holds teh return address of the previus call ;)
@@ -213,38 +303,6 @@ void __fastcall CheckBlock(CompiledBlockInfo* block)
 	}
 }
 /*
-void RewriteBasicBlockCond(CompiledBasicBlock* cBB)
-{
-	u32 flags=0;
-	if (cBB->ebi.TT_block)
-		flags|=1;
-	if (cBB->ebi.TF_block)
-		flags|=2;
-
-	if (flags==1)
-	{
-		x86e->Emit(op_jne,x86_ptr_imm(cBB->ebi.TT_block->Code));
-		x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , block
-		x86e->Emit(op_jmp,x86_ptr_imm(bb_link_compile_inject_TF_stub));
-	}
-	else if  (flags==2)
-	{
-		x86e->Emit(op_je,x86_ptr_imm(cBB->ebi.TF_block->Code));
-		x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , block
-		x86e->Emit(op_jmp,x86_ptr_imm(bb_link_compile_inject_TT_stub));
-	}
-	else  if  (flags==3)
-	{
-		x86e->Emit(op_je,x86_ptr_imm(cBB->ebi.TF_block->Code));
-		x86e->Emit(op_jmp,x86_ptr_imm(cBB->ebi.TT_block->Code));
-	}
-	else
-	{
-		x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , block
-		x86e->Emit(op_je,x86_ptr_imm(bb_link_compile_inject_TF_stub));
-		x86e->Emit(op_jmp,x86_ptr_imm(bb_link_compile_inject_TT_stub));
-	}
-}
 void RewriteBasicBlockFixed(CompiledBasicBlock* cBB)
 {
 	if (cBB->ebi.TF_block)
@@ -256,17 +314,10 @@ void RewriteBasicBlockFixed(CompiledBasicBlock* cBB)
 		x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , cBB
 		x86e->Emit(op_jmp,x86_ptr_imm((u32*)&(cBB->ebi.pTF_next_addr)));	//mov eax , [pTF_next_addr]
 	}
-}
-*/
+}*/
+
 void BasicBlock::Compile()
 {
-	/*
-	if (!inited)
-	{
-		Init();
-		inited=true;
-	}*/
-
 	FloatRegAllocator*		fra;
 	IntegerRegAllocator*	ira;
 
@@ -297,7 +348,13 @@ void BasicBlock::Compile()
 	//that is a realy nice debug helper :)
 	x86e->Emit(op_mov32,&Curr_block,(u32)cBB);
 	*/
-	x86_Label* block_start = x86e->CreateLabel(true,0);
+
+	x86_Label* block_exit = x86e->CreateLabel(false,0);
+
+	
+	x86e->Emit(op_sub32 ,&rec_cycles,cycles);
+	x86e->Emit(op_js,block_exit);
+
 	//x86e->MarkLabel(block_start);
 	if (flags.ProtectionType==BLOCK_PROTECTIONTYPE_MANUAL)
 	{
@@ -418,6 +475,9 @@ void BasicBlock::Compile()
 	}
 */
 	//end block acording to block type :)
+	cBB->ebi.RewriteType=0;
+	cBB->ebi.LastRewrite=0xFF;
+
 	switch(flags.ExitType)
 	{
 	case BLOCK_EXITTYPE_DYNAMIC_CALL:	//same as below , sets call guess
@@ -429,19 +489,11 @@ void BasicBlock::Compile()
 		}
 	case BLOCK_EXITTYPE_DYNAMIC:		//not guess 
 		{
-			x86e->Emit(op_sub32 ,&rec_cycles,cycles);
-			x86e->Emit(op_jns,x86_ptr_imm(Dynarec_Mainloop_no_update));
-			x86e->Emit(op_jmp,x86_ptr_imm(Dynarec_Mainloop_do_update));
+			x86e->Emit(op_jmp,x86_ptr_imm(Dynarec_Mainloop_no_update));
 		}
 		break;
 	case BLOCK_EXITTYPE_RET:			//guess
 		{
-			//x86_Label* not_ok=x86e->CreateLabel(false);
-
-			//link end ?
-			x86e->Emit(op_sub32 ,&rec_cycles,cycles);
-			x86e->Emit(op_js,x86_ptr_imm(Dynarec_Mainloop_do_update));
-
 			//cmp pr,guess
 			x86e->Emit(op_mov32 ,EAX,GetRegPtr(reg_pc));
 			x86e->Emit(op_cmp32 ,EAX,&call_ret_address);
@@ -458,61 +510,42 @@ void BasicBlock::Compile()
 		{
 			//ok , handle COND here :)
 			//mem address
-			u32* TF_a=&cBB->ebi.TT_next_addr;
-			u32* TT_a=&cBB->ebi.TF_next_addr;
+			u32 TT_a=cBB->ebi.TT_next_addr;
+			u32 TF_a=cBB->ebi.TF_next_addr;
 			
-			//functions
-			u32* pTF_f=(u32*)&(cBB->ebi.pTT_next_addr);
-			u32* pTT_f=(u32*)&(cBB->ebi.pTF_next_addr);
 
-			x86e->Emit(op_sub32 ,&rec_cycles,cycles);
-			
-			x86_Label* Exit_Link = x86e->CreateLabel(false,8);
+			x86e->Emit(op_cmp32,&T_jcond_value,1);
 
-			x86e->Emit(op_js ,Exit_Link);
-
-			//Link:
-			//if we can execute more blocks
+			if (TT_a==cBB->cbi.start)
 			{
-				x86e->Emit(op_test32,&T_jcond_value,1);
-				if (*TT_a==cBB->cbi.start)
-				{
-					x86e->Emit(op_jne,block_start);
-					x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , block
-					x86e->Emit(op_jmp32,x86_ptr(pTF_f));
-				}
-				else if  (*TF_a==cBB->cbi.start)
-				{
-					x86e->Emit(op_je,block_start);
-					x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , block
-					x86e->Emit(op_jmp32,x86_ptr(pTT_f));
-				}
-				else
-				{
-					x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , block
-					x86e->Emit(op_mov32,EAX,pTF_f);
-					x86e->Emit(op_cmovne32 ,EAX,pTT_f);
-					x86e->Emit(op_jmp32,EAX);
-				}
-				
+				cBB->ebi.TT_block=&cBB->cbi;
 			}
-			
-			//If our cycle count is expired
-			x86e->MarkLabel(Exit_Link);
+			else
 			{
-				//save the dest address to pc
-				x86e->Emit(op_test32,&T_jcond_value,1);
-				//see witch pc to set
-
-				x86e->Emit(op_mov32,EAX,*TF_a);//==
-				//!=
-				x86e->Emit(op_cmovne32 ,EAX,TT_a);//!=
-				x86e->Emit(op_mov32,GetRegPtr(reg_pc),EAX);
-
-				//return to caller to check for interrupts
-				x86e->Emit(op_jmp,x86_ptr_imm(Dynarec_Mainloop_do_update));
-				//x86e->Emit(op_ret);
+				cBB->ebi.TT_block=FindBlock(TT_a);
+				if (cBB->ebi.TT_block)
+					cBB->ebi.TT_block->AddRef(&cBB->cbi);
 			}
+
+			if  (TF_a==cBB->cbi.start)
+			{
+				cBB->ebi.TF_block=&cBB->cbi;
+			}
+			else
+			{
+				cBB->ebi.TF_block=FindBlock(TF_a);
+				if (cBB->ebi.TF_block)
+					cBB->ebi.TF_block->AddRef(&cBB->cbi);
+			}
+
+			cBB->ebi.RewriteType=1;
+			cBB->ebi.RewriteOffset=x86e->x86_indx;
+			
+
+			x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , block
+			x86e->Emit(op_jne,x86_ptr_imm(0));
+			x86e->Emit(op_jmp,x86_ptr_imm(0));
+			x86e->Emit(op_int3);
 		} 
 		break;
 	case BLOCK_EXITTYPE_FIXED_CALL:		//same as below
@@ -524,33 +557,22 @@ void BasicBlock::Compile()
 		}
 	case BLOCK_EXITTYPE_FIXED:			//linkable
 		{
-			//
-			//x86e->Emit(op_cmp32 ,&rec_cycles,BLOCKLIST_MAX_CYCLES);
-
-			x86e->Emit(op_sub32 ,&rec_cycles,cycles);
-			x86_Label* No_Link = x86e->CreateLabel(false,8);
-
-			x86e->Emit(op_js ,No_Link);
-
-			//Link:
-			//if we can execute more blocks
 			if (cBB->ebi.TF_next_addr==cBB->cbi.start)
 			{
-				//__asm int 03;
 				printf("Fast Link possible\n");
 			}
+			else
+			{
+				cBB->ebi.TF_block=FindBlock(cBB->ebi.TF_next_addr);
+				if (cBB->ebi.TF_block)
+					cBB->ebi.TF_block->AddRef(&cBB->cbi);
+			}
 
+			cBB->ebi.RewriteType=2;
+			cBB->ebi.RewriteOffset=x86e->x86_indx;
 			//link to next block :
 			x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , cBB
 			x86e->Emit(op_jmp32,x86_ptr((u32*)&(cBB->ebi.pTF_next_addr)));	//mov eax , [pTF_next_addr]
-			//x86e->Emit(op_jmp32 ,EAX);									//jmp eax
-
-			//If our cycle count is expired
-			x86e->MarkLabel(No_Link);
-			//save pc
-			x86e->Emit(op_mov32,GetRegPtr(reg_pc),cBB->ebi.TF_next_addr);
-			//and return to caller to check for interrupts
-			x86e->Emit(op_jmp,x86_ptr_imm(Dynarec_Mainloop_do_update));
 		}
 		break;
 	case BLOCK_EXITTYPE_FIXED_CSC:		//forced lookup , possible state chainge
@@ -558,14 +580,12 @@ void BasicBlock::Compile()
 			//We have to exit , as we gota do mode lookup :)
 			//We also have to reset return cache to ensure its ok
 
-			x86e->Emit(op_sub32 ,&rec_cycles,cycles);
 			//call_ret_address=0xFFFFFFFF;
 			x86e->Emit(op_mov32,&call_ret_address,0xFFFFFFFF);
 			//pcall_ret_address=0;
 			x86e->Emit(op_mov32,(u32*)&pcall_ret_address,0);
 			//Good , now return to caller :)
-			x86e->Emit(op_jns,x86_ptr_imm(Dynarec_Mainloop_no_update));
-			x86e->Emit(op_jmp,x86_ptr_imm(Dynarec_Mainloop_do_update));
+			x86e->Emit(op_jmp,x86_ptr_imm(Dynarec_Mainloop_no_update));
 		}
 		break;
 	}
@@ -573,11 +593,18 @@ void BasicBlock::Compile()
 	ira->AfterTrail();
 	fra->AfterTrail();
 
+	x86e->MarkLabel(block_exit);
+	x86e->Emit(op_add32 ,&rec_cycles,cycles);
+	x86e->Emit(op_mov32 ,GetRegPtr(reg_pc),start);
+	x86e->Emit(op_jmp,x86_ptr_imm(Dynarec_Mainloop_do_update));
+
 	x86e->Emit(op_int3);
-	void* codeptr=x86e->Generate(0,0);//heh
+
+	void* codeptr=x86e->Generate();//heh
 
 	cBB->cbi.Code=(BasicBlockEP*)codeptr;
 	cBB->cbi.size=x86e->x86_indx;
+	dyna_link(&cBB->cbi);
 
 	//make it call the stubs , unless otherwise needed
 	cBB->ebi.pTF_next_addr=bb_link_compile_inject_TF_stub;
@@ -601,6 +628,9 @@ void BasicBlock::Compile()
 	delete ira;
 	x86e->Free();
 	delete x86e;
+
+	if (cBB->ebi.RewriteType)
+		RewriteBasicBlockCond(cBB);
 }
 
 //

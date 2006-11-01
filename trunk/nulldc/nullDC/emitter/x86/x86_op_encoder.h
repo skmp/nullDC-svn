@@ -184,47 +184,26 @@ struct x86_opcode
 	x86_opcode_param pg_3;		//param 3 groop , either NONE or IMM*
 };
 
-void __fastcall write8(x86_block* to, u32 value)
-{
-	to->x86_buffer_ensure(15);
-	//printf("%02X ",value);
-	to->x86_buff[to->x86_indx]=value;
-	to->x86_indx+=1;
-}
-void __fastcall write16(x86_block* to,u32 value)
-{
-	to->x86_buffer_ensure(15);
-	//printf("%04X ",value);
-	*(u16*)&to->x86_buff[to->x86_indx]=value;
-	to->x86_indx+=2;
-}
-void __fastcall write32(x86_block* to,u32 value)
-{
-	to->x86_buffer_ensure(15);
-	//printf("%08X ",value);
-	*(u32*)&to->x86_buff[to->x86_indx]=value;
-	to->x86_indx+=4;
-}
 //mod|reg|rm
 void __fastcall encode_modrm(x86_block* block,encoded_type* mrm, u32 extra)
 {
 	if (mrm->type != pg_ModRM)
 	{
 		verify(mrm->type==pg_REG || mrm->type==pg_CL || mrm->type==pg_R0);
-		write8(block,(3<<6) | (mrm->reg ) | (extra<<3));
+		block->write8((3<<6) | (mrm->reg ) | (extra<<3));
 	}
 	else
 	{
 		x86_mrm* modr=&mrm->modrm;
-		write8(block,modr->modrm | (extra<<3));
+		block->write8(modr->modrm | (extra<<3));
 
 		if (mrm->modrm.flags&1)
-			write8(block,modr->sib);
+			block->write8(modr->sib);
 
 		if (mrm->modrm.flags&2)
-			write8(block,modr->disp);
+			block->write8(modr->disp);
 		else if (mrm->modrm.flags&4)
-			write32(block,modr->disp);
+			block->write32(modr->disp);
 	}
 }
 //Encoding function (partialy) specialised by templates to gain speed :)
@@ -234,7 +213,7 @@ void __fastcall x86_encode_opcode_tmpl(x86_block* block, const x86_opcode* op, e
 	//printf("Encoding : ");
 
 	if (enc_op_size==opsz_16)
-			write8(block,0x66);
+			block->write8(0x66);
 
 	switch(enc_1)
 	{
@@ -242,19 +221,19 @@ void __fastcall x86_encode_opcode_tmpl(x86_block* block, const x86_opcode* op, e
 		// +r
 	case enc_param_plus_r:
 		for (int i=0;i<(sz-1);i++)
-			write8(block,op->b_data[i]);
-		write8(block,op->b_data[sz-1] + (p1->reg-EAX));
+			block->write8(op->b_data[i]);
+		block->write8(op->b_data[sz-1] + (p1->reg-EAX));
 		break;
 		// /r
 	case enc_param_slash_r:
 		for (int i=0;i<(sz);i++)
-			write8(block,op->b_data[i]);
+			block->write8(op->b_data[i]);
 		encode_modrm(block,p2,p1->reg);
 		break;
 
 	case enc_param_slash_r_rev:
 		for (int i=0;i<(sz);i++)
-			write8(block,op->b_data[i]);
+			block->write8(op->b_data[i]);
 		encode_modrm(block,p1,p2->reg);
 		break;
 
@@ -268,14 +247,14 @@ void __fastcall x86_encode_opcode_tmpl(x86_block* block, const x86_opcode* op, e
 	case enc_param_slash_6:
 	case enc_param_slash_7:
 		for (int i=0;i<(sz);i++)
-			write8(block,op->b_data[i]);
+			block->write8(op->b_data[i]);
 		encode_modrm(block,p1,enc_1-enc_param_slash_0);
 		break;
 
 		//diroffset
 	case enc_param_memdir:
 		for (int i=0;i<(sz);i++)
-			write8(block,op->b_data[i]);
+			block->write8(op->b_data[i]);
 		
 		code_patch cp;
 		
@@ -285,14 +264,14 @@ void __fastcall x86_encode_opcode_tmpl(x86_block* block, const x86_opcode* op, e
 		
 		block->patches.push_back(cp);
 
-		write32(block,0x12345678);
+		block->write32(0x12345678);
 
 		break;
 
 		//reloffset
 	case enc_param_memrel_8:
 		for (int i=0;i<(sz);i++)
-			write8(block,op->b_data[i]);
+			block->write8(op->b_data[i]);
 
 		cp.dest=p1->ptr;
 		cp.type=1;
@@ -301,11 +280,11 @@ void __fastcall x86_encode_opcode_tmpl(x86_block* block, const x86_opcode* op, e
 		cp.offset=block->x86_indx;
 		block->patches.push_back(cp);
 
-		write8(block,0x12);
+		block->write8(0x12);
 		break;
 	case enc_param_memrel_16:
 		for (int i=0;i<(sz);i++)
-			write8(block,op->b_data[i]);
+			block->write8(op->b_data[i]);
 		
 		cp.dest=p1->ptr;
 		cp.type=2;
@@ -314,11 +293,11 @@ void __fastcall x86_encode_opcode_tmpl(x86_block* block, const x86_opcode* op, e
 		cp.offset=block->x86_indx;
 		block->patches.push_back(cp);
 
-		write16(block,0x1234);
+		block->write16(0x1234);
 		break;
 	case enc_param_memrel_32:
 		for (int i=0;i<(sz);i++)
-			write8(block,op->b_data[i]);
+			block->write8(op->b_data[i]);
 
 		cp.dest=p1->ptr;
 		cp.type=4;
@@ -327,12 +306,12 @@ void __fastcall x86_encode_opcode_tmpl(x86_block* block, const x86_opcode* op, e
 		cp.offset=block->x86_indx;
 		block->patches.push_back(cp);
 
-		write32(block,0x12345678);
+		block->write32(0x12345678);
 		break;
 
 	default:
 		for (int i=0;i<(sz);i++)
-			write8(block,op->b_data[i]);
+			block->write8(op->b_data[i]);
 		break;
 	}
 
@@ -340,23 +319,23 @@ void __fastcall x86_encode_opcode_tmpl(x86_block* block, const x86_opcode* op, e
 	{
 	case enc_imm_native :
 		if (enc_op_size==opsz_8)
-			write8(block,p3);
+			block->write8(p3);
 		else if (enc_op_size==opsz_16)
-			write16(block,p3);
+			block->write16(p3);
 		else 
-			write32(block,p3);
+			block->write32(p3);
 		break;
 
 	case enc_imm_8 :
-		write8(block,p3);
+		block->write8(p3);
 		break;
 
 	case enc_imm_16 :
-		write16(block,p3);
+		block->write16(p3);
 		break;
 
 	case enc_imm_32 :
-		write32(block,p3);
+		block->write32(p3);
 		break;
 	}
 }

@@ -2,6 +2,7 @@
 #include "dc\mem\sh4_mem.h"
 #include "blockmanager.h"
 #include "nullprof.h"
+#include "windows.h"
 
 //block manager : new implementation 
 //ideas :
@@ -48,9 +49,6 @@
 
 #define BLOCK_NONE (&BLOCK_NONE_B)
 CompiledBlockInfo BLOCK_NONE_B;
-
-u32 DynarecRam_Start;
-u32 DynarecRam_End;
 
 u32* block_stack_pointer;
 
@@ -226,7 +224,6 @@ public :
 	}
 };
 //page info
-
 pginfo PageInfo[RAM_SIZE/PAGE_SIZE];
 
 //block managment
@@ -246,8 +243,58 @@ BlockList					BlockLookupLists[LOOKUP_HASH_SIZE];
 //even after optimising blocks , guesses give a good speedup :)
 CompiledBlockInfo*			BlockLookupGuess[LOOKUP_HASH_SIZE];
 #endif
+
+//Memory managment :)
+class MemoryChunk
+{
+public:
+	void Init(u8* _ptr,u32 sz,u32 Ma,u32 Mi)
+	{
+		ptr=_ptr;
+		usable_bytes=sz;
+		freed_bytes=0;
+		index=0;
+		size=sz;
+		
+		MaxAllocSize=Ma;
+		MinAllocSize=Mi;
+	}
+	u8* ptr;
+	u32 usable_bytes;
+	u32 index;
+	u32 freed_bytes;
+	u32 size;
+	u32 MaxAllocSize;
+	u32 MinAllocSize;
+
+	bool CanAlloc(u32 size)
+	{
+		return ((size>=MinAllocSize) &&(size<MaxAllocSize));
+	}
+	u8* Allocate(u32 size)
+	{
+		if (usable_bytes>size)
+		{
+			u8* rv= &ptr[index];
+			index+=size;
+			usable_bytes-=size;
+			return rv;
+		}
+		else
+			return 0;
+	}
+	BlockList blocks;
+};
+
+MemoryChunk* MemChunks=0;
+u32 MemChunkCount=0;
+
+u8* DynarecCache;
+u32 DynarecCacheSize;
+
 //implemented later
 void FreeBlock(CompiledBlockInfo* block);
+void init_memalloc(u32 scs,u32 scc,u32 bcc,u32 bcs);
 
 //misc code & helper functions
 //this should not be called from a running block , or it could crash
@@ -491,13 +538,6 @@ void FillBlockLockInfo(BasicBlock* block)
 void RegisterBlock(CompiledBlockInfo* block)
 {
 	all_block_list.Add(block);
-	u32 code_addr=(u32)block->Code;
-
-	if (DynarecRam_Start>code_addr)
-		DynarecRam_Start=code_addr;
-
-	if (DynarecRam_End<code_addr)
-		DynarecRam_End=code_addr;
 
 	u32 start=(block->start&RAM_MASK)/PAGE_SIZE;
 	u32 end=(block->end&RAM_MASK)/PAGE_SIZE;
@@ -638,11 +678,10 @@ void InitBlockManager()
 	BLOCK_NONE->start=0xFFFFFFFF;
 	BLOCK_NONE->cpu_mode_tag=0xFFFFFFFF;
 	BLOCK_NONE->lookups=0;
+	init_memalloc(1,32*1024*1024,1,1024*1024);
 }
 void ResetBlockManager()
 {
-	DynarecRam_Start=0xFFFFFFFF;
-	DynarecRam_End=0;
 	ResetBlocks();
 }
 void TermBlockManager()
@@ -674,6 +713,125 @@ void DumpBlockMappings()
 		}
 	}
 	fclose(out);
+}
+
+//Memory allocator
+//we store blocks that are small on small buffers, and big ones on big buffers
+//A small buffer is from 64 to 1024 KB , a big buffer is from 1024 to 4096 KB
+//a block is considered small , if it is less than the 1/8th of the small buffer size :)
+
+MemoryChunk* GetMCFromPtr(void* ptr)
+{
+	u32 offset=(u8*)ptr-(u8*)DynarecCache;
+	for (u32 i=0;i<MemChunkCount;i++)
+	{
+		if (offset>MemChunks[i].size)
+			offset-=MemChunks[i].size;
+		else
+			return &MemChunks[i];
+	}
+	return 0;
+}
+MemoryChunk* FindBestChunk(u32 size)
+{
+	MemoryChunk* rv=0;
+
+	for (u32 i=0;i<MemChunkCount;i++)
+	{
+		if (MemChunks[i].CanAlloc(size))
+		{
+			if (rv==0)
+				rv=&MemChunks[i];
+			else
+			{
+				if (rv->usable_bytes<MemChunks[i].usable_bytes)
+				{
+					rv=&MemChunks[i];
+				}
+				else if (rv->usable_bytes == MemChunks[i].usable_bytes)
+				{
+					if (rv->freed_bytes>MemChunks[i].freed_bytes)
+					{
+						rv=&MemChunks[i];
+					}
+				}
+			}
+		}
+	}
+
+	return rv;
+}
+
+void init_memalloc(u32 scc,u32 scs,u32 bcc,u32 bcs)
+{
+	printf("Dynarec cache : %d*%dKB small buffers , %d*%dKB big buffers , for a total of %dKB dynarec cache\n",
+		   scc,scs/1024,bcc,bcs/1024,(scc*scs+bcc*bcs)/1024);
+
+	DynarecCacheSize=scc*scs+bcc*bcs;
+
+	DynarecCache = (u8*)VirtualAlloc(0,DynarecCacheSize,MEM_COMMIT | MEM_RESERVE,PAGE_EXECUTE_READWRITE);
+	verify(DynarecCache!=0);
+
+	MemChunks = new MemoryChunk[scc + bcc];	
+	MemChunkCount=scc + bcc;
+	
+	u8* DynarecMem=DynarecCache;
+
+	for (u32 i =0;i<scc;i++)
+	{
+		MemChunks[i].Init(DynarecMem,scs,scs/8,0);
+		DynarecMem+=scs;
+	}
+	for (u32 i = scc;i<(scc+bcc);i++)
+	{
+		MemChunks[i].Init(DynarecMem,bcs,bcs/2,scs/8);
+		DynarecMem+=bcs;
+		i++;
+	}
+}
+u8 dyna_tempbuffer[1024*1024];
+void* dyna_malloc(u32 size)
+{
+	verify(size<sizeof(dyna_tempbuffer));
+	return &dyna_tempbuffer;
+}
+void* dyna_realloc(void*ptr,u32 oldsize,u32 newsize)
+{
+	if (ptr==0)
+		return dyna_malloc(newsize);
+	verify(newsize<sizeof(dyna_tempbuffer));
+	return ptr;
+}
+void* dyna_finalize(void* ptr,u32 oldsize,u32 newsize)
+{
+//	__asm int 3;
+	void* rv=0;
+
+	MemoryChunk* mc=FindBestChunk(newsize);
+	rv=mc->Allocate(newsize);
+
+	if (rv==0)
+	{
+		printf("Must flush a buffer !\n");
+		__asm int 3;
+	}
+
+	memcpy(rv,dyna_tempbuffer,newsize);
+	
+	return rv;
+}
+void dyna_link(CompiledBlockInfo* block)
+{
+	MemoryChunk* mc =  GetMCFromPtr(block->Code);
+	mc->blocks.Add(block);
+	//block->Code=(BasicBlockEP*)rv;
+}
+void dyna_free(CompiledBlockInfo* block)
+{
+	//__asm int 3;
+	MemoryChunk* mc =  GetMCFromPtr(block->Code);
+	mc->blocks.Remove(block);
+	mc->freed_bytes+=block->size;
 }
 ///////////////////////////////////////////////
 //			nullProf implementation			 //

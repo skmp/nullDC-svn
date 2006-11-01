@@ -85,6 +85,9 @@ struct CompiledBasicBlockInfo
 	void* pTF_next_addr;//tfalse or jmp
 	void* pTT_next_addr;//ttrue  or rts guess
 
+	u32 RewriteOffset;
+	u8 RewriteType;
+	u8 LastRewrite;
 	//Block link info
 	vector<CompiledBlockInfo*> blocks_to_clear;
 };

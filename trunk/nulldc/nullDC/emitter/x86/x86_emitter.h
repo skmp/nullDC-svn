@@ -165,18 +165,21 @@ public:
 	u8* x86_buff;
 	u32 x86_indx;
 	u32 x86_size;
-
+	bool do_realloc;
 
 	~x86_block();
 	void x86_buffer_ensure(u32 size);
 
+	void  x86_block::write8(u32 value);
+	void  x86_block::write16(u32 value);
+	void  x86_block::write32(u32 value);
+
 	//init things
 	void Init();
 
-	//Generates code.if user_data is non zero , user_data_size bytes are allocated after the executable code
-	//and user_data is set to the first byte of em.Allways 16 byte alligned
-	void* Generate(void** user_data,u32 user_data_size);
-	void CopyTo(void* to);
+	//Generates code.
+	void* Generate();
+	//void CopyTo(void* to);
 
 	//Will free any used resources exept generated code
 	void Free();

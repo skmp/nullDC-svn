@@ -46,6 +46,8 @@ void AnalyseTick(u32 pc,prof_info* to)
 	u32 pvr_base=((u32)libPvr->info.Init) & 0xFFE00000;
 	u32 gdrom_base=((u32)libGDR->info.Init) & 0xFFE00000;
 
+	u32 DynarecRam_Start = (u32)DynarecCache;
+	u32 DynarecRam_End = (u32)DynarecCache+DynarecCacheSize;
 	//printf("0x%X 0x%X to 0x%X\n",pc,DynarecRam_Start,DynarecRam_End);
 	if (aica_base==(pc& 0xFFE00000))
 	{
@@ -98,7 +100,7 @@ void AnalyseTick(u32 pc,prof_info* to)
 			 memset(&info,0,sizeof(prof_info));
 
 			 profile_info.ToText(temp);
-			 printf("%s \n",temp,DynarecRam_Start,DynarecRam_End);
+			 printf("%s \n",temp);
 		 }
 
 		 //Sleep , so we dont realy use the cpu much
