@@ -167,23 +167,23 @@ void fastcall AnalyseCodeSuperBlock(u32 pc)
 		last_block_count=blocks.size()-last_block;
 	}
 	
-	/*
-	u32 pre_toc=0;
-	u32 pre_tec=0;
+	
+	//u32 pre_toc=0;
+	//u32 pre_tec=0;
 	u32 pre_tsc=0;
 	for (u32 i=0;i<blocks.size();i++)
 	{
-		pre_toc+=blocks[i]->OpcodeCount();
+		//pre_toc+=blocks[i]->OpcodeCount();
 		pre_tsc+=blocks[i]->ilst.op_count;
-		pre_tec+=blocks[i]->cycles;
-	}*/
+		//pre_tec+=blocks[i]->cycles;
+	}
 
 	//Superblock level constant elimination :)
 	
 	for (u32 k=0;k<5;k++)
 	{
 		//set the input info for each block
-		for (u32 i=1;i<blocks.size();i++)
+		for (u32 i=0;i<blocks.size();i++)
 		{
 			if (blocks[i]->TF_block_ptr)
 			{
@@ -217,7 +217,7 @@ void fastcall AnalyseCodeSuperBlock(u32 pc)
 		tec+=blocks[i]->cycles;
 		delete blocks[i];
 	}
-	printf("SBL size : %d ,%d[%d] ops , %d shil ops\n",blocks.size(),toc,tec,tsc);
+	printf("SBL size : %d ,%d[%d] ops , %d[%d] shil ops\n",blocks.size(),toc,tec,tsc,pre_tsc);
 	
 	//block->flags.DisableHS=true;
 	//Compile code

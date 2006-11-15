@@ -563,22 +563,6 @@ int __fastcall UpdateSystem(u32 Cycles)
 			gcp_timer++;
 			FreeSuspendedBlocks();
 		}
-		/*if (gpc_counter &1)
-		{
-			if (CCN_MMUCR.AT)
-			{
-				u32 rv=CCN_MMUCR.URB;
-				rv=rv==0?63:rv;
-				CCN_MMUCR.URC=fastrand() % rv;
-			}
-		}*/
-
-		/*if (shitaaa==0x10000)
-		{
-			shitaaa=0;
-			DynaPrintCycles();
-		}
-		shitaaa++;*/
 		aica_cycl=0;
 	}
 	UpdateTMU(Cycles);

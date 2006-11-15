@@ -170,9 +170,9 @@ void AnalyseCode(BasicBlock* to)
 		}
 
 		//must not happen as all calls/branches are emulated natively (338)
-		verify((OpTyp[opcode]&WritesPC)==0);
+		//verify((OpTyp[opcode]&WritesPC)==0);
 
-		if ((OpTyp[opcode]&(WritesSR | WritesFPSCR)))
+		if ((OpTyp[opcode]&(WritesSR | WritesFPSCR | WritesPC)))
 		{
 			//after execution , resume to recompile from pc+2
 			//opcode is interpreted so pc is set , if update shit() is called , pc must remain
@@ -222,6 +222,17 @@ void AnalyseCode(BasicBlock* to)
 
 	to->ilst.op_count=(u32)to->ilst.opcodes.size();
 	
+	if (to->flags.ExitType==BLOCK_EXITTYPE_COND ||
+		to->flags.ExitType==BLOCK_EXITTYPE_FIXED ||
+		to->flags.ExitType==BLOCK_EXITTYPE_FIXED_CALL
+		)
+	{
+		to->flags.DisableHS=0;
+	}
+	else
+	{
+		to->flags.DisableHS=1;
+	}
 	//shil_opt_return srv;
 //	perform_shil_opt(shil_opt_ntc,to,srv);
 

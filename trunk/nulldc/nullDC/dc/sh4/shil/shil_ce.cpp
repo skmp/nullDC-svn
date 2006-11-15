@@ -190,6 +190,7 @@ u32 ce_GetConst(u8 reg)
 		return shil_ce_gpr[reg].RegValue;
 	else
 		ce_die("ce_GetConst : can't get const when reg is not const");
+	return 0;
 }
 void ce_SetConst(u8 reg,u32 value)
 {
@@ -296,7 +297,7 @@ u32 shil_optimise_pass_ce_main(SBL_BasicBlock* bb)
 	u32 opt=0;
 
 	Init_ce();
-	for (u32 i=0;i<sh4_reg_count;i++)
+	for (u8 i=0;i<sh4_reg_count;i++)
 	{
 		if (bb->in_info.reginfo[i].is_const)
 		{
@@ -358,7 +359,7 @@ u32 shil_optimise_pass_ce_main_final(SBL_BasicBlock* bb)
 	u32 opt=0;
 
 	Init_ce();
-	for (u32 i=0;i<sh4_reg_count;i++)
+	for (u8 i=0;i<sh4_reg_count;i++)
 	{
 		if (bb->in_info.reginfo[i].is_const)
 		{
@@ -1071,9 +1072,9 @@ u32 shil_optimise_pass_btp_main(BasicBlock* bb)
 		u32 new_cv=0;
 		if (backscan_const(bb,reg_pc,&new_cv))
 		{
-			//printf("Block promote 0x%X , from DYNAMIC to FIXED exit 0x%X\n",bb->start,new_cv);
+			//printf("Block promote 0x%X , from DYNAMIC to FIXED exit 0x%X : %d\n",bb->start,new_cv,bb->flags.ExitType);
 			bb->TF_next_addr=new_cv;
-			if (bb->flags.ExitType=BLOCK_EXITTYPE_DYNAMIC)
+			if (bb->flags.ExitType==BLOCK_EXITTYPE_DYNAMIC)
 				bb->flags.ExitType=BLOCK_EXITTYPE_FIXED;
 			else
 				bb->flags.ExitType=BLOCK_EXITTYPE_FIXED_CALL;

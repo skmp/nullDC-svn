@@ -822,16 +822,15 @@ void* dyna_finalize(void* ptr,u32 oldsize,u32 newsize)
 }
 void dyna_link(CompiledBlockInfo* block)
 {
-	MemoryChunk* mc =  GetMCFromPtr(block->Code);
-	mc->blocks.Add(block);
+	//MemoryChunk* mc =  GetMCFromPtr(block->Code);
+	//mc->blocks.Add(block);
 	//block->Code=(BasicBlockEP*)rv;
 }
 void dyna_free(CompiledBlockInfo* block)
 {
-	//__asm int 3;
-	MemoryChunk* mc =  GetMCFromPtr(block->Code);
-	mc->blocks.Remove(block);
-	mc->freed_bytes+=block->size;
+	//MemoryChunk* mc =  GetMCFromPtr(block->Code);
+	//mc->blocks.Remove(block);
+	//mc->freed_bytes+=block->size;
 }
 ///////////////////////////////////////////////
 //			nullProf implementation			 //
@@ -1004,3 +1003,61 @@ nullprof_prof_pointers null_prof_pointers=
 	nullprof_GetBlocks,
 	nullprof_ClearBlockPdata
 };
+
+BlockList tbp_tick_blocks;
+u32 dyna_ticz=0;
+///TBP :)
+int compare_tbp_ticks (const void * a, const void * b)
+{
+	CompiledBlockInfo* cba=*(CompiledBlockInfo**)a;
+	CompiledBlockInfo* cbb=*(CompiledBlockInfo**)b;
+	return cba->tbp_ticks-cbb->tbp_ticks;
+}
+void dyna_profiler_printf()
+{
+	printf("%d blocks in list\n",tbp_tick_blocks.size());
+	qsort(&(tbp_tick_blocks[0]), tbp_tick_blocks.ItemCount, sizeof(CompiledBlockInfo*), compare_tbp_ticks);
+
+	u32 tticks=0;
+	for (u32 i=0;i<tbp_tick_blocks.size();i++)
+	{
+		printf("%d%%[%d] :0x%X : 0x%X %d-%d\n"
+			,tbp_tick_blocks[i]->tbp_ticks*100/dyna_ticz
+			,tbp_tick_blocks[i]->tbp_ticks
+			,tbp_tick_blocks[i]->start
+			,tbp_tick_blocks[i]->cpu_mode_tag
+			,tbp_tick_blocks[i]->OpcodeCount()
+			,tbp_tick_blocks[i]->size);
+		tticks+=tbp_tick_blocks[i]->tbp_ticks;
+		tbp_tick_blocks[i]->tbp_ticks=0;
+		//if (i>10)
+		//	break;
+	}
+	printf("%d%% total\n",tticks*100/dyna_ticz);
+	tbp_tick_blocks.clear();
+	dyna_ticz=0;
+}
+
+void dyna_profiler_tick(void* addr)
+{
+	if (dyna_ticz++>200)
+		dyna_profiler_printf();
+	u32 nca=(u32)addr;
+	for (u32 i=0;i<all_block_list.size();i++)
+	{
+		CompiledBlockInfo* cb=all_block_list[i];
+		u32 baddr=(u32)cb->Code;
+
+		if ((nca>=baddr) && ((nca-baddr)<cb->size))
+		{
+			if (tbp_tick_blocks.Find(cb->start,cb->cpu_mode_tag)==0)
+				tbp_tick_blocks.Add(cb);
+			
+			cb->tbp_ticks++;
+			return;
+		}
+	}
+	__asm int 3;
+	printf("0x%X OMG! UNABLE TO MATCH BLOCK TEH NOES\n",addr);
+}
+

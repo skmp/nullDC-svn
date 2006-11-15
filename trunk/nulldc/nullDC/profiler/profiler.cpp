@@ -67,6 +67,7 @@ void AnalyseTick(u32 pc,prof_info* to)
 	}
 	else if ((pc>=DynarecRam_Start) && (pc<=(DynarecRam_End+4096)))
 	{
+		//dyna_profiler_tick((void*)pc);
 		to->dyna_tick_count++;
 	}
 	else

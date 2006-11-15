@@ -46,6 +46,9 @@ public :
 	//can be avoided
 	bool Discarded;
 
+	//For TBP :)
+	u32 tbp_ticks;
+
 	//Called to Free :p yeshrly
 	void Free();
 	//Called when this block is suspended

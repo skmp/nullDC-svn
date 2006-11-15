@@ -6,6 +6,7 @@
 #include "emitter/regalloc/x86_sseregalloc.h"
 #include <memory.h>
 #include "recompiler.h"
+#include "dc/sh4/sh4_interpreter.h"
 
 #include "dc/sh4/rec_v1/blockmanager.h"
 
@@ -113,6 +114,7 @@ void BasicBlock::SetCompiledBlockInfo(CompiledBasicBlock* cBl)
 	cBB->cbi.cpu_mode_tag=flags.FpuMode;
 	cBB->cbi.lookups=0;
 	cBB->cbi.Discarded=false;
+	cBB->cbi.tbp_ticks=0;
 
 	if (cBl->cbi.block_type.nullProf)
 		cBB->cbi.GetNP()->cycles=cycles;
@@ -355,7 +357,6 @@ void BasicBlock::Compile()
 	x86e->Emit(op_sub32 ,&rec_cycles,cycles);
 	x86e->Emit(op_js,block_exit);
 
-	//x86e->MarkLabel(block_start);
 	if (flags.ProtectionType==BLOCK_PROTECTIONTYPE_MANUAL)
 	{
 		int sz=end-start;
@@ -397,21 +398,23 @@ void BasicBlock::Compile()
 		x86e->MarkLabel(execute_block);
 	}
 
-	verify(do_hs==false);
-	/*
+	//verify(do_hs==false);
+	
 	if (do_hs)
 	{
 		//check for block promotion to superblock ;)
-		x86e->Emit(op_dec32 ,&cBB->cbi.GetHS()->bpm_ticks);
+		x86e->Emit(op_dec32 ,x86_ptr(&cBB->cbi.GetHS()->bpm_ticks));
 		
-		u8* not_zero=x86e->JNZ8(0);
+		x86_Label* not_zero=x86e->CreateLabel(false,8);
+		x86e->Emit(op_jnz,not_zero);
 		{
 			//yay , 0 , see if it needs promotion kkthxdie
 			x86e->Emit(op_mov32,EAX,&gcp_timer);//now
-			x86e->SUB32MtoR(EAX,&cBB->cbi.GetHS()->gcp_lasttimer);//now-last
-			x86e->CMP32ItoR(EAX,16);
+			x86e->Emit(op_sub32,EAX,&cBB->cbi.GetHS()->gcp_lasttimer);//now-last
+			x86e->Emit(op_cmp32,EAX,16);
 			//if it took more that 16 ticks , then its less that 10% , no promotion
-			u8*no_promote= x86e->JBE8(0);
+			x86_Label* no_promote=x86e->CreateLabel(false,8);
+			x86e->Emit(op_jbe,no_promote);
 			{
 				//suspend block
 				x86e->Emit(op_mov32,ECX,(u32)cBB);
@@ -419,13 +422,13 @@ void BasicBlock::Compile()
 				void*  __fastcall CompileCode_SuperBlock(u32 pc);
 				x86e->Emit(op_mov32,ECX,(u32)cBB->cbi.start);
 				x86e->Emit(op_call,x86_ptr_imm(CompileCode_SuperBlock));
-				x86e->JMP32R(EAX);
+				x86e->Emit(op_jmp32,EAX);
 			}
-			x86e->x86SetJ8(no_promote);
-			x86e->ADD32RtoM(&cBB->cbi.GetHS()->gcp_lasttimer,EAX);//last+now-last=now ;)
+			x86e->MarkLabel(no_promote);
+			x86e->Emit(op_add32,&cBB->cbi.GetHS()->gcp_lasttimer,EAX);//last+now-last=now ;)
 			x86e->Emit(op_mov32,&cBB->cbi.GetHS()->bpm_ticks,3022);
 		}
-		x86e->x86SetJ8(not_zero);
+		x86e->MarkLabel(not_zero);
 
 		//16 ticks or more to convert to zuper block
 		//16 ticks -> 241760hrz /8 ~=30220 blocks
@@ -433,9 +436,6 @@ void BasicBlock::Compile()
 		cBB->cbi.GetHS()->gcp_lasttimer=gcp_timer;
 		cBB->cbi.GetHS()->bpm_ticks=3022*2;
 	}
-	*/
-	
-	//s8* start_ptr;
 	
 	/*
 	if (nullprof_enabled)

@@ -196,14 +196,14 @@ bool IsSSEAllocReg(u32 reg)
 	return (reg >=fr_0 && reg<=fr_15);
 }
 //FPU !!! YESH
-bool IsInFReg(u32 reg)
+u32 IsInFReg(u32 reg)
 {
 	if (IsSSEAllocReg(reg))
 	{
 		if (fra->IsRegAllocated(reg))
-			return true;
+			return 1;
 	}
-	return false;
+	return 0;
 }
 
 //REGISTER ALLOCATION
@@ -2033,28 +2033,57 @@ void __fastcall shil_compile_ftrv(shil_opcode* op)
 	u32 sz=op->flags & 3;
 	if (sz==FLAG_32)
 	{
+		fra->FlushRegister_xmm(XMM0);
+		fra->FlushRegister_xmm(XMM1);
+		fra->FlushRegister_xmm(XMM2);
+		fra->FlushRegister_xmm(XMM3);
+
+		fra->FlushRegister(op->reg1);
+		fra->FlushRegister(op->reg1+1);
+		fra->FlushRegister(op->reg1+2);
+		fra->FlushRegister(op->reg1+3);
+
 		assert(!IsReg64((Sh4RegType)op->reg1));
 		assert(Ensure32());
 
-		x86e->Emit(op_movaps ,XMM0,GetRegPtr(op->reg1));
-		x86e->Emit(op_movaps ,XMM3,XMM0);
-		x86e->Emit(op_shufps ,XMM0,XMM0,0);
-		x86e->Emit(op_movaps ,XMM1,XMM3);
-		x86e->Emit(op_movaps ,XMM2,XMM3);
-		x86e->Emit(op_shufps ,XMM1,XMM1,0x55);
-		x86e->Emit(op_shufps ,XMM2,XMM2,0xaa);
-		x86e->Emit(op_shufps ,XMM3,XMM3,0xff);
 
-		x86e->Emit(op_mulps ,XMM0,GetRegPtr(xf_0));
-		x86e->Emit(op_mulps ,XMM1,GetRegPtr(xf_4));
-		x86e->Emit(op_mulps ,XMM2,GetRegPtr(xf_8));
-		x86e->Emit(op_mulps ,XMM3,GetRegPtr(xf_12));
+		if (x86_caps.sse_2)
+		{
+			x86e->Emit(op_movaps ,XMM3,GetRegPtr(op->reg1));	//xmm0=vector
 
-		x86e->Emit(op_addps ,XMM0,XMM1);
+			x86e->Emit(op_pshufd ,XMM0,XMM3,0);					//xmm0={v0}
+			x86e->Emit(op_pshufd ,XMM1,XMM3,0x55);				//xmm1={v1}	
+			x86e->Emit(op_pshufd ,XMM2,XMM3,0xaa);				//xmm2={v2}
+			x86e->Emit(op_pshufd ,XMM3,XMM3,0xff);				//xmm3={v3}
+		}
+		else
+		{
+			x86e->Emit(op_movaps ,XMM0,GetRegPtr(op->reg1));	//xmm0=vector
+
+			x86e->Emit(op_movaps ,XMM3,XMM0);					//xmm3=vector
+			x86e->Emit(op_shufps ,XMM0,XMM0,0);					//xmm0={v0}
+			x86e->Emit(op_movaps ,XMM1,XMM3);					//xmm1=vector
+			x86e->Emit(op_movaps ,XMM2,XMM3);					//xmm2=vector
+			x86e->Emit(op_shufps ,XMM3,XMM3,0xff);				//xmm3={v3}
+			x86e->Emit(op_shufps ,XMM1,XMM1,0x55);				//xmm1={v1}	
+			x86e->Emit(op_shufps ,XMM2,XMM2,0xaa);				//xmm2={v2}
+		}
+
+		x86e->Emit(op_mulps ,XMM0,GetRegPtr(xf_0));			//v0*=vm0
+		x86e->Emit(op_mulps ,XMM1,GetRegPtr(xf_4));			//v1*=vm1
+		x86e->Emit(op_mulps ,XMM2,GetRegPtr(xf_8));			//v2*=vm2
+		x86e->Emit(op_mulps ,XMM3,GetRegPtr(xf_12));		//v3*=vm3
+
+		x86e->Emit(op_addps ,XMM0,XMM1);					//sum it all up
 		x86e->Emit(op_addps ,XMM2,XMM3);
 		x86e->Emit(op_addps ,XMM0,XMM2);
 
 		x86e->Emit(op_movaps ,GetRegPtr(op->reg1),XMM0);
+
+		fra->ReloadRegister(op->reg1);
+		fra->ReloadRegister(op->reg1+1);
+		fra->ReloadRegister(op->reg1+2);
+		fra->ReloadRegister(op->reg1+3);
 	}
 	else
 	{
@@ -2070,14 +2099,41 @@ void __fastcall shil_compile_fipr(shil_opcode* op)
 	{
 		assert(Ensure32());
 
-		x86e->Emit(op_movaps ,XMM0,GetRegPtr(op->reg1));
-		x86e->Emit(op_mulps ,XMM0,GetRegPtr(op->reg2));
-		x86e->Emit(op_movhlps ,XMM1,XMM0);
-		x86e->Emit(op_addps ,XMM0,XMM1);
-		x86e->Emit(op_movaps ,XMM1,XMM0);
-		x86e->Emit(op_shufps ,XMM1,XMM1,1);
-		x86e->Emit(op_addss ,XMM0,XMM1);
-		x86e->Emit(op_movss,GetRegPtr(op->reg1+3),XMM0);
+		fra->FlushRegister_xmm(XMM0);
+		fra->FlushRegister_xmm(XMM1);
+
+		fra->FlushRegister(op->reg1);
+		fra->FlushRegister(op->reg1+1);
+		fra->FlushRegister(op->reg1+2);
+		fra->FlushRegister(op->reg1+3);
+
+		fra->FlushRegister(op->reg2);
+		fra->FlushRegister(op->reg2+1);
+		fra->FlushRegister(op->reg2+2);
+		fra->FlushRegister(op->reg2+3);
+
+		if (x86_caps.sse_3)
+		{
+			x86e->Emit(op_movaps ,XMM0,GetRegPtr(op->reg1));
+			x86e->Emit(op_mulps ,XMM0,GetRegPtr(op->reg2));
+												//xmm0={a0				,a1				,a2				,a3}
+			x86e->Emit(op_haddps,XMM0,XMM0);	//xmm0={a0+a1			,a2+a3			,a0+a1			,a2+a3}
+			x86e->Emit(op_haddps,XMM0,XMM0);	//xmm0={(a0+a1)+(a2+a3) ,(a0+a1)+(a2+a3),(a0+a1)+(a2+a3),(a0+a1)+(a2+a3)}
+
+			x86e->Emit(op_movss,GetRegPtr(op->reg1+3),XMM0);
+		}
+		else
+		{
+			x86e->Emit(op_movaps ,XMM0,GetRegPtr(op->reg1));
+			x86e->Emit(op_mulps ,XMM0,GetRegPtr(op->reg2));
+			x86e->Emit(op_movhlps ,XMM1,XMM0);
+			x86e->Emit(op_addps ,XMM0,XMM1);
+			x86e->Emit(op_movaps ,XMM1,XMM0);
+			x86e->Emit(op_shufps ,XMM1,XMM1,1);
+			x86e->Emit(op_addss ,XMM0,XMM1);
+			x86e->Emit(op_movss,GetRegPtr(op->reg1+3),XMM0);
+		}
+		fra->ReloadRegister(op->reg1+3);
 	}
 	else
 	{

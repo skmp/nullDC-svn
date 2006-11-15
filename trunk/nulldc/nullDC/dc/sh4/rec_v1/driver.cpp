@@ -62,7 +62,7 @@ void*  __fastcall CompileCode_SuperBlock(u32 pc)
 	block->CalculateLockFlags();
 	//analyse code [generate il/block type]
 	AnalyseCode(block);
-	block->flags.DisableHS=true;
+	block->flags.DisableHS=1;
 	//Compile code
 	block->Compile();
 	RegisterBlock(cblock=&block->cBB->cbi);
@@ -190,8 +190,8 @@ no_update:
 		and eax,0x3;
 		cmp [edx+12],eax;
 		jne full_lookup;
-		inc [edx+16];
-		jmp [edx+8];
+		inc dword ptr[edx+16];
+		jmp dword ptr[edx+8];
 		/*
 		else
 		{

@@ -5,16 +5,16 @@
 //xmm0 is reserved for math/temp
 x86_sse_reg reg_to_alloc_xmm[7]=
 {
-	XMM1,
-	XMM2,
-	XMM3,
-	XMM4,
-	XMM5,
-	XMM6,
 	XMM7,
+	XMM6,
+	XMM5,
+	XMM4,
+	XMM3,
+	XMM2,
+	XMM1,
 };
 u32 alb=0;
-	u32 nalb=0;
+u32 nalb=0;
 
 struct fprinfo
 {
@@ -23,8 +23,9 @@ struct fprinfo
 	bool WritenBack;
 };
 
-bool SimpleSSERegAlloc_sse2=false;
-bool SimpleSSERegAlloc_cft=false;
+//bool SimpleSSERegAlloc_sse2=false;
+//bool SimpleSSERegAlloc_cft=false;
+/*
 void SimpleSSERegAlloc_init()
 {
 	if (SimpleSSERegAlloc_cft)
@@ -52,6 +53,7 @@ void SimpleSSERegAlloc_init()
 		printf("SSE2 not supported , using olny SSE1\n");
 	}
 }
+*/
 
 class SimpleSSERegAlloc:public FloatRegAllocator
 {
@@ -115,10 +117,8 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 	//DoAllocation		: do allocation on the block
 	virtual void DoAllocation(BasicBlock* block,x86_block* x86e)
 	{
-		SimpleSSERegAlloc_init();
-
 		this->x86e=x86e;
-		DoAlloc= (block->flags.FpuIsVector==0) && (block->flags.FpuMode==0);
+		DoAlloc= (block->flags.FpuMode==0);
 		
 		sort_temp used[16];
 		for (int i=0;i<16;i++)
@@ -343,7 +343,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 	{
 		if (IsRegAllocated(to))
 		{
-			if (SimpleSSERegAlloc_sse2)
+			if (x86_caps.sse_2)
 			{
 				x86_sse_reg freg=GetRegister(XMM0,to,RA_NODATA);
 				assert(freg!=XMM0);
@@ -367,7 +367,7 @@ class SimpleSSERegAlloc:public FloatRegAllocator
 		if (IsRegAllocated(from))
 		{
 			fprinfo* r1=  GetInfo(from);
-			if ((SimpleSSERegAlloc_sse2==true) &&  (r1->Loaded==true) && (r1->WritenBack==false))
+			if ((x86_caps.sse_2) &&  (r1->Loaded==true) && (r1->WritenBack==false))
 			{
 				x86_sse_reg freg=GetRegister(XMM0,from,RA_DEFAULT);
 				assert(freg!=XMM0);

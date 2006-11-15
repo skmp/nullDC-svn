@@ -1,9 +1,9 @@
 #pragma once
 
 //this looks like the main header ? -Z
-//#define BUILD_DREAMCAST	(1)
+#define BUILD_DREAMCAST	(1)
 //#define BUILD_DEV_UNIT	(1)
-#define BUILD_NAOMI	(1)
+//#define BUILD_NAOMI	(1)
 
 
 //SHUT UP M$ COMPILER !@#!@$#
@@ -62,7 +62,7 @@ using namespace std;
 	MEM_*  is defined to  note a debug part of code using mem , mailny for buffer underruns
 	So far :
 	MEM_ALLOC_CHECK -> automagicaly checks mallocs and reallocs for success
-	MEM_BOUND_CHECK -> automagicaly checks bouts on Array/Stack/*list types (stdclass.cpp)
+	MEM_BOUND_CHECK -> automagicaly checks bounds on Array/Stack/*list types (stdclass.cpp)
 	MEM_ERROR_BREAK -> breaks when an error is detected (int 3)
 	MEM_DO_BREAK    -> does a break :P
 
