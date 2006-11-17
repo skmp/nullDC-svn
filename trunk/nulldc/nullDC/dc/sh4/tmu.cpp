@@ -12,6 +12,7 @@ u32 tmu_ch_bit[3]={1,2,4};
 u32 tmu_regs_CNT[3];
 u32 tmu_regs_COR[3];
 u16 tmu_regs_CR[3];
+u32 old_mode[3] = {0xFFFF,0xFFFF,0xFFFF};
 u8 TMU_TOCR,TMU_TSTR;
 
 const InterruptID tmu_intID[3]={sh4_TMU0_TUNI0,sh4_TMU1_TUNI1,sh4_TMU2_TUNI2};
@@ -50,6 +51,11 @@ void UpdateTMU(u32 Cycles)
 //Update internal counter registers
 void UpdateTMUCounts(u32 reg)
 {
+	if (old_mode[reg]==(tmu_regs_CR[reg] & 0x7))
+		return;
+	else
+		old_mode[reg]=(tmu_regs_CR[reg] & 0x7);
+
 	switch(tmu_regs_CR[reg] & 0x7)
 	{
 		case 0:	//4
@@ -88,8 +94,9 @@ void UpdateTMUCounts(u32 reg)
 	tmu_cnt_max[reg]*=4;// because we count in Iö cycles (cpu core cycles) and the tmu is provided w/
 					  // the Pö (perhipal clock).. This may or may not be ok , but seems to work well
 
-	if (tmu_cnt[reg]>tmu_cnt_max[reg])
-		tmu_cnt[reg]=tmu_cnt_max[reg];
+	/*if (tmu_cnt[reg]>tmu_cnt_max[reg])
+		tmu_cnt[reg]=tmu_cnt_max[reg];*/
+	tmu_cnt[reg]=0;
 }
 
 //A.M.A.N
@@ -237,15 +244,10 @@ void tmu_Term()
 {
 }
 
-
-
-
 //INTC sources
 bool tmu_CNT0Pending()
 {
-	bool t1= (tmu_regs_CR[0] & tmu_underflow)!=0;
-	bool t2= (tmu_regs_CR[0] & tmu_UNIE)!=0;
-	return t1&&t2;
+	return (tmu_regs_CR[0] & (tmu_underflow | tmu_UNIE))==(tmu_underflow | tmu_UNIE);
 }
 u32 tmu_CNT0Priority()
 {
@@ -254,9 +256,7 @@ u32 tmu_CNT0Priority()
 
 bool tmu_CNT1Pending()
 {
-	bool t1= (tmu_regs_CR[1] & tmu_underflow)!=0;
-	bool t2= (tmu_regs_CR[1] & tmu_UNIE)!=0;
-	return t1&&t2;
+	return (tmu_regs_CR[1] & (tmu_underflow | tmu_UNIE))==(tmu_underflow | tmu_UNIE);
 }
 u32 tmu_CNT1Priority()
 {
@@ -265,9 +265,7 @@ u32 tmu_CNT1Priority()
 
 bool tmu_CNT2Pending()
 {
-	bool t1= (tmu_regs_CR[2] & tmu_underflow)!=0;
-	bool t2= (tmu_regs_CR[2] & tmu_UNIE)!=0;
-	return t1&&t2;
+	return (tmu_regs_CR[2] & (tmu_underflow | tmu_UNIE))==(tmu_underflow | tmu_UNIE);
 }
 u32 tmu_CNT2Priority()
 {

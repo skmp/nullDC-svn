@@ -132,7 +132,6 @@ void BasicBlock::SetCompiledBlockInfo(CompiledBasicBlock* cBl)
 }
 //BasicBlock compiler :D
 
-
 void RewriteBasicBlockFixed(CompiledBasicBlock* cBB)
 {
 	u8 flags=0;
@@ -304,19 +303,6 @@ void __fastcall CheckBlock(CompiledBlockInfo* block)
 		__asm int 3;
 	}
 }
-/*
-void RewriteBasicBlockFixed(CompiledBasicBlock* cBB)
-{
-	if (cBB->ebi.TF_block)
-	{
-		x86e->Emit(op_jmp,x86_ptr_imm(cBB->ebi.TF_block->Code));
-	}
-	else
-	{
-		x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , cBB
-		x86e->Emit(op_jmp,x86_ptr_imm((u32*)&(cBB->ebi.pTF_next_addr)));	//mov eax , [pTF_next_addr]
-	}
-}*/
 
 void BasicBlock::Compile()
 {
@@ -359,28 +345,21 @@ void BasicBlock::Compile()
 
 	if (flags.ProtectionType==BLOCK_PROTECTIONTYPE_MANUAL)
 	{
-		int sz=end-start;
-		//check at least 4 bytes
-		sz=(sz +3) & (~3);
+		int sz=Size();
+		verify(sz!=0);
 
-		if (sz<4)
-			sz=1;
-		else
-			sz/=4;
-		//sz++;
 		int i=0;
 		//that can be optimised a lota :p
 		
 		x86_Label* exit_discard_block= x86e->CreateLabel(false,0);
-		x86_Label* execute_block= x86e->CreateLabel(false,0);
-
-		for (i=0;i<sz;i++)
+		x86_Label* execute_block= x86e->CreateLabel(false,8);
+		verify(sz!=0);
+		while(sz>=4)
 		{
-			u32* pmem=(u32*)GetMemPtr(start+i*4,4);
-			x86e->Emit(op_cmp32 ,GetMemPtr(start+i*4,4),*pmem);
-			//u8* patch=x86e->JE8(0);
-			//x86e->x86SetJ8(patch);
-			if (i!=(sz-1))
+			u32* pmem=(u32*)GetMemPtr(start+i,4);
+			x86e->Emit(op_cmp32 ,pmem,*pmem);
+			
+			if (sz!=4)
 			{
 				x86e->Emit(op_jne ,exit_discard_block);
 			}
@@ -388,7 +367,21 @@ void BasicBlock::Compile()
 			{
 				x86e->Emit(op_je ,execute_block);
 			}
+			i+=4;
+			sz-=4;
 		}
+		if (sz>=2)
+		{
+			//die("lol");
+			u16* pmem=(u16*)GetMemPtr(start+i,2);
+			x86e->Emit(op_cmp16 ,pmem,*pmem);
+			
+			x86e->Emit(op_je ,execute_block);
+
+			i+=2;
+			sz-=2;
+		}
+		verify(sz==0);
 
 		x86e->MarkLabel(exit_discard_block);
 		x86e->Emit(op_mov32,ECX,(u32)cBB);
