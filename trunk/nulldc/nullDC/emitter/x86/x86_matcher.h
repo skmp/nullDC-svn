@@ -74,9 +74,9 @@ encoded_type __fastcall param_type(u32 imm)
 	if (IsS8(imm))
 		rv.type=pg_IMM_S8;
 	else if ((imm & (~0xFF))==0)
-		rv.type=pg_IMM_U8;/*
+		rv.type=pg_IMM_U8;
 	else if ((imm & (~0xFFFF))==0)
-		rv.type=pg_IMM_U16;*/
+		rv.type=pg_IMM_U16;
 	else
 		rv.type=pg_IMM_U32;
 

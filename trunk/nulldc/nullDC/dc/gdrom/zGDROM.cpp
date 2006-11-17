@@ -493,9 +493,10 @@ void ProcessSPI(void)
 		return;
 
 
-
-	case SPI_CD_READ:	// dma or pio
 	case SPI_CD_READ2:
+		printf("CDREAD2!!!\n");
+		__asm int 3;
+	case SPI_CD_READ:	// dma or pio
 	 {
 		 LoadSyscallHooks();
 		if(0x28 != cmd[1])
@@ -637,16 +638,8 @@ void DMAC_Ch3St(u32 data)
 		//best solution ;) will automagically invalidate block too
 		WriteMemBlock_nommu(src,(u32*)&gdReadBuffer[dmaOffset], len);
 
-		//GetMemPtr perhaps ? it's better not to use the arrays like that ;P
-		//memcpy( &mem_b[src&RAM_MASK], &gdReadBuffer[dmaOffset], len );		
-		/*for (int i=0;i<len;i+=0x2)
-		{
-			BlockTest(src+i); 
-		}*/
 		if (len>=8*1024*1024)
 			printf("\n~\tERROR: GDROM DMA LENGTH LARGER THAN BUFFER SIZE!\n\n");
-
-	//	lprintf("\n(DMA)\tGDROM DMA Started! src: %08X, len: %08X, dmaor: %X (dmaCount=%d)\n\n", src, len, dmaor, dmaCount);
 	}
 	else
 		printf("\n!\tGDROM: SB_GDDIR %X (TO AICA WAVE MEM?) !\n\n", SB_GDDIR);

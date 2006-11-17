@@ -161,7 +161,7 @@ typedef enum
 typedef enum
 {
 	GD_RESET_SR		= (0),	// host to dev, NULL Data, No Data
-	GD_RECV_DATA	= (2),
+	GD_RECV_DATA	= (2 | 4),	//*edit by razi* , set IO too
 	GD_RECV_CMD		= (3),
 	GD_STATUS_OK	= (5),
 	GD_SEND_DATA	= (6),
