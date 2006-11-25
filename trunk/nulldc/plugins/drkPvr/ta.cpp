@@ -1,6 +1,5 @@
 #include "ta.h"
 //Tile Accelerator state machine
-#include "ta_alloc.h"
 
 namespace TASplitter
 {
@@ -27,7 +26,9 @@ namespace TASplitter
 		Ta_Dma* ta_data=(Ta_Dma*)data;
 		while (size)
 		{
+			
 			u32 sz =TaCmd(ta_data,size);
+			
 			size-=sz;
 			ta_data+=sz;
 		}

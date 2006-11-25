@@ -210,10 +210,10 @@ void fastcall vq_TW(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height,u32 U)
 		for (u32 x=0;x<(Width>>1);x++)
 		{
 			u8 pval = p_in[twop(p++,U)];
-			pb->SetPixel(x*2,y*2	,	vq_codebook[pval][0]);
-			pb->SetPixel(x*2,y*2+1	,	vq_codebook[pval][1]);
-			pb->SetPixel(x*2+1,y*2	,	vq_codebook[pval][2]);
-			pb->SetPixel(x*2+1,y*2+1,	vq_codebook[pval][3]);
+			pb->SetPixel(x*2	,y*2	,	vq_codebook[pval][0]);
+			pb->SetPixel(x*2	,y*2+1	,	vq_codebook[pval][1]);
+			pb->SetPixel(x*2+1	,y*2	,	vq_codebook[pval][2]);
+			pb->SetPixel(x*2+1	,y*2+1	,	vq_codebook[pval][3]);
 		}
 	}
 }

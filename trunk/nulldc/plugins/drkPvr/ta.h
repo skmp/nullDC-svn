@@ -6,10 +6,6 @@ namespace TASplitter
 	//void TaWrite(u32* data);
 	void TADma(u32 address,u32* data,u32 size);
 
-	bool Ta_Init();
-	void Ta_Term();
-	void Ta_Reset(bool manual);
-
 	//hehe
 	//as it sems , bit 1,2 are type , bit 0 is mod volume :p
 	const u32 ListType_Opaque=0;			
@@ -603,11 +599,17 @@ namespace TASplitter
 		TA_decoder::AppendPolyVertex##num##A(&vp->vtx##num##A);\
 		}	\
 		/*process second half*/	\
-		if (part!=1)	\
+		if (part==0)	\
 		{	\
 		TA_decoder::AppendPolyVertex##num##B(&vp->vtx##num##B);\
 		rv+=SZ32;	\
-		} }\
+		} \
+		else if (part==2)	\
+		{	\
+		TA_decoder::AppendPolyVertex##num##B((TA_Vertex##num##B*)data);\
+		rv+=SZ32;	\
+		} \
+		}\
 		break;
 
 
@@ -647,7 +649,7 @@ namespace TASplitter
 		{
 			//32B more needed , 32B done :)
 			TaCmd=ta_main;
-			TA_decoder::AppendSpriteVertex1N((TA_Sprite1B*)data);
+			TA_decoder::AppendSpriteVertex1B((TA_Sprite1B*)data);
 			return SZ32;
 		}
 		static u32 fastcall ta_sprite1_data(Ta_Dma* data,u32 size)
@@ -655,7 +657,7 @@ namespace TASplitter
 			if (size==1)
 			{
 				//32B more needed , 32B done :)
-				TaCmd=ta_dummy_32;
+				TaCmd=ta_sprite1B_data;
 				return SZ32;
 			}
 			else
@@ -758,7 +760,7 @@ strip_end:
 					}
 					else if (data->pcw.Col_Type==1)
 					{
-						log ("invalid");
+						die ("invalid");
 					}
 					else
 					{
@@ -789,7 +791,7 @@ strip_end:
 						return 9;						//(Non-Textured, Packed Color, with Two Volumes)
 					else if (data->pcw.Col_Type==1)
 					{
-						log ("invalid");
+						die ("invalid");
 					}
 					else
 						return 10;						//(Non-Textured, Intensity, with Two Volumes)
@@ -932,7 +934,7 @@ strip_end:
 					//Assumed to be 32B
 				default:
 					{
-						log("Unhadled parameter");
+						die("Unhadled parameter");
 						data+=SZ32;
 						size-=SZ32;
 					}
@@ -943,6 +945,10 @@ strip_end:
 			return ci;
 		}
 		//Rest shit
+		FifoSplitter()
+		{
+			Init();
+		}
 		static bool Init()
 		{
 			int i=0;
@@ -964,6 +970,10 @@ strip_end:
 			return true;
 		}
 
+		~FifoSplitter()
+		{
+			Term();
+		}
 		static void Term()
 		{
 			//ta_alloc_release_all();
