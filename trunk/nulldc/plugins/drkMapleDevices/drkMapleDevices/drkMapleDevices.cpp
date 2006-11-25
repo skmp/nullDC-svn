@@ -194,9 +194,7 @@ INT_PTR CALLBACK sch( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 
 void cfgdlg(PluginType type,void* window)
 {
-	printf("drkIIRaziel's MAPLIE plugin:No config kthx\n");
-	//if (cur_icpl->PvrDllConfig)
-		//cur_icpl->PvrDllConfig((HWND)window);
+	printf("ndcMAPLE :No config kthx\n");
 }//called when plugin is used by emu (you should do first time init here)
 void* handle;
 void dcInitPvr(void* aparam,PluginType type)
@@ -242,7 +240,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 EXPORT void dcGetPluginInfo(plugin_info* info)
 {
 	info->InterfaceVersion.full=PLUGIN_I_F_VERSION;
-	sprintf(info->Name,"drkMaple");
+	sprintf(info->Name,"ndcMaple");
 	info->PluginVersion.full=NDC_MakeVersion(1,2,3);
 	
 
