@@ -279,7 +279,7 @@ void TAWrite(u32 address,u32* data,u32 count)
 	u32 address_w=address&0x1FFFFFF;//correct ?
 	if (address_w<0x800000)//TA poly
 	{
-		libPvr->pvr_info.TADma(address,data,count);
+		libPvr->pvr_info.TaFIFO(address,data,count);
 	}
 	else if(address_w<0x1000000) //Yuv Converter
 	{

@@ -102,6 +102,20 @@ public:
 	~nullDC_Maple_plugin();
 };
 
+//Ext.Device
+class nullDC_ExtDevice_plugin: public nullDC_plugin
+{
+public :
+	ext_device_plugin_if ext_device_info;
+private:
+	dcGetExtDeviceInfoFP* dcGetExtDeviceInfo;
+
+	PluginLoadError PluginExLoad();
+public:
+	nullDC_ExtDevice_plugin();
+	~nullDC_ExtDevice_plugin();
+};
+
 //Struct to hold plugin info
 struct PluginLoadInfo
 {
@@ -121,6 +135,7 @@ extern nullDC_PowerVR_plugin* libPvr;
 extern nullDC_GDRom_plugin*   libGDR;
 extern nullDC_AICA_plugin*    libAICA;
 extern List<nullDC_Maple_plugin*>libMaple;
+extern nullDC_ExtDevice_plugin*	libExtDevice;
 //more to come
 
 void plugins_Init();

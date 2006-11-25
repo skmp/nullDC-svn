@@ -125,15 +125,33 @@ void map_area4(u32 base)
 	//upper 32mb mirror lower 32 mb
 	_vmem_mirror_mapping(0x1200|base,0x1000|base,0x0200);
 }
+
+
 //AREA 5	--	Ext. Device
+//Read Ext.Device
+template <u32 sz,class T>
+T __fastcall ReadMem_extdev_T(u32 addr)
+{
+	return (T)libExtDevice->ext_device_info.ReadMem_A5(addr,sz);
+}
+
+//Write Ext.Device
+template <u32 sz,class T>
+void __fastcall WriteMem_extdev_T(u32 addr,T data)
+{
+	libExtDevice->ext_device_info.WriteMem_A5(addr,data,sz);
+}
+
+_vmem_handler area5_handler;
 void map_area5_init()
 {
-	
+	area5_handler = _vmem_register_handler_Template(ReadMem_extdev_T,WriteMem_extdev_T);
 }
 
 void map_area5(u32 base)
 {
-	//TODO : map later
+	//map hole region to plugin handler :)
+	_vmem_map_handler(area5_handler,base|0x1400,base|0x17FF);
 }
 
 //AREA 6	--	Unassigned 

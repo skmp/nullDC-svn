@@ -52,7 +52,7 @@ void pvr_do_sort_dma()
 
 		link_addr=ea_ptr[0x1C>>2];//Next link
 		//transfer global param
-		libPvr->pvr_info.TADma(0x10000000,ea_ptr,ea_ptr[0x18>>2]);
+		libPvr->pvr_info.TaFIFO(0x10000000,ea_ptr,ea_ptr[0x18>>2]);
 		if (link_addr==2)
 		{
 			link_addr=calculate_start_link_addr();

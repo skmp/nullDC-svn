@@ -553,8 +553,9 @@ int __fastcall UpdateSystem(u32 Cycles)
 	aica_cycl+=Cycles;
 	if (aica_cycl>(200*1000*1000/(44100*3)))
 	{
+		//~1500 cycles .These devices dont need more precition , so we save a bit here :)
 		UpdateAica(aica_cycl);
-
+		libExtDevice->ext_device_info.UpdateExtDevice(aica_cycl);
 		//~15k cycles
 		gpc_counter++;
 		if (gpc_counter>10)

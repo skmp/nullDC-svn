@@ -25,6 +25,7 @@ nullDC_PowerVR_plugin*		libPvr;
 nullDC_GDRom_plugin*		libGDR;
 nullDC_AICA_plugin*			libAICA;
 List<nullDC_Maple_plugin*>libMaple;
+nullDC_ExtDevice_plugin*	libExtDevice;
 
 sh4_if*						sh4_cpu;
 //more to come
@@ -243,6 +244,34 @@ nullDC_Maple_plugin::~nullDC_Maple_plugin()
 }
 //End nullDC_Maple_plugin
 
+//Class nullDC_ExtDevice_plugin
+PluginLoadError nullDC_ExtDevice_plugin::PluginExLoad()
+{
+	dcGetExtDeviceInfo=(dcGetExtDeviceInfoFP*)lib.GetProcAddress("dcGetExtDeviceInfo");
+
+	if (!dcGetExtDeviceInfo)
+		return PluginLoadError::PluginInterfaceExMissing;
+
+	dcGetExtDeviceInfo(&ext_device_info);
+
+	if (ext_device_info.InterfaceVersion.full!=EXTDEVICE_PLUGIN_I_F_VERSION)
+		return PluginLoadError::PluginInterfaceExVersionError;
+	
+	//All ok !
+	Loaded=true;
+	return PluginLoadError::NoError;
+}
+
+
+nullDC_ExtDevice_plugin::nullDC_ExtDevice_plugin():nullDC_plugin()
+{
+	dcGetExtDeviceInfo=0;
+}
+nullDC_ExtDevice_plugin::~nullDC_ExtDevice_plugin()
+{
+}
+//End nullDC_AICA_plugin
+
 //Plguin loading shit
 //temp struct
 struct temp_123__2_23{List<PluginLoadInfo>* l;u32 typemask;};
@@ -317,6 +346,9 @@ bool SetPlugin(nullDC_plugin* plugin,PluginType type)
 
 	switch(type)
 	{
+		case PluginType::ExtDevice:
+			libExtDevice=(nullDC_ExtDevice_plugin*)plugin;
+			return true;
 
 		case PluginType::AICA:
 			libAICA=(nullDC_AICA_plugin*)plugin;
@@ -404,10 +436,32 @@ void plugins_Init()
 	{
 		libMaple[i]->info.Init(&maple_info,PluginType::MapleDevice);
 	}
+
+	ext_device_init_params ext_device_info;
+	ext_device_info.WindowHandle=GetRenderTargetHandle();
+	ext_device_info.RaiseInterrupt=sh4_cpu->RaiseInterrupt;
+	ext_device_info.SB_ISTEXT=&SB_ISTEXT;
+	if (libExtDevice)
+	{
+		libExtDevice->info.Init(&ext_device_info,PluginType::ExtDevice);
+	}
+	else
+	{
+		EMUERROR("Error ,ExtDevice plugin is not loaded");
+	}
 }
 
 void plugins_Term()
 {
+	if (libExtDevice)
+	{
+		libExtDevice->info.Term(PluginType::ExtDevice);
+	}
+	else
+	{
+		//EMUERROR("Error , libExtDevice plugin is not loaded");
+	}
+
 	for (size_t i=libMaple.size();i>0;i--)
 	{
 		libMaple[i-1]->info.Term(PluginType::MapleDevice);
@@ -484,6 +538,15 @@ void plugins_Reset(bool Manual)
 	{
 		EMUERROR("Error , AICA/arm7 plugin is not loaded");
 	}
+
+	if (libExtDevice)
+	{
+		libExtDevice->info.Reset(Manual,PluginType::ExtDevice);
+	}
+	else
+	{
+		EMUERROR("Error , ExtDevice plugin is not loaded");
+	}
 }
 
 void plugins_ThreadInit()
@@ -518,6 +581,15 @@ void plugins_ThreadInit()
 	for (u32 i=0;i<libMaple.size();i++)
 	{
 		libMaple[i]->info.ThreadInit(PluginType::MapleDevice);
+	}
+	
+	if (libExtDevice)
+	{
+		libExtDevice->info.ThreadInit(PluginType::ExtDevice);
+	}
+	else
+	{
+		EMUERROR("Error , ExtDevice plugin is not loaded");
 	}
 }
 
@@ -554,5 +626,14 @@ void plugins_ThreadTerm()
 	else
 	{
 		EMUERROR("Error , pvr plugin is not loaded");
+	}	
+
+	if (libExtDevice)
+	{
+		libExtDevice->info.ThreadTerm(PluginType::ExtDevice);
+	}
+	else
+	{
+		EMUERROR("Error , ExtDevice plugin is not loaded");
 	}
 }

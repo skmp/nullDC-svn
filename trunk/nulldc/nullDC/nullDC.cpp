@@ -49,6 +49,7 @@ void EnumPlugins()
 	List<PluginLoadInfo>* gdrom= EnumeratePlugins(PluginType::GDRom);
 	List<PluginLoadInfo>* aica= EnumeratePlugins(PluginType::AICA);
 	List<PluginLoadInfo>* maple= EnumeratePlugins(PluginType::MapleDevice);
+	List<PluginLoadInfo>* extdev= EnumeratePlugins(PluginType::ExtDevice);
 
 	printf("PowerVR plugins :\n");
 	for (u32 i=0;i<pvr->itemcount;i++)
@@ -93,10 +94,20 @@ void EnumPlugins()
 		}
 	}
 	
+	printf("\nExtDevice plugins :\n");
+	for (u32 i=0;i<extdev->itemcount;i++)
+	{
+		printf("*\tFound %s v%d.%d.%d\n" ,(*extdev)[i].plugin_info.Name,
+			(*extdev)[i].plugin_info.PluginVersion.major,
+			(*extdev)[i].plugin_info.PluginVersion.minnor,
+			(*extdev)[i].plugin_info.PluginVersion.build);
+	}
+
 	delete pvr;
 	delete gdrom;
 	delete aica;
 	delete maple;
+	delete extdev;
 
 	//getc(stdin);
 }

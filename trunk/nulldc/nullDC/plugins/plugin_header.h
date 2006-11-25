@@ -179,6 +179,7 @@ enum PluginType
 	GDRom=2,
 	AICA=4,
 	MapleDevice=8,	//controler ,mouse , vmu , ect
+	ExtDevice=16	//BBA , Lan adapter , other 
 };
 
 #define PLUGIN_I_F_VERSION NDC_MakeVersion(0,0,2)
@@ -442,6 +443,41 @@ struct maple_init_params
 //For MapleDeviceMain
 //Uses maple_plugin_if , diferent flags tho
 typedef void dcGetMapleInfoFP(maple_plugin_if* info);
+
+//Ext.Device
+//TODO : Design and implement this
+
+#define EXTDEVICE_PLUGIN_I_F_VERSION NDC_MakeVersion(1,0,0)
+
+struct ext_device_plugin_if
+{
+	VersionNumber	InterfaceVersion;	//interface version
+
+	//Area 0 , 0x00600000- 0x006007FF	[MODEM]
+	ReadMemFP*  ReadMem_A0_006;
+	WriteMemFP* WriteMem_A0_006;
+
+	//Area 0 , 0x01000000- 0x01FFFFFF	[Ext. Device]
+	ReadMemFP*  ReadMem_A0_010;
+	WriteMemFP* WriteMem_A0_010;
+	
+	//Area 5
+	ReadMemFP*  ReadMem_A5;
+	WriteMemFP* WriteMem_A5;
+
+	UpdateFP*	UpdateExtDevice;
+};
+
+//passed on Ext.Device init call
+struct ext_device_init_params
+{
+	void* WindowHandle;
+	RaiseInterruptFP*	RaiseInterrupt;
+	u32* SB_ISTEXT;
+};
+
+//Give to the emu pointers for the aica interface
+typedef void dcGetExtDeviceInfoFP(ext_device_plugin_if* info);
 
 
 #undef PVR_CODE

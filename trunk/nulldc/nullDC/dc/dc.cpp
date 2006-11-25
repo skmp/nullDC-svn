@@ -68,6 +68,7 @@ bool Init_DC()
 	nullDC_PowerVR_plugin* pvrplg=new nullDC_PowerVR_plugin();
 	nullDC_GDRom_plugin* gdrplg=new nullDC_GDRom_plugin();
 	nullDC_AICA_plugin* aicaplg=new nullDC_AICA_plugin();
+	nullDC_ExtDevice_plugin* extdevplg=new nullDC_ExtDevice_plugin();
 
 	//load the selected plugins
 	cfgLoadStr("nullDC_plugins","Current_PVR",temp_dll);
@@ -79,10 +80,14 @@ bool Init_DC()
 	cfgLoadStr("nullDC_plugins","Current_AICA",temp_dll);
 	aicaplg->LoadnullDCPlugin(temp_dll);
 
+	cfgLoadStr("nullDC_plugins","Current_ExtDevice",temp_dll);
+	extdevplg->LoadnullDCPlugin(temp_dll);
+
 	//ok , all loaded , set em as selected
 	SetPlugin(pvrplg,PluginType::PowerVR);
 	SetPlugin(gdrplg,PluginType::GDRom);
 	SetPlugin(aicaplg,PluginType::AICA);
+	SetPlugin(extdevplg,PluginType::ExtDevice);
 
 	sh4_cpu->Init();
 	mem_Init();

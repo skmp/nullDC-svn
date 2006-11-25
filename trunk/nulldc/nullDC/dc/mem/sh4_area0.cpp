@@ -108,7 +108,8 @@ T __fastcall ReadMem_area0(u32 addr)
 	//map 0x0060 to 0x0060
 	else if ((base_start >=0x0060) && (base_end <=0x0060) /*&& (addr>= 0x00600000)*/ && (addr<= 0x006007FF)) //	:MODEM
 	{
-		EMUERROR2("Read from area0_32 not implemented [MODEM], addr=%x",addr);
+		return (T)libExtDevice->ext_device_info.ReadMem_A0_006(addr,sz);
+		//EMUERROR2("Read from area0_32 not implemented [MODEM], addr=%x",addr);
 	}
 	//map 0x0060 to 0x006F
 	else if ((base_start >=0x0060) && (base_end <=0x006F) && (addr>= 0x00600800) && (addr<= 0x006FFFFF)) //	:G2 (Reserved)
@@ -137,6 +138,7 @@ T __fastcall ReadMem_area0(u32 addr)
 	else if ((base_start >=0x0100) && (base_end <=0x01FF) /*&& (addr>= 0x01000000) && (addr<= 0x01FFFFFF)*/) //	:Ext. Device
 	{
 	//	EMUERROR2("Read from area0_32 not implemented [Ext. Device], addr=%x",addr);
+		return (T)libExtDevice->ext_device_info.ReadMem_A0_010(addr,sz);
 	}
 	//rest of it ;P
 	/*else 
@@ -212,7 +214,8 @@ void  __fastcall WriteMem_area0(u32 addr,T data)
 	//map 0x0060 to 0x0060
 	else if ((base_start >=0x0060) && (base_end <=0x0060) /*&& (addr>= 0x00600000)*/ && (addr<= 0x006007FF)) //	:MODEM
 	{
-		EMUERROR4("Write to area0_32 not implemented [MODEM], addr=%x,data=%x,size=%d",addr,data,sz);
+		//EMUERROR4("Write to area0_32 not implemented [MODEM], addr=%x,data=%x,size=%d",addr,data,sz);
+		libExtDevice->ext_device_info.WriteMem_A0_006(addr,data,sz);
 	}
 	//map 0x0060 to 0x006F
 	else if ((base_start >=0x0060) && (base_end <=0x006F) && (addr>= 0x00600800) && (addr<= 0x006FFFFF)) //	:G2 (Reserved)
@@ -246,6 +249,7 @@ void  __fastcall WriteMem_area0(u32 addr,T data)
 	else if ((base_start >=0x0100) && (base_end <=0x01FF) /*&& (addr>= 0x01000000) && (addr<= 0x01FFFFFF)*/) //	:Ext. Device
 	{
 		//EMUERROR4("Write to area0_32 not implemented [Ext. Device], addr=%x,data=%x,size=%d",addr,data,sz);
+		libExtDevice->ext_device_info.WriteMem_A0_010(addr,data,sz);
 	}
 	/*else
 	{

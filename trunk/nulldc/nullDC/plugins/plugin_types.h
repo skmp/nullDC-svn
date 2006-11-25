@@ -27,13 +27,13 @@ bool operator ==(VersionNumber& x,  const u32 y);
 //NDC_ so it's not confused w/ win32 one
 #define NDC_SetVersion(to,major,minor,build) {to.major=major;to.minor=minor;to.build=build;}
 #define NDC_MakeVersion(major,minor,build) ((build<<16)|(minor<<8)|(major))
-
 enum PluginType
 {
 	PowerVR=1,
 	GDRom=2,
 	AICA=4,
 	MapleDevice=8,	//controler ,mouse , vmu , ect
+	ExtDevice=16	//BBA , Lan adapter , other 
 };
 
 #define PLUGIN_I_F_VERSION NDC_MakeVersion(0,0,2)
@@ -134,7 +134,7 @@ struct pvr_plugin_if
 	VersionNumber		InterfaceVersion;	//interface version
 
 	UpdateFP*		UpdatePvr;		//called from sh4 context , should update pvr/ta state and evereything else
-	TaFIFOFP*		TADma;			//called from sh4 context , in case of dma or SQ to TA memory , size is 32 byte transfer counts
+	TaFIFOFP*		TaFIFO;			//called from sh4 context , in case of dma or SQ to TA memory , size is 32 byte transfer counts
 	ReadMemFP*		ReadReg;
 	WriteMemFP*		WriteReg;
 	vramLockCBFP*	LockedBlockWrite;
@@ -241,7 +241,6 @@ struct aica_init_params
 //Give to the emu pointers for the aica interface
 typedef void dcGetAICAInfoFP(aica_plugin_if* info);
 
-
 //Maple Plugins :)
 
 #define MAPLE_PLUGIN_I_F_VERSION NDC_MakeVersion(0,1,0)
@@ -294,9 +293,45 @@ struct maple_init_params
 };
 
 
+
 //For MapleDeviceMain
 //Uses maple_plugin_if , diferent flags tho
 typedef void dcGetMapleInfoFP(maple_plugin_if* info);
+
+//Ext.Device
+//TODO : Design and implement this
+
+#define EXTDEVICE_PLUGIN_I_F_VERSION NDC_MakeVersion(1,0,0)
+
+struct ext_device_plugin_if
+{
+	VersionNumber	InterfaceVersion;	//interface version
+
+	//Area 0 , 0x00600000- 0x006007FF	[MODEM]
+	ReadMemFP*  ReadMem_A0_006;
+	WriteMemFP* WriteMem_A0_006;
+
+	//Area 0 , 0x01000000- 0x01FFFFFF	[Ext. Device]
+	ReadMemFP*  ReadMem_A0_010;
+	WriteMemFP* WriteMem_A0_010;
+	
+	//Area 5
+	ReadMemFP*  ReadMem_A5;
+	WriteMemFP* WriteMem_A5;
+
+	UpdateFP*	UpdateExtDevice;
+};
+
+//passed on Ext.Device init call
+struct ext_device_init_params
+{
+	void* WindowHandle;
+	RaiseInterruptFP*	RaiseInterrupt;
+	u32* SB_ISTEXT;
+};
+
+//Give to the emu pointers for the aica interface
+typedef void dcGetExtDeviceInfoFP(ext_device_plugin_if* info);
 
 
 #undef PVR_CODE

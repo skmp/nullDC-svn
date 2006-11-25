@@ -918,6 +918,7 @@ INT_PTR CALLBACK ArmDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam 
 
 }
 char SelectedPlugin_Aica[512]={0};
+char SelectedPlugin_ExtDev[512]={0};
 char SelectedPlugin_Pvr[512]={0};
 char SelectedPlugin_Gdr[512]={0};
 char SelectedPlugin_maple[4][6][512]={0};
@@ -1088,6 +1089,7 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		List<PluginLoadInfo>* pvr= EnumeratePlugins(PluginType::PowerVR);	
 		List<PluginLoadInfo>* gdrom= EnumeratePlugins(PluginType::GDRom);
 		List<PluginLoadInfo>* aica= EnumeratePlugins(PluginType::AICA);
+		List<PluginLoadInfo>* extdev= EnumeratePlugins(PluginType::ExtDevice);
 
 		char temp[512];
 
@@ -1104,6 +1106,9 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		AddItemsToCB(aica,GetDlgItem(hWnd,IDC_C_AICA),temp);
 		GetCurrent(GetDlgItem(hWnd,IDC_C_AICA),SelectedPlugin_Aica);
 
+		cfgLoadStr("nullDC_plugins","Current_ExtDevice",temp);
+		AddItemsToCB(extdev,GetDlgItem(hWnd,IDC_C_EXTDEV),temp);
+		GetCurrent(GetDlgItem(hWnd,IDC_C_EXTDEV),SelectedPlugin_ExtDev);
 		
 		delete gdrom,pvr,aica;
 
@@ -1143,16 +1148,37 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 				UpdateMapleSelections(GetDlgItem(hWnd,IDC_MAPLEPORT),hWnd);
 			break;
 
+		case IDC_C_EXTDEV:
+			if (HIWORD(wParam)==CBN_SELCHANGE)
+				GetCurrent(GetDlgItem(hWnd,IDC_C_EXTDEV),SelectedPlugin_ExtDev);
+			break;
+
 		case IDOK:
 			//save settings
 			cfgSaveStr("nullDC_plugins","Current_PVR",SelectedPlugin_Pvr);
 			cfgSaveStr("nullDC_plugins","Current_GDR",SelectedPlugin_Gdr);
 			cfgSaveStr("nullDC_plugins","Current_AICA",SelectedPlugin_Aica);
+			cfgSaveStr("nullDC_plugins","Current_ExtDevice",SelectedPlugin_ExtDev);
 			UpdateMapleSelections(GetDlgItem(hWnd,IDC_MAPLEPORT),hWnd);
 			SaveMaple();
 		case IDCANCEL://close plugin
 			EndDialog(hWnd,0);
 			return true;
+
+		case IDC_EXTDEV_CONF:
+			{
+				nullDC_ExtDevice_plugin t;
+				if (t.LoadnullDCPlugin(SelectedPlugin_ExtDev)==PluginLoadError::NoError)
+				{
+					t.info.ShowConfig(PluginType::ExtDevice,hWnd);
+				}
+				else
+				{
+					//error
+					printf("Failed to load \"%s\"\n",SelectedPlugin_Aica);
+				}
+			}
+			break;
 
 		case IDC_AICA_CONF:
 			{
