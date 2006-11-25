@@ -2041,8 +2041,8 @@ static void DrawBackground()
   {
     bkg_poly2* pBkg = (bkg_poly2*) pDataVideo;
 
-    DWORD* pBuffer = (DWORD*) pBkg;
-    pBuffer = pBuffer -1;
+    DWORD* pBuffer = (DWORD*) (DWORD*)  SH4GetVideoRAMPtr(uAddress + SH4VideoRAM_START-4);;;
+    //pBuffer = pBuffer -1;
 
     pTextureD3D = GetTexture(pBuffer);
 
@@ -2060,8 +2060,8 @@ static void DrawBackground()
   {
     bkg_poly3* pBkg = (bkg_poly3*) pDataVideo;
 
-    DWORD* pBuffer = (DWORD*) pBkg;
-    pBuffer = pBuffer -1;
+    DWORD* pBuffer = (DWORD*)  SH4GetVideoRAMPtr(uAddress + SH4VideoRAM_START-4);;
+    //pBuffer = pBuffer -1;
 
     pTextureD3D = GetTexture(pBuffer);
 
