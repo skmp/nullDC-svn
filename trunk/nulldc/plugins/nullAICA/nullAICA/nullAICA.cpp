@@ -17,15 +17,16 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 
 void cfgdlg(PluginType type,void* window)
 {
-	printf("null AICA plugin [h4x0rs olny kthx]:No config kthx , however i will show ya some hle info :D\n");
-	ARM_Katana_Driver_Info();
+	//printf("null AICA plugin [h4x0rs olny kthx]:No config kthx , however i will show ya some hle info :D\n");
+	MessageBox((HWND)window,"Nothing to configure","nullAICA plugin",MB_OK | MB_ICONINFORMATION);
+	//ARM_Katana_Driver_Info();
 }
 
 //Give to the emu info for the plugin type
 EXPORT void dcGetPluginInfo(plugin_info* info)
 {
 	info->InterfaceVersion.full=PLUGIN_I_F_VERSION;
-	strcpy(info->Name,"null AICA plugin [h4x0rs olny kthx] (" __DATE__ ")");
+	strcpy(info->Name,"nullAICA [no sound/reduced compat] (" __DATE__ ")");
 	info->PluginVersion.full=NDC_MakeVersion(MAJOR,MINOR,BUILD);
 	
 
