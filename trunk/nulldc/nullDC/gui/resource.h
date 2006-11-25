@@ -124,6 +124,9 @@
 #define IDC_GDR_CONF                    1101
 #define IDC_BUTTON3                     1102
 #define IDC_AICA_CONF                   1102
+#define IDC_C_EXTDEV                    1105
+#define IDC_AICA_CONF2                  1106
+#define IDC_EXTDEV_CONF                 1106
 #define IDC_COMBO6                      1107
 #define IDC_MAPLEPORT                   1107
 #define IDC_MAPLEMAIN                   1108
