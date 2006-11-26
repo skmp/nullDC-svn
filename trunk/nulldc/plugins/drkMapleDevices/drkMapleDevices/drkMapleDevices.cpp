@@ -7,8 +7,9 @@
 #ifdef UNICODE
 #undef UNICODE
 #endif
-
+#define _WIN32_WINNT 0x500
 #include <windows.h>
+#include <windowsx.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -18,11 +19,25 @@ u16 kcode=0xFFFF;
 s8 joyx=0,joyy=0;
 s8 joy2x=0,joy2y=0;
 u8 rt=0,lt=0;
+u32 mo_buttons = 0xFFFFFFFF;
+s32 mo_x_delta = 0;
+s32 mo_y_delta = 0;
+s32 mo_wheel_delta = 0;
+#define mo_Middle (1<<0) 
+#define mo_Right (1<<1)
+#define mo_Left (1<<2)
+#define mo_Thumb (1<<3)
+//1 Right button (B) 
+//2 Left button (A) 
+//3 Thumb button (START) 
 
 #pragma pack(1)
 char testJoy_strName[64] = "Emulated Dreamcast Controler\0";
 char testJoy_strName_nul[64] = "Null Dreamcast Controler\0";
 char testJoy_strName_vmu[64] = "Emulated VMU\0";
+char testJoy_strName_kbd[64] = "Emulated Dreamcast Keyboard\0";
+char testJoy_strName_mouse[64] = "Emulated Dreamcast Mouse\0";
+
 char testJoy_strBrand[64] = "Faked by drkIIRaziel && ZeZu , made for nullDC\0";
 
 #define key_CONT_C  (1 << 0);
@@ -42,18 +57,95 @@ char testJoy_strBrand[64] = "Faked by drkIIRaziel && ZeZu , made for nullDC\0";
 #define key_CONT_DPAD2_LEFT  (1 << 14);
 #define key_CONT_DPAD2_RIGHT  (1 << 15);	
 
+u8 kb_shift          ; //shift keys pressed (bitmask)	//1
+u8 kb_led            ; //leds currently lit			//1
+u8 kb_key[6]={0}     ; //normal keys pressed			//6
+u8 kb_used=0;
+char kb_map[256];
+
 struct VMU_info
 {
 	u8 data[256*1024];
 	char file[512];
 };
+void kb_down(u8 kc)
+{
+	void Init_kb_map();
+	Init_kb_map();
+	if (kc==0)
+		return;
+	if (kb_used<6)
+	{
+		for (int i=0;i<6;i++)
+		{
+			if (kb_key[i]==kc)
+				return;
+		}
+		kb_key[kb_used]=kc;
+		kb_used++;
+	}
+}
+void kb_up(u8 kc)
+{
+	if (kc==0)
+		return;
+	if (kb_used>0)
+	{
+		for (int i=0;i<6;i++)
+		{
+			if (kb_key[i]==kc)
+			{
+				kb_used--;
+				for (int j=i;j<5;j++)
+					kb_key[j]=kb_key[j+1];
+				kb_key[6]=0;
+			}
+		}
+	}
+}
 typedef INT_PTR CALLBACK dlgp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
 dlgp* oldptr;
+s32 old_pos_x=0;
+s32 old_pos_y=0;
 INT_PTR CALLBACK sch( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	switch(uMsg)
 	{
+	case WM_MBUTTONDOWN:
+	case WM_MBUTTONUP:
+
+		if (wParam & MK_LBUTTON)
+			mo_buttons&=~mo_Left;
+		else
+			mo_buttons|=mo_Left;
+
+		if (wParam & MK_MBUTTON)
+			mo_buttons&=~mo_Middle;
+		else
+			mo_buttons|=mo_Middle;
+
+		if (wParam & MK_RBUTTON)
+			mo_buttons&=~mo_Right;
+		else
+			mo_buttons|=mo_Right;
+
+		break;
+	case WM_MOUSEMOVE:
+		mo_x_delta+= GET_X_LPARAM(lParam)-old_pos_x ;
+		mo_y_delta+= GET_Y_LPARAM(lParam) -old_pos_y ;
+
+		old_pos_x=GET_X_LPARAM(lParam);
+		old_pos_y=GET_Y_LPARAM(lParam);
+		break;
+	case WM_MOUSEWHEEL:
+		{
+		s32 diff=GET_WHEEL_DELTA_WPARAM(wParam)/WHEEL_DELTA;
+		diff*=10;
+		mo_wheel_delta+=diff;
+		}
+		break;
 	case WM_KEYDOWN:
+		kb_down(kb_map[wParam & 0xFF]);
 		switch(wParam)
 		{
 		case 'V':
@@ -122,6 +214,7 @@ INT_PTR CALLBACK sch( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 		break;
 
 	case WM_KEYUP:
+		kb_up(kb_map[wParam & 0xFF]);
 		switch(wParam)
 		{
 		case 'V':
@@ -197,11 +290,13 @@ void cfgdlg(PluginType type,void* window)
 	printf("ndcMAPLE :No config kthx\n");
 }//called when plugin is used by emu (you should do first time init here)
 void* handle;
+void Init_kb_map();
 void dcInitPvr(void* aparam,PluginType type)
 {
 	maple_init_params* mpi=(maple_init_params*)aparam;
 	handle=mpi->WindowHandle;
 	oldptr = (dlgp*)SetWindowLongPtr((HWND)handle,GWL_WNDPROC,(LONG)sch);
+	Init_kb_map();
 }
 
 //called when plugin is unloaded by emu , olny if dcInitPvr is called (eg , not called to enumerate plugins)
@@ -235,7 +330,90 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 {
     return TRUE;
 }
-
+#define sk(num,key)kb_map[key]=0x##num;
+void Init_kb_map()
+{
+	memset(kb_map,0,sizeof(kb_map));
+	//Keycode Key 
+		//00 No key pressed 
+		//01 Too many keys pressed error 
+		//02-03 Not used(?) 
+		//04-1D Letter keys A-Z (in alphabetic order) 
+		for (int i=0x4;i<=0x1D;i++)
+			kb_map['A'+i-4]=i;
+		//1E-27 Number keys 1-0 
+		for (int i=0x1E;i<=0x27;i++)
+			kb_map['1'+i-0x1E]=i;
+		kb_map['0']=0x27;
+		//28 Enter 
+		sk(28,'\r');
+		//29 Esc 
+		sk(29,VK_ESCAPE);
+		//2A Backspace 
+		sk(2A,'\b');
+		//2B Tab 
+		sk(2B,VK_TAB);
+		//2C Space 
+		sk(2C,VK_SPACE);
+		//2D-2E "-" and "^" (the 2 keys right of the numbers) 
+		//sk(28,VK_SUBTRACT);
+		sk(2d,'-');
+		//2F-30 "@" and "[" (the 2 keys right of P) 
+		sk(30,'[');
+		//31 Not used 
+		//32-34 "]", ";" and ":" (the 3 keys right of L) 
+		sk(32,']');
+		sk(33,';');
+		sk(34,':');
+		//35 hankaku/zenkaku / kanji (top left) 
+		//36-38 ",", "." and "/" (the 3 keys right of M) 
+		sk(36,0xbc);
+		sk(37,0xbc+2);
+		sk(38,0xbc+3);
+		//39 Caps Lock 
+		//3A-45 Function keys F1-F12 
+		for (int i=0;i<12;i++)
+			kb_map[VK_F1+i]=0x3A+i;
+		//46-4E Control keys above cursor keys 
+		//4F Cursor right
+		sk(4F,VK_RIGHT);
+		//50 Cursor left 
+		sk(50,VK_LEFT);
+		//51 Cursor down 
+		sk(28,VK_DOWN);
+		//52 Cursor up 
+		sk(52,VK_UP);
+		//53 Num Lock (Numeric keypad) 
+		sk(53,VK_NUMLOCK);
+		//54 "/" (Numeric keypad) 
+		sk(54,VK_DIVIDE);
+		//55 "*" (Numeric keypad) 
+		sk(55,VK_MULTIPLY);
+		//56 "-" (Numeric keypad) 
+		sk(56,VK_SUBTRACT);
+		//57 "+" (Numeric keypad) 
+		sk(57,VK_ADD);
+		//58 Enter (Numeric keypad) 
+		sk(58,VK_EXECUTE);	//enter ??
+		//59-62 Number keys 1-0 (Numeric keypad) 
+		sk(59,VK_NUMPAD1);
+		sk(59+1,VK_NUMPAD2);
+		sk(59+2,VK_NUMPAD3);
+		sk(59+3,VK_NUMPAD4);
+		sk(59+4,VK_NUMPAD5);
+		sk(59+5,VK_NUMPAD6);
+		sk(59+6,VK_NUMPAD7);
+		sk(59+7,VK_NUMPAD8);
+		sk(59+8,VK_NUMPAD9);
+		sk(59+9,VK_NUMPAD0);
+		//63 "." (Numeric keypad) 
+		sk(59+9,'.');
+		//64 "\" (right of left Shift) 
+		sk(64,'\\');
+		//65 S3 key 
+		//66-86 Not used 
+		//8C-FF Not used 
+}
 //Give to the emu info for the plugin type
 EXPORT void dcGetPluginInfo(plugin_info* info)
 {
@@ -262,6 +440,240 @@ u8 GetBtFromSgn(s8 val);
 #define w32(data) *(u32*)buffer_out_b=(data);buffer_out_b+=4;buffer_out_len+=4
 #define w16(data) *(u16*)buffer_out_b=(data);buffer_out_b+=2;buffer_out_len+=2
 #define w8(data) *(u8*)buffer_out_b=(data);buffer_out_b+=1;buffer_out_len+=1
+
+void KbdDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+{
+	//printf("ControllerDMA Called 0x%X;Command %d\n",device_instance->port,Command);
+//void testJoy_GotData(u32 header1,u32 header2,u32*data,u32 datalen)
+	u8*buffer_out_b=(u8*)buffer_out;
+
+	switch (Command)
+	{
+		/*typedef struct {
+			DWORD		func;//4
+			DWORD		function_data[3];//3*4
+			u8		area_code;//1
+			u8		connector_direction;//1
+			char		product_name[30];//30*1
+			char		product_license[60];//60*1
+			WORD		standby_power;//2
+			WORD		max_power;//2
+		} maple_devinfo_t;*/
+		case 1:
+			//header
+			//WriteMem32(ptr_out,(u32)(0x05 | //response
+			//			(((u16)sendadr << 8) & 0xFF00) |
+			//			((((recadr == 0x20) ? 0x20 : 0) << 16) & 0xFF0000) |
+			//			(((112/4) << 24) & 0xFF000000))); ptr_out += 4;
+
+			responce=5;
+
+			//caps
+			//4
+			w32(1 << 30);
+
+			//struct data
+			//3*4
+			w32( 0xfe060f00); 
+			w32( 0);
+			w32( 0);
+			//1	area code
+			w8(0xFF);
+			//1	direction
+			w8(0);
+			//30
+			for (u32 i = 0; i < 30; i++)
+			{
+				w8((u8)testJoy_strName_kbd[i]);
+				//if (!testJoy_strName[i])
+				//	break;
+			}
+			//ptr_out += 30;
+
+			//60
+			for (u32 i = 0; i < 60; i++)
+			{
+				w8((u8)testJoy_strBrand[i]);
+				//if (!testJoy_strBrand[i])
+				//	break;
+			}
+			//ptr_out += 60;
+
+			//2
+			w16(0x04FF); 
+
+			//2
+			w16(0x0069); 
+			break;
+
+		/* controller condition structure 
+		typedef struct {//8 bytes
+		int8 shift          ; shift keys pressed (bitmask)	//1
+		int8 led            ; leds currently lit			//1
+		int8 key[6]         ; normal keys pressed			//6
+		} cont_cond_t;*/
+		case 9:
+
+
+			//header
+			//WriteMem32(ptr_out, (u32)(0x08 | // data transfer (response)
+			//			(((u16)sendadr << 8) & 0xFF00) |
+			//			((((recadr == 0x20) ? 0x20 : 1) << 16) & 0xFF0000) |
+			//			(((12 / 4 ) << 24) & 0xFF000000))); ptr_out += 4;
+			responce=0x08;
+			//caps
+			//4
+			//WriteMem32(ptr_out, (1 << 24)); ptr_out += 4;
+			w32((1 << 30));
+			//struct data
+			//int8 shift          ; shift keys pressed (bitmask)	//1
+			w8(kb_shift);
+			//int8 led            ; leds currently lit			//1
+			w8(kb_led);
+			//int8 key[6]         ; normal keys pressed			//6
+			for (int i=0;i<6;i++)
+			{
+				w8(kb_key[i]);
+			}
+			
+			break;
+
+		default:
+			printf("UNKOWN MAPLE COMMAND \n");
+			break;
+	}
+}
+
+u16 mo_cvt(s32 delta)
+{
+	delta+=0x200;
+	if (delta<=0)
+		delta=0;
+	else if (delta>0x3FF)
+		delta=0x3FF;
+
+	return (u16) delta;
+}
+void MouseDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+{
+	//printf("ControllerDMA Called 0x%X;Command %d\n",device_instance->port,Command);
+//void testJoy_GotData(u32 header1,u32 header2,u32*data,u32 datalen)
+	u8*buffer_out_b=(u8*)buffer_out;
+
+	switch (Command)
+	{
+		/*typedef struct {
+			DWORD		func;//4
+			DWORD		function_data[3];//3*4
+			u8		area_code;//1
+			u8		connector_direction;//1
+			char		product_name[30];//30*1
+			char		product_license[60];//60*1
+			WORD		standby_power;//2
+			WORD		max_power;//2
+		} maple_devinfo_t;*/
+		case 1:
+			//header
+			//WriteMem32(ptr_out,(u32)(0x05 | //response
+			//			(((u16)sendadr << 8) & 0xFF00) |
+			//			((((recadr == 0x20) ? 0x20 : 0) << 16) & 0xFF0000) |
+			//			(((112/4) << 24) & 0xFF000000))); ptr_out += 4;
+
+			responce=5;
+
+			//caps
+			//4
+			w32(1 << 17);
+
+			//struct data
+			//3*4
+			w32( 0xfe060f00); 
+			w32( 0);
+			w32( 0);
+			//1	area code
+			w8(0xFF);
+			//1	direction
+			w8(0);
+			//30
+			for (u32 i = 0; i < 30; i++)
+			{
+				w8((u8)testJoy_strName_mouse[i]);
+				//if (!testJoy_strName[i])
+				//	break;
+			}
+			//ptr_out += 30;
+
+			//60
+			for (u32 i = 0; i < 60; i++)
+			{
+				w8((u8)testJoy_strBrand[i]);
+				//if (!testJoy_strBrand[i])
+				//	break;
+			}
+			//ptr_out += 60;
+
+			//2
+			w16(0x04FF); 
+
+			//2
+			w16(0x0069); 
+			break;
+
+		/* controller condition structure 
+		typedef struct {//8 bytes
+		int32 buttons       ; digital buttons bitfield (little endian)
+		int16 axis1         ; horizontal movement (0-$3FF) (little endian)
+		int16 axis2         ; vertical movement (0-$3FF) (little endian)
+		int16 axis3         ; mouse wheel movement (0-$3FF) (little endian)
+		int16 axis4         ; ? movement (0-$3FF) (little endian)
+		int16 axis5         ; ? movement (0-$3FF) (little endian)
+		int16 axis6         ; ? movement (0-$3FF) (little endian)
+		int16 axis7         ; ? movement (0-$3FF) (little endian)
+		int16 axis8         ; ? movement (0-$3FF) (little endian)
+		} cont_cond_t;*/
+		case 9:
+
+
+			//header
+			//WriteMem32(ptr_out, (u32)(0x08 | // data transfer (response)
+			//			(((u16)sendadr << 8) & 0xFF00) |
+			//			((((recadr == 0x20) ? 0x20 : 1) << 16) & 0xFF0000) |
+			//			(((12 / 4 ) << 24) & 0xFF000000))); ptr_out += 4;
+			responce=0x08;
+			//caps
+			//4
+			//WriteMem32(ptr_out, (1 << 24)); ptr_out += 4;
+			w32(1 << 17);
+			//struct data
+			
+			//int32 buttons       ; digital buttons bitfield (little endian)
+			w32(mo_buttons);
+			//int16 axis1         ; horizontal movement (0-$3FF) (little endian)
+			w16(mo_cvt(mo_x_delta));
+			//int16 axis2         ; vertical movement (0-$3FF) (little endian)
+			w16(mo_cvt(mo_y_delta));
+			//int16 axis3         ; mouse wheel movement (0-$3FF) (little endian)
+			w16(mo_cvt(mo_wheel_delta));
+			//int16 axis4         ; ? movement (0-$3FF) (little endian)
+			w16(mo_cvt(0));
+			//int16 axis5         ; ? movement (0-$3FF) (little endian)
+			w16(mo_cvt(0));
+			//int16 axis6         ; ? movement (0-$3FF) (little endian)
+			w16(mo_cvt(0));
+			//int16 axis7         ; ? movement (0-$3FF) (little endian)
+			w16(mo_cvt(0));
+			//int16 axis8         ; ? movement (0-$3FF) (little endian)
+			w16(mo_cvt(0));
+
+			mo_x_delta=0;
+			mo_y_delta=0;
+			break;
+
+		default:
+			printf("UNKOWN MAPLE COMMAND \n");
+			break;
+	}
+}
 
 
 void ControllerDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
@@ -703,6 +1115,16 @@ void CreateInstance(maple_device*dev,maple_device_instance& inst,u8 port)
 		inst.MapleDeviceDMA=ControllerDMA_nul;
 		inst.DevData=0;
 	}
+	else if (dev->id==3)
+	{
+		inst.MapleDeviceDMA=KbdDMA;
+		inst.DevData=0;
+	}
+	else if (dev->id==4)
+	{
+		inst.MapleDeviceDMA=MouseDMA;
+		inst.DevData=0;
+	}
 	printf("Created instance of device %s on port 0x%x\n",dev->name,port);
 }
 
@@ -736,8 +1158,20 @@ EXPORT void dcGetMapleInfo(maple_plugin_if* info)
 	info->Devices[2].id=2;
 	strcpy(info->Devices[2].name,"nullDC DC controller [no input](" __DATE__ ")");
 
-	info->Devices[3].CreateInstance=0;
-	info->Devices[3].DestroyInstance=0;
+	info->Devices[3].CreateInstance=CreateInstance;
+	info->Devices[3].DestroyInstance=DestroyInstance;
+	info->Devices[3].type=0;//Controller
+	info->Devices[3].id=3;
+	strcpy(info->Devices[3].name,"nullDC DC Keyboard(" __DATE__ ")");
+
+	info->Devices[4].CreateInstance=CreateInstance;
+	info->Devices[4].DestroyInstance=DestroyInstance;
+	info->Devices[4].type=0;//Controller
+	info->Devices[4].id=4;
+	strcpy(info->Devices[4].name,"nullDC DC Mouse(" __DATE__ ")");
+
+	info->Devices[5].CreateInstance=0;
+	info->Devices[5].DestroyInstance=0;
 }
 
 
