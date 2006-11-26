@@ -27,6 +27,13 @@
 	r[n] = ssr;
 } 
 
+//stc SGR,<REG_N>               
+ sh4op(i0000_nnnn_0011_1010)
+{
+	//iNimp("stc SGR,<REG_N>");
+	u32 n = GetN(op);
+	r[n] = sgr;
+} 
 
 //stc SPC,<REG_N>               
  sh4op(i0000_nnnn_0100_0010)
@@ -324,6 +331,14 @@
 	r[n] -= 4;
 	WriteMemU32(r[n], ssr);
 }
+//stc.l SGR,@-<REG_N>           
+ sh4op(i0100_nnnn_0011_0010)
+{
+	//iNimp("stc.l SGR,@-<REG_N>");
+	u32 n = GetN(op);
+	r[n] -= 4;
+	WriteMemU32(r[n], sgr);
+}
 
 
 //stc.l SPC,@-<REG_N>           
@@ -428,6 +443,15 @@
 	r[n] += 4;
 }
 
+//ldc.l @<REG_N>+,SGR           
+ sh4op(i0100_nnnn_0011_0110)
+{
+	//iNimp("ldc.l @<REG_N>+,SGR");
+	u32 n = GetN(op);
+	
+	ReadMemU32(sgr,r[n]);
+	r[n] += 4;
+}
 
 //ldc.l @<REG_N>+,SPC           
  sh4op(i0100_nnnn_0100_0111)
@@ -524,6 +548,14 @@
 	ssr = r[n];
 }
 
+ //ldc <REG_N>,SGR               
+ sh4op(i0100_nnnn_0011_1010)
+{
+	//iNimp("ldc <REG_N>,SGR");
+	u32 n = GetN(op);
+
+	sgr = r[n];
+}
 
 //ldc <REG_N>,SPC               
  sh4op(i0100_nnnn_0100_1110)

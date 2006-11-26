@@ -188,7 +188,7 @@ u32  ReadMem_gdrom(u32 Addr, u32 sz)
 		// this actually makes it go past where it stops but just causes it to loop doing error checking?
 		if(rERROR.ABRT) {
 			RaiseInterrupt(InterruptID::holly_GDROM_CMD);	// Raise Interrupt for aborted cmd
-
+			rERROR.ABRT=0;
 			// clear error status
 		}
 

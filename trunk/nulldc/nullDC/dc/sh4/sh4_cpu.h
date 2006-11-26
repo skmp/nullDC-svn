@@ -12,6 +12,8 @@
  sh4op(i0000_nnnn_0010_0010);
 //stc SSR,<REG_N>               
  sh4op(i0000_nnnn_0011_0010);
+ //stc SGR,<REG_N>               
+ sh4op(i0000_nnnn_0011_1010);
 //stc SPC,<REG_N>               
  sh4op(i0000_nnnn_0100_0010);
 //stc R0_BANK,<REG_N>           
@@ -172,6 +174,8 @@
  sh4op(i0100_nnnn_0010_0011);
 //stc.l SSR,@-<REG_N>           
  sh4op(i0100_nnnn_0011_0011);
+ //stc.l SGR,@-<REG_N>           
+ sh4op(i0100_nnnn_0011_0010);
 //stc.l SPC,@-<REG_N>           
  sh4op(i0100_nnnn_0100_0011);
 //stc Rm_BANK,@-<REG_N>         
@@ -194,6 +198,8 @@
  sh4op(i0100_nnnn_0010_0111);
 //ldc.l @<REG_N>+,SSR           
  sh4op(i0100_nnnn_0011_0111);
+  //ldc.l @<REG_N>+,SGR           
+ sh4op(i0100_nnnn_0011_0110);
 //ldc.l @<REG_N>+,SPC           
  sh4op(i0100_nnnn_0100_0111);
 //ldc.l @<REG_N>+,R0_BANK       
@@ -218,6 +224,8 @@
  sh4op(i0100_nnnn_0010_1110);
 //ldc <REG_N>,SSR               
  sh4op(i0100_nnnn_0011_1110);
+ //ldc <REG_N>,SGR               
+ sh4op(i0100_nnnn_0011_1010);
 //ldc <REG_N>,SPC               
  sh4op(i0100_nnnn_0100_1110);
 //ldc <REG_N>,R0_BANK           

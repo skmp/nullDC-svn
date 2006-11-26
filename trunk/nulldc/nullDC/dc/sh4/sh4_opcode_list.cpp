@@ -621,7 +621,11 @@ sh4_opcodelistentry opcodes[]=
 	{rec_shil_icpu_nimp				,i0000_nnnn_0000_0010	,Mask_n		,0x0002	,Normal				,OpDissCFS,"stc SR,<REG_N>"					,2,2,CO,fix_none},	//stc SR,<REG_N>                
 	{rec_shil_i0000_nnnn_0001_0010	,i0000_nnnn_0001_0010	,Mask_n		,0x0012	,Normal				,OpDissCFS,"stc GBR,<REG_N>"				,2,2,CO,fix_none},	//stc GBR,<REG_N>               
 	{rec_shil_i0000_nnnn_0010_0010	,i0000_nnnn_0010_0010	,Mask_n		,0x0022	,Normal				,OpDissCFS,"stc VBR,<REG_N>"				,2,2,CO,fix_none},	//stc VBR,<REG_N>               
-	{rec_shil_i0000_nnnn_0011_0010	,i0000_nnnn_0011_0010	,Mask_n		,0x0032	,Normal				,OpDissCFS,"stc SSR,<REG_N>"				,2,2,CO,fix_none},	//stc SSR,<REG_N>               
+	{rec_shil_i0000_nnnn_0011_0010	,i0000_nnnn_0011_0010	,Mask_n		,0x0032	,Normal				,OpDissCFS,"stc SSR,<REG_N>"				,2,2,CO,fix_none},	//stc SSR,<REG_N>  
+	
+				//STC SGR,Rn SGR > Rn 0000_nnnn_0011_1010 Privileged —(this one is 0x0f3A)
+	{rec_shil_i0000_nnnn_0011_1010	,i0000_nnnn_0011_1010	,Mask_n		,0x003A	,Normal				,OpDissCFS,"stc SGR,<REG_N>"				,3,3,CO,fix_none},	//stc SGR,<REG_N> 
+
 	{rec_shil_i0000_nnnn_0100_0010	,i0000_nnnn_0100_0010	,Mask_n		,0x0042	,Normal				,OpDissCFS,"stc SPC,<REG_N>"				,2,2,CO,fix_none},	//stc SPC,<REG_N>               
 	{rec_shil_i0000_nnnn_1mmm_0010	,i0000_nnnn_1mmm_0010	,Mask_n_ml3bit,0x0082,Normal			,OpDissCFS,"stc R0_BANK,<REG_N>"			,2,2,CO,fix_none},	//stc R0_BANK,<REG_N>           
 	{rec_shil_i0000_nnnn_0010_0011	,i0000_nnnn_0010_0011	,Mask_n		,0x0023	,Branch_rel_d		,OpDissCFS,"braf <REG_N>"					,2,3,CO,fix_none},	//braf <REG_N>                  
@@ -696,6 +700,10 @@ sh4_opcodelistentry opcodes[]=
 	{rec_shil_i0100_nnnn_0001_0011	,i0100_nnnn_0001_0011	,Mask_n		,0x4013	,Normal				,OpDissCFS,"stc.l GBR,@-<REG_N>"			,1,1,CO,rn_4	},	//stc.l GBR,@-<REG_N>           
 	{rec_shil_i0100_nnnn_0010_0011	,i0100_nnnn_0010_0011	,Mask_n		,0x4023	,Normal				,OpDissCFS,"stc.l VBR,@-<REG_N>"			,1,1,CO,rn_4	},	//stc.l VBR,@-<REG_N>           
 	{rec_shil_i0100_nnnn_0011_0011	,i0100_nnnn_0011_0011	,Mask_n		,0x4033	,Normal				,OpDissCFS,"stc.l SSR,@-<REG_N>"			,1,1,CO,rn_4	},	//stc.l SSR,@-<REG_N>           
+
+				//STC.L SGR,@-Rn      0100_nnnn_0011_0010 Privileged —
+	{rec_shil_i0100_nnnn_0011_0010	,i0100_nnnn_0011_0010	,Mask_n		,0x4032	,Normal				,OpDissCFS,"stc.l SGR,@-<REG_N>"			,3,3,CO,rn_4	},	//stc.l SGR,@-<REG_N>           
+
 	{rec_shil_i0100_nnnn_0100_0011	,i0100_nnnn_0100_0011	,Mask_n		,0x4043	,Normal				,OpDissCFS,"stc.l SPC,@-<REG_N>"			,1,1,CO,rn_4	},	//stc.l SPC,@-<REG_N>           
 	{rec_shil_i0100_nnnn_1mmm_0011	,i0100_nnnn_1mmm_0011	,Mask_n_ml3bit,0x4083,Normal			,OpDissCFS,"stc <RM_BANK>,@-<REG_N>"		,1,1,CO,rn_4	},	//stc Rm_BANK,@-<REG_N>         
 	{rec_shil_i0100_nnnn_0000_0110	,i0100_nnnn_0000_0110	,Mask_n		,0x4006	,Normal				,OpDissCFS,"lds.l @<REG_N>+,MACH"			,1,1,CO,fix_none},	//lds.l @<REG_N>+,MACH          
@@ -707,6 +715,10 @@ sh4_opcodelistentry opcodes[]=
 	{rec_shil_i0100_nnnn_0001_0111	,i0100_nnnn_0001_0111	,Mask_n		,0x4017	,Normal				,OpDissCFS,"ldc.l @<REG_N>+,GBR"			,1,1,CO,fix_none},	//ldc.l @<REG_N>+,GBR           
 	{rec_shil_i0100_nnnn_0010_0111	,i0100_nnnn_0010_0111	,Mask_n		,0x4027	,Normal				,OpDissCFS,"ldc.l @<REG_N>+,VBR"			,1,1,CO,fix_none},	//ldc.l @<REG_N>+,VBR           
 	{rec_shil_i0100_nnnn_0011_0111	,i0100_nnnn_0011_0111	,Mask_n		,0x4037	,Normal				,OpDissCFS,"ldc.l @<REG_N>+,SSR"			,1,1,CO,fix_none},	//ldc.l @<REG_N>+,SSR           
+
+			    //LDC.L @Rm+,SGR (Rm) 0100_mmmm_0011_0110 Privileged —
+	{rec_shil_i0100_nnnn_0011_0110	,i0100_nnnn_0011_0110	,Mask_n		,0x4036	,Normal				,OpDissCFS,"ldc.l @<REG_N>+,SGR"			,3,3,CO,fix_none},	//ldc.l @<REG_N>+,SGR           
+
 	{rec_shil_i0100_nnnn_0100_0111	,i0100_nnnn_0100_0111	,Mask_n		,0x4047	,Normal				,OpDissCFS,"ldc.l @<REG_N>+,SPC"			,1,1,CO,fix_none},	//ldc.l @<REG_N>+,SPC           
 	{rec_shil_i0100_nnnn_1mmm_0111	,i0100_nnnn_1mmm_0111	,Mask_n_ml3bit,0x4087,Normal			,OpDissCFS,"ldc.l @<REG_N>+,RM_BANK"		,1,1,CO,fix_none},	//ldc.l @<REG_N>+,RM_BANK       
 	{rec_shil_i0100_nnnn_0000_1010	,i0100_nnnn_0000_1010	,Mask_n		,0x400A	,Normal				,OpDissCFS,"lds <REG_N>,MACH"				,1,3,CO,fix_none},	//lds <REG_N>,MACH              
@@ -718,7 +730,11 @@ sh4_opcodelistentry opcodes[]=
 	{rec_shil_icpu_nimp				,i0100_nnnn_0000_1110	,Mask_n		,0x400E	,WritesSR			,OpDissCFS,"ldc <REG_N>,SR"					,1,1,CO,fix_none},	//ldc <REG_N>,SR                
 	{rec_shil_i0100_nnnn_0001_1110	,i0100_nnnn_0001_1110	,Mask_n		,0x401E	,Normal				,OpDissCFS,"ldc <REG_N>,GBR"				,1,1,CO,fix_none},	//ldc <REG_N>,GBR               
 	{rec_shil_i0100_nnnn_0010_1110	,i0100_nnnn_0010_1110	,Mask_n		,0x402E	,Normal				,OpDissCFS,"ldc <REG_N>,VBR"				,1,1,CO,fix_none},	//ldc <REG_N>,VBR               
-	{rec_shil_i0100_nnnn_0011_1110	,i0100_nnnn_0011_1110	,Mask_n		,0x403E	,Normal				,OpDissCFS,"ldc <REG_N>,SSR"				,1,1,CO,fix_none},	//ldc <REG_N>,SSR               
+	{rec_shil_i0100_nnnn_0011_1110	,i0100_nnnn_0011_1110	,Mask_n		,0x403E	,Normal				,OpDissCFS,"ldc <REG_N>,SSR"				,1,1,CO,fix_none},	//ldc <REG_N>,SSR
+	
+				//LDC Rm,SGR Rm > SGR 0100_mmmm_0011_1010 Privileged —
+	{rec_shil_i0100_nnnn_0011_1010	,i0100_nnnn_0011_1010	,Mask_n		,0x403A	,Normal				,OpDissCFS,"ldc <REG_N>,SGR"				,3,3,CO,fix_none},	//ldc <REG_N>,SGR
+
 	{rec_shil_i0100_nnnn_0100_1110	,i0100_nnnn_0100_1110	,Mask_n		,0x404E	,Normal				,OpDissCFS,"ldc <REG_N>,SPC"				,1,1,CO,fix_none},	//ldc <REG_N>,SPC               
 	{rec_shil_i0100_nnnn_1mmm_1110	,i0100_nnnn_1mmm_1110	,Mask_n_ml3bit,0x408E,Normal			,OpDissCFS,"ldc <REG_N>,<RM_BANK>"			,1,1,CO,fix_none},	//ldc <REG_N>,<RM_BANK>               
 	{rec_shil_i0100_nnnn_0000_0000	,i0100_nnnn_0000_0000	,Mask_n		,0x4000	,Normal				,OpDissCFS,"shll <REG_N>"					,1,1,EX,fix_none},	//shll <REG_N>                  

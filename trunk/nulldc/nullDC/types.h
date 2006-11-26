@@ -189,4 +189,4 @@ struct RegisterStruct
 	u32 flags;					//flags for read/write
 };
 
-#define NO_MMU
+//#define NO_MMU
