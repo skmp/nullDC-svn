@@ -166,6 +166,8 @@
  sh4op(i0100_nnnn_0001_0010);
 //sts.l PR,@-<REG_N>            
  sh4op(i0100_nnnn_0010_0010);
+ //sts.l DBR,@-<REG_N>            
+ sh4op(i0100_nnnn_1111_0010);
 //stc.l SR,@-<REG_N>            
  sh4op(i0100_nnnn_0000_0011);
 //stc.l GBR,@-<REG_N>           
@@ -189,7 +191,9 @@
 //lds.l @<REG_N>+,FPUL          
  sh4op(i0100_nnnn_0101_0110);
 //lds.l @<REG_N>+,FPSCR         
- sh4op(i0100_nnnn_0110_0110);
+ sh4op(i0100_nnnn_0110_0110); 
+//ldc.l @<REG_N>+,DBR            
+ sh4op(i0100_nnnn_1111_0110);
 //ldc.l @<REG_N>+,SR            
  sh4op(i0100_nnnn_0000_0111);
 //ldc.l @<REG_N>+,GBR           

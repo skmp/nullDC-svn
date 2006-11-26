@@ -696,6 +696,10 @@ sh4_opcodelistentry opcodes[]=
 	{rec_shil_i0100_nnnn_0000_0010	,i0100_nnnn_0000_0010	,Mask_n		,0x4002	,Normal				,OpDissCFS,"sts.l MACH,@-<REG_N>"			,1,3,CO,rn_4	},	//sts.l MACH,@-<REG_N>          
 	{rec_shil_i0100_nnnn_0001_0010	,i0100_nnnn_0001_0010	,Mask_n		,0x4012	,Normal				,OpDissCFS,"sts.l MACL,@-<REG_N>"			,1,3,CO,rn_4	},	//sts.l MACL,@-<REG_N>          
 	{rec_shil_i0100_nnnn_0010_0010	,i0100_nnnn_0010_0010	,Mask_n		,0x4022	,Normal				,OpDissCFS,"sts.l PR,@-<REG_N>"				,1,1,CO,rn_4	},	//sts.l PR,@-<REG_N>            
+	
+					//STC.L DBR,@-Rn  0100_nnnn_1111_0010 Privileged —
+	{rec_shil_i0100_nnnn_1111_0010	,i0100_nnnn_1111_0010	,Mask_n		,0x40F2	,Normal				,OpDissCFS,"stc.l DBR,@-<REG_N>"			,2,2,CO,rn_4	},	//stc.l DBR,@-<REG_N>           
+
 	{rec_shil_icpu_nimp				,i0100_nnnn_0000_0011	,Mask_n		,0x4003	,Normal				,OpDissCFS,"stc.l SR,@-<REG_N>"				,1,1,CO,rn_4	},	//stc.l SR,@-<REG_N>            
 	{rec_shil_i0100_nnnn_0001_0011	,i0100_nnnn_0001_0011	,Mask_n		,0x4013	,Normal				,OpDissCFS,"stc.l GBR,@-<REG_N>"			,1,1,CO,rn_4	},	//stc.l GBR,@-<REG_N>           
 	{rec_shil_i0100_nnnn_0010_0011	,i0100_nnnn_0010_0011	,Mask_n		,0x4023	,Normal				,OpDissCFS,"stc.l VBR,@-<REG_N>"			,1,1,CO,rn_4	},	//stc.l VBR,@-<REG_N>           
@@ -711,6 +715,10 @@ sh4_opcodelistentry opcodes[]=
 	{rec_shil_i0100_nnnn_0010_0110	,i0100_nnnn_0010_0110	,Mask_n		,0x4026	,Normal				,OpDissCFS,"lds.l @<REG_N>+,PR"				,1,2,CO,fix_none},	//lds.l @<REG_N>+,PR            
 	{rec_shil_i0100_nnnn_0101_0110	,i0100_nnnn_0101_0110	,Mask_n		,0x4056	,Normal				,OpDissCFS,"lds.l @<REG_N>+,FPUL"			,1,1,CO,fix_none},	//lds.l @<REG_N>+,FPUL          
 	{rec_shil_icpu_nimp				,i0100_nnnn_0110_0110	,Mask_n		,0x4066	,WritesFPSCR		,OpDissCFS,"lds.l @<REG_N>+,FPSCR"			,1,1,CO,fix_none},	//lds.l @<REG_N>+,FPSCR         
+	
+				    //LDC.L @Rm+,DBR  0100_mmmm_1111_0110 Privileged —
+	{rec_shil_i0100_nnnn_1111_0110	,i0100_nnnn_1111_0110	,Mask_n		,0x40F6	,Normal				,OpDissCFS,"ldc.l @<REG_N>+,DBR"			,1,3,CO,fix_none},	//ldc.l @<REG_N>+,DBR            
+
 	{rec_shil_icpu_nimp				,i0100_nnnn_0000_0111	,Mask_n		,0x4007	,WritesSR			,OpDissCFS,"ldc.l @<REG_N>+,SR"				,1,1,CO,fix_none},	//ldc.l @<REG_N>+,SR            
 	{rec_shil_i0100_nnnn_0001_0111	,i0100_nnnn_0001_0111	,Mask_n		,0x4017	,Normal				,OpDissCFS,"ldc.l @<REG_N>+,GBR"			,1,1,CO,fix_none},	//ldc.l @<REG_N>+,GBR           
 	{rec_shil_i0100_nnnn_0010_0111	,i0100_nnnn_0010_0111	,Mask_n		,0x4027	,Normal				,OpDissCFS,"ldc.l @<REG_N>+,VBR"			,1,1,CO,fix_none},	//ldc.l @<REG_N>+,VBR           

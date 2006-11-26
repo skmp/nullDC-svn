@@ -302,6 +302,13 @@
 	WriteMemU32(r[n],pr);
 }
 
+ //sts.l DBR,@-<REG_N>            
+ sh4op(i0100_nnnn_1111_0010)
+{
+	u32 n = GetN(op);
+	r[n] -= 4;
+	WriteMemU32(r[n],dbr);
+}
 
 //stc.l GBR,@-<REG_N>           
  sh4op(i0100_nnnn_0001_0011)
@@ -404,11 +411,14 @@
 	r[n] += 4;
 }
 
-
-
-
-
-
+//lds.l @<REG_N>+,DBR         
+ sh4op(i0100_nnnn_1111_0110)
+{
+	u32 n = GetN(op);
+	
+	ReadMemU32(dbr,r[n]);
+	r[n] += 4;
+}
 
 
 //ldc.l @<REG_N>+,GBR           
