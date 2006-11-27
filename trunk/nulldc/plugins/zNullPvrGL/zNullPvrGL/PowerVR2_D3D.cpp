@@ -262,6 +262,7 @@ S_INLINE void RenderSprites(vector<Vertex> &vl)
 void RenderD3D()
 {
 //	FrameCount++;
+	lprintf("Render() (D3D)\n");
 
 	u32 dwValue = *pVO_BORDER_COL;
 	u32	R=((dwValue>>0x10)&0xFF),

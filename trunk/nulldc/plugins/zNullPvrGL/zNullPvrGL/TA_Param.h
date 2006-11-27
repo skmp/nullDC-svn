@@ -543,6 +543,7 @@ extern u32 lists_complete;		// TODO, fix this shit, i had it fixed before, check
 
 
 #define combine_ac()	\
+	ac = (AllocCtrl *)pTA_ALLOC_CTRL;									\
 	if( ac->O_OPB	== 0 ) { lists_complete |= (1<<LT_Opaque);		}	\
 	if( ac->T_OPB	== 0 ) { lists_complete |= (1<<LT_Translucent);	}	\
 	if( ac->TM_OPB	== 0 ) { lists_complete |= (1<<LT_TransMod);	}	\
@@ -550,6 +551,8 @@ extern u32 lists_complete;		// TODO, fix this shit, i had it fixed before, check
 	if( ac->PT_OPB	== 0 ) { lists_complete |= (1<<LT_PunchThrough);}
 
 
+#define LT_FULL	\
+	(1<<LT_Opaque) | (1<<LT_Translucent) | (1<<LT_TransMod) | (1<<LT_OpaqueMod) | (1<<LT_PunchThrough)
 
 
 
@@ -660,6 +663,8 @@ struct Vertex
 
 #define DCACHE_SIZE	SZ_4MB
 
+
+extern u32 RenderPending;
 extern u32 nOpqStrips, nTrsStrips, nPtuStrips;
 extern u8 opq[DCACHE_SIZE], trs[DCACHE_SIZE], ptu[DCACHE_SIZE];
 

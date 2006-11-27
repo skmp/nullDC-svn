@@ -48,7 +48,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 
 void cfgdlg(PluginType type,void* window)
 {
-	MessageBox((HWND)window,"Nothing to configure","nullExtDev plugin",MB_OK | MB_ICONINFORMATION);
+//	MessageBox((HWND)window,"Nothing to configure","nullExtDev plugin",MB_OK | MB_ICONINFORMATION);
 }
 
 //Give to the emu info for the plugin type

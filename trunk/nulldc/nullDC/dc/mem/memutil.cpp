@@ -76,6 +76,8 @@ bool LoadFileToSh4Bootrom(char *szFile)
 		printf("LoadFileToSh4Bootrom: can't load file \"%s\", Too Large! size(%d bytes)\n", szFile, flen);
 		return false;
 	}
+#else
+	fseek(fd, 0x15014, SEEK_SET);
 #endif
 
 	char buf = 'Z';

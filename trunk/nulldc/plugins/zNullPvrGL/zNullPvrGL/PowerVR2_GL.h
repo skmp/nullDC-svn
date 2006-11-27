@@ -31,10 +31,10 @@ enum {
 
 bool InitGL();
 void TermGL();
-void ResizeGL();
 void RenderGL();
-
+u32 RenderToTexGL();
 void CheckErrorsGL(char *szFunc);
+void ResizeGL(bool bDefault=true);
 
 
 S_INLINE void TexFilterGL( GLuint filter )

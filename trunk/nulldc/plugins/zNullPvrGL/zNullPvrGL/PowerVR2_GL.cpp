@@ -475,7 +475,9 @@ S_INLINE void RenderSprites(vector<Vertex> &vl)
 
 void RenderGL()
 {
-//	FrameCount++;
+	//	FrameCount++;
+	lprintf("Render() (GL)\n");
+
 //	glFlush();
 	Resize();
 
@@ -523,14 +525,69 @@ void RenderGL()
 }
 
 
+/*
+**	We're going to try this one ... 
+**	we'll need to make sure to keep the image @ 1024x512
+**	the color buffer will be sized at whatever the window is stretched to
+**	so this is going to be a pain in the ass unless the resolution is locked to 640x480
+**	for now we'll just ignore this shit and it will look like ass :)
+**	(( we can just resize viewport to get proper size? or does it need another render? ))
+**	this isn't working ... need to rerender evidently ... not cool ... 
+**	image is upside down as well, not a huge surprise, but we would have to manually flip it ..
+**	Or rerender to a new target which would be the best bet i guess .. 
+**	simply flipping the tex coords could be efficient as well 
+*/
 
+RECT rClient;
+GLuint rToTexID = 0;
 
-void ResizeGL()
+u32 RenderToTexGL()
 {
-	RECT rClient;
+	if(0 == rToTexID)
+	{
+		glGenTextures(1, &rToTexID);
+		glBindTexture(GL_TEXTURE_2D, rToTexID);
+
+		u32 * pData = new u32[1024*512];
+		if(NULL == pData) return 0;
+		memset(pData, 0, 1024*512*sizeof(u32));
+		delete [] pData;
+
+		glTexImage2D(GL_TEXTURE_2D, 0, 0, 1024,512, 0,0,0, pData);
+	}
+
+	ResizeGL(false);
+	glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 1024,512, 0);
+
+//#define REREND
+#ifdef  REREND
+
+	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+
+	glBegin(GL_QUADS);
+		glVertex3f(0,0,0);		glTexCoord2f(0,0);
+		glVertex3f(640,0,0);	glTexCoord2f(1,0);
+		glVertex3f(640,480,0);	glTexCoord2f(1,1);
+		glVertex3f(0,480,0);	glTexCoord2f(0,1);
+	glEnd();
+
+#endif //REREND
+
+
+	ResizeGL();
+	return rToTexID;
+}
+
+
+void ResizeGL(bool bDefault)
+{
 	GetClientRect((HWND)emuIf.handle,&rClient);
 
-	glViewport( 0,0, (u32)(rClient.right-rClient.left), (u32)(rClient.bottom-rClient.top) );
+	if(bDefault)
+		glViewport( 0,0, (u32)(rClient.right-rClient.left), (u32)(rClient.bottom-rClient.top) );
+	else
+		glViewport( 0,0, 640,480 );
+
 	//lprintf("SizeGL() viewport: %i, %i\n",(rClient.right-rClient.left), (rClient.bottom-rClient.top));
 
 	glMatrixMode(GL_PROJECTION);
@@ -632,8 +689,8 @@ bool InitGL()
 
 #endif
 
-	Resize();
-	Render();
+	ResizeGL();
+	RenderGL();
 
 	return true;
 }

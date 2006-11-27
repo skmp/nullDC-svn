@@ -11,10 +11,10 @@ using namespace PvrIf;
 ////////////////////
 
 AllocCtrl * ac;
+u32 RenderPending=0;
 u32 lists_complete=0;
 
 TA_PolyMode PolyMode;
-
 
 
 
@@ -23,12 +23,20 @@ S_INLINE u32 ProcessParam(ParamBase *pb)
 {
 	PCW * pcw = &pb->pcw;
 
-//	lprintf("ProcessParam: %X\n", pcw->ParaType);
+	lprintf("ProcessParam: %X\n", pcw->ParaType);
 
 	switch(pcw->ParaType)
 	{
 	case PT_EndOfList:
 		PolyMode = PM_None;
+
+		lists_complete |= (1<<pcw->ListType);
+		if(0x1F == lists_complete && RenderPending)
+		{
+			printf("Rendering Pending Data !\n");
+			RenderPending=0;
+			PvrIf::Render();
+		}
 
 		if(GlobalParams.size() > 0) {
 			ASSERT_T((GlobalParams[GlobalParams.size()-1].pcw.ListType >= LT_Reserved),"<PVR> EndOfList: Reserved List Type !");
@@ -103,9 +111,9 @@ void TaFifo(u32 address, u32* data, u32 size)
 	s32 sz = (size<<=5);
 	ParamBase * pb= NULL;
 
-//	lprintf("TaFifo(%08X, %p, %d)\n{\n", address, data, size);
-//	lprintf(" :: data %08X %08X %08X %08X\n",
-//		*(u32*)&data[0], *(u32*)&data[4], *(u32*)&data[8], *(u32*)&data[12]);
+	lprintf("TaFifo(%08X, %p, %d)\n{\n", address, data, size);
+	lprintf(" :: data %08X %08X %08X %08X\n",
+		*(u32*)&data[0], *(u32*)&data[4], *(u32*)&data[8], *(u32*)&data[12]);
 
 	if(WritePend) {
 		memcpy(&FifoBuff[32], &data[0], 32);
@@ -119,7 +127,7 @@ void TaFifo(u32 address, u32* data, u32 size)
 		ASSERT_T((sz&31),"Illegal TaFifo sz!");
 		pb = (ParamBase *)&data[((s32)size-sz)>>2];
 
- //		lprintf("-\tpb: %p :: sz: %d\n", pb, sz);
+		lprintf("-\tpb: %p :: sz: %d\n", pb, sz);
 
 		u32 PSize = 32 ;
 		if(PT_Vertex  == pb->pcw.ParaType) { if(isVert64Byte(&pb->pcw)) { PSize = 64; } }
@@ -130,6 +138,7 @@ void TaFifo(u32 address, u32* data, u32 size)
 		{
 			WritePend = true;
 			memcpy(FifoBuff, pb, sz);
+			printf("!\nWritePend! sz:%d\n}\n",sz);
 			lprintf("!\nWritePend! sz:%d\n}\n",sz);
 			return;	// we're finished
 		}
@@ -138,7 +147,7 @@ void TaFifo(u32 address, u32* data, u32 size)
 
 		sz -= PSize ;
 	}
-//	lprintf("}\n\n");
+	lprintf("}\n\n");
 	IsProcessing=false;
 }
 
@@ -280,6 +289,12 @@ u32 PvrIf::AppendStrip(VertexParam *vp)
 		idx=0;
 		LPType=0;
 		ParamIdx=0;
+
+		lprintf("---- EOS ----\n");
+	}
+	else
+	{
+		lprintf("Append: Idx: %X\n", idx);
 	}
 	return 0;
 }

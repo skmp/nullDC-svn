@@ -5,7 +5,9 @@
 
 #ifdef BUILD_NAOMI	
 
-void naomi_WriteXicor(u32 Addr, u32 data, u32 sz)
+
+
+void WriteMem_Xicor(u32 Addr, u32 data, u32 sz)
 {
 	int Dat	= data&1;
 	int Clk	= data&2;
@@ -18,114 +20,60 @@ void naomi_WriteXicor(u32 Addr, u32 data, u32 sz)
 	GameEPROM.SetSCL(Clk);
 */
 }
-u32  naomi_ReadXicor(u32 Addr, u32 sz)
+u32  ReadMem_Xicor(u32 Addr, u32 sz)
 {
-	return 0;//SB_NXICOR_WR;
+	return SB_NXICOR_WR;
 }
 
-u32  naomi_reg_ReadMem(u32 Addr, u32 sz)
+u32  ReadMem_naomi(u32 Addr, u32 sz)
 {
+	switch(Addr&255)
+	{
+	case NAOMI_ROM_OFFSETH_addr&255:
+	case NAOMI_ROM_OFFSETL_addr&255:
+	case NAOMI_ROM_DATA_addr&255:
+	case NAOMI_DMA_OFFSETH_addr&255:
+	case NAOMI_DMA_OFFSETL_addr&255:
+	case NAOMI_DMA_COUNT_addr&255:
+	case NAOMI_BOARDID_WRITE_addr&255:
+	case NAOMI_BOARDID_READ_addr&255:
+	case NAOMI_COMM_OFFSET_addr&255:
+	case NAOMI_COMM_DATA_addr&255:
+//	case NAOMI_XICOR_WRITE_addr&255:
+//	case NAOMI_XICOR_READ_addr&255:
+		//printf("-> nReg handled %X \n", Addr);
+		return 1;
+
+	default: break;
+	}
 	printf("naomi ReadMem: %X, %d\n", Addr, sz);
 	return 0;
 
 }
-void naomi_reg_WriteMem(u32 Addr, u32 data, u32 sz)
+void WriteMem_naomi(u32 Addr, u32 data, u32 sz)
 {
+	switch(Addr&255)
+	{
+	case NAOMI_ROM_OFFSETH_addr&255:
+	case NAOMI_ROM_OFFSETL_addr&255:
+	case NAOMI_ROM_DATA_addr&255:
+	case NAOMI_DMA_OFFSETH_addr&255:
+	case NAOMI_DMA_OFFSETL_addr&255:
+	case NAOMI_DMA_COUNT_addr&255:
+	case NAOMI_BOARDID_WRITE_addr&255:
+	case NAOMI_BOARDID_READ_addr&255:
+	case NAOMI_COMM_OFFSET_addr&255:
+	case NAOMI_COMM_DATA_addr&255:
+		//	case NAOMI_XICOR_WRITE_addr&255:
+		//	case NAOMI_XICOR_READ_addr&255:
+		//printf("-> nReg handled %X \n", Addr);
+		return;
+
+	default: break;
+	}
 	printf("naomi WriteMem: %X <= %X, %d\n", Addr, data, sz);
 }
 
-
-
-void naomi_reg_Init()
-{
-	sb_regs[((NAOMI_ROM_OFFSETH_addr-SB_BASE))>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
-	sb_regs[((NAOMI_ROM_OFFSETH_addr-SB_BASE))>>2].NextCange=0;
-	sb_regs[((NAOMI_ROM_OFFSETH_addr-SB_BASE))>>2].readFunction=(RegReadFP*)naomi_reg_ReadMem;
-	sb_regs[((NAOMI_ROM_OFFSETH_addr-SB_BASE))>>2].writeFunction=(RegWriteFP*)naomi_reg_WriteMem;
-	sb_regs[((NAOMI_ROM_OFFSETH_addr-SB_BASE))>>2].data32=&NAOMI_ROM_OFFSETH;
-
-
-	sb_regs[((NAOMI_ROM_OFFSETL_addr-SB_BASE))>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
-	sb_regs[((NAOMI_ROM_OFFSETL_addr-SB_BASE))>>2].NextCange=0;
-	sb_regs[((NAOMI_ROM_OFFSETL_addr-SB_BASE))>>2].readFunction=(RegReadFP*)naomi_reg_ReadMem;;
-	sb_regs[((NAOMI_ROM_OFFSETL_addr-SB_BASE))>>2].writeFunction=(RegWriteFP*)naomi_reg_WriteMem;;
-	sb_regs[((NAOMI_ROM_OFFSETL_addr-SB_BASE))>>2].data32=&NAOMI_ROM_OFFSETL;
-
-
-	sb_regs[((NAOMI_ROM_DATA_addr-SB_BASE))>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
-	sb_regs[((NAOMI_ROM_DATA_addr-SB_BASE))>>2].NextCange=0;
-	sb_regs[((NAOMI_ROM_DATA_addr-SB_BASE))>>2].readFunction=(RegReadFP*)naomi_reg_ReadMem;;
-	sb_regs[((NAOMI_ROM_DATA_addr-SB_BASE))>>2].writeFunction=(RegWriteFP*)naomi_reg_WriteMem;;
-	sb_regs[((NAOMI_ROM_DATA_addr-SB_BASE))>>2].data32=&NAOMI_ROM_DATA;
-
-
-	sb_regs[((NAOMI_DMA_OFFSETH_addr-SB_BASE))>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
-	sb_regs[((NAOMI_DMA_OFFSETH_addr-SB_BASE))>>2].NextCange=0;
-	sb_regs[((NAOMI_DMA_OFFSETH_addr-SB_BASE))>>2].readFunction=(RegReadFP*)naomi_reg_ReadMem;;
-	sb_regs[((NAOMI_DMA_OFFSETH_addr-SB_BASE))>>2].writeFunction=(RegWriteFP*)naomi_reg_WriteMem;;
-	sb_regs[((NAOMI_DMA_OFFSETH_addr-SB_BASE))>>2].data32=&NAOMI_DMA_OFFSETH;
-
-
-	sb_regs[((NAOMI_DMA_OFFSETL_addr-SB_BASE))>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
-	sb_regs[((NAOMI_DMA_OFFSETL_addr-SB_BASE))>>2].NextCange=0;
-	sb_regs[((NAOMI_DMA_OFFSETL_addr-SB_BASE))>>2].readFunction=(RegReadFP*)naomi_reg_ReadMem;;
-	sb_regs[((NAOMI_DMA_OFFSETL_addr-SB_BASE))>>2].writeFunction=(RegWriteFP*)naomi_reg_WriteMem;;
-	sb_regs[((NAOMI_DMA_OFFSETL_addr-SB_BASE))>>2].data32=&NAOMI_DMA_OFFSETL;
-
-
-	sb_regs[((NAOMI_DMA_COUNT_addr-SB_BASE))>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
-	sb_regs[((NAOMI_DMA_COUNT_addr-SB_BASE))>>2].NextCange=0;
-	sb_regs[((NAOMI_DMA_COUNT_addr-SB_BASE))>>2].readFunction=(RegReadFP*)naomi_reg_ReadMem;;
-	sb_regs[((NAOMI_DMA_COUNT_addr-SB_BASE))>>2].writeFunction=(RegWriteFP*)naomi_reg_WriteMem;;
-	sb_regs[((NAOMI_DMA_COUNT_addr-SB_BASE))>>2].data32=&NAOMI_DMA_COUNT;
-
-
-	sb_regs[((NAOMI_BOARDID_WRITE_addr-SB_BASE))>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
-	sb_regs[((NAOMI_BOARDID_WRITE_addr-SB_BASE))>>2].NextCange=0;
-	sb_regs[((NAOMI_BOARDID_WRITE_addr-SB_BASE))>>2].readFunction=(RegReadFP*)naomi_reg_ReadMem;;
-	sb_regs[((NAOMI_BOARDID_WRITE_addr-SB_BASE))>>2].writeFunction=(RegWriteFP*)naomi_reg_WriteMem;;
-	sb_regs[((NAOMI_BOARDID_WRITE_addr-SB_BASE))>>2].data32=&NAOMI_BOARDID_WRITE;
-
-
-	sb_regs[((NAOMI_BOARDID_READ_addr-SB_BASE))>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
-	sb_regs[((NAOMI_BOARDID_READ_addr-SB_BASE))>>2].NextCange=0;
-	sb_regs[((NAOMI_BOARDID_READ_addr-SB_BASE))>>2].readFunction=(RegReadFP*)naomi_reg_ReadMem;;
-	sb_regs[((NAOMI_BOARDID_READ_addr-SB_BASE))>>2].writeFunction=(RegWriteFP*)naomi_reg_WriteMem;;
-	sb_regs[((NAOMI_BOARDID_READ_addr-SB_BASE))>>2].data32=&NAOMI_BOARDID_READ;
-
-
-	sb_regs[((NAOMI_COMM_OFFSET_addr-SB_BASE))>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
-	sb_regs[((NAOMI_COMM_OFFSET_addr-SB_BASE))>>2].NextCange=0;
-	sb_regs[((NAOMI_COMM_OFFSET_addr-SB_BASE))>>2].readFunction=(RegReadFP*)naomi_reg_ReadMem;;
-	sb_regs[((NAOMI_COMM_OFFSET_addr-SB_BASE))>>2].writeFunction=(RegWriteFP*)naomi_reg_WriteMem;;
-	sb_regs[((NAOMI_COMM_OFFSET_addr-SB_BASE))>>2].data32=&NAOMI_COMM_OFFSET;
-
-
-	sb_regs[((NAOMI_COMM_DATA_addr-SB_BASE))>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
-	sb_regs[((NAOMI_COMM_DATA_addr-SB_BASE))>>2].NextCange=0;
-	sb_regs[((NAOMI_COMM_DATA_addr-SB_BASE))>>2].readFunction=(RegReadFP*)naomi_reg_ReadMem;;
-	sb_regs[((NAOMI_COMM_DATA_addr-SB_BASE))>>2].writeFunction=(RegWriteFP*)naomi_reg_WriteMem;;
-	sb_regs[((NAOMI_COMM_DATA_addr-SB_BASE))>>2].data32=&NAOMI_COMM_DATA;
-
-
-	sb_regs[((NAOMI_XICOR_WRITE_addr-SB_BASE))>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
-	sb_regs[((NAOMI_XICOR_WRITE_addr-SB_BASE))>>2].NextCange=0;
-	sb_regs[((NAOMI_XICOR_WRITE_addr-SB_BASE))>>2].readFunction=(RegReadFP*)naomi_reg_ReadMem;;
-	sb_regs[((NAOMI_XICOR_WRITE_addr-SB_BASE))>>2].writeFunction=(RegWriteFP*)naomi_reg_WriteMem;;
-	sb_regs[((NAOMI_XICOR_WRITE_addr-SB_BASE))>>2].data32=&NAOMI_XICOR_WRITE;
-
-	sb_regs[((NAOMI_XICOR_READ_addr-SB_BASE))>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
-	sb_regs[((NAOMI_XICOR_READ_addr-SB_BASE))>>2].NextCange=0;
-	sb_regs[((NAOMI_XICOR_READ_addr-SB_BASE))>>2].readFunction=(RegReadFP*)naomi_reg_ReadMem;;
-	sb_regs[((NAOMI_XICOR_READ_addr-SB_BASE))>>2].writeFunction=(RegWriteFP*)naomi_reg_WriteMem;;
-	sb_regs[((NAOMI_XICOR_READ_addr-SB_BASE))>>2].data32=&NAOMI_XICOR_READ;
-
-}
-
-
-
-void naomi_reg_Term(){}
-void naomi_reg_Reset(bool Manual){}
 
 
 

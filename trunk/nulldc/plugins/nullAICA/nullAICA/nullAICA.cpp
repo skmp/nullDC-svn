@@ -18,7 +18,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 void cfgdlg(PluginType type,void* window)
 {
 	//printf("null AICA plugin [h4x0rs olny kthx]:No config kthx , however i will show ya some hle info :D\n");
-	MessageBox((HWND)window,"Nothing to configure","nullAICA plugin",MB_OK | MB_ICONINFORMATION);
+//	MessageBox((HWND)window,"Nothing to configure","nullAICA plugin",MB_OK | MB_ICONINFORMATION);
 	//ARM_Katana_Driver_Info();
 }
 

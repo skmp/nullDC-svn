@@ -594,6 +594,11 @@ void d1111_nnnn_0111_1101(char* text,const char* tx1,u32 pc,u16 opcode)
 	}	
 }
 
+
+
+
+
+
 void OpNoDiss(char* text,const char* tx1,u32 pc,u16 opcode)
 {
 	sprintf(text,"Missing Disassemble");

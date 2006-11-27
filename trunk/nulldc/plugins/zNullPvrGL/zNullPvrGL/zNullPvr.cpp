@@ -58,9 +58,9 @@ extern "C" __declspec(dllexport)
 void dcGetPluginInfo(ndcPluginIf *If)
 {
 	If->IfVersion	= 0x00020000;	// double check with nullgdr
-	If->LibVersion= 0x01;			// 
-	If->PluginType= 0x01;			// 1=PowerVR2
-	strcpy_s(If->szName, "zNullPvr, OpenGL PowerVR2 Plugin By ZeZu - (David Miller)[" __DATE__ "]");
+	If->LibVersion	= 0x00000001;	// 
+	If->PluginType	= 0x00000001;	// 1=PowerVR2
+	strcpy_s(If->szName, "zNullPvr, OpenGL PowerVR2 Plugin By ZeZu (David Miller) - [" __DATE__ "]");
 
 	If->Init		= pvrInit;
 	If->Term		= pvrTerm;
@@ -185,6 +185,7 @@ u32 vblCount=0;
 u32 last_fps=0;
 u32 FrameCount=0;
 
+S_INLINE
 void vblank_done()
 {
 	vblCount++;

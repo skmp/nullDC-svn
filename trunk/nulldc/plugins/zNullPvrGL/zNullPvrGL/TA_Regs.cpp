@@ -44,6 +44,7 @@ u32  pvrReadReg(u32 addr,u32 size)
 }
 
 extern u32 IsProcessing;
+extern u32 RenderPending;
 
 void pvrWriteReg(u32 addr,u32 data,u32 size)
 {
@@ -56,7 +57,9 @@ void pvrWriteReg(u32 addr,u32 data,u32 size)
 
 		switch(addr &0xFFF)
 		{
-		case TA_ALLOC_CTRL:	break;	// useless to do anything until after write, use eol instead
+		case TA_ALLOC_CTRL:
+			combine_ac();
+			break;	// useless to do anything until after write, use eol instead
 
 		case TA_LIST_CONT:
 			printf( ")>\tPVR2: TA_LIST_CONT Write <= %X\n", data);
@@ -64,16 +67,33 @@ void pvrWriteReg(u32 addr,u32 data,u32 size)
 			break;	// write it
 
 		case TA_LIST_INIT:
-		//	combine_ac();
+
+			if(RenderPending)
+			{
+				printf("LIST_INIT && RenderPending, Rendering !\n");
+				RenderPending=0;
+				PvrIf::Render();
+			}
+
+			lists_complete=0;
+			combine_ac();
 		//	lprintf("\n**************** TA_LIST_INIT ****************\n\n");
 			break;
 
 		case STARTRENDER:
 			if(0 != data) {
-			//	lprintf(")>\tSTART RENDER !\n");
+				lprintf(")>\tSTART RENDER ! lists_complete; %X Full: %X\n", lists_complete, LT_FULL);
 
 			// *FIXME*
-				PvrIf::Render();
+				if(0x1F==lists_complete)
+				{
+					PvrIf::Render();
+					RenderPending=0;
+				} else {
+					RenderPending=true;
+					ASSERT_T((1),"STARTRENDER && Lists Not Complete !");
+				}
+
 				emuIf.RaiseInterrupt(holly_RENDER_DONE);
 				emuIf.RaiseInterrupt(holly_RENDER_DONE_vd);
 				emuIf.RaiseInterrupt(holly_RENDER_DONE_isp);

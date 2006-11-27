@@ -1532,10 +1532,6 @@ void sb_Init()
 	pvr_sb_Init();
 	maple_Init();
 	aica_sb_Init();
-
-#ifdef BUILD_NAOMI
-	naomi_reg_Init();
-#endif
 }
 
 void sb_Reset(bool Manual)
@@ -1545,10 +1541,6 @@ void sb_Reset(bool Manual)
 	pvr_sb_Reset(Manual);
 	maple_Reset(Manual);
 	aica_sb_Reset(Manual);
-
-#ifdef BUILD_NAOMI
-	naomi_reg_Reset(Manual);
-#endif
 }
 
 void sb_Term()
@@ -1558,8 +1550,4 @@ void sb_Term()
 	pvr_sb_Term();
 	gdrom_reg_Term();
 	asic_reg_Term();
-
-#ifdef BUILD_NAOMI
-	naomi_reg_Term();
-#endif
 }

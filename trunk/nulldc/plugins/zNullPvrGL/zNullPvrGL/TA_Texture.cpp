@@ -912,6 +912,16 @@ void TexDecBump_TW(PolyParam *pp, TexEntry *te)
 
 
 
+S_INLINE u32 RenderToTex()
+{
+	if(R_OPENGL == pvrOpts.GfxApi)
+		return RenderToTexGL();
+//	if(R_DIRECTX == pvrOpts.GfxApi)
+//		return RenderToTexD3D();
+
+	return 0;
+}
+
 
 
 /*	When ScanOrder is 1 MipMap is ignored !
@@ -924,6 +934,14 @@ TexID TextureCache::GetTexture(PolyParam *pp)
 	u32 TexAddr = ((pp->param0.tcw.TexAddr << 3) &0x7FFFFF);
 	if(0==TexAddr)
 		return 0;
+
+	u32 fbAddrR1 = *pFB_R_SOF1 & 0x7FFFFF;	u32 fbAddrR2 = *pFB_R_SOF1 & 0x7FFFFF;
+	u32 fbAddrW1 = *pFB_W_SOF1 & 0x7FFFFF;	u32 fbAddrW2 = *pFB_W_SOF2 & 0x7FFFFF;
+	if( fbAddrR1==TexAddr || fbAddrR2==TexAddr ||
+		fbAddrW1==TexAddr || fbAddrW2==TexAddr )
+	{
+		return RenderToTex();
+	}
 
 	//for(size_t t=0; t<TexList.size(); t++)
 	//{

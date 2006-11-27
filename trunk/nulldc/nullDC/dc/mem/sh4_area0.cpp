@@ -4,6 +4,7 @@
 #include "dc/pvr/pvr_if.h"
 #include "dc/gdrom/gdrom_if.h"
 #include "dc/aica/aica_if.h"
+#include "naomi/naomi.h"
 
 #include "plugins/plugin_manager.h"
 
@@ -14,7 +15,7 @@
 //0x00400000- 0x005F67FF	:Unassigned
 //0x005F6800- 0x005F69FF	:System Control Reg.
 //0x005F6C00- 0x005F6CFF	:Maple i/f Control Reg.
-//0x005F7000- 0x005F70FF	:GD-ROM
+//0x005F7000- 0x005F70FF	:GD-ROM / NAOMI BD Reg.
 //0x005F7400- 0x005F74FF	:G1 i/f Control Reg.
 //0x005F7800- 0x005F78FF	:G2 i/f Control Reg.
 //0x005F7C00- 0x005F7CFF	:PVR i/f Control Reg.
@@ -93,7 +94,11 @@ T __fastcall ReadMem_area0(u32 addr)
 	else if ((base_start >=0x005F) && (base_end <=0x005F) && (addr>= 0x005F7000) && (addr<= 0x005F70FF)) //	:GD-ROM
 	{
 		//EMUERROR3("Read from area0_32 not implemented [GD-ROM], addr=%x,size=%d",addr,sz);
+#ifndef BUILD_NAOMI
 		return (T)ReadMem_gdrom(addr,sz);
+#else
+		return (T)ReadMem_naomi(addr,sz);
+#endif
 	}
 	else if ((base_start >=0x005F) && (base_end <=0x005F) && (addr>= 0x005F7C00) && (addr<=0x005F7CFF)) //	/*:PVR i/f Control Reg.*/ -> ALL SB registers now
 	{
@@ -198,7 +203,11 @@ void  __fastcall WriteMem_area0(u32 addr,T data)
 	else if ((base_start >=0x005F) && (base_end <=0x005F) && (addr>= 0x005F7000) && (addr<= 0x005F70FF)) //	:GD-ROM
 	{
 		//EMUERROR4("Write to area0_32 not implemented [GD-ROM], addr=%x,data=%x,size=%d",addr,data,sz);
+#ifndef BUILD_NAOMI
 		WriteMem_gdrom(addr,data,sz);
+#else
+		WriteMem_naomi(addr,data,sz);
+#endif
 	}
 	else if ((base_start >=0x005F) && (base_end <=0x005F) && (addr>= 0x005F7C00) && (addr<=0x005F7CFF)) //	/*:PVR i/f Control Reg.*/ -> ALL SB registers
 	{
