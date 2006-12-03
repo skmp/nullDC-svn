@@ -25,6 +25,7 @@ CArm7* g_pArm7 = NULL;
 
 HWND g_hWnd;
 RaiseInterruptFP* Sh4RaiseInterrupt;
+CDDA_SectorFP*	get_cdda;
 u32* SB_ISTEXT;
 
 u32 g_videoCableType=2;

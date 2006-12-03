@@ -124,7 +124,6 @@
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="&quot;C:\Program Files\Microsoft DirectX SDK (April 2006)\Include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;CHANKAAICA_EXPORTS;_VERSION_FINAL"
-				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
 				EnableEnhancedInstructionSet="0"
 				FloatingPointModel="2"

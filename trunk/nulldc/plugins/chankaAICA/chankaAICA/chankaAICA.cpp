@@ -56,6 +56,7 @@ void dcInit(void* param,PluginType type)
 {
 	aica_init_params* ip=(aica_init_params*)param;
 	Sh4RaiseInterrupt=ip->RaiseInterrupt;
+	get_cdda=ip->CDDA_Sector;
 	SB_ISTEXT=ip->SB_ISTEXT;
 	win_handle=ip->WindowHandle;
 }

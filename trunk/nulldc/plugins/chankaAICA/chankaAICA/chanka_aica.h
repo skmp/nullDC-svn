@@ -12,6 +12,7 @@ void InitARM7(void* winh);
 void TerminateARM7();
 
 extern RaiseInterruptFP* Sh4RaiseInterrupt;
+extern CDDA_SectorFP*	get_cdda;
 extern u32* SB_ISTEXT;
 extern u32 g_videoCableType;
 extern u32 sh4_cycles;

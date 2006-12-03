@@ -1269,6 +1269,9 @@ void AICA_CpuRunScanline()
 	}
 }
 */
+#define SAMPLES_PER_SECTOR (1176)
+int buffer_pos=SAMPLES_PER_SECTOR;
+s16 cdda_data[SAMPLES_PER_SECTOR];
 void AICA_DoSamples(int nsamples)
 {
 
@@ -1337,9 +1340,16 @@ void AICA_DoSamples(int nsamples)
 		++bufl1;
 		++bufr1;
 #else
-		*bufl=ICLIP16(smpl);
+		if (SAMPLES_PER_SECTOR == buffer_pos)
+		{
+			buffer_pos=0;
+			get_cdda(cdda_data);
+		}
+		*bufl=ICLIP16(smpl + cdda_data[buffer_pos]);
+		buffer_pos++;
 		++bufl;
-		*bufl=ICLIP16(smpr);
+		*bufl=ICLIP16(smpr + cdda_data[buffer_pos]);
+		buffer_pos++;
 		++bufl;
 		*bufl1=0;
 		*bufr1=0;

@@ -96,7 +96,8 @@ extern u32* SB_ISTEXT;
 extern u32 g_videoCableType;
 extern RaiseInterruptFP* Sh4RaiseInterrupt;
 extern u32 sh4_cycles;
-
+typedef void CDDA_SectorFP(s16* sector);
+extern CDDA_SectorFP*	get_cdda;
 #define NUM_CYCLES_PER_BLOCK 448
 #define SH4_CYCLES_PER_FRAME ((200*1000*1000)/60)
 
