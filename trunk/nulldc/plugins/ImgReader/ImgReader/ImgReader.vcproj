@@ -120,7 +120,6 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;NULLGDR_EXPORTS;X86"
-				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
 				EnableEnhancedInstructionSet="0"
 				UsePrecompiledHeader="0"

@@ -62,6 +62,12 @@ bool ConvertSector(u8* in_buff , u8* out_buff , int from , int to,int sector)
 				memcpy(out_buff,&in_buff[0x8],2048);
 		}
 		break;
+	case 2352:
+		//if (from >= 2352)
+		{
+			memcpy(out_buff,&in_buff[0],2352);
+		}
+		break;
 	default :
 		printf("Sector convertion from %d to %d not supported \n", from , to);
 		break;

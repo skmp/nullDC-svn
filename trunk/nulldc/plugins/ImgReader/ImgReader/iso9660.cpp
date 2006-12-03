@@ -153,7 +153,7 @@ void iso_DriveGetTocInfo(TocInfo* toc,DiskArea area)
 //TODO : fix up
 DiskType iso_DriveGetDiskType()
 {
-	return DiskType::GdRom;
+	return DiskType::NoDisk;
 } 
 
 
