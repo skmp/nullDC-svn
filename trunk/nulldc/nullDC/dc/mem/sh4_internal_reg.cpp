@@ -93,7 +93,7 @@ INLINE void RegSWrite(Array<RegisterStruct>& reg,u32 offset,u32 data)
 		EMUERROR("unallinged register write");
 	}
 #endif
-offset>>=2;
+	offset>>=2;
 #ifdef TRACE
 	if (reg[offset].flags & size)
 	{
@@ -146,7 +146,7 @@ T __fastcall ReadMem_P4(u32 addr)
 {
 	/*if (((addr>>26)&0x7)==7)
 	{
-		return ReadMem_area7(addr,sz);	
+	return ReadMem_area7(addr,sz);	
 	}*/
 
 	switch((addr>>24)&0xFF)
@@ -229,19 +229,26 @@ T __fastcall ReadMem_P4(u32 addr)
 		printf("Unhandled p4 read [Reserved] 0x%x\n",addr);
 		break;
 	}
-	
+
 	EMUERROR2("Read from P4 not implemented , addr=%x",addr);
 	return 0;
-	
+
 }
+const u32 mmu_mask_2[4]= 
+{
+	((0xFFFFFFFF)>>10)<<0,	//1 kb page
+	((0xFFFFFFFF)>>12)<<2,	//4 kb page
+	((0xFFFFFFFF)>>16)<<6,	//64 kb page
+	((0xFFFFFFFF)>>20)<<10	//1 MB page
+};
 //Write P4
 template <u32 sz,class T>
 void __fastcall WriteMem_P4(u32 addr,T data)
 {
 	/*if (((addr>>26)&0x7)==7)
 	{
-		WriteMem_area7(addr,data,sz);	
-		return;
+	WriteMem_area7(addr,data,sz);	
+	return;
 	}*/
 
 	switch((addr>>24)&0xFF)
@@ -305,18 +312,30 @@ void __fastcall WriteMem_P4(u32 addr,T data)
 		{
 			if (addr&0x80)
 			{
-				printf("Unhandled p4 Write [Unified TLB address array , Associative Write] 0x%x = %x\n",addr,data);
+				//printf("Unhandled p4 Write [Unified TLB address array , Associative Write] 0x%x = %x\n",addr,data);
 				CCN_PTEH_type t;
 				t.reg_data=data;
-				
+
+				//That is not 100% correct :/
 				for (int i=0;i<64;i++)
 				{
-					if ((UTLB[i].Address.VPN==t.VPN) && (UTLB[i].Address.ASID == t.ASID))
+					u32 sz=UTLB[i].Data.SZ1*2+UTLB[i].Data.SZ0;
+					u32 mask=mmu_mask_2[sz];
+					u32 vpn=t.VPN&mask;
+
+					if (( (UTLB[i].Address.VPN&mask) ==vpn) && (UTLB[i].Address.ASID == CCN_PTEH.ASID))
 					{
 						UTLB[i].Data.V=((u32)data>>8)&1;
 						UTLB[i].Data.D=((u32)data>>9)&1;
 					}
-					if ((ITLB[i].Address.VPN==t.VPN) && (ITLB[i].Address.ASID == t.ASID))
+				}
+
+				for (int i=0;i<4;i++)
+				{
+					u32 sz=ITLB[i].Data.SZ1*2+ITLB[i].Data.SZ0;
+					u32 mask=mmu_mask_2[sz];
+					u32 vpn=t.VPN&mask;
+					if (( (ITLB[i].Address.VPN&mask)==vpn) && (ITLB[i].Address.ASID == CCN_PTEH.ASID))
 					{
 						ITLB[i].Data.V=((u32)data>>8)&1;
 						ITLB[i].Data.D=((u32)data>>9)&1;
@@ -400,11 +419,11 @@ void __fastcall WriteMem_sq(u32 addr,T data)
 
 	/*if ((addr & 0x20)) // 0: SQ0, 1: SQ1
 	{
-		sq1_dw[offset] = data;
+	sq1_dw[offset] = data;
 	}
 	else
 	{
-		sq0_dw[offset] = data;
+	sq0_dw[offset] = data;
 	}
 	return;*/
 
@@ -544,16 +563,16 @@ T __fastcall ReadMem_area7(u32 addr)
 		}
 		break;
 
-	//who realy cares about ht-udi ? it's not existant on dc iirc ..
+		//who realy cares about ht-udi ? it's not existant on dc iirc ..
 	case A7_REG_HASH(UDI_BASE_addr):
 		switch(addr)
 		{
-		//UDI SDIR 0x1FF00000 0x1FF00000 16 0xFFFF Held Held Held Pclk
+			//UDI SDIR 0x1FF00000 0x1FF00000 16 0xFFFF Held Held Held Pclk
 		case UDI_SDIR_addr :
 			break;
 
 
-		//UDI SDDR 0x1FF00008 0x1FF00008 32 Held Held Held Held Pclk
+			//UDI SDDR 0x1FF00008 0x1FF00008 32 Held Held Held Held Pclk
 		case UDI_SDDR_addr :
 			break;
 		}
@@ -705,7 +724,7 @@ void __fastcall WriteMem_area7(u32 addr,T data)
 		}
 		break;
 
-	//who realy cares about ht-udi ? it's not existant on dc iirc ..
+		//who realy cares about ht-udi ? it's not existant on dc iirc ..
 	case A7_REG_HASH(UDI_BASE_addr):
 		switch(addr)
 		{
@@ -783,16 +802,16 @@ void sh4_internal_reg_Init()
 
 	for (u32 i=0;i<30;i++)
 	{
-	if (i<CCN.Size)	CCN[i].flags=REG_NOT_IMPL;	//(16,true);	//CCN  : 14 registers
-	if (i<UBC.Size)	UBC[i].flags=REG_NOT_IMPL;	//(9,true);		//UBC  : 9 registers
-	if (i<BSC.Size)	BSC[i].flags=REG_NOT_IMPL;	//(19,true);	//BSC  : 18 registers
-	if (i<DMAC.Size)DMAC[i].flags=REG_NOT_IMPL;	//(17,true);	//DMAC : 17 registers
-	if (i<CPG.Size)	CPG[i].flags=REG_NOT_IMPL;	//(5,true);		//CPG  : 5 registers
-	if (i<RTC.Size)	RTC[i].flags=REG_NOT_IMPL;	//(16,true);	//RTC  : 16 registers
-	if (i<INTC.Size)INTC[i].flags=REG_NOT_IMPL;	//(4,true);		//INTC : 4 registers
-	if (i<TMU.Size)	TMU[i].flags=REG_NOT_IMPL;	//(12,true);	//TMU  : 12 registers
-	if (i<SCI.Size)	SCI[i].flags=REG_NOT_IMPL;	//(8,true);		//SCI  : 8 registers
-	if (i<SCIF.Size)SCIF[i].flags=REG_NOT_IMPL;	//(10,true);	//SCIF : 10 registers
+		if (i<CCN.Size)	CCN[i].flags=REG_NOT_IMPL;	//(16,true);	//CCN  : 14 registers
+		if (i<UBC.Size)	UBC[i].flags=REG_NOT_IMPL;	//(9,true);		//UBC  : 9 registers
+		if (i<BSC.Size)	BSC[i].flags=REG_NOT_IMPL;	//(19,true);	//BSC  : 18 registers
+		if (i<DMAC.Size)DMAC[i].flags=REG_NOT_IMPL;	//(17,true);	//DMAC : 17 registers
+		if (i<CPG.Size)	CPG[i].flags=REG_NOT_IMPL;	//(5,true);		//CPG  : 5 registers
+		if (i<RTC.Size)	RTC[i].flags=REG_NOT_IMPL;	//(16,true);	//RTC  : 16 registers
+		if (i<INTC.Size)INTC[i].flags=REG_NOT_IMPL;	//(4,true);		//INTC : 4 registers
+		if (i<TMU.Size)	TMU[i].flags=REG_NOT_IMPL;	//(12,true);	//TMU  : 12 registers
+		if (i<SCI.Size)	SCI[i].flags=REG_NOT_IMPL;	//(8,true);		//SCI  : 8 registers
+		if (i<SCIF.Size)SCIF[i].flags=REG_NOT_IMPL;	//(10,true);	//SCIF : 10 registers
 	}
 
 	//initialise Register structs
@@ -864,7 +883,7 @@ void map_area7_init()
 
 	//default area7 handler
 	area7_handler= _vmem_register_handler_Template1(ReadMem_area7,WriteMem_area7,0);
-	
+
 #define Make_a7_handler(base) area7_handler_##base=_vmem_register_handler_Template1(ReadMem_area7,WriteMem_area7,0x##base);
 	Make_a7_handler(1F00);
 	Make_a7_handler(1F20);

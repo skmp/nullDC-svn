@@ -101,7 +101,7 @@ void fastcall mmu_raise_exeption(u32 mmu_error,u32 address,u32 am)
 
 	//TLB Multyhit
 	case MMU_ERROR_TLB_MHIT :
-		printf("MMU_ERROR_TLB_MHIT\n");
+		printf("MMU_ERROR_TLB_MHIT @ 0x%X\n",address);
 		break;
 
 	//Mem is read/write protected (depends on translation type)
@@ -116,8 +116,15 @@ void fastcall mmu_raise_exeption(u32 mmu_error,u32 address,u32 am)
 
 	//Mem is write protected , firstwrite
 	case MMU_ERROR_FIRSTWRITE :
+		/*
 		printf("MMU_ERROR_FIRSTWRITE\n");
 		getc(stdin);
+		*/
+		verify(am==MMU_TT_DWRITE);
+		//FIRSTWRITE - Initial Page Write Exception
+		sh4_cpu->RaiseExeption(0x80,0x100);
+		
+		return;
 		break;
 
 	//data read/write missasligned

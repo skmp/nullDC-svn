@@ -63,16 +63,16 @@ struct GD_FeaturesT
 {
 	union
 	{
-		struct CDRead
+		struct 
 		{
 			u32 DMA:1;//Bit 0 (DMA): Send data for command in DMA mode. 
 			u32 res :7;//not used
-		};
-		struct SetFeature
+		}CDRead;
+		struct 
 		{
-			u32 DMA:7;//Bit 6 - 0 (Feature Number): Set transfer mode by setting to 3. 
-			u32 res :1;//not used
-		};
+			u32 FeatureNumber:7;//Bit 6 - 0 (Feature Number): Set transfer mode by setting to 3. 
+			u32 Value :1;//not used
+		}SetFeature;
 
 		u8 full;
 	};
@@ -115,6 +115,17 @@ struct GD_SecNumbT
 		u8 full;
 	};
 };
+
+#define GD_BUSY	0x00	// State transition
+#define GD_PAUSE	0x01	// Pause
+#define GD_STANDBY	0x02	// Standby (drive stop)
+#define GD_PLAY	0x03	// CD playback
+#define GD_SEEK	0x04	// Seeking
+#define GD_SCAN	0x05	// Scanning
+#define GD_OPEN	0x06	// Tray is open
+#define GD_NODISC	0x07	// No disc
+#define GD_RETRY	0x08	// Read retry in progress (option)
+#define GD_ERROR	0x09	// Reading of disc TOC failed (state does not allow access) 
 
 //Responce strings
 extern u16 g_aValues0x11[];
@@ -177,3 +188,5 @@ extern char szExDT[8][32];
 #define SPI_CD_READ		0x30	// 
 #define SPI_CD_READ2	0x31	// 
 #define SPI_GET_SCD		0x40	// 
+
+void gdrom_get_cdda(s16* sector);

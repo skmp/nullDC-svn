@@ -215,7 +215,7 @@ typedef void dcGetGDRInfoFP(gdr_plugin_if* info);
 //For Aica
 //TODO : Design and implement this
 
-#define AICA_PLUGIN_I_F_VERSION NDC_MakeVersion(0,1,0)
+#define AICA_PLUGIN_I_F_VERSION NDC_MakeVersion(0,2,0)
 
 //Ram/Regs are managed by plugin , exept RTC regs (managed by main emu)
 struct aica_plugin_if
@@ -230,12 +230,14 @@ struct aica_plugin_if
 	UpdateFP*	UpdateAICA;
 };
 
+typedef void CDDA_SectorFP(s16* sector);
 //passed on AICA init call
 struct aica_init_params
 {
 	void* WindowHandle;
 	RaiseInterruptFP*	RaiseInterrupt;
 	u32* SB_ISTEXT;
+	CDDA_SectorFP*	CDDA_Sector;
 };
 
 //Give to the emu pointers for the aica interface

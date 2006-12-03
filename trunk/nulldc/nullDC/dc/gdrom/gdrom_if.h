@@ -7,14 +7,16 @@
 #include "types.h"
 #include "plugins/plugin_manager.h"
 
-#define ZGDROM
+//#define ZGDROM
 //#define OLD_GDROM
-//#define TEST_GDROM
+#define TEST_GDROM
 
 #ifdef OLD_GDROM
 #include "gdromv2_old.h"
 #endif
-
+#ifdef TEST_GDROM
+#include "gdromv3.h"
+#endif
 #ifdef ZGDROM
 #include "zGDROM.h"
 #endif

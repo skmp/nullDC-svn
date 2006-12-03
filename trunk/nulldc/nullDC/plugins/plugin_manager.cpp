@@ -421,6 +421,8 @@ void plugins_Init()
 	aica_info.WindowHandle=GetRenderTargetHandle();
 	aica_info.RaiseInterrupt=sh4_cpu->RaiseInterrupt;
 	aica_info.SB_ISTEXT=&SB_ISTEXT;
+	aica_info.CDDA_Sector=gdrom_get_cdda;
+
 	if (libAICA)
 	{
 		libAICA->info.Init(&aica_info,PluginType::AICA);
