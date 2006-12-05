@@ -77,25 +77,28 @@ void testJoy_GotData(u32 header1,u32 header2,u32*data,u32 datalen);
 bool maple_ddt_pending_reset=false;
 void maple_vblank()
 {
-	if (SB_MDTSEL&1)
+	if (SB_MDEN &1)
 	{
-		if (maple_ddt_pending_reset)
+		if (SB_MDTSEL&1)
 		{
-			//printf("DDT vblank ; reset pending\n");
+			if (maple_ddt_pending_reset)
+			{
+				//printf("DDT vblank ; reset pending\n");
+			}
+			else
+			{
+				//printf("DDT vblank\n");
+				DoMapleDma();
+				if ((SB_MSYS>>12)&1)
+				{
+					maple_ddt_pending_reset=true;
+				}
+			}
 		}
 		else
 		{
-			//printf("DDT vblank\n");
-			DoMapleDma();
-			if ((SB_MSYS>>12)&1)
-			{
-				maple_ddt_pending_reset=true;
-			}
+			maple_ddt_pending_reset=false;
 		}
-	}
-	else
-	{
-		maple_ddt_pending_reset=false;
 	}
 }
 void maple_SB_MSHTCL_Write(u32 data)
@@ -110,9 +113,13 @@ void maple_SB_MDST_Write(u32 data)
 	#else
 	if (data & 0x1)
 	{
-		SB_MDST=1;
-		DoMapleDma();	
+		if (SB_MDEN &1)
+		{
+			//SB_MDST=1;
+			DoMapleDma();
+		}
 	}
+	SB_MDST = 0;	//No dma in progress :)
 	#endif
 }
 u32 GetSubDeviceMask(u32 port)
@@ -170,8 +177,7 @@ u32 GetConnectedDevices(u32 Port)
 u32 dmacount=0;
 void DoMapleDma()
 {
-	if ((SB_MDEN &1)==0)
-		return;
+	verify(SB_MDEN &1)
 #if debug_maple
 	printf("Maple :DoMapleDma\n");
 #endif
@@ -250,7 +256,7 @@ void DoMapleDma()
 		}
 	}
 dma_end:
-	SB_MDST = 0;	//MAPLE_STATE = 0;//finished :P
+//	SB_MDST = 0;	//MAPLE_STATE = 0;//finished :P
 	RaiseInterrupt(holly_MAPLE_DMA);
 }
 
