@@ -164,7 +164,7 @@ int UpdateINTC()
 	if ((sr.BL==1) &&(!sh4_sleeping))
 		return false;
 
-	InterruptsArePending=false;//guess no until proven wrong
+	InterruptsArePending=false;//guess no unless proven wrong
 	s32 interID=-1;
 
 	for (int i=0;InterruptSourceList[i].IsPending;i++)
@@ -251,6 +251,23 @@ bool Do_Exeption(u32 lvl, u32 expEvn, u32 CallVect)
 	return true;
 }
 
+//Register writes need interrupt re-testing !
+
+void write_INTC_IPRA(u32 data)
+{
+	INTC_IPRA.reg_data=(u16)data;
+	InterruptsArePending=true;	//Interrupt mask levels updated 
+}
+void write_INTC_IPRB(u32 data)
+{
+	INTC_IPRB.reg_data=(u16)data;
+	InterruptsArePending=true;	//Interrupt mask levels updated 
+}
+void write_INTC_IPRC(u32 data)
+{
+	INTC_IPRC.reg_data=(u16)data;
+	InterruptsArePending=true;	//Interrupt mask levels updated 
+}
 //Init/Res/Term
 void intc_Init()
 {
@@ -262,24 +279,24 @@ void intc_Init()
 	INTC[(INTC_ICR_addr&0xFF)>>2].data16=&INTC_ICR.reg_data;
 
 	//INTC IPRA 0xFFD00004 0x1FD00004 16 0x0000 0x0000 Held Held Pclk
-	INTC[(INTC_IPRA_addr&0xFF)>>2].flags=REG_16BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
+	INTC[(INTC_IPRA_addr&0xFF)>>2].flags=REG_16BIT_READWRITE | REG_READ_DATA;
 	INTC[(INTC_IPRA_addr&0xFF)>>2].NextCange=0;
 	INTC[(INTC_IPRA_addr&0xFF)>>2].readFunction=0;
-	INTC[(INTC_IPRA_addr&0xFF)>>2].writeFunction=0;
+	INTC[(INTC_IPRA_addr&0xFF)>>2].writeFunction=write_INTC_IPRA;
 	INTC[(INTC_IPRA_addr&0xFF)>>2].data16=&INTC_IPRA.reg_data;
 
 	//INTC IPRB 0xFFD00008 0x1FD00008 16 0x0000 0x0000 Held Held Pclk
-	INTC[(INTC_IPRB_addr&0xFF)>>2].flags=REG_16BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
+	INTC[(INTC_IPRB_addr&0xFF)>>2].flags=REG_16BIT_READWRITE | REG_READ_DATA;
 	INTC[(INTC_IPRB_addr&0xFF)>>2].NextCange=0;
 	INTC[(INTC_IPRB_addr&0xFF)>>2].readFunction=0;
-	INTC[(INTC_IPRB_addr&0xFF)>>2].writeFunction=0;
+	INTC[(INTC_IPRB_addr&0xFF)>>2].writeFunction=write_INTC_IPRB;
 	INTC[(INTC_IPRB_addr&0xFF)>>2].data16=&INTC_IPRB.reg_data;
 
 	//INTC IPRC 0xFFD0000C 0x1FD0000C 16 0x0000 0x0000 Held Held Pclk
-	INTC[(INTC_IPRC_addr&0xFF)>>2].flags=REG_16BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
+	INTC[(INTC_IPRC_addr&0xFF)>>2].flags=REG_16BIT_READWRITE | REG_READ_DATA;
 	INTC[(INTC_IPRC_addr&0xFF)>>2].NextCange=0;
 	INTC[(INTC_IPRC_addr&0xFF)>>2].readFunction=0;
-	INTC[(INTC_IPRC_addr&0xFF)>>2].writeFunction=0;
+	INTC[(INTC_IPRC_addr&0xFF)>>2].writeFunction=write_INTC_IPRC;
 	INTC[(INTC_IPRC_addr&0xFF)>>2].data16=&INTC_IPRC.reg_data;
 }
 

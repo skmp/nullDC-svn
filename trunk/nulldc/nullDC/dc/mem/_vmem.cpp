@@ -29,27 +29,30 @@ void naked _vmem_ReadMisc8()
 {
 	__asm
 	{
+		int 3;
 		//get function pointer
-		mov eax , [_vmem_RF8+eax];
-		jmp eax;
+		jmp  [_vmem_RF8+eax];
+		//jmp eax;
 	}
 }
 void naked _vmem_ReadMisc16()
 {
 	__asm
 	{
+		int 3;
 		//get function pointer
-		mov eax , [_vmem_RF16+eax];
-		jmp eax;
+		jmp [_vmem_RF16+eax];
+		//jmp eax;
 	}
 }
 void naked _vmem_ReadMisc32()
 {
 	__asm
 	{
+		int 3;
 		//get function pointer
-		mov eax , [_vmem_RF32+eax];
-		jmp eax;
+		jmp [_vmem_RF32+eax];
+		//jmp eax;
 	}
 }
 
@@ -60,8 +63,9 @@ void naked _vmem_WriteMisc8()
 {
 	__asm
 	{
-		mov eax , [_vmem_WF8+eax];
-		jmp eax;
+		int 3;
+		jmp  [_vmem_WF8+eax];
+		//jmp eax;
 	}
 }
 
@@ -69,8 +73,9 @@ void naked _vmem_WriteMisc16()
 {
 	__asm
 	{
-		mov eax , [_vmem_WF16+eax];
-		jmp eax;
+		int 3;
+		jmp [_vmem_WF16+eax];
+		//jmp eax;
 	}
 }
 
@@ -78,8 +83,9 @@ void naked _vmem_WriteMisc32()
 {
 	__asm
 	{
-		mov eax , [_vmem_WF32+eax];
-		jmp eax;
+		int 3;
+		jmp [_vmem_WF32+eax];
+		//jmp eax;
 	}
 }
 
@@ -105,7 +111,7 @@ u8 naked fastcall _vmem_ReadMem8(u32 Address)
 
 	test eax,0xFFFF0000;
 	jnz direct;
-	jmp _vmem_ReadMisc8;
+	jmp [_vmem_RF8+eax];
 direct:
 	mov eax,[eax+edx];	//note : upper bits dont matter , so i do 32b read here ;) (to get read of partial register stalls)
 	ret;
@@ -124,7 +130,7 @@ u16 naked fastcall _vmem_ReadMem16(u32 Address)
 	mov eax,[_vmem_MemInfo+eax*4];
 	test eax,0xFFFF0000;
 	jnz direct;
-	jmp _vmem_ReadMisc16;
+	jmp [_vmem_RF16+eax];
 direct:
 	mov eax,[eax+edx];	//note : upper bits dont matter , so i do 32b read here ;) (to get read of partial register stalls)
 	ret;
@@ -143,7 +149,7 @@ u32 naked fastcall _vmem_ReadMem32(u32 Address)
 	mov eax,[_vmem_MemInfo+eax*4];
 	test eax,0xFFFF0000;
 	jnz direct;
-	jmp _vmem_ReadMisc32;
+	jmp [_vmem_RF32+eax];
 direct:
 	mov eax,[eax+edx];	//note : upper bits dont matter , so i do 32b read here ;) (to get read of partial register stalls)
 	ret;
@@ -168,7 +174,7 @@ void naked fastcall _vmem_WriteMem8(u32 Address,u8 data)
 
 	test eax,0xFFFF0000;
 	jnz direct;
-	jmp _vmem_WriteMisc8;
+	jmp [_vmem_WF8+eax];
 direct:
 	and ecx,0xFFFF;//lower 16b of address
 	//or eax,edx;	//get ptr to the value we want
@@ -188,7 +194,7 @@ void naked fastcall _vmem_WriteMem16(u32 Address,u16 data)
 	mov eax,[_vmem_MemInfo+eax*4];
 	test eax,0xFFFF0000;
 	jnz direct;
-	jmp _vmem_WriteMisc16;
+	jmp [_vmem_WF16+eax];
 direct:
 	and ecx,0xFFFF;
 	mov [eax+ecx],dx;
@@ -205,7 +211,7 @@ void naked fastcall _vmem_WriteMem32(u32 Address,u32 data)
 	mov eax,[_vmem_MemInfo+eax*4];
 	test eax,0xFFFF0000;
 	jnz direct;
-	jmp _vmem_WriteMisc32;
+	jmp [_vmem_WF32+eax];
 direct:
 	and ecx,0xFFFF;
 	mov [eax+ecx],edx;

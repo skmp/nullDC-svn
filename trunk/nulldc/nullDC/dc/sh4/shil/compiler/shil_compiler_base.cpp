@@ -360,7 +360,9 @@ void emit_vmem_op_compat_const(x86_block* x86e,u32 ra,
 		{
 			if (sse)
 			{
-				__asm int 3;
+				//die("sse + function write is not supported");
+				
+				x86e->Emit(op_movd_xmm_to_r32,EDX,ro);
 			}
 			else
 			{
