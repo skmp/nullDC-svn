@@ -1,7 +1,7 @@
 #include "x86_sseregalloc.h"
 #include <assert.h>
 
-#define REG_ALLOC_COUNT (6)
+#define REG_ALLOC_COUNT (0)
 //xmm0 is reserved for math/temp
 x86_sse_reg reg_to_alloc_xmm[7]=
 {
