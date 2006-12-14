@@ -52,10 +52,25 @@ void DMAC_Ch2St()
 			// Texture DMA 
 	if( (dst >= 0x10000000) && (dst <= 0x10FFFFFF) )
 	{
+		u32 p_addr=src & RAM_MASK;
 		//GetMemPtr perhaps ? it's not good to use teh mem arrays directly 
-		u32 *sys_buf=(u32 *)GetMemPtr(src,len);//(&mem_b[src&RAM_MASK]);
-
-		TAWrite(dst,sys_buf,(len/32));
+		while(len)
+		{
+			if ((p_addr+len)>RAM_SIZE)
+			{
+				u32 *sys_buf=(u32 *)GetMemPtr(src,len);//(&mem_b[src&RAM_MASK]);
+				u32 new_len=RAM_SIZE-p_addr;
+				TAWrite(dst,sys_buf,(new_len/32));
+				len-=new_len;
+				src+=new_len;
+			}
+			else
+			{
+				u32 *sys_buf=(u32 *)GetMemPtr(src,len);//(&mem_b[src&RAM_MASK]);
+				TAWrite(dst,sys_buf,(len/32));
+				break;
+			}
+		}
 		//libPvr->pvr_info.TADma(dst,sys_buf,(len/32));
 	}
 	else	//	If SB_C2DSTAT reg is inrange from 0x11000000 to 0x11FFFFE0,	 set 1 in SB_LMMODE0 reg.
