@@ -142,8 +142,8 @@ S_INLINE void SetRenderMode(u32 ParamID, u32 TexID)
 		}
 
 		// this has got to be all fucked up ...
-		//	if( gp->param0.tsp.SrcSelect ) glAccum( GL_RETURN, 0.f ) ;
-		//	if( gp->param0.tsp.DstSelect ) glAccum( GL_LOAD, 0.f ) ;
+	//		if( gp->param0.tsp.SrcSelect ) glAccum( GL_RETURN, 0.f ) ;
+	//		if( gp->param0.tsp.DstSelect ) glAccum( GL_LOAD, 0.f ) ;
 
 		glBlendFunc(SrcBlendGL[gp->param0.tsp.SrcInstr], DstBlendGL[gp->param0.tsp.DstInstr]);
 //		CheckErrorsGL("RenderSceneGL()->RenderLists()->SetRenderMode(LT_TRS)");
@@ -476,7 +476,7 @@ S_INLINE void RenderSprites(vector<Vertex> &vl)
 void RenderGL()
 {
 	//	FrameCount++;
-	lprintf("Render() (GL)\n");
+	//lprintf("Render() (GL)\n");
 
 //	glFlush();
 	Resize();

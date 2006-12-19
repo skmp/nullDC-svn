@@ -661,7 +661,7 @@ struct Vertex
 //	vector<Vert> List;
 };
 
-#define DCACHE_SIZE	SZ_4MB
+#define DCACHE_SIZE	SZ_8MB
 
 
 extern u32 RenderPending;

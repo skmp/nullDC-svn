@@ -82,7 +82,7 @@ void pvrWriteReg(u32 addr,u32 data,u32 size)
 
 		case STARTRENDER:
 			if(0 != data) {
-				lprintf(")>\tSTART RENDER ! lists_complete; %X Full: %X\n", lists_complete, LT_FULL);
+			//	lprintf(")>\tSTART RENDER ! lists_complete; %X Full: %X\n", lists_complete, LT_FULL);
 
 			// *FIXME*
 				if(0x1F==lists_complete)
