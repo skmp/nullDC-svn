@@ -84,7 +84,46 @@ twiddle_optimiz3d(u32 value, int n)
 	return ret;
 }
 
-# define twop( val, n )	twiddle_optimiz3d( (val), (n) )
+//input : address in the yyyyyxxxxx format
+//output : address in the xyxyxyxy format
+//U : x resolution , V : y resolution
+//twidle works on 64b words
+u32 fastcall twidle_razi(u32 x,u32 y,u32 x_sz,u32 y_sz)
+{
+	//u32 rv2=twiddle_optimiz3d(raw_addr,U);
+	u32 rv=0;//raw_addr & 3;//low 2 bits are directly passed  -> needs some misc stuff to work.However
+			 //Pvr internaly maps the 64b banks "as if" they were twidled :p
+	
+	//verify(x_sz==y_sz);
+	u32 sh=0;
+	x_sz>>=1;
+	y_sz>>=1;
+	while(x_sz!=0 || y_sz!=0)
+	{
+		if (y_sz)
+		{
+			u32 temp=y&1;
+			rv|=temp<<sh;
+
+			y_sz>>=1;
+			y>>=1;
+			sh++;
+		}
+		if (x_sz)
+		{
+			u32 temp=x&1;
+			rv|=temp<<sh;
+
+			x_sz>>=1;
+			x>>=1;
+			sh++;
+		}
+	}	
+	return rv;
+}
+
+//# define twop( val, n )	twidle_razi( (val), (n),(n) )
+#define twop twidle_razi
 
 void fastcall argb4444to8888(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height)
 {
@@ -124,40 +163,43 @@ void fastcall argb565to8888(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height)
 }
 
 
-void fastcall argb4444to8888_TW(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height,u32 U)
+void fastcall argb4444to8888_TW(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height)
 {
 	u32 p=0;
 	for (u32 y=0;y<Height;y++)
 	{
 		for (u32 x=0;x<Width;x++)
 		{
-			u16 pval = p_in[twop(p++,U)];
+			u16 pval = p_in[twop(x,y,Width,Height)];
+			p++;
 			pb->SetLinePixel(x,ARGB4444(pval));
 		}
 		pb->NextLine();
 	}
 }
-void fastcall argb1555to8888_TW(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height,u32 U)
+void fastcall argb1555to8888_TW(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height)
 {
 	u32 p=0;
 	for (u32 y=0;y<Height;y++)
 	{
 		for (u32 x=0;x<Width;x++)
 		{
-			u16 pval = p_in[twop(p++,U)];
+			u16 pval = p_in[twop(x,y,Width,Height)];
+			p++;
 			pb->SetLinePixel(x,ARGB1555(pval));
 		}
 		pb->NextLine();
 	}
 }
-void fastcall argb565to8888_TW(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height,u32 U)
+void fastcall argb565to8888_TW(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height)
 {
 	u32 p=0;
 	for (u32 y=0;y<Height;y++)
 	{
 		for (u32 x=0;x<Width;x++)
 		{
-			u16 pval = p_in[twop(p++,U)];
+			u16 pval = p_in[twop(x,y,Width,Height)];
+			p++;
 			pb->SetLinePixel(x,ARGB565(pval));
 		}
 		pb->NextLine();
@@ -200,16 +242,20 @@ void fastcall vq_codebook_argb4444(u16* p_in)
 	}
 }
 
-void fastcall vq_TW(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height,u32 U)
+void fastcall vq_TW(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height)
 {
 	p_in+=256*4*2;
 	u32 p=0;
-	U-=1;//half the height , b/c VQ is 2 pix/ 1 byte on each direction ;)
-	for (u32 y=0;y<(Height>>1);y++)
+	//U-=1;//half the height , b/c VQ is 2 pix/ 1 byte on each direction ;)
+	Height>>=1;
+	Width>>=1;
+
+	for (u32 y=0;y<Height;y++)
 	{
-		for (u32 x=0;x<(Width>>1);x++)
+		for (u32 x=0;x<Width;x++)
 		{
-			u8 pval = p_in[twop(p++,U)];
+			u8 pval = p_in[twop(x,y,Width<<1,Height)];
+			p++;
 			pb->SetPixel(x*2	,y*2	,	vq_codebook[pval][0]);
 			pb->SetPixel(x*2	,y*2+1	,	vq_codebook[pval][1]);
 			pb->SetPixel(x*2+1	,y*2	,	vq_codebook[pval][2]);

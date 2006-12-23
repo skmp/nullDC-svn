@@ -10,20 +10,66 @@ namespace Direct3DRenderer
 {
 	IDirect3D9* d3d9;
 	IDirect3DDevice9* dev;
+
 	//use that someday
 	void PresentFB()
 	{
 	}
 
+
 	u32 VertexCount;
 	u32 FrameCount;
 
+	// A structure for our custom vertex type
+	struct CUSTOMVERTEX
+	{
+		FLOAT x, y, z, rhw; // The transformed position for the vertex
+		DWORD color;        // The vertex color
+	};
+
+	// Our custom FVF, which describes our custom vertex structure
+#define D3DFVF_CUSTOMVERTEX (D3DFVF_XYZRHW|D3DFVF_DIFFUSE)
+    CUSTOMVERTEX Vertices[] =
+    {
+        { 150.0f,  50.0f, 0.5f, 1.0f, 0xffff0000, }, // x, y, z, rhw, color
+        { 250.0f, 250.0f, 0.5f, 1.0f, 0xff00ff00, },
+        {  50.0f, 250.0f, 0.5f, 1.0f, 0xff00ffff, },
+    };
 	void StartRender()
 	{
 		render_end_pending_cycles=100000;
 		if (FB_W_SOF1 & 0x1000000)
 			return;
 		FrameCount++;
+
+
+
+		// Clear the backbuffer to a blue color
+		dev->Clear( 0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0,0,255), 1.0f, 0 );
+
+		// Begin the scene
+		if( SUCCEEDED( dev->BeginScene() ) )
+		{
+			// Draw the triangles in the vertex buffer. This is broken into a few
+			// steps. We are passing the Vertices down a "stream", so first we need
+			// to specify the source of that stream, which is our vertex buffer. Then
+			// we need to let D3D know what vertex shader to use. Full, custom vertex
+			// shaders are an advanced topic, but in most cases the vertex shader is
+			// just the FVF, so that D3D knows what type of Vertices we are dealing
+			// with. Finally, we call DrawPrimitive() which does the actual rendering
+			// of our geometry (in this case, just one triangle).
+			//g_pd3dDevice->SetStreamSource( 0, g_pVB, 0, sizeof(CUSTOMVERTEX) );
+			dev->SetFVF( D3DFVF_CUSTOMVERTEX );
+			//g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLELIST, 0, 1 );
+			//dev->DrawPrimitive( D3DPT_TRIANGLELIST, 0, 1 );
+			dev->DrawPrimitiveUP(D3DPT_TRIANGLELIST,1,Vertices,sizeof(Vertices[0]));
+
+			// End the scene
+			dev->EndScene();
+		}
+
+		// Present the backbuffer contents to the display
+		dev->Present( NULL, NULL, NULL, NULL );
 	}
 
 	using namespace TASplitter;
@@ -298,7 +344,7 @@ namespace Direct3DRenderer
 
 		D3DPRESENT_PARAMETERS ppar;
 		memset(&ppar,0,sizeof(ppar));
-		
+/*		
 		ppar.MultiSampleType = D3DMULTISAMPLE_NONE;
 		ppar.BackBufferCount=3;
 		ppar.PresentationInterval=D3DPRESENT_INTERVAL_IMMEDIATE;
@@ -306,9 +352,16 @@ namespace Direct3DRenderer
 		ppar.BackBufferFormat = D3DFMT_R8G8B8;
 		ppar.EnableAutoDepthStencil=true;
 		ppar.hDeviceWindow=(HWND)Hwnd;
-
-		
-		verifyc(d3d9->CreateDevice(0,D3DDEVTYPE_HAL,(HWND)Hwnd,D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_FPU_PRESERVE,&ppar,&dev));
+*/
+		ppar.Windowed = TRUE;
+		ppar.SwapEffect = D3DSWAPEFFECT_DISCARD;
+		ppar.BackBufferFormat = D3DFMT_UNKNOWN;
+		ppar.PresentationInterval=D3DPRESENT_INTERVAL_IMMEDIATE;
+/*D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWnd,
+                                      D3DCREATE_SOFTWARE_VERTEXPROCESSING,
+                                      &d3dpp, &g_pd3dDevice 
+		*/
+		verifyc(d3d9->CreateDevice(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,(HWND)Hwnd,D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_FPU_PRESERVE,&ppar,&dev));
 
 		return TileAccel.Init();
 	}

@@ -799,20 +799,137 @@ strip_end:
 			}
 			return 0;
 		}
+		/*
+		Volume,Col_Type,Texture,Offset,Gouraud,16bit_UV
+		
+		0	0	0	(0)	x	invalid	Polygon Type 0	Polygon Type 0
+		0	0	1	x	x	0		Polygon Type 0	Polygon Type 3
+		0	0	1	x	x	1		Polygon Type 0	Polygon Type 4
+
+		0	1	0	(0)	x	invalid	Polygon Type 0	Polygon Type 1
+		0	1	1	x	x	0		Polygon Type 0	Polygon Type 5
+		0	1	1	x	x	1		Polygon Type 0	Polygon Type 6
+
+		0	2	0	(0)	x	invalid	Polygon Type 1	Polygon Type 2
+		0	2	1	0	x	0		Polygon Type 1	Polygon Type 7
+		0	2	1	0	x	1		Polygon Type 1	Polygon Type 8
+		0	2	1	1	x	0		Polygon Type 2	Polygon Type 7
+		0	2	1	1	x	1		Polygon Type 2	Polygon Type 8
+
+		0	3	0	(0)	x	invalid	Polygon Type 0	Polygon Type 2
+		0	3	1	x	x	0		Polygon Type 0	Polygon Type 7
+		0	3	1	x	x	1		Polygon Type 0	Polygon Type 8
+
+		1	0	0	(0)	x	invalid	Polygon Type 3	Polygon Type 9
+		1	0	1	x	x	0		Polygon Type 3	Polygon Type 11
+		1	0	1	x	x	1		Polygon Type 3	Polygon Type 12
+
+		1	2	0	(0)	x	invalid	Polygon Type 4	Polygon Type 10
+		1	2	1	x	x	0		Polygon Type 4	Polygon Type 13
+		1	2	1	x	x	1		Polygon Type 4	Polygon Type 14
+
+		1	3	0	(0)	x	invalid	Polygon Type 3	Polygon Type 10
+		1	3	1	x	x	0		Polygon Type 3	Polygon Type 13
+		1	3	1	x	x	1		Polygon Type 3	Polygon Type 14
+		
+		Sprites :
+		(0)	(0)	0	(0)	(0)	invalid	Sprite	Sprite Type 0
+		(0)	(0)	1	x	(0)	(1)		Sprite	Sprite Type 1
+
+		*/
 		static u32 fastcall poly_header_type_size(Ta_Dma* data)
 		{
-			if (data->pcw.Col_Type>1)
+			if (data->pcw.Volume == 0)
 			{
-				if ((data->pcw.Offset==1) || (data->pcw.Volume==1))
-					return SZ64;
+				if ( data->pcw.Col_Type<2 ) //0,1
+				{
+					return SZ32;	//Polygon Type 0
+				}
+				else if ( data->pcw.Col_Type == 2 )
+				{
+					if (data->pcw.Texture)
+					{
+						if (data->pcw.Offset)
+						{
+							return SZ64;	//Polygon Type 2
+						}
+						else
+						{
+							return SZ32;	//Polygon Type 1
+						}
+					}
+					else
+					{
+						return SZ32;	//Polygon Type 1
+					}
+				}
+				else	//col_type ==3
+				{
+					return SZ32;	//Polygon Type 0
+				}
 			}
-			return SZ32;
+			else
+			{
+				if ( data->pcw.Col_Type==0 ) //0
+				{
+					return SZ32;	//Polygon Type 3
+				}
+				else if ( data->pcw.Col_Type==2 ) //2
+				{
+					return SZ64;	//Polygon Type 4
+				}
+				else if ( data->pcw.Col_Type==3 ) //3
+				{
+					return SZ32;	//Polygon Type 3
+				}
+				else
+				{
+					die ("data->pcw.Col_Type==1 && volume ==1");
+				}
+			}
+			/*
+			if (data->pcw.Col_Type=0)	//packed color
+			{
+				//cant have offset
+				verify((data->pcw.Offset)==0);
+				return SZ32;
+			}
+			else if (data->pcw.Col_Type=1)	//floating color
+			{
+				//cant be offset or two volume :)
+				verify((data->pcw.Volume | data->pcw.Offset)==0);
+				return SZ32;
+			}
+			else
+			{
+				//Intesity 1/2
+				if (data->pcw.Offset==1)
+				{
+					//cant have 2 volumes
+					verify((data->pcw.Volume)==0);
+					return SZ64;
+				}
+				else
+				{
+					if (data->pcw.Volume==1)
+					{
+						return SZ64;
+					}
+					else
+					{
+						return SZ32;
+					}
+				}
+			}
+			*/
 		}
 
 
 		static void fastcall ta_list_start(u32 new_list)
 		{
+			verify(CurrentList==ListType_None);
 			verify(ListIsFinished[new_list]==false);
+			//printf("Starting list %d\n",new_list);
 			CurrentList=new_list;
 			TA_decoder::StartList(CurrentList);
 		}
@@ -829,10 +946,17 @@ strip_end:
 				case ParamType_End_Of_List:
 					{
 						if (CurrentList==ListType_None)
+						{
 							CurrentList=data->pcw.ListType;
+							printf("End_Of_List : list error\n");
+						}
 						else
+						{
+							//end of list should be all 0's ...
 							TA_decoder::EndList(CurrentList);//end a list olny if it was realy started
+						}
 
+						//printf("End list %X\n",CurrentList);
 						RaiseInterrupt(ListEndInterrupt[CurrentList]);
 						ListIsFinished[CurrentList]=true;
 						CurrentList=ListType_None;
@@ -844,6 +968,7 @@ strip_end:
 					//32B
 				case ParamType_User_Tile_Clip:
 					{
+						//printf("TILECLIP\n");
 						//*couh* ignore it :p
 						data+=SZ32;
 						size-=SZ32;
@@ -852,6 +977,7 @@ strip_end:
 					//32B
 				case ParamType_Object_List_Set:
 					{
+						die("ParamType_Object_List_Set");
 						//*couh* ignore it :p
 						data+=SZ32;
 						size-=SZ32;
@@ -872,11 +998,14 @@ strip_end:
 							VerxexDataFP=ta_mod_vol_data;
 							data+=SZ32;
 							size-=SZ32;
+							//printf("modvol\n");
 						}
 						else
 						{
 							u32 id=poly_data_type_id(data);
 							u32 psz=poly_header_type_size(data);
+
+							//printf("Poly %d-%d\n",id,psz);
 
 							VerxexDataFP=ta_poly_data_lut[id];
 							verify(StripStarted==false);
@@ -913,6 +1042,7 @@ strip_end:
 				case ParamType_Sprite:
 					{
 						VerxexDataFP=ta_sprite1_data;
+						//printf("Sprite \n");
 						TA_decoder::AppendSpriteParam((TA_SpriteParam*)data);
 						data+=SZ32;
 						size-=SZ32;
@@ -923,6 +1053,7 @@ strip_end:
 				case ParamType_Vertex_Parameter:
 					//log ("vtx");
 					{
+						//printf("VTX:0x%08X\n",VerxexDataFP);
 						verify(VerxexDataFP!=0);
 						u32 rv= VerxexDataFP(data,size);
 						data+= rv;
