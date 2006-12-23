@@ -1120,8 +1120,8 @@ void vramLockCB(vram_block *bl, u32 addr)
 	TexCacheList::TexCacheEntry* tce=(TexCacheList::TexCacheEntry*)bl->userdata;
 
 			///// **FIXME** //////
-/*	PvrIf->InvList.push_back(tce->text.texID);
-	PvrIf->TexList.Remove(tce);*/
+	PvrIf::TCache.InvList.push_back(tce->text.texID);
+	PvrIf::TCache.TexList.Remove(tce);
 	delete tce;
 	emuIf.vramUnlock(bl);
 }
