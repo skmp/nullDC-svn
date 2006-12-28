@@ -147,3 +147,5 @@ void fastcall vq_codebook_argb565(u16* p_in);
 void fastcall vq_codebook_argb1555(u16* p_in);
 void fastcall vq_codebook_argb4444(u16* p_in);
 void fastcall vq_TW(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height);
+void fastcall YUV422(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height);
+void fastcall YUV422_TW(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height);

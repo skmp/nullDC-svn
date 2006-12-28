@@ -45,6 +45,8 @@ u32 unpack_6_to_8[64] =
 
 u32 unpack_1_to_8[2]={0,0xFF};
 
+#define clamp(minv,maxv,x) min(maxv,max(minv,x))
+
 #define ARGB8888(A,R,G,B) \
 	( ((A)<<24) | ((R)<<16) | ((G)<<8) | ((B)<<0))
 
@@ -60,6 +62,14 @@ u32 unpack_1_to_8[2]={0,0xFF};
 #define ARGB4444( word )	\
 	( ((word&0xF000)<<16) | ((word&0xF00)>>4) | ((word&0xF0)<<8) | ((word&0xF)<<20) )
 
+u32 YUV422(s32 Y,s32 Yu,s32 Yv)
+{
+	s32 B = (76283*(Y - 16) + 132252*(Yu - 128))>>16;
+	s32 G = (76283*(Y - 16) - 53281 *(Yv - 128) - 25624*(Yu - 128))>>16;
+	s32 R = (76283*(Y - 16) + 104595*(Yv - 128))>>16;
+
+	return ARGB8888(255,clamp(0,255,R),clamp(0,255,G),clamp(0,255,B));
+}
 ///////////////////// thX to Optimiz3 for new routine
 const static unsigned int lut[4] = { 0, 1, 4, 5 };
 
@@ -261,5 +271,48 @@ void fastcall vq_TW(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height)
 			pb->SetPixel(x*2+1	,y*2	,	vq_codebook[pval][2]);
 			pb->SetPixel(x*2+1	,y*2+1	,	vq_codebook[pval][3]);
 		}
+	}
+}
+void fastcall YUV422(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height)
+{
+	u32 p=0;
+	for (u32 y=0;y<Height;y++)
+	{
+		for (u32 x=0;x<Width;x+=2)
+		{
+			u32 YUV0 = p_in[p];p++;
+			u32 YUV1 = p_in[p];p++;
+
+			s32 Y0 = (YUV0>>8) &255;
+			s32 Yu = (YUV0>>0) &255;
+			s32 Y1 = (YUV1>>8) &255;
+			s32 Yv = (YUV1>>0) &255;
+
+			pb->SetLinePixel(x,YUV422(Y0,Yu,Yv));
+
+			pb->SetLinePixel(x+1,YUV422(Y1,Yu,Yv));
+		}
+		pb->NextLine();
+	}
+}
+void fastcall YUV422_TW(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height)
+{
+	for (u32 y=0;y<Height;y++)
+	{
+		for (u32 x=0;x<Width;x+=2)
+		{
+			u32 YUV0 = p_in[twop(x,y,Width,Height)];
+			u32 YUV1 = p_in[twop(x+1,y,Width,Height)];
+
+			s32 Y0 = (YUV0>>8) &255;
+			s32 Yu = (YUV0>>0) &255;
+			s32 Y1 = (YUV1>>8) &255;
+			s32 Yv = (YUV1>>0) &255;
+
+			pb->SetLinePixel(x,YUV422(Y0,Yu,Yv));
+
+			pb->SetLinePixel(x+1,YUV422(Y1,Yu,Yv));
+		}
+		pb->NextLine();
 	}
 }
