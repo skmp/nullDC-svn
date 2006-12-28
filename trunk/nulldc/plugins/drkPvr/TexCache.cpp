@@ -46,7 +46,7 @@ u32 unpack_6_to_8[64] =
 u32 unpack_1_to_8[2]={0,0xFF};
 
 #define ARGB8888(A,R,G,B) \
-	( ((A)<<24) | ((R)<<0) | ((G)<<8) | ((B)<<16))
+	( ((A)<<24) | ((R)<<16) | ((G)<<8) | ((B)<<0))
 
 #define ARGB1555( word )	\
 	ARGB8888(unpack_1_to_8[word>>15],unpack_5_to_8[(word>>10) & 0x1F],	\
@@ -88,7 +88,7 @@ twiddle_optimiz3d(u32 value, int n)
 //output : address in the xyxyxyxy format
 //U : x resolution , V : y resolution
 //twidle works on 64b words
-u32 fastcall twidle_razi(u32 x,u32 y,u32 x_sz,u32 y_sz)
+u32 fastcall twiddle_razi(u32 x,u32 y,u32 x_sz,u32 y_sz)
 {
 	//u32 rv2=twiddle_optimiz3d(raw_addr,U);
 	u32 rv=0;//raw_addr & 3;//low 2 bits are directly passed  -> needs some misc stuff to work.However
@@ -123,7 +123,7 @@ u32 fastcall twidle_razi(u32 x,u32 y,u32 x_sz,u32 y_sz)
 }
 
 //# define twop( val, n )	twidle_razi( (val), (n),(n) )
-#define twop twidle_razi
+#define twop twiddle_razi
 
 void fastcall argb4444to8888(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height)
 {

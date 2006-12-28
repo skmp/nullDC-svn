@@ -1,78 +1,673 @@
+#include <d3dx9.h>
+
 #include "nullRend.h"
 
 #include "d3dRend.h"
 #include "windows.h"
-#include "gl\gl.h"
+//#include "gl\gl.h"
 #include "regs.h"
-#include <d3d9.h>
+
+//#include <D3dx9shader.h>
+
+using namespace TASplitter;
+
 
 namespace Direct3DRenderer
 {
 	IDirect3D9* d3d9;
 	IDirect3DDevice9* dev;
+	IDirect3DVertexBuffer9* vb;
+	IDirect3DVertexShader9* CompiledShader;
+	IDirect3DPixelShader9* CompiledPShader;
+	ID3DXConstantTable* shader_consts;
+	
+	char Shader[] = 
+"struct vertex { float4 pos : POSITION; float4 col : COLOR; float4 uv : TEXCOORD0; };"
+"float W_min: register(c0);float W_max: register(c1);"
+"  vertex VertexShader_Tutorial_1(in vertex vtx) {"
+"vtx.pos.x=(vtx.pos.x/320)-1;"
+"vtx.pos.y=-(vtx.pos.y/240)+1;"
+
+"vtx.uv.xy*=vtx.pos.z;"
+"vtx.uv.z=0;"
+"vtx.uv.w=vtx.pos.z;" 
+
+"vtx.pos.z=((1/clamp(0.0000001,10000000,vtx.pos.z))-W_min)/W_max;"
+"vtx.pos.z=smoothstep(0, 1, vtx.pos.z);"
+"vtx.pos.w=1;"
+"return vtx; "
+"}";
+
+		char Pixel[] = 
+			"  float4 VertexShader_Tutorial_1(in float4 zz:COLOR0 ):COLOR0 { return zz; }";
+
+	const static u32 SrcBlendGL[] =
+	{
+		D3DBLEND_ZERO,
+		D3DBLEND_ONE,
+		D3DBLEND_DESTCOLOR,
+		D3DBLEND_INVDESTCOLOR,
+		D3DBLEND_SRCALPHA,
+		D3DBLEND_INVSRCALPHA,
+		D3DBLEND_DESTALPHA,
+		D3DBLEND_INVDESTALPHA
+	};
+
+	/*
+	0	Zero	(0, 0, 0, 0)
+	1	One	(1, 1, 1, 1)
+	2	‘Other’ Color	(OR, OG, OB, OA) 
+	3	Inverse ‘Other’ Color	(1-OR, 1-OG, 1-OB, 1-OA)
+	4	SRC Alpha	(SA, SA, SA, SA)
+	5	Inverse SRC Alpha	(1-SA, 1-SA, 1-SA, 1-SA)
+	6	DST Alpha	(DA, DA, DA, DA)
+	7	Inverse DST Alpha	(1-DA, 1-DA, 1-DA, 1-DA)
+	*/
+
+	const static u32 DstBlendGL[] =
+	{
+		D3DBLEND_ZERO,
+		D3DBLEND_ONE,
+		D3DBLEND_SRCCOLOR,
+		D3DBLEND_INVSRCCOLOR,
+		D3DBLEND_SRCALPHA,
+		D3DBLEND_INVSRCALPHA,
+		D3DBLEND_DESTALPHA,
+		D3DBLEND_INVDESTALPHA
+	};
+
+
+	char texFormatName[8][30]=
+	{
+		"1555",
+		"565",
+		"4444",
+		"YUV422",
+		"Bump Map",
+		"8 BPP Palette",
+		"8 BPP Palette",
+		"Reserved	, 1555"
+	};
+
+	float unkpack_bgp_to_float[256];
+	u32 temp_tex_buffer[1024*1024*4];
+f32 f16(u16 v)
+		{
+			u32 z=v<<16;
+			return *(f32*)&z;
+		}
+	const u32 MipPoint[8] =
+	{
+			0x00006,//8
+			0x00016,//16
+			0x00056,//32
+			0x00156,//64
+			0x00556,//128
+			0x01556,//256
+			0x05556,//512
+			0x15556//1024
+	};
+
+
+#define twidle_tex(format)\
+						if (tcw.NO_PAL.VQ_Comp)\
+					{\
+						vq_codebook_argb##format((u16*)&params.vram[sa]);\
+						if (tcw.NO_PAL.MipMapped)\
+							sa+=MipPoint[tsp.TexU];\
+						vq_TW(&pbt,(u8*)&params.vram[sa],w,h);\
+					}\
+					else\
+					{\
+						if (tcw.NO_PAL.MipMapped)\
+							sa+=MipPoint[tsp.TexU]<<3;\
+						argb##format##to8888_TW(&pbt,(u16*)&params.vram[sa],w,h);\
+					}
+
+	//Texture Cache :)
+	struct TextureCacheData
+	{
+		u32 Start;
+		IDirect3DTexture9* Texture;
+		u32 Lookups;
+		u32 Updates;
+
+		TSP tsp;TCW tcw;
+
+		u32 w,h;
+		u32 size;
+		bool dirty;
+		vram_block* lock_block;
+
+		//Called when texture entry is reused , resets any texture type info (dynamic/static)
+		void Reset()
+		{
+			Lookups=0;
+			Updates=0;
+		}
+		void PrintTextureName()
+		{
+			printf(texFormatName[tcw.NO_PAL.PixelFmt]);
+	
+			if (tcw.NO_PAL.VQ_Comp)
+				printf(" VQ");
+
+			if (tcw.NO_PAL.ScanOrder==0)
+				printf(" TW");
+
+			if (tcw.NO_PAL.MipMapped)
+				printf(" MM");
+
+			if (tcw.NO_PAL.StrideSel)
+				printf(" Stride");
+
+			printf(" %dx%d @ 0x%X",8<<tsp.TexU,8<<tsp.TexV,tcw.NO_PAL.TexAddr<<3);
+			printf("\n");
+		}
+		void Update()
+		{
+			verify(dirty);
+			verify(lock_block==0);
+
+			Updates++;
+			dirty=false;
+
+			u32 sa=Start;
+
+			PixelBuffer pbt;
+			pbt.p_buffer_start=pbt.p_current_line=temp_tex_buffer;
+			pbt.pixels_per_line=w;
+
+			switch (tcw.NO_PAL.PixelFmt)
+			{
+			case 0:
+			case 7:
+				//0	1555 value: 1 bit; RGB values: 5 bits each
+				//7	Reserved	Regarded as 1555
+				if (tcw.NO_PAL.ScanOrder)
+				{
+					//verify(tcw.NO_PAL.VQ_Comp==0);
+					argb1555to8888(&pbt,(u16*)&params.vram[sa],w,h);
+				}
+				else
+				{
+					//verify(tsp.TexU==tsp.TexV);
+					twidle_tex(1555);
+				}
+				break;
+
+				//1	565	 R value: 5 bits; G value: 6 bits; B value: 5 bits
+			case 1:
+				if (tcw.NO_PAL.ScanOrder)
+				{
+					//verify(tcw.NO_PAL.VQ_Comp==0);
+					argb565to8888(&pbt,(u16*)&params.vram[sa],w,h);
+				}
+				else
+				{
+					//verify(tsp.TexU==tsp.TexV);
+					twidle_tex(565);
+				}
+				break;
+
+				//2	4444 value: 4 bits; RGB values: 4 bits each
+			case 2:
+				if (tcw.NO_PAL.ScanOrder)
+				{
+					//verify(tcw.NO_PAL.VQ_Comp==0);
+					argb4444to8888(&pbt,(u16*)&params.vram[sa],w,h);
+				}
+				else
+				{
+					twidle_tex(4444);
+				}
+
+				break;
+				//3	YUV422 32 bits per 2 pixels; YUYV values: 8 bits each
+				//4	Bump Map	16 bits/pixel; S value: 8 bits; R value: 8 bits
+				//5	4 BPP Palette	Palette texture with 4 bits/pixel
+				//6	8 BPP Palette	Palette texture with 8 bits/pixel
+			default:
+				printf("Unhandled texture\n");
+				memset(temp_tex_buffer,0xFFFFFFFF,w*h*4);
+			}
+
+			PrintTextureName();
+			u32 ea=sa+w*h*2;
+			if (ea>=(8*1024*1024))
+			{
+				ea=(8*1024*1024)-1;
+			}
+			//(u32 start_offset64,u32 end_offset64,void* userdata);
+			lock_block = params.vram_lock_64(sa,ea,this);
+
+			if (Texture==0)
+			{
+				verifyc(dev->CreateTexture(w,h,1,0,D3DFMT_A8R8G8B8,D3DPOOL_MANAGED,&Texture,0));
+			}
+			D3DLOCKED_RECT rect;
+
+			verifyc(Texture->LockRect(0,&rect,NULL,D3DLOCK_NOSYSLOCK));
+
+			u32* texture_data= (u32*)rect.pBits;
+			u32* source = temp_tex_buffer;
+
+			for (u32 y=0;y<h;y++)
+			{
+				for (u32 x=0;x<w;x++)
+				{
+					texture_data[x]=*source++;
+				}
+				texture_data+=rect.Pitch/4;
+			}
+			Texture->UnlockRect(0);
+		}
+	};
+
+	TexCacheList<TextureCacheData> TexCache;
+
+
+	TextureCacheData* __fastcall GenText(TSP tsp,TCW tcw,TextureCacheData* tf)
+	{
+		//generate texture
+		tf->Start=(tcw.NO_PAL.TexAddr<<3) & 0x7FFFFF;
+		
+		tf->w=8<<tsp.TexU;
+		tf->h=8<<tsp.TexV;
+		tf->tsp=tsp;
+		tf->tcw=tcw;
+		tf->dirty=true;
+		tf->lock_block=0;
+		tf->Texture=0;
+		tf->Reset();
+		tf->Update();
+		return tf;
+	}
+
+	TextureCacheData* __fastcall GenText(TSP tsp,TCW tcw)
+	{
+		//add new entry to tex cache
+		TextureCacheData* tf = &TexCache.Add(0)->data;
+		//Generate texture 
+		return GenText(tsp,tcw,tf);
+	}
+
+	u32 RenderToTextureAddr;
+
+	IDirect3DTexture9* __fastcall GetTexture(TSP tsp,TCW tcw)
+	{	
+		u32 addr=(tcw.NO_PAL.TexAddr<<3) & 0x7FFFFF;
+		/*if (addr==RenderToTextureAddr)
+			return RenderToTextureTex;*/
+
+		TextureCacheData* tf = TexCache.Find(addr);
+		if (tf)
+		{
+			if (tf->dirty)
+			{
+				if ((tf->tsp.full==tsp.full) && (tf->tcw.full==tcw.full))
+					tf->Update();
+				else
+				{
+					if (tf->Texture)
+					{
+						tf->Texture->Release();
+						tf->Texture=0;
+					}
+					GenText(tsp,tcw,tf);
+				}
+			}
+			tf->Lookups++;
+			return tf->Texture;
+		}
+		else
+		{
+			tf = GenText(tsp,tcw);
+			return tf->Texture;
+		}
+		return 0;
+	}
+	
+	void VramLockedWrite(vram_block* bl)
+	{
+		TextureCacheData* tcd = (TextureCacheData*)bl->userdata;
+		tcd->dirty=true;
+		tcd->lock_block=0;
+		if (tcd->Updates==0)
+		{
+			tcd->Texture->Release();
+			tcd->Texture=0;
+		}
+		params.vram_unlock(bl);
+	}
 
 	//use that someday
-	void PresentFB()
+	void VBlank()
 	{
 	}
 
-
-	u32 VertexCount;
-	u32 FrameCount;
-
-	// A structure for our custom vertex type
-	struct CUSTOMVERTEX
+	//Vertex storage types
+	//64B
+	struct Vertex
 	{
-		FLOAT x, y, z, rhw; // The transformed position for the vertex
-		DWORD color;        // The vertex color
+		/*
+		//0
+		float xyz[3];
+
+		//12
+		u32 nil;//padding
+
+		//16
+		float col[4];
+
+		//32
+		//tex cords if texture
+		float uv[4];
+
+		//48
+		//offset color
+		float col_offset[4];
+*/
+		//64
+		float x,y,z,oow;
+
+		float col[4];
+		float u,v;
+		//unsigned int uiRGBA;
+		//unsigned int uiSpecularRGBA;
+		
+	};
+	const D3DVERTEXELEMENT9 vertelem[] =
+	{
+		{0, 0, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION,0},
+		{0, 16, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0},
+		{0, 32, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD,0},
+		D3DDECL_END()
 	};
 
-	// Our custom FVF, which describes our custom vertex structure
-#define D3DFVF_CUSTOMVERTEX (D3DFVF_XYZRHW|D3DFVF_DIFFUSE)
-    CUSTOMVERTEX Vertices[] =
-    {
-        { 150.0f,  50.0f, 0.5f, 1.0f, 0xffff0000, }, // x, y, z, rhw, color
-        { 250.0f, 250.0f, 0.5f, 1.0f, 0xff00ff00, },
-        {  50.0f, 250.0f, 0.5f, 1.0f, 0xff00ffff, },
-    };
+	IDirect3DVertexDeclaration9* vdecl;
+
+	//8B
+	struct PolyParam
+	{
+		u32 first;		//entry index , holds vertex/pos data
+		u32 count;
+
+		//lets see what more :)
+		//Texture* texID;	//0xFFFFFFFF if no texture
+		TSP tsp;
+		TCW tcw;
+		PCW pcw;
+/*
+		void SetRenderMode_Op()
+		{
+			if (texID!=0xFFFFFFFF)
+			{
+				if (!gl_Text2D_enabled)
+				{
+					gl_Text2D_enabled=true;
+					glEnable(GL_TEXTURE_2D);
+				}
+
+				glBindTexture(GL_TEXTURE_2D,texID);
+
+				if (!gl_TextCord_enabled)
+				{
+					gl_TextCord_enabled=true;
+					glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+				}
+				glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+			}
+			else
+			{
+				if (gl_TextCord_enabled)
+				{
+					gl_TextCord_enabled=false;
+					glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+				}
+				if (gl_Text2D_enabled)
+				{
+					gl_Text2D_enabled=false;
+					glDisable(GL_TEXTURE_2D);
+				}
+			}
+		}
+		void SetRenderMode_Tr()
+		{
+			if (texID!=0xFFFFFFFF)
+			{
+				//verify(glIsTexture(texID));
+				glEnable(GL_TEXTURE_2D);
+				glBindTexture(GL_TEXTURE_2D,texID);
+				glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+				glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+			}
+			else
+			{
+				glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+				glDisable(GL_TEXTURE_2D);
+			}
+			
+			if(tsp.UseAlpha)
+			{
+				glEnable(GL_BLEND);
+				glBlendFunc(SrcBlendGL[tsp.SrcInstr], DstBlendGL[tsp.DstInstr]);
+			}
+			else
+				glDisable(GL_BLEND);
+		}
+		void SetRenderMode_Pt()
+		{
+			if (texID!=0xFFFFFFFF)
+			{
+				glEnable(GL_TEXTURE_2D);
+				glBindTexture(GL_TEXTURE_2D,texID);
+				glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+				glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+			}
+			else
+			{
+				glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+				glDisable(GL_TEXTURE_2D);
+			}
+		}
+		*/
+	};
+
+
+	static u32 vert_reappend;
+
+	//vertex lists
+	struct TA_context
+	{
+		u32 Address;
+		u32 LastUsed;
+		f32 invW_min;
+		f32 invW_max;
+		List<Vertex> verts;
+		List<PolyParam> global_param_op;
+		List<PolyParam> global_param_pt;
+		List<PolyParam> global_param_tr;
+
+		void Clear()
+		{
+			verts.Clear();
+			global_param_op.Clear();
+			global_param_pt.Clear();
+			global_param_tr.Clear();
+			invW_min= 1000000.0f;
+			invW_max=-1000000.0f;
+		}
+	};
+
+	
+	TA_context tarc;
+	#define pvrrc tarc
+
+	PolyParam* CurrentPP=0;
+	List<PolyParam>* CurrentPPlist;
+	
+	template <u32 Type>
+	__forceinline
+	void RendStrips(PolyParam* gp)
+	{
+		if (gp->count>2)
+		{	//0 vert polys ? why does games even bother sending em  ? =P
+
+			if (gp->pcw.Texture)
+			{
+				IDirect3DTexture9* tex=GetTexture(gp->tsp,gp->tcw);
+				dev->SetTexture(0,tex);
+				if (Type==ListType_Translucent)
+				{
+					switch(gp->tsp.ShadInstr)	// these should be correct, except offset
+					{
+					case 0:	// Decal
+						dev->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1);
+						dev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+						dev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
+						dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+						break;
+					case 1:	// Modulate
+						dev->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_MODULATE);
+						dev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+						dev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+						dev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
+						dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+						break;
+					case 2:	// Decal Alpha
+						dev->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_BLENDTEXTUREALPHA);
+						dev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+						dev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+						dev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
+						dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
+						break;
+					case 3:	// Modulate Alpha
+						dev->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_MODULATE);
+						dev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+						dev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+						dev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_MODULATE);
+						dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+						dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
+						break;
+					}
+				}
+			}
+			else
+			{
+				dev->SetTexture(0,NULL);
+			}
+
+			if (Type==ListType_Translucent)
+			{
+				if(gp->tsp.UseAlpha)
+				{
+					verifyc(dev->SetRenderState(D3DRS_ALPHABLENDENABLE,TRUE));
+					verifyc(dev->SetRenderState(D3DRS_ALPHAFUNC,TRUE));
+
+					verifyc(dev->SetRenderState(D3DRS_SRCBLEND, SrcBlendGL[gp->tsp.SrcInstr]));
+					verifyc(dev->SetRenderState(D3DRS_DESTBLEND, DstBlendGL[gp->tsp.DstInstr]));
+				}
+				else
+					verifyc(dev->SetRenderState(D3DRS_ALPHABLENDENABLE,FALSE));
+			}
+
+			verifyc(dev->DrawPrimitive(D3DPT_TRIANGLESTRIP,gp->first ,
+				gp->count-2));
+		}
+	}
+
+	template <u32 Type>
+	void RendPolyParamList(List<PolyParam>& gpl)
+	{
+		for (u32 i=0;i<gpl.used;i++)
+		{		
+			RendStrips<Type>(&gpl.data[i]);
+		}
+	}
+
 	void StartRender()
 	{
+		VertexCount+= pvrrc.verts.used;
 		render_end_pending_cycles=100000;
+
 		if (FB_W_SOF1 & 0x1000000)
 			return;
 		FrameCount++;
 
+		void* ptr;
+		u32 sz=pvrrc.verts.used*sizeof(Vertex);
+		
+		verifyc(vb->Lock(0,sz,&ptr,D3DLOCK_DISCARD));
+		
+		memcpy(ptr,pvrrc.verts.data,sz);
+		
+		verifyc(vb->Unlock());
+
 
 
 		// Clear the backbuffer to a blue color
-		dev->Clear( 0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0,0,255), 1.0f, 0 );
+		verifyc(dev->Clear( 0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0,0,255), 1.0f, 0 ));
 
 		// Begin the scene
 		if( SUCCEEDED( dev->BeginScene() ) )
-		{
-			// Draw the triangles in the vertex buffer. This is broken into a few
-			// steps. We are passing the Vertices down a "stream", so first we need
-			// to specify the source of that stream, which is our vertex buffer. Then
-			// we need to let D3D know what vertex shader to use. Full, custom vertex
-			// shaders are an advanced topic, but in most cases the vertex shader is
-			// just the FVF, so that D3D knows what type of Vertices we are dealing
-			// with. Finally, we call DrawPrimitive() which does the actual rendering
-			// of our geometry (in this case, just one triangle).
-			//g_pd3dDevice->SetStreamSource( 0, g_pVB, 0, sizeof(CUSTOMVERTEX) );
-			dev->SetFVF( D3DFVF_CUSTOMVERTEX );
-			//g_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLELIST, 0, 1 );
-			//dev->DrawPrimitive( D3DPT_TRIANGLELIST, 0, 1 );
-			dev->DrawPrimitiveUP(D3DPT_TRIANGLELIST,1,Vertices,sizeof(Vertices[0]));
+		{			
+			
+			verifyc(dev->SetVertexShader(CompiledShader));
+
+#define clamp(minv,maxv,x) min(maxv,max(minv,x))
+			float c0=1/clamp(0.0000001f,10000000.0f,pvrrc.invW_max);
+			float c1=1/clamp(0.0000001f,10000000.0f,pvrrc.invW_min);
+
+			verifyc(dev->SetVertexShaderConstantF(0,&c0,1));
+			verifyc(dev->SetVertexShaderConstantF(1,&c1,1));
+			
+			//dev->SetPixelShader(CompiledPShader);
+
+			verifyc(dev->SetRenderState(D3DRS_CULLMODE,D3DCULL_NONE));
+//			verifyc(dev->SetRenderState(D3DRS_,D3DCULL_NONE));
+			verifyc(dev->SetRenderState(D3DRS_ZENABLE,D3DZB_TRUE));
+			verifyc(dev->SetRenderState(D3DRS_ZFUNC,D3DCMP_LESSEQUAL));
+			
+			verifyc(dev->SetVertexDeclaration(vdecl));
+			verifyc(dev->SetStreamSource(0,vb,0,sizeof(Vertex)));
+
+			dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+			dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+			//	D3DTTFF_DISABLE, D3DTTFF_COUNT1|2|3|4  D3DTTFF_PROJECTED 
+			dev->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS,
+				D3DTTFF_COUNT4 | D3DTTFF_PROJECTED);
+
+			verifyc(dev->SetRenderState(D3DRS_ALPHABLENDENABLE,FALSE));
+			verifyc(dev->SetRenderState(D3DRS_ALPHATESTENABLE,FALSE));
+
+			RendPolyParamList<0>(tarc.global_param_op);
+
+			//verifyc(dev->SetRenderState(D3DRS_ALPHATESTENABLE,TRUE));
+			verifyc(dev->SetRenderState(D3DRS_ALPHAFUNC,D3DCMP_GREATEREQUAL));
+			
+			verifyc(dev->SetRenderState(D3DRS_ALPHAREF,PT_ALPHA_REF &0xFF));
+
+			RendPolyParamList<1>(tarc.global_param_pt);
+
+			//verifyc(dev->SetRenderState(D3DRS_ALPHATESTENABLE,FALSE));
+			verifyc(dev->SetRenderState(D3DRS_ALPHAFUNC,D3DCMP_GREATER));
+			verifyc(dev->SetRenderState(D3DRS_ALPHAREF,0));
+
+			RendPolyParamList<2>(tarc.global_param_tr);
 
 			// End the scene
-			dev->EndScene();
+			verifyc(dev->EndScene());
 		}
 
-		// Present the backbuffer contents to the display
-		dev->Present( NULL, NULL, NULL, NULL );
-	}
+		pvrrc.verts.Clear();
+		pvrrc.global_param_op.Clear();
+		pvrrc.global_param_pt.Clear();
+		pvrrc.global_param_tr.Clear();
 
-	using namespace TASplitter;
+		// Present the backbuffer contents to the display
+		verifyc(dev->Present( NULL, NULL, NULL, NULL ));
+	}
 
 
 	struct VertexDecoder
@@ -81,26 +676,56 @@ namespace Direct3DRenderer
 		__forceinline
 		static void StartList(u32 ListType)
 		{
-			
+			if (ListType==ListType_Opaque)
+				CurrentPPlist=&tarc.global_param_op;
+			else if (ListType==ListType_Punch_Through)
+				CurrentPPlist=&tarc.global_param_pt;
+			else if (ListType==ListType_Translucent)
+				CurrentPPlist=&tarc.global_param_tr;
+
 		}
 		__forceinline
 		static void EndList(u32 ListType)
 		{
-			
+			if (CurrentPP)
+			{
+				CurrentPP->count=tarc.verts.used - CurrentPP->first;
+				CurrentPP=0;
+			}
+			CurrentPPlist=0;
 		}
 
 		//Polys
-#define glob_param_bdc
+#define glob_param_bdc \
+	    if (CurrentPP)\
+		{\
+		CurrentPP->count=tarc.verts.used - CurrentPP->first;\
+		}\
+		PolyParam* d_pp =CurrentPPlist->Append(); \
+		\
+		CurrentPP=d_pp;\
+		\
+		d_pp->first=tarc.verts.used;\
+		vert_reappend=0;
+
 
 		__forceinline
 		static void AppendPolyParam32(TA_PolyParamA* pp)
 		{
 			glob_param_bdc;
+
+			d_pp->tsp=pp->tsp;
+			d_pp->tcw=pp->tcw;
+			d_pp->pcw=pp->pcw;
 		}
 		__forceinline
 		static void AppendPolyParam64A(TA_PolyParamA* pp)
 		{
 			glob_param_bdc;
+
+			d_pp->tsp=pp->tsp;
+			d_pp->tcw=pp->tcw;
+			d_pp->pcw=pp->pcw;
 		}
 		__forceinline
 		static void AppendPolyParam64B(TA_PolyParamB* pp)
@@ -112,24 +737,61 @@ namespace Direct3DRenderer
 		__forceinline
 		static void StartPolyStrip()
 		{
-			
+			if (vert_reappend)
+			{
+				Vertex* cv=tarc.verts.Append(2);
+				cv[0]=cv[-1];//dup prev
+				vert_reappend=tarc.verts.used-1;
+			}
 		}
 		__forceinline
 		static void EndPolyStrip()
 		{
-			
+			if (vert_reappend)
+			{
+				Vertex* vert=&tarc.verts.data[vert_reappend];
+				vert[0]=vert[1];
+			}
+			else
+			{
+				vert_reappend=1;
+			}
 		}
 
-			//Poly Vertex handlers
+		//Poly Vertex handlers
 
-#define vert_cvt_base VertexCount++;
+#define vert_cvt_base \
+	Vertex* cv=tarc.verts.Append();\
+	cv->x=vtx->xyz[0];\
+	cv->y=vtx->xyz[1];\
+	f32 invW=vtx->xyz[2];\
+	cv->z=invW;\
+	if (tarc.invW_min>invW)\
+		tarc.invW_min=invW;\
+	if (tarc.invW_max<invW)\
+		tarc.invW_max=invW;
 
+#define vert_uv_32(u_name,v_name) \
+		cv->u	=	(vtx->u_name);\
+		cv->v	=	(vtx->v_name);
+		//cv->uv[2]	=	0; 
+		//cv->uv[3]	=	invW; 
+
+#define vert_uv_16(u_name,v_name) \
+		cv->u	=	f16(vtx->u_name);\
+		cv->v	=	f16(vtx->v_name);
+		//cv->uv[2]	=	0; 
+		//cv->uv[3]	=	invW; 
 
 		//(Non-Textured, Packed Color)
 		__forceinline
 		static void AppendPolyVertex0(TA_Vertex0* vtx)
 		{
 			vert_cvt_base;
+			cv->col[0]	= unkpack_bgp_to_float[(255 & (vtx->BaseCol >> 16)) ];
+			cv->col[1]	= unkpack_bgp_to_float[(255 & (vtx->BaseCol >> 8))  ];
+			cv->col[2]	= unkpack_bgp_to_float[(255 & (vtx->BaseCol >> 0))  ];
+			cv->col[3]	= unkpack_bgp_to_float[(255 & (vtx->BaseCol >> 24)) ];
 		}
 
 		//(Non-Textured, Floating Color)
@@ -137,6 +799,10 @@ namespace Direct3DRenderer
 		static void AppendPolyVertex1(TA_Vertex1* vtx)
 		{
 			vert_cvt_base;
+			cv->col[0]	= vtx->BaseR;
+			cv->col[1]	= vtx->BaseG;
+			cv->col[2]	= vtx->BaseB;
+			cv->col[3]	= vtx->BaseA;
 		}
 
 		//(Non-Textured, Intensity)
@@ -144,6 +810,11 @@ namespace Direct3DRenderer
 		static void AppendPolyVertex2(TA_Vertex2* vtx)
 		{
 			vert_cvt_base;
+			
+			cv->col[0]	= vtx->BaseInt;
+			cv->col[1]	= vtx->BaseInt;
+			cv->col[2]	= vtx->BaseInt;
+			cv->col[3]	= vtx->BaseInt;
 		}
 
 		//(Textured, Packed Color)
@@ -151,6 +822,13 @@ namespace Direct3DRenderer
 		static void AppendPolyVertex3(TA_Vertex3* vtx)
 		{
 			vert_cvt_base;
+			
+			cv->col[0]	= unkpack_bgp_to_float[(255 & (vtx->BaseCol >> 16)) ];
+			cv->col[1]	= unkpack_bgp_to_float[(255 & (vtx->BaseCol >> 8))  ];
+			cv->col[2]	= unkpack_bgp_to_float[(255 & (vtx->BaseCol >> 0))  ];
+			cv->col[3]	= unkpack_bgp_to_float[(255 & (vtx->BaseCol >> 24)) ];
+
+			vert_uv_32(u,v);
 		}
 
 		//(Textured, Packed Color, 16bit UV)
@@ -158,6 +836,13 @@ namespace Direct3DRenderer
 		static void AppendPolyVertex4(TA_Vertex4* vtx)
 		{
 			vert_cvt_base;
+
+			cv->col[0]	= unkpack_bgp_to_float[(255 & (vtx->BaseCol >> 16)) ];
+			cv->col[1]	= unkpack_bgp_to_float[(255 & (vtx->BaseCol >> 8))  ];
+			cv->col[2]	= unkpack_bgp_to_float[(255 & (vtx->BaseCol >> 0))  ];
+			cv->col[3]	= unkpack_bgp_to_float[(255 & (vtx->BaseCol >> 24)) ];
+
+			vert_uv_16(u,v);
 		}
 
 		//(Textured, Floating Color)
@@ -165,6 +850,13 @@ namespace Direct3DRenderer
 		static void AppendPolyVertex5A(TA_Vertex5A* vtx)
 		{
 			vert_cvt_base;
+			
+			cv->col[0]	= 1;//vtx->BaseR;
+			cv->col[1]	= 1;//vtx->BaseG;
+			cv->col[2]	= 1;//vtx->BaseB;
+			cv->col[3]	= 1;//vtx->BaseA;
+
+			vert_uv_32(u,v);
 		}
 		__forceinline
 		static void AppendPolyVertex5B(TA_Vertex5B* vtx)
@@ -177,6 +869,13 @@ namespace Direct3DRenderer
 		static void AppendPolyVertex6A(TA_Vertex6A* vtx)
 		{
 			vert_cvt_base;
+
+			cv->col[0]	= 1;//vtx->BaseR;
+			cv->col[1]	= 1;//vtx->BaseG;
+			cv->col[2]	= 1;//vtx->BaseB;
+			cv->col[3]	= 1;//vtx->BaseA;
+
+			vert_uv_16(u,v);
 		}
 		__forceinline
 		static void AppendPolyVertex6B(TA_Vertex6B* vtx)
@@ -189,6 +888,13 @@ namespace Direct3DRenderer
 		static void AppendPolyVertex7(TA_Vertex7* vtx)
 		{
 			vert_cvt_base;
+
+			cv->col[0]	= vtx->BaseInt;
+			cv->col[1]	= vtx->BaseInt;
+			cv->col[2]	= vtx->BaseInt;
+			cv->col[3]	= vtx->BaseInt;
+
+			vert_uv_32(u,v);
 		}
 
 		//(Textured, Intensity, 16bit UV)
@@ -196,6 +902,13 @@ namespace Direct3DRenderer
 		static void AppendPolyVertex8(TA_Vertex8* vtx)
 		{
 			vert_cvt_base;
+
+			cv->col[0]	= 1.0f;//vtx->BaseInt;
+			cv->col[1]	= 1.0f;//vtx->BaseInt;
+			cv->col[2]	= 1.0f;//vtx->BaseInt;
+			cv->col[3]	= 1.0f;//vtx->BaseInt;
+
+			vert_uv_16(u,v);
 		}
 
 		//(Non-Textured, Packed Color, with Two Volumes)
@@ -203,6 +916,11 @@ namespace Direct3DRenderer
 		static void AppendPolyVertex9(TA_Vertex9* vtx)
 		{
 			vert_cvt_base;
+
+			cv->col[0]	= unkpack_bgp_to_float[(255 & (vtx->BaseCol0 >> 16)) ];
+			cv->col[1]	= unkpack_bgp_to_float[(255 & (vtx->BaseCol0 >> 8))  ];
+			cv->col[2]	= unkpack_bgp_to_float[(255 & (vtx->BaseCol0 >> 0))  ];
+			cv->col[3]	= unkpack_bgp_to_float[(255 & (vtx->BaseCol0 >> 24)) ];
 		}
 
 		//(Non-Textured, Intensity,	with Two Volumes)
@@ -210,6 +928,11 @@ namespace Direct3DRenderer
 		static void AppendPolyVertex10(TA_Vertex10* vtx)
 		{
 			vert_cvt_base;
+			
+			cv->col[0]	= 1.0f;//vtx->BaseInt0;
+			cv->col[1]	= 1.0f;//vtx->BaseInt0;
+			cv->col[2]	= 1.0f;//vtx->BaseInt0;
+			cv->col[3]	= 1.0f;//vtx->BaseInt0;
 		}
 
 		//(Textured, Packed Color,	with Two Volumes)	
@@ -217,6 +940,13 @@ namespace Direct3DRenderer
 		static void AppendPolyVertex11A(TA_Vertex11A* vtx)
 		{
 			vert_cvt_base;
+
+			cv->col[0]	= unkpack_bgp_to_float[(255 & (vtx->BaseCol0 >> 16)) ];
+			cv->col[1]	= unkpack_bgp_to_float[(255 & (vtx->BaseCol0 >> 8))  ];
+			cv->col[2]	= unkpack_bgp_to_float[(255 & (vtx->BaseCol0 >> 0))  ];
+			cv->col[3]	= unkpack_bgp_to_float[(255 & (vtx->BaseCol0 >> 24)) ];
+
+			vert_uv_32(u0,v0);
 		}
 		__forceinline
 		static void AppendPolyVertex11B(TA_Vertex11B* vtx)
@@ -229,6 +959,13 @@ namespace Direct3DRenderer
 		static void AppendPolyVertex12A(TA_Vertex12A* vtx)
 		{
 			vert_cvt_base;
+
+			cv->col[0]	= unkpack_bgp_to_float[(255 & (vtx->BaseCol0 >> 16)) ];
+			cv->col[1]	= unkpack_bgp_to_float[(255 & (vtx->BaseCol0 >> 8))  ];
+			cv->col[2]	= unkpack_bgp_to_float[(255 & (vtx->BaseCol0 >> 0))  ];
+			cv->col[3]	= unkpack_bgp_to_float[(255 & (vtx->BaseCol0 >> 24)) ];
+
+			vert_uv_16(u0,v0);
 		}
 		__forceinline
 		static void AppendPolyVertex12B(TA_Vertex12B* vtx)
@@ -240,7 +977,14 @@ namespace Direct3DRenderer
 		__forceinline
 		static void AppendPolyVertex13A(TA_Vertex13A* vtx)
 		{
-			vert_cvt_base;		
+			vert_cvt_base;
+
+			cv->col[0]	= 1.0f;//vtx->BaseInt0;
+			cv->col[1]	= 1.0f;//vtx->BaseInt0;
+			cv->col[2]	= 1.0f;//vtx->BaseInt0;
+			cv->col[3]	= 1.0f;//vtx->BaseInt0;
+
+			vert_uv_32(u0,v0);			
 		}
 		__forceinline
 		static void AppendPolyVertex13B(TA_Vertex13B* vtx)
@@ -253,6 +997,13 @@ namespace Direct3DRenderer
 		static void AppendPolyVertex14A(TA_Vertex14A* vtx)
 		{
 			vert_cvt_base;
+
+			cv->col[0]	= 1.0f;//vtx->BaseInt0;
+			cv->col[1]	= 1.0f;//vtx->BaseInt0;
+			cv->col[2]	= 1.0f;//vtx->BaseInt0;
+			cv->col[3]	= 1.0f;//vtx->BaseInt0;
+
+			vert_uv_16(u0,v0);	
 		}
 		__forceinline
 		static void AppendPolyVertex14B(TA_Vertex14B* vtx)
@@ -264,7 +1015,7 @@ namespace Direct3DRenderer
 		__forceinline
 		static void AppendSpriteParam(TA_SpriteParam* spr)
 		{
-
+			//printf("Sprite\n");
 		}
 
 		//Sprite Vertex Handlers
@@ -281,7 +1032,7 @@ namespace Direct3DRenderer
 		__forceinline
 		static void AppendSpriteVertex1A(TA_Sprite1A* sv)
 		{
-
+			
 		}
 		__forceinline
 		static void AppendSpriteVertex1B(TA_Sprite1B* sv)
@@ -324,11 +1075,14 @@ namespace Direct3DRenderer
 		__forceinline
 		static void ListCont()
 		{
+			//printf("LC : TA OL base = 0x%X\n",TA_OL_BASE);
 		}
 		__forceinline
 		static void ListInit()
 		{
-
+			//printf("LI : TA OL base = 0x%X\n",TA_OL_BASE);
+//			SetCurrentTARC(TA_ISP_BASE);
+			tarc.Clear();
 		}
 		__forceinline
 		static void SoftReset()
@@ -348,21 +1102,49 @@ namespace Direct3DRenderer
 		ppar.MultiSampleType = D3DMULTISAMPLE_NONE;
 		ppar.BackBufferCount=3;
 		ppar.PresentationInterval=D3DPRESENT_INTERVAL_IMMEDIATE;
-		ppar.AutoDepthStencilFormat = D3DFMT_D24S8;
 		ppar.BackBufferFormat = D3DFMT_R8G8B8;
-		ppar.EnableAutoDepthStencil=true;
+		
 		ppar.hDeviceWindow=(HWND)Hwnd;
 */
 		ppar.Windowed = TRUE;
 		ppar.SwapEffect = D3DSWAPEFFECT_DISCARD;
 		ppar.BackBufferFormat = D3DFMT_UNKNOWN;
 		ppar.PresentationInterval=D3DPRESENT_INTERVAL_IMMEDIATE;
+		ppar.EnableAutoDepthStencil=true;
+		ppar.AutoDepthStencilFormat = D3DFMT_D24X8;
 /*D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWnd,
                                       D3DCREATE_SOFTWARE_VERTEXPROCESSING,
                                       &d3dpp, &g_pd3dDevice 
 		*/
-		verifyc(d3d9->CreateDevice(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,(HWND)Hwnd,D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_FPU_PRESERVE,&ppar,&dev));
+		verifyc(d3d9->CreateDevice(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,(HWND)params.WindowHandle,D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_FPU_PRESERVE,&ppar,&dev));
 
+		//yay , 10 mb -_- =P
+		verifyc(dev->CreateVertexBuffer(10*1024*1024,D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY | 0,0,D3DPOOL_DEFAULT,&vb,0));
+		
+		verifyc(dev->CreateVertexDeclaration(vertelem,&vdecl));
+
+		ID3DXBuffer* perr;
+		ID3DXBuffer* shader;
+		
+		verifyc(D3DXCompileShader(Shader,sizeof(Shader),NULL,NULL,"VertexShader_Tutorial_1",D3DXGetVertexShaderProfile(dev) , 0, &shader,&perr,&shader_consts));
+		if (perr)
+		{
+			char* text=(char*)perr->GetBufferPointer();
+			printf("%s\n",text);
+		}
+		verifyc(dev->CreateVertexShader((DWORD*)shader->GetBufferPointer(),&CompiledShader));
+		verifyc(D3DXCompileShader(Pixel,sizeof(Pixel),NULL,NULL,"VertexShader_Tutorial_1",D3DXGetPixelShaderProfile(dev) , NULL, &shader,&perr,&shader_consts));
+		if (perr)
+		{
+			char* text=(char*)perr->GetBufferPointer();
+			printf("%s\n",text);
+		}
+		verifyc(dev->CreatePixelShader((DWORD*)shader->GetBufferPointer(),&CompiledPShader));
+		
+		for (u32 i=0;i<256;i++)
+		{
+			unkpack_bgp_to_float[i]=i/255.0f;
+		}
 		return TileAccel.Init();
 	}
 
@@ -402,7 +1184,7 @@ void GetDirect3DRenderer(rend_if* rif)
 	rif->ThreadEnd=Direct3DRenderer::ThreadEnd;
 
 	//drawing related functions :)
-	rif->PresentFB=Direct3DRenderer::PresentFB;
+	rif->VBlank=Direct3DRenderer::VBlank;
 	rif->StartRender=Direct3DRenderer::StartRender;
 	
 	//TA splitter i/f
@@ -410,6 +1192,7 @@ void GetDirect3DRenderer(rend_if* rif)
 	rif->Ta_ListInit=Direct3DRenderer::TileAccel.ListInit;
 	rif->Ta_SoftReset=Direct3DRenderer::TileAccel.SoftReset;
 
-	rif->VertexCount=&Direct3DRenderer::VertexCount;
-	rif->FrameCount=&Direct3DRenderer::FrameCount;
+	//rif->VertexCount=&Direct3DRenderer::VertexCount;
+	//rif->FrameCount=&Direct3DRenderer::FrameCount;
+	rif->VramLockedWrite=Direct3DRenderer::VramLockedWrite;
 }

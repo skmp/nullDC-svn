@@ -7,6 +7,9 @@
 rend_if* renderer;
 rend_if  rend_data;
 
+u32 VertexCount=0;
+u32 FrameCount=0;
+
 //List of interfaces to renderers
 GetInterfaceFP* rend_list[4]=
 {
@@ -41,7 +44,7 @@ bool SetRenderer(RendererType new_rend,void* Window)
 	if (renderer->Reset ==0)
 		return false;
 
-	if (renderer->PresentFB ==0)
+	if (renderer->VBlank ==0)
 		return false;
 
 	renderer->Window=Window;

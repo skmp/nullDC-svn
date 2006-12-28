@@ -65,7 +65,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="winMM.lib  opengl32.lib  glu32.lib glaux.lib d3d9.lib"
+				AdditionalDependencies="winMM.lib  opengl32.lib  glu32.lib glaux.lib d3d9.lib d3dx9.lib"
 				OutputFile="$(SolutionDir)\WorkDir\Plugins\$(ProjectName)_$(PlatformName).dll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="C:\Program Files\Microsoft DirectX SDK (April 2006)\Lib\x86"
@@ -150,7 +150,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="winMM.lib  opengl32.lib  glu32.lib glaux.lib d3d9.lib"
+				AdditionalDependencies="winMM.lib  opengl32.lib  glu32.lib glaux.lib d3d9.lib d3dx9.lib"
 				OutputFile="$(SolutionDir)\WorkDir\Plugins\$(ProjectName)_$(PlatformName).dll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="C:\Program Files\Microsoft DirectX SDK (April 2006)\Lib\x86"

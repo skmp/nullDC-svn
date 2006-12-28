@@ -30,9 +30,9 @@ void spgUpdatePvr(u32 cycles)
 		if (render_end_pending_cycles<cycles)
 		{
 			render_end_pending=false;
-			RaiseInterrupt(InterruptID::holly_RENDER_DONE);
-			RaiseInterrupt(InterruptID::holly_RENDER_DONE_isp);
-			RaiseInterrupt(InterruptID::holly_RENDER_DONE_vd);
+			params.RaiseInterrupt(InterruptID::holly_RENDER_DONE);
+			params.RaiseInterrupt(InterruptID::holly_RENDER_DONE_isp);
+			params.RaiseInterrupt(InterruptID::holly_RENDER_DONE_vd);
 		}
 		render_end_pending_cycles-=cycles;
 	}
@@ -79,9 +79,9 @@ void spgUpdatePvr(u32 cycles)
 		//Check for scanline interrupts -- realy need to test the scanline values
 		u32 data=SPG_VBLANK_INT;
 		if ((data & 0x3FFF) == prv_cur_scanline)
-			RaiseInterrupt(holly_SCANINT1);
+			params.RaiseInterrupt(holly_SCANINT1);
 		if (((data >> 16) & 0x3FFF) == prv_cur_scanline)
-			RaiseInterrupt(holly_SCANINT2);
+			params.RaiseInterrupt(holly_SCANINT2);
 
 		SPG_STATUS=((VblankInfo()/*Vblank*/) << 13) | ((0/*hblank*/) << 12) | ((0/*?*/) << 10) | prv_cur_scanline;
 
@@ -90,26 +90,26 @@ void spgUpdatePvr(u32 cycles)
 		{
 			//Vblank counter
 			vblk_cnt++;
-			RaiseInterrupt(InterruptID::holly_HBLank);// -> This turned out to be HBlank btw , needs to be emulater ;(
-			//TODO : Renderer->PresentFB();
-			renderer->PresentFB();//present FB data
+			params.RaiseInterrupt(InterruptID::holly_HBLank);// -> This turned out to be HBlank btw , needs to be emulater ;(
+			//TODO : rend_if_VBlank();
+			renderer->VBlank();//notify for vblank :)
 
 			if ((timeGetTime()-last_fps)>800)
 			{
-				double spd_fps=(double)(*renderer->FrameCount)/(double)((double)(timeGetTime()-(double)last_fps)/1000);
+				double spd_fps=(double)(FrameCount)/(double)((double)(timeGetTime()-(double)last_fps)/1000);
 				double spd_cpu=(double)vblk_cnt/(double)((double)(timeGetTime()-(double)last_fps)/1000);
 				spd_cpu*=Frame_Cycles;
 				spd_cpu/=1000000;	//mrhz kthx
 				double fullfps=(spd_fps/spd_cpu)*200;
-				double mv=(*renderer->VertexCount) /1000000.0;
-				(*renderer->VertexCount)=0;
+				double mv=VertexCount /1000000.0;
+				VertexCount=0;
 				last_fps=timeGetTime();
-				(*renderer->FrameCount)=0;
+				FrameCount=0;
 				vblk_cnt=0;
 
 				char fpsStr[256];
 				sprintf(fpsStr,"FPS: %4.2f(%4.2f) Vert : %4.2fM -  Sh4: %4.2f mhz (%4.2f%%) - nullDC v0.0.1", spd_fps,fullfps,mv, spd_cpu,spd_cpu*100/200);
-				SetWindowText((HWND)Hwnd, fpsStr);
+				SetWindowText((HWND)params.WindowHandle, fpsStr);
 			}
 		}
 	}

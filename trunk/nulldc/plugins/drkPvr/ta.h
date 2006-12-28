@@ -957,7 +957,7 @@ strip_end:
 						}
 
 						//printf("End list %X\n",CurrentList);
-						RaiseInterrupt(ListEndInterrupt[CurrentList]);
+						params.RaiseInterrupt(ListEndInterrupt[CurrentList]);
 						ListIsFinished[CurrentList]=true;
 						CurrentList=ListType_None;
 						VerxexDataFP=0;

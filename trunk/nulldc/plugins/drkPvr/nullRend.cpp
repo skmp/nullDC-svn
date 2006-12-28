@@ -9,12 +9,12 @@ namespace NullRenderer
 {
 	
 	//use that someday
-	void PresentFB()
+	void VBlank()
 	{
 	}
 
-	u32 VertexCount;
-	u32 FrameCount;
+	//u32 VertexCount;
+	//u32 FrameCount;
 
 	void StartRender()
 	{
@@ -332,7 +332,7 @@ void GetNullRenderer(rend_if* rif)
 	rif->ThreadEnd=NullRenderer::ThreadEnd;
 
 	//drawing related functions :)
-	rif->PresentFB=NullRenderer::PresentFB;
+	rif->VBlank=NullRenderer::VBlank;
 	rif->StartRender=NullRenderer::StartRender;
 	
 	//TA splitter i/f
@@ -340,6 +340,6 @@ void GetNullRenderer(rend_if* rif)
 	rif->Ta_ListInit=NullRenderer::TileAccel.ListInit;
 	rif->Ta_SoftReset=NullRenderer::TileAccel.SoftReset;
 
-	rif->VertexCount=&NullRenderer::VertexCount;
-	rif->FrameCount=&NullRenderer::FrameCount;
+//	rif->VertexCount=&NullRenderer::VertexCount;
+//	rif->FrameCount=&NullRenderer::FrameCount;
 }

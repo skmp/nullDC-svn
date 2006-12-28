@@ -37,9 +37,9 @@ u32 ReadPvrRegister(u32 addr,u32 size);
 void WritePvrRegister(u32 addr,u32 data,u32 size);
 
 
-extern u8*	vram_64;
-extern void* Hwnd;
-extern RaiseInterruptFP* RaiseInterrupt;
+//extern u8*	params.vram;
+//extern void* Hwnd;
+//extern RaiseInterruptFP* RaiseInterrupt;
 
 float GetSeconds();
 
@@ -60,7 +60,8 @@ float GetSeconds();
 
 extern bool render_end_pending;
 extern u32 render_end_pending_cycles;
-
+/*
 extern vramlock_Lock_32FP* lock32;
 extern vramlock_Lock_64FP* lock64;
-extern vramlock_Unlock_blockFP* unlock;
+extern vramlock_Unlock_blockFP* unlock;*/
+extern pvr_init_params params;

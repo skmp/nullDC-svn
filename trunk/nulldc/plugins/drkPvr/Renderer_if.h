@@ -11,7 +11,7 @@ typedef void ResetRendererFP(bool Manual);
 //more shit
 //Present FB/Rendered data
 //~~Watch~~ for rendered data/fb writes/RenderToTexture ...
-typedef void PresentFBFP();
+typedef void VBlankFP();
 
 typedef void StartRenderFP();
 typedef void voidFunctRetvoid();
@@ -27,7 +27,7 @@ struct rend_if
 	InitRendererFP* ThreadStart;
 	TermRendererFP* ThreadEnd;
 
-	PresentFBFP*	PresentFB;
+	VBlankFP*	VBlank;
 	StartRenderFP*	StartRender;
 
 	voidFunctRetvoid* Ta_ListInit;
@@ -38,9 +38,12 @@ struct rend_if
 	//misc data
 	bool Inited;
 	void* Window;
-	u32* VertexCount;
-	u32* FrameCount;
+	/*u32 VertexCount;
+	u32 FrameCount;*/
 };
+
+extern u32 VertexCount;
+extern u32 FrameCount;
 
 //GetInterface
 typedef void GetInterfaceFP(rend_if* rif);
