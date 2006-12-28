@@ -33,7 +33,7 @@ namespace Direct3DRenderer
 "vtx.uv.w=vtx.pos.z;" 
 
 "vtx.pos.z=((1/clamp(0.0000001,10000000,vtx.pos.z))-W_min)/W_max;"
-"vtx.pos.z=smoothstep(0, 1, vtx.pos.z);"
+"vtx.pos.z=clamp(0, 1, vtx.pos.z);"
 "vtx.pos.w=1;"
 "return vtx; "
 "}";
@@ -51,6 +51,41 @@ namespace Direct3DRenderer
 		D3DBLEND_INVSRCALPHA,
 		D3DBLEND_DESTALPHA,
 		D3DBLEND_INVDESTALPHA
+	};
+
+	const static u32 CullMode[]= 
+	{
+		D3DCULL_NONE,	//0	No culling	no culling
+		D3DCULL_NONE,	//1	Cull if Small	Cull if	( |det| < fpu_cull_val )
+
+		//wtf ?
+		D3DCULL_NONE /*D3DCULL_CCW*/,		//2	Cull if Negative	Cull if 	( |det| < 0 ) or
+						//( |det| < fpu_cull_val )
+		D3DCULL_NONE /*D3DCULL_CW*/,		//3	Cull if Positive	Cull if 	( |det| > 0 ) or
+						//( |det| < fpu_cull_val )
+	};
+	const static u32 Zfunction[]=
+	{
+		//This bit is used in combination with the Z Write Disable bit, and 
+		//supports compare processing, which is required for OpenGL and D3D 
+		//versus Z buffer updates.  It is important to note that, because the
+		//value of either 1/z or 1/w is referenced for the Z value, the closer
+		//that the polygon is, the larger that the Z value will be.
+		
+		//This setting is ignored for Translucent polygons in Auto-sort 
+		//mode; the comparison must be made on a "Greater or Equal" basis.  
+		//This setting is also ignored for Punch Through polygons in HOLLY2; 
+		//the comparison must be made on a "Less or Equal" basis.
+
+
+		D3DCMP_NEVER,				//0	Never
+		D3DCMP_GREATER,				//1	Less
+		D3DCMP_EQUAL,				//2	Equal
+		D3DCMP_GREATEREQUAL,		//3	Less Or Equal
+		D3DCMP_LESS,				//4	Greater
+		D3DCMP_NOTEQUAL,			//5	Not Equal
+		D3DCMP_LESSEQUAL,			//6	Greater Or Equal
+		D3DCMP_ALWAYS,				//7	Always
 	};
 
 	/*
@@ -161,7 +196,10 @@ f32 f16(u16 v)
 			if (tcw.NO_PAL.StrideSel)
 				printf(" Stride");
 
-			printf(" %dx%d @ 0x%X",8<<tsp.TexU,8<<tsp.TexV,tcw.NO_PAL.TexAddr<<3);
+			if (tcw.NO_PAL.StrideSel)
+				printf(" %d[%d]x%d @ 0x%X",(TEXT_CONTROL&31)*32,8<<tsp.TexU,8<<tsp.TexV,tcw.NO_PAL.TexAddr<<3);
+			else
+				printf(" %dx%d @ 0x%X",8<<tsp.TexU,8<<tsp.TexV,tcw.NO_PAL.TexAddr<<3);
 			printf("\n");
 		}
 		void Update()
@@ -224,6 +262,23 @@ f32 f16(u16 v)
 
 				break;
 				//3	YUV422 32 bits per 2 pixels; YUYV values: 8 bits each
+			case 3:
+				if (tcw.NO_PAL.ScanOrder)
+				{
+					if (tcw.NO_PAL.StrideSel)
+					{
+						u32 sr=(TEXT_CONTROL&31)*32;
+						YUV422(&pbt,(u16*)&params.vram[sa],sr,h);
+					}
+					else
+						YUV422(&pbt,(u16*)&params.vram[sa],w,h);
+				}
+				else
+				{
+					YUV422_TW(&pbt,(u16*)&params.vram[sa],w,h);
+					//it cant be VQ , can it ?
+				}
+				break;
 				//4	Bump Map	16 bits/pixel; S value: 8 bits; R value: 8 bits
 				//5	4 BPP Palette	Palette texture with 4 bits/pixel
 				//6	8 BPP Palette	Palette texture with 8 bits/pixel
@@ -344,6 +399,8 @@ f32 f16(u16 v)
 	//use that someday
 	void VBlank()
 	{
+		//we need to actualy draw the image here :)
+		//dev->
 	}
 
 	//Vertex storage types
@@ -398,6 +455,7 @@ f32 f16(u16 v)
 		TSP tsp;
 		TCW tcw;
 		PCW pcw;
+		ISP_TSP isp;
 /*
 		void SetRenderMode_Op()
 		{
@@ -512,13 +570,13 @@ f32 f16(u16 v)
 	void RendStrips(PolyParam* gp)
 	{
 		if (gp->count>2)
-		{	//0 vert polys ? why does games even bother sending em  ? =P
-
+		{	
+			//0 vert polys ? why does games even bother sending em  ? =P
 			if (gp->pcw.Texture)
 			{
 				IDirect3DTexture9* tex=GetTexture(gp->tsp,gp->tcw);
 				dev->SetTexture(0,tex);
-				if (Type==ListType_Translucent)
+				if (Type!=ListType_Opaque)
 				{
 					switch(gp->tsp.ShadInstr)	// these should be correct, except offset
 					{
@@ -558,19 +616,37 @@ f32 f16(u16 v)
 				dev->SetTexture(0,NULL);
 			}
 
-			if (Type==ListType_Translucent)
+			if (Type!=ListType_Opaque)
 			{
 				if(gp->tsp.UseAlpha)
 				{
-					verifyc(dev->SetRenderState(D3DRS_ALPHABLENDENABLE,TRUE));
-					verifyc(dev->SetRenderState(D3DRS_ALPHAFUNC,TRUE));
-
-					verifyc(dev->SetRenderState(D3DRS_SRCBLEND, SrcBlendGL[gp->tsp.SrcInstr]));
-					verifyc(dev->SetRenderState(D3DRS_DESTBLEND, DstBlendGL[gp->tsp.DstInstr]));
+					dev->SetRenderState(D3DRS_ALPHABLENDENABLE,TRUE);
+					
+					dev->SetRenderState(D3DRS_SRCBLEND, SrcBlendGL[gp->tsp.SrcInstr]);
+					dev->SetRenderState(D3DRS_DESTBLEND, DstBlendGL[gp->tsp.DstInstr]);
 				}
 				else
-					verifyc(dev->SetRenderState(D3DRS_ALPHABLENDENABLE,FALSE));
+					dev->SetRenderState(D3DRS_ALPHABLENDENABLE,FALSE);
 			}
+
+
+			//set cull mode !
+			dev->SetRenderState(D3DRS_CULLMODE,CullMode[gp->isp.CullMode]);
+			//set Z mode !
+			if (Type==ListType_Opaque)
+				dev->SetRenderState(D3DRS_ZFUNC,Zfunction[gp->isp.DepthMode]);
+			else if (Type==ListType_Translucent)
+			{
+				//if (autosort) -> where ? :p
+				//dev->SetRenderState(D3DRS_ZFUNC,Zfunction[6]); // : GEQ
+				//else -> fix it ! someday
+				dev->SetRenderState(D3DRS_ZFUNC,Zfunction[gp->isp.DepthMode]);
+			}
+			else
+				dev->SetRenderState(D3DRS_ZFUNC,Zfunction[3]); //PT : LEQ
+
+			dev->SetRenderState(D3DRS_ZWRITEENABLE,gp->isp.ZWriteDis==0);
+			
 
 			verifyc(dev->DrawPrimitive(D3DPT_TRIANGLESTRIP,gp->first ,
 				gp->count-2));
@@ -641,20 +717,21 @@ f32 f16(u16 v)
 			verifyc(dev->SetRenderState(D3DRS_ALPHABLENDENABLE,FALSE));
 			verifyc(dev->SetRenderState(D3DRS_ALPHATESTENABLE,FALSE));
 
-			RendPolyParamList<0>(tarc.global_param_op);
+			RendPolyParamList<ListType_Opaque>(tarc.global_param_op);
 
-			//verifyc(dev->SetRenderState(D3DRS_ALPHATESTENABLE,TRUE));
+			verifyc(dev->SetRenderState(D3DRS_ALPHATESTENABLE,TRUE));
 			verifyc(dev->SetRenderState(D3DRS_ALPHAFUNC,D3DCMP_GREATEREQUAL));
 			
 			verifyc(dev->SetRenderState(D3DRS_ALPHAREF,PT_ALPHA_REF &0xFF));
 
-			RendPolyParamList<1>(tarc.global_param_pt);
+			RendPolyParamList<ListType_Punch_Through>(tarc.global_param_pt);
 
-			//verifyc(dev->SetRenderState(D3DRS_ALPHATESTENABLE,FALSE));
+			//alpha test is not working properly btw
+			//verifyc(dev->SetRenderState(D3DRS_ALPHATESTENABLE,TRUE));
 			verifyc(dev->SetRenderState(D3DRS_ALPHAFUNC,D3DCMP_GREATER));
 			verifyc(dev->SetRenderState(D3DRS_ALPHAREF,0));
 
-			RendPolyParamList<2>(tarc.global_param_tr);
+			RendPolyParamList<ListType_Translucent>(tarc.global_param_tr);
 
 			// End the scene
 			verifyc(dev->EndScene());
@@ -666,7 +743,7 @@ f32 f16(u16 v)
 		pvrrc.global_param_tr.Clear();
 
 		// Present the backbuffer contents to the display
-		verifyc(dev->Present( NULL, NULL, NULL, NULL ));
+		dev->Present( NULL, NULL, NULL, NULL );
 	}
 
 
@@ -691,6 +768,7 @@ f32 f16(u16 v)
 			{
 				CurrentPP->count=tarc.verts.used - CurrentPP->first;
 				CurrentPP=0;
+				vert_reappend=0;
 			}
 			CurrentPPlist=0;
 		}
@@ -714,6 +792,7 @@ f32 f16(u16 v)
 		{
 			glob_param_bdc;
 
+			d_pp->isp=pp->isp;
 			d_pp->tsp=pp->tsp;
 			d_pp->tcw=pp->tcw;
 			d_pp->pcw=pp->pcw;
@@ -723,6 +802,7 @@ f32 f16(u16 v)
 		{
 			glob_param_bdc;
 
+			d_pp->isp=pp->isp;
 			d_pp->tsp=pp->tsp;
 			d_pp->tcw=pp->tcw;
 			d_pp->pcw=pp->pcw;
