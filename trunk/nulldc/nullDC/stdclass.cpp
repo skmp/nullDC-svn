@@ -42,7 +42,7 @@ char* GetNullDCSoruceFileName(char* full)
 char* GetPathFromFileNameTemp(char* full)
 {
 	size_t len = strlen(full);
-	while(len>5)
+	while(len>2)
 	{
 		if (full[len]=='\\')
 		{

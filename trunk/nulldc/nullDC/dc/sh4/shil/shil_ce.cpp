@@ -474,6 +474,7 @@ u32 shil_optimise_pass_ce_main(BasicBlock* bb)
 
 void shil_optimise_pass_ce_driver(BasicBlock* bb)
 {
+		//return;
 	ce_re_run=true;
 	u32 rv=0;
 	u32 pass=0;

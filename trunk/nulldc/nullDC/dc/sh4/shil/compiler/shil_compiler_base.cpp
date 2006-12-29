@@ -500,7 +500,8 @@ void emit_vmem_read(x86_reg reg_addr,u8 reg_out,u32 sz)
 		}
 		else
 		{
-			x86e->Emit(op_mov32, writereg,EAX);
+			if (writereg!=EAX)
+				x86e->Emit(op_mov32, writereg,EAX);
 		}
 		SaveReg(reg_out,writereg);
 	}
