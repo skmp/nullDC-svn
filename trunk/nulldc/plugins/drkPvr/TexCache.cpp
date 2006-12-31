@@ -51,7 +51,7 @@ u32 unpack_1_to_8[2]={0,0xFF};
 	( ((A)<<24) | ((R)<<16) | ((G)<<8) | ((B)<<0))
 
 #define ARGB1555( word )	\
-	ARGB8888(unpack_1_to_8[word>>15],unpack_5_to_8[(word>>10) & 0x1F],	\
+	ARGB8888(unpack_1_to_8[(word>>15)&1],unpack_5_to_8[(word>>10) & 0x1F],	\
 	unpack_5_to_8[(word>>5) & 0x1F],unpack_5_to_8[word&0x1F])
 
 #define ARGB565( word )		\
@@ -60,7 +60,7 @@ u32 unpack_1_to_8[2]={0,0xFF};
 	//( 0xFF000000 | unpack_5_to_8[(word>>11) & 0x1F] | unpack_5_to_8[(word>>5) & 0x3F]<<8 | unpack_5_to_8[word&0x1F]<<16 )
 
 #define ARGB4444( word )	\
-	( ((word&0xF000)<<16) | ((word&0xF00)>>4) | ((word&0xF0)<<8) | ((word&0xF)<<20) )
+	ARGB8888( (word&0xF000)>>(12-4),(word&0xF00)>>(8-4),(word&0xF0)>>(4-4),(word&0xF)<<4 )
 
 u32 YUV422(s32 Y,s32 Yu,s32 Yv)
 {

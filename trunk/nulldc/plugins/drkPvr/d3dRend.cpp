@@ -6,6 +6,7 @@
 #include "windows.h"
 //#include "gl\gl.h"
 #include "regs.h"
+#include <vector>
 
 //#include <D3dx9shader.h>
 
@@ -158,6 +159,13 @@ f32 f16(u16 v)
 							sa+=MipPoint[tsp.TexU]<<3;\
 						argb##format##to8888_TW(&pbt,(u16*)&params.vram[sa],w,h);\
 					}
+#define norm_text(format) \
+	u32 sr;\
+	if (tcw.NO_PAL.StrideSel)\
+					{sr=(TEXT_CONTROL&31)*32;}\
+					else\
+					{sr=w;}\
+					format(&pbt,(u16*)&params.vram[sa],sr,h);
 
 	//Texture Cache :)
 	struct TextureCacheData
@@ -210,7 +218,7 @@ f32 f16(u16 v)
 			Updates++;
 			dirty=false;
 
-			u32 sa=Start;
+			u32 sa=(tcw.NO_PAL.TexAddr<<3) & 0x7FFFFF;
 
 			PixelBuffer pbt;
 			pbt.p_buffer_start=pbt.p_current_line=temp_tex_buffer;
@@ -225,7 +233,8 @@ f32 f16(u16 v)
 				if (tcw.NO_PAL.ScanOrder)
 				{
 					//verify(tcw.NO_PAL.VQ_Comp==0);
-					argb1555to8888(&pbt,(u16*)&params.vram[sa],w,h);
+					norm_text(argb1555to8888);
+					//argb1555to8888(&pbt,(u16*)&params.vram[sa],w,h);
 				}
 				else
 				{
@@ -239,7 +248,8 @@ f32 f16(u16 v)
 				if (tcw.NO_PAL.ScanOrder)
 				{
 					//verify(tcw.NO_PAL.VQ_Comp==0);
-					argb565to8888(&pbt,(u16*)&params.vram[sa],w,h);
+					norm_text(argb565to8888);
+					//(&pbt,(u16*)&params.vram[sa],w,h);
 				}
 				else
 				{
@@ -253,7 +263,8 @@ f32 f16(u16 v)
 				if (tcw.NO_PAL.ScanOrder)
 				{
 					//verify(tcw.NO_PAL.VQ_Comp==0);
-					argb4444to8888(&pbt,(u16*)&params.vram[sa],w,h);
+					//argb4444to8888(&pbt,(u16*)&params.vram[sa],w,h);
+					norm_text(argb4444to8888);
 				}
 				else
 				{
@@ -265,17 +276,14 @@ f32 f16(u16 v)
 			case 3:
 				if (tcw.NO_PAL.ScanOrder)
 				{
-					if (tcw.NO_PAL.StrideSel)
-					{
-						u32 sr=(TEXT_CONTROL&31)*32;
-						YUV422(&pbt,(u16*)&params.vram[sa],sr,h);
-					}
-					else
-						YUV422(&pbt,(u16*)&params.vram[sa],w,h);
+					norm_text(YUV422);
 				}
 				else
 				{
+					if (tcw.NO_PAL.MipMapped)
+						sa+=MipPoint[tsp.TexU]<<3;
 					YUV422_TW(&pbt,(u16*)&params.vram[sa],w,h);
+					verify(tcw.NO_PAL.VQ_Comp==0);
 					//it cant be VQ , can it ?
 				}
 				break;
@@ -316,6 +324,14 @@ f32 f16(u16 v)
 				texture_data+=rect.Pitch/4;
 			}
 			Texture->UnlockRect(0);
+			
+			/*
+			char file[512];
+
+			sprintf(file,"d:\\textures\\0x%x_%d_%s_VQ%d_TW%d_MM%d_.jpg",Start,Lookups,texFormatName[tcw.NO_PAL.PixelFmt]
+			,tcw.NO_PAL.VQ_Comp,tcw.NO_PAL.ScanOrder,tcw.NO_PAL.MipMapped);
+			D3DXSaveTextureToFileA( file,D3DXIFF_JPG,Texture,0);
+			*/
 		}
 	};
 
@@ -325,7 +341,7 @@ f32 f16(u16 v)
 	TextureCacheData* __fastcall GenText(TSP tsp,TCW tcw,TextureCacheData* tf)
 	{
 		//generate texture
-		tf->Start=(tcw.NO_PAL.TexAddr<<3) & 0x7FFFFF;
+		tf->Start=tcw.full;//(tcw.NO_PAL.TexAddr<<3) & 0x7FFFFF;
 		
 		tf->w=8<<tsp.TexU;
 		tf->h=8<<tsp.TexV;
@@ -351,16 +367,16 @@ f32 f16(u16 v)
 
 	IDirect3DTexture9* __fastcall GetTexture(TSP tsp,TCW tcw)
 	{	
-		u32 addr=(tcw.NO_PAL.TexAddr<<3) & 0x7FFFFF;
+		//u32 addr=(tcw.NO_PAL.TexAddr<<3) & 0x7FFFFF;
 		/*if (addr==RenderToTextureAddr)
 			return RenderToTextureTex;*/
 
-		TextureCacheData* tf = TexCache.Find(addr);
+		TextureCacheData* tf = TexCache.Find(tcw.full);
 		if (tf)
 		{
 			if (tf->dirty)
 			{
-				if ((tf->tsp.full==tsp.full) && (tf->tcw.full==tcw.full))
+				if (tf->tsp.full==tsp.full)
 					tf->Update();
 				else
 				{
@@ -426,7 +442,7 @@ f32 f16(u16 v)
 		float col_offset[4];
 */
 		//64
-		float x,y,z,oow;
+		float x,y,z;
 
 		float col[4];
 		float u,v;
@@ -436,100 +452,26 @@ f32 f16(u16 v)
 	};
 	const D3DVERTEXELEMENT9 vertelem[] =
 	{
-		{0, 0, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION,0},
-		{0, 16, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0},
-		{0, 32, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD,0},
+		{0, 0, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION,0},
+		{0, 12, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0},
+		{0, 28, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD,0},
 		D3DDECL_END()
 	};
 
 	IDirect3DVertexDeclaration9* vdecl;
 
-	//8B
 	struct PolyParam
 	{
 		u32 first;		//entry index , holds vertex/pos data
 		u32 count;
 
 		//lets see what more :)
-		//Texture* texID;	//0xFFFFFFFF if no texture
+		
 		TSP tsp;
 		TCW tcw;
 		PCW pcw;
 		ISP_TSP isp;
-/*
-		void SetRenderMode_Op()
-		{
-			if (texID!=0xFFFFFFFF)
-			{
-				if (!gl_Text2D_enabled)
-				{
-					gl_Text2D_enabled=true;
-					glEnable(GL_TEXTURE_2D);
-				}
 
-				glBindTexture(GL_TEXTURE_2D,texID);
-
-				if (!gl_TextCord_enabled)
-				{
-					gl_TextCord_enabled=true;
-					glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-				}
-				glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-			}
-			else
-			{
-				if (gl_TextCord_enabled)
-				{
-					gl_TextCord_enabled=false;
-					glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-				}
-				if (gl_Text2D_enabled)
-				{
-					gl_Text2D_enabled=false;
-					glDisable(GL_TEXTURE_2D);
-				}
-			}
-		}
-		void SetRenderMode_Tr()
-		{
-			if (texID!=0xFFFFFFFF)
-			{
-				//verify(glIsTexture(texID));
-				glEnable(GL_TEXTURE_2D);
-				glBindTexture(GL_TEXTURE_2D,texID);
-				glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-				glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-			}
-			else
-			{
-				glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-				glDisable(GL_TEXTURE_2D);
-			}
-			
-			if(tsp.UseAlpha)
-			{
-				glEnable(GL_BLEND);
-				glBlendFunc(SrcBlendGL[tsp.SrcInstr], DstBlendGL[tsp.DstInstr]);
-			}
-			else
-				glDisable(GL_BLEND);
-		}
-		void SetRenderMode_Pt()
-		{
-			if (texID!=0xFFFFFFFF)
-			{
-				glEnable(GL_TEXTURE_2D);
-				glBindTexture(GL_TEXTURE_2D,texID);
-				glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-				glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-			}
-			else
-			{
-				glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-				glDisable(GL_TEXTURE_2D);
-			}
-		}
-		*/
 	};
 
 
@@ -560,11 +502,82 @@ f32 f16(u16 v)
 
 	
 	TA_context tarc;
-	#define pvrrc tarc
+	TA_context pvrrc;
+
+	std::vector<TA_context> rcnt;
+	inline u32 FindRC(u32 addr)
+	{
+		for (u32 i=0;i<rcnt.size();i++)
+		{
+			if (rcnt[i].Address==addr)
+			{
+				return i;
+			}
+		}
+		return 0xFFFFFFFF;
+	}
+	void SetCurrentTARC(u32 addr)
+	{
+		//printf("SetCurrentTARC:0x%X\n",addr);
+		if (addr==tarc.Address)
+			return;//nothing to do realy
+
+		//save old context
+		u32 found=FindRC(tarc.Address);
+		if (found!=0xFFFFFFFF)
+			memcpy(&rcnt[found],&tarc,sizeof(TA_context));
+
+		//switch to new one
+		found=FindRC(addr);
+		if (found!=0xFFFFFFFF)
+		{
+			memcpy(&tarc,&rcnt[found],sizeof(TA_context));
+		}
+		else
+		{
+			//add one :p
+			tarc.Address=addr;
+			rcnt.push_back(tarc);
+		}
+	}
+	void SetCurrentPVRRC(u32 addr)
+	{
+	//	printf("SetCurrentPVRRC:0x%X\n",addr);
+		if (addr==tarc.Address)
+		{
+			memcpy(&pvrrc,&tarc,sizeof(TA_context));
+			return;
+		}
+
+		u32 found=FindRC(addr);
+		if (found!=0xFFFFFFFF)
+		{
+			memcpy(&pvrrc,&rcnt[found],sizeof(TA_context));
+			return;
+		}
+
+		printf("WARNING : Unable to find a PVR rendering context\n");
+		memcpy(&pvrrc,&tarc,sizeof(TA_context));
+	}
+
 
 	PolyParam* CurrentPP=0;
 	List<PolyParam>* CurrentPPlist;
 	
+	template<D3DSAMPLERSTATETYPE state>
+	void SetTexMode(u32 clamp,u32 mirror)
+	{
+		if (clamp)
+			dev->SetSamplerState(0,state,D3DTADDRESS_CLAMP);
+		else 
+		{
+			if (mirror)
+				dev->SetSamplerState(0,state,D3DTADDRESS_MIRROR);
+			else
+				dev->SetSamplerState(0,state,D3DTADDRESS_WRAP);
+		}
+		
+	}
 	template <u32 Type>
 	__forceinline
 	void RendStrips(PolyParam* gp)
@@ -576,6 +589,9 @@ f32 f16(u16 v)
 			{
 				IDirect3DTexture9* tex=GetTexture(gp->tsp,gp->tcw);
 				dev->SetTexture(0,tex);
+				SetTexMode<D3DSAMP_ADDRESSV>(gp->tsp.ClampV,gp->tsp.FlipV);
+				SetTexMode<D3DSAMP_ADDRESSU>(gp->tsp.ClampU,gp->tsp.FlipU);
+				
 				if (Type!=ListType_Opaque)
 				{
 					switch(gp->tsp.ShadInstr)	// these should be correct, except offset
@@ -664,6 +680,7 @@ f32 f16(u16 v)
 
 	void StartRender()
 	{
+		SetCurrentPVRRC(PARAM_BASE);
 		VertexCount+= pvrrc.verts.used;
 		render_end_pending_cycles=100000;
 
@@ -672,6 +689,7 @@ f32 f16(u16 v)
 		FrameCount++;
 
 		void* ptr;
+		
 		u32 sz=pvrrc.verts.used*sizeof(Vertex);
 		
 		verifyc(vb->Lock(0,sz,&ptr,D3DLOCK_DISCARD));
@@ -717,31 +735,28 @@ f32 f16(u16 v)
 			verifyc(dev->SetRenderState(D3DRS_ALPHABLENDENABLE,FALSE));
 			verifyc(dev->SetRenderState(D3DRS_ALPHATESTENABLE,FALSE));
 
-			RendPolyParamList<ListType_Opaque>(tarc.global_param_op);
+			RendPolyParamList<ListType_Opaque>(pvrrc.global_param_op);
 
 			verifyc(dev->SetRenderState(D3DRS_ALPHATESTENABLE,TRUE));
 			verifyc(dev->SetRenderState(D3DRS_ALPHAFUNC,D3DCMP_GREATEREQUAL));
 			
 			verifyc(dev->SetRenderState(D3DRS_ALPHAREF,PT_ALPHA_REF &0xFF));
 
-			RendPolyParamList<ListType_Punch_Through>(tarc.global_param_pt);
+			RendPolyParamList<ListType_Punch_Through>(pvrrc.global_param_pt);
 
 			//alpha test is not working properly btw
 			//verifyc(dev->SetRenderState(D3DRS_ALPHATESTENABLE,TRUE));
 			verifyc(dev->SetRenderState(D3DRS_ALPHAFUNC,D3DCMP_GREATER));
 			verifyc(dev->SetRenderState(D3DRS_ALPHAREF,0));
 
-			RendPolyParamList<ListType_Translucent>(tarc.global_param_tr);
+			RendPolyParamList<ListType_Translucent>(pvrrc.global_param_tr);
 
 			// End the scene
 			verifyc(dev->EndScene());
 		}
 
-		pvrrc.verts.Clear();
-		pvrrc.global_param_op.Clear();
-		pvrrc.global_param_pt.Clear();
-		pvrrc.global_param_tr.Clear();
-
+		//pvrrc.Clear();
+		
 		// Present the backbuffer contents to the display
 		dev->Present( NULL, NULL, NULL, NULL );
 	}
@@ -1156,12 +1171,13 @@ f32 f16(u16 v)
 		static void ListCont()
 		{
 			//printf("LC : TA OL base = 0x%X\n",TA_OL_BASE);
+			SetCurrentTARC(TA_ISP_BASE);
 		}
 		__forceinline
 		static void ListInit()
 		{
 			//printf("LI : TA OL base = 0x%X\n",TA_OL_BASE);
-//			SetCurrentTARC(TA_ISP_BASE);
+			SetCurrentTARC(TA_ISP_BASE);
 			tarc.Clear();
 		}
 		__forceinline

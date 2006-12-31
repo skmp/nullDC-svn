@@ -99,8 +99,10 @@ namespace TASplitter
 			u32 MipMapD		: 4;
 			u32 SupSample	: 1;
 			u32 FilterMode	: 2;
-			u32 ClampUV		: 2;
-			u32 FlipUV		: 2;
+			u32 ClampV		: 1;
+			u32 ClampU		: 1;
+			u32 FlipV		: 1;
+			u32 FlipU		: 1;
 			u32 IgnoreTexA	: 1;
 			u32 UseAlpha	: 1;
 			u32 ColorClamp	: 1;
@@ -230,8 +232,7 @@ namespace TASplitter
 	struct TA_Vertex4	//	(Packed Color, 16bit UV)
 	{
 		f32 xyz[3];
-		u32 u : 16;
-		u32 v : 16;
+		u16 v,u; //note the oposite order here !
 		u32 ignore_1;
 		u32 BaseCol;
 		u32 OffsCol;
@@ -256,8 +257,7 @@ namespace TASplitter
 	struct TA_Vertex6A	//	(Floating Color, 16bit UV)
 	{
 		f32 xyz[3];
-		u32 u : 16;
-		u32 v : 16;
+		u16 v,u; //note the oposite order here !
 		u32 ignore_1;
 		u32 ignore_2;
 		u32 ignore_3;
@@ -283,8 +283,7 @@ namespace TASplitter
 	struct TA_Vertex8	//	(Intensity, 16bit UV)
 	{
 		f32 xyz[3];
-		u32 u : 16;
-		u32 v : 16;
+		u16 v,u; //note the oposite order here !
 		u32 ignore_1;
 		f32 BaseInt;
 		f32 OffsInt;
@@ -328,16 +327,14 @@ namespace TASplitter
 	struct TA_Vertex12A	//	(Textured, Packed Color, 16bit UV, with Two Volumes)
 	{
 		f32 xyz[3];
-		u32 u0 : 16;
-		u32 v0 : 16;
+		u16 v0,u0; //note the oposite order here !
 		u32 ignore_1;
 		u32 BaseCol0, OffsCol0;
 	};
 	//32B
 	struct TA_Vertex12B
 	{
-		u32 u1 : 16;
-		u32 v1 : 16;
+		u16 v1,u1; //note the oposite order here !
 		u32 ignore_2;
 		u32 BaseCol1, OffsCol1;
 		u32 ignore_3, ignore_4;
@@ -363,16 +360,14 @@ namespace TASplitter
 	struct TA_Vertex14A	//	(Textured, Intensity, 16bit UV, with Two Volumes)
 	{
 		f32 xyz[3];
-		u32 u0 : 16;
-		u32 v0 : 16;
+		u16 v0,u0; //note the oposite order here !
 		u32 ignore_1;
 		f32 BaseInt0, OffsInt0;
 	};
 	//32B
 	struct TA_Vertex14B
 	{
-		u32 u1 : 16;
-		u32 v1 : 16;
+		u16 v1,u1; //note the oposite order here !
 		u32 ignore_2;
 		f32 BaseInt1, OffsInt1;
 		u32 ignore_3, ignore_4;
