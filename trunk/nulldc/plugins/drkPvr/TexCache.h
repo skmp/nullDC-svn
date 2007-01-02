@@ -2,11 +2,14 @@
 #include "drkPvr.h"
 
 extern u8* vq_codebook;
+extern u32 palette_index;
+extern u32 palette_lut[1024];
+extern bool pal_needs_update;
 //Generic texture cache list class =P
 template <class TexEntryType>
 class TexCacheList
 {
-	public:
+public:
 	class TexCacheEntry
 	{
 	public:
@@ -47,16 +50,16 @@ class TexCacheList
 						//if last one then , the last one is the previus
 						plast=pl->prev;
 					}
-					
+
 					//remove the texture from the list
 					textures++;//one is counted down by remove ;)
 					Remove(pl);
-					
+
 					//add it on top
 					pl->prev=0;			//no prev , we are first
 					pl->next=pfirst;	//after us is the old first
 					pfirst->prev=pl;	//we are before the old first
-					
+
 					//replace pfirst pointer
 					pfirst=pl;
 
@@ -126,26 +129,26 @@ struct PixelBuffer
 
 	u32 pixels_per_line;
 
-	void prel(u32 x,u32 value)
+	__forceinline void prel(u32 x,u32 value)
 	{
 		p_current_pixel[x]=value;
 	}
 
-	void prel(u32 x,u32 y,u32 value)
+	__forceinline void prel(u32 x,u32 y,u32 value)
 	{
 		p_current_pixel[y*pixels_per_line+x]=value;
 	}
 
-	void rmovex(u32 value)
+	__forceinline void rmovex(u32 value)
 	{
 		p_current_pixel+=value;
 	}
-	void rmovey(u32 value)
+	__forceinline void rmovey(u32 value)
 	{
 		p_current_line+=pixels_per_line*value;
 		p_current_pixel=p_current_line;
 	}
-	void amove(u32 x_m,u32 y_m)
+	__forceinline void amove(u32 x_m,u32 y_m)
 	{
 		//p_current_pixel=p_buffer_start;
 		p_current_line=p_buffer_start+pixels_per_line*y_m;
@@ -196,6 +199,8 @@ const u32 unpack_6_to_8[64] =
 	60<<2,61<<2,62<<2,63<<2,
 };
 
+void palette_update();
+
 const u32 unpack_1_to_8[2]={0,0xFF};
 
 #define clamp(minv,maxv,x) min(maxv,max(minv,x))
@@ -210,13 +215,13 @@ const u32 unpack_1_to_8[2]={0,0xFF};
 #define ARGB565( word )		\
 	ARGB8888(0xFF,unpack_5_to_8[(word>>11) & 0x1F],	\
 	unpack_6_to_8[(word>>5) & 0x3F],unpack_5_to_8[word&0x1F])
-	//( 0xFF000000 | unpack_5_to_8[(word>>11) & 0x1F] | unpack_5_to_8[(word>>5) & 0x3F]<<8 | unpack_5_to_8[word&0x1F]<<16 )
+//( 0xFF000000 | unpack_5_to_8[(word>>11) & 0x1F] | unpack_5_to_8[(word>>5) & 0x3F]<<8 | unpack_5_to_8[word&0x1F]<<16 )
 
 #define ARGB4444( word )	\
 	ARGB8888( (word&0xF000)>>(12-4),(word&0xF00)>>(8-4),(word&0xF0)>>(4-4),(word&0xF)<<4 )
 
 template<class PixelPacker>
-u32 YUV422(s32 Y,s32 Yu,s32 Yv)
+__forceinline u32 YUV422(s32 Y,s32 Yu,s32 Yv)
 {
 	s32 B = (76283*(Y - 16) + 132252*(Yu - 128))>>16;
 	s32 G = (76283*(Y - 16) - 53281 *(Yv - 128) - 25624*(Yu - 128))>>16;
@@ -232,7 +237,7 @@ u32 fastcall twiddle_razi(u32 x,u32 y,u32 x_sz,u32 y_sz);
 struct pp_dx
 {
 	__forceinline 
-	static u32 pack(u8 A,u8 R,u8 G,u8 B)
+		static u32 pack(u8 A,u8 R,u8 G,u8 B)
 	{
 		return ( ((A)<<24) | ((R)<<16) | ((G)<<8) | ((B)<<0));
 	}
@@ -240,229 +245,209 @@ struct pp_dx
 struct pp_gl
 {
 	__forceinline 
-	static u32 pack(u8 A,u8 R,u8 G,u8 B)
+		static u32 pack(u8 A,u8 R,u8 G,u8 B)
 	{
 		return ( ((A)<<24) | ((B)<<16) | ((G)<<8) | ((R)<<0));
 	}
 };
 
 //pixel convertors !
+#define pixelcvt_start(name,x,y) template<class PixelPacker> \
+struct name \
+{ \
+	static const u32 xpp=x;\
+	static const u32 ypp=y;	\
+	__forceinline static void fastcall Convert(PixelBuffer* pb,u8* data) \
+{
+
+#define pixelcvt_end } }
+#define pixelcvt_next(name,x,y) pixelcvt_end;  pixelcvt_start(name,x,y)
 //Non twiddled
-template<class PixelPacker>
-struct conv565_PL
+pixelcvt_start(conv565_PL,4,1)
 {
-	static const u32 xpp=4;	//x pixels per pass
-	static const u32 ypp=1;	//y pixels per pass
-	static void fastcall Convert(PixelBuffer* pb,u8* data)
-	{
-		//convert 4x1 565 to 4x1 8888
-		u16* p_in=(u16*)data;
-		//0,0
-		pb->prel(0,ARGB565(p_in[0]));
-		//1,0
-		pb->prel(1,ARGB565(p_in[1]));
-		//2,0
-		pb->prel(2,ARGB565(p_in[2]));
-		//3,0
-		pb->prel(3,ARGB565(p_in[3]));
-	}
-};
-
-template<class PixelPacker>
-struct conv1555_PL
+	//convert 4x1 565 to 4x1 8888
+	u16* p_in=(u16*)data;
+	//0,0
+	pb->prel(0,ARGB565(p_in[0]));
+	//1,0
+	pb->prel(1,ARGB565(p_in[1]));
+	//2,0
+	pb->prel(2,ARGB565(p_in[2]));
+	//3,0
+	pb->prel(3,ARGB565(p_in[3]));
+}
+pixelcvt_next(conv1555_PL,4,1)
 {
-	static const u32 xpp=4;	//x pixels per pass
-	static const u32 ypp=1;	//y pixels per pass
-	static void fastcall Convert(PixelBuffer* pb,u8* data)
-	{
-		//convert 4x1 1555 to 4x1 8888
-		u16* p_in=(u16*)data;
-		//0,0
-		pb->prel(0,ARGB1555(p_in[0]));
-		//1,0
-		pb->prel(1,ARGB1555(p_in[1]));
-		//2,0
-		pb->prel(2,ARGB1555(p_in[2]));
-		//3,0
-		pb->prel(3,ARGB1555(p_in[3]));
-	}
-};
-
-template<class PixelPacker>
-struct conv4444_PL
+	//convert 4x1 1555 to 4x1 8888
+	u16* p_in=(u16*)data;
+	//0,0
+	pb->prel(0,ARGB1555(p_in[0]));
+	//1,0
+	pb->prel(1,ARGB1555(p_in[1]));
+	//2,0
+	pb->prel(2,ARGB1555(p_in[2]));
+	//3,0
+	pb->prel(3,ARGB1555(p_in[3]));
+}
+pixelcvt_next(conv4444_PL,4,1)
 {
-	static const u32 xpp=4;	//x pixels per pass
-	static const u32 ypp=1;	//y pixels per pass
-	static void fastcall Convert(PixelBuffer* pb,u8* data)
-	{
-		//convert 4x1 4444 to 4x1 8888
-		u16* p_in=(u16*)data;
-		//0,0
-		pb->prel(0,ARGB4444(p_in[0]));
-		//1,0
-		pb->prel(1,ARGB4444(p_in[1]));
-		//2,0
-		pb->prel(2,ARGB4444(p_in[2]));
-		//3,0
-		pb->prel(3,ARGB4444(p_in[3]));
-	}
-};
-
-template<class PixelPacker>
-struct convYUV_PL
+	//convert 4x1 4444 to 4x1 8888
+	u16* p_in=(u16*)data;
+	//0,0
+	pb->prel(0,ARGB4444(p_in[0]));
+	//1,0
+	pb->prel(1,ARGB4444(p_in[1]));
+	//2,0
+	pb->prel(2,ARGB4444(p_in[2]));
+	//3,0
+	pb->prel(3,ARGB4444(p_in[3]));
+}
+pixelcvt_next(convYUV_PL,4,1)
 {
-	static const u32 xpp=4;	//x pixels per pass
-	static const u32 ypp=1;	//y pixels per pass
-	static void fastcall Convert(PixelBuffer* pb,u8* data)
-	{
-		//convert 4x1 4444 to 4x1 8888
-		u16* p_in=(u16*)data;
-
-		
-		s32 Y0 = (p_in[0]>>8) &255; //
-		s32 Yu = (p_in[0]>>0) &255; //p_in[0]
-		s32 Y1 = (p_in[1]>>8) &255; //p_in[3]
-		s32 Yv = (p_in[1]>>0) &255; //p_in[2]
-
-		//0,0
-		pb->prel(0,YUV422<PixelPacker>(Y0,Yu,Yv));
-		//1,0
-		pb->prel(1,YUV422<PixelPacker>(Y1,Yu,Yv));
-		
-		//next 4 bytes
-		p_in+=2;
-
-		Y0 = (p_in[0]>>8) &255; //
-		Yu = (p_in[0]>>0) &255; //p_in[0]
-		Y1 = (p_in[1]>>8) &255; //p_in[3]
-		Yv = (p_in[1]>>0) &255; //p_in[2]
-
-		//0,0
-		pb->prel(2,YUV422<PixelPacker>(Y0,Yu,Yv));
-		//1,0
-		pb->prel(3,YUV422<PixelPacker>(Y1,Yu,Yv));
-	}
-};
+	//convert 4x1 4444 to 4x1 8888
+	u32* p_in=(u32*)data;
 
 
+	s32 Y0 = (p_in[0]>>8) &255; //
+	s32 Yu = (p_in[0]>>0) &255; //p_in[0]
+	s32 Y1 = (p_in[0]>>24) &255; //p_in[3]
+	s32 Yv = (p_in[0]>>16) &255; //p_in[2]
+
+	//0,0
+	pb->prel(0,YUV422<PixelPacker>(Y0,Yu,Yv));
+	//1,0
+	pb->prel(1,YUV422<PixelPacker>(Y1,Yu,Yv));
+
+	//next 4 bytes
+	p_in+=1;
+
+	Y0 = (p_in[0]>>8) &255; //
+	Yu = (p_in[0]>>0) &255; //p_in[0]
+	Y1 = (p_in[0]>>24) &255; //p_in[3]
+	Yv = (p_in[0]>>16) &255; //p_in[2]
+
+	//0,0
+	pb->prel(2,YUV422<PixelPacker>(Y0,Yu,Yv));
+	//1,0
+	pb->prel(3,YUV422<PixelPacker>(Y1,Yu,Yv));
+}
+pixelcvt_end;
 //twiddled 
-template<class PixelPacker>
-struct conv565_TW
+pixelcvt_start(conv565_TW,2,2)
 {
-	static const u32 xpp=2;	//x pixels per pass
-	static const u32 ypp=2;	//y pixels per pass
-	static void fastcall Convert(PixelBuffer* pb,u8* data)
-	{
-		//convert 4x1 565 to 4x1 8888
-		u16* p_in=(u16*)data;
-		//0,0
-		pb->prel(0,0,ARGB565(p_in[0]));
-		//0,1
-		pb->prel(0,1,ARGB565(p_in[1]));
-		//1,0
-		pb->prel(1,0,ARGB565(p_in[2]));
-		//1,1
-		pb->prel(1,1,ARGB565(p_in[3]));
-	}
-};
-
-template<class PixelPacker>
-struct conv1555_TW
+	//convert 4x1 565 to 4x1 8888
+	u16* p_in=(u16*)data;
+	//0,0
+	pb->prel(0,0,ARGB565(p_in[0]));
+	//0,1
+	pb->prel(0,1,ARGB565(p_in[1]));
+	//1,0
+	pb->prel(1,0,ARGB565(p_in[2]));
+	//1,1
+	pb->prel(1,1,ARGB565(p_in[3]));
+}
+pixelcvt_next(conv1555_TW,2,2)
 {
-	static const u32 xpp=2;	//x pixels per pass
-	static const u32 ypp=2;	//y pixels per pass
-	static void fastcall Convert(PixelBuffer* pb,u8* data)
-	{
-		//convert 4x1 1555 to 4x1 8888
-		u16* p_in=(u16*)data;
-		//0,0
-		pb->prel(0,0,ARGB1555(p_in[0]));
-		//0,1
-		pb->prel(0,1,ARGB1555(p_in[1]));
-		//1,0
-		pb->prel(1,0,ARGB1555(p_in[2]));
-		//1,1
-		pb->prel(1,1,ARGB1555(p_in[3]));
-	}
-};
-
-template<class PixelPacker>
-struct conv4444_TW
+	//convert 4x1 1555 to 4x1 8888
+	u16* p_in=(u16*)data;
+	//0,0
+	pb->prel(0,0,ARGB1555(p_in[0]));
+	//0,1
+	pb->prel(0,1,ARGB1555(p_in[1]));
+	//1,0
+	pb->prel(1,0,ARGB1555(p_in[2]));
+	//1,1
+	pb->prel(1,1,ARGB1555(p_in[3]));
+}
+pixelcvt_next(conv4444_TW,2,2)
 {
-	static const u32 xpp=2;	//x pixels per pass
-	static const u32 ypp=2;	//y pixels per pass
-	static void fastcall Convert(PixelBuffer* pb,u8* data)
-	{
-		//convert 4x1 4444 to 4x1 8888
-		u16* p_in=(u16*)data;
-		//0,0
-		pb->prel(0,0,ARGB4444(p_in[0]));
-		//0,1
-		pb->prel(0,1,ARGB4444(p_in[1]));
-		//1,0
-		pb->prel(1,0,ARGB4444(p_in[2]));
-		//1,1
-		pb->prel(1,1,ARGB4444(p_in[3]));
-	}
-};
-
-template<class PixelPacker>
-struct convYUV_TW
+	//convert 4x1 4444 to 4x1 8888
+	u16* p_in=(u16*)data;
+	//0,0
+	pb->prel(0,0,ARGB4444(p_in[0]));
+	//0,1
+	pb->prel(0,1,ARGB4444(p_in[1]));
+	//1,0
+	pb->prel(1,0,ARGB4444(p_in[2]));
+	//1,1
+	pb->prel(1,1,ARGB4444(p_in[3]));
+}
+pixelcvt_next(convYUV_TW,2,2)
 {
-	static const u32 xpp=2;	//x pixels per pass
-	static const u32 ypp=2;	//y pixels per pass
-	static void fastcall Convert(PixelBuffer* pb,u8* data)
-	{
-		//convert 4x1 4444 to 4x1 8888
-		u16* p_in=(u16*)data;
-
-		
-		s32 Y0 = (p_in[0]>>8) &255; //
-		s32 Yu = (p_in[0]>>0) &255; //p_in[0]
-		s32 Y1 = (p_in[2]>>8) &255; //p_in[3]
-		s32 Yv = (p_in[2]>>0) &255; //p_in[2]
-
-		//0,0
-		pb->prel(0,0,YUV422<PixelPacker>(Y0,Yu,Yv));
-		//1,0
-		pb->prel(1,0,YUV422<PixelPacker>(Y1,Yu,Yv));
-		
-		//next 4 bytes
-		//p_in+=2;
-
-		Y0 = (p_in[1]>>8) &255; //
-		Yu = (p_in[1]>>0) &255; //p_in[0]
-		Y1 = (p_in[3]>>8) &255; //p_in[3]
-		Yv = (p_in[3]>>0) &255; //p_in[2]
-
-		//0,1
-		pb->prel(0,1,YUV422<PixelPacker>(Y0,Yu,Yv));
-		//1,1
-		pb->prel(1,1,YUV422<PixelPacker>(Y1,Yu,Yv));
-	}
-};
+	//convert 4x1 4444 to 4x1 8888
+	u16* p_in=(u16*)data;
 
 
-template<class PixelPacker>
-struct convPAL4_TW
+	s32 Y0 = (p_in[0]>>8) &255; //
+	s32 Yu = (p_in[0]>>0) &255; //p_in[0]
+	s32 Y1 = (p_in[2]>>8) &255; //p_in[3]
+	s32 Yv = (p_in[2]>>0) &255; //p_in[2]
+
+	//0,0
+	pb->prel(0,0,YUV422<PixelPacker>(Y0,Yu,Yv));
+	//1,0
+	pb->prel(1,0,YUV422<PixelPacker>(Y1,Yu,Yv));
+
+	//next 4 bytes
+	//p_in+=2;
+
+	Y0 = (p_in[1]>>8) &255; //
+	Yu = (p_in[1]>>0) &255; //p_in[0]
+	Y1 = (p_in[3]>>8) &255; //p_in[3]
+	Yv = (p_in[3]>>0) &255; //p_in[2]
+
+	//0,1
+	pb->prel(0,1,YUV422<PixelPacker>(Y0,Yu,Yv));
+	//1,1
+	pb->prel(1,1,YUV422<PixelPacker>(Y1,Yu,Yv));
+}
+pixelcvt_end;
+
+pixelcvt_start(convPAL4_TW,4,4)
 {
-	static const u32 xpp=4;	//x pixels per pass
-	static const u32 ypp=4;	//y pixels per pass
-	static void fastcall Convert(PixelBuffer* pb,u8* data)
-	{
-		u8* p_in=(u8*)data;
-	}
-};
-template<class PixelPacker>
-struct convPAL8_TW
+	palette_update();
+
+	u8* p_in=(u8*)data;
+	u32* pal=&palette_lut[palette_index];
+
+	pb->prel(0,0,pal[p_in[0]&0xF]);
+	pb->prel(0,1,pal[(p_in[0]>>4)&0xF]);p_in++;
+	pb->prel(1,0,pal[p_in[0]&0xF]);
+	pb->prel(1,1,pal[(p_in[0]>>4)&0xF]);p_in++;
+
+	pb->prel(0,2,pal[p_in[0]&0xF]);
+	pb->prel(0,3,pal[(p_in[0]>>4)&0xF]);p_in++;
+	pb->prel(1,2,pal[p_in[0]&0xF]);
+	pb->prel(1,3,pal[(p_in[0]>>4)&0xF]);p_in++;
+
+	pb->prel(2,0,pal[p_in[0]&0xF]);
+	pb->prel(2,1,pal[(p_in[0]>>4)&0xF]);p_in++;
+	pb->prel(3,0,pal[p_in[0]&0xF]);
+	pb->prel(3,1,pal[(p_in[0]>>4)&0xF]);p_in++;
+
+	pb->prel(2,2,pal[p_in[0]&0xF]);
+	pb->prel(2,3,pal[(p_in[0]>>4)&0xF]);p_in++;
+	pb->prel(3,2,pal[p_in[0]&0xF]);
+	pb->prel(3,3,pal[(p_in[0]>>4)&0xF]);p_in++;
+}
+pixelcvt_next(convPAL8_TW,2,4)
 {
-	static const u32 xpp=2;	//x pixels per pass
-	static const u32 ypp=4;	//y pixels per pass
-	static void fastcall Convert(PixelBuffer* pb,u8* data)
-	{
-		u8* p_in=(u8*)data;
-	}
-};
+	palette_update();
+
+	u8* p_in=(u8*)data;
+	u32* pal=&palette_lut[palette_index];
+
+	pb->prel(0,0,pal[p_in[0]]);p_in++;
+	pb->prel(0,1,pal[p_in[0]]);p_in++;
+	pb->prel(1,0,pal[p_in[0]]);p_in++;
+	pb->prel(1,1,pal[p_in[0]]);p_in++;
+
+	pb->prel(0,2,pal[p_in[0]]);p_in++;
+	pb->prel(0,3,pal[p_in[0]]);p_in++;
+	pb->prel(1,2,pal[p_in[0]]);p_in++;
+	pb->prel(1,3,pal[p_in[0]]);p_in++;
+}
+pixelcvt_end;
 //hanlder functions
 template<class PixelConvertor>
 void fastcall texture_PL(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height)
@@ -492,7 +477,7 @@ void fastcall texture_TW(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height)
 {
 	u32 p=0;
 	pb->amove(0,0);
-	
+
 	Height/=PixelConvertor::ypp;
 	Width/=PixelConvertor::xpp;
 
@@ -515,7 +500,7 @@ void fastcall texture_VQ(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height)
 	p_in+=256*4*2;
 	u32 p=0;
 	pb->amove(0,0);
-	
+
 	Height/=PixelConvertor::ypp;
 	Width/=PixelConvertor::xpp;
 
@@ -556,47 +541,26 @@ template void fastcall texture_VQ<convYUV_TW<pp_dx>>(PixelBuffer* pb,u8* p_in,u3
 template void fastcall texture_VQ<convPAL4_TW<pp_dx>>(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height);
 template void fastcall texture_VQ<convPAL8_TW<pp_dx>>(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height);
 
-//#defines to keep compat w/ older code
-//void fastcall argb1555to8888(PixelBuffer* p_out,u16* p_in,u32 Width,u32 Height);
+//Planar
 #define argb1555to8888 texture_PL<conv1555_PL<pp_dx>>
-//void fastcall argb565to8888(PixelBuffer* p_out,u16* p_in,u32 Width,u32 Height);
 #define argb565to8888 texture_PL<conv565_PL<pp_dx>>
-//void fastcall argb4444to8888(PixelBuffer* p_out,u16* p_in,u32 Width,u32 Height);
 #define argb4444to8888 texture_PL<conv4444_PL<pp_dx>>
-//void fastcall YUV422to8888(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height);
 #define YUV422to8888 texture_PL<convYUV_PL<pp_dx>>
 
-//void fastcall argb1555to8888_TW(PixelBuffer* p_out,u16* p_in,u32 Width,u32 Height);
+//Twiddle
 #define argb1555to8888_TW texture_TW<conv1555_TW<pp_dx>>
-//void fastcall argb565to8888_TW(PixelBuffer* p_out,u16* p_in,u32 Width,u32 Height);
 #define argb565to8888_TW texture_TW<conv565_TW<pp_dx>>
-//void fastcall argb4444to8888_TW(PixelBuffer* p_out,u16* p_in,u32 Width,u32 Height);
 #define argb4444to8888_TW texture_TW<conv4444_TW<pp_dx>>
-//void fastcall YUV422to8888_TW(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height);
 #define YUV422to8888_TW texture_TW<convYUV_TW<pp_dx>>
-//void fastcall PAL4to8888_TW(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height,u32 pal_base);
 #define PAL4to8888_TW texture_TW<convPAL4_TW<pp_dx>>
-//void fastcall PAL8to8888_TW(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height,u32 pal_base);
 #define PAL8to8888_TW  texture_TW<convPAL8_TW<pp_dx>>
 
-//void fastcall vq_codebook_argb565(u16* p_in);
-//void fastcall vq_codebook_argb1555(u16* p_in);
-//void fastcall vq_codebook_argb4444(u16* p_in);
-//void fastcall vq_codebook_YUV422(u16* p_in);
-//void fastcall vq_codebook_PAL4(u16* p_in);
-//void fastcall vq_codebook_PAL8(u16* p_in);
-
-//void fastcall argb1555to8888_TW(PixelBuffer* p_out,u16* p_in,u32 Width,u32 Height);
+//VQ
 #define argb1555to8888_VQ texture_VQ<conv1555_TW<pp_dx>>
-//void fastcall argb565to8888_TW(PixelBuffer* p_out,u16* p_in,u32 Width,u32 Height);
 #define argb565to8888_VQ texture_VQ<conv565_TW<pp_dx>>
-//void fastcall argb4444to8888_TW(PixelBuffer* p_out,u16* p_in,u32 Width,u32 Height);
 #define argb4444to8888_VQ texture_VQ<conv4444_TW<pp_dx>>
-//void fastcall YUV422to8888_TW(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height);
 #define YUV422to8888_VQ texture_VQ<convYUV_TW<pp_dx>>
-//void fastcall PAL4to8888_TW(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height,u32 pal_base);
 #define PAL4to8888_VQ texture_VQ<convPAL4_TW<pp_dx>>
-//void fastcall PAL8to8888_TW(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height,u32 pal_base);
 #define PAL8to8888_VQ  texture_VQ<convPAL8_TW<pp_dx>>
 
 /*
@@ -608,10 +572,7 @@ void fastcall texture_VQ_PAL4(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height);
 void fastcall texture_VQ_PAL8(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height);
 */
 
-void fastcall palette_PAL4(u32 offset);
 void fastcall texture_PAL4(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height);
-
-void fastcall palette_PAL8(u32 offset);
 void fastcall texture_PAL8(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height);
 
 

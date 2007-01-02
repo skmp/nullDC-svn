@@ -42,6 +42,49 @@ u32 fastcall twiddle_razi(u32 x,u32 y,u32 x_sz,u32 y_sz)
 
 //# define twop( val, n )	twidle_razi( (val), (n),(n) )
 #define twop twiddle_razi
+
+u8* vq_codebook;
+u32 palette_index;
+u32 palette_lut[1024];
+bool pal_needs_update=true;
+void palette_update()
+{
+	if (pal_needs_update==false)
+		return;
+#define PixelPacker pp_dx
+	pal_needs_update=false;
+	switch(PAL_RAM_CTRL&3)
+	{
+	case 0:
+		for (int i=0;i<1024;i++)
+		{
+			palette_lut[i]=ARGB1555(PALETTE_RAM[i]);
+		}
+		break;
+
+	case 1:
+		for (int i=0;i<1024;i++)
+		{
+			palette_lut[i]=ARGB565(PALETTE_RAM[i]);
+		}
+		break;
+
+	case 2:
+		for (int i=0;i<1024;i++)
+		{
+			palette_lut[i]=ARGB4444(PALETTE_RAM[i]);
+		}
+		break;
+
+	case 3:
+		for (int i=0;i<1024;i++)
+		{
+			palette_lut[i]=PALETTE_RAM[i];//argb 8888 :p
+		}
+		break;
+	}
+
+}
 /*
 void fastcall argb4444to8888(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height)
 {
@@ -264,9 +307,6 @@ struct PixelConvertor
 	static void fastcall Convert(PixelBuffer* pb,u8* data);
 };
 */
-
-
-u8* vq_codebook;//[256][4];
 /*
 void fastcall vq_codebook_argb565(u16* p_in)
 {
@@ -336,7 +376,7 @@ void fastcall vq_codebook_YUV422(u16* p_in)
 		}
 	}
 }*/
-
+/*
 void fastcall texture_VQ(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height)
 {
 	p_in+=256*4*2;
@@ -357,4 +397,4 @@ void fastcall texture_VQ(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height)
 //			pb->SetPixel(x*2+1	,y*2+1	,	vq_codebook[pval][3]);
 		}
 	}
-}
+}*/

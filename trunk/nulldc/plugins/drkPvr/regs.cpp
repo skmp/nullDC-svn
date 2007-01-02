@@ -145,6 +145,8 @@ void WritePvrRegister(u32 addr,u32 data,u32 size)
 		renderer->Ta_ListCont();
 	}
 
+	if ((addr&RegMask)>=PALETTE_RAM_START_addr)
+		pal_needs_update=true;
 	PvrReg(addr)=data;
 }
 

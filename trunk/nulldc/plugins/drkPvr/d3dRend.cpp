@@ -298,7 +298,7 @@ f32 f16(u16 v)
 				verify(tcw.PAL.VQ_Comp==0);
 				if (tcw.NO_PAL.MipMapped)
 							sa+=MipPoint[tsp.TexU]<<2;
-				//tcw.PAL.PalSelect<<4
+				palette_index = tcw.PAL.PalSelect<<4;
 				PAL4to8888_TW(&pbt,(u8*)&params.vram[sa],w,h);
 				break;
 			case 6:
@@ -306,7 +306,7 @@ f32 f16(u16 v)
 				verify(tcw.PAL.VQ_Comp==0);
 				if (tcw.NO_PAL.MipMapped)
 							sa+=MipPoint[tsp.TexU]<<2;
-				//(tcw.PAL.PalSelect<<4)&(~0xFF)
+				palette_index = (tcw.PAL.PalSelect<<4)&(~0xFF);
 				PAL8to8888_TW(&pbt,(u8*)&params.vram[sa],w,h);
 				break;
 			default:
