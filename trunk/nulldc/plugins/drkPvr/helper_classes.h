@@ -17,6 +17,7 @@ public :
 	
 	__declspec(noinline) void resize(u32 min_size=1)
 	{
+		//verify(size!=0x000004d7);
 		u32 new_size=used+4+min_size;
 		//MAX 4mb increase each time :)
 		if (new_size>(MaxAllocChunk))
@@ -25,8 +26,11 @@ public :
 	}
 	void resize_2(u32 new_size)
 	{
+		//verify(size!=0x000004d7);
+		//printf("resize_2 , size = %d:%d\n",size,new_size);
 		data=(T*)realloc(data,new_size*sizeof(T));
 		size=new_size;
+		//printf("resize_2 , size = %d\n",size);
 	}
 	void Init(u32 pre_alloc=0)
 	{
@@ -76,7 +80,8 @@ public :
 			if (allocated_chunk>avg_chunk_avg)
 				resize(avg_chunk_avg*FreeStepChunk);
 		}
-
+		
+		//printf("Clear , size = %d:%d\n",size,used);
 		used=0;
 	}
 	void Free()

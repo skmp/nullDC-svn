@@ -1,98 +1,6 @@
 #include "TexCache.h"
+#include "regs.h"
 
-//Generic texture cache / texture format conevrtion code
-u32 unpack_5_to_8[32] = 
-{
-	//low 16
-	0<<3,1<<3,2<<3,3<<3,
-	4<<3,5<<3,6<<3,7<<3,
-	8<<3,9<<3,10<<3,11<<3,
-	12<<3,13<<3,14<<3,15<<3,
-
-	//hi 16
-	16<<3,17<<3,18<<3,19<<3,
-	20<<3,21<<3,22<<3,23<<3,
-	24<<3,25<<3,26<<3,27<<3,
-	28<<3,29<<3,30<<3,31<<3,
-};
-
-u32 unpack_6_to_8[64] = 
-{
-	//low 16
-	0<<2,1<<2,2<<2,3<<2,
-	4<<2,5<<2,6<<2,7<<2,
-	8<<2,9<<2,10<<2,11<<2,
-	12<<2,13<<2,14<<2,15<<2,
-
-	//hi 16
-	16<<2,17<<2,18<<2,19<<2,
-	20<<2,21<<2,22<<2,23<<2,
-	24<<2,25<<2,26<<2,27<<2,
-	28<<2,29<<2,30<<2,31<<2,
-
-	//low 16
-	32<<2,33<<2,34<<2,35<<2,
-	36<<2,37<<2,38<<2,39<<2,
-	40<<2,41<<2,42<<2,43<<2,
-	44<<2,45<<2,46<<2,47<<2,
-
-	//hi 16
-	48<<2,49<<2,50<<2,51<<2,
-	52<<2,53<<2,54<<2,55<<2,
-	56<<2,57<<2,58<<2,59<<2,
-	60<<2,61<<2,62<<2,63<<2,
-};
-
-u32 unpack_1_to_8[2]={0,0xFF};
-
-#define clamp(minv,maxv,x) min(maxv,max(minv,x))
-
-#define ARGB8888(A,R,G,B) \
-	( ((A)<<24) | ((R)<<16) | ((G)<<8) | ((B)<<0))
-
-#define ARGB1555( word )	\
-	ARGB8888(unpack_1_to_8[(word>>15)&1],unpack_5_to_8[(word>>10) & 0x1F],	\
-	unpack_5_to_8[(word>>5) & 0x1F],unpack_5_to_8[word&0x1F])
-
-#define ARGB565( word )		\
-	ARGB8888(0xFF,unpack_5_to_8[(word>>11) & 0x1F],	\
-	unpack_6_to_8[(word>>5) & 0x3F],unpack_5_to_8[word&0x1F])
-	//( 0xFF000000 | unpack_5_to_8[(word>>11) & 0x1F] | unpack_5_to_8[(word>>5) & 0x3F]<<8 | unpack_5_to_8[word&0x1F]<<16 )
-
-#define ARGB4444( word )	\
-	ARGB8888( (word&0xF000)>>(12-4),(word&0xF00)>>(8-4),(word&0xF0)>>(4-4),(word&0xF)<<4 )
-
-u32 YUV422(s32 Y,s32 Yu,s32 Yv)
-{
-	s32 B = (76283*(Y - 16) + 132252*(Yu - 128))>>16;
-	s32 G = (76283*(Y - 16) - 53281 *(Yv - 128) - 25624*(Yu - 128))>>16;
-	s32 R = (76283*(Y - 16) + 104595*(Yv - 128))>>16;
-
-	return ARGB8888(255,clamp(0,255,R),clamp(0,255,G),clamp(0,255,B));
-}
-///////////////////// thX to Optimiz3 for new routine
-const static unsigned int lut[4] = { 0, 1, 4, 5 };
-
-__inline static u32
-twiddle_optimiz3d(u32 value, int n)
-{
-	unsigned int y, x, count, ret = 0, sh = 0;
-
-	y = x = value;
-	y >>= n;			// t0 = y coordinate
-	x &= ~(-1 << n);	// t1 = x coordinate
-
-	// we process 2 y bits and 2 x bits every iteration (4 bits) it is possible to do more if we expand the lookup table by a power of 2
-	for(count = (n + 1) >> 1; count; --count)
-	{
-		ret |= (lut[y & 3] | lut[x & 3] << 1) << sh;
-		y >>= 2;
-		x >>= 2;
-		sh += 4;
-	}
-
-	return ret;
-}
 
 //input : address in the yyyyyxxxxx format
 //output : address in the xyxyxyxy format
@@ -134,7 +42,7 @@ u32 fastcall twiddle_razi(u32 x,u32 y,u32 x_sz,u32 y_sz)
 
 //# define twop( val, n )	twidle_razi( (val), (n),(n) )
 #define twop twiddle_razi
-
+/*
 void fastcall argb4444to8888(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height)
 {
 	for (u32 y=0;y<Height;y++)
@@ -216,64 +124,7 @@ void fastcall argb565to8888_TW(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height)
 	}
 }
 
-
-u32 vq_codebook[256][4];
-void fastcall vq_codebook_argb565(u16* p_in)
-{
-	for( u32 i=0; i<256;i++) 
-	{
-		for( u32 j=0; j<4; j++ )
-		{
-			vq_codebook[i][j] = ARGB565(*p_in);
-			p_in++;
-		}
-	}
-}
-void fastcall vq_codebook_argb1555(u16* p_in)
-{
-	for( u32 i=0; i<256;i++) 
-	{
-		for( u32 j=0; j<4; j++ )
-		{
-			vq_codebook[i][j] = ARGB1555(*p_in);
-			p_in++;
-		}
-	}
-}
-void fastcall vq_codebook_argb4444(u16* p_in)
-{
-	for( u32 i=0; i<256;i++) 
-	{
-		for( u32 j=0; j<4; j++ )
-		{
-			vq_codebook[i][j] = ARGB4444(*p_in);
-			p_in++;
-		}
-	}
-}
-
-void fastcall vq_TW(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height)
-{
-	p_in+=256*4*2;
-	u32 p=0;
-	//U-=1;//half the height , b/c VQ is 2 pix/ 1 byte on each direction ;)
-	Height>>=1;
-	Width>>=1;
-
-	for (u32 y=0;y<Height;y++)
-	{
-		for (u32 x=0;x<Width;x++)
-		{
-			u8 pval = p_in[twop(x,y,Width<<1,Height)];
-			p++;
-			pb->SetPixel(x*2	,y*2	,	vq_codebook[pval][0]);
-			pb->SetPixel(x*2	,y*2+1	,	vq_codebook[pval][1]);
-			pb->SetPixel(x*2+1	,y*2	,	vq_codebook[pval][2]);
-			pb->SetPixel(x*2+1	,y*2+1	,	vq_codebook[pval][3]);
-		}
-	}
-}
-void fastcall YUV422(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height)
+void fastcall YUV422to8888(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height)
 {
 	u32 p=0;
 	for (u32 y=0;y<Height;y++)
@@ -295,7 +146,7 @@ void fastcall YUV422(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height)
 		pb->NextLine();
 	}
 }
-void fastcall YUV422_TW(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height)
+void fastcall YUV422to8888_TW(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height)
 {
 	for (u32 y=0;y<Height;y++)
 	{
@@ -314,5 +165,195 @@ void fastcall YUV422_TW(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height)
 			pb->SetLinePixel(x+1,YUV422(Y1,Yu,Yv));
 		}
 		pb->NextLine();
+	}
+}
+
+u32 palette_lut[1024];
+void fastcall update_palette()
+{
+	switch(PAL_RAM_CTRL&3)
+	{
+	case 0:
+		for (int i=0;i<1024;i++)
+		{
+			palette_lut[i]=ARGB1555(PALETTE_RAM[i]);
+		}
+		break;
+
+	case 1:
+		for (int i=0;i<1024;i++)
+		{
+			palette_lut[i]=ARGB565(PALETTE_RAM[i]);
+		}
+		break;
+
+	case 2:
+		for (int i=0;i<1024;i++)
+		{
+			palette_lut[i]=ARGB4444(PALETTE_RAM[i]);
+		}
+		break;
+
+	case 3:
+		for (int i=0;i<1024;i++)
+		{
+			palette_lut[i]=PALETTE_RAM[i];//argb 8888 :p
+		}
+		break;
+	}
+
+}
+
+void fastcall PAL4to8888_TW(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height,u32 pal_base)
+{
+	update_palette();
+	u32* pal=&palette_lut[pal_base];
+
+	Width>>=1;
+	for (u32 y=0;y<Height;y++)
+	{
+		for (u32 x=0;x<Width;x++)
+		{
+			u32 index = p_in[twop(x,y,Width,Height)];
+
+			pb->SetLinePixel(x*2,pal[index&0xF]);
+			pb->SetLinePixel(x*2+1,pal[index>>4]);
+		}
+		pb->NextLine();
+	}
+}
+
+void fastcall PAL8to8888_TW(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height,u32 pal_base)
+{
+	update_palette();
+	u32* pal=&palette_lut[pal_base];
+	for (u32 y=0;y<Height;y++)
+	{
+		for (u32 x=0;x<Width;x++)
+		{
+			u32 index = p_in[twop(x,y,Width,Height)];
+
+			pb->SetLinePixel(x,pal[index]);
+		}
+		pb->NextLine();
+	}
+}
+*/
+
+//mnn
+//time for better texture code
+//wiihhaa
+
+/*
+
+PowerVR internaly handles textures on 64bit each time.Twidlle is on 64bits too
+
+So , it is a good idea to base this code on that.
+Generic texture Handlers
+
+struct PixelPacker
+{
+	void pack(pixelbuffer* pb,u8 R,u8 G,u8 B,u8 A)
+};
+template<class PixelPacker>
+struct PixelConvertor
+{
+	const u32 xpp=1;	//x pixels per pass
+	const u32 ypp=1;	//y pixels per pass
+	const bool twidle=true;
+	static void fastcall Convert(PixelBuffer* pb,u8* data);
+};
+*/
+
+
+u32 vq_codebook[256][4];
+void fastcall vq_codebook_argb565(u16* p_in)
+{
+	for( u32 i=0; i<256;i++) 
+	{
+		for( u32 j=0; j<4; j++ )
+		{
+			//vq_codebook[i][j] = ARGB565(*p_in);
+			p_in++;
+		}
+	}
+}
+void fastcall vq_codebook_argb1555(u16* p_in)
+{
+	for( u32 i=0; i<256;i++) 
+	{
+		for( u32 j=0; j<4; j++ )
+		{
+			//vq_codebook[i][j] = ARGB1555(*p_in);
+			p_in++;
+		}
+	}
+}
+void fastcall vq_codebook_argb4444(u16* p_in)
+{
+	for( u32 i=0; i<256;i++) 
+	{
+		for( u32 j=0; j<4; j++ )
+		{
+			//vq_codebook[i][j] = ARGB4444(*p_in);
+			p_in++;
+		}
+	}
+}
+void fastcall vq_codebook_YUV422(u16* p_in)
+{
+	for( u32 i=0; i<256;i++) 
+	{
+		for( u32 j=0; j<4; j+=4 )
+		{
+			{
+				u32 YUV0 = *p_in++;//p_in++;//Y0U
+				u32 YUV1 = *p_in++;//p_in++;//Y1V
+				
+
+				s32 Y0 = (YUV0>>8) &255;
+				s32 U = (YUV0>>0) &255;
+				s32 Y1 = (YUV1>>8) &255;
+				s32 V = (YUV1>>0) &255;
+				
+				//vq_codebook[i][3]=vq_codebook[i][1]=vq_codebook[i][2]=vq_codebook[i][0] = YUV422(Y1,U,V);
+				//vq_codebook[i][j+1]=YUV422(Y1,U,V);
+			}
+			{
+				u32 YUV0 = *p_in++;//p_in++;//Y0U
+				u32 YUV1 = *p_in++;//p_in++;//Y1V
+				
+
+				s32 Y0 = (YUV0>>8) &255;
+				s32 U = (YUV0>>0) &255;
+				s32 Y1 = (YUV1>>8) &255;
+				s32 V = (YUV1>>0) &255;
+				
+				//vq_codebook[i][3]=vq_codebook[i][1] = YUV422(Y0,U,V);
+				//vq_codebook[i][j+2] = YUV422(Y1,U,V);
+			}
+		}
+	}
+}
+
+void fastcall texture_VQ(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height)
+{
+	p_in+=256*4*2;
+	u32 p=0;
+	//U-=1;//half the height , b/c VQ is 2 pix/ 1 byte on each direction ;)
+	Height>>=1;
+	Width>>=1;
+
+	for (u32 y=0;y<Height;y++)
+	{
+		for (u32 x=0;x<Width;x++)
+		{
+			u8 pval = p_in[twop(x,y,Width,Height)];
+			p++;
+//			pb->SetPixel(x*2	,y*2	,	vq_codebook[pval][0]);
+//			pb->SetPixel(x*2	,y*2+1	,	vq_codebook[pval][1]);
+//			pb->SetPixel(x*2+1	,y*2	,	vq_codebook[pval][2]);
+//			pb->SetPixel(x*2+1	,y*2+1	,	vq_codebook[pval][3]);
+		}
 	}
 }

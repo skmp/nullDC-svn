@@ -6,7 +6,6 @@
 #include <stdio.h>
 
 #include <string.h>
-#include "helper_classes.h"
 
 #define BUILD 0
 #define MINOR 1
@@ -57,6 +56,8 @@ float GetSeconds();
 #define log1(xx,yy) printf(xx " (from "__FUNCTION__ ")\n",yy);
 #define log2(xx,yy,zz) printf(xx " (from "__FUNCTION__ ")\n",yy,zz);
 #define log3(xx,yy,gg) printf(xx " (from "__FUNCTION__ ")\n",yy,zz,gg);
+
+#include "helper_classes.h"
 
 extern bool render_end_pending;
 extern u32 render_end_pending_cycles;

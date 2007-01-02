@@ -120,7 +120,7 @@ namespace Direct3DRenderer
 		"4444",
 		"YUV422",
 		"Bump Map",
-		"8 BPP Palette",
+		"4 BPP Palette",
 		"8 BPP Palette",
 		"Reserved	, 1555"
 	};
@@ -148,16 +148,16 @@ f32 f16(u16 v)
 #define twidle_tex(format)\
 						if (tcw.NO_PAL.VQ_Comp)\
 					{\
-						vq_codebook_argb##format((u16*)&params.vram[sa]);\
+						vq_codebook_##format((u16*)&params.vram[sa]);\
 						if (tcw.NO_PAL.MipMapped)\
 							sa+=MipPoint[tsp.TexU];\
-						vq_TW(&pbt,(u8*)&params.vram[sa],w,h);\
+						texture_VQ(&pbt,(u8*)&params.vram[sa],w,h);\
 					}\
 					else\
 					{\
 						if (tcw.NO_PAL.MipMapped)\
 							sa+=MipPoint[tsp.TexU]<<3;\
-						argb##format##to8888_TW(&pbt,(u16*)&params.vram[sa],w,h);\
+						##format##to8888_TW(&pbt,(u8*)&params.vram[sa],w,h);\
 					}
 #define norm_text(format) \
 	u32 sr;\
@@ -165,7 +165,7 @@ f32 f16(u16 v)
 					{sr=(TEXT_CONTROL&31)*32;}\
 					else\
 					{sr=w;}\
-					format(&pbt,(u16*)&params.vram[sa],sr,h);
+					format(&pbt,(u8*)&params.vram[sa],sr,h);
 
 	//Texture Cache :)
 	struct TextureCacheData
@@ -239,10 +239,11 @@ f32 f16(u16 v)
 				else
 				{
 					//verify(tsp.TexU==tsp.TexV);
-					twidle_tex(1555);
+					twidle_tex(argb1555);
 				}
 				break;
 
+				//redo_argb:
 				//1	565	 R value: 5 bits; G value: 6 bits; B value: 5 bits
 			case 1:
 				if (tcw.NO_PAL.ScanOrder)
@@ -254,10 +255,11 @@ f32 f16(u16 v)
 				else
 				{
 					//verify(tsp.TexU==tsp.TexV);
-					twidle_tex(565);
+					twidle_tex(argb565);
 				}
 				break;
 
+				
 				//2	4444 value: 4 bits; RGB values: 4 bits each
 			case 2:
 				if (tcw.NO_PAL.ScanOrder)
@@ -268,7 +270,7 @@ f32 f16(u16 v)
 				}
 				else
 				{
-					twidle_tex(4444);
+					twidle_tex(argb4444);
 				}
 
 				break;
@@ -276,20 +278,37 @@ f32 f16(u16 v)
 			case 3:
 				if (tcw.NO_PAL.ScanOrder)
 				{
-					norm_text(YUV422);
+					norm_text(YUV422to8888);
 				}
 				else
 				{
-					if (tcw.NO_PAL.MipMapped)
-						sa+=MipPoint[tsp.TexU]<<3;
-					YUV422_TW(&pbt,(u16*)&params.vram[sa],w,h);
-					verify(tcw.NO_PAL.VQ_Comp==0);
+					//if (tcw.NO_PAL.VQ_Comp)
+						//goto redo_argb;
+					//if (tcw.NO_PAL.MipMapped)
+					//	sa+=MipPoint[tsp.TexU]<<3;
+					//YUV422to8888_TW(&pbt,(u16*)&params.vram[sa],w,h);
+					twidle_tex(YUV422);
+					//verify(tcw.NO_PAL.VQ_Comp==0);
 					//it cant be VQ , can it ?
 				}
 				break;
 				//4	Bump Map	16 bits/pixel; S value: 8 bits; R value: 8 bits
+			case 5:
 				//5	4 BPP Palette	Palette texture with 4 bits/pixel
+				verify(tcw.PAL.VQ_Comp==0);
+				if (tcw.NO_PAL.MipMapped)
+							sa+=MipPoint[tsp.TexU]<<2;
+				//tcw.PAL.PalSelect<<4
+				PAL4to8888_TW(&pbt,(u8*)&params.vram[sa],w,h);
+				break;
+			case 6:
 				//6	8 BPP Palette	Palette texture with 8 bits/pixel
+				verify(tcw.PAL.VQ_Comp==0);
+				if (tcw.NO_PAL.MipMapped)
+							sa+=MipPoint[tsp.TexU]<<2;
+				//(tcw.PAL.PalSelect<<4)&(~0xFF)
+				PAL8to8888_TW(&pbt,(u8*)&params.vram[sa],w,h);
+				break;
 			default:
 				printf("Unhandled texture\n");
 				memset(temp_tex_buffer,0xFFFFFFFF,w*h*4);
@@ -325,13 +344,13 @@ f32 f16(u16 v)
 			}
 			Texture->UnlockRect(0);
 			
-			/*
+		/*
 			char file[512];
 
 			sprintf(file,"d:\\textures\\0x%x_%d_%s_VQ%d_TW%d_MM%d_.jpg",Start,Lookups,texFormatName[tcw.NO_PAL.PixelFmt]
 			,tcw.NO_PAL.VQ_Comp,tcw.NO_PAL.ScanOrder,tcw.NO_PAL.MipMapped);
-			D3DXSaveTextureToFileA( file,D3DXIFF_JPG,Texture,0);
-			*/
+			D3DXSaveTextureToFileA( file,D3DXIFF_JPG,Texture,0);*/
+			
 		}
 	};
 
@@ -518,6 +537,7 @@ f32 f16(u16 v)
 	}
 	void SetCurrentTARC(u32 addr)
 	{
+		return;
 		//printf("SetCurrentTARC:0x%X\n",addr);
 		if (addr==tarc.Address)
 			return;//nothing to do realy
@@ -542,8 +562,9 @@ f32 f16(u16 v)
 	}
 	void SetCurrentPVRRC(u32 addr)
 	{
+		//return;
 	//	printf("SetCurrentPVRRC:0x%X\n",addr);
-		if (addr==tarc.Address)
+		//if (addr==tarc.Address)
 		{
 			memcpy(&pvrrc,&tarc,sizeof(TA_context));
 			return;
