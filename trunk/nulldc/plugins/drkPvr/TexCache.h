@@ -416,15 +416,15 @@ struct convYUV_TW
 		u8* p_in=(u8*)data;
 
 		
-		//s32 Y0 = (YUV0>>8) &255; //p_in[1]
-		//s32 Yu = (YUV0>>0) &255; //p_in[0]
-		//s32 Y1 = (YUV1>>8) &255; //p_in[3]
-		//s32 Yv = (YUV1>>0) &255; //p_in[2]
+		//s32 Y0 = (YUV0>>8) &255; //p_in[1] //0
+		//s32 Yu = (YUV0>>0) &255; //p_in[0] //0
+		//s32 Y1 = (YUV1>>8) &255; //p_in[3] //1
+		//s32 Yv = (YUV1>>0) &255; //p_in[2] //1
 
 		//0,0
 		pb->prel(0,0,YUV422<PixelPacker>(p_in[1],p_in[0],p_in[2]));
 		//0,1
-		pb->prel(0,1,YUV422<PixelPacker>(p_in[1],p_in[0],p_in[3]));
+		pb->prel(0,1,YUV422<PixelPacker>(p_in[3],p_in[0],p_in[2]));
 		
 		//next 2 bytes
 		p_in+=4;
@@ -432,7 +432,7 @@ struct convYUV_TW
 		//1,0
 		pb->prel(1,0,YUV422<PixelPacker>(p_in[1],p_in[0],p_in[2]));
 		//1,1
-		pb->prel(1,1,YUV422<PixelPacker>(p_in[1],p_in[0],p_in[3]));
+		pb->prel(1,1,YUV422<PixelPacker>(p_in[3],p_in[0],p_in[1]));
 	}
 };
 
