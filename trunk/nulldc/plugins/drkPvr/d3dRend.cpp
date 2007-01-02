@@ -148,10 +148,10 @@ f32 f16(u16 v)
 #define twidle_tex(format)\
 						if (tcw.NO_PAL.VQ_Comp)\
 					{\
-						vq_codebook_##format((u16*)&params.vram[sa]);\
+						vq_codebook=(u8*)&params.vram[sa];\
 						if (tcw.NO_PAL.MipMapped)\
 							sa+=MipPoint[tsp.TexU];\
-						texture_VQ(&pbt,(u8*)&params.vram[sa],w,h);\
+						##format##to8888_VQ(&pbt,(u8*)&params.vram[sa],w,h);\
 					}\
 					else\
 					{\

@@ -1,6 +1,7 @@
 #pragma once
 #include "drkPvr.h"
 
+extern u8* vq_codebook;
 //Generic texture cache list class =P
 template <class TexEntryType>
 class TexCacheList
@@ -413,26 +414,31 @@ struct convYUV_TW
 	static void fastcall Convert(PixelBuffer* pb,u8* data)
 	{
 		//convert 4x1 4444 to 4x1 8888
-		u8* p_in=(u8*)data;
+		u16* p_in=(u16*)data;
 
 		
-		//s32 Y0 = (YUV0>>8) &255; //p_in[1] //0
-		//s32 Yu = (YUV0>>0) &255; //p_in[0] //0
-		//s32 Y1 = (YUV1>>8) &255; //p_in[3] //1
-		//s32 Yv = (YUV1>>0) &255; //p_in[2] //1
+		s32 Y0 = (p_in[0]>>8) &255; //
+		s32 Yu = (p_in[0]>>0) &255; //p_in[0]
+		s32 Y1 = (p_in[2]>>8) &255; //p_in[3]
+		s32 Yv = (p_in[2]>>0) &255; //p_in[2]
 
 		//0,0
-		pb->prel(0,0,YUV422<PixelPacker>(p_in[1],p_in[0],p_in[2]));
-		//0,1
-		pb->prel(0,1,YUV422<PixelPacker>(p_in[3],p_in[0],p_in[2]));
-		
-		//next 2 bytes
-		p_in+=4;
-
+		pb->prel(0,0,YUV422<PixelPacker>(Y0,Yu,Yv));
 		//1,0
-		pb->prel(1,0,YUV422<PixelPacker>(p_in[1],p_in[0],p_in[2]));
+		pb->prel(1,0,YUV422<PixelPacker>(Y1,Yu,Yv));
+		
+		//next 4 bytes
+		//p_in+=2;
+
+		Y0 = (p_in[1]>>8) &255; //
+		Yu = (p_in[1]>>0) &255; //p_in[0]
+		Y1 = (p_in[3]>>8) &255; //p_in[3]
+		Yv = (p_in[3]>>0) &255; //p_in[2]
+
+		//0,1
+		pb->prel(0,1,YUV422<PixelPacker>(Y0,Yu,Yv));
 		//1,1
-		pb->prel(1,1,YUV422<PixelPacker>(p_in[3],p_in[0],p_in[1]));
+		pb->prel(1,1,YUV422<PixelPacker>(Y1,Yu,Yv));
 	}
 };
 
@@ -506,6 +512,7 @@ void fastcall texture_TW(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height)
 template<class PixelConvertor>
 void fastcall texture_VQ(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height)
 {
+	p_in+=256*4*2;
 	u32 p=0;
 	pb->amove(0,0);
 	
@@ -516,8 +523,8 @@ void fastcall texture_VQ(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height)
 	{
 		for (u32 x=0;x<Width;x++)
 		{
-			u8* p = &p_in[twop(x,y,Width,Height)];
-			PixelConvertor::Convert(pb,p);
+			u8 p = p_in[twop(x,y,Width,Height)];
+			PixelConvertor::Convert(pb,&vq_codebook[p*8]);
 
 			pb->rmovex(PixelConvertor::xpp);
 		}
@@ -572,14 +579,34 @@ template void fastcall texture_VQ<convPAL8_TW<pp_dx>>(PixelBuffer* pb,u8* p_in,u
 //void fastcall PAL8to8888_TW(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height,u32 pal_base);
 #define PAL8to8888_TW  texture_TW<convPAL8_TW<pp_dx>>
 
-void fastcall vq_codebook_argb565(u16* p_in);
-void fastcall vq_codebook_argb1555(u16* p_in);
-void fastcall vq_codebook_argb4444(u16* p_in);
-void fastcall vq_codebook_YUV422(u16* p_in);
-void fastcall vq_codebook_PAL4(u16* p_in);
-void fastcall vq_codebook_PAL8(u16* p_in);
+//void fastcall vq_codebook_argb565(u16* p_in);
+//void fastcall vq_codebook_argb1555(u16* p_in);
+//void fastcall vq_codebook_argb4444(u16* p_in);
+//void fastcall vq_codebook_YUV422(u16* p_in);
+//void fastcall vq_codebook_PAL4(u16* p_in);
+//void fastcall vq_codebook_PAL8(u16* p_in);
 
-void fastcall texture_VQ(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height);
+//void fastcall argb1555to8888_TW(PixelBuffer* p_out,u16* p_in,u32 Width,u32 Height);
+#define argb1555to8888_VQ texture_VQ<conv1555_TW<pp_dx>>
+//void fastcall argb565to8888_TW(PixelBuffer* p_out,u16* p_in,u32 Width,u32 Height);
+#define argb565to8888_VQ texture_VQ<conv565_TW<pp_dx>>
+//void fastcall argb4444to8888_TW(PixelBuffer* p_out,u16* p_in,u32 Width,u32 Height);
+#define argb4444to8888_VQ texture_VQ<conv4444_TW<pp_dx>>
+//void fastcall YUV422to8888_TW(PixelBuffer* pb,u16* p_in,u32 Width,u32 Height);
+#define YUV422to8888_VQ texture_VQ<convYUV_TW<pp_dx>>
+//void fastcall PAL4to8888_TW(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height,u32 pal_base);
+#define PAL4to8888_VQ texture_VQ<convPAL4_TW<pp_dx>>
+//void fastcall PAL8to8888_TW(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height,u32 pal_base);
+#define PAL8to8888_VQ  texture_VQ<convPAL8_TW<pp_dx>>
+
+/*
+void fastcall texture_VQ_argb565(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height);
+void fastcall texture_VQ_argb1555(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height);
+void fastcall texture_VQ_argb4444(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height);
+void fastcall texture_VQ_YUV422(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height);
+void fastcall texture_VQ_PAL4(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height);
+void fastcall texture_VQ_PAL8(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height);
+*/
 
 void fastcall palette_PAL4(u32 offset);
 void fastcall texture_PAL4(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height);

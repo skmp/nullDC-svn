@@ -266,7 +266,8 @@ struct PixelConvertor
 */
 
 
-u32 vq_codebook[256][4];
+u8* vq_codebook;//[256][4];
+/*
 void fastcall vq_codebook_argb565(u16* p_in)
 {
 	for( u32 i=0; i<256;i++) 
@@ -334,7 +335,7 @@ void fastcall vq_codebook_YUV422(u16* p_in)
 			}
 		}
 	}
-}
+}*/
 
 void fastcall texture_VQ(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height)
 {
