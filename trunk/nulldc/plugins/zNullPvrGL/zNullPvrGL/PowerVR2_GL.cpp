@@ -396,36 +396,41 @@ void PvrIf::DeleteDispList(u32 dlid)
 
 S_INLINE void RenderStripList(TA_ListType lType)
 {
-	int nStrips = 0;
-	Vertex * pVList = NULL;
+	DCache * pDList = NULL;
 
 	switch(lType)	{
-	case LT_Opaque:			nStrips=nOpqStrips;	pVList=(Vertex*)opq;	break;
-	case LT_Translucent:	nStrips=nTrsStrips;	pVList=(Vertex*)trs;	break;
-	case LT_PunchThrough:	nStrips=nPtuStrips;	pVList=(Vertex*)ptu;	break;
+	case LT_Opaque:			pDList = &Opaque;		break;
+	case LT_Translucent:	pDList = &Transparent;	break;
+	case LT_PunchThrough:	pDList = &PunchThru;	break;
+	default: ASSERT_T((1),"RenderStripList() LType Default");	return;
 	}
 
-
-	for(u32 p=0; p<nStrips; p++)
+	int cpos=0;
+	for(u32 p=0; p<pDList->StripCount; p++)
 	{
-		Vertex * vp = &pVList[p];
-		SetRenderMode(vp->ParamID, vp->TexID);
+		int len = pDList->StripList[p].len;
+		SetRenderMode(pDList->StripList[p].ParamID, pDList->StripList[p].TexID);
 
-//		lprintf("\nVList: %X : size: %d\n", p, vp->Size);
+		ASSERT_T((len <= 2), "Render of Strip <= len 2");
+		//lprintf("\nVList: %X : size: %d\n", p, vp->Size);
 
 		glBegin(GL_TRIANGLE_STRIP);
-		for(u32 v=0; v<vp->Size; v++)
+		for(u32 v=0; v<len; v++)
 		{
-//			lprintf("VList[%02X] v(%.3f, %.3f, %.3f) vc(%.3f, %.3f) c: %08X \n",
-//				v,	vp->List[v].xyz[0],	vp->List[v].xyz[1],	vp->List[v].xyz[2],
-//					vp->List[v].uv[0],	vp->List[v].uv[1],	vp->List[v].col);
+			Vert * vp = &((Vert*)pDList->buff)[cpos+v];
 
-			glColor4ubv((u8*)&vp->List[v].col);
-			glTexCoord4fv(vp->List[v].uv);
-			glVertex3fv(vp->List[v].xyz);
+		/*	lprintf("VList[%02X] v(%.3f, %.3f, %.3f) vc(%f, %f) c: %08X \n",
+				v,	vp->xyz[0],	vp->xyz[1],	vp->xyz[2],
+					vp->uv[0],	vp->uv[1],	vp->col);
+*/
+
+			glColor4ubv((u8*)&vp->col);
+			glTexCoord4fv(vp->uv);
+			glVertex3fv(vp->xyz);
 		}
 	//	lprintf("\n", p);
 		glEnd();
+		cpos += len;
 	}
 }
 
@@ -433,7 +438,7 @@ S_INLINE void RenderStripList(TA_ListType lType)
 
 S_INLINE void RenderStripListArray(TA_ListType lType)
 {
-	int nStrips = 0;
+/*	int nStrips = 0;
 	Vertex * pVList = NULL;
 
 	switch(lType)	{
@@ -451,7 +456,7 @@ S_INLINE void RenderStripListArray(TA_ListType lType)
 		glTexCoordPointer(4, GL_FLOAT, sizeof(Vert), &vp->List[0].uv[0]);
 		glVertexPointer(3, GL_FLOAT, sizeof(Vert), &vp->List[0].xyz[0]);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, (GLsizei)vp->Size);
-	}
+	}*/
 }
 
 
@@ -489,12 +494,20 @@ void RenderGL()
 	glClearColor( R,G,B, 1.f );
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // | GL_ACCUM_BUFFER_BIT);
 	////////////////////////////////////////////////////
+/*
+	//printf("-------RENDER GL_-----------------\n");
 
-#ifndef USE_VERTEX_ARRAYS
+	if(!TA_State.ListInit)
+	{
+		//printf("PVR RENDERFRAME ------------------------------- \n");
+		goto _eor;
+	}*/
+
+//#ifndef USE_VERTEX_ARRAYS
 	RenderStripList(LT_Opaque);
 	RenderStripList(LT_Translucent);
 	RenderStripList(LT_PunchThrough);
-#else
+/*#else
 	glPushClientAttrib(GL_CLIENT_VERTEX_ARRAY_BIT);
 	glEnableClientState(GL_COLOR_ARRAY);
 	glEnableClientState(GL_VERTEX_ARRAY);
@@ -505,7 +518,7 @@ void RenderGL()
 	RenderStripListArray(LT_PunchThrough);
 
 	glPopClientAttrib();
-#endif
+#endif*/
 /*
 #ifdef USE_DISPLAY_LISTS
 	for(int i=0; i<DLists.size(); i++)
@@ -576,6 +589,12 @@ u32 RenderToTexGL()
 
 	ResizeGL();
 	return rToTexID;
+}
+
+
+void RenderFrame()
+{
+	printf("--------- RENDER FRAMEBUFFER -----------\n");
 }
 
 

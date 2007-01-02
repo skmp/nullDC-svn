@@ -134,6 +134,7 @@ void pvrInit(void *params, u32 PluginType)
 //	ConfigLoadStr("zNullPvr","VShader", ConfigStr);
 //	ConfigLoadStr("zNullPvr","PShader", ConfigStr);
 	InitTA_Regs();
+	memset(&TA_State, 0, sizeof(TA_State));
 
 	printf("pvrInit()\n");
 
@@ -206,6 +207,11 @@ void vblank_done()
 		SetWindowText((HWND)emuIf.handle, fpsStr);
 
 	}
+
+	//printf(" vbl1 :: ListInit: %d\n", TA_State.ListInit);
+	//if(0==TA_State.ListInit)
+	//	PvrIf::Render();
+
 }
 
 

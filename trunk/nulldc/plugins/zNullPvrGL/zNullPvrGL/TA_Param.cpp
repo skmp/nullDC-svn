@@ -11,11 +11,14 @@ using namespace PvrIf;
 ////////////////////
 
 AllocCtrl * ac;
-u32 RenderPending=0;
+t_TA_State TA_State;
 u32 lists_complete=0;
 
 TA_PolyMode PolyMode;
 
+DCache * pCur = NULL;
+
+u32 DCache::flags=DCACHE_READY;
 
 //FR919919999//
 
@@ -23,7 +26,7 @@ S_INLINE u32 ProcessParam(ParamBase *pb)
 {
 	PCW * pcw = &pb->pcw;
 
-//	lprintf("ProcessParam: %X\n", pcw->ParaType);
+	//lprintf("ProcessParam: %X\n", pcw->ParaType);
 
 	switch(pcw->ParaType)
 	{
@@ -34,22 +37,28 @@ S_INLINE u32 ProcessParam(ParamBase *pb)
 		PolyMode = PM_None;
 		lists_complete |= (1<<rLT);	//(1<<pcw->ListType);
 
-		if((0x1F == lists_complete) && RenderPending)
+		if((0x1F == lists_complete) && (TA_State.RenderPending))
 		{
 			printf("Lists Complete: Rendering Pending Data !\n");
-			RenderPending=0;
+			TA_State.RenderPending = 0;
 			PvrIf::Render();
 		}
 
-		ASSERT_T((rLT >= LT_Reserved),"<PVR> EndOfList: Reserved List Type !");
-		ASSERT_T((0==GlobalParams.size()),"EndOfList, GlobalParamSize==0 \n");		// *FIXME* keep last param after render !
+		ASSERT_T((rLT >= LT_Reserved),"<PVR> EndOfList: Reserved List Type ");
+		ASSERT_T((0==GlobalParams.size()),"EndOfList, GlobalParamSize==0 ");		// *FIXME* keep last param after render !
 		emuIf.RaiseInterrupt(PvrInts[rLT]);
 	}
 	return 0;
 
+
 	case PT_Polygon:		// Global: Polygon 
 //	case PT_Modifier=4,		// Global: Modfifier Volume
+/*
+*	On Event of new GParam, when strip is still being processed, must end strip !
+		----- new to make global param king hehe --------
+*/
 
+		DCache::flags = DCache::DCACHE_NEEDS_EOS;
 		PolyMode = (pb->pcw.Volume && !pb->pcw.Shadow) ? PM_Modifier : PM_Vertex;
 
 		if(PM_Vertex == PolyMode) {
@@ -59,6 +68,7 @@ S_INLINE u32 ProcessParam(ParamBase *pb)
 
 	case PT_Sprite:			// Global: Sprite
 		PolyMode = PM_Sprite;
+		DCache::flags = DCache::DCACHE_NEEDS_EOS;
 		GlobalParams.push_back(*(GlobalParam*)pb);
 	return 0;
 
@@ -68,11 +78,11 @@ S_INLINE u32 ProcessParam(ParamBase *pb)
 		if(PM_None==PolyMode) PolyMode = PM_Vertex;	// HACK 
 
 		if(PM_Vertex == PolyMode) {
-			PvrIf::AppendStrip((VertexParam*)pb);
+			PvrIf::AppendStrip((VertexParam*)pb);	// this and spr should be same soon / distinct gparams
 			return 0;
 		}
 		else if(PM_Sprite == PolyMode) {
-			PvrIf::AppendSprite((GlobalParam*)pb);
+		//	PvrIf::AppendSprite((VertexParam*)pb);
 			return 0;
 		}
 		else if(PM_Modifier == PolyMode) {	// Not Handled Yet *FIXME*
@@ -92,7 +102,6 @@ S_INLINE u32 ProcessParam(ParamBase *pb)
 	case PT_Reserved3:		// Control: Reserved Param
 	case PT_Reserved6:		// Global: Reserved Param
 		return 0;
-
 	}
 
 	ASSERT_T((1),"<PVR> ERROR Invalid ListType, Out of Context!\n");
@@ -100,25 +109,28 @@ S_INLINE u32 ProcessParam(ParamBase *pb)
 }
 
 
-u32 IsProcessing=0;
-
-u32 WritePend=0;
 u8 FifoBuff[96];
 
 void TaFifo(u32 address, u32* data, u32 size)
 {
-	IsProcessing=true;
+	TA_State.Processing=true;
+
 	s32 sz = (size<<=5);
 	ParamBase * pb= NULL;
 
-//	lprintf("TaFifo(%08X, %p, %d)\n{\n", address, data, size);
-//	lprintf(" :: data %08X %08X %08X %08X\n",
-//		*(u32*)&data[0], *(u32*)&data[4], *(u32*)&data[8], *(u32*)&data[12]);
+	//lprintf("TaFifo(%08X, %p, %d)\n{\n", address, data, size);
+	//lprintf(" :: data %08X %08X %08X %08X\n",
+	//	*(u32*)&data[0], *(u32*)&data[4], *(u32*)&data[8], *(u32*)&data[12]);
 
-	if(WritePend) {
+	if(TA_State.WritePending) {
+
+		lprintf("writepend: \n{\n");
+	//	for()
+
+
 		memcpy(&FifoBuff[32], &data[0], 32);
 		ProcessParam((ParamBase *)FifoBuff);
-		WritePend = false;
+		TA_State.WritePending = false;
 		sz -= 32;
 	}
 
@@ -136,7 +148,7 @@ void TaFifo(u32 address, u32* data, u32 size)
 
 		if((64>sz) && (64==PSize))
 		{
-			WritePend = true;
+			TA_State.WritePending = true;
 			memcpy(FifoBuff, pb, sz);
 			printf("!\nWritePend! sz:%d\n}\n",sz);
 			lprintf("!\nWritePend! sz:%d\n}\n",sz);
@@ -147,8 +159,8 @@ void TaFifo(u32 address, u32* data, u32 size)
 
 		sz -= PSize ;
 	}
-//	lprintf("}\n\n");
-	IsProcessing=false;
+	//lprintf("}\n\n");
+	TA_State.Processing=false;
 }
 
 
@@ -161,6 +173,12 @@ void TaFifo(u32 address, u32* data, u32 size)
 /////////// *TEMP* *FIXME* //////////
 
 
+DCache Opaque, OpaqueMod, Transparent, TransMod, PunchThru, Sprite;
+
+
+
+
+/*
 u8 opq[DCACHE_SIZE], trs[DCACHE_SIZE], ptu[DCACHE_SIZE], spr[DCACHE_SIZE];
 
 u32 opos=0, tpos=0, ppos=0, spos=0;
@@ -214,7 +232,7 @@ S_INLINE u32 UpdateVBuffer(u32 which, u32 written)
 	}
 	return 0;
 }
-
+*/
 
 
 
@@ -227,6 +245,7 @@ S_INLINE u32 UpdateVBuffer(u32 which, u32 written)
 
 
 u32 idx = 0, LPType=0, ParamIdx=0;
+u32 BytesRemain = 0;
 u8 * pVBuf = NULL;
 
 
@@ -234,14 +253,118 @@ u8 * pVBuf = NULL;
 void ClearDCache()
 {
 	GlobalParams.clear();
-	nOpqStrips	= opos	= 0;
+	Opaque.StripCount		=	Opaque.pos		= 0;	Opaque.flags		= DCache::DCACHE_READY;
+	OpaqueMod.StripCount	=	OpaqueMod.pos	= 0;	OpaqueMod.flags		= DCache::DCACHE_READY;
+	Transparent.StripCount	=	Transparent.pos	= 0;	Transparent.flags	= DCache::DCACHE_READY;
+	TransMod.StripCount		=	TransMod.pos	= 0;	TransMod.flags		= DCache::DCACHE_READY;
+	PunchThru.StripCount	=	PunchThru.pos	= 0;	PunchThru.flags		= DCache::DCACHE_READY;
+	Sprite.StripCount		=	Sprite.pos		= 0;	Sprite.flags		= DCache::DCACHE_READY;
+	
+/*	nOpqStrips	= opos	= 0;
 	nTrsStrips	= tpos	= 0;
 	nPtuStrips	= ppos	= 0;
-	nSprStrips	= spos	= 0;
+	nSprStrips	= spos	= 0;*/
 	ParamIdx	= idx	= 0;
 	pVBuf		= NULL;
 }
 
+
+
+void DCache::AppendVert(VertexParam *vp)
+{
+	ASSERT_T(((DCACHE_SIZE>>3)<= StripCount), "StripCount Out Of Bounds !");
+
+	//lprintf("AppendVert()\n{\nStripCount: %d\n", StripCount);
+
+	ASSERT_F(((GlobalParams.size()-1)==ParamIdx),	"AppendVert(), ParamIndex Changed")
+
+	PolyParam * pp = &GlobalParams[ParamIdx];
+	u32 PType = PolyType(&pp->pcw);
+
+	// The Change of Type should have already been picked up here !!
+	//ASSERT_T(((0!=idx) && (LPType!=PType) && (DCACHE_NEEDS_EOS != flags)),			"AppendVert(), PType Mismatch");
+	//if(0==idx) { LPType = PType; }
+
+	if(DCACHE_NEEDS_EOS == flags)
+	{
+		// could leak tex mem here if we overwrite prev. tex id w/ new and never delete ! *FIXME*
+
+		if((NULL!=pVBuf) && (0!=StripList[StripCount].len))
+		{
+			//lprintf("---- NEEDS EOS ----\n");
+			//lprintf("Strip[%06X].len = %d\n", StripCount,
+			//StripList[StripCount].len);
+			StripList[StripCount].len		= (u32)idx++ +1;
+			StripList[StripCount].TexID		= (u32)TCache.GetTexture(pp);
+			StripList[StripCount].ParamID	= (u32)ParamIdx;
+			StripCount++;
+
+			UpdateVBuffer(sizeof(Vert)*idx);
+		}
+		pVBuf = NULL;
+		idx=0;
+		LPType=0;
+		ParamIdx=0;
+		flags = DCACHE_READY;
+	}
+	if(DCACHE_READY == flags)
+	{
+		ParamIdx = GlobalParams.size() ? (GlobalParams.size()-1) : 0 ;
+
+		BytesRemain=0;
+		flags = DCACHE_ALLOCATED;
+		pVBuf = GetVBufferPtr(&BytesRemain);
+		ASSERT_T((sizeof(Vert)>BytesRemain),		"AppendVert(), ByteRemain too Low");
+	}
+	ASSERT_T((NULL==pVBuf),							"AppendVert(), Bad VBuff. Ptr");
+
+	switch(PType&0xFFFF) {
+	case 0x00: { DecodeStrip0(&((Vert*)pVBuf)[idx], vp); break; }
+	case 0x01: { DecodeStrip1(&((Vert*)pVBuf)[idx], vp); break; }
+	case 0x02: { DecodeStrip2(&((Vert*)pVBuf)[idx], vp); break; }
+	case 0x03: { DecodeStrip3(&((Vert*)pVBuf)[idx], vp); break; }
+	case 0x04: { DecodeStrip4(&((Vert*)pVBuf)[idx], vp); break; }
+	case 0x05: { DecodeStrip5(&((Vert*)pVBuf)[idx], vp); break; }
+	case 0x06: { DecodeStrip6(&((Vert*)pVBuf)[idx], vp); break; }
+	case 0x07: { DecodeStrip7(&((Vert*)pVBuf)[idx], vp); break; }
+	case 0x08: { DecodeStrip8(&((Vert*)pVBuf)[idx], vp); break; }
+	case 0x09: { DecodeStrip9(&((Vert*)pVBuf)[idx], vp); break; }
+	case 0x0A: { DecodeStripA(&((Vert*)pVBuf)[idx], vp); break; }
+	case 0x0B: { DecodeStripB(&((Vert*)pVBuf)[idx], vp); break; }
+	case 0x0C: { DecodeStripC(&((Vert*)pVBuf)[idx], vp); break; }
+	case 0x0D: { DecodeStripD(&((Vert*)pVBuf)[idx], vp); break; }
+	case 0x0E: { DecodeStripE(&((Vert*)pVBuf)[idx], vp); break; }
+	default:	ASSERT_T((1),"DCache::AppendVert() Default Case Reached!"); return;
+	}
+
+	//lprintf("--<<< %f, %f \n", ((Vert*)pVBuf)[idx].uv[0], ((Vert*)pVBuf)[idx].uv[1]);
+
+	++idx;
+	if(vp->pcw.EndOfStrip)	// || (++idx>=MAX_VERTS))
+	{
+		//lprintf("---- EOS ----\n");
+		StripList[StripCount].len		= (u32)idx;
+		StripList[StripCount].TexID		= (u32)TCache.GetTexture(pp);
+		StripList[StripCount].ParamID	= (u32)ParamIdx;
+		++StripCount;
+
+		UpdateVBuffer(sizeof(Vert)*idx);
+		pVBuf = NULL;
+		idx=0;
+		LPType=0;
+		ParamIdx=0;
+		flags = DCACHE_READY;
+	}
+	else
+	{
+		////lprintf("Append: Idx: %X\n", idx);
+	}
+
+	//lprintf("}\n\n");
+}
+
+/*	*FIXME* GTG
+*
 u32 PvrIf::AppendStrip(VertexParam *vp)
 {
 	u32 BytesRemain = 0;
@@ -257,6 +380,7 @@ u32 PvrIf::AppendStrip(VertexParam *vp)
 	PolyParam * pp = &GlobalParams[ParamIdx];
 	u32 PType = PolyType(&pp->pcw);
 
+	// The Change of Type should have already been picked up here !!
 	ASSERT_T(((0!=idx) && (LPType!=PType)),			"AppendStrip() PType Mismatch");
 	if(0==idx) { LPType = PType; }
 	
@@ -279,9 +403,9 @@ u32 PvrIf::AppendStrip(VertexParam *vp)
 	default:	ASSERT_T((1),"PvrIf::AppendStrip() Default Case Reached!"); return 0;
 	}
 
-	if(vp->pcw.EndOfStrip || (++idx>=MAX_VERTS))
+	if(vp->pcw.EndOfStrip)	// || (++idx>=MAX_VERTS))
 	{
-		((Vertex*)pVBuf)->Size	  = (MAX_VERTS==idx)?idx:idx+1;				// hack ?
+		((Vertex*)pVBuf)->Size	  = idx+1;	//(MAX_VERTS==idx)?idx:idx+1;				// hack ? - no more
 		((Vertex*)pVBuf)->TexID	  = (u32)TCache.GetTexture(pp);
 		((Vertex*)pVBuf)->ParamID = (u32)(GlobalParams.size()-1);
 
@@ -306,11 +430,11 @@ u32 PvrIf::AppendStrip(VertexParam *vp)
 //		lprintf("Append: Idx: %X\n", idx);
 	}
 	return 0;
-}
-
-u32 PvrIf::AppendSprite(GlobalParam *gp)
+}*/
+/*
+u32 PvrIf::AppendSprite(VertexParam *vp)
 {
-/*	u32 BytesRemain = 0;
+	u32 BytesRemain = 0;
 
 	if(0==idx) {
 		ParamIdx = GlobalParams.size() ? (GlobalParams.size()-1) : 0 ;
@@ -325,6 +449,6 @@ u32 PvrIf::AppendSprite(GlobalParam *gp)
 
 	ASSERT_T(((0!=idx) && (LPType!=PType)),			"AppendStrip() PType Mismatch");
 	if(0==idx) { LPType = PType; }
-*/
+
 	return 0;
-}
+}*/

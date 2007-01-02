@@ -7,6 +7,27 @@
 #endif
 
 
+
+// ** ISP ** *FIXME*
+//
+/*
+float ModifyISP
+{
+
+};
+*/
+
+	// *FIXME* 
+/* intensity color conversion !
+Intensity ? Packed Color
+Regarding alpha values, the TA converts the specified Face Color Alpha value into a fixed decimal
+value between 0.0 and 1.0, multiples the value by 255, and derives an 8-bit value.  Regarding RGB values, 
+the TA converts the specified Face Color R/G/B value into a fixed decimal value between 0.0 and 1.0,
+multiples the value by 255, converts the intensity value into a fixed decimal value between 0.0 and 1.0,
+multiplies the converted R/G/B value and the converted intensity value together, multiplies that result by 255,
+and derives an 8-bit value for each of R, G, and B.   Finally, the TA packs each 8-bit value into a 32-bit value.
+*/
+
 // A few helper macros 
 
 u32 LastInt = ~0;

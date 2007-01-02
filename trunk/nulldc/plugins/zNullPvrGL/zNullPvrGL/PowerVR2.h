@@ -10,7 +10,7 @@
 #include "PowerVR2_D3D.h"
 
 
-typedef bool PvrCallFP();
+typedef void PvrCallFP();
 typedef bool bPvrCallFP();
 
 namespace PvrIf
@@ -19,16 +19,25 @@ namespace PvrIf
 	extern TextureCache TCache;
 	extern vector<GlobalParam> GlobalParams;
 
-	u32 AppendStrip (VertexParam *vp);
-	u32 AppendSprite(GlobalParam *gp);
+	S_INLINE void AppendStrip (VertexParam *vp)
+	{
+		DCache * pDList = NULL;
+
+		switch(vp->pcw.ListType)	{
+		case LT_Opaque:			pDList = &Opaque;		break;
+		case LT_Translucent:	pDList = &Transparent;	break;
+		case LT_PunchThrough:	pDList = &PunchThru;	break;
+		default: ASSERT_T((1),"PvrIf::AppendStrip() LType Default");	return;
+		}
+		pDList->AppendVert(vp);
+	}
+//	u32 AppendSprite(VertexParam *vp);
 
 	extern bPvrCallFP	* Init;
 	extern PvrCallFP	* Term;
 	extern PvrCallFP	* Render;
 	extern PvrCallFP	* Resize;
 };
-
-
 
 
 

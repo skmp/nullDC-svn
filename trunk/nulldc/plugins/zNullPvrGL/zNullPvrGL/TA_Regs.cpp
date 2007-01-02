@@ -43,8 +43,6 @@ u32  pvrReadReg(u32 addr,u32 size)
 	return 0;
 }
 
-extern u32 IsProcessing;
-extern u32 RenderPending;
 
 void pvrWriteReg(u32 addr,u32 data,u32 size)
 {
@@ -53,25 +51,48 @@ void pvrWriteReg(u32 addr,u32 data,u32 size)
 
 	if(addr>=TA_REG_START && TA_REG_END>=addr)
 	{
-		ASSERT_T(IsProcessing,"Write to Regs While Processing Fifo");
+		ASSERT_T(TA_State.Processing,"Write to Regs While Processing Fifo");
 
 		switch(addr &0xFFF)
 		{
+		case SOFTRESET:
+			printf("PVR SOFTRESET\n");
+			ResetState();
+			break;
+
 		case TA_ALLOC_CTRL:
 			combine_ac();
 			break;	// useless to do anything until after write, use eol instead
 
 		case TA_LIST_CONT:
+	/*
+		If list continuation processing is performed through the TA_LIST_CONT register,
+		the TA initializes its internal status in the same manner as before,
+		but leaves the TA_NEXT_OPB register unchanged.  As a result,
+		the additional OPB for the list that is continuing to be input is stored
+		after the OPB that was input last time.
+	*/
 			printf( ")>\tPVR2: TA_LIST_CONT Write <= %X\n", data);
 			lprintf(")>\tPVR2: TA_LIST_CONT Write <= %X\n", data);
 			break;	// write it
 
 		case TA_LIST_INIT:
+	/*
+		If list initialization is performed through the TA_LIST_INIT register,
+		the TA initializes its internal status, loads the value in the TA_NEXT_OPB_INIT register
+		into the TA_NEXT_OPB register, and then allocates space in texture memory as the OPB initial area,
+		from the address that is specified in the TA_OL_BASE register to the address that is specified in the
+		TA_NEXT_OPB_INIT register.
+	*/
+			TA_State.ListInit=1;
+			printf("LIST_INIT:\n");
 
-			if(RenderPending)
+			*pTA_NEXT_OPB = *pTA_NEXT_OPB_INIT ;	// Load Next OPB Init to Next OPB
+
+			if(TA_State.RenderPending)
 			{
 				printf("LIST_INIT && RenderPending, Rendering !\n");
-				RenderPending=0;
+				TA_State.RenderPending = 0;
 				PvrIf::Render();
 			}
 
@@ -88,9 +109,9 @@ void pvrWriteReg(u32 addr,u32 data,u32 size)
 				if(0x1F==lists_complete)
 				{
 					PvrIf::Render();
-					RenderPending=0;
+					TA_State.RenderPending = 0;
 				} else {
-					RenderPending=true;
+					TA_State.RenderPending = 1;
 					ASSERT_T((1),"STARTRENDER && Lists Not Complete !");
 				}
 

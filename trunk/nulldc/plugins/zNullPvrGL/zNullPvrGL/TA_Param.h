@@ -663,11 +663,10 @@ struct Vertex
 
 #define DCACHE_SIZE	SZ_8MB
 
-
-extern u32 RenderPending;
+/*
 extern u32 nOpqStrips, nTrsStrips, nPtuStrips;
 extern u8 opq[DCACHE_SIZE], trs[DCACHE_SIZE], ptu[DCACHE_SIZE];
-
+*/
 void FlushFifo();
 void ClearTCache();
 void ClearDCache();
@@ -718,6 +717,100 @@ S_INLINE u32 PolyType( PCW *pcw )
 	}
 	return 0xFFFFFFFF;	// fucked
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+extern struct t_TA_State
+{
+	u32 ResetPending	: 1 ;
+	u32 WritePending	: 1 ;
+	u32 RenderPending	: 1 ;
+	u32 Processing		: 1 ;
+	u32 ListInit		: 1 ;
+
+	u32 TS_Reserved		: 27;
+
+} TA_State;
+
+#define ResetState()	\
+	TA_State.ResetPending	= 1;	\
+	TA_State.RenderPending	= 0;	\
+	TA_State.Processing		= 0;	\
+	TA_State.ListInit		= 0;	\
+	__noop
+
+
+
+
+
+
+class DCache
+{
+public:
+
+	u8 buff[DCACHE_SIZE];
+	u32 pos;
+
+	static u32 flags;		// *WATCH* Static !
+
+	enum DCacheFlags
+	{
+		DCACHE_READY,
+		DCACHE_ALLOCATED,
+		DCACHE_NEEDS_EOS,
+	};
+
+	// strip list //
+	struct ListDesc
+	{
+		u32 pos;	// Offset in Bytes
+		u32 len;	// Length in elements
+
+		u32 TexID, ParamID;
+	};
+
+	u32 StripCount;
+	ListDesc StripList[DCACHE_SIZE>>3];
+
+
+	DCache() {
+		pos = 0;
+		//flags = DCACHE_READY;	// DO NOT TOUCH FLAGS 
+	}
+
+	void AppendVert(VertexParam *vp);
+
+	//S_INLINE 
+	u8 * GetVBufferPtr(u32 *pBytesLeft)	// which buffer, bytes left in buffer
+	{
+		*pBytesLeft = (DCACHE_SIZE-pos);
+		return &buff[pos];
+	}
+
+	//S_INLINE 
+	u32 UpdateVBuffer(u32 written)	
+	{
+		return DCACHE_SIZE - (pos += written) ;
+	}
+
+};
+
+
+
+extern DCache Opaque, OpaqueMod, Transparent, TransMod, PunchThru, Sprite;
+
+
 
 
 #endif //__TAPARAM_H__

@@ -228,8 +228,35 @@ S_INLINE void SetRenderModeSpr(u32 ParamID, u32 TexID)
 }
 
 
-
 S_INLINE void RenderStripList(TA_ListType lType)
+{
+	DCache * pDList = NULL;
+
+	switch(lType)	{
+	case LT_Opaque:			pDList = &Opaque;		break;
+	case LT_Translucent:	pDList = &Transparent;	break;
+	case LT_PunchThrough:	pDList = &PunchThru;	break;
+	default: ASSERT_T((1),"RenderStripList() LType Default");	return;
+	}
+
+	int cpos=0;
+	for(u32 p=0; p<pDList->StripCount; p++)
+	{
+		int len = pDList->StripList[p].len;
+
+		ASSERT_T((len <= 2), "Render of Strip <= len 2");
+		//lprintf("\nVList: %X : size: %d\n", p, vp->Size);
+
+		Vert * vp = &((Vert*)pDList->buff)[cpos];//+v];
+		SetRenderMode(pDList->StripList[p].ParamID, pDList->StripList[p].TexID);
+		g_pDev->SetTexture(0, (IDirect3DTexture9*)pDList->StripList[p].TexID);
+		g_pDev->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, len-2, &vp->xyz, sizeof(Vert));
+
+		cpos += len;
+	}
+}
+
+/*S_INLINE void RenderStripList(TA_ListType lType)
 {
 	int nStrips = 0;
 	Vertex * pVList = NULL;
@@ -247,7 +274,7 @@ S_INLINE void RenderStripList(TA_ListType lType)
 		g_pDev->SetTexture(0, (IDirect3DTexture9*)vp->TexID);
 		g_pDev->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, vp->Size-2, &vp->List[0].xyz, sizeof(Vert));
 	}
-}
+}*/
 
 S_INLINE void RenderSprites(vector<Vertex> &vl)
 {
