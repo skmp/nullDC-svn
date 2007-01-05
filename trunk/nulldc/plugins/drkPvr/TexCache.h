@@ -478,14 +478,13 @@ void fastcall texture_TW(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height)
 	u32 p=0;
 	pb->amove(0,0);
 
-	Height/=PixelConvertor::ypp;
-	Width/=PixelConvertor::xpp;
+	const u32 divider=PixelConvertor::xpp*PixelConvertor::ypp;
 
-	for (u32 y=0;y<Height;y++)
+	for (u32 y=0;y<Height;y+=PixelConvertor::ypp)
 	{
-		for (u32 x=0;x<Width;x++)
+		for (u32 x=0;x<Width;x+=PixelConvertor::xpp)
 		{
-			u8* p = &p_in[twop(x,y,Width,Height)<<3];
+			u8* p = &p_in[(twop(x,y,Width,Height)/divider)<<3];
 			PixelConvertor::Convert(pb,p);
 
 			pb->rmovex(PixelConvertor::xpp);
@@ -501,14 +500,15 @@ void fastcall texture_VQ(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height)
 	u32 p=0;
 	pb->amove(0,0);
 
-	Height/=PixelConvertor::ypp;
-	Width/=PixelConvertor::xpp;
+	//Height/=PixelConvertor::ypp;
+	//Width/=PixelConvertor::xpp;
+	const u32 divider=PixelConvertor::xpp*PixelConvertor::ypp;
 
-	for (u32 y=0;y<Height;y++)
+	for (u32 y=0;y<Height;y+=PixelConvertor::ypp)
 	{
-		for (u32 x=0;x<Width;x++)
+		for (u32 x=0;x<Width;x+=PixelConvertor::xpp)
 		{
-			u8 p = p_in[twop(x,y,Width,Height)];
+			u8 p = p_in[twop(x,y,Width,Height)/divider];
 			PixelConvertor::Convert(pb,&vq_codebook[p*8]);
 
 			pb->rmovex(PixelConvertor::xpp);

@@ -40,8 +40,10 @@ namespace TASplitter
 #pragma pack(push, 1)   // n = 1
 	//	Global Param/misc structs
 	//4B
-	struct PCW
+	union PCW
 	{
+		struct
+		{
 		//Obj Control
 		u32 UV_16bit		: 1;
 		u32 Gouraud			: 1;
@@ -62,14 +64,18 @@ namespace TASplitter
 		u32 ListType		: 3;
 		u32 Res_1			: 1;
 		u32 EndOfStrip		: 1;
-		u32	ParaType		: 3;		
+		u32	ParaType		: 3;	
+		};
+		u32 full;
 	} ;
 
 
 	//// ISP/TSP Instruction Word
 
-	struct ISP_TSP
+	union ISP_TSP
 	{
+		struct
+		{
 		u32	Reserved	: 20;
 		u32	DCalcCtrl	: 1;
 		u32	CacheBypass	: 1;
@@ -80,7 +86,8 @@ namespace TASplitter
 		u32	ZWriteDis	: 1;
 		u32	CullMode	: 2;
 		u32	DepthMode	: 3;
-
+		};
+		u32 full;
 	};
 
 

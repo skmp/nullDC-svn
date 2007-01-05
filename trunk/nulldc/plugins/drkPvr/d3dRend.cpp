@@ -60,9 +60,9 @@ namespace Direct3DRenderer
 		D3DCULL_NONE,	//1	Cull if Small	Cull if	( |det| < fpu_cull_val )
 
 		//wtf ?
-		D3DCULL_NONE /*D3DCULL_CCW*/,		//2	Cull if Negative	Cull if 	( |det| < 0 ) or
+		D3DCULL_CCW /*D3DCULL_CCW*/,		//2	Cull if Negative	Cull if 	( |det| < 0 ) or
 						//( |det| < fpu_cull_val )
-		D3DCULL_NONE /*D3DCULL_CW*/,		//3	Cull if Positive	Cull if 	( |det| > 0 ) or
+		D3DCULL_CW /*D3DCULL_CW*/,		//3	Cull if Positive	Cull if 	( |det| > 0 ) or
 						//( |det| < fpu_cull_val )
 	};
 	const static u32 Zfunction[]=
@@ -297,7 +297,7 @@ f32 f16(u16 v)
 				//5	4 BPP Palette	Palette texture with 4 bits/pixel
 				verify(tcw.PAL.VQ_Comp==0);
 				if (tcw.NO_PAL.MipMapped)
-							sa+=MipPoint[tsp.TexU]<<2;
+							sa+=MipPoint[tsp.TexU]<<1;
 				palette_index = tcw.PAL.PalSelect<<4;
 				PAL4to8888_TW(&pbt,(u8*)&params.vram[sa],w,h);
 				break;
@@ -349,8 +349,8 @@ f32 f16(u16 v)
 
 			sprintf(file,"d:\\textures\\0x%x_%d_%s_VQ%d_TW%d_MM%d_.jpg",Start,Lookups,texFormatName[tcw.NO_PAL.PixelFmt]
 			,tcw.NO_PAL.VQ_Comp,tcw.NO_PAL.ScanOrder,tcw.NO_PAL.MipMapped);
-			D3DXSaveTextureToFileA( file,D3DXIFF_JPG,Texture,0);*/
-			
+			D3DXSaveTextureToFileA( file,D3DXIFF_JPG,Texture,0);
+			*/
 		}
 	};
 
@@ -666,7 +666,7 @@ f32 f16(u16 v)
 					dev->SetRenderState(D3DRS_ALPHABLENDENABLE,FALSE);
 			}
 
-
+ 
 			//set cull mode !
 			dev->SetRenderState(D3DRS_CULLMODE,CullMode[gp->isp.CullMode]);
 			//set Z mode !
@@ -718,6 +718,7 @@ f32 f16(u16 v)
 		memcpy(ptr,pvrrc.verts.data,sz);
 		
 		verifyc(vb->Unlock());
+		//memset(pvrrc.verts.data,0xFEA345FD,pvrrc.verts.size*sizeof(Vertex));
 
 
 
@@ -795,53 +796,46 @@ f32 f16(u16 v)
 				CurrentPPlist=&tarc.global_param_pt;
 			else if (ListType==ListType_Translucent)
 				CurrentPPlist=&tarc.global_param_tr;
-
+			
+			CurrentPP=0;
+			vert_reappend=0;
 		}
 		__forceinline
 		static void EndList(u32 ListType)
 		{
-			if (CurrentPP)
-			{
-				CurrentPP->count=tarc.verts.used - CurrentPP->first;
-				CurrentPP=0;
-				vert_reappend=0;
-			}
+			vert_reappend=0;
+			CurrentPP=0;
 			CurrentPPlist=0;
 		}
 
 		//Polys
 #define glob_param_bdc \
-	    if (CurrentPP)\
+	if (CurrentPP==0 || CurrentPP->pcw.full!=pp->pcw.full || \
+		CurrentPP->tcw.full!=pp->tcw.full || \
+		CurrentPP->tsp.full!=pp->tsp.full || \
+		CurrentPP->isp.full!=pp->isp.full	) \
 		{\
-		CurrentPP->count=tarc.verts.used - CurrentPP->first;\
-		}\
-		PolyParam* d_pp =CurrentPPlist->Append(); \
-		\
-		CurrentPP=d_pp;\
-		\
-		d_pp->first=tarc.verts.used;\
-		vert_reappend=0;
+			PolyParam* d_pp =CurrentPPlist->Append(); \
+			CurrentPP=d_pp;\
+			d_pp->first=tarc.verts.used; \
+			d_pp->count=0; \
+			vert_reappend=0; \
+			d_pp->isp=pp->isp; \
+			d_pp->tsp=pp->tsp; \
+			d_pp->tcw=pp->tcw; \
+			d_pp->pcw=pp->pcw; \
+		}
 
 
 		__forceinline
 		static void AppendPolyParam32(TA_PolyParamA* pp)
 		{
 			glob_param_bdc;
-
-			d_pp->isp=pp->isp;
-			d_pp->tsp=pp->tsp;
-			d_pp->tcw=pp->tcw;
-			d_pp->pcw=pp->pcw;
 		}
 		__forceinline
 		static void AppendPolyParam64A(TA_PolyParamA* pp)
 		{
 			glob_param_bdc;
-
-			d_pp->isp=pp->isp;
-			d_pp->tsp=pp->tsp;
-			d_pp->tcw=pp->tcw;
-			d_pp->pcw=pp->pcw;
 		}
 		__forceinline
 		static void AppendPolyParam64B(TA_PolyParamB* pp)
@@ -850,13 +844,23 @@ f32 f16(u16 v)
 		}
 
 		//Poly Strip handling
+		//We unite Strips together by dupplicating the [last,first].On odd sized strips
+		//a second [first] vert is needed to make sure Culling works fine :)
 		__forceinline
 		static void StartPolyStrip()
 		{
 			if (vert_reappend)
 			{
-				Vertex* cv=tarc.verts.Append(2);
-				cv[0]=cv[-1];//dup prev
+				if (CurrentPP->count&1)
+				{
+					Vertex* cv=tarc.verts.Append(3);
+					cv[1]=cv[0]=cv[-1];
+				}
+				else
+				{
+					Vertex* cv=tarc.verts.Append(2);
+					cv[0]=cv[-1];//dup prev
+				}
 				vert_reappend=tarc.verts.used-1;
 			}
 		}
@@ -868,10 +872,8 @@ f32 f16(u16 v)
 				Vertex* vert=&tarc.verts.data[vert_reappend];
 				vert[0]=vert[1];
 			}
-			else
-			{
-				vert_reappend=1;
-			}
+			vert_reappend=1;
+			CurrentPP->count=tarc.verts.used - CurrentPP->first;
 		}
 
 		//Poly Vertex handlers
