@@ -8,16 +8,6 @@ DriveIF* CurrDrive;
 DriveIF drives[]=
 {
 	{
-		//iso
-		iso_DriveReadSector,
-		iso_DriveGetTocInfo,
-		iso_DriveGetDiskType,
-		0,
-		iso_init,//these need to be filled
-		iso_term,
-		"ISO reader"
-	},
-	{
 		//cdi
 		cdi_DriveReadSector,
 		cdi_DriveGetTocInfo,
@@ -36,6 +26,16 @@ DriveIF drives[]=
 		mds_init,
 		mds_term,
 		"NRG/MDS/MDF reader"
+	},
+		{
+		//iso
+		iso_DriveReadSector,
+		iso_DriveGetTocInfo,
+		iso_DriveGetDiskType,
+		iso_GetSessionsInfo,
+		iso_init,//these need to be filled
+		iso_term,
+		"ISO reader"
 	},
 };
 
@@ -57,7 +57,7 @@ bool ConvertSector(u8* in_buff , u8* out_buff , int from , int to,int sector)
 			verify(from>=2048);
 			verify((from==2448) || (from==2352) || (from==2336));
 			if ((from == 2352) || (from == 2448))
-				memcpy(out_buff,&in_buff[0x18],2048);
+				memcpy(out_buff,&in_buff[0x18],2048); //0x18 or 0x10 ? cdrwin for some reason needs 0x10 o.O
 			else
 				memcpy(out_buff,&in_buff[0x8],2048);
 		}
@@ -81,7 +81,7 @@ bool ConvertSector(u8* in_buff , u8* out_buff , int from , int to,int sector)
 void InitDrive()
 {
 	char fn[512]="";
-	if (GetFile(fn,"CD Images (*.cdi;*.mds;*.nrg) \0*.cdi;*.mds;*.nrg\0\0")==false)
+	if (GetFile(fn,"CD/GD Images (*.cdi;*.mds;*.nrg;*.gdi) \0*.cdi;*.mds;*.nrg;*.gdi\0\0")==false)
 	{
 		CurrDrive=&drives[Iso];
 		return;
