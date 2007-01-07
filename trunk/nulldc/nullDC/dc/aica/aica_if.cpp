@@ -11,10 +11,10 @@
 
 u32 ReadMem_aica_rtc(u32 addr,u32 sz)
 {
-	/*
+	
 	//this somehow works :P
 
-	time_t rawtime;
+	time_t rawtime=0;
 	tm  timeinfo;
 	
 	//int tm_sec;     /* seconds after the minute - [0,59] */
@@ -40,7 +40,7 @@ u32 ReadMem_aica_rtc(u32 addr,u32 sz)
 		rawtime+=24*3600;//add an hour if dst (maby rtc has a reg for that ? *watch* and add it if yes :)
 
 */
-	u32 RTC=0x5bfc8900 ;//+ (u32)rawtime;// add delta to known dc time
+	u32 RTC=0x5bfc8900 + (u32)rawtime;// add delta to known dc time
 
 	switch( addr & 0xFF )
 	{

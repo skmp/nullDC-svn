@@ -385,25 +385,14 @@ void __fastcall WriteMem_P4(u32 addr,T data)
 template <u32 sz,class T>
 T __fastcall ReadMem_sq(u32 addr)
 {
-	//isnt all this the same as
-	//sq_byteptr[addr&0x3F] 
-	//?
 	if (sz!=4)
 	{
 		printf("Store Queue Error , olny 4 byte read are possible[x%X]\n",addr);
 		return 0xDE;
 	}
-	//u32 offset = (addr >> 2) & 7; // 3 bits
+
 	u32 united_offset=addr & 0x3C;
 
-	//if ((addr & 0x20)) // 0: SQ0, 1: SQ1
-	//{
-	//	return sq1_dw[offset];
-	//}
-	//else
-	//{
-	//	return sq0_dw[offset];
-	//}	
 	return (T)*(u32*)&sq_both[united_offset];
 }
 

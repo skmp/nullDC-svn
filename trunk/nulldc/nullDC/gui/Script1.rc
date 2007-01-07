@@ -70,11 +70,11 @@ END
 IDD_ABOUT DIALOGEX 0, 0, 187, 88
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_TOOLWINDOW | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE
-CAPTION "zIcarus about"
+CAPTION "About nullDC"
 FONT 10, "Courier New", 0, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "&Ok",IDOK,130,67,50,14,BS_FLAT,WS_EX_CLIENTEDGE | WS_EX_STATICEDGE
-    LTEXT           "nullDC\n\tWriten by drkIIRaziel && ZeZu",IDC_STATIC,7,7,173,58
+    LTEXT           "nullDC\n\tWriten by drkIIRaziel && ZeZu\n\n Many thanks to PsyMan for beta testing && metal support",IDC_STATIC,7,7,173,58
 END
 
 IDD_SH4DEBUG DIALOGEX 0, 0, 585, 279

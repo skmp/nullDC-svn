@@ -156,6 +156,20 @@ u32 uiInit(void)
 		MessageBox( NULL, "Couldn't Create Debug Window!","ERROR",MB_ICONERROR );
 		return false;
 	}
+	RECT rect;
+	RECT rect2;
+	GetClientRect(g_hWnd,&rect);
+	int xsz=rect.right-rect.left;
+	int ysz=rect.bottom-rect.top;
+
+	GetWindowRect(g_hWnd,&rect2);
+	int xsz_2=rect2.right-rect2.left;
+	int ysz_2=rect2.bottom-rect2.top;
+	xsz_2-=xsz;
+	ysz_2-=ysz;
+
+	SetWindowPos(g_hWnd,NULL,0,0,xsz_2+640,ysz_2+480,SWP_NOZORDER|SWP_NOMOVE);
+	
 
 	return UI_OK;
 }
@@ -179,7 +193,7 @@ u32 uiMain(void)
 		{
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
-		}
+		} 
 
 		if( WM_QUIT == msg.message )
 			return UI_MAIN_QUIT;
