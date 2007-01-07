@@ -37,8 +37,11 @@ char testJoy_strName_nul[64] = "Null Dreamcast Controler\0";
 char testJoy_strName_vmu[64] = "Emulated VMU\0";
 char testJoy_strName_kbd[64] = "Emulated Dreamcast Keyboard\0";
 char testJoy_strName_mouse[64] = "Emulated Dreamcast Mouse\0";
-
+char testJoy_strName_dreameye_1[64] = "Dreamcast Camera Flash  Devic\0";
+char testJoy_strName_dreameye_2[64] = "Dreamcast Camera Flash LDevic\0";
+char testJoy_strName_mic[64] = "MicDevice for Dreameye\0";
 char testJoy_strBrand[64] = "Faked by drkIIRaziel && ZeZu , made for nullDC\0";
+char testJoy_strBrand_2[64] = "Produced By or Under License From SEGA ENTERPRISES,LTD.\0";
 
 #define key_CONT_C  (1 << 0);
 #define key_CONT_B  (1 << 1);
@@ -554,6 +557,386 @@ u16 mo_cvt(s32 delta)
 
 	return (u16) delta;
 }
+/*
+	(06/01/07)[04:09] <BlueCrab> Device info for port A0:
+	(06/01/07)[04:09] <BlueCrab> Functions: 01000000
+	(06/01/07)[04:09] <BlueCrab> Function Data 0: 00080000
+	(06/01/07)[04:09] <BlueCrab> Function Data 1: 00000000
+	(06/01/07)[04:09] <BlueCrab> Function Data 2: 00000000
+	(06/01/07)[04:09] <BlueCrab> Area code: FF
+	(06/01/07)[04:09] <BlueCrab> Connector direction: 00
+	(06/01/07)[04:09] <BlueCrab> Product name: Dreamcast Camera Flash  Devic
+	(06/01/07)[04:09] <BlueCrab> Product licence: Produced By or Under License From SEGA ENTERPRISES,LTD.    
+	(06/01/07)[04:09] <BlueCrab> Standby power: 07D0
+	(06/01/07)[04:10] <BlueCrab> Max power: 0960
+*/
+void DreamEye_mainDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+{
+	//printf("ControllerDMA Called 0x%X;Command %d\n",device_instance->port,Command);
+//void testJoy_GotData(u32 header1,u32 header2,u32*data,u32 datalen)
+	u8*buffer_out_b=(u8*)buffer_out;
+
+	switch (Command)
+	{
+		/*typedef struct {
+			DWORD		func;//4
+			DWORD		function_data[3];//3*4
+			u8		area_code;//1
+			u8		connector_direction;//1
+			char		product_name[30];//30*1
+			char		product_license[60];//60*1
+			WORD		standby_power;//2
+			WORD		max_power;//2
+		} maple_devinfo_t;*/
+		case 1:
+			//header
+			//WriteMem32(ptr_out,(u32)(0x05 | //response
+			//			(((u16)sendadr << 8) & 0xFF00) |
+			//			((((recadr == 0x20) ? 0x20 : 0) << 16) & 0xFF0000) |
+			//			(((112/4) << 24) & 0xFF000000))); ptr_out += 4;
+
+			responce=5;
+
+			//caps
+			//4
+			w32(0x01000000);
+
+			//struct data
+			//3*4
+			w32( 0x00080000); 
+			w32( 0);
+			w32( 0);
+			//1	area code
+			w8(0xFF);
+			//1	direction
+			w8(0);
+			//30
+			for (u32 i = 0; i < 30; i++)
+			{
+				w8((u8)testJoy_strName_dreameye_1[i]);
+				//if (!testJoy_strName[i])
+				//	break;
+			}
+			//ptr_out += 30;
+
+			//60
+			for (u32 i = 0; i < 60; i++)
+			{
+				w8((u8)testJoy_strBrand[i]);
+				//if (!testJoy_strBrand[i])
+				//	break;
+			}
+			//ptr_out += 60;
+
+			//2
+			w16(0x04FF); 
+
+			//2
+			w16(0x0069); 
+			break;
+			/* controller condition structure 
+		typedef struct {//8 bytes
+		WORD buttons;			///* buttons bitfield	/2
+		u8 rtrig;			///* right trigger			/1
+		u8 ltrig;			///* left trigger 			/1
+		u8 joyx;			////* joystick X 			/1
+		u8 joyy;			///* joystick Y				/1
+		u8 joy2x;			///* second joystick X 		/1
+		u8 joy2y;			///* second joystick Y 		/1
+		} cont_cond_t;*/
+		case 9:
+
+
+			//header
+			//WriteMem32(ptr_out, (u32)(0x08 | // data transfer (response)
+			//			(((u16)sendadr << 8) & 0xFF00) |
+			//			((((recadr == 0x20) ? 0x20 : 1) << 16) & 0xFF0000) |
+			//			(((12 / 4 ) << 24) & 0xFF000000))); ptr_out += 4;
+			responce=0x08;
+			//caps
+			//4
+			//WriteMem32(ptr_out, (1 << 24)); ptr_out += 4;
+			w32((1 << 24));
+			//struct data
+			//2
+			w16(0xF7FF); //camera button not pressed
+			
+			//triger
+			//1 R
+			w8(0);
+			//1 L
+			w8(0); 
+			//joyx
+			//1
+			w8(GetBtFromSgn(0));
+			//joyy
+			//1
+			w8(GetBtFromSgn(0));
+
+			//1
+			w8(GetBtFromSgn(0)); 
+			//1
+			w8(GetBtFromSgn(0)); 
+			//are these needed ?
+			//1
+			//WriteMem8(ptr_out, 10); ptr_out += 1;
+			//1
+			//WriteMem8(ptr_out, 10); ptr_out += 1;
+
+			break;
+		default:
+			printf("DreamEye_mainDMA : UNKOWN MAPLE COMMAND %d \n",Command);
+			responce=7;//just ko
+			break;
+	}
+}
+
+/*
+	(06/01/07)[04:10] <BlueCrab> Device info for port A1:
+	(06/01/07)[04:10] <BlueCrab> Functions: 00080000
+	(06/01/07)[04:10] <BlueCrab> Function Data 0: 30A800C0
+	(06/01/07)[04:10] <BlueCrab> Function Data 1: 00000000
+	(06/01/07)[04:10] <BlueCrab> Function Data 2: 00000000
+	(06/01/07)[04:10] <BlueCrab> Area code: FF
+	(06/01/07)[04:10] <BlueCrab> Connector direction: 00
+	(06/01/07)[04:10] <BlueCrab> Product name: Dreamcast Camera Flash LDevic
+	(06/01/07)[04:10] <BlueCrab> Product licence: Produced By or Under License From SEGA ENTERPRISES,LTD.    
+	(06/01/07)[04:10] <BlueCrab> Standby power: 0000
+	(06/01/07)[04:10] <BlueCrab> Max power: 0000
+*/
+u32 des_9_count=0;
+void DreamEye_subDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+{
+	//printf("ControllerDMA Called 0x%X;Command %d\n",device_instance->port,Command);
+//void testJoy_GotData(u32 header1,u32 header2,u32*data,u32 datalen)
+	u8*buffer_out_b=(u8*)buffer_out;
+
+	switch (Command)
+	{
+		/*typedef struct {
+			DWORD		func;//4
+			DWORD		function_data[3];//3*4
+			u8		area_code;//1
+			u8		connector_direction;//1
+			char		product_name[30];//30*1
+			char		product_license[60];//60*1
+			WORD		standby_power;//2
+			WORD		max_power;//2
+		} maple_devinfo_t;*/
+		case 1:
+			//header
+			//WriteMem32(ptr_out,(u32)(0x05 | //response
+			//			(((u16)sendadr << 8) & 0xFF00) |
+			//			((((recadr == 0x20) ? 0x20 : 0) << 16) & 0xFF0000) |
+			//			(((112/4) << 24) & 0xFF000000))); ptr_out += 4;
+
+			responce=5;
+
+			//caps
+			//4
+			w32(0x00080000);
+
+			//struct data
+			//3*4
+			w32( 0x30A800C0); 
+			w32( 0);
+			w32( 0);
+			//1	area code
+			w8(0xFF);
+			//1	direction
+			w8(0);
+			//30
+			for (u32 i = 0; i < 30; i++)
+			{
+				w8((u8)testJoy_strName_dreameye_2[i]);
+				//if (!testJoy_strName[i])
+				//	break;
+			}
+			//ptr_out += 30;
+
+			//60
+			for (u32 i = 0; i < 60; i++)
+			{
+				w8((u8)testJoy_strBrand[i]);
+				//if (!testJoy_strBrand[i])
+				//	break;
+			}
+			//ptr_out += 60;
+
+			//2
+			w16(0); 
+
+			//2
+			w16(0); 
+			break;
+
+//(07/01/07)[02:36] <BlueCrab> dreameye: replied with 8, size 5
+//(07/01/07)[02:36] <BlueCrab> 00080000, 000000D0, 1F000480, 1F000481, C0070094,
+//(07/01/07)[02:46] <BlueCrab> ok... to the 6 command 9's after the one with data, it replies identically:
+//(07/01/07)[02:46] <BlueCrab> dreameye: replied with 8, size 2
+//(07/01/07)[02:46] <BlueCrab> 00080000, 000000D0, 
+		case 9:
+
+			//header
+			//WriteMem32(ptr_out, (u32)(0x08 | // data transfer (response)
+			//			(((u16)sendadr << 8) & 0xFF00) |
+			//			((((recadr == 0x20) ? 0x20 : 1) << 16) & 0xFF0000) |
+			//			(((12 / 4 ) << 24) & 0xFF000000))); ptr_out += 4;
+			responce=0x08;
+			//caps
+			//4
+			w32(0x00080000);
+			//struct data
+			if (des_9_count==0)
+			{
+			//4 dwords
+			w32(0x000000D0);
+			w32(0x1F000480);
+			w32(0x1F000481);
+			w32(0xC0070094);
+			}
+			else
+			{
+				//1 dword
+				w32(0x000000D0); //? ok maby ?
+			}
+
+			des_9_count++;
+			printf("DreamEye_subDMA[0x%x | %d %x] : UNKOWN MAPLE COMMAND %d \n",device_instance->port,device_instance->port>>6,device_instance->port&63,Command);
+			printf(" buffer in size : %d\n",buffer_in_len);
+			for (u32 i=0;i<buffer_in_len;i+=4)
+			{
+				printf("%08X ",*buffer_in++);
+			}
+			printf("\n");
+			//getchar();
+			break;
+//(07/01/07)[03:04] <BlueCrab> dreameye: replied with 11, size 2
+//(07/01/07)[03:04] <BlueCrab>           responding to port B1
+//(07/01/07)[03:04] <BlueCrab> 00080000, 000002FF, 
+		case 17:
+			{
+				responce=17; //? fuck ?
+				//caps
+				//4
+				w32(0x00080000);
+				//mmwaaa?
+				//w32(0x000002FF);
+				w32(rand());
+			}
+			printf("DreamEye_subDMA[0x%x | %d %x] : UNKOWN MAPLE COMMAND %d \n",device_instance->port,device_instance->port>>6,device_instance->port&63,Command);
+			printf(" buffer in size : %d\n",buffer_in_len);
+			for (u32 i=0;i<buffer_in_len;i+=4)
+			{
+				printf("%08X ",*buffer_in++);
+			}
+			printf("\n");
+			//getchar();
+			break;
+		default:
+			printf("DreamEye_subDMA[0x%x | %d %x] : UNKOWN MAPLE COMMAND %d \n",device_instance->port,device_instance->port>>6,device_instance->port&63,Command);
+			printf(" buffer in size : %d\n",buffer_in_len);
+			for (u32 i=0;i<buffer_in_len;i+=4)
+			{
+				printf("%08X ",*buffer_in++);
+			}
+			printf("\n");
+			//getchar();
+			responce=7;//just ko
+			break;
+	}
+}
+
+
+void MicDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+{
+	//printf("ControllerDMA Called 0x%X;Command %d\n",device_instance->port,Command);
+//void testJoy_GotData(u32 header1,u32 header2,u32*data,u32 datalen)
+	u8*buffer_out_b=(u8*)buffer_out;
+
+	printf("MicDMA[0x%x | %d %x] : UNKOWN MAPLE COMMAND %d \n",device_instance->port,device_instance->port>>6,device_instance->port&63,Command);
+	printf(" buffer in size : %d\n",buffer_in_len);
+	if (buffer_in_len==-4)
+		buffer_in_len=0;
+	for (u32 i=0;i<buffer_in_len;i+=4)
+	{
+		printf("%08X ",*buffer_in++);
+	}
+	printf("\n");
+
+	switch (Command)
+	{
+		/*typedef struct {
+			DWORD		func;//4
+			DWORD		function_data[3];//3*4
+			u8		area_code;//1
+			u8		connector_direction;//1
+			char		product_name[30];//30*1
+			char		product_license[60];//60*1
+			WORD		standby_power;//2
+			WORD		max_power;//2
+		} maple_devinfo_t;*/
+		case 1:
+			//header
+			//WriteMem32(ptr_out,(u32)(0x05 | //response
+			//			(((u16)sendadr << 8) & 0xFF00) |
+			//			((((recadr == 0x20) ? 0x20 : 0) << 16) & 0xFF0000) |
+			//			(((112/4) << 24) & 0xFF000000))); ptr_out += 4;
+
+			responce=5;
+
+			//caps
+			//4
+			w32(0x10000000);
+
+			//struct data
+			//3*4
+			w32( 0x3F000000);  // ?? wii pwns ps3 ...
+			w32( 0);
+			w32( 0);
+			//1	area code
+			w8(0xF); //WTF ?
+			//1	direction
+			w8(1); //WTF ?
+			//30
+			for (u32 i = 0; i < 30; i++)
+			{
+				w8((u8)testJoy_strName_mic[i]);
+				//if (!testJoy_strName[i])
+				//	break;
+			}
+			//ptr_out += 30;
+
+			//60
+			for (u32 i = 0; i < 60; i++)
+			{
+				w8((u8)testJoy_strBrand[i]);
+				//if (!testJoy_strBrand[i])
+				//	break;
+			}
+			//ptr_out += 60;
+
+			//2
+			w16(0x012C); 
+
+			//2
+			w16(0x012C); 
+			break;
+		case 9:
+			responce=0x08;
+			//caps
+			//4
+			w32(0x10000000);
+			//getchar();
+			break;
+
+		default:
+			responce=7;//just ko
+			break;
+	}
+}
+
+
 void MouseDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
 {
 	//printf("ControllerDMA Called 0x%X;Command %d\n",device_instance->port,Command);
@@ -1125,6 +1508,21 @@ void CreateInstance(maple_device*dev,maple_device_instance& inst,u8 port)
 		inst.MapleDeviceDMA=MouseDMA;
 		inst.DevData=0;
 	}
+	else if ( dev->id==5)
+	{
+		inst.MapleDeviceDMA=DreamEye_mainDMA;
+		inst.DevData=0;
+	}
+	else if ( dev->id==6)
+	{
+		inst.MapleDeviceDMA=DreamEye_subDMA;
+		inst.DevData=0;
+	}
+	else if ( dev->id==7)
+	{
+		inst.MapleDeviceDMA=MicDMA;
+		inst.DevData=0;
+	}
 	printf("Created instance of device %s on port 0x%x\n",dev->name,port);
 }
 
@@ -1170,8 +1568,26 @@ EXPORT void dcGetMapleInfo(maple_plugin_if* info)
 	info->Devices[4].id=4;
 	strcpy(info->Devices[4].name,"nullDC DC Mouse(" __DATE__ ")");
 
-	info->Devices[5].CreateInstance=0;
-	info->Devices[5].DestroyInstance=0;
+	info->Devices[5].CreateInstance=CreateInstance;
+	info->Devices[5].DestroyInstance=DestroyInstance;
+	info->Devices[5].type=0;//main
+	info->Devices[5].id=5;
+	strcpy(info->Devices[5].name,"nullDC DreamEye Main(" __DATE__ ")");
+
+	info->Devices[6].CreateInstance=CreateInstance;
+	info->Devices[6].DestroyInstance=DestroyInstance;
+	info->Devices[6].type=1;//sub
+	info->Devices[6].id=6;
+	strcpy(info->Devices[6].name,"nullDC DreamEye Sub(" __DATE__ ")");
+
+	info->Devices[7].CreateInstance=CreateInstance;
+	info->Devices[7].DestroyInstance=DestroyInstance;
+	info->Devices[7].type=1;//sub
+	info->Devices[7].id=7;
+	strcpy(info->Devices[7].name,"nullDC Dreamcast Mic(" __DATE__ ")");
+
+	info->Devices[8].CreateInstance=0;
+	info->Devices[8].DestroyInstance=0;
 }
 
 
