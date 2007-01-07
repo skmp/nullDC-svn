@@ -12,6 +12,14 @@
 
 using namespace TASplitter;
 
+#define DEV_CREATE_FLAGS D3DCREATE_HARDWARE_VERTEXPROCESSING
+//#define DEV_CREATE_FLAGS D3DCREATE_SOFTWARE_VERTEXPROCESSING
+
+#if DEV_CREATE_FLAGS==D3DCREATE_HARDWARE_VERTEXPROCESSING
+	#define VB_CREATE_FLAGS 0
+#else
+	#define VB_CREATE_FLAGS D3DUSAGE_SOFTWAREPROCESSING
+#endif
 
 namespace Direct3DRenderer
 {
@@ -26,8 +34,8 @@ namespace Direct3DRenderer
 "struct vertex { float4 pos : POSITION; float4 col : COLOR; float4 uv : TEXCOORD0; };"
 "float W_min: register(c0);float W_max: register(c1);"
 "  vertex VertexShader_Tutorial_1(in vertex vtx) {"
-"vtx.pos.x=(vtx.pos.x/320)-1;"
-"vtx.pos.y=-(vtx.pos.y/240)+1;"
+"vtx.pos.x=(vtx.pos.x/319.5)-1;"
+"vtx.pos.y=-(vtx.pos.y/239.5)+1;"
 
 "vtx.uv.xy*=vtx.pos.z;"
 "vtx.uv.z=0;"
@@ -1235,10 +1243,10 @@ f32 f16(u16 v)
                                       D3DCREATE_SOFTWARE_VERTEXPROCESSING,
                                       &d3dpp, &g_pd3dDevice 
 		*/
-		verifyc(d3d9->CreateDevice(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,(HWND)params.WindowHandle,D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_FPU_PRESERVE,&ppar,&dev));
+		verifyc(d3d9->CreateDevice(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,(HWND)params.WindowHandle,DEV_CREATE_FLAGS | D3DCREATE_FPU_PRESERVE,&ppar,&dev));
 
 		//yay , 10 mb -_- =P
-		verifyc(dev->CreateVertexBuffer(10*1024*1024,D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY | 0,0,D3DPOOL_DEFAULT,&vb,0));
+		verifyc(dev->CreateVertexBuffer(10*1024*1024,D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY | VB_CREATE_FLAGS,0,D3DPOOL_DEFAULT,&vb,0));
 		
 		verifyc(dev->CreateVertexDeclaration(vertelem,&vdecl));
 
