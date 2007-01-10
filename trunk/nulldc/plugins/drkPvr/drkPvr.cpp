@@ -167,3 +167,65 @@ char* GetNullDCSoruceFileName(char* full)
 	strcpy(temp,full);
 	return &temp[0];
 }
+
+
+//Windoze Code implementation of commong classes from here and after ..
+
+//Thread class
+cThread::cThread(ThreadEntryFP* function,void* prm)
+{
+	Entry=function;
+	param=prm;
+	hThread=CreateThread(NULL,NULL,(LPTHREAD_START_ROUTINE)function,prm,CREATE_SUSPENDED,NULL);
+}
+cThread::~cThread()
+{
+	//gota think of something !
+}
+	
+void cThread::Start()
+{
+	ResumeThread(hThread);
+}
+void cThread::Suspend()
+{
+	SuspendThread(hThread);
+}
+void cThread::WaitToEnd(u32 msec)
+{
+	WaitForSingleObject(hThread,msec);
+}
+//End thread class
+
+//cResetEvent Calss
+cResetEvent::cResetEvent(bool State,bool Auto)
+{
+		hEvent = CreateEvent( 
+        NULL,             // default security attributes
+		Auto?FALSE:TRUE,  // auto-reset event?
+		State?TRUE:FALSE, // initial state is State
+        NULL			  // unnamed object
+        );
+}
+cResetEvent::~cResetEvent()
+{
+	//Destroy the event object ?
+	 CloseHandle(hEvent);
+}
+void cResetEvent::Set()//Signal
+{
+	SetEvent(hEvent);
+}
+void cResetEvent::Reset()//reset
+{
+	ResetEvent(hEvent);
+}
+void cResetEvent::Wait(u32 msec)//Wait for signal , then reset
+{
+	WaitForSingleObject(hEvent,msec);
+}
+void cResetEvent::Wait()//Wait for signal , then reset
+{
+	WaitForSingleObject(hEvent,(u32)-1);
+}
+//End AutoResetEvent

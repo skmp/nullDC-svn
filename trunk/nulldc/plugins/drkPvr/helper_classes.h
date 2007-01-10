@@ -91,3 +91,39 @@ public :
 		data=0;
 	}
 };
+//Windoze code
+//Threads
+#define THREADCALL __stdcall
+
+typedef  u32 THREADCALL ThreadEntryFP(void* param);
+typedef void* THREADHANDLE;
+
+class cThread
+{
+private:
+	ThreadEntryFP* Entry;
+	void* param;
+	THREADHANDLE hThread;
+public :
+	cThread(ThreadEntryFP* function,void* param);
+	~cThread();
+	//Simple thread functions
+	void Start();
+	void Suspend();
+	void WaitToEnd(u32 msec);
+};
+
+//Wait Events
+typedef void* EVENTHANDLE;
+class cResetEvent
+{
+private:
+	EVENTHANDLE hEvent;
+public :
+	cResetEvent(bool State,bool Auto);
+	~cResetEvent();
+	void Set();		//Set state to signaled
+	void Reset();	//Set state to non signaled
+	void Wait(u32 msec);//Wait for signal , then reset[if auto]
+	void Wait();	//Wait for signal , then reset[if auto]
+};

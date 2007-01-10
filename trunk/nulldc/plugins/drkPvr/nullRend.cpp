@@ -5,12 +5,29 @@
 #include "gl\gl.h"
 #include "regs.h"
 
+//SW rendering .. yay (?)
 namespace NullRenderer
 {
-	
+	bool running=true;
+	cResetEvent rs(false,true);
+	u32 THREADCALL RenderThead(void* param)
+	{
+		while(1)
+		{
+			rs.Wait();
+			if (!running)
+				break;
+			//render
+		}
+		return 0;
+	}
+
+	cThread rth(RenderThead,0);
+
 	//use that someday
 	void VBlank()
 	{
+		//present the vram to FB
 	}
 
 	//u32 VertexCount;
@@ -310,12 +327,14 @@ namespace NullRenderer
 
 	bool ThreadStart(void* window)
 	{
+		rth.Start();
 		return true;
 	}
 
 	void ThreadEnd()
 	{
-
+		rs.Set();
+		rth.WaitToEnd(0xFFFFFFFF);
 	}
 }
 

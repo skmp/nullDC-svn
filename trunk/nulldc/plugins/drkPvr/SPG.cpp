@@ -33,6 +33,7 @@ void spgUpdatePvr(u32 cycles)
 			params.RaiseInterrupt(InterruptID::holly_RENDER_DONE);
 			params.RaiseInterrupt(InterruptID::holly_RENDER_DONE_isp);
 			params.RaiseInterrupt(InterruptID::holly_RENDER_DONE_vd);
+			renderer->EndRender();
 		}
 		render_end_pending_cycles-=cycles;
 	}

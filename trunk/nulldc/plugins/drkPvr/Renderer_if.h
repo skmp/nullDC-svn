@@ -14,6 +14,7 @@ typedef void ResetRendererFP(bool Manual);
 typedef void VBlankFP();
 
 typedef void StartRenderFP();
+typedef void EndRenderFP();
 typedef void voidFunctRetvoid();
 typedef void VramLockedWriteFP(vram_block* bl);
 //Renderer interface
@@ -29,6 +30,7 @@ struct rend_if
 
 	VBlankFP*	VBlank;
 	StartRenderFP*	StartRender;
+	EndRenderFP* EndRender;
 
 	voidFunctRetvoid* Ta_ListInit;
 	voidFunctRetvoid* Ta_SoftReset;
