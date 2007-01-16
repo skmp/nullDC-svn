@@ -40,7 +40,7 @@ int RunDC(int argc, char* argv[])
 
 void PrintHeader()
 {
-	printf("nullDC version %d.%d [%s]\n",MAJOR_VER,MINOR_VER,VER_STRING);
+	printf("nullDC version %s\n",VER_STRING);
 }
 
 void EnumPlugins()

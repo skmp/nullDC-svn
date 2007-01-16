@@ -143,10 +143,11 @@ using namespace std;
 #define EMUWARN3(x,a,b)(printf("Warning in %s:" __FUNCTION__":%d  -> " x"\n",GetNullDCSoruceFileName(__FILE__),__LINE__,a,b))
 #define EMUWARN4(x,a,b,c)(printf("Warning in %s:" __FUNCTION__":%d  -> " x"\n",GetNullDCSoruceFileName(__FILE__),__LINE__,a,b,c))
 
+#define BUILD_VER 0
 #define MAJOR_VER 0
 #define MINOR_VER 1
 
-#define VER_STRING "pre release alpha"
+#define VER_STRING "1.0.0 beta"
 
 #define dbgbreak __asm {int 3}
 

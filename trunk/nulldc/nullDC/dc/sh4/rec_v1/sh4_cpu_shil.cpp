@@ -1787,9 +1787,9 @@ void DoDslot(u32 pc,BasicBlock* bb)
 {
 	u16 opcode=ReadMem16(pc+2);
 
-	/*if ((opcode&0xF000)==0xF000)
-		ilst->shil_ifb(opcode,pc+2);
-	else*/
+	if (opcode==0 || opcode==0)
+		printf("0 on delayslot , ingoring it ..\n");
+	else
 		RecOpPtr[opcode](opcode,pc+2,bb);
 		bb->flags.HasDelaySlot=true;
 }

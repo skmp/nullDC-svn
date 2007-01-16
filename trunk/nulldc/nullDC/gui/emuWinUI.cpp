@@ -42,7 +42,8 @@ TCHAR g_szFileName[MAX_PATH];
 
 INT_PTR CALLBACK DlgProc( HWND, UINT, WPARAM, LPARAM );
 INT_PTR CALLBACK ArmDlgProc( HWND, UINT, WPARAM, LPARAM );
-INT_PTR CALLBACK DlgProcModal( HWND, UINT, WPARAM, LPARAM );
+INT_PTR CALLBACK DlgProcModal_about( HWND, UINT, WPARAM, LPARAM );
+INT_PTR CALLBACK DlgProcModal_config( HWND, UINT, WPARAM, LPARAM );
 LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
 INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
 
@@ -150,7 +151,7 @@ u32 uiInit(void)
 
 	InitCommonControls();
 
-	g_hWnd = CreateWindow( "Debugger", "nullDC v1.0.0 beta", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+	g_hWnd = CreateWindow( "Debugger", "nullDC " VER_STRING, WS_OVERLAPPEDWINDOW | WS_VISIBLE,
 		CW_USEDEFAULT, CW_USEDEFAULT, 640,480, NULL, NULL, g_hInst, NULL );
 	if( !IsWindow(g_hWnd) ) {
 		MessageBox( NULL, "Couldn't Create Debug Window!","ERROR",MB_ICONERROR );
@@ -378,11 +379,11 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 
 			/////// HELP MENU
 		case ID_HELP_ABOUT:
-			DialogBox(NULL,MAKEINTRESOURCE(IDD_ABOUT),hWnd,DlgProcModal);
+			DialogBox(NULL,MAKEINTRESOURCE(IDD_ABOUT),hWnd,DlgProcModal_about);
 			return 0;
 
 		case ID_OPTIONS_CONFIG:
-			DialogBox(NULL,MAKEINTRESOURCE(IDD_CONFIG),hWnd,DlgProcModal);
+			DialogBox(NULL,MAKEINTRESOURCE(IDD_CONFIG),hWnd,DlgProcModal_config);
 			return 0;
 
 		//Plugin Selection Menu
@@ -446,7 +447,41 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 }
 
 
-INT_PTR CALLBACK DlgProcModal( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
+INT_PTR CALLBACK DlgProcModal_about( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
+{
+	switch( uMsg )
+	{
+	case WM_INITDIALOG:
+		{
+			Edit_SetText(GetDlgItem(hWnd,IDC_THXLIST),".. gota fill this later ...");
+			Static_SetText(GetDlgItem(hWnd,IDC_NDC_VER),"nullDC " VER_STRING);
+		}
+		return true;
+
+	case WM_COMMAND:
+		switch( LOWORD(wParam) )
+		{
+		case IDOK:
+			EndDialog(hWnd,0);
+			return true;
+
+		default: break;
+		}
+		return false;
+
+	case WM_CLOSE:
+	case WM_DESTROY:
+		EndDialog(hWnd,0);
+		return true;
+
+	default: break;
+	}
+
+	return false;
+}
+
+
+INT_PTR CALLBACK DlgProcModal_config( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	switch( uMsg )
 	{
@@ -459,10 +494,10 @@ INT_PTR CALLBACK DlgProcModal( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 		return true;
 
 	case WM_COMMAND:
+
 		switch( LOWORD(wParam) )
 		{
 		case IDOK:
-			if(IsWindow(GetDlgItem(hWnd,IDC_REC)))	// this is Config dialog
 			{
 				int tmp = 0;
 				tmp = (BST_CHECKED==IsDlgButtonChecked(hWnd,IDC_REC)) ? 1 : 0 ;
@@ -497,7 +532,7 @@ INT_PTR CALLBACK DlgProcModal( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					//SwitchCPU_DC();
 					Start_DC();
 					//sh4_cpu->Run();
-					
+
 				}
 			}
 		case IDCANCEL:
@@ -518,7 +553,6 @@ INT_PTR CALLBACK DlgProcModal( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 
 	return false;
 }
-
 
 
 INT_PTR CALLBACK ChildDlgProc( HWND hChild, UINT uMsg, WPARAM wParam, LPARAM lParan )
@@ -1045,8 +1079,8 @@ void GetCurrent(HWND hw,char* dest)
 }
 void UpdateMapleSelections(HWND hw,HWND hWnd)
 {
-	int cs=ComboBox_GetCurSel(hw);
-	LRESULT new_port=ComboBox_GetItemData(hw,cs);
+	//int cs=TabCtrl_GetCurSel(hw);
+	LRESULT new_port=TabCtrl_GetCurSel(hw);//ComboBox_GetItemData(hw,cs);
 //	char temp[512];
 	
 	//save selected ones
@@ -1099,6 +1133,18 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 	case WM_INITDIALOG:
 		{
 
+		TCITEM tci; 
+		tci.mask = TCIF_TEXT | TCIF_IMAGE; 
+		tci.iImage = -1; 
+		tci.pszText = "Port A"; 
+		TabCtrl_InsertItem(GetDlgItem(hWnd,IDC_MAPLETAB), 0, &tci); 
+		tci.pszText = "Port B"; 
+		TabCtrl_InsertItem(GetDlgItem(hWnd,IDC_MAPLETAB), 1, &tci); 
+		tci.pszText = "Port C"; 
+		TabCtrl_InsertItem(GetDlgItem(hWnd,IDC_MAPLETAB), 2, &tci); 
+		tci.pszText = "Port D"; 
+		TabCtrl_InsertItem(GetDlgItem(hWnd,IDC_MAPLETAB), 3, &tci); 
+
 		current_maple_port=-1;
 		List<PluginLoadInfo>* pvr= EnumeratePlugins(PluginType::PowerVR);	
 		List<PluginLoadInfo>* gdrom= EnumeratePlugins(PluginType::GDRom);
@@ -1136,8 +1182,8 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB3),"NONE");
 		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB4),"NONE");
 		LoadMaple();
-		InitMaplePorts(GetDlgItem(hWnd,IDC_MAPLEPORT));
-		UpdateMapleSelections(GetDlgItem(hWnd,IDC_MAPLEPORT),hWnd);
+		InitMaplePorts(GetDlgItem(hWnd,IDC_MAPLETAB));
+		UpdateMapleSelections(GetDlgItem(hWnd,IDC_MAPLETAB),hWnd);
 		}
 		return true;
 		
@@ -1159,7 +1205,7 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			break;
 		case IDC_MAPLEPORT:
 			if (HIWORD(wParam)==CBN_SELCHANGE)
-				UpdateMapleSelections(GetDlgItem(hWnd,IDC_MAPLEPORT),hWnd);
+				UpdateMapleSelections(GetDlgItem(hWnd,IDC_MAPLETAB),hWnd);
 			break;
 
 		case IDC_C_EXTDEV:
@@ -1241,7 +1287,15 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		default: break;
 		}
 		return false;
-
+	case WM_NOTIFY:
+		{
+			if ( ((LPNMHDR)lParam)->idFrom==IDC_MAPLETAB && 
+				 ((LPNMHDR)lParam)->code == TCN_SELCHANGE  )
+			{
+				UpdateMapleSelections(GetDlgItem(hWnd,IDC_MAPLETAB),hWnd);
+			}
+			return true;
+		}
 	case WM_CLOSE:
 	case WM_DESTROY:
 		EndDialog(hWnd,0);

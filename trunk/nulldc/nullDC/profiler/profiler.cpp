@@ -27,7 +27,7 @@ void init_Profiler(void* param)
 	RunProfiler=true;
 
 	prof_thread = new cThread(ProfileThead,param);
-	//prof_thread->Start();
+	prof_thread->Start();
 }
 
 void term_Profiler()

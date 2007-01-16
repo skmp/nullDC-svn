@@ -509,7 +509,8 @@ bool ExecuteDelayslot()
 		return true;
 	}
 	//verify(sh4_exept_raised==false);
-	ExecuteOpcode(op);
+	if (op!=0)
+		ExecuteOpcode(op);
 	if(sh4_exept_raised==true)
 		exept_was_dslot=true;
 
@@ -523,6 +524,7 @@ bool ExecuteDelayslot_RTE()
 	u32 op=IReadMem16(pc);
 	sr.SetFull(ssr);
 	verify(sh4_exept_raised==false);
+	if (op!=0)
 	ExecuteOpcode(op);
 	verify(sh4_exept_raised==false);
 
