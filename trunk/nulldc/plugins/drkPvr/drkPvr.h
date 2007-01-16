@@ -1,4 +1,10 @@
 #pragma once
+#define REND_D3D  1
+#define REND_OGL  2
+#define REND_SW   3
+
+#define REND_API REND_D3D
+
 //bleh stupid windoze header
 #include "..\..\nullDC\plugins\plugin_header.h"
 #include <windows.h>
@@ -66,3 +72,16 @@ extern vramlock_Lock_32FP* lock32;
 extern vramlock_Lock_64FP* lock64;
 extern vramlock_Unlock_blockFP* unlock;*/
 extern pvr_init_params params;
+
+#if REND_API == REND_D3D
+	#define REND_NAME "Direct3D"
+	#define GetRenderer GetDirect3DRenderer
+#elif REND_API == REND_OGL
+	#define REND_NAME "OpenGL"
+	#define GetRenderer GetOpenGLRenderer
+#elif  REND_API == REND_SW
+	#define REND_NAME "Software TileEmu"
+	#define GetRenderer GetNullRenderer
+#else
+	#error invalid config.REND_API must be set with one of REND_D3D/REND_OGL/REND_SW
+#endif

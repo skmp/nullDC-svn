@@ -109,7 +109,7 @@ void WritePvrRegister(u32 addr,u32 data,u32 size)
 	if ((addr&RegMask)==STARTRENDER_addr)
 	{
 		//start render
-		renderer->StartRender();
+		rend_start_render();
 		//PrintfInfo();
 		//TODO : fix that mess -- now uses hacksync ;) later will be async too :P:P
 		
@@ -124,7 +124,7 @@ void WritePvrRegister(u32 addr,u32 data,u32 size)
 	{
 		if (data>>31)
 		{
-			renderer->Ta_ListInit();
+			rend_list_init();
 			data=0;
 		}
 	}
@@ -134,7 +134,7 @@ void WritePvrRegister(u32 addr,u32 data,u32 size)
 		if (data!=0)
 		{
 			if (data&1)
-				renderer->Ta_SoftReset();
+				rend_list_srst();
 			data=0;
 		}
 	}
@@ -142,11 +142,14 @@ void WritePvrRegister(u32 addr,u32 data,u32 size)
 	if ((addr&RegMask)==TA_LIST_CONT_addr)
 	{
 		//a write of anything works ?
-		renderer->Ta_ListCont();
+		rend_list_cont();
 	}
 
 	if ((addr&RegMask)>=PALETTE_RAM_START_addr)
+	{
 		pal_needs_update=true;
+		pal_rev++;
+	}
 	PvrReg(addr)=data;
 }
 

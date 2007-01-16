@@ -14,7 +14,8 @@ namespace TASplitter
 	bool ListIsFinished[5]={false,false,false,false,false};
 
 	//splitter function lookup
-	TaListFP* ta_poly_data_lut[15];
+	
+	u32 ta_type_lut[256];
 
 	//true if strip started :p
 	bool StripStarted=false;

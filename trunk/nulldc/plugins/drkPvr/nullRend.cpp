@@ -5,6 +5,7 @@
 #include "gl\gl.h"
 #include "regs.h"
 
+#if REND_API == REND_SW
 //SW rendering .. yay (?)
 namespace NullRenderer
 {
@@ -41,6 +42,9 @@ namespace NullRenderer
 			return;
 		FrameCount++;
 	}
+	void EndRender()
+	{
+	}
 
 	using namespace TASplitter;
 
@@ -63,19 +67,39 @@ namespace NullRenderer
 #define glob_param_bdc
 
 		__forceinline
-		static void AppendPolyParam32(TA_PolyParamA* pp)
+		static void fastcall AppendPolyParam0(TA_PolyParam0* pp)
 		{
 			glob_param_bdc;
 		}
 		__forceinline
-		static void AppendPolyParam64A(TA_PolyParamA* pp)
+		static void fastcall AppendPolyParam1(TA_PolyParam1* pp)
 		{
 			glob_param_bdc;
 		}
 		__forceinline
-		static void AppendPolyParam64B(TA_PolyParamB* pp)
+		static void fastcall AppendPolyParam2A(TA_PolyParam2A* pp)
 		{
-
+			glob_param_bdc;
+		}
+		__forceinline
+		static void fastcall AppendPolyParam2B(TA_PolyParam2B* pp)
+		{
+			
+		}
+		__forceinline
+		static void fastcall AppendPolyParam3(TA_PolyParam3* pp)
+		{
+			glob_param_bdc;
+		}
+		__forceinline
+		static void fastcall AppendPolyParam4A(TA_PolyParam4A* pp)
+		{
+			glob_param_bdc;
+		}
+		__forceinline
+		static void fastcall AppendPolyParam4B(TA_PolyParam4B* pp)
+		{
+		
 		}
 
 		//Poly Strip handling
@@ -90,8 +114,7 @@ namespace NullRenderer
 			
 		}
 
-			//Poly Vertex handlers
-
+		//Poly Vertex handlers
 #define vert_cvt_base VertexCount++;
 
 
@@ -308,7 +331,7 @@ namespace NullRenderer
 
 	FifoSplitter<VertexDecoder> TileAccel;
 
-	bool InitRenderer(void* window)
+	bool InitRenderer()
 	{
 		return TileAccel.Init();
 	}
@@ -325,7 +348,7 @@ namespace NullRenderer
 		FrameCount=0;
 	}
 
-	bool ThreadStart(void* window)
+	bool ThreadStart()
 	{
 		rth.Start();
 		return true;
@@ -336,29 +359,23 @@ namespace NullRenderer
 		rs.Set();
 		rth.WaitToEnd(0xFFFFFFFF);
 	}
+	void ListCont()
+	{
+		TileAccel.ListCont();
+	}
+	void ListInit()
+	{
+		TileAccel.ListInit();
+	}
+	void SoftReset()
+	{
+		TileAccel.SoftReset();
+	}
+	
+	void VramLockedWrite(vram_block* bl)
+	{
+		
+	}
 }
 
-//Get null i/f
-void GetNullRenderer(rend_if* rif)
-{
-	//general init/term/reset
-	rif->Init=NullRenderer::InitRenderer;
-	rif->Term=NullRenderer::TermRenderer;
-	rif->Reset=NullRenderer::ResetRenderer;
-	
-	//thread init/term
-	rif->ThreadStart=NullRenderer::ThreadStart;
-	rif->ThreadEnd=NullRenderer::ThreadEnd;
-
-	//drawing related functions :)
-	rif->VBlank=NullRenderer::VBlank;
-	rif->StartRender=NullRenderer::StartRender;
-	
-	//TA splitter i/f
-	rif->Ta_ListCont=NullRenderer::TileAccel.ListCont;
-	rif->Ta_ListInit=NullRenderer::TileAccel.ListInit;
-	rif->Ta_SoftReset=NullRenderer::TileAccel.SoftReset;
-
-//	rif->VertexCount=&NullRenderer::VertexCount;
-//	rif->FrameCount=&NullRenderer::FrameCount;
-}
+#endif

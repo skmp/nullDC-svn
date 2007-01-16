@@ -223,6 +223,14 @@
 				RelativePath=".\ta_alloc.h"
 				>
 			</File>
+			<File
+				RelativePath=".\ta_const_df.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ta_structs.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="spg"

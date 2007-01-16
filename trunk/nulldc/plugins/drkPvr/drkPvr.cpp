@@ -61,7 +61,8 @@ EXPORT void dcGetPluginInfo(plugin_info* info)
 void vramLockCB (vram_block* block,u32 addr)
 {
 	//rend_if_vram_locked_write(block,addr);
-	renderer->VramLockedWrite(block);
+	//renderer->VramLockedWrite(block);
+	rend_text_invl(block);
 }
 //Give to the emu pointers for the PowerVR interface
 EXPORT void dcGetPvrInfo(pvr_plugin_if* info)
@@ -92,7 +93,7 @@ void dcInitPvr(void* aparam,PluginType type)
 	//RaiseInterrupt=param->RaiseInterrupt;
 
 	memcpy(&params,param,sizeof(params));
-	SetRenderer(RendererType::Hw_D3d,params.WindowHandle);
+//	SetRenderer(RendererType::Hw_D3d,params.WindowHandle);
 
 	if ((!Regs_Init()))
 	{
@@ -102,7 +103,7 @@ void dcInitPvr(void* aparam,PluginType type)
 	{
 		//failed
 	}
-	if (!rend_if_Init())
+	if (!rend_init())
 	{
 		//failed
 	}
@@ -111,7 +112,7 @@ void dcInitPvr(void* aparam,PluginType type)
 //called when plugin is unloaded by emu , olny if dcInitPvr is called (eg , not called to enumerate plugins)
 void dcTermPvr(PluginType type)
 {
-	rend_if_Term();
+	rend_term();
 	spg_Term();
 	Regs_Term();
 }
@@ -121,21 +122,21 @@ void dcResetPvr(bool Manual,PluginType type)
 {
 	Regs_Reset(Manual);
 	spg_Reset(Manual);
-	rend_if_Reset(Manual);
+	rend_reset(Manual);
 }
 
 //called when entering sh4 thread , from the new thread context (for any thread speciacific init)
 void dcThreadInitPvr(PluginType type)
 {
 	//olny the renderer cares about thread speciacific shit ..
-	rend_if_ThreadInit();
+	rend_thread_start();
 }
 
 //called when exiting from sh4 thread , from the new thread context (for any thread speciacific de init) :P
 void dcThreadTermPvr(PluginType type)
 {
 	//olny the renderer cares about thread speciacific shit ..
-	rend_if_ThreadTerm();
+	rend_thread_end();
 }
 
 //Helper functions

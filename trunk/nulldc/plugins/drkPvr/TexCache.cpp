@@ -47,6 +47,7 @@ u8* vq_codebook;
 u32 palette_index;
 u32 palette_lut[1024];
 bool pal_needs_update=true;
+u32 pal_rev=0;
 void palette_update()
 {
 	if (pal_needs_update==false)

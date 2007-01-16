@@ -33,7 +33,7 @@ void spgUpdatePvr(u32 cycles)
 			params.RaiseInterrupt(InterruptID::holly_RENDER_DONE);
 			params.RaiseInterrupt(InterruptID::holly_RENDER_DONE_isp);
 			params.RaiseInterrupt(InterruptID::holly_RENDER_DONE_vd);
-			renderer->EndRender();
+			rend_end_render();
 		}
 		render_end_pending_cycles-=cycles;
 	}
@@ -93,7 +93,7 @@ void spgUpdatePvr(u32 cycles)
 			vblk_cnt++;
 			params.RaiseInterrupt(InterruptID::holly_HBLank);// -> This turned out to be HBlank btw , needs to be emulater ;(
 			//TODO : rend_if_VBlank();
-			renderer->VBlank();//notify for vblank :)
+			rend_vblank();//notify for vblank :)
 
 			if ((timeGetTime()-last_fps)>800)
 			{
