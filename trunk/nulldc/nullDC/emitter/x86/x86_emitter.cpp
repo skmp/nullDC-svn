@@ -51,10 +51,12 @@ void* dyna_finalize(void* ptr,u32 oldsize,u32 newsize);
 //x86_block
 //init things
 
+#ifdef X86_OP_NAMES
 const char Names[op_count][64] =
 {
 	#include "generated_class_names_string.h"
 };
+#endif
 
 
 void* x86_Label::GetPtr()
@@ -64,7 +66,11 @@ void* x86_Label::GetPtr()
 
 const char* DissasmClass(x86_opcode_class opcode)
 {
+	#ifdef X86_OP_NAMES
 	return Names[opcode];
+	#else
+	return "No opcode name info included";
+	#endif
 }
 void x86_block::Init()
 {
