@@ -12,6 +12,8 @@
 #define MAJOR 1
 
 #define DCclock (200*1000*1000)
+extern aica_init_params params;
+extern emu_info emu;
 
 //called when plugin is used by emu (you should do first time init here)
 void dcInit(void* param,PluginType type);

@@ -24,15 +24,13 @@ u32 sh4_cycles;
 CArm7* g_pArm7 = NULL;
 
 HWND g_hWnd;
-RaiseInterruptFP* Sh4RaiseInterrupt;
-CDDA_SectorFP*	get_cdda;
-u32* SB_ISTEXT;
+
 
 u32 g_videoCableType=2;
 
 #include "aica\arm7Memory.h"
 
-u32 ReadMem_reg(u32 addr,u32 size)
+u32 FASTCALL ReadMem_reg(u32 addr,u32 size)
 {
 	DWORD uAddressAux = addr&SH4Memory_MASK;
 	switch(size)
@@ -50,7 +48,7 @@ u32 ReadMem_reg(u32 addr,u32 size)
 
 	return 0;
 }
-void WriteMem_reg(u32 addr,u32 data,u32 size)
+void FASTCALL WriteMem_reg(u32 addr,u32 data,u32 size)
 {
 	DWORD uAddressAux = addr&SH4Memory_MASK;
 	switch(size)
@@ -68,6 +66,7 @@ void WriteMem_reg(u32 addr,u32 data,u32 size)
 	
 }
 
+/*
 u32 ReadMem_ram(u32 addr,u32 size)
 {
 	DWORD uData;
@@ -117,7 +116,8 @@ void WriteMem_ram(u32 addr,u32 data,u32 size)
 	}
 }
 
-void UpdateSystem(u32 Cycles)
+*/
+void FASTCALL UpdateSystem(u32 Cycles)
 {
 	sh4_cycles+=Cycles;
 	g_pArm7->BlockStepArm7(Cycles/(8*ARM7BIAS));
@@ -125,13 +125,13 @@ void UpdateSystem(u32 Cycles)
 }
 
 void InitArm7Memory();
-void InitARM7(void* winh)
+void InitARM7()
 {
-  g_hWnd=(HWND)winh;
-  g_pArm7 = NEW(CArm7);
-  InitArm7Memory();
-  g_pArm7->Init();
-  AicaInit();
+	g_hWnd=(HWND)emu.WindowHandle;
+	g_pArm7 = NEW(CArm7);
+	InitArm7Memory();
+	g_pArm7->Init();
+	AicaInit();
 }
 void TerminateARM7()
 {

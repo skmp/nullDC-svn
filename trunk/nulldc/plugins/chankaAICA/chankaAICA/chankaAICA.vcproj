@@ -46,7 +46,7 @@
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="3"
 				BufferSecurityCheck="false"
-				EnableEnhancedInstructionSet="0"
+				EnableEnhancedInstructionSet="1"
 				FloatingPointModel="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -68,6 +68,7 @@
 				OutputFile="$(SolutionDir)\WorkDir\Plugins\$(ProjectName)_$(PlatformName).dll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;C:\Program Files\Microsoft DirectX SDK (April 2006)\Lib\x86&quot;"
+				ModuleDefinitionFile="exports.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
@@ -124,8 +125,9 @@
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="&quot;C:\Program Files\Microsoft DirectX SDK (April 2006)\Include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;CHANKAAICA_EXPORTS;_VERSION_FINAL"
+				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
-				EnableEnhancedInstructionSet="0"
+				EnableEnhancedInstructionSet="1"
 				FloatingPointModel="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -147,6 +149,7 @@
 				OutputFile="$(SolutionDir)\WorkDir\Plugins\$(ProjectName)_$(PlatformName).dll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;C:\Program Files\Microsoft DirectX SDK (April 2006)\Lib\x86&quot;"
+				ModuleDefinitionFile="exports.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -191,6 +194,10 @@
 			</File>
 			<File
 				RelativePath=".\chankaAICA.h"
+				>
+			</File>
+			<File
+				RelativePath=".\exports.def"
 				>
 			</File>
 		</Filter>

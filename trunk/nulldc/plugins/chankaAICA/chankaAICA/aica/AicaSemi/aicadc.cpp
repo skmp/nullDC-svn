@@ -1,5 +1,5 @@
 /*	
-	Dreamcast AICA Emulation
+	Dreamcast AICA_s Emulation
 */
 
 #include "..\stdafx.h"
@@ -209,20 +209,20 @@ struct _SLOT
 	unsigned int ADStep;
 };
 
-#define MEM4B(AICA)		((AICA.data[0]>>0x0)&0x0200)
-#define DAC18B(AICA)	((AICA.data[0]>>0x0)&0x0100)
-#define MVOL(AICA)		((AICA.data[0]>>0x0)&0x000F)
-#define RBL(AICA)		((AICA.data[1]>>0x7)&0x0003)
-#define RBP(AICA)		((AICA.data[1]>>0x0)&0x003F)
-#define MOFULL(AICA)	((AICA.data[2]>>0x0)&0x1000)
-#define MOEMPTY(AICA)	((AICA.data[2]>>0x0)&0x0800)
-#define MIOVF(AICA)		((AICA.data[2]>>0x0)&0x0400)
-#define MIFULL(AICA)	((AICA.data[2]>>0x0)&0x0200)
-#define MIEMPTY(AICA)	((AICA.data[2]>>0x0)&0x0100)
+#define MEM4B(AICA_s)		((AICA_s.data[0]>>0x0)&0x0200)
+#define DAC18B(AICA_s)	((AICA_s.data[0]>>0x0)&0x0100)
+#define MVOL(AICA_s)		((AICA_s.data[0]>>0x0)&0x000F)
+#define RBL(AICA_s)		((AICA_s.data[1]>>0x7)&0x0003)
+#define RBP(AICA_s)		((AICA_s.data[1]>>0x0)&0x003F)
+#define MOFULL(AICA_s)	((AICA_s.data[2]>>0x0)&0x1000)
+#define MOEMPTY(AICA_s)	((AICA_s.data[2]>>0x0)&0x0800)
+#define MIOVF(AICA_s)		((AICA_s.data[2]>>0x0)&0x0400)
+#define MIFULL(AICA_s)	((AICA_s.data[2]>>0x0)&0x0200)
+#define MIEMPTY(AICA_s)	((AICA_s.data[2]>>0x0)&0x0100)
 
-#define SCILV0(AICA)    ((AICA.data[0x24/2]>>0x0)&0xff)
-#define SCILV1(AICA)    ((AICA.data[0x26/2]>>0x0)&0xff)
-#define SCILV2(AICA)    ((AICA.data[0x28/2]>>0x0)&0xff)
+#define SCILV0(AICA_s)    ((AICA_s.data[0x24/2]>>0x0)&0xff)
+#define SCILV1(AICA_s)    ((AICA_s.data[0x26/2]>>0x0)&0xff)
+#define SCILV2(AICA_s)    ((AICA_s.data[0x28/2]>>0x0)&0xff)
 
 #define SCIEX0	0
 #define SCIEX1	1
@@ -244,26 +244,26 @@ static struct _AICA
 	unsigned char BUFPTR;
 	unsigned char *AICARAM;	
 	char Master;
-} AICA;
+} AICA_s;
 
 
 unsigned char DecodeSCI(unsigned char irq)
 {
 	unsigned char SCI=0;
 	unsigned char v;
-	v=(SCILV0((AICA))&(1<<irq))?1:0;
+	v=(SCILV0((AICA_s))&(1<<irq))?1:0;
 	SCI|=v;
-	v=(SCILV1((AICA))&(1<<irq))?1:0;
+	v=(SCILV1((AICA_s))&(1<<irq))?1:0;
 	SCI|=v<<1;
-	v=(SCILV2((AICA))&(1<<irq))?1:0;
+	v=(SCILV2((AICA_s))&(1<<irq))?1:0;
 	SCI|=v<<2;
 	return SCI;
 }
 
 void CheckPendingIRQ()
 {
-	DWORD pend=AICA.data[0x20/2];
-	DWORD en=AICA.data[0x1e/2];
+	DWORD pend=AICA_s.data[0x20/2];
+	DWORD en=AICA_s.data[0x1e/2];
 	/*if(pend&0x8)
 		if(en&0x8)
 		{
@@ -489,7 +489,7 @@ signed short DecodeADPCM(float &m_fLastValue,unsigned char Delta,float &m_fQuant
 void AICA_StartSlot(_SLOT *slot)
 {
 	slot->active=1;
-	slot->base=AICA.AICARAM+SA(slot);
+	slot->base=AICA_s.AICARAM+SA(slot);
 	slot->cur_addr=0;
 	slot->step=AICA_Step(slot);	
 	Compute_EG(slot);
@@ -533,7 +533,7 @@ void AICA_StopSlot(_SLOT *slot,int keyoff)
 void AICA_Init(int SampleRate)
 {
 	srate=SampleRate;
-	memset(&AICA,0,sizeof(AICA));
+	memset(&AICA_s,0,sizeof(AICA_s));
 	RevR=0;
 	RevW=REVERB_DIF;
 	memset(bufferrevl,0,sizeof(bufferrevl));
@@ -663,7 +663,7 @@ void AICA_Init(int SampleRate)
 #error No ENVMODE Set
 #endif
 	for(int i=0;i<64;++i)
-		AICA.Slots[i].slot=i;
+		AICA_s.Slots[i].slot=i;
 
 	LFO_Init();
 	buffertmpl=(signed int*) malloc(44100*sizeof(signed int)*2);
@@ -674,17 +674,17 @@ void AICA_Init(int SampleRate)
 
 void AICA_SetRAM(unsigned char *r,unsigned char *regs)
 {
-	AICA.AICARAM=r;
-	AICA.datab=regs+0x2800;
+	AICA_s.AICARAM=r;
+	AICA_s.datab=regs+0x2800;
 	for(int i=0;i<64;++i)
 	{
-		AICA.Slots[i].datab=regs+0x0000+128*i;
+		AICA_s.Slots[i].datab=regs+0x0000+128*i;
 	}
 }
 
 void AICA_UpdateSlotReg(int s,int r)
 {
-	_SLOT *slot=AICA.Slots+s;
+	_SLOT *slot=AICA_s.Slots+s;
 	switch(r&0x3f)
 	{
 		case 0:
@@ -693,7 +693,7 @@ void AICA_UpdateSlotReg(int s,int r)
 			{
 				for(int sl=0;sl<64;++sl)
 				{
-					_SLOT *s2=AICA.Slots+sl;
+					_SLOT *s2=AICA_s.Slots+sl;
 					//if(s2->EG.state!=RELEASE)
 					{
 						if(KEYONB(s2) && (!s2->active || (s2->active && s2->EG.state==RELEASE)))
@@ -759,33 +759,33 @@ void AICA_UpdateReg(int reg)
 			break;
 		case 0x18:
 		case 0x19:
-			if(AICA.Master)	
+			if(AICA_s.Master)	
 			{
-				TimPris[0]=1<<((AICA.data[0x18/2]>>8)&0x7);
-				TimCnt[0]=((AICA.data[0x18/2]&0xff)<<8)|(TimCnt[0]&0xff);
+				TimPris[0]=1<<((AICA_s.data[0x18/2]>>8)&0x7);
+				TimCnt[0]=((AICA_s.data[0x18/2]&0xff)<<8)|(TimCnt[0]&0xff);
 			}
 			break;
 		case 0x1a:
 		case 0x1b:
-			if(AICA.Master)	
+			if(AICA_s.Master)	
 			{
-				TimPris[1]=1<<((AICA.data[0x1A/2]>>8)&0x7);
-				TimCnt[1]=((AICA.data[0x1A/2]&0xff)<<8)|(TimCnt[1]&0xff);
+				TimPris[1]=1<<((AICA_s.data[0x1A/2]>>8)&0x7);
+				TimCnt[1]=((AICA_s.data[0x1A/2]&0xff)<<8)|(TimCnt[1]&0xff);
 			}
 			break;
 		case 0x1C:
 		case 0x1D:
-			if(AICA.Master)	
+			if(AICA_s.Master)	
 			{
-				TimPris[2]=1<<((AICA.data[0x1C/2]>>8)&0x7);
-				TimCnt[2]=((AICA.data[0x1C/2]&0xff)<<8)|(TimCnt[2]&0xff);
+				TimPris[2]=1<<((AICA_s.data[0x1C/2]>>8)&0x7);
+				TimCnt[2]=((AICA_s.data[0x1C/2]&0xff)<<8)|(TimCnt[2]&0xff);
 			}
 			break;
 		case 0x22:	//SCIRE
 		case 0x23:
-			if(AICA.Master)	
+			if(AICA_s.Master)	
 			{
-				AICA.data[0x20/2]&=~AICA.data[0x22/2];
+				AICA_s.data[0x20/2]&=~AICA_s.data[0x22/2];
 				CheckPendingIRQ();
 			}
 			break;
@@ -795,7 +795,7 @@ void AICA_UpdateReg(int reg)
 		case 0x27:
 		case 0x28:
 		case 0x29:
-			if(AICA.Master)
+			if(AICA_s.Master)
 			{
 				IrqTimA=DecodeSCI(SCITMA);
 				IrqTimBC=DecodeSCI(SCITMB);
@@ -817,7 +817,7 @@ void AICA_UpdateRegR(int reg)
 		case 4:
 		case 5:
 			{
-				unsigned short v=AICA.data[0x5/2];
+				unsigned short v=AICA_s.data[0x5/2];
 				v&=0xff00;
 				v|=MidiStack[MidiR];
 				if(MidiR!=MidiW)
@@ -827,16 +827,16 @@ void AICA_UpdateRegR(int reg)
 					//Int68kCB(IrqMidi);
 				}
 				MidiInFill--;
-				AICA.data[0x5/2]=v;
+				AICA_s.data[0x5/2]=v;
 			}
 			break;
 		case 8:
 		case 9:
 			{
-				unsigned char slot=AICA.data[0x8/2]>>11;	
-				unsigned int CA=AICA.Slots[slot&0x3f].cur_addr>>(SHIFT+12);
-				AICA.data[0x8/2]&=~(0x780);
-				AICA.data[0x8/2]|=CA<<7;
+				unsigned char slot=AICA_s.data[0x8/2]>>11;	
+				unsigned int CA=AICA_s.Slots[slot&0x3f].cur_addr>>(SHIFT+12);
+				AICA_s.data[0x8/2]&=~(0x780);
+				AICA_s.data[0x8/2]|=CA<<7;
 			}
 			break;
 	}
@@ -851,12 +851,12 @@ void AICA_w8(unsigned int addr,unsigned char val)
 		int slot=addr/0x20;
 		addr&=0x1f;
 		ErrorLogMessage("Slot %02X Reg %02X write byte %04X",slot,addr,val);
-		*((unsigned char *) (AICA.Slots[slot].datab+(addr^1))) = val;
+		*((unsigned char *) (AICA_s.Slots[slot].datab+(addr^1))) = val;
 		AICA_UpdateSlotReg(slot,addr&0x1f);
 	}
 	else if(addr<0x600)
 	{
-		*((unsigned char *) (AICA.datab+((addr&0xff)^1))) = val;
+		*((unsigned char *) (AICA_s.datab+((addr&0xff)^1))) = val;
 		AICA_UpdateReg(addr&0xff);
 	}	
 	else
@@ -871,12 +871,12 @@ void AICA_w16(unsigned int addr,unsigned short val)
 		int slot=addr/0x20;
 		addr&=0x1f;
 		ErrorLogMessage("Slot %02X Reg %02X write word %04X",slot,addr,val);
-		*((unsigned short *) (AICA.Slots[slot].datab+(addr))) = val;
+		*((unsigned short *) (AICA_s.Slots[slot].datab+(addr))) = val;
 		AICA_UpdateSlotReg(slot,addr&0x1f);
 	}
 	else if(addr<0x600)
 	{
-		*((unsigned short *) (AICA.datab+((addr&0xff)))) = val;
+		*((unsigned short *) (AICA_s.datab+((addr&0xff)))) = val;
 		AICA_UpdateReg(addr&0xff);
 	}	
 	else
@@ -893,14 +893,14 @@ void AICA_w32(unsigned int addr,unsigned int val)
 		addr&=0x1f;
 		ErrorLogMessage("Slot %02X Reg %02X write dword %08X",slot,addr,val);
 		_asm rol val,16
-		*((unsigned int *) (AICA.Slots[slot].datab+(addr))) = val;
+		*((unsigned int *) (AICA_s.Slots[slot].datab+(addr))) = val;
 		AICA_UpdateSlotReg(slot,addr&0x1f);
 		AICA_UpdateSlotReg(slot,(addr&0x1f)+2);
 	}
 	else if(addr<0x600)
 	{
 		_asm rol val,16
-		*((unsigned int *) (AICA.datab+((addr&0xff)))) = val;
+		*((unsigned int *) (AICA_s.datab+((addr&0xff)))) = val;
 		AICA_UpdateReg(addr&0xff);
 		AICA_UpdateReg((addr&0xff)+2);
 	}	
@@ -920,14 +920,14 @@ unsigned char AICA_r8(unsigned int addr)
 		addr&=0x1f;
 		AICA_UpdateSlotRegR(slot,addr&0x1f);
 		
-		v=*((unsigned char *) (AICA.Slots[slot].datab+(addr^1)));
+		v=*((unsigned char *) (AICA_s.Slots[slot].datab+(addr^1)));
 		ErrorLogMessage("Slot %02X Reg %02X Read byte %02X",slot,addr,v);
 	}
 	else if(addr<0x600)
 	{
 		AICA_UpdateRegR(addr&0xff);
-		v= *((unsigned char *) (AICA.datab+((addr&0xff)^1)));
-		//ErrorLogMessage("AICA Reg %02X Read byte %02X",addr&0xff,v);		
+		v= *((unsigned char *) (AICA_s.datab+((addr&0xff)^1)));
+		//ErrorLogMessage("AICA_s Reg %02X Read byte %02X",addr&0xff,v);		
 	}	
 	else if(addr<0x700)
 		v=0;
@@ -943,14 +943,14 @@ unsigned short AICA_r16(unsigned int addr)
 		int slot=addr/0x20;
 		addr&=0x1f;
 		AICA_UpdateSlotRegR(slot,addr&0x1f);
-		v=*((unsigned short *) (AICA.Slots[slot].datab+(addr)));
+		v=*((unsigned short *) (AICA_s.Slots[slot].datab+(addr)));
 		ErrorLogMessage("Slot %02X Reg %02X Read word %04X",slot,addr,v);
 	}
 	else if(addr<0x600)
 	{
 		AICA_UpdateRegR(addr&0xff);
-		v= *((unsigned short *) (AICA.datab+((addr&0xff))));
-		//ErrorLogMessage("AICA Reg %02X Read word %04X",addr&0xff,v);
+		v= *((unsigned short *) (AICA_s.datab+((addr&0xff))));
+		//ErrorLogMessage("AICA_s Reg %02X Read word %04X",addr&0xff,v);
 	}	
 	return v;
 }
@@ -972,7 +972,7 @@ void AICA_TimersAddTicks2(int ticks)
 		
 		if(!TimPris[0])
 		{
-			//cnt=AICA.data[0x18/2]&0xff;
+			//cnt=AICA_s.data[0x18/2]&0xff;
 			cnt=TimCnt[0];
 			if(cnt==0xffff)
 				goto noTA;
@@ -980,18 +980,18 @@ void AICA_TimersAddTicks2(int ticks)
 			++TimCnt[0];
 			if(cnt>=TIMER_LIMITSA)
 			{
-				/*if((AICA.data[0x20/2]&AICA.data[0x1e/2])&0x40)	//timer pending ack
+				/*if((AICA_s.data[0x20/2]&AICA_s.data[0x1e/2])&0x40)	//timer pending ack
 					int a=1;*/
-				AICA.data[0x20/2]|=0x40;
-				/*if(AICA.data[0x1e/2]&0x40)
+				AICA_s.data[0x20/2]|=0x40;
+				/*if(AICA_s.data[0x1e/2]&0x40)
 					Int68kCB(IrqTimA);*/
 				cnt=0xff;
 				TimCnt[0]=0xffff;
 			}
-			step=1<<((AICA.data[0x18/2]>>8)&0x7);
+			step=1<<((AICA_s.data[0x18/2]>>8)&0x7);
 			TimPris[0]=step;
-			AICA.data[0x18/2]&=0xff00;
-			AICA.data[0x18/2]|=cnt;
+			AICA_s.data[0x18/2]&=0xff00;
+			AICA_s.data[0x18/2]|=cnt;
 		}
 //		else
 			TimPris[0]--;
@@ -1001,7 +1001,7 @@ noTA:
 		
 		if(!TimPris[1])
 		{
-			//cnt=AICA.data[0x1a/2]&0xff;
+			//cnt=AICA_s.data[0x1a/2]&0xff;
 			cnt=TimCnt[1];
 			if(cnt==0xffff)
 				goto noTB;
@@ -1009,18 +1009,18 @@ noTA:
 			++TimCnt[1];
 			if(cnt>=TIMER_LIMITSB)
 			{
-				/*if((AICA.data[0x20/2]&AICA.data[0x1e/2])&0x80)	//timer pending ack
+				/*if((AICA_s.data[0x20/2]&AICA_s.data[0x1e/2])&0x80)	//timer pending ack
 					int a=1;*/
-				AICA.data[0x20/2]|=0x80;
-				/*if(AICA.data[0x1e/2]&0x80)
+				AICA_s.data[0x20/2]|=0x80;
+				/*if(AICA_s.data[0x1e/2]&0x80)
 					Int68kCB(IrqTimBC);*/
 				cnt=0xff;
 				TimCnt[1]=0xffff;
 			}
-			step=1<<((AICA.data[0x1a/2]>>8)&0x7);
+			step=1<<((AICA_s.data[0x1a/2]>>8)&0x7);
 			TimPris[1]=step;
-			AICA.data[0x1a/2]&=0xff00;
-			AICA.data[0x1a/2]|=cnt;
+			AICA_s.data[0x1a/2]&=0xff00;
+			AICA_s.data[0x1a/2]|=cnt;
 		}
 //		else
 			TimPris[1]--;
@@ -1030,7 +1030,7 @@ noTB:
 		
 		if(!TimPris[2])
 		{
-			//cnt=AICA.data[0x1c/2]&0xff;
+			//cnt=AICA_s.data[0x1c/2]&0xff;
 			cnt=TimCnt[2];
 			if(cnt==0xffff)
 				goto noTC;
@@ -1038,18 +1038,18 @@ noTB:
 			++TimCnt[2];
 			if(cnt>=TIMER_LIMITSC)
 			{
-				/*if((AICA.data[0x20/2]&AICA.data[0x1e/2])&0x100)	//timer pending ack
+				/*if((AICA_s.data[0x20/2]&AICA_s.data[0x1e/2])&0x100)	//timer pending ack
 					int a=1;*/
-				AICA.data[0x20/2]|=0x100;
-				/*if(AICA.data[0x1e/2]&0x100)
+				AICA_s.data[0x20/2]|=0x100;
+				/*if(AICA_s.data[0x1e/2]&0x100)
 					Int68kCB(IrqTimBC);*/
 				cnt=0xff;
 				TimCnt[2]=0xffff;
 			}
-			step=1<<((AICA.data[0x1c/2]>>8)&0x7);
+			step=1<<((AICA_s.data[0x1c/2]>>8)&0x7);
 			TimPris[2]=step;
-			AICA.data[0x1c/2]&=0xff00;
-			AICA.data[0x1c/2]|=cnt;
+			AICA_s.data[0x1c/2]&=0xff00;
+			AICA_s.data[0x1c/2]|=cnt;
 		}
 //		else
 			TimPris[2]--;
@@ -1061,37 +1061,37 @@ void AICA_TimersAddTicks(int ticks)
 {
 	if(TimCnt[0]<=0xff00)
 	{
-		TimCnt[0]+=ticks << (8-((AICA.data[0x18/2]>>8)&0x7));
+		TimCnt[0]+=ticks << (8-((AICA_s.data[0x18/2]>>8)&0x7));
 		if (TimCnt[0] > 0xFE00)
 		{
 			TimCnt[0] = 0xFFFF;
-			AICA.data[0x20/2]|=0x40;
+			AICA_s.data[0x20/2]|=0x40;
 		}
-		AICA.data[0x18/2]&=0xff00;
-		AICA.data[0x18/2]|=TimCnt[0]>>8;
+		AICA_s.data[0x18/2]&=0xff00;
+		AICA_s.data[0x18/2]|=TimCnt[0]>>8;
 	}
 	if(TimCnt[1]<=0xff00)
 	{
-		TimCnt[1]+=ticks << (8-((AICA.data[0x1a/2]>>8)&0x7));
+		TimCnt[1]+=ticks << (8-((AICA_s.data[0x1a/2]>>8)&0x7));
 		if (TimCnt[1] > 0xFE00)
 		{
 			TimCnt[1] = 0xFFFF;
-			AICA.data[0x20/2]|=0x80;
+			AICA_s.data[0x20/2]|=0x80;
 		}
-		AICA.data[0x1a/2]&=0xff00;
-		AICA.data[0x1a/2]|=TimCnt[1]>>8;
+		AICA_s.data[0x1a/2]&=0xff00;
+		AICA_s.data[0x1a/2]|=TimCnt[1]>>8;
 
 	}
 	if(TimCnt[2]<=0xff00)
 	{
-		TimCnt[2]+=ticks << (8-((AICA.data[0x1c/2]>>8)&0x7));
+		TimCnt[2]+=ticks << (8-((AICA_s.data[0x1c/2]>>8)&0x7));
 		if (TimCnt[2] > 0xFE00)
 		{
 			TimCnt[2] = 0xFFFF;
-			AICA.data[0x20/2]|=0x100;
+			AICA_s.data[0x20/2]|=0x100;
 		}
-		AICA.data[0x1c/2]&=0xff00;
-		AICA.data[0x1c/2]|=TimCnt[2]>>8;
+		AICA_s.data[0x1c/2]&=0xff00;
+		AICA_s.data[0x1c/2]|=TimCnt[2]>>8;
 	}
 
 }
@@ -1286,9 +1286,9 @@ void AICA_DoSamples(int nsamples)
 //		if(sl==0x15)
 //			continue;
 
-		if(AICA.Slots[sl].active)
+		if(AICA_s.Slots[sl].active)
 		{
-			_SLOT *slot=AICA.Slots+sl;
+			_SLOT *slot=AICA_s.Slots+sl;
 			unsigned int disdl=DISDL(slot);
 			unsigned int efsdl=EFSDL(slot);
 			unsigned int tl=TL(slot);
@@ -1343,7 +1343,7 @@ void AICA_DoSamples(int nsamples)
 		if (SAMPLES_PER_SECTOR == buffer_pos)
 		{
 			buffer_pos=0;
-			get_cdda(cdda_data);
+			params.CDDA_Sector(cdda_data);
 		}
 		*bufl=ICLIP16(smpl + cdda_data[buffer_pos]);
 		buffer_pos++;
@@ -1496,9 +1496,9 @@ void AICA_DoSamples(int nsamples)
 
 		for(int sl=0;sl<64;++sl)
 		{
-			if(AICA.Slots[sl].active)
+			if(AICA_s.Slots[sl].active)
 			{
-				_SLOT *slot=AICA.Slots+sl;
+				_SLOT *slot=AICA_s.Slots+sl;
 				signed int sample=0;
 				//if(sl==0x6)
 					sample=AICA_UpdateSlot(slot);
@@ -1547,7 +1547,7 @@ void AICA_MidiIn(BYTE val)
 	MidiW&=7;
 	MidiInFill++;
 	//Int68kCB(IrqMidi);
-//	AICA.data[0x20/2]|=0x8;
+//	AICA_s.data[0x20/2]|=0x8;
 }
 
 void AICA_MidiOutW(BYTE val)
@@ -1584,7 +1584,7 @@ unsigned char AICA_MidiInFill()
 
 void AICA_RTECheck()
 {
-/*	unsigned short pend=AICA.data[0x20/2]&0xfff;
+/*	unsigned short pend=AICA_s.data[0x20/2]&0xfff;
 	if(pend)
 	{
 		if(pend&0x40)
@@ -1625,5 +1625,5 @@ void AICA_SetBuffers(signed short *l,signed short *r)
 
 unsigned int AICA_GetPlayPos(int slot)
 {
-	return AICA.Slots[slot&0x3f].cur_addr>>SHIFT;
+	return AICA_s.Slots[slot&0x3f].cur_addr>>SHIFT;
 }

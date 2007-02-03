@@ -136,7 +136,7 @@ DWORD TAICA::UpdateTimer(DWORD uCycles, const DWORD TIMER_RW_32, const DWORD BIT
 		if (HW_REG_LONG(ARM_MCIEB_RW_32) & BIT_TIMER_ON)
 		{		
 	    //TSH4_ASIC::EventCompleted(TSH4_ASIC::ASIC_EVT_SPU_IRQ);			
-			Sh4RaiseInterrupt(InterruptID::holly_SPU_IRQ);
+			params.RaiseInterrupt(InterruptID::holly_SPU_IRQ);
 		}
 	}
 
@@ -555,7 +555,7 @@ void TestAddress(const DWORD uAddress,const DWORD uData)
      // DWORD uEvent = TSH4_ASIC::ASIC_EVT_SPU_IRQ;
 	 //pAddress[(uEvent>>8)&0xff] &= ~(1<<(uEvent&0xff));    
 	u32 Interrupt = (u32)(1 << ((((u32)InterruptID::holly_SPU_IRQ & (u32)InterruptIDMask))));
-	*SB_ISTEXT&=~Interrupt;
+	*params.SB_ISTEXT&=~Interrupt;
     }
   }
   else if (uAddress == TAICA::ARM_SCIRE_W_32)
@@ -583,7 +583,7 @@ void AICAWriteDword(const DWORD uAddress, const DWORD _uData)
 		if (uData&0x20)
 		{
 			//TSH4_ASIC::EventCompleted(TSH4_ASIC::ASIC_EVT_SPU_IRQ);
-			Sh4RaiseInterrupt(InterruptID::holly_SPU_IRQ);
+			params.RaiseInterrupt(InterruptID::holly_SPU_IRQ);
 		}						
 	}
 
@@ -649,7 +649,7 @@ void AICAWriteWord(const DWORD uAddress, const WORD _uData)
 		if (uData&0x20)
 		{
 			//TSH4_ASIC::EventCompleted(TSH4_ASIC::ASIC_EVT_SPU_IRQ);
-			Sh4RaiseInterrupt(InterruptID::holly_SPU_IRQ);
+			params.RaiseInterrupt(InterruptID::holly_SPU_IRQ);
 		}						
 	}
   else if(uAddress == TAICA::ARM_RESET_RW_32)
@@ -705,7 +705,7 @@ void AICAWriteByte(const DWORD uAddress, const BYTE _uData)
 		if (uData&0x20)
 		{
 			//TSH4_ASIC::EventCompleted(TSH4_ASIC::ASIC_EVT_SPU_IRQ);
-			Sh4RaiseInterrupt(InterruptID::holly_SPU_IRQ);
+			params.RaiseInterrupt(InterruptID::holly_SPU_IRQ);
 		}						
 	}
   else if(uAddress == TAICA::ARM_RESET_RW_32)
