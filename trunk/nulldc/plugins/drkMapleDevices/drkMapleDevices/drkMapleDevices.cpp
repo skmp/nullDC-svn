@@ -4,6 +4,7 @@
 #include "..\..\..\nullDC\plugins\plugin_header.h"
 #include <memory.h>
 
+emu_info host;
 #ifdef UNICODE
 #undef UNICODE
 #endif
@@ -292,20 +293,23 @@ void cfgdlg(PluginType type,void* window)
 {
 	printf("ndcMAPLE :No config kthx\n");
 }//called when plugin is used by emu (you should do first time init here)
-void* handle;
+
 void Init_kb_map();
-void dcInitPvr(void* aparam,PluginType type)
+s32 FASTCALL Load(emu_info* emu)
 {
-	maple_init_params* mpi=(maple_init_params*)aparam;
-	handle=mpi->WindowHandle;
-	oldptr = (dlgp*)SetWindowLongPtr((HWND)handle,GWL_WNDPROC,(LONG)sch);
+	memcpy(&host,emu,sizeof(host));
+	//maple_init_params* mpi=(maple_init_params*)aparam;
+	//handle=mpi->WindowHandle;
+	oldptr = (dlgp*)SetWindowLongPtr((HWND)host.WindowHandle,GWL_WNDPROC,(LONG)sch);
 	Init_kb_map();
+
+	return rv_ok;
 }
 
 //called when plugin is unloaded by emu , olny if dcInitPvr is called (eg , not called to enumerate plugins)
-void dcTermPvr(PluginType type)
+void FASTCALL  Unload()
 {
-	SetWindowLongPtr((HWND)handle,GWL_WNDPROC,(LONG)oldptr);
+	SetWindowLongPtr((HWND)host.WindowHandle,GWL_WNDPROC,(LONG)oldptr);
 }
 
 //It's suposed to reset anything but vram (vram is set to 0 by emu)
@@ -418,8 +422,11 @@ void Init_kb_map()
 		//8C-FF Not used 
 }
 //Give to the emu info for the plugin type
-EXPORT void dcGetPluginInfo(plugin_info* info)
+void EXPORT_CALL dcGetPluginInfo(plugin_info* info)
 {
+	info->InterfaceVersion=PLUGIN_I_F_VERSION;
+	info->count=2;
+	/*
 	info->InterfaceVersion.full=PLUGIN_I_F_VERSION;
 	sprintf(info->Name,"ndcMaple");
 	info->PluginVersion.full=NDC_MakeVersion(1,2,3);
@@ -434,6 +441,7 @@ EXPORT void dcGetPluginInfo(plugin_info* info)
 
 	info->ShowConfig=cfgdlg;
 	info->Type=PluginType::MapleDevice;
+	*/
 }
 
 
@@ -444,7 +452,7 @@ u8 GetBtFromSgn(s8 val);
 #define w16(data) *(u16*)buffer_out_b=(data);buffer_out_b+=2;buffer_out_len+=2
 #define w8(data) *(u8*)buffer_out_b=(data);buffer_out_b+=1;buffer_out_len+=1
 
-void KbdDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+void FASTCALL KbdDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
 {
 	//printf("ControllerDMA Called 0x%X;Command %d\n",device_instance->port,Command);
 //void testJoy_GotData(u32 header1,u32 header2,u32*data,u32 datalen)
@@ -570,7 +578,7 @@ u16 mo_cvt(s32 delta)
 	(06/01/07)[04:09] <BlueCrab> Standby power: 07D0
 	(06/01/07)[04:10] <BlueCrab> Max power: 0960
 */
-void DreamEye_mainDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+void FASTCALL DreamEye_mainDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
 {
 	//printf("ControllerDMA Called 0x%X;Command %d\n",device_instance->port,Command);
 //void testJoy_GotData(u32 header1,u32 header2,u32*data,u32 datalen)
@@ -705,7 +713,7 @@ void DreamEye_mainDMA(maple_device_instance* device_instance,u32 Command,u32* bu
 	(06/01/07)[04:10] <BlueCrab> Max power: 0000
 */
 u32 des_9_count=0;
-void DreamEye_subDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+void FASTCALL DreamEye_subDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
 {
 	//printf("ControllerDMA Called 0x%X;Command %d\n",device_instance->port,Command);
 //void testJoy_GotData(u32 header1,u32 header2,u32*data,u32 datalen)
@@ -848,7 +856,7 @@ void DreamEye_subDMA(maple_device_instance* device_instance,u32 Command,u32* buf
 }
 
 
-void MicDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+void FASTCALL MicDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
 {
 	//printf("ControllerDMA Called 0x%X;Command %d\n",device_instance->port,Command);
 //void testJoy_GotData(u32 header1,u32 header2,u32*data,u32 datalen)
@@ -937,7 +945,7 @@ void MicDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u3
 }
 
 
-void MouseDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+void FASTCALL MouseDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
 {
 	//printf("ControllerDMA Called 0x%X;Command %d\n",device_instance->port,Command);
 //void testJoy_GotData(u32 header1,u32 header2,u32*data,u32 datalen)
@@ -1059,7 +1067,7 @@ void MouseDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,
 }
 
 
-void ControllerDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+void FASTCALL ControllerDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
 {
 	//printf("ControllerDMA Called 0x%X;Command %d\n",device_instance->port,Command);
 //void testJoy_GotData(u32 header1,u32 header2,u32*data,u32 datalen)
@@ -1181,7 +1189,7 @@ void ControllerDMA(maple_device_instance* device_instance,u32 Command,u32* buffe
 	}
 }
 
-void ControllerDMA_nul(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+void FASTCALL ControllerDMA_nul(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
 {
 	//printf("ControllerDMA Called 0x%X;Command %d\n",device_instance->port,Command);
 //void testJoy_GotData(u32 header1,u32 header2,u32*data,u32 datalen)
@@ -1328,7 +1336,7 @@ typedef struct {
 	(((u32) (val) & (u32) 0x0000ff00U) <<  8) | \
 	(((u32) (val) & (u32) 0x00ff0000U) >>  8) | \
 	(((u32) (val) & (u32) 0xff000000U) >> 24)))
-void VmuDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+void FASTCALL VmuDMA(maple_subdevice_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
 {
 	u8*buffer_out_b=(u8*)buffer_out;
 	//printf("VmuDMA Called for port 0x%X, Command %d\n",device_instance->port,Command);
@@ -1421,7 +1429,7 @@ void VmuDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u3
 		case 11:
 			if(buffer_in[0]&(2<<24))
 			{
-				VMU_info* dev=(VMU_info*)((*device_instance).DevData);
+				VMU_info* dev=(VMU_info*)((*device_instance).data);
 
 				buffer_out[0] = (2<<24);
 				u32 Block = (SWAP32(buffer_in[1]))&0xffff;
@@ -1442,7 +1450,7 @@ void VmuDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u3
 		case 12:
 			if(buffer_in[0]&(2<<24))
 			{
-				VMU_info* dev=(VMU_info*)((*device_instance).DevData);
+				VMU_info* dev=(VMU_info*)((*device_instance).data);
 
 				u32 Block = (SWAP32(buffer_in[1]))&0xffff;
 				u32 Phase = ((SWAP32(buffer_in[1]))>>16)&0xff; 
@@ -1471,71 +1479,143 @@ void VmuDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u3
 			printf("UNKOWN MAPLE COMMAND \n");
 			break;
 	}
+
 }
 
 
-void CreateInstance(maple_device*dev,maple_device_instance& inst,u8 port)
+template<u32 has_input>
+s32 FASTCALL CreateController(maple_device_instance* inst,u8 port)
 {
-	if (dev->id==0)
+	if (has_input)
 	{
-		inst.MapleDeviceDMA=ControllerDMA;
-		inst.DevData=0;
+		inst->dma=ControllerDMA;
+		inst->data=0;
 	}
-	else if (dev->id==1)
+	else
 	{
-		inst.DevData=malloc(sizeof(VMU_info));
-		sprintf(((VMU_info*)inst.DevData)->file,"vmu_data_port%x.bin",port);
-		FILE* f=fopen(((VMU_info*)inst.DevData)->file,"rb");
-		if (f)
-		{
-			fread(((VMU_info*)inst.DevData)->data,1,128*1024,f);
-			fclose(f);
-		}
-		inst.MapleDeviceDMA=VmuDMA;
+		inst->dma=ControllerDMA_nul;
+		inst->data=0;
 	}
-	else if (dev->id==2)
+/*
+	else if (id==2)
 	{
-		inst.MapleDeviceDMA=ControllerDMA_nul;
-		inst.DevData=0;
+		
 	}
-	else if (dev->id==3)
+	else if (id==3)
 	{
-		inst.MapleDeviceDMA=KbdDMA;
-		inst.DevData=0;
+		inst->dma=KbdDMA;
+		inst->data=0;
 	}
-	else if (dev->id==4)
+	else if (id==4)
 	{
-		inst.MapleDeviceDMA=MouseDMA;
-		inst.DevData=0;
+		inst->dma=MouseDMA;
+		inst->data=0;
 	}
-	else if ( dev->id==5)
+	else if ( id==5)
 	{
-		inst.MapleDeviceDMA=DreamEye_mainDMA;
-		inst.DevData=0;
+		inst->dma=DreamEye_mainDMA;
+		inst->data=0;
 	}
-	else if ( dev->id==6)
+	else if ( id==6)
 	{
-		inst.MapleDeviceDMA=DreamEye_subDMA;
-		inst.DevData=0;
+		inst->dma=DreamEye_subDMA;
+		inst->data=0;
 	}
-	else if ( dev->id==7)
+	else if ( id==7)
 	{
-		inst.MapleDeviceDMA=MicDMA;
-		inst.DevData=0;
+		inst->dma=MicDMA;
+		inst->data=0;
 	}
-	printf("Created instance of device %s on port 0x%x\n",dev->name,port);
+	else
+		return false;
+*/
+	return rv_ok;
+	//printf("Created instance of device %s on port 0x%x\n",dev->name,port);
 }
 
 
-void DestroyInstance(maple_device*dev,maple_device_instance& inst)
+void FASTCALL DestroyController(maple_device_instance* inst)
 {
-	if (inst.DevData)
-		free(inst.DevData);
-	printf("Deleted instance of device %s \n",dev->name);
+
 }
+s32 FASTCALL CreateVmu(maple_subdevice_instance* inst,u8 port)
+{
+	inst->data=malloc(sizeof(VMU_info));
+	sprintf(((VMU_info*)inst->data)->file,"vmu_data_port%x.bin",port);
+	FILE* f=fopen(((VMU_info*)inst->data)->file,"rb");
+	if (f)
+	{
+		fread(((VMU_info*)inst->data)->data,1,128*1024,f);
+		fclose(f);
+	}
+	inst->dma=VmuDMA;
+
+	return rv_ok;
+}
+void FASTCALL DestroyVmu(maple_subdevice_instance* inst)
+{
+	if (inst->data)
+		free(inst->data);
+}
+/*
+plugin_info_entry plugins[] = 
+{
+	{
+		{name,version,type,ifver,load,unload}
+	}
+	{CreateInstance<0>,DestroyInstance,
+}*/
 //Give a list of the devices to teh emu
-EXPORT void dcGetMapleInfo(maple_plugin_if* info)
+bool EXPORT_CALL dcGetPlugin(u32 id,plugin_info_entry* info)
 {
+	if (id>1)
+		return false;
+
+#define km info->maple
+#define ks info->maple_sub
+#define c info->common
+	
+	c.InterfaceVersion=MAPLE_PLUGIN_I_F_VERSION;
+
+	c.Load=Load;
+	c.Unload=Unload;
+
+	switch(id)
+	{
+	case 0:
+		strcpy(c.Name,"nullDC DC controller [WinHook] (" __DATE__ ")");
+
+		c.Type=Maple;
+		c.PluginVersion=NDC_MakeVersion(1,0,0);
+
+		km.Init=0;
+		km.Reset=0;
+		km.Term=0;
+
+		km.Create=CreateController<1>;
+		km.Destroy=DestroyController;
+
+		km.ShowConfig=0;
+		km.subdev_info=MAPLE_SUBDEVICE_DISABLE_2|MAPLE_SUBDEVICE_DISABLE_3|MAPLE_SUBDEVICE_DISABLE_4;
+		break;
+	case 1:
+		strcpy(c.Name,"nullDC VMU (" __DATE__ ")");
+
+		c.Type=MapleSub;
+		c.PluginVersion=NDC_MakeVersion(1,0,0);
+
+		ks.Init=0;
+		ks.Reset=0;
+		ks.Term=0;
+
+		ks.Create=CreateVmu;
+		ks.Destroy=DestroyVmu;
+
+		ks.ShowConfig=0;
+		break;
+	}
+	return true;
+	/*
 	info->InterfaceVersion.full=MAPLE_PLUGIN_I_F_VERSION;
 
 	info->Devices[0].CreateInstance=CreateInstance;
@@ -1588,6 +1668,7 @@ EXPORT void dcGetMapleInfo(maple_plugin_if* info)
 
 	info->Devices[8].CreateInstance=0;
 	info->Devices[8].DestroyInstance=0;
+	*/
 }
 
 
