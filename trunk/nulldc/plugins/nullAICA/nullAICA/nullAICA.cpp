@@ -23,13 +23,66 @@ void cfgdlg(PluginType type,void* window)
 }
 
 //Give to the emu info for the plugin type
-EXPORT void dcGetPluginInfo(plugin_info* info)
+void EXPORT_CALL dcGetPluginInfo(plugin_info* info)
 {
-	info->InterfaceVersion.full=PLUGIN_I_F_VERSION;
-	strcpy(info->Name,"nullAICA [no sound/reduced compat] (" __DATE__ ")");
-	info->PluginVersion.full=NDC_MakeVersion(MAJOR,MINOR,BUILD);
-	
+	info->InterfaceVersion=PLUGIN_I_F_VERSION;
+	info->count=1;
 
+}
+s32 FASTCALL PluginLoad(emu_info* param)
+{
+	return rv_ok;
+}
+
+void FASTCALL PluginUnload()
+{
+}
+s32 FASTCALL Init(aica_init_params* param)
+{
+	aica_ram=param->aica_ram;
+	init_mem();
+	InitHLE();
+
+	return rv_ok;
+}
+void FASTCALL Term()
+{
+	term_mem();
+	TermHLE();
+}
+void FASTCALL Reset(bool Manual)
+{
+		ResetHLE();
+}
+
+//Give to the emu pointers for the PowerVR interface
+bool EXPORT_CALL dcGetPlugin(u32 id , plugin_info_entry* info)
+{
+#define c info->common
+#define a info->aica
+
+	strcpy(c.Name,"nullAICA [no sound/reduced compat] (" __DATE__ ")");
+	c.PluginVersion=NDC_MakeVersion(MAJOR,MINOR,BUILD);
+
+	c.InterfaceVersion=AICA_PLUGIN_I_F_VERSION;
+	c.Type=AICA;
+
+	c.Load=PluginLoad;
+	c.Unload=PluginUnload;
+
+	a.Init=Init;
+	a.Reset=Reset;
+	a.Term=Term;
+	a.ShowConfig=0;
+	a.ExeptionHanlder=0;
+
+	a.UpdateAICA=UpdateAICA;
+
+	a.ReadMem_aica_reg=ReadMem_reg;
+	a.WriteMem_aica_reg=WriteMem_reg;
+	return true;
+	
+/*
 	info->Init=dcInit;
 	info->Term=dcTerm;
 	info->Reset=dcReset;
@@ -38,47 +91,12 @@ EXPORT void dcGetPluginInfo(plugin_info* info)
 	info->ThreadTerm=dcThreadTerm;
 	info->ShowConfig=cfgdlg;
 	info->Type=PluginType::AICA;
-}
 
-//Give to the emu pointers for the PowerVR interface
-EXPORT void dcGetAICAInfo(aica_plugin_if* info)
-{
 	info->InterfaceVersion.full=AICA_PLUGIN_I_F_VERSION;
 
 	info->ReadMem_aica_ram=ReadMem_ram;
 	info->WriteMem_aica_ram=WriteMem_ram;
 	info->ReadMem_aica_reg=ReadMem_reg;
 	info->WriteMem_aica_reg=WriteMem_reg;
-	info->UpdateAICA=UpdateAICA;
-}
-
-
-//called when plugin is used by emu (you should do first time init here)
-void dcInit(void* param,PluginType type)
-{
-	init_mem();
-	InitHLE();
-}
-
-//called when plugin is unloaded by emu , olny if dcInit is called (eg , not called to enumerate plugins)
-void dcTerm(PluginType type)
-{
-	term_mem();
-	TermHLE();
-}
-
-//It's suposed to reset anything 
-void dcReset(bool Manual,PluginType type)
-{
-	ResetHLE();
-}
-
-//called when entering sh4 thread , from the new thread context (for any thread speciacific init)
-void dcThreadInit(PluginType type)
-{
-}
-
-//called when exiting from sh4 thread , from the new thread context (for any thread speciacific de init) :P
-void dcThreadTerm(PluginType type)
-{
+	info->UpdateAICA=UpdateAICA;*/
 }
