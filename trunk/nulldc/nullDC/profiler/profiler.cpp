@@ -27,13 +27,23 @@ void init_Profiler(void* param)
 	RunProfiler=true;
 
 	prof_thread = new cThread(ProfileThead,param);
-	prof_thread->Start();
+	//prof_thread->Start();
 }
-
+void start_Profiler()
+{
+	if (prof_thread)
+		prof_thread->Start();
+}
+void stop_Profiler()
+{
+	if (prof_thread)
+		prof_thread->Suspend();
+}
 void term_Profiler()
 {
 	RunProfiler=false;
-	prof_thread->WaitToEnd(666);
+	prof_thread->Start();//make sure it is started
+	prof_thread->WaitToEnd(-1);
 	delete prof_thread;
 	//Clear profile info
 	memset(&profile_info,0,sizeof(prof_info));
@@ -42,9 +52,9 @@ void term_Profiler()
 void AnalyseTick(u32 pc,prof_info* to)
 {
 	u32 main_base=((u32)AnalyseTick) & 0xFFE00000;
-	u32 aica_base=((u32)libAICA->info.Init) & 0xFFE00000;
-	u32 pvr_base=((u32)libPvr->info.Init) & 0xFFE00000;
-	u32 gdrom_base=((u32)libGDR->info.Init) & 0xFFE00000;
+	u32 aica_base=((u32)libAICA.Load) & 0xFFE00000;
+	u32 pvr_base=((u32)libPvr.Load) & 0xFFE00000;
+	u32 gdrom_base=((u32)libGDR.Load) & 0xFFE00000;
 
 	u32 DynarecRam_Start = (u32)DynarecCache;
 	u32 DynarecRam_End = (u32)DynarecCache+DynarecCacheSize;

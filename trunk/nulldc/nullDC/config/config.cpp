@@ -6,17 +6,17 @@
 static char appPath[MAX_PATH];
 static char cfgPath[MAX_PATH];
 
-s32 cfgLoadInt(const char * lpSection, const char * lpKey)
+s32 FASTCALL cfgLoadInt(const char * lpSection, const char * lpKey)
 {
 	return GetPrivateProfileInt(lpSection,lpKey,-1,cfgPath);
 }
 
-void cfgLoadStr(const char * lpSection, const char * lpKey, char * lpReturn)
+void FASTCALL cfgLoadStr(const char * lpSection, const char * lpKey, char * lpReturn)
 {
 	GetPrivateProfileString(lpSection,lpKey,"NULL",lpReturn,MAX_PATH,cfgPath);
 }
 
-void cfgSaveInt(const char * lpSection, const char * lpKey, s32 Int)
+void FASTCALL cfgSaveInt(const char * lpSection, const char * lpKey, s32 Int)
 {
 	char tmp[32];
 	sprintf(tmp,"%d", Int);
@@ -24,7 +24,7 @@ void cfgSaveInt(const char * lpSection, const char * lpKey, s32 Int)
 }
 
 
-void cfgSaveStr(const char * lpSection, const char * lpKey, const char * lpString)
+void FASTCALL cfgSaveStr(const char * lpSection, const char * lpKey, const char * lpString)
 {
 	WritePrivateProfileString(lpSection,lpKey,lpString,cfgPath);
 }
@@ -63,7 +63,7 @@ bool cfgVerify()
 		cfgSaveStr("nullDC","magic","0x420");	// now write it ...
 
 		// defaults
-		cfgSaveInt("nullDC","bNeedsCfg",TRUE);	// set configure needed
+		//cfgSaveInt("nullDC","bNeedsCfg",TRUE);	// set configure needed
 
 		// Default Paths:
 		char finalPath[MAX_PATH];

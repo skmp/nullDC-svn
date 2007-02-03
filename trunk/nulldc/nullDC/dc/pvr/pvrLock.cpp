@@ -5,7 +5,7 @@ using namespace std;
 
 vector<vram_block*> VramLocks[VRAM_SIZE/PAGE_SIZE];
 //vram 32-64b
-VArray vram;
+VArray2 vram;
  
 
 //Address space convertion functions
@@ -157,7 +157,7 @@ inline bool IsInRange(vram_block* block,u32 offset)
 }
 
 //returns block handle
-vram_block* vramlock_Lock_32(u32 start_offset32,u32 end_offset32,void* userdata)
+vram_block* FASTCALL vramlock_Lock_32(u32 start_offset32,u32 end_offset32,void* userdata)
 {
 	vram_block* block=(vram_block*)malloc(sizeof(vram_block));
  
@@ -188,7 +188,7 @@ vram_block* vramlock_Lock_32(u32 start_offset32,u32 end_offset32,void* userdata)
 	return block;
 }
 
-vram_block* vramlock_Lock_64(u32 start_offset64,u32 end_offset64,void* userdata)
+vram_block* FASTCALL vramlock_Lock_64(u32 start_offset64,u32 end_offset64,void* userdata)
 {
 	vram_block* block=(vram_block* )malloc(sizeof(vram_block));
  
@@ -234,7 +234,7 @@ bool VramLockedWrite(u8* address)
 		{
 			if ((*list)[i])
 			{
-				libPvr->pvr_info.LockedBlockWrite((*list)[i],(u32)offset);
+				libPvr.LockedBlockWrite((*list)[i],(u32)offset);
 				//found++;
 				if ((*list)[i])
 				{
@@ -255,7 +255,7 @@ bool VramLockedWrite(u8* address)
 
 //unlocks mem
 //also frees the handle
-void vramlock_Unlock_block(vram_block* block)
+void FASTCALL vramlock_Unlock_block(vram_block* block)
 {
 	//VRAM_SIZE/PAGE_SIZE;
 	if (block->end>VRAM_SIZE)

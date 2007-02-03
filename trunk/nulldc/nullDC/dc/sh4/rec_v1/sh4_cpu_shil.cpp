@@ -130,7 +130,7 @@ sh4op(i0000_nnnn_1000_0011)
 			try
 			{
 				//printf("TA dlist SQ to Addr: %08X\n", Address);
-				libPvr->pvr_info.TADma(Address,sq,1);
+				libPvr.TADma(Address,sq,1);
 			}
 			catch(...){}
 		}

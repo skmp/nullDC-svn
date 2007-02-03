@@ -3,6 +3,7 @@
 
 //initialse Emu
 #include "types.h"
+#include "dc/mem/_vmem.h"
 #include "stdclass.h"
 #include "dc/dc.h"
 #include "gui/base.h"
@@ -38,78 +39,75 @@ int RunDC(int argc, char* argv[])
 	return 0;
 }
 
-void PrintHeader()
-{
-	printf("nullDC version %s\n",VER_STRING);
-}
 
 void EnumPlugins()
 {
 	List<PluginLoadInfo>* pvr= EnumeratePlugins(PluginType::PowerVR);
 	List<PluginLoadInfo>* gdrom= EnumeratePlugins(PluginType::GDRom);
 	List<PluginLoadInfo>* aica= EnumeratePlugins(PluginType::AICA);
-	List<PluginLoadInfo>* maple= EnumeratePlugins(PluginType::MapleDevice);
+	List<PluginLoadInfo>* maple= EnumeratePlugins(PluginType::Maple);
+	List<PluginLoadInfo>* maplesub= EnumeratePlugins(PluginType::MapleSub);
 	List<PluginLoadInfo>* extdev= EnumeratePlugins(PluginType::ExtDevice);
 
 	printf("PowerVR plugins :\n");
 	for (u32 i=0;i<pvr->itemcount;i++)
 	{
-		printf("*\tFound %s v%d.%d.%d\n" ,(*pvr)[i].plugin_info.Name,
-			(*pvr)[i].plugin_info.PluginVersion.major,
-			(*pvr)[i].plugin_info.PluginVersion.minnor,
-			(*pvr)[i].plugin_info.PluginVersion.build);
+		printf("*\tFound %s v%d.%d.%d\n" ,(*pvr)[i].Name,
+			(*pvr)[i].PluginVersion.major,
+			(*pvr)[i].PluginVersion.minnor,
+			(*pvr)[i].PluginVersion.build);
 	}
 
 	printf("\nGDRom plugins :\n");
 	for (u32 i=0;i<gdrom->itemcount;i++)
 	{
-		printf("*\tFound %s v%d.%d.%d\n" ,(*gdrom)[i].plugin_info.Name,
-			(*gdrom)[i].plugin_info.PluginVersion.major,
-			(*gdrom)[i].plugin_info.PluginVersion.minnor,
-			(*gdrom)[i].plugin_info.PluginVersion.build);
+		printf("*\tFound %s v%d.%d.%d\n" ,(*gdrom)[i].Name,
+			(*gdrom)[i].PluginVersion.major,
+			(*gdrom)[i].PluginVersion.minnor,
+			(*gdrom)[i].PluginVersion.build);
 	}
 
 	
 	printf("\nAica plugins :\n");
 	for (u32 i=0;i<aica->itemcount;i++)
 	{
-		printf("*\tFound %s v%d.%d.%d\n" ,(*aica)[i].plugin_info.Name,
-			(*aica)[i].plugin_info.PluginVersion.major,
-			(*aica)[i].plugin_info.PluginVersion.minnor,
-			(*aica)[i].plugin_info.PluginVersion.build);
+		printf("*\tFound %s v%d.%d.%d\n" ,(*aica)[i].Name,
+			(*aica)[i].PluginVersion.major,
+			(*aica)[i].PluginVersion.minnor,
+			(*aica)[i].PluginVersion.build);
 	}
 
 	printf("\nMaple plugins :\n");
 	for (u32 i=0;i<maple->itemcount;i++)
 	{
-		nullDC_Maple_plugin mpl;
-		mpl.LoadnullDCPlugin((*maple)[i].dll);
-		printf("*\tFound %s v%d.%d.%d [devices : " ,(*maple)[i].plugin_info.Name,
-			(*maple)[i].plugin_info.PluginVersion.major,
-			(*maple)[i].plugin_info.PluginVersion.minnor,
-			(*maple)[i].plugin_info.PluginVersion.build);
-		for (int j=0;mpl.maple_info.Devices[j].CreateInstance;j++)
-		{
-			printf("%s%s",mpl.maple_info.Devices[j].name,mpl.maple_info.Devices[j+1].CreateInstance==0?"]\n":";");
-		}
+		printf("*\tFound %s v%d.%d.%d [main]\n" ,(*maple)[i].Name,
+			(*maple)[i].PluginVersion.major,
+			(*maple)[i].PluginVersion.minnor,
+			(*maple)[i].PluginVersion.build);
+	}
+	for (u32 i=0;i<maplesub->itemcount;i++)
+	{
+		printf("*\tFound %s v%d.%d.%d [sub]\n" ,(*maplesub)[i].Name,
+			(*maplesub)[i].PluginVersion.major,
+			(*maplesub)[i].PluginVersion.minnor,
+			(*maplesub)[i].PluginVersion.build);
 	}
 	
 	printf("\nExtDevice plugins :\n");
 	for (u32 i=0;i<extdev->itemcount;i++)
 	{
-		printf("*\tFound %s v%d.%d.%d\n" ,(*extdev)[i].plugin_info.Name,
-			(*extdev)[i].plugin_info.PluginVersion.major,
-			(*extdev)[i].plugin_info.PluginVersion.minnor,
-			(*extdev)[i].plugin_info.PluginVersion.build);
+		printf("*\tFound %s v%d.%d.%d\n" ,(*extdev)[i].Name,
+			(*extdev)[i].PluginVersion.major,
+			(*extdev)[i].PluginVersion.minnor,
+			(*extdev)[i].PluginVersion.build);
 	}
 
 	delete pvr;
 	delete gdrom;
 	delete aica;
 	delete maple;
+	delete maplesub;
 	delete extdev;
-
-	//getc(stdin);
 }
 
 int main___(int argc,char* argv[])
@@ -122,9 +120,10 @@ int main___(int argc,char* argv[])
 	// Could Change plugin path even, do first, is always relative to execution dir.
 	if(!cfgVerify())
 		printf("~ERROR: cfgVerify() Failed!\n");
-
+/*
 	if(TRUE == cfgLoadInt("nullDC","bNeedsCfg"))
 		printf(" >>>>>>>>>>> NEEDS A CFG !\n");
+	*/
 
 	//get curent path and set plugin path
 //	("plugins\\");
@@ -136,16 +135,28 @@ int main___(int argc,char* argv[])
 	SetPluginPath(plpath);
 	delete[] plpath;
 	
-
-	PrintHeader();
 	EnumPlugins();
-	//getc(stdin);
-	//return 0;
 
 	if (!CreateGUI())
 	{
 		printf("Creating GUI failed\n");
 		return -1;
+	}
+
+	while (!plugins_Load())
+	{
+		//MessageBox(g_hWnd,"Unable to load plugins","nullDC " VER_STRING,MB_OK | MB_ICONEXCLAMATION);
+		if (!plugins_Config())
+		{
+			printf("Unable to load plugins -- exiting\n");
+			return -2;
+		}
+	}
+	
+	if (1==0)
+	{
+		printf("Unable to locate dreamcast bios in \"%s\"\n","bios\dc_boot.bin");
+		return -3; 
 	}
 	int rv= RunDC(argc,argv);
 	
@@ -153,15 +164,25 @@ int main___(int argc,char* argv[])
 	
 	return rv;
 }
+
 int main(int argc, char* argv[])
 {
+	if (!_vmem_reserve())
+	{
+		printf("Unable to reserve nullDC memory ...\n");
+		getchar();
+		return -1;
+	}
+	int rv=0;
 	__try
 	{
-		main___(argc,argv);
+		rv=main___(argc,argv);
 	}
 	__except( ExeptionHandler( GetExceptionCode(), (GetExceptionInformation()) ) )
 	{
 
 	}
+	_vmem_release();
+	return rv;
 }
 

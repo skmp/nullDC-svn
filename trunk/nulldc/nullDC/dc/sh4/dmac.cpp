@@ -71,7 +71,7 @@ void DMAC_Ch2St()
 				break;
 			}
 		}
-		//libPvr->pvr_info.TADma(dst,sys_buf,(len/32));
+		//libPvr.TADma(dst,sys_buf,(len/32));
 	}
 	else	//	If SB_C2DSTAT reg is inrange from 0x11000000 to 0x11FFFFE0,	 set 1 in SB_LMMODE0 reg.
 	if( (dst >= 0x11000000) && (dst <= 0x11FFFFE0) )

@@ -1,69 +1,6 @@
 #pragma once
 #include "types.h"
 #include "dc\sh4\sh4_if.h"
-
-
-#pragma pack (push,1)
-//16 byte il representation
-struct shil_opcode
-{
-	shil_opcode()
-	{
-		opcode=0;
-		flags=0;
-		flags_ex=0;
-		reg1=0;
-		reg2=0;  
-		imm1=0;
-		imm2=0;
-	}
-	//opcode info
-	u16 opcode;
-	u16 flags;//-> opcode related
-	
-	u16 flags_ex;//flags		-> opts related
-
-	
-	u8 reg1;	//reg 
-	u8 reg2;	//reg
-
-	u32 imm1;	//imm1
-	u32 imm2;	//imm2
-
-	bool ReadsReg(Sh4RegType reg);
-	bool OverwritesReg(Sh4RegType reg);
-	bool UpdatesReg(Sh4RegType reg);
-	bool WritesReg(Sh4RegType reg);
-};
-
-#pragma pack (pop)
-
-//flags
-enum shil_opflags
-{
-	FLAG_8=0,
-	FLAG_16=1,
-	FLAG_32=2,
-	FLAG_64=3,
-	
-	FLAG_SX=4,
-	FLAG_ZX=0,//defualt
-
-	FLAG_REG1=8,
-	FLAG_REG2=16,
-
-	FLAG_IMM1=32,
-	FLAG_IMM2=64,
-
-	FLAG_R0=128,
-	FLAG_GBR=256,
-	FLAG_MACH=512,
-	FLAG_MACL=1024,
-
-	FLAG_SETFLAGS=2048,
-	FLAG_PRESERVE=2048
-};
-
 //shil is a combination of sh4 and x86 opcodes , in a decoded form so that varius optimisations
 //are possible (inlcuding cost removal , dead code elimination , flag elimination , more)
 //
@@ -80,6 +17,82 @@ enum shil_opflags
 //
 //Register allocation is done on the last step  , all other opts are done on shil to shil passes
 //
+
+//22/1/2007 : im kinda bored today .. so i think i'l re-design shil ;)
+/*
+	md_index -> metadata index [16b]
+
+	3 register		[32b sized]
+	2 imm			[32b sized]
+
+	flags_ex -> removed [never used ...]
+	flags -> expanded to 32 bits
+*/
+
+#pragma pack (push,1)
+//16 byte il representation
+struct shil_opcode
+{
+	shil_opcode()
+	{
+		opcode=0;
+		flags=0;
+		reg1=0;
+		reg2=0;  
+		imm1=0;
+		imm2=0;
+	}
+	//opcode info
+	u16 opcode;
+	u16 md_index;
+
+	u32 flags;
+
+	u32 reg1;	//reg 
+	u32 reg2;	//reg 
+	u32 reg3;	//reg 
+
+	u32 imm1;	//imm1
+	u32 imm2;	//imm2
+	u32 imm3;	//imm2
+
+	bool ReadsReg(Sh4RegType reg);
+	bool OverwritesReg(Sh4RegType reg);
+	bool UpdatesReg(Sh4RegType reg);
+	bool WritesReg(Sh4RegType reg);
+};
+
+#pragma pack (pop)
+
+#define make_bit(b) (1<<b)
+//flags
+enum shil_opflags
+{
+	//2 bits
+	FLAG_8=0,
+	FLAG_16=1,
+	FLAG_32=2,
+	FLAG_64=3,
+	
+	FLAG_SX=make_bit(2),
+	FLAG_ZX=0,//defualt
+
+	FLAG_REG1=make_bit(3),
+	FLAG_REG2=make_bit(4),
+	FLAG_REG3=make_bit(5),
+
+	FLAG_IMM1=make_bit(6),
+	FLAG_IMM2=make_bit(7),
+	FLAG_IMM3=make_bit(8),
+
+	FLAG_R0=make_bit(9),
+	FLAG_GBR=make_bit(10),
+	FLAG_MACH=make_bit(11),
+	FLAG_MACL=make_bit(12),
+
+	FLAG_SETFLAGS=make_bit(13),
+	FLAG_PRESERVE=make_bit(14)
+};
 
 enum shil_opcodes
 {

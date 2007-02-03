@@ -171,12 +171,12 @@ void ce_die(char* reason)
 
 	__asm int 3;
 }
-bool ce_CanBeConst(u8 reg)
+bool ce_CanBeConst(u32 reg)
 {
 	return (reg<16) || (reg==reg_pc_temp)|| (reg==reg_macl) || (reg==reg_mach);
 }
 
-bool ce_IsConst(u8 reg)
+bool ce_IsConst(u32 reg)
 {
 	if (ce_CanBeConst(reg))
 		return shil_ce_gpr[reg].IsConstant;
@@ -184,7 +184,7 @@ bool ce_IsConst(u8 reg)
 		return false;
 }
 
-u32 ce_GetConst(u8 reg)
+u32 ce_GetConst(u32 reg)
 {
 	if (ce_IsConst(reg))
 		return shil_ce_gpr[reg].RegValue;
@@ -192,7 +192,7 @@ u32 ce_GetConst(u8 reg)
 		ce_die("ce_GetConst : can't get const when reg is not const");
 	return 0;
 }
-void ce_SetConst(u8 reg,u32 value)
+void ce_SetConst(u32 reg,u32 value)
 {
 	if (ce_IsConst(reg))
 	{
@@ -206,7 +206,7 @@ void ce_SetConst(u8 reg,u32 value)
 	else
 		ce_die("ce_SetConst : can't set const when reg is not const");
 }
-void ce_MakeConst(u8 reg,u32 value)
+void ce_MakeConst(u32 reg,u32 value)
 {
 	if (ce_CanBeConst(reg))
 	{
@@ -231,7 +231,7 @@ void ce_MakeConst(u8 reg,u32 value)
 	else
 		ce_die("ce_MakeConst : can't create const when reg can't be const.tracked");
 }
-void ce_KillConst(u8 reg)
+void ce_KillConst(u32 reg)
 {
 	if (ce_IsConst(reg))
 	{
@@ -255,7 +255,7 @@ bool ce_FindExistingConst(u32 value,u8* reg_num)
 	return false;
 }
 
-void ce_WriteBack(u8 reg,shil_stream* il)
+void ce_WriteBack(u32 reg,shil_stream* il)
 {
 	if (ce_IsConst(reg))
 	{
@@ -283,7 +283,7 @@ void ce_WriteBack_all(shil_stream* il)
 		ce_WriteBack(i,il);
 }
 
-void ce_WriteBack_aks(u8 reg,shil_stream* il)
+void ce_WriteBack_aks(u32 reg,shil_stream* il)
 {
 	ce_WriteBack(reg,il);
 	ce_KillConst(reg);
@@ -1050,7 +1050,7 @@ bool backscan_const(BasicBlock* bb,u8 reg,u32* rv)
 			{
 				//if its a reg 2 reg move , we alias the old reg w/ the one that replaced it ;)
 				verify(op->flags & FLAG_REG2);
-				reg=op->reg2;
+				reg=(u8)op->reg2;
 			}
 		}
 		else

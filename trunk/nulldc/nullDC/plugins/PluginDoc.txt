@@ -23,3 +23,31 @@ Common plugin Interface :
 Function : "dcGetPluginInfo" has to be exported exported from the dll
 For more information about the params look at plugin_types.h(or plugin_header.h)
 
+
+ppfftdkktkjjasd
+
+Emu start
+{ensure all plugins are selected}
+Plugin Load() on needed plugins
+....
+Emulation start
+Plugin Init()
+Plugin Reset()
+...
+...
+emulation switch()
+...
+emulation reset()
+Plugin Reset()
+....
+Plugin Term ()
+...
+Emu exit()
+Plugin unload()
+
+
+
+plugin select -> on 'ok' it call's SetPlugin() & co , witch olny load/unload needed plugins ;)
+*note*
+on plugin config call , the Load  _HAS_ to be called , and unload may be called after it ;)
+

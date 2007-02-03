@@ -21,8 +21,8 @@
 #include "dc/gdrom/gdrom_if.h"
 #include "dc/dc.h"
 #include "config/config.h"
-
-
+#include "plugins/plugin_manager.h"
+#include "profiler/profiler.h"
 /////////////////////////////
 #include "DBG/CtrlMemView.h"
 #include "DBG/CtrlDisAsmView.h"
@@ -170,7 +170,6 @@ u32 uiInit(void)
 	ysz_2-=ysz;
 
 	SetWindowPos(g_hWnd,NULL,0,0,xsz_2+640,ysz_2+480,SWP_NOZORDER|SWP_NOMOVE);
-	
 
 	return UI_OK;
 }
@@ -268,18 +267,19 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 
 				if(GetOpenFileName(&ofn)>0)
 				{
-					Init_DC();
-					Reset_DC(false);
-					if(!LoadBinfileToSh4Mem(0x10000, g_szFileName))
+					if (Init_DC())
+					{
+						Reset_DC(false);
+						if(!LoadBinfileToSh4Mem(0x10000, g_szFileName))
+							return 0;
+						EnablePatch(patch_resets_Misc);//mwhaha
+						sh4_cpu->Reset(false);//do a hard reset
+						sh4_cpu->SetRegister(Sh4RegType::reg_sr,0x70000000);
+						sh4_cpu->SetRegister(Sh4RegType::reg_gbr,0x8c000000);
+						sh4_cpu->SetRegister(Sh4RegType::reg_pc,0x8c008300);
+						Start_DC();
 						return 0;
-					EnablePatch(patch_resets_Misc);//mwhaha
-					sh4_cpu->Reset(false);//do a hard reset
-					sh4_cpu->SetRegister(Sh4RegType::reg_sr,0x70000000);
-					sh4_cpu->SetRegister(Sh4RegType::reg_gbr,0x8c000000);
-					sh4_cpu->SetRegister(Sh4RegType::reg_pc,0x8c008300);
-					Start_DC();
-					return 0;
-
+					}
 				}
 			}
 			//add warn message
@@ -312,20 +312,22 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 
 		case ID_FILE_BOOTHLE:
 		 {
-			 Init_DC();
-			 Reset_DC(false);
-			 if (gdBootHLE()==false)
+			 if (Init_DC())
 			 {
-				 MessageBox(hWnd,"Failed to find ip.bin/bootfile\nTry to boot using the Normal boot method.","HLE Boot Error",MB_ICONEXCLAMATION | MB_OK);
+				 Reset_DC(false);
+				 if (gdBootHLE()==false)
+				 {
+					 MessageBox(hWnd,"Failed to find ip.bin/bootfile\nTry to boot using the Normal boot method.","HLE Boot Error",MB_ICONEXCLAMATION | MB_OK);
+					 return 0;
+				 }
+				 EnablePatch(patch_resets_Misc);//mwhaha
+				 sh4_cpu->Reset(false);//do a hard reset
+				 sh4_cpu->SetRegister(Sh4RegType::reg_sr,0x70000000);
+				 sh4_cpu->SetRegister(Sh4RegType::reg_gbr,0x8c000000);
+				 sh4_cpu->SetRegister(Sh4RegType::reg_pc,0x8c008300);
+				 Start_DC();
 				 return 0;
 			 }
-			 EnablePatch(patch_resets_Misc);//mwhaha
-			 sh4_cpu->Reset(false);//do a hard reset
-			 sh4_cpu->SetRegister(Sh4RegType::reg_sr,0x70000000);
-			 sh4_cpu->SetRegister(Sh4RegType::reg_gbr,0x8c000000);
-			 sh4_cpu->SetRegister(Sh4RegType::reg_pc,0x8c008300);
-			 Start_DC();
-			 return 0;
 		 }
 
 		case ID_FILE_EXIT:
@@ -382,13 +384,38 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 			DialogBox(NULL,MAKEINTRESOURCE(IDD_ABOUT),hWnd,DlgProcModal_about);
 			return 0;
 
+		case ID_PROFILER_SHOW:
+			msgboxf("Profiler gui not yet implementd",MB_ICONERROR);
+			//DialogBox(NULL,MAKEINTRESOURCE(IDD_PROFILER),hWnd,DlgProcModal_about);
+			return 0;
+
+		case ID_PROFILER_ENABLE:
+			{
+				HMENU m=GetMenu(hWnd);
+				if (GetMenuState(m,ID_PROFILER_ENABLE,0) & MF_CHECKED)
+				{
+					stop_Profiler();
+					CheckMenuItem(m,ID_PROFILER_ENABLE,MF_UNCHECKED);
+				}
+				else
+				{
+					start_Profiler();
+					CheckMenuItem(m,ID_PROFILER_ENABLE,MF_CHECKED);
+				}
+				//()
+				//msgboxf("Profiler gui not yet implementd",MB_ICONERROR);
+				//DialogBox(NULL,MAKEINTRESOURCE(IDD_PROFILER),hWnd,DlgProcModal_about);
+			}
+			return 0;
+
+
 		case ID_OPTIONS_CONFIG:
 			DialogBox(NULL,MAKEINTRESOURCE(IDD_CONFIG),hWnd,DlgProcModal_config);
 			return 0;
 
 		//Plugin Selection Menu
 		case ID_OPTIONS_SELECTPLUGINS:
-			DialogBox(NULL,MAKEINTRESOURCE(IDD_PLUGIN_SELECT),hWnd,PluginDlgProc);
+			plugins_Config();
 			return 0;
 
 		}
@@ -445,8 +472,12 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 
 	return DefWindowProc(hWnd,uMsg,wParam,lParam);
 }
-
-
+bool plgdlg_cancel=false;
+bool SelectPluginsGui()
+{
+	DialogBox(NULL,MAKEINTRESOURCE(IDD_PLUGIN_SELECT),g_hWnd,PluginDlgProc);
+	return !plgdlg_cancel;
+}
 INT_PTR CALLBACK DlgProcModal_about( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	switch( uMsg )
@@ -509,8 +540,9 @@ INT_PTR CALLBACK DlgProcModal_config( HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 					{
 						//SwitchCPU_DC();
 						//sh4_cpu->Stop();
-						Stop_DC();
+						//Stop_DC();
 						bStart=true;
+						Stop_DC();
 						sh4_cpu->Term();
 					}
 				}
@@ -1015,38 +1047,6 @@ void SetSelected(HWND hw,char* selected)
 	ComboBox_SetCurSel(hw,0);
 }
 
-void AddMapleItemsToCB(List<MapleDeviceLoadInfo>* list,HWND hw,char* selected)
-{
-		char temp[512]="None";
-		char dll[512]="NULL";
-
-		char* lp = (char * )malloc(5); 
-		strcpy(lp,dll);
-		
-		int i2 = ComboBox_AddString(hw, temp); 
-		ComboBox_SetItemData(hw, i2, lp); 
-
-		for (u32 i=0;i<list->itemcount;i++)
-		{
-
-			GetFileNameFromPath((*list)[i].dll,dll);
-			sprintf(temp,"%s v%d.%d.%d (%s:%d)",(*list)[i].name
-				,(*list)[i].PluginVersion.major
-				,(*list)[i].PluginVersion.minnor
-				,(*list)[i].PluginVersion.build
-				,dll,(*list)[i].id);
-			
-			size_t dll_len=strlen(dll);
-			lp = (char * )malloc(dll_len+1+2); 
-			//strcpy(lp,dll);
-			sprintf(lp,"%s:%d",dll,(*list)[i].id);
-			i2 = ComboBox_AddString(hw, temp); 
-			ComboBox_SetItemData(hw, i2, lp); 
-		}
-
-		ComboBox_SetCurSel(hw,0);
-}
-
 void AddItemsToCB(List<PluginLoadInfo>* list,HWND hw,char* selected)
 {
 		for (u32 i=0;i<list->itemcount;i++)
@@ -1054,10 +1054,10 @@ void AddItemsToCB(List<PluginLoadInfo>* list,HWND hw,char* selected)
 			char temp[512];
 			char dll[512];
 			GetFileNameFromPath((*list)[i].dll,dll);
-			sprintf(temp,"%s v%d.%d.%d (%s)",(*list)[i].plugin_info.Name
-				,(*list)[i].plugin_info.PluginVersion.major
-				,(*list)[i].plugin_info.PluginVersion.minnor
-				,(*list)[i].plugin_info.PluginVersion.build
+			sprintf(temp,"%s v%d.%d.%d (%s)",(*list)[i].Name
+				,(*list)[i].PluginVersion.major
+				,(*list)[i].PluginVersion.minnor
+				,(*list)[i].PluginVersion.build
 				,dll);
 			
 			size_t dll_len=strlen(dll);
@@ -1069,6 +1069,19 @@ void AddItemsToCB(List<PluginLoadInfo>* list,HWND hw,char* selected)
 		SetSelected(hw,selected);
 }
 
+void AddMapleItemsToCB(List<PluginLoadInfo>* list,HWND hw,char* selected)
+{
+		char temp[512]="None";
+		char dll[512]="NULL";
+
+		char* lp = (char * )malloc(5); 
+		strcpy(lp,dll);
+		
+		int i2 = ComboBox_AddString(hw, temp); 
+		ComboBox_SetItemData(hw, i2, lp); 
+		AddItemsToCB(list,hw,selected);
+}
+
 void GetCurrent(HWND hw,char* dest)
 {
 	int sel=ComboBox_GetCurSel(hw);
@@ -1076,6 +1089,40 @@ void GetCurrent(HWND hw,char* dest)
 	if (source==0 || source==(((char*)0)-1))
 		source="";
 	strcpy(dest,source);
+}
+
+void SetMapleMain_Mask(char* plugin,HWND hWnd)
+{
+	if (strcmp(plugin,"NULL")==0)
+	{
+		for (int j=1;j<6;j++)
+		{
+			SetSelected(GetDlgItem(hWnd,IDC_maple[j]),"NULL");
+			ComboBox_Enable(GetDlgItem(hWnd,IDC_maple[j]),FALSE);
+		}
+	}
+	else
+	{
+		List<PluginLoadInfo>* lst = EnumeratePlugins(Maple);
+		int i=0;
+		while(!strcmp(plugin,(*lst)[i].dll))
+		{
+
+		}
+
+		for (int j=0;j<5;j++)
+		{
+			if ((*lst)[i].subdev_info & (1<<j))
+			{
+				SetSelected(GetDlgItem(hWnd,IDC_maple[j+1]),"NULL");
+				ComboBox_Enable(GetDlgItem(hWnd,IDC_maple[j+1]),FALSE);
+			}
+			else
+			{
+				ComboBox_Enable(GetDlgItem(hWnd,IDC_maple[j+1]),TRUE);
+			}
+		}
+	}
 }
 void UpdateMapleSelections(HWND hw,HWND hWnd)
 {
@@ -1096,6 +1143,7 @@ void UpdateMapleSelections(HWND hw,HWND hWnd)
 	{
 		SetSelected(GetDlgItem(hWnd,IDC_maple[j]),SelectedPlugin_maple[new_port][j]);
 	}
+	SetMapleMain_Mask(SelectedPlugin_maple[new_port][0],hWnd);
 	current_maple_port=new_port;
 	//cfgSaveStr("ASD","Asd","asd");
 }
@@ -1151,6 +1199,9 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		List<PluginLoadInfo>* aica= EnumeratePlugins(PluginType::AICA);
 		List<PluginLoadInfo>* extdev= EnumeratePlugins(PluginType::ExtDevice);
 
+		List<PluginLoadInfo>* MapleMain=EnumeratePlugins(PluginType::Maple);
+		List<PluginLoadInfo>* MapleSub=EnumeratePlugins(PluginType::MapleSub);
+
 		char temp[512];
 
 		
@@ -1169,18 +1220,23 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		cfgLoadStr("nullDC_plugins","Current_ExtDevice",temp);
 		AddItemsToCB(extdev,GetDlgItem(hWnd,IDC_C_EXTDEV),temp);
 		GetCurrent(GetDlgItem(hWnd,IDC_C_EXTDEV),SelectedPlugin_ExtDev);
-		
-		delete gdrom,pvr,aica;
 
-		List<MapleDeviceLoadInfo>* MapleMain=GetMapleMainDevices();
-		List<MapleDeviceLoadInfo>* MapleSub=GetMapleSubDevices();
 		AddMapleItemsToCB(MapleMain,GetDlgItem(hWnd,IDC_MAPLEMAIN),"NONE");
+		//AddMapleItemsToCB(MapleMain,GetDlgItem(hWnd,IDC_MAPLEMAIN),"NONE");
 
 		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB0),"NONE");
 		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB1),"NONE");
 		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB2),"NONE");
 		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB3),"NONE");
 		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB4),"NONE");
+
+		delete gdrom,pvr,aica,MapleMain,MapleSub;
+
+		//AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB0),"NONE");
+		//AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB1),"NONE");
+		//AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB2),"NONE");
+		//AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB3),"NONE");
+		//AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB4),"NONE");
 		LoadMaple();
 		InitMaplePorts(GetDlgItem(hWnd,IDC_MAPLETAB));
 		UpdateMapleSelections(GetDlgItem(hWnd,IDC_MAPLETAB),hWnd);
@@ -1207,6 +1263,16 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			if (HIWORD(wParam)==CBN_SELCHANGE)
 				UpdateMapleSelections(GetDlgItem(hWnd,IDC_MAPLETAB),hWnd);
 			break;
+		case IDC_MAPLEMAIN:
+			if (HIWORD(wParam)==CBN_SELCHANGE)
+			{
+				char temp[512];
+				GetCurrent(GetDlgItem(hWnd,IDC_MAPLEMAIN),temp);
+				SetMapleMain_Mask(temp,hWnd);
+				//ENABLE/DISABLE THINGS	
+			}
+			//	UpdateMapleSelections(GetDlgItem(hWnd,IDC_MAPLETAB),hWnd);
+			break;
 
 		case IDC_C_EXTDEV:
 			if (HIWORD(wParam)==CBN_SELCHANGE)
@@ -1221,16 +1287,21 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			cfgSaveStr("nullDC_plugins","Current_ExtDevice",SelectedPlugin_ExtDev);
 			UpdateMapleSelections(GetDlgItem(hWnd,IDC_MAPLEPORT),hWnd);
 			SaveMaple();
-		case IDCANCEL://close plugin
+			plgdlg_cancel=false;
 			EndDialog(hWnd,0);
 			return true;
 
+		case IDCANCEL://close plugin
+			plgdlg_cancel=true;
+			EndDialog(hWnd,0);
+			return true;
+/*
 		case IDC_EXTDEV_CONF:
 			{
 				nullDC_ExtDevice_plugin t;
-				if (t.LoadnullDCPlugin(SelectedPlugin_ExtDev)==PluginLoadError::NoError)
+				if (t.Load(SelectedPlugin_ExtDev)==PluginLoadError::NoError)
 				{
-					t.info.ShowConfig(PluginType::ExtDevice,hWnd);
+//					t.info.ShowConfig(PluginType::ExtDevice,hWnd);
 				}
 				else
 				{
@@ -1243,9 +1314,9 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		case IDC_AICA_CONF:
 			{
 				nullDC_AICA_plugin t;
-				if (t.LoadnullDCPlugin(SelectedPlugin_Aica)==PluginLoadError::NoError)
+				if (t.Load(SelectedPlugin_Aica)==PluginLoadError::NoError)
 				{
-					t.info.ShowConfig(PluginType::AICA,hWnd);
+					//t.info.ShowConfig(PluginType::AICA,hWnd);
 				}
 				else
 				{
@@ -1258,9 +1329,9 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		case IDC_PVR_CONF:
 			{
 				nullDC_PowerVR_plugin t;
-				if (t.LoadnullDCPlugin(SelectedPlugin_Pvr)==PluginLoadError::NoError)
+				if (t.Load(SelectedPlugin_Pvr)==PluginLoadError::NoError)
 				{
-					t.info.ShowConfig(PluginType::PowerVR,hWnd);
+					//t.info.ShowConfig(PluginType::PowerVR,hWnd);
 				}
 				else
 				{
@@ -1273,9 +1344,9 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		case IDC_GDR_CONF:
 			{
 				nullDC_GDRom_plugin t;
-				if (t.LoadnullDCPlugin(SelectedPlugin_Gdr)==PluginLoadError::NoError)
+				if (t.Load(SelectedPlugin_Gdr)==PluginLoadError::NoError)
 				{
-					t.info.ShowConfig(PluginType::GDRom,hWnd);
+					//t.info.ShowConfig(PluginType::GDRom,hWnd);
 				}
 				else
 				{
@@ -1283,7 +1354,7 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 					printf("Failed to load \"%s\"\n",SelectedPlugin_Gdr);
 				}
 			}
-			break;
+			break;*/
 		default: break;
 		}
 		return false;

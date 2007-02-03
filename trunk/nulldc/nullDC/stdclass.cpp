@@ -297,6 +297,30 @@ void VArray::UnLockRegion(u32 offset,u32 size)
 	DWORD old;
 	VirtualProtect(((u8*)data)+offset , size, PAGE_READWRITE,&old);
 }
+/*
+void VArray2::Init(void* dta,u32 sz)
+{
+	size=sz;
+	data=(u8*)dta;
+	void* rv=VirtualAlloc(data,sz,MEM_COMMIT,PAGE_READWRITE);
+	verify(rv!=0);
+}
+void VArray2::Term()
+{
+	VirtualFree(data,size,MEM_DECOMMIT);
+	size=0;
+	data=0;
+}*/
+void VArray2::LockRegion(u32 offset,u32 size)
+{
+	DWORD old;
+	VirtualProtect(((u8*)data)+offset , size, PAGE_READONLY,&old);
+}
+void VArray2::UnLockRegion(u32 offset,u32 size)
+{
+	DWORD old;
+	VirtualProtect(((u8*)data)+offset , size, PAGE_READWRITE,&old);
+}
 
 
 bool VramLockedWrite(u8* address);
@@ -319,4 +343,21 @@ int ExeptionHandler(u32 dwCode, void* pExceptionPointers)
 		return EXCEPTION_CONTINUE_EXECUTION;
 
 	return EXCEPTION_CONTINUE_SEARCH;
+}
+
+int msgbox(char* text,unsigned int type)
+{
+	return MessageBox(NULL,text,"nulldc " VER_STRING,type);
+}
+int msgboxf(char* text,unsigned int type,...)
+{
+	va_list args;
+
+	char temp[2048];
+	va_start(args, type);
+	vsprintf(temp, text, args);
+	va_end(args);
+
+
+	return MessageBox(NULL,temp,"nulldc " VER_STRING,type | MB_TASKMODAL);
 }

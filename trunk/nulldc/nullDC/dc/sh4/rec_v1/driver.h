@@ -4,7 +4,7 @@
 
 
 //interface
-void rec_Sh4_int_Run(ThreadCallbackFP* tcb);
+void rec_Sh4_int_Run();
 void rec_Sh4_int_Stop();
 void rec_Sh4_int_Step();
 void rec_Sh4_int_Skip();

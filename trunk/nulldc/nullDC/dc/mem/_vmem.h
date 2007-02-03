@@ -48,3 +48,9 @@ u32 fastcall _vmem_ReadMem32(u32 Address);
 void fastcall _vmem_WriteMem8(u32 Address,u8 data);
 void fastcall _vmem_WriteMem16(u32 Address,u16 data);
 void fastcall _vmem_WriteMem32(u32 Address,u32 data);
+
+//global reserved mem space
+extern u8* sh4_reserved_mem;
+//should be called at start up to ensure it will succed:)
+bool _vmem_reserve();
+void _vmem_release();

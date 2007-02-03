@@ -11,7 +11,7 @@ u32 pvr_readreg_TA(u32 addr,u32 sz);
 void pvr_writereg_TA(u32 addr,u32 data,u32 sz);
 
 //vram 32-64b
-extern VArray vram;
+extern VArray2 vram;
 //read
 u8 __fastcall pvr_read_area1_8(u32 addr);
 u16 __fastcall pvr_read_area1_16(u32 addr);
@@ -31,7 +31,7 @@ void pvr_Reset(bool Manual);
 
 void TAWrite(u32 address,u32* data,u32 count);
 //
-#define UpdatePvr(clc) libPvr->pvr_info.UpdatePvr(clc)
+#define UpdatePvr(clc) libPvr.UpdatePvr(clc)
 
 
 //registers 

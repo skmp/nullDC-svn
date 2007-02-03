@@ -655,4 +655,36 @@ public:
     }
 };
 
+class VArray2
+{
+public:
+
+	u8* data;
+	u32 size;
+	//void Init(void* data,u32 sz);
+	//void Term();
+	void LockRegion(u32 offset,u32 size);
+	void UnLockRegion(u32 offset,u32 size);
+
+	void Zero()
+	{
+		UnLockRegion(0,size);
+		memset(data,0,size);
+	}
+
+	INLINE u8& operator [](const u32 i)
+    {
+#ifdef MEM_BOUND_CHECK
+        if (i>=size)
+		{
+			printf("Error: VArray2 , index out of range (%d>%d)\n",i,size-1);
+			MEM_DO_BREAK;
+		}
+#endif
+		return data[i];
+    }
+};
+
 int ExeptionHandler(u32 dwCode, void* pExceptionPointers);
+int msgbox(char* text,unsigned int type);
+int msgboxf(char* text,unsigned int type,...);

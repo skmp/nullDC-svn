@@ -7,7 +7,6 @@ void gdrom_reg_Init();
 void gdrom_reg_Term();
 void gdrom_reg_Reset(bool Manual);
 
-void GDNotifyEvent(DriveEvent info,void* param);
 u32 ReadMem_gdrom(u32 Addr, u32 sz);
 void WriteMem_gdrom(u32 Addr, u32 data, u32 sz);
 void UpdateGDRom();
@@ -189,4 +188,4 @@ extern char szExDT[8][32];
 #define SPI_CD_READ2	0x31	// 
 #define SPI_GET_SCD		0x40	// 
 
-void gdrom_get_cdda(s16* sector);
+void FASTCALL gdrom_get_cdda(s16* sector);

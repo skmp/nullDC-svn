@@ -1296,14 +1296,14 @@ void __fastcall shil_compile_SaveT(shil_opcode* op)
 	assert(op->flags & FLAG_IMM1);//imm1
 	assert(0==(op->flags & (FLAG_IMM2|FLAG_REG1|FLAG_REG2)));//no imm2/r1/r2
 
-	//hmm guess 32b stores are faster or smth ????
-
-	//x86e->SETcc8M(GetRegPtr(reg_sr_T),op->imm1);//imm1 :P
+	//x86e->Emit(SetCC[op->imm1],x86_ptr(GetRegPtr(reg_sr_T)));	 -> LOADS slower
+	//strange .. anyway :p
 	
 	x86e->Emit(SetCC[op->imm1],EAX);
 	x86e->Emit(op_movzx8to32, EAX,EAX);				//zero out rest of eax
 	x86e->Emit(op_mov32,GetRegPtr(reg_sr_T),EAX);
-		
+
+	
 }
 void __fastcall shil_compile_LoadT(shil_opcode* op)
 {

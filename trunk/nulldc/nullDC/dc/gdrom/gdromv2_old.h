@@ -271,7 +271,6 @@ struct GDReadBlock_t
 //ok , funciton headers now
 bool InitGDROM(void);
 void TermGDROM(void);
-void GDNotifyEvent(DriveEvent info,void* param);
 u32 ReadMem_gdrom(u32 Addr, u32 sz);
 void WriteMem_gdrom(u32 Addr, u32 data, u32 sz);
 void UpdateGDRom();

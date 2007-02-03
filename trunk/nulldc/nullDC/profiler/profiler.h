@@ -4,6 +4,8 @@
 void init_Profiler(void* param);
 void term_Profiler();
 
+void start_Profiler();
+void stop_Profiler();
 
 struct prof_info
 {

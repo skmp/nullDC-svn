@@ -130,7 +130,7 @@ void gdrom_reg_Reset(bool Manual)
 {
 	gdrom_reg_Term();
 	gdrom_reg_Init();
-	gdSR.iDevType	= (u8)((u32)libGDR->gdr_info.GetDiskType() | GDSTATE_STANDBY);
+	gdSR.iDevType	= (u8)((u32)libGDR.GetDiscType() | GDSTATE_STANDBY);
 }
 
 u32 bts_to_read=0;
@@ -444,7 +444,7 @@ void ProcessSPI(void)
 	case SPI_GET_TOC:
 	 {
 		u32 gdtoc[128];	// plus padding
-		libGDR->gdr_info.GetToc(&gdtoc[0], DiskArea(cmd[1]&1));
+		libGDR.GetToc(&gdtoc[0], DiskArea(cmd[1]&1));
 
 		u32 len = (cmd[3]<<8) | cmd[4];
 
@@ -466,7 +466,7 @@ void ProcessSPI(void)
 		lprintf("(GD)\tSPI_REQ_SES: %02X Len:%02X !\n\n", cmd[2], cmd[4]);
 
 		u16 SessionInfo[3];
-		libGDR->gdr_info.GetSessionInfo((u8*)&SessionInfo[0], cmd[2]);
+		libGDR.GetSessionInfo((u8*)&SessionInfo[0], cmd[2]);
 
 		for(int x=2; x>=0; x--)
 			databuff.push_back(SessionInfo[x]);
@@ -509,7 +509,7 @@ void ProcessSPI(void)
 			((rFEATURES&1)?"DMA":"PIO"), cmd[1], Start, Length);
 
 			// *FIXME* modify the gd spec, pass all of cmd[1] to lib.
-		libGDR->gdr_info.ReadSector(gdReadBuffer, Start, Length, 2048);
+		libGDR.ReadSector(gdReadBuffer, Start, Length, 2048);
 
 		if(rFEATURES&1)	// DMA
 		{
@@ -535,7 +535,7 @@ void ProcessSPI(void)
 		 lprintf("(GD)\tSPI_GET_SCD: Fmt: %X, Len:%d !\n\n", Fmt, Len);
 
 		 // *FIXME* modify the gd spec, pass all of cmd[1] to lib.
-		 libGDR->gdr_info.ReadSubChannel(gdReadBuffer, Fmt, Len);
+		 libGDR.ReadSubChannel(gdReadBuffer, Fmt, Len);
 
 		 for(int x=(int)((Len-2)>>1); x>=0; x--)
 			 databuff.push_back( ((u16*)gdReadBuffer)[x] );
@@ -596,7 +596,7 @@ void NotifyEvent_gdrom(DriveEvent info, void* param)
 	{
 	case Notify_DiskEject:
 	case Notify_DiskInsert:
-		gdSR.iDevType	= (u8)((u32)libGDR->gdr_info.GetDiskType() | GDSTATE_STANDBY);
+		gdSR.iDevType	= (u8)((u32)libGDR.GetDiscType() | GDSTATE_STANDBY);
 		return;
 
 	default: break;

@@ -17,7 +17,7 @@
 /* 4/3/2006 -> it's a macro now
 void UpdatePvr(u32 cycles)
 {
-	libPvr->pvr_info.UpdatePvr(cycles);
+	libPvr.UpdatePvr(cycles);
 }*/
 //
 
@@ -227,13 +227,13 @@ u32 pvr_readreg_TA(u32 addr,u32 sz)
 	if ((addr&0xFFFFFF)==0x5F8150)
 		return YUV_doneblocks;
 	//EMUERROR3("Not implemented TA register read , addr=%d,sz=%d",addr,sz);
-	return libPvr->pvr_info.ReadReg(addr,sz);//__pvr_read__reg(addr);
+	return libPvr.ReadReg(addr,sz);//__pvr_read__reg(addr);
 }
 
 void pvr_writereg_TA(u32 addr,u32 data,u32 sz)
 {
 	//__pvr_write_reg(addr,data);
-	libPvr->pvr_info.WriteReg(addr,data,sz);
+	libPvr.WriteReg(addr,data,sz);
 	if ((addr&0xFFFFFF)==0x5F8148)
 		YUV_init();
 }
@@ -279,7 +279,7 @@ void TAWrite(u32 address,u32* data,u32 count)
 	u32 address_w=address&0x1FFFFFF;//correct ?
 	if (address_w<0x800000)//TA poly
 	{
-		libPvr->pvr_info.TaFIFO(address,data,count);
+		libPvr.TaFIFO(address,data,count);
 	}
 	else if(address_w<0x1000000) //Yuv Converter
 	{
@@ -297,11 +297,11 @@ void TAWrite(u32 address,u32* data,u32 count)
 //Init/Term , global
 void pvr_Init()
 {
-	vram.Init(VRAM_SIZE);
+	//vram.Init(sh4_reserved_mem,VRAM_SIZE);
 }
 void pvr_Term()
 {
-	vram.Term();
+	//vram.Term();
 }
 //Reset -> Reset - Initialise to defualt values
 void pvr_Reset(bool Manual)

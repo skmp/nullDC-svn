@@ -8,7 +8,7 @@
 //RTC is emulated here tho xD
 //Gota check what to do about the rest regs that are not aica olny .. pfftt [display mode , any other ?]
 #include <time.h>
-
+u8 aica_ram[2*1024*1024];
 u32 ReadMem_aica_rtc(u32 addr,u32 sz)
 {
 	
@@ -83,7 +83,7 @@ void aica_Term()
 //Cycles are sh4 cpu cycles
 void UpdateAica(u32 cycles)
 {
-	libAICA->aica_info.UpdateAICA(cycles);
+	libAICA.UpdateAICA(cycles);
 }
 
 void Write_SB_ADST(u32 data)
@@ -111,7 +111,8 @@ void Write_SB_ADST(u32 data)
 			for (u32 i=0;i<len;i+=4)
 			{
 				u32 data=ReadMem32_nommu(src+i);
-				libAICA->aica_info.WriteMem_aica_ram(dst+i,data,4);
+				//libAICA.WriteMem_aica_ram(dst+i,data,4);
+				WriteMem32_nommu(dst+i,data);
 			}
 
 			if (SB_ADLEN & 0x80000000)

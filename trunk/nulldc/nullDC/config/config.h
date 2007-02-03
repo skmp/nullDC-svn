@@ -10,9 +10,9 @@
 */
 
 bool cfgVerify();
-s32  cfgLoadInt(const char * lpSection, const char * lpKey);
-void cfgSaveInt(const char * lpSection, const char * lpKey, s32 Int);
-void cfgLoadStr(const char * lpSection, const char * lpKey, char * lpReturn);
-void cfgSaveStr(const char * lpSection, const char * lpKey, const char * lpString);
+s32  FASTCALL cfgLoadInt(const char * lpSection, const char * lpKey);
+void FASTCALL cfgSaveInt(const char * lpSection, const char * lpKey, s32 Int);
+void FASTCALL cfgLoadStr(const char * lpSection, const char * lpKey, char * lpReturn);
+void FASTCALL cfgSaveStr(const char * lpSection, const char * lpKey, const char * lpString);
 
 

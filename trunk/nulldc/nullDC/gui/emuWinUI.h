@@ -20,6 +20,7 @@ extern HWND hDebugger;
 extern HWND g_hWnd;
 
 void uiGetFN(char *szFileName, char *szParse);
+bool SelectPluginsGui();
 
 //	*FIXME* these should be in emuUI.h as they should not be OS dependant
 

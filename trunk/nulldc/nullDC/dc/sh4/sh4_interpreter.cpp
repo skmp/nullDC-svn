@@ -23,7 +23,6 @@
 
 //uh uh 
 volatile bool  sh4_int_bCpuRun=false;
-cThread* sh4_int_thr_handle=0;
 
 u32 exec_cycles=0;
 time_t odtime=0;
@@ -131,12 +130,53 @@ void __fastcall sh4_int_RaiseExeption(u32 ExeptionCode,u32 VectorAddress)
 	SaveSh4Regs(&sh4_ex_SRC);
 }
 
-u32 THREADCALL sh4_int_ThreadEntry_code(void* ptar)
+
+/*u32 THREADCALL sh4_int_ThreadEntry_code(void* ptar)
 {
 	//just cast it
-	ThreadCallbackFP* ptr=(ThreadCallbackFP*) ptar;
+	//ThreadCallbackFP* ptr=(ThreadCallbackFP*) ptar;
 
-	ptr(true);//call the callback to init
+	//ptr(true);//call the callback to init
+
+	
+	//ptr(false);//call the callback
+
+	return 0;
+}
+//setup the SEH handler here so it doesnt fuq us (vc realy likes not to optimise SEH enabled functions)
+u32 THREADCALL sh4_int_ThreadEntry(void* ptar)
+{
+	__try
+	{
+		return sh4_int_ThreadEntry_code(ptar);
+	}
+	__except( ExeptionHandler( GetExceptionCode(), (GetExceptionInformation()) ) )
+	{
+
+	}
+
+	return 0;
+}*/
+
+//interface
+void Sh4_int_Run()
+{
+	/*if (sh4_int_thr_handle)
+	{
+		printf("Sh4_int_Run: Cpu allready running\n");
+	}
+	else
+	{
+		sh4_int_bCpuRun=true;
+		sh4_int_thr_handle=new cThread(sh4_int_ThreadEntry,tcb);
+
+		if (sh4_int_thr_handle==0)
+		{
+			printf("Sh4_int_Run: Thread creation failed\n");
+		}
+		sh4_int_thr_handle->Start();
+	}*/
+	sh4_int_bCpuRun=true;
 
 	__asm
 	{
@@ -152,7 +192,7 @@ u32 THREADCALL sh4_int_ThreadEntry_code(void* ptar)
 		mov esi,CPU_TIMESLICE;  //cycle count = max
 
 		//loop start
-		i_mainloop:
+i_mainloop:
 
 		//run a single opcode -- doesnt use _any_ stack space :D
 		{
@@ -160,17 +200,17 @@ i_run_opcode:
 			mov ecx , pc;			//param #1 for readmem16
 			call IReadMem16;		//ax has opcode to execute now
 			movzx eax,ax;			//zero extend to 32b
-			
+
 			mov ecx,eax;			//ecx=opcode (param 1 to opcode handler)
 			call OpPtr[eax*4];		//call opcode handler
 
 			add pc,2;				//pc+=2 -> goto next opcode
-			
-			
+
+
 			sub esi,CPU_RATIO;		//remove cycles from cycle count
 			jns i_run_opcode;		//jump not (esi>0) , inner loop til timeslice is executed
 		}
-		
+
 		//exeption rollback point
 		//if an exeption happened , resume execution here
 i_exept_rp:
@@ -188,7 +228,7 @@ i_exept_rp:
 
 		neg ecx;				//ecx=-ecx , now we have leftover as positive
 		add ecx,esi;			//add ecx+=CPU_TIMESLICE , so we have total cycles on ecx
-		
+
 		//take in acount delay slots now
 		add ecx,exec_cycles;	//add cycles to ecx
 		mov exec_cycles,eax;	//zero out cycles [rember ? we zero'd out eax lots ago :p]
@@ -207,43 +247,7 @@ i_exit_mainloop:
 	}
 
 
-	ptr(false);//call the callback
 	sh4_int_bCpuRun=false;
-	return 0;
-}
-//setup the SEH handler here so it doesnt fuq us (vc realy likes not to optimise SEH enabled functions)
-u32 THREADCALL sh4_int_ThreadEntry(void* ptar)
-{
-	__try
-	{
-		return sh4_int_ThreadEntry_code(ptar);
-	}
-	__except( ExeptionHandler( GetExceptionCode(), (GetExceptionInformation()) ) )
-	{
-
-	}
-
-	return 0;
-}
-
-//interface
-void Sh4_int_Run(ThreadCallbackFP* tcb)
-{
-	if (sh4_int_thr_handle)
-	{
-		printf("Sh4_int_Run: Cpu allready running\n");
-	}
-	else
-	{
-		sh4_int_bCpuRun=true;
-		sh4_int_thr_handle=new cThread(sh4_int_ThreadEntry,tcb);
-
-		if (sh4_int_thr_handle==0)
-		{
-			printf("Sh4_int_Run: Thread creation failed\n");
-		}
-		sh4_int_thr_handle->Start();
-	}
 }
 
 void Sh4_int_Stop()
@@ -252,15 +256,15 @@ void Sh4_int_Stop()
 	{
 		sh4_int_bCpuRun=false;
 		//wait for thread to exit
-		sh4_int_thr_handle->WaitToEnd((u32)-1);
-		delete sh4_int_thr_handle;
-		sh4_int_thr_handle=0;
+		//sh4_int_thr_handle->WaitToEnd((u32)-1);
+		//delete sh4_int_thr_handle;
+		//sh4_int_thr_handle=0;
 	}
-	if (sh4_int_thr_handle)
-	{
-		delete sh4_int_thr_handle;
-		sh4_int_thr_handle=0;
-	}
+	//if (sh4_int_thr_handle)
+	//{
+	//	delete sh4_int_thr_handle;
+	//	sh4_int_thr_handle=0;
+	//}
 }
 
 void Sh4_int_Step() 
@@ -557,7 +561,7 @@ int __fastcall UpdateSystem(u32 Cycles)
 	{
 		//~1500 cycles .These devices dont need more precition , so we save a bit here :)
 		UpdateAica(aica_cycl);
-		libExtDevice->ext_device_info.UpdateExtDevice(aica_cycl);
+		libExtDevice.UpdateExtDevice(aica_cycl);
 		//~15k cycles
 		gpc_counter++;
 		if (gpc_counter>10)

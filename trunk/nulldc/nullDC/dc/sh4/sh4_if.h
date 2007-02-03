@@ -186,8 +186,7 @@ struct fpscr_type
 };
 
 
-typedef void ThreadCallbackFP(bool init);
-typedef void RunFP(ThreadCallbackFP* tcb);
+typedef void RunFP();
 typedef void StopFP();
 typedef void StepFP();
 typedef void SkipFP();

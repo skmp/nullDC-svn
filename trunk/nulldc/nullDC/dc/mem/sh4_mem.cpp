@@ -15,7 +15,7 @@
 
 
 //main system mem
-VArray mem_b;
+VArray2 mem_b;
 
 //bios rom
 Array<u8> bios_b;
@@ -132,14 +132,14 @@ void map_area4(u32 base)
 template <u32 sz,class T>
 T __fastcall ReadMem_extdev_T(u32 addr)
 {
-	return (T)libExtDevice->ext_device_info.ReadMem_A5(addr,sz);
+	return (T)libExtDevice.ReadMem_A5(addr,sz);
 }
 
 //Write Ext.Device
 template <u32 sz,class T>
 void __fastcall WriteMem_extdev_T(u32 addr,T data)
 {
-	libExtDevice->ext_device_info.WriteMem_A5(addr,data,sz);
+	libExtDevice.WriteMem_A5(addr,data,sz);
 }
 
 _vmem_handler area5_handler;
@@ -226,7 +226,7 @@ void mem_map_defualt()
 void mem_Init()
 {
 	//Allocate mem for memory/bios/flash
-	mem_b.Init(RAM_SIZE);
+	//mem_b.Init(&sh4_reserved_mem[0x0C000000],RAM_SIZE);
 	bios_b.Resize(BIOS_SIZE,false);
 	flash_b.Resize(FLASH_SIZE,false);
 
@@ -267,11 +267,12 @@ void mem_Term()
 	strcat(temp_path,"dc_flash_wb.bin");
 	SaveSh4FlashromToFile(temp_path);
 	free(temp_path);
-	flash_b.Free();
+	
 
 	//Free allocated mem for memory/bios/flash
+	flash_b.Free();
 	bios_b.Free();
-	mem_b.Term();
+	//mem_b.Term();
 
 	//vmem
 	_vmem_term();

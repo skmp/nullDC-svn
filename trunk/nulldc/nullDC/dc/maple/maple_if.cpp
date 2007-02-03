@@ -11,7 +11,7 @@
 #include "plugins/plugin_manager.h"
 #include "dc/sh4/rec_v1/blockmanager.h"
 
-maple_device_instance MapleDevices[4][6];
+maple_device_instance MapleDevices[4];
 
 #ifdef BUILD_NAOMI
 void naomi_InitMaple(void);
@@ -122,19 +122,6 @@ void maple_SB_MDST_Write(u32 data)
 	SB_MDST = 0;	//No dma in progress :)
 	#endif
 }
-u32 GetSubDeviceMask(u32 port)
-{
-	u32 rv=0;
-	if (MapleDevices[port][0].Connected==false)
-		return 0;
-
-	for (int i=0;i<5;i++)
-	{
-		if (MapleDevices[port][i+1].Connected)
-			rv|=(1<<i);
-	}
-	return rv;
-}
 
 bool IsOnSh4Ram(u32 addr)
 {
@@ -153,23 +140,25 @@ u32 GetMaplePort(u32 addr)
 	for (int i=0;i<6;i++)
 	{
 		if ((1<<i)&addr)
-			return i==5?0:1+i;
+			return i==5?0:i;
 	}
 	return 0;
 }
 u32 GetConnectedDevices(u32 Port)
 {
 	u32 rv=0;
+	if (!MapleDevices[Port].connected)
+		return rv;
 	
-	if(MapleDevices[Port][1].Connected)
+	if(MapleDevices[Port].subdevices[0].connected)
 		rv|=0x01;
-	if(MapleDevices[Port][2].Connected)
+	if(MapleDevices[Port].subdevices[1].connected)
 		rv|=0x02;
-	if(MapleDevices[Port][3].Connected)
+	if(MapleDevices[Port].subdevices[2].connected)
 		rv|=0x04;
-	if(MapleDevices[Port][4].Connected)
+	if(MapleDevices[Port].subdevices[3].connected)
 		rv|=0x08;
-	if(MapleDevices[Port][5].Connected)
+	if(MapleDevices[Port].subdevices[4].connected)
 		rv|=0x10;
 
 	return rv;
@@ -219,19 +208,33 @@ void DoMapleDma()
 			u32 resp=0;
 			inlen*=4;
 
-			if (MapleDevices[device][0].Connected && MapleDevices[device][subport].Connected)
+			if (MapleDevices[device].connected && (subport!=0 || MapleDevices[device].subdevices[subport].connected))
 			{
 				//MaplePlugin[device][0].GotDataCB(header_1,header_2,p_data,plen);
 				//libMapleMain[device]->SendFrame(command,&p_data[0],inlen,&p_out[1],outlen,retv);
 				//(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce);
-				MapleDevices[device][subport].MapleDeviceDMA(
-					&MapleDevices[device][subport],
-					command,
-					&p_data[1],
-					inlen-4,
-					&p_out[1],
-					outlen,
-					resp);
+				if (subport==0)
+				{
+					MapleDevices[device].dma(
+						&MapleDevices[device],
+						command,
+						&p_data[1],
+						inlen-4,
+						&p_out[1],
+						outlen,
+						resp);
+				}
+				else
+				{
+					MapleDevices[device].subdevices[subport].dma(
+						&MapleDevices[device].subdevices[subport],
+						command,
+						&p_data[1],
+						inlen-4,
+						&p_out[1],
+						outlen,
+						resp);
+				}
 
 
 				if(reci&0x20)
@@ -260,13 +263,8 @@ dma_end:
 	RaiseInterrupt(holly_MAPLE_DMA);
 }
 
-void Split(char* in,char* dll,int& id)
-{
-	char *first = strtok(in, ":"); 
-	char *second = strtok(NULL, "\0"); 
-	strcpy(dll,first);
-	id=atoi (second);
-}
+void Split(char* in,char* dll,int& id);
+/*
 List<MapleDeviceLoadInfo> maple_plugin_devices;
 List<MapleDeviceLoadInfo>* GetMapleMainDevices()
 {
@@ -292,16 +290,16 @@ List<MapleDeviceLoadInfo>* GetMapleSubDevices()
 	}
 
 	return rv;
-}
+}*/
 void maple_plugins_enum_devices()
-{
+{/*
 	maple_plugin_devices.clear();
 	List<PluginLoadInfo>* maplepl = EnumeratePlugins(PluginType::MapleDevice);
 
 	for (u32 i=0;i<(*maplepl).size();i++)
 	{
 		nullDC_Maple_plugin mpi;
-		mpi.LoadnullDCPlugin((*maplepl)[i].dll);
+		mpi.Load((*maplepl)[i].dll);
 		for (int j=0;mpi.maple_info.Devices[j].CreateInstance;j++)
 		{
 			MapleDeviceLoadInfo dev;
@@ -315,23 +313,23 @@ void maple_plugins_enum_devices()
 			maple_plugin_devices.Add(dev);
 		}
 		mpi.Unload();
-	}
+	}*/
 }
 
 void maple_plugins_add(char* device)
-{
+{/*
 	char dll[512];
 	int id;
 	Split(device,dll,id);
 	for (u32 i=0;i<libMaple.size();i++)
 	{
-		if ((strcmp(libMaple[i]->dll,dll)==0))
+		if ((strcmp(libMaple[i].dll,dll)==0))
 			return;
 	}
-	nullDC_Maple_plugin* t=new nullDC_Maple_plugin();
-	t->LoadnullDCPlugin(dll);
-	libMaple.Add(t);
+	nullDC_Maple_plugin t;
+	libMaple.Add(t)->Load(dll);*/
 }
+/*
 maple_device* FindMapleDevice(char* device)
 {
 	char dll[512];
@@ -339,12 +337,12 @@ maple_device* FindMapleDevice(char* device)
 	Split(device,dll,id);
 	for (u32 i=0;i<libMaple.size();i++)
 	{
-		if (strcmp(libMaple[i]->dll,dll)==0)
-			return &(libMaple[i]->maple_info.Devices[id]);
+		if (strcmp(libMaple[i].dll,dll)==0)
+			return &(libMaple[i].maple_info.Devices[id]);
 	}
 	return 0;
 }
-
+*/
 u32 GetMapleAddress(u32 port,u32 device)
 {
 	u32 rv=port<<6;
@@ -356,6 +354,7 @@ u32 GetMapleAddress(u32 port,u32 device)
 
 	return rv;
 }
+/*
 //after plugin init
 void maple_plugins_Init()
 {
@@ -371,14 +370,14 @@ void maple_plugins_Init()
 			cfgLoadStr("nullDC_plugins",temp,plugin);
 			if (strcmp(plugin,"NULL")!=0)
 			{
-				maple_device* plugin_dev=FindMapleDevice(plugin);
-				plugin_dev->CreateInstance(plugin_dev,MapleDevices[i][j],(u8)GetMapleAddress(i,j));
+				//maple_device* plugin_dev=FindMapleDevice(plugin);
+				//plugin_dev->CreateInstance(plugin_dev,MapleDevices[i][j],(u8)GetMapleAddress(i,j));
 				MapleDevices[i][j].port=(u8)GetMapleAddress(i,j);
-				MapleDevices[i][j].Connected=true;
+				MapleDevices[i][j].connected=true;
 			}
 			else
 			{
-				MapleDevices[i][j].Connected=false;
+				MapleDevices[i][j].connected=false;
 			}
 		}
 	}
@@ -398,17 +397,18 @@ void maple_plugins_Term()
 			cfgLoadStr("nullDC_plugins",temp,plugin);
 			if (strcmp(plugin,"NULL")!=0)
 			{
-				maple_device* plugin_dev=FindMapleDevice(plugin);
-				plugin_dev->DestroyInstance(plugin_dev,MapleDevices[i][j]);
-				MapleDevices[i][j].Connected=false;
+				//maple_device* plugin_dev=FindMapleDevice(plugin);
+				//plugin_dev->DestroyInstance(plugin_dev,MapleDevices[i][j]);
+				MapleDevices[i][j].connected=false;
 			}
 			else
 			{
-				MapleDevices[i][j].Connected=false;
+				MapleDevices[i][j].connected=false;
 			}
 		}
 	}
 }
+
 
 void maple_plugins_create_list()
 {
@@ -431,6 +431,7 @@ void maple_plugins_create_list()
 	}
 }
 
+*/
 //Maple plugin enumeration
 //what is needed here is :
 //Enumerate all maple plugin
@@ -450,8 +451,6 @@ void maple_Init()
 
 	sb_regs[(SB_MSHTCL_addr-SB_BASE)>>2].flags=REG_32BIT_READWRITE;
 	sb_regs[(SB_MSHTCL_addr-SB_BASE)>>2].writeFunction=maple_SB_MSHTCL_Write;
-
-	maple_plugins_create_list();
 
 	#ifdef BUILD_NAOMI
 	naomi_InitMaple();

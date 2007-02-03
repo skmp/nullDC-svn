@@ -16,46 +16,203 @@
 bool dc_inited=false;
 bool dc_reseted=false;
 bool dc_ingore_init=false;
+bool dc_running=false;
+
+enum emu_thread_state_t
+{
+	EMU_IDLE,
+	EMU_CPU_START,
+	EMU_NOP,
+	EMU_QUIT,
+	EMU_INIT,
+	EMU_TERM,
+	EMU_RESET,
+	EMU_RESET_MANUAL,
+};
+enum emu_thread_rv_t
+{
+	RV_OK = 1,
+	RV_ERROR=2,
+
+	RV_EXEPTION=-2,
+	RV_WAIT =-1,
+};
+
+
+volatile emu_thread_state_t emu_thread_state=EMU_IDLE;
+volatile emu_thread_rv_t emu_thread_rv=RV_WAIT;
+
+cThread* emu_thread=0;
+
+u32 THREADCALL emulation_thead(void* ptar);
+struct _______initialzzz__
+{	
+	_______initialzzz__()
+	{
+		emu_thread = new cThread(emulation_thead,0);
+		emu_thread->Start();
+	}
+} init_ctorz;
+emu_thread_rv_t emu_rtc(emu_thread_state_t cmd)
+{
+	static MSG msg;
+
+	emu_thread_rv=RV_WAIT;
+	emu_thread_state=cmd;
+	while(emu_thread_rv==RV_WAIT)
+	{
+		Sleep(10);
+		if( PeekMessage(&msg, NULL, 0,0, PM_REMOVE) != 0 )
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+	}
+	return emu_thread_rv;
+}
+//This is the emulation thread =P
+u32 THREADCALL emulation_thead(void* ptar)
+{
+	emu_thread_state=EMU_IDLE;
+	emu_thread_rv=RV_OK;
+
+	printf("+Emulation thread started \n");
+	HANDLE hThreadreal;
+	DuplicateHandle(GetCurrentProcess(), 
+		GetCurrentThread(), 
+		GetCurrentProcess(),
+		&hThreadreal, 
+		0,
+		FALSE,
+		DUPLICATE_SAME_ACCESS);
+	init_Profiler(hThreadreal);
+
+	while (emu_thread_state!=EMU_QUIT)
+	{
+		__try
+		{
+			while(emu_thread_state!=EMU_QUIT)
+			{
+				switch(emu_thread_state)
+				{
+				case EMU_IDLE:
+					Sleep(100);
+					break;
+
+				case EMU_NOP:
+					emu_thread_state=EMU_IDLE;
+
+					emu_thread_rv=RV_OK;
+					break;
+
+				case EMU_CPU_START:
+					emu_thread_state=EMU_IDLE;
+					emu_thread_rv=RV_OK;
+					sh4_cpu->Run();
+					break;
+
+				case EMU_INIT:
+					emu_thread_state=EMU_IDLE;
+
+					
+					if (!plugins_Init())
+					{ 
+						//printf("Emulation thread : Plugin init failed\n"); 	
+						plugins_Term();
+						emu_thread_rv=RV_ERROR;
+						break;
+					}
+					sh4_cpu->Init();
+
+
+					mem_Init();
+					pvr_Init();
+					aica_Init();
+					mem_map_defualt();
+
+					emu_thread_rv=RV_OK;
+					break;
+
+				case EMU_TERM:
+					emu_thread_state=EMU_IDLE;
+
+					aica_Term();
+					pvr_Term();
+					mem_Term();
+					sh4_cpu->Term();
+					plugins_Term();
+					
+
+					emu_thread_rv=RV_OK;
+					break;
+
+				case EMU_RESET:
+					emu_thread_state=EMU_IDLE;
+
+					plugins_Reset(false);
+					sh4_cpu->Reset(false);
+					mem_Reset(false);
+					pvr_Reset(false);
+					aica_Reset(false);
+
+					//when we boot from ip.bin , it's nice to have it seted up
+					sh4_cpu->SetRegister(Sh4RegType::reg_gbr,0x8c000000);
+					sh4_cpu->SetRegister(Sh4RegType::reg_sr,0x700000F0);
+					sh4_cpu->SetRegister(Sh4RegType::reg_fpscr,0x0004001);
+
+					emu_thread_rv=RV_OK;
+					break;
+
+				case EMU_RESET_MANUAL:
+					emu_thread_state=EMU_IDLE;
+
+					sh4_cpu->Reset(true);
+					plugins_Reset(true);
+					mem_Reset(true);
+					pvr_Reset(true);
+					aica_Reset(true);
+
+					//when we boot from ip.bin , it's nice to have it seted up
+					sh4_cpu->SetRegister(Sh4RegType::reg_gbr,0x8c000000);
+					sh4_cpu->SetRegister(Sh4RegType::reg_sr,0x700000F0);
+					sh4_cpu->SetRegister(Sh4RegType::reg_fpscr,0x0004001);
+
+					emu_thread_rv=RV_OK;
+					break;
+
+				}
+			}
+
+		}
+		__except( (EXCEPTION_CONTINUE_EXECUTION==ExeptionHandler( GetExceptionCode(), (GetExceptionInformation()))) ? EXCEPTION_CONTINUE_EXECUTION : EXCEPTION_CONTINUE_SEARCH )
+		{
+			printf("Unhandled exeption ; Emulation thread halted...\n");
+			emu_thread_rv= RV_EXEPTION;
+		}
+	}
+	emu_thread_rv=RV_OK;
+	term_Profiler();
+	CloseHandle(hThreadreal);
+	printf("-Emulation thread stoped \n");
+
+	return 0;
+}
 //called from the new thread
-void ThreadCallback_DC(bool start)
+/*void ThreadCallback_DC(bool start)
 {
 	//call Thread initialisers
 	if (start)
 	{
-		plugins_ThreadInit();
+		//plugins_ThreadInit();
 		GDB_BOOT_TEST();
 	}
 	//call Thread terminators
 	else
 	{
-		plugins_ThreadTerm();
+		//plugins_ThreadTerm();
 	}
-}
+}*/
 
-void cputhreadcb(bool shit)
-{
-	if (shit)
-	{
-		printf("+Sh4 thread started \n");
-		HANDLE hThreadreal;
-		DuplicateHandle(GetCurrentProcess(), 
-                    GetCurrentThread(), 
-                    GetCurrentProcess(),
-                    &hThreadreal, 
-                    0,
-                    FALSE,
-                    DUPLICATE_SAME_ACCESS);
-		init_Profiler(hThreadreal);
-	}
-	else
-	{
-		term_Profiler();
-		printf("-Sh4 thread stoped \n");
-	}
-	if (!dc_ingore_init)
-		ThreadCallback_DC(shit);
-	dc_ingore_init=false;
-}
 
 //Init mainly means allocate
 //Reset is called before first run
@@ -64,38 +221,32 @@ void cputhreadcb(bool shit)
 //Plugins/Cpu core must not change after this call is made.
 bool Init_DC()
 {
+	/*
 	char temp_dll[512];
-	nullDC_PowerVR_plugin* pvrplg=new nullDC_PowerVR_plugin();
-	nullDC_GDRom_plugin* gdrplg=new nullDC_GDRom_plugin();
-	nullDC_AICA_plugin* aicaplg=new nullDC_AICA_plugin();
-	nullDC_ExtDevice_plugin* extdevplg=new nullDC_ExtDevice_plugin();
+	//nullDC_PowerVR_plugin* pvrplg=new nullDC_PowerVR_plugin();
+	//nullDC_GDRom_plugin* gdrplg=new nullDC_GDRom_plugin();
+	//nullDC_AICA_plugin* aicaplg=new nullDC_AICA_plugin();
+	//nullDC_ExtDevice_plugin* extdevplg=new nullDC_ExtDevice_plugin();
 
 	//load the selected plugins
 	cfgLoadStr("nullDC_plugins","Current_PVR",temp_dll);
-	pvrplg->LoadnullDCPlugin(temp_dll);
+	SetPlugin(temp_dll,PluginType::PowerVR);
 
 	cfgLoadStr("nullDC_plugins","Current_GDR",temp_dll);
-	gdrplg->LoadnullDCPlugin(temp_dll);
+	SetPlugin(temp_dll,PluginType::GDRom);
 
 	cfgLoadStr("nullDC_plugins","Current_AICA",temp_dll);
-	aicaplg->LoadnullDCPlugin(temp_dll);
+	SetPlugin(temp_dll,PluginType::AICA);
 
 	cfgLoadStr("nullDC_plugins","Current_ExtDevice",temp_dll);
-	extdevplg->LoadnullDCPlugin(temp_dll);
+	SetPlugin(temp_dll,PluginType::ExtDevice);
+	*/
+	if (!plugins_Load())
+		return false;
 
-	//ok , all loaded , set em as selected
-	SetPlugin(pvrplg,PluginType::PowerVR);
-	SetPlugin(gdrplg,PluginType::GDRom);
-	SetPlugin(aicaplg,PluginType::AICA);
-	SetPlugin(extdevplg,PluginType::ExtDevice);
+	if (emu_rtc(EMU_INIT)!=RV_OK)
+		return false;
 
-	sh4_cpu->Init();
-	mem_Init();
-	pvr_Init();
-	aica_Init();
-	mem_map_defualt();
-	plugins_Init();
-	maple_plugins_Init();
 
 	dc_inited=true;
 	return true;
@@ -103,16 +254,10 @@ bool Init_DC()
 
 bool Reset_DC(bool Manual)
 {
-	sh4_cpu->Reset(Manual);
-	mem_Reset(Manual);
-	pvr_Reset(Manual);
-	aica_Reset(Manual);
-	plugins_Reset(Manual);
-
-	//when we boot from ip.bin , it's nice to have it seted up
-	sh4_cpu->SetRegister(Sh4RegType::reg_gbr,0x8c000000);
-	sh4_cpu->SetRegister(Sh4RegType::reg_sr,0x700000F0);
-	sh4_cpu->SetRegister(Sh4RegType::reg_fpscr,0x0004001);
+	if (Manual)
+		emu_rtc(EMU_RESET_MANUAL);
+	else
+		emu_rtc(EMU_RESET);
 
 	dc_reseted=true;
 	return true;
@@ -122,12 +267,10 @@ void Term_DC()
 {
 	if (dc_inited)
 	{
-		sh4_cpu->Term();
-		maple_plugins_Term();
-		plugins_Term();
-		aica_Term();
-		pvr_Term();
-		mem_Term();
+		Stop_DC();
+		emu_rtc(EMU_TERM);
+		emu_rtc(EMU_QUIT);
+		dc_inited=false;
 	}
 }
 
@@ -145,7 +288,10 @@ void LoadBiosFiles()
 	strcat(temp_path,"hkt_boot.bin");
 #endif
 
-	LoadFileToSh4Bootrom(temp_path);
+	if (!LoadFileToSh4Bootrom(temp_path))
+	{
+
+	}
 
 #ifndef BUILD_NAOMI
 	temp_path[pl]=0;
@@ -191,22 +337,25 @@ void Start_DC()
 	{
 		if (!dc_inited)
 		{
-			Init_DC();
+			if (!Init_DC())
+				return;
 		}
 
 		if (!dc_reseted)
 			Reset_DC(false);//hard reset kthx
 
-		sh4_cpu->Run(cputhreadcb);
+		verify(emu_rtc(EMU_CPU_START)==RV_OK);
+		//sh4_cpu->Run();
 	}
 }
 void Stop_DC()
 {
 	if (dc_inited)//sh4_cpu may not be inited ;)
 	{
-		//if (sh4_cpu->IsCpuRunning())
+		if (sh4_cpu->IsCpuRunning())
 		{
 			sh4_cpu->Stop();
+			emu_rtc(EMU_NOP);
 		}
 	}
 }
@@ -214,8 +363,4 @@ void Stop_DC()
 bool IsDCInited()
 {
 	return dc_inited;
-}
-void SwitchCPU_DC()
-{
-	dc_ingore_init=true;//hehe just ingore next thread callback :P
 }

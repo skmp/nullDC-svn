@@ -130,7 +130,7 @@ bool InitGDROM(void)
 {
 	gd_log=fopen("gdrom.log.txt","w");
 	//we must Get pointers here :)
-	drive=&libGDR->gdr_info; //GetIsoDrive();//cdi_GetDrive();//GetIsoDrive();//Get_IcIsoDrive("Img_Iso.dll");
+	drive=&libGDR.; //GetIsoDrive();//cdi_GetDrive();//GetIsoDrive();//Get_IcIsoDrive("Img_Iso.dll");
 
 	//init registers
 	DriveSel		=0xA1;		// right ?
@@ -166,7 +166,7 @@ void NotifyEvent_gdrom(DriveEvent info,void* param)
 	switch(info)
 	{
 		case DiskChange:
-			if (drive->GetDiskType()==NoDisk)
+			if (drive->GetDiscType()==NoDisk)
 			{
 				//y know , this must be filed some day :) lol
 				SecNumber.DiscFormat= 0;
@@ -175,7 +175,7 @@ void NotifyEvent_gdrom(DriveEvent info,void* param)
 			else
 			{
 				//o.O is this suposed to work ??
-				SecNumber.DiscFormat=drive->GetDiskType()>>4;
+				SecNumber.DiscFormat=drive->GetDiscType()>>4;
 				SecNumber.Status=2;
 			}
 			break;
@@ -691,7 +691,7 @@ bool ProcessSPI(SpiCommandInfo* cmd)
 			printf("Session Info for Session %d,%d bytes\n",cmd->CommandData[2],cmd->CommandData[4]);
 			
 			u8 ses_inf[6];
-			libGDR->gdr_info.GetSessionInfo(ses_inf,cmd->CommandData[2]);
+			libGDR.GetSessionInfo(ses_inf,cmd->CommandData[2]);
 
 			//send requested data
 			SendBytesToHost(cmd->CommandData[4],(u8*)&ses_inf[0]);

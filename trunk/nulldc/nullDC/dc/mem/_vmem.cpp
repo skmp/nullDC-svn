@@ -18,76 +18,8 @@ _vmem_WriteMem32FP*		_vmem_WF32[0x1000];
 
 //upper 16b of the address
 void* _vmem_MemInfo[0x10000];
+u8* sh4_reserved_mem;
 
-
-//reading from misc mem areas
-
-//eax=function index
-//ecx=full address of read
-//edx=unused , but may be corrupted
-void naked _vmem_ReadMisc8()
-{
-	__asm
-	{
-		int 3;
-		//get function pointer
-		jmp  [_vmem_RF8+eax];
-		//jmp eax;
-	}
-}
-void naked _vmem_ReadMisc16()
-{
-	__asm
-	{
-		int 3;
-		//get function pointer
-		jmp [_vmem_RF16+eax];
-		//jmp eax;
-	}
-}
-void naked _vmem_ReadMisc32()
-{
-	__asm
-	{
-		int 3;
-		//get function pointer
-		jmp [_vmem_RF32+eax];
-		//jmp eax;
-	}
-}
-
-//eax=function index
-//ecx=full address of write
-//edx=data to write
-void naked _vmem_WriteMisc8()
-{
-	__asm
-	{
-		int 3;
-		jmp  [_vmem_WF8+eax];
-		//jmp eax;
-	}
-}
-
-void naked _vmem_WriteMisc16()
-{
-	__asm
-	{
-		int 3;
-		jmp [_vmem_WF16+eax];
-		//jmp eax;
-	}
-}
-
-void naked _vmem_WriteMisc32()
-{
-	__asm
-	{
-		int 3;
-		jmp [_vmem_WF32+eax];
-		//jmp eax;
-	}
-}
 
 //ReadMem/WriteMem functions
 //ReadMem
@@ -399,3 +331,128 @@ void _vmem_term()
 {
 
 }
+#include <windows.h>
+#include "dc\pvr\pvr_if.h"
+#include "sh4_mem.h"
+
+HANDLE mem_handle;
+bool _vmem_reserve()
+{
+	mem_handle=CreateFileMapping(INVALID_HANDLE_VALUE,0,PAGE_READWRITE ,0,RAM_SIZE + VRAM_SIZE,"ndc_mem_dataazz");
+
+	void* ptr=0;
+	sh4_reserved_mem=(u8*)VirtualAlloc(0,512*1024*1024,MEM_RESERVE,PAGE_NOACCESS);
+	if (sh4_reserved_mem==0)
+		return false;
+	VirtualFree(sh4_reserved_mem,0,MEM_RELEASE);
+	
+	
+	
+	
+	//Area 0
+	//[0 ,0x04000000) -> unused
+	ptr=VirtualAlloc(&sh4_reserved_mem[0x00000000],0x04000000,MEM_RESERVE,PAGE_NOACCESS);
+	if (ptr==0)
+		return false;
+	//Area 1
+	//[0x04000000,0x05000000) -> vram | mirror
+	//[0x05000000,0x06000000) -> unused
+	//[0x06000000,0x07000000) -> vram   mirror
+	//[0x07000000,0x08000000) -> unused mirror
+
+	//vram #0
+	ptr= MapViewOfFileEx(mem_handle,FILE_MAP_READ |FILE_MAP_WRITE,0,RAM_SIZE,VRAM_SIZE,&sh4_reserved_mem[0x04000000]);
+	ptr= MapViewOfFileEx(mem_handle,FILE_MAP_READ |FILE_MAP_WRITE,0,RAM_SIZE,VRAM_SIZE,&sh4_reserved_mem[0x05000000]);
+	if (ptr==0)
+		return false;
+	vram.size=VRAM_SIZE;
+	vram.data=(u8*)ptr;
+
+	//vram #1
+	ptr= MapViewOfFileEx(mem_handle,FILE_MAP_READ |FILE_MAP_WRITE,0,RAM_SIZE,VRAM_SIZE,&sh4_reserved_mem[0x06000000]);
+	if (ptr==0)
+		return false;
+
+	//Area 2
+	//[0x08000000,0x0C000000) -> unused
+	ptr=VirtualAlloc(&sh4_reserved_mem[0x08000000],0x04000000,MEM_RESERVE,PAGE_NOACCESS);
+	if (ptr==0)
+		return false;
+	//Area 3
+	//[0x0C000000,0x0D000000) -> main ram
+	//[0x0D000000,0x0E000000) -> main ram mirror
+	//[0x0E000000,0x0F000000) -> main ram mirror
+	//[0x0F000000,0x10000000) -> main ram mirror
+		//ram #0
+	ptr= MapViewOfFileEx(mem_handle,FILE_MAP_READ |FILE_MAP_WRITE,0,0,RAM_SIZE,&sh4_reserved_mem[0x0C000000]);
+	if (ptr==0)
+		return false;
+	mem_b.size=RAM_SIZE;
+	mem_b.data=(u8*)ptr;
+
+	//ram #1
+	ptr= MapViewOfFileEx(mem_handle,FILE_MAP_READ |FILE_MAP_WRITE,0,0,RAM_SIZE,&sh4_reserved_mem[0x0D000000]);
+	if (ptr==0)
+		return false;
+
+	//Area 4
+	//Area 5
+	//Area 6
+	//Area 7
+	//all -> Unused 
+	//[0x10000000,0x20000000) -> unused
+	
+	ptr=VirtualAlloc(&sh4_reserved_mem[0x10000000],0x10000000,MEM_RESERVE,PAGE_NOACCESS);
+	if (ptr==0)
+		return false;
+
+	return sh4_reserved_mem!=0;
+}
+
+void _vmem_release()
+{
+	VirtualFree(sh4_reserved_mem,0,MEM_RELEASE);
+}
+
+/*
+	Some more notes :
+	_vmem : for any *general* purpose access , with size 1/2/4/8/32.
+	8/32 size , if not in memory , is splitted to many calls to 4 functions
+	
+	dynarec _vmem :
+	When dynarec is using vmem , there are a few things to take in acount ...
+
+	Access sizes are 1,2,4,8
+
+	An access can be static (fixed address).If so , it can be fully optimised to call/movs 
+		[even more if i implementthe register info table]. it is marked by an 's' (for static)
+
+	An access can be block olny (to mapped buffers).In that case , the dynarec should provide 
+		a fallback to full mode to ensure compat. It is marked by an 'n' (for native)
+
+	An access can be anyware in the mem space.In that case , an optimised version of the full 
+	_vmem lookup is generated.
+
+	so , we have
+
+	svmem (static  , handler)		: corrupts regs a call can corrupt
+	nsvmem(static  , block)			: corrupts olny temp regs used
+	nvmem (dynamic , block)			: corrupts olny temp regs used
+	_vmem (dynamic , anywere)		: corrupts regs a call can corrupt
+
+	These opcodes allways corrupt the input reg , and read/write to another reg (rm/wm).
+
+	The memory address calculation will get a seperate opcode.
+
+	so , we have the opcodes :
+	calc_addr(...) -> temp
+	r_*vmem(temp) -> reg
+	w_*vmem(temp,reg) -> nil
+
+	and the optimiser info :
+	*_vmem(const) -> block(const) ? *_nsvmem : *_svmem
+	*_nvmem(const) -> block(const) ? *_nsvmem : *_svmem
+	
+	The problem is , the current dynarec/il do not support any kind of metadata , so the implementation has to wait
+	til it supports opcode/register metadata. Also , this idea fits best w/ an unlimited set of temp regs.
+*/

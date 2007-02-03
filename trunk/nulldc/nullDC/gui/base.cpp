@@ -15,10 +15,14 @@
 
 bool CreateGUI()
 {
-	return uiInit()==UI_OK;
+	if (uiInit()!=UI_OK)
+		return false;
+
+	return true;
 }
 void DestroyGUI()
 {
+	plugins_Unload();
 	uiTerm();
 }
 void GuiLoop()

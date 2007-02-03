@@ -144,14 +144,15 @@ using namespace std;
 #define EMUWARN4(x,a,b,c)(printf("Warning in %s:" __FUNCTION__":%d  -> " x"\n",GetNullDCSoruceFileName(__FILE__),__LINE__,a,b,c))
 
 #define BUILD_VER 0
-#define MAJOR_VER 0
-#define MINOR_VER 1
+#define MAJOR_VER 1
+#define MINOR_VER 0
 
-#define VER_STRING "1.0.0 beta"
+#define VER_STRING "1.0.0 beta 1"
 
 #define dbgbreak __asm {int 3}
 
 #define fastcall __fastcall
+#define FASTCALL __fastcall
 #define verify(x) if((x)==false){ printf("Verify Failed  : " #x "\n in %s -> %s : %d \n",__FUNCTION__,__FILE__,__LINE__); dbgbreak;}
 #define die(reason) { printf("Fatal error : %s\n in %s -> %s : %d \n",reason,__FUNCTION__,__FILE__,__LINE__); dbgbreak;}
 #define fverify verify

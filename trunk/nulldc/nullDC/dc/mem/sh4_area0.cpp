@@ -75,6 +75,7 @@ T __fastcall ReadMem_area0(u32 addr)
 	{
 		EMUERROR2("Read from area0_32 not implemented [Unassigned], addr=%x",addr);
 	}
+	/*
 	else if ((base_start >=0x005F) && (base_end <=0x005F) && (addr>= 0x005F6800) && (addr<= 0x005F69FF))		//	:System Control Reg.
 	{
 		return (T)sb_ReadMem(addr,sz);
@@ -90,7 +91,7 @@ T __fastcall ReadMem_area0(u32 addr)
 	else if ((base_start >=0x005F) && (base_end <=0x005F) && (addr>= 0x005F7800) && (addr<=0x005F78FF)) //	:G2 i/f Control Reg.
 	{
 		return (T)sb_ReadMem(addr,sz);
-	}
+	}*/
 	else if ((base_start >=0x005F) && (base_end <=0x005F) && (addr>= 0x005F7000) && (addr<= 0x005F70FF)) //	:GD-ROM
 	{
 		//EMUERROR3("Read from area0_32 not implemented [GD-ROM], addr=%x,size=%d",addr,sz);
@@ -100,7 +101,7 @@ T __fastcall ReadMem_area0(u32 addr)
 		return (T)ReadMem_naomi(addr,sz);
 #endif
 	}
-	else if ((base_start >=0x005F) && (base_end <=0x005F) && (addr>= 0x005F7C00) && (addr<=0x005F7CFF)) //	/*:PVR i/f Control Reg.*/ -> ALL SB registers now
+	else if ((base_start >=0x005F) && (base_end <=0x005F) && (addr>= 0x005F6800) && (addr<=0x005F7CFF)) //	/*:PVR i/f Control Reg.*/ -> ALL SB registers now
 	{
 		//EMUERROR2("Read from area0_32 not implemented [PVR i/f Control Reg], addr=%x",addr);
 		return (T)sb_ReadMem(addr,sz);
@@ -113,7 +114,7 @@ T __fastcall ReadMem_area0(u32 addr)
 	//map 0x0060 to 0x0060
 	else if ((base_start >=0x0060) && (base_end <=0x0060) /*&& (addr>= 0x00600000)*/ && (addr<= 0x006007FF)) //	:MODEM
 	{
-		return (T)libExtDevice->ext_device_info.ReadMem_A0_006(addr,sz);
+		return (T)libExtDevice.ReadMem_A0_006(addr,sz);
 		//EMUERROR2("Read from area0_32 not implemented [MODEM], addr=%x",addr);
 	}
 	//map 0x0060 to 0x006F
@@ -125,7 +126,7 @@ T __fastcall ReadMem_area0(u32 addr)
 	else if ((base_start >=0x0070) && (base_end <=0x0070) /*&& (addr>= 0x00700000)*/ && (addr<=0x00707FFF)) //	:AICA- Sound Cntr. Reg.
 	{
 		//EMUERROR2("Read from area0_32 not implemented [AICA- Sound Cntr. Reg], addr=%x",addr);
-		return (T)libAICA->aica_info.ReadMem_aica_reg(addr,sz);
+		return (T)libAICA.ReadMem_aica_reg(addr,sz);
 	}
 	//map 0x0071 to 0x0071
 	else if ((base_start >=0x0071) && (base_end <=0x0071) /*&& (addr>= 0x00710000)*/ && (addr<= 0x0071000B)) //	:AICA- RTC Cntr. Reg.
@@ -136,14 +137,14 @@ T __fastcall ReadMem_area0(u32 addr)
 	//map 0x0080 to 0x00FF
 	else if ((base_start >=0x0080) && (base_end <=0x00FF) /*&& (addr>= 0x00800000) && (addr<=0x00FFFFFF)*/) //	:AICA- Wave Memory
 	{
-		//EMUERROR2("Read from area0_32 not implemented [AICA- Wave Memory], addr=%x",addr);
-		return (T)libAICA->aica_info.ReadMem_aica_ram(addr,sz);
+		EMUERROR2("Read from area0_32 not implemented [AICA- Wave Memory], addr=%x",addr);
+		//return (T)libAICA.ReadMem_aica_ram(addr,sz);
 	}
 	//map 0x0100 to 0x01FF
 	else if ((base_start >=0x0100) && (base_end <=0x01FF) /*&& (addr>= 0x01000000) && (addr<= 0x01FFFFFF)*/) //	:Ext. Device
 	{
 	//	EMUERROR2("Read from area0_32 not implemented [Ext. Device], addr=%x",addr);
-		return (T)libExtDevice->ext_device_info.ReadMem_A0_010(addr,sz);
+		return (T)libExtDevice.ReadMem_A0_010(addr,sz);
 	}
 	//rest of it ;P
 	/*else 
@@ -178,7 +179,7 @@ void  __fastcall WriteMem_area0(u32 addr,T data)
 	else if ((base_start >=0x005F) && (base_end <=0x005F) /*&& (addr>= 0x00400000) */&& (addr<= 0x005F67FF))		//	:Unassigned
 	{
 		EMUERROR4("Write to area0_32 not implemented [Unassigned], addr=%x,data=%x,size=%d",addr,data,sz);
-	}
+	}/*
 	else if ((base_start >=0x005F) && (base_end <=0x005F) && (addr>= 0x005F6800) && (addr<= 0x005F69FF))		//	:System Control Reg.
 	{
 		//EMUERROR4("Write to area0_32 not implemented [System Control Reg], addr=%x,data=%x,size=%d",addr,data,sz);
@@ -199,7 +200,7 @@ void  __fastcall WriteMem_area0(u32 addr,T data)
 	{
 		//EMUERROR4("Write to area0_32 not implemented [G2 i/f Control Reg], addr=%x,data=%x,size=%d",addr,data,sz);
 		sb_WriteMem(addr,data,sz);
-	}
+	}*/
 	else if ((base_start >=0x005F) && (base_end <=0x005F) && (addr>= 0x005F7000) && (addr<= 0x005F70FF)) //	:GD-ROM
 	{
 		//EMUERROR4("Write to area0_32 not implemented [GD-ROM], addr=%x,data=%x,size=%d",addr,data,sz);
@@ -209,7 +210,7 @@ void  __fastcall WriteMem_area0(u32 addr,T data)
 		WriteMem_naomi(addr,data,sz);
 #endif
 	}
-	else if ((base_start >=0x005F) && (base_end <=0x005F) && (addr>= 0x005F7C00) && (addr<=0x005F7CFF)) //	/*:PVR i/f Control Reg.*/ -> ALL SB registers
+	else if ((base_start >=0x005F) && (base_end <=0x005F) && (addr>= 0x005F6800) && (addr<=0x005F7CFF)) //	/*:PVR i/f Control Reg.*/ -> ALL SB registers
 	{
 		//EMUERROR4("Write to area0_32 not implemented [PVR i/f Control Reg], addr=%x,data=%x,size=%d",addr,data,sz);
 		sb_WriteMem(addr,data,sz);
@@ -224,7 +225,7 @@ void  __fastcall WriteMem_area0(u32 addr,T data)
 	else if ((base_start >=0x0060) && (base_end <=0x0060) /*&& (addr>= 0x00600000)*/ && (addr<= 0x006007FF)) //	:MODEM
 	{
 		//EMUERROR4("Write to area0_32 not implemented [MODEM], addr=%x,data=%x,size=%d",addr,data,sz);
-		libExtDevice->ext_device_info.WriteMem_A0_006(addr,data,sz);
+		libExtDevice.WriteMem_A0_006(addr,data,sz);
 	}
 	//map 0x0060 to 0x006F
 	else if ((base_start >=0x0060) && (base_end <=0x006F) && (addr>= 0x00600800) && (addr<= 0x006FFFFF)) //	:G2 (Reserved)
@@ -236,7 +237,7 @@ void  __fastcall WriteMem_area0(u32 addr,T data)
 	{
 		//EMUERROR4("Write to area0_32 not implemented [AICA- Sound Cntr. Reg], addr=%x,data=%x,size=%d",addr,data,sz);
 		//aica_writereg(addr,data,sz);
-		libAICA->aica_info.WriteMem_aica_reg(addr,data,sz);
+		libAICA.WriteMem_aica_reg(addr,data,sz);
 		return;
 	}
 	//map 0x0071 to 0x0071
@@ -249,16 +250,16 @@ void  __fastcall WriteMem_area0(u32 addr,T data)
 	//map 0x0080 to 0x00FF
 	else if ((base_start >=0x0080) && (base_end <=0x00FF) /*&& (addr>= 0x00800000) && (addr<=0x00FFFFFF)*/) //	:AICA- Wave Memory
 	{
-		//EMUERROR4("Write to area0_32 not implemented [AICA- Wave Memory], addr=%x,data=%x,size=%d",addr,data,sz);
+		EMUERROR4("Write to area0_32 not implemented [AICA- Wave Memory], addr=%x,data=%x,size=%d",addr,data,sz);
 		//aica_writeram(addr,data,sz);
-		libAICA->aica_info.WriteMem_aica_ram(addr,data,sz);
+		//libAICA.WriteMem_aica_ram(addr,data,sz);
 		return;
 	}
 	//map 0x0100 to 0x01FF
 	else if ((base_start >=0x0100) && (base_end <=0x01FF) /*&& (addr>= 0x01000000) && (addr<= 0x01FFFFFF)*/) //	:Ext. Device
 	{
 		//EMUERROR4("Write to area0_32 not implemented [Ext. Device], addr=%x,data=%x,size=%d",addr,data,sz);
-		libExtDevice->ext_device_info.WriteMem_A0_010(addr,data,sz);
+		libExtDevice.WriteMem_A0_010(addr,data,sz);
 	}
 	/*else
 	{
@@ -292,7 +293,7 @@ _vmem_handler area0_handler_60_60;
 _vmem_handler area0_handler_61_6F;
 _vmem_handler area0_handler_70_70;
 _vmem_handler area0_handler_71_71;
-_vmem_handler area0_handler_80_FF;
+//_vmem_handler area0_handler_80_FF;
 _vmem_handler area0_handler_100_1FF;
 
 
@@ -320,7 +321,7 @@ void map_area0_init()
 	area0_handler_61_6F = _vmem_register_handler_Template2(ReadMem_area0,WriteMem_area0,0x0061,0x006F);
 	area0_handler_70_70 = _vmem_register_handler_Template2(ReadMem_area0,WriteMem_area0,0x0070,0x0070);
 	area0_handler_71_71 = _vmem_register_handler_Template2(ReadMem_area0,WriteMem_area0,0x0071,0x0071);
-	area0_handler_80_FF = _vmem_register_handler_Template2(ReadMem_area0,WriteMem_area0,0x0080,0x00FF);
+	//area0_handler_80_FF = _vmem_register_handler_Template2(ReadMem_area0,WriteMem_area0,0x0080,0x00FF);
 	area0_handler_100_1FF = _vmem_register_handler_Template2(ReadMem_area0,WriteMem_area0,0x0100,0x01FF);
 }
 void map_area0(u32 base)
@@ -347,7 +348,11 @@ void map_area0(u32 base)
 	//0x0071-0x0071
 	_vmem_map_handler(area0_handler_71_71,0x0071|base,0x0071|base);
 	//0x0080-0x00FF
-	_vmem_map_handler(area0_handler_80_FF,0x0080|base,0x00FF|base);
+	//_vmem_map_handler(area0_handler_80_FF,0x0080|base,0x00FF|base);
+	_vmem_map_block(aica_ram,0x0080|base,0x009F|base);
+	_vmem_map_block(aica_ram,0x00A0|base,0x00BF|base);
+	_vmem_map_block(aica_ram,0x00C0|base,0x00DF|base);
+	_vmem_map_block(aica_ram,0x00E0|base,0x00FF|base);
 	//0x0100-0x01FF
 	_vmem_map_handler(area0_handler_100_1FF,0x0100|base,0x01FF|base);
 

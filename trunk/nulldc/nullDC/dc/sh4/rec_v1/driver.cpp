@@ -220,17 +220,16 @@ do_update:
 		ret;
 	}
 }
+/*
 u32 THREADCALL rec_sh4_int_ThreadEntry(void* ptar)
 {
 	//just cast it
-	ThreadCallbackFP* ptr=(ThreadCallbackFP*) ptar;
+	//ThreadCallbackFP* ptr=(ThreadCallbackFP*) ptar;
 
-	ptr(true);//call the callback to init
+	//ptr(true);//call the callback to init
 	
-	rec_cycles=0;
-	SetFloatStatusReg();
-	DynaMainLoop();
-	ptr(false);//call the callback
+
+	//ptr(false);//call the callback
 
 	return 0;
 }
@@ -249,25 +248,14 @@ u32 THREADCALL rec_sh4_int_ThreadEntry_stub(void* ptar)
 
 	return 0;
 }
-
+*/
 //interface
-void rec_Sh4_int_Run(ThreadCallbackFP* tcb)
+void rec_Sh4_int_Run()
 {
-	if (rec_sh4_int_thr_handle)
-	{
-		printf("recSh4_int_Run: Cpu allready running\n");
-	}
-	else
-	{
-		rec_sh4_int_bCpuRun=true;
-		rec_sh4_int_thr_handle=new cThread(rec_sh4_int_ThreadEntry_stub,tcb);
-
-		if (rec_sh4_int_thr_handle==0)
-		{
-			printf("recSh4_int_Run: Thread creation failed\n");
-		}
-		rec_sh4_int_thr_handle->Start();
-	}
+	rec_sh4_int_bCpuRun=true;
+	rec_cycles=0;
+	SetFloatStatusReg();
+	DynaMainLoop();
 }
 
 void rec_Sh4_int_Stop()
@@ -276,15 +264,15 @@ void rec_Sh4_int_Stop()
 	{
 		rec_sh4_int_bCpuRun=false;
 		//wait for thread to exit
-		rec_sh4_int_thr_handle->WaitToEnd((u32)-1);
-		delete rec_sh4_int_thr_handle;
-		rec_sh4_int_thr_handle=0;
+		//rec_sh4_int_thr_handle->WaitToEnd((u32)-1);
+		//delete rec_sh4_int_thr_handle;
+		//rec_sh4_int_thr_handle=0;
 	}
-	if (rec_sh4_int_thr_handle)
-	{
-		delete rec_sh4_int_thr_handle;
-		rec_sh4_int_thr_handle=0;
-	}
+	//if (rec_sh4_int_thr_handle)
+	//{
+	//	delete rec_sh4_int_thr_handle;
+	//	rec_sh4_int_thr_handle=0;
+	//}
 }
 
 void rec_Sh4_int_Step() 

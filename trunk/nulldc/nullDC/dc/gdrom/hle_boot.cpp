@@ -18,7 +18,7 @@ u32 FindPVD(u32 ss)
 	printf("Scanning sectors %d to %d for PVD..\n",ss,ss+90000-1);
 	for (u32 s=ss;s<(ss+90000);s++)
 	{
-		libGDR->gdr_info.ReadSector((u8*)pvd_temp, s, 1, 2048);
+		libGDR.ReadSector((u8*)pvd_temp, s, 1, 2048);
 		if (pvd_temp[0]==1  &&
 			pvd_temp[1]==67 && 
 			pvd_temp[2]==68 && 
@@ -190,7 +190,7 @@ bool file_scan(u32 sector,char* fn,u32* ssc,u32* fsz,u32 maxsec)
 	printf("Scanning sector %d to %d for \"%s\" file entry\n",sector,max_sector-1,fn);
 	for (;sector<max_sector;sector++)
 	{
-		libGDR->gdr_info.ReadSector((u8*)pvd_temp, sector, 1, 2048);
+		libGDR.ReadSector((u8*)pvd_temp, sector, 1, 2048);
 		for ( u32 i=0;i<(2048-len);i+=1)
 		{
 			if (compstr_fs(&pvd_temp[i],fn,len))
@@ -295,7 +295,7 @@ bool load_ip_bin(u32 sector,char* bootfile)
 {
 	///////////////////////////
 	u8 * pmem = &mem_b[0x8000];
-	libGDR->gdr_info.ReadSector(pmem,sector, 16, 2048);	// addr?
+	libGDR.ReadSector(pmem,sector, 16, 2048);	// addr?
 
 	
 	if (compstr_fs(pmem,"SEGA SEGAKATANA",15)==false)
@@ -315,15 +315,15 @@ bool gdBootHLE()
 	printf("\n~~~\tgdBootHLE()\n\n");
 
 	u32 toc[102];
-	if (libGDR->gdr_info.GetDiskType()==NoDisk)
+	if (libGDR.GetDiscType()==NoDisk)
 	{
 		printf("No disk on the drive , kinda impossible to boot you know ...\n");
 		return false;
 	}
-	if (libGDR->gdr_info.GetDiskType()==GdRom)
-		libGDR->gdr_info.GetToc(&toc[0], DoubleDensity);
+	if (libGDR.GetDiscType()==GdRom)
+		libGDR.GetToc(&toc[0], DoubleDensity);
 	else
-		libGDR->gdr_info.GetToc(&toc[0], SingleDensity);
+		libGDR.GetToc(&toc[0], SingleDensity);
 
 	int i=0;
 	for(i=98; i>=0; i--)
@@ -337,7 +337,7 @@ bool gdBootHLE()
 	if (i==-1) i=0;
 	u32 addr = ((toc[i]&0xFF00)<<8) | ((toc[i]>>8)&0xFF00) | ((toc[i]>>24)&0xFF);
 	u8 session_info[6];
-	libGDR->gdr_info.GetSessionInfo(session_info,0);
+	libGDR.GetSessionInfo(session_info,0);
 	bool SelfBoot=true;
 	if (session_info[2]==1)
 	{
@@ -346,7 +346,7 @@ bool gdBootHLE()
 	}
 	else
 	{
-		libGDR->gdr_info.GetSessionInfo(session_info,2);
+		libGDR.GetSessionInfo(session_info,2);
 		u32 addr_Ses = (session_info[3]<<16 ) | (session_info[4]<<8 ) | (session_info[5] );
 		if (addr_Ses!=addr)
 		{
@@ -404,7 +404,7 @@ bool gdBootHLE()
 
 	u8* memptr= (u8*) malloc(((file_len/2048) +1)*2048);// 
 
-	libGDR->gdr_info.ReadSector(memptr,file_sector, (file_len/2048) +1, 2048);	// addr?
+	libGDR.ReadSector(memptr,file_sector, (file_len/2048) +1, 2048);	// addr?
 
 	if (SelfBoot)
 	{
