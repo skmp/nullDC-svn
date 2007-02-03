@@ -71,7 +71,7 @@ void rss(u8* buff,u32 ss,FILE* file)
 	fseek(file,ss*2352+0x10,SEEK_SET);
 	fread(buff,2048,1,file);
 }
-void iso_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
+void FASTCALL iso_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 {
 	printf("GDR->Read : Sector %d , size %d , mode %d \n",StartSector,SectorCount,secsz);
 	if (StartSector>150)
@@ -220,12 +220,12 @@ void iso_DriveGetTocInfo(TocInfo* toc,DiskArea area)
 	}*/
 }
 //TODO : fix up
-DiskType iso_DriveGetDiskType()
+u32 FASTCALL iso_DriveGetDiscType()
 {
 	if (iso_tc==0)
-		return DiskType::NoDisk;
+		return DiscType::NoDisk;
 	else
-		return DiskType::GdRom;
+		return DiscType::GdRom;
 } 
 
 bool load_gdi(char* file)

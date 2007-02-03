@@ -22,95 +22,111 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 }
 
 #define PLUGIN_NAME "Image Reader plugin by drk||Raziel & GiGaHeRz [" __DATE__ "]"
-void cfgdlg(PluginType type,void* window)
+void FASTCALL cfgdlg(void* window)
 {
 	printf("No config kthx\n");
 }
-void GetSessionInfo(u8* out,u8 ses);
-//Give to the emu info for the plugin type
-EXPORT void dcGetPluginInfo(plugin_info* info)
-{
-	info->InterfaceVersion.full=PLUGIN_I_F_VERSION;
-	strcpy(info->Name,PLUGIN_NAME);
-	info->PluginVersion.full=NDC_MakeVersion(MAJOR,MINOR,BUILD);
-	
-	info->Init=dcInitGDR;
-	info->Term=dcTermGDR;
-	info->Reset=dcResetGDR;
-	info->ThreadInit=dcThreadInitGDR;
-	info->ThreadTerm=dcThreadTermGDR;
-	info->Type=PluginType::GDRom;
-	info->ShowConfig=cfgdlg;
-}
+void FASTCALL GetSessionInfo(u8* out,u8 ses);
 
-void DriveReadSubChannel(u8 * buff, u32 format, u32 len)
+
+void FASTCALL DriveReadSubChannel(u8 * buff, u32 format, u32 len)
 {
 //	printf("SUB CODE READ DOES NOTHING : 0x%p,0x%X,%d\n",buff,format,len);
 }
-//Give to the emu pointers for the gd rom interface
-EXPORT void dcGetGDRInfo(gdr_plugin_if* info)
-{
-	info->InterfaceVersion.full=GDR_PLUGIN_I_F_VERSION;
 
-	info->GetDiskType=DriveGetDiskType;
-	info->GetToc=DriveGetTocInfo;
-	info->ReadSector=DriveReadSector;
-	info->GetSessionInfo=GetSessionInfo;
-	info->ReadSubChannel=DriveReadSubChannel;
-}
-
-
-void DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
+void FASTCALL DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 {
 	CurrDrive->ReadSector(buff,StartSector,SectorCount,secsz);
 }
 
-void DriveGetTocInfo(u32* toc,DiskArea area)
+void FASTCALL DriveGetTocInfo(u32* toc,u32 area)
 {
-	GetDriveToc(toc,area);
+	GetDriveToc(toc,(DiskArea)area);
 }
 //TODO : fix up
-DiskType DriveGetDiskType()
+u32 FASTCALL DriveGetDiscType()
 {
-	return CurrDrive->GetDiskType();
+	return CurrDrive->GetDiscType();
 }
 
-void GetSessionInfo(u8* out,u8 ses)
+void FASTCALL GetSessionInfo(u8* out,u8 ses)
 {
 	GetDriveSessionInfo(out,ses);
 }
-
+emu_info emu;
 //called when plugin is used by emu (you should do first time init here)
-void dcInitGDR(void* param,PluginType type)
+s32 FASTCALL Load(emu_info* emu_inf)
 {
-	gdr_init_params* ip=(gdr_init_params*)param;
-	DriveNotifyEvent=ip->DriveNotifyEvent;
-	InitDrive();
-	DriveNotifyEvent(DriveEvent::DiskChange,0);
+	memcpy(&emu,emu_inf,sizeof(emu));
+	return rv_ok;
 }
 
 //called when plugin is unloaded by emu , olny if dcInitGDR is called (eg , not called to enumerate plugins)
-void dcTermGDR(PluginType type)
+void FASTCALL Unload()
 {
-	TermDrive();
+	
 }
 
 //It's suposed to reset everything (if not a manual reset)
-void dcResetGDR(bool Manual,PluginType type)
+void FASTCALL ResetGDR(bool Manual)
 {
 	DriveNotifyEvent(DriveEvent::DiskChange,0);
 }
 
 //called when entering sh4 thread , from the new thread context (for any thread speciacific init)
-void dcThreadInitGDR(PluginType type)
+s32 FASTCALL InitGDR(gdr_init_params* prm)
 {
+	DriveNotifyEvent=prm->DriveNotifyEvent;
+	if (!InitDrive())
+		return rv_serror;
+	DriveNotifyEvent(DiskChange,0);
+
+	return rv_ok;
 }
 
 //called when exiting from sh4 thread , from the new thread context (for any thread speciacific de init) :P
-void dcThreadTermGDR(PluginType type)
+void FASTCALL TermGDR()
 {
+	TermDrive();
 }
 
+//Give to the emu info for the plugin type
+void EXPORT_CALL dcGetPluginInfo(plugin_info* info)
+{
+	info->InterfaceVersion=PLUGIN_I_F_VERSION;
+	info->count=1;
+
+}
+//Give to the emu pointers for the gd rom interface
+bool EXPORT_CALL dcGetPlugin(u32 id , plugin_info_entry* info)
+{
+#define c info->common
+#define g info->gdr
+	
+	c.Type=GDRom;
+	c.InterfaceVersion=GDR_PLUGIN_I_F_VERSION;
+
+	strcpy(c.Name,PLUGIN_NAME);
+	c.PluginVersion=NDC_MakeVersion(MAJOR,MINOR,BUILD);
+	
+	c.Load=Load;
+	c.Unload=Unload;
+	
+	
+	g.Init=InitGDR;
+	g.Term=TermGDR;
+	g.Reset=ResetGDR;
+	g.ShowConfig=cfgdlg;
+	
+	g.GetDiscType=DriveGetDiscType;
+	g.GetToc=DriveGetTocInfo;
+	g.ReadSector=DriveReadSector;
+	g.GetSessionInfo=GetSessionInfo;
+	g.ReadSubChannel=DriveReadSubChannel;
+	g.ExeptionHanlder=0;
+
+	return true;
+}
 
 #define INTERFACE_VERSION	MAKEWORD(1,0)
 struct chanka_cd_play_pos
@@ -148,7 +164,7 @@ struct chanka_cdrom_info
   bool (_cdecl *GetCurrentPlayPos)(struct chanka_cd_play_pos *PlayPos);
 };
 
-void chanka_DriveNotifyEvent(DriveEvent info,void* param)
+void FASTCALL chanka_DriveNotifyEvent(u32 info,void* param)
 {
 }
 int _cdecl chanka_Init(const char* pszFileName)
@@ -156,14 +172,17 @@ int _cdecl chanka_Init(const char* pszFileName)
 	gdr_init_params params;
 	params.DriveNotifyEvent=chanka_DriveNotifyEvent;
 
-	dcInitGDR(&params,GDRom);
-	dcThreadInitGDR(GDRom);
+	emu_info emuif;
+	strcpy(emuif.Name,"Chankast 0.2.5");
+
+	Load(&emuif);
+	InitGDR(&params);
 	return 0;
 }
 void _cdecl chanka_End()
 {
-	dcThreadTermGDR(GDRom);
-	dcTermGDR(GDRom);
+	TermGDR();
+	Unload();
 }
 void _cdecl chanka_Refresh()
 {

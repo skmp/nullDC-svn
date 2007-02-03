@@ -4,7 +4,7 @@
 
 SessionInfo mds_ses;
 TocInfo mds_toc;
-DiskType mds_disktype=CdRom;
+DiscType mds_Disctype=CdRom;
 
 struct file_TrackInfo
 {
@@ -32,7 +32,7 @@ void mds_ReadSSect(u8* p_out,u32 sector,u32 secsz)
 		}
 	}
 }
-void mds_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
+void FASTCALL mds_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 {
 //	printf("MDS/NRG->Read : Sector %d , size %d , mode %d \n",StartSector,SectorCount,secsz);
 	while(SectorCount--)
@@ -122,13 +122,13 @@ void mds_CreateToc()
 	}
 
 	if ((CD_M1==true) && (CD_DA==false) && (CD_M2==false))
-		mds_disktype = CdRom;
+		mds_Disctype = CdRom;
 	else if (CD_M2)
-		mds_disktype = CdRom_XA;
+		mds_Disctype = CdRom_XA;
 	else if (CD_DA && CD_M1) 
-		mds_disktype = CdRom_Extra;
+		mds_Disctype = CdRom_Extra;
 	else
-		mds_disktype=CdRom;//hmm?
+		mds_Disctype=CdRom;//hmm?
 
 	mds_toc.LastTrack=track;
 	mds_TrackCount=track;
@@ -177,9 +177,9 @@ void mds_term()
 	fp_mdf=0;
 }
 
-DiskType mds_DriveGetDiskType()
+u32 FASTCALL mds_DriveGetDiscType()
 {
-	return mds_disktype;
+	return mds_Disctype;
 }
 void mds_DriveGetTocInfo(TocInfo* toc,DiskArea area)
 {

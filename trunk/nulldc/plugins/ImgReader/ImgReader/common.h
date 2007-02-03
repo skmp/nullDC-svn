@@ -21,7 +21,7 @@ struct TocInfo
 
 struct SessionInfo
 {
-	u32 SessionsEndFAD;	//end of disk (?)
+	u32 SessionsEndFAD;	//end of Disc (?)
 	u8 SessionCount;	//must be at least 1
 	u32 SessionFAD[98];	//for sessions 1-99 ;)
 };
@@ -46,7 +46,7 @@ struct DriveIF
 {
 	DriveReadSectorFP*  ReadSector;
 	DriveGetTocInfoModFP*  GetToc;
-	DriveGetDiskTypeFP* GetDiskType;
+	DriveGetDiscTypeFP* GetDiscType;
 	DriveGetSessionInfoModFP*GetSessionInfo;
 	InitFP*				Init;
 	TermFP*				Term;
@@ -61,10 +61,11 @@ extern DriveNotifyEventFP* DriveNotifyEvent;
 
 bool ConvertSector(u8* in_buff , u8* out_buff , int from , int to,int sector);
 
-void InitDrive();
+bool InitDrive();
 void TermDrive();
 
 void ConvToc(u32* to,TocInfo* from);
 void GetDriveToc(u32* to,DiskArea area);
 void GetDriveSessionInfo(u8* to,u8 session);
 bool GetFile(TCHAR *szFileName, TCHAR *szParse);
+int msgboxf(char* text,unsigned int type,...);

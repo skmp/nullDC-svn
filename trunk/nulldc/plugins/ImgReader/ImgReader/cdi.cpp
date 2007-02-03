@@ -28,7 +28,7 @@ PfcGetTocFP*  PfcGetToc;
 SPfcToc* pstToc;
 SessionInfo cdi_ses;
 TocInfo cdi_toc;
-DiskType cdi_disktype;
+DiscType cdi_Disctype;
 struct file_TrackInfo
 {
 	u32 FAD;
@@ -57,7 +57,7 @@ void cdi_ReadSSect(u8* p_out,u32 sector,u32 secsz)
 		}
 	}
 }
-void cdi_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
+void FASTCALL cdi_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 {
 	//printf("GDR->Read : Sector %d , size %d , mode %d \n",StartSector,SectorCount,secsz);
 	while(SectorCount--)
@@ -155,13 +155,13 @@ void cdi_CreateToc()
 	}
 
 	if ((CD_M1==true) && (CD_DA==false) && (CD_M2==false))
-		cdi_disktype = CdRom;
+		cdi_Disctype = CdRom;
 	else if (CD_M2)
-		cdi_disktype = CdRom_XA;
+		cdi_Disctype = CdRom_XA;
 	else if (CD_DA && CD_M1) 
-		cdi_disktype = CdRom_Extra;
+		cdi_Disctype = CdRom_Extra;
 	else
-		cdi_disktype=CdRom;//hmm?
+		cdi_Disctype=CdRom;//hmm?
 
 	TrackCount=track;
 	cdi_toc.LastTrack=track;
@@ -207,9 +207,9 @@ void cdi_term()
 		FreeLibrary(pfctoc_mod);
 }
 
-DiskType cdi_DriveGetDiskType()
+u32 FASTCALL cdi_DriveGetDiscType()
 {
-	return cdi_disktype;
+	return cdi_Disctype;
 }
 void cdi_DriveGetTocInfo(TocInfo* toc,DiskArea area)
 {

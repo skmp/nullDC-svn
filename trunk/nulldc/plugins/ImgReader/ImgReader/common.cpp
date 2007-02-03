@@ -3,6 +3,7 @@
 #include "mds.h"
 #include "iso9660.h"
 #include <memory.h>
+#include <windows.h>
 
 DriveIF* CurrDrive;
 DriveIF drives[]=
@@ -11,7 +12,7 @@ DriveIF drives[]=
 		//cdi
 		cdi_DriveReadSector,
 		cdi_DriveGetTocInfo,
-		cdi_DriveGetDiskType,
+		cdi_DriveGetDiscType,
 		cdi_GetSessionsInfo,
 		cdi_init,
 		cdi_term,
@@ -21,7 +22,7 @@ DriveIF drives[]=
 		//cdi
 		mds_DriveReadSector,
 		mds_DriveGetTocInfo,
-		mds_DriveGetDiskType,
+		mds_DriveGetDiscType,
 		mds_GetSessionsInfo,
 		mds_init,
 		mds_term,
@@ -31,7 +32,7 @@ DriveIF drives[]=
 		//iso
 		iso_DriveReadSector,
 		iso_DriveGetTocInfo,
-		iso_DriveGetDiskType,
+		iso_DriveGetDiscType,
 		iso_GetSessionsInfo,
 		iso_init,//these need to be filled
 		iso_term,
@@ -40,6 +41,19 @@ DriveIF drives[]=
 };
 
 DriveNotifyEventFP* DriveNotifyEvent;
+
+int msgboxf(char* text,unsigned int type,...)
+{
+	va_list args;
+
+	char temp[2048];
+	va_start(args, type);
+	vsprintf(temp, text, args);
+	va_end(args);
+
+
+	return MessageBox(NULL,temp,emu.Name,type);
+}
 
 bool ConvertSector(u8* in_buff , u8* out_buff , int from , int to,int sector)
 {
@@ -78,13 +92,13 @@ bool ConvertSector(u8* in_buff , u8* out_buff , int from , int to,int sector)
 
 
 
-void InitDrive()
+bool InitDrive()
 {
 	char fn[512]="";
 	if (GetFile(fn,"CD/GD Images (*.cdi;*.mds;*.nrg;*.gdi) \0*.cdi;*.mds;*.nrg;*.gdi\0\0")==false)
 	{
 		CurrDrive=&drives[Iso];
-		return;
+		return false;
 	}
 
 	if (CurrDrive !=0 && CurrDrive->Inited==true)
@@ -102,11 +116,12 @@ void InitDrive()
 		{
 			CurrDrive=&drives[i];
 			printf("Using %s \n",CurrDrive->name);
-			return;
+			return true;
 		}
 	}
-	printf("Can't open file , using no disk driver :p\n");
-	CurrDrive=&drives[Iso];
+	msgboxf("Unkown format type",MB_ICONERROR);
+	//CurrDrive=&drives[Iso];
+	return false;
 }
 
 void TermDrive()
