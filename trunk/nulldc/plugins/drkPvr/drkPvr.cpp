@@ -12,6 +12,7 @@
 
 //void* Hwnd;
 
+emu_info emu;
 pvr_init_params params;
 
 //u8*	params.vram;
@@ -35,90 +36,35 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     return TRUE;
 }
 
-void dcShowConfig(PluginType type,void* window)
+void FASTCALL dcShowConfig(void* window)
 {
 	printf("No config for now\n");
 }
-//Give to the emu info for the plugin type
-EXPORT void dcGetPluginInfo(plugin_info* info)
-{
-	info->InterfaceVersion.full=PLUGIN_I_F_VERSION;
-	strcpy(info->Name,"drkpvr -- OpenGL/Direct3D/Software PowerVR plugin");
-	info->PluginVersion.full=NDC_MakeVersion(MAJOR,MINOR,BUILD);
-	
 
-	info->Init=dcInitPvr;
-	info->Term=dcTermPvr;
-	info->Reset=dcResetPvr;
 
-	info->ThreadInit=dcThreadInitPvr;
-	info->ThreadTerm=dcThreadTermPvr;
-
-	info->Type=PluginType::PowerVR;
-	info->ShowConfig=dcShowConfig;
-}
-
-void vramLockCB (vram_block* block,u32 addr)
+void FASTCALL vramLockCB (vram_block* block,u32 addr)
 {
 	//rend_if_vram_locked_write(block,addr);
 	//renderer->VramLockedWrite(block);
 	rend_text_invl(block);
 }
-//Give to the emu pointers for the PowerVR interface
-EXPORT void dcGetPvrInfo(pvr_plugin_if* info)
-{
-	info->InterfaceVersion.full=PVR_PLUGIN_I_F_VERSION;
-
-	info->UpdatePvr=spgUpdatePvr;
-	info->TaFIFO=TASplitter::Dma;
-	info->ReadReg=ReadPvrRegister;
-	info->WriteReg=WritePvrRegister;
-	info->LockedBlockWrite=vramLockCB;
-}
-
 
 //called when plugin is used by emu (you should do first time init here)
-void dcInitPvr(void* aparam,PluginType type)
+s32 FASTCALL Load(emu_info* emu_inf)
 {
-	pvr_init_params* param=(pvr_init_params*)aparam;
-	
-	//Hwnd=param->WindowHandle;
-	
-	//params.vram=param->vram;
-
-//	lock32 = param->vram_lock_32;
-//	lock64 = param->vram_lock_64;
-//	unlock = param->vram_unlock;
-
-	//RaiseInterrupt=param->RaiseInterrupt;
-
-	memcpy(&params,param,sizeof(params));
+	memcpy(&emu,emu_inf,sizeof(emu));
 //	SetRenderer(RendererType::Hw_D3d,params.WindowHandle);
-
-	if ((!Regs_Init()))
-	{
-		//failed
-	}
-	if (!spg_Init())
-	{
-		//failed
-	}
-	if (!rend_init())
-	{
-		//failed
-	}
+	return rv_ok;
 }
 
 //called when plugin is unloaded by emu , olny if dcInitPvr is called (eg , not called to enumerate plugins)
-void dcTermPvr(PluginType type)
+void FASTCALL Unload()
 {
-	rend_term();
-	spg_Term();
-	Regs_Term();
+	
 }
 
 //It's suposed to reset anything but vram (vram is set to 0 by emu)
-void dcResetPvr(bool Manual,PluginType type)
+void FASTCALL ResetPvr(bool Manual)
 {
 	Regs_Reset(Manual);
 	spg_Reset(Manual);
@@ -126,17 +72,44 @@ void dcResetPvr(bool Manual,PluginType type)
 }
 
 //called when entering sh4 thread , from the new thread context (for any thread speciacific init)
-void dcThreadInitPvr(PluginType type)
+s32 FASTCALL InitPvr(pvr_init_params* param)
 {
+	memcpy(&params,param,sizeof(params));
+
+	
+	if ((!Regs_Init()))
+	{
+		//failed
+		return rv_error;
+	}
+	if (!spg_Init())
+	{
+		//failed
+		return rv_error;
+	}
+	if (!rend_init())
+	{
+		//failed
+		return rv_error;
+	}
+
 	//olny the renderer cares about thread speciacific shit ..
-	rend_thread_start();
+	if (!rend_thread_start())
+	{
+		return rv_error;
+	}
+
+	return rv_ok;
 }
 
 //called when exiting from sh4 thread , from the new thread context (for any thread speciacific de init) :P
-void dcThreadTermPvr(PluginType type)
+void FASTCALL TermPvr()
 {
-	//olny the renderer cares about thread speciacific shit ..
 	rend_thread_end();
+
+	rend_term();
+	spg_Term();
+	Regs_Term();
 }
 
 //Helper functions
@@ -168,6 +141,47 @@ char* GetNullDCSoruceFileName(char* full)
 	strcpy(temp,full);
 	return &temp[0];
 }
+
+//Give to the emu info for the plugin type
+void EXPORT_CALL dcGetPluginInfo(plugin_info* info)
+{
+	info->InterfaceVersion=PLUGIN_I_F_VERSION;
+	info->count=1;
+}
+//Give to the emu pointers for the PowerVR interface
+bool EXPORT_CALL dcGetPlugin(u32 id,plugin_info_entry* info)
+{
+#define c  info->common
+#define p info->pvr
+	
+	c.Type=PowerVR;
+	c.InterfaceVersion=PVR_PLUGIN_I_F_VERSION;
+
+	strcpy(c.Name,"drkpvr -- OpenGL/Direct3D/Software PowerVR plugin");
+	c.PluginVersion=NDC_MakeVersion(0,9,0);
+
+	c.Load=Load;
+	c.Unload=Unload;
+
+	p.ExeptionHanlder=0;
+	p.Init=InitPvr;
+	p.Reset=ResetPvr;
+	p.Term=TermPvr;
+	p.ShowConfig=dcShowConfig;
+
+	
+	p.ReadReg=ReadPvrRegister;
+	p.WriteReg=WritePvrRegister;
+	p.UpdatePvr=spgUpdatePvr;
+
+	p.TaFIFO=TASplitter::Dma;
+	p.LockedBlockWrite=vramLockCB;
+	
+#undef c
+#undef p
+	return true;
+}
+
 
 
 //Windoze Code implementation of commong classes from here and after ..

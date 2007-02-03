@@ -21,7 +21,7 @@ namespace TASplitter
 	bool StripStarted=false;
 
 	//DMA from emulator :)
-	void Dma(u32 address,u32* data,u32 size)
+	void FASTCALL Dma(u32 address,u32* data,u32 size)
 	{
 		verify(TaCmd!=0);
 		Ta_Dma* ta_data=(Ta_Dma*)data;

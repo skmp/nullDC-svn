@@ -17,7 +17,7 @@
 #define MINOR 1
 #define MAJOR 0
 #define DCclock (200*1000*1000)
-
+/*
 //called when plugin is used by emu (you should do first time init here)
 void dcInitPvr(void* param,PluginType type);
 
@@ -41,7 +41,7 @@ void dcTADma(u32 address,u32* data,u32 size);
 u32 ReadPvrRegister(u32 addr,u32 size);
 void WritePvrRegister(u32 addr,u32 data,u32 size);
 
-
+*/
 //extern u8*	params.vram;
 //extern void* Hwnd;
 //extern RaiseInterruptFP* RaiseInterrupt;
@@ -72,6 +72,7 @@ extern vramlock_Lock_32FP* lock32;
 extern vramlock_Lock_64FP* lock64;
 extern vramlock_Unlock_blockFP* unlock;*/
 extern pvr_init_params params;
+extern emu_info emu;
 
 #if REND_API == REND_D3D
 	#define REND_NAME "Direct3D"

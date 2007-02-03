@@ -23,7 +23,7 @@ u8 VblankInfo()
 bool render_end_pending=false;
 u32 render_end_pending_cycles;
 //called from sh4 context , should update pvr/ta state and evereything else
-void spgUpdatePvr(u32 cycles)
+void FASTCALL spgUpdatePvr(u32 cycles)
 {
 	if (render_end_pending)
 	{
@@ -109,8 +109,8 @@ void spgUpdatePvr(u32 cycles)
 				vblk_cnt=0;
 
 				char fpsStr[256];
-				sprintf(fpsStr,"FPS: %4.2f(%4.2f) Vert : %4.2fM -  Sh4: %4.2f mhz (%4.2f%%) - nullDC v0.0.1", spd_fps,fullfps,mv, spd_cpu,spd_cpu*100/200);
-				SetWindowText((HWND)params.WindowHandle, fpsStr);
+				sprintf(fpsStr,"FPS: %4.2f(%4.2f) Vert : %4.2fM -  Sh4: %4.2f mhz (%4.2f%%) - %s", spd_fps,fullfps,mv, spd_cpu,spd_cpu*100/200,emu.Name);
+				SetWindowText((HWND)emu.WindowHandle, fpsStr);
 			}
 		}
 	}

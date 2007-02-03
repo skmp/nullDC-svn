@@ -3,8 +3,7 @@
 
 namespace TASplitter
 {
-	//void TaWrite(u32* data);
-	void TADma(u32 address,u32* data,u32 size);
+	extern void FASTCALL Dma(u32 address,u32* data,u32 size);
 
 	//hehe
 	//as it sems , bit 1,2 are type , bit 0 is mod volume :p
@@ -624,5 +623,4 @@ strip_end:
 		}
 	};
 
-	extern void Dma(u32 address,u32* data,u32 size);
 }

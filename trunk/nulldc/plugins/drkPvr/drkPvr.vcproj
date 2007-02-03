@@ -69,6 +69,7 @@
 				OutputFile="$(SolutionDir)\WorkDir\Plugins\$(ProjectName)_$(PlatformName).dll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="C:\Program Files\Microsoft DirectX SDK (April 2006)\Lib\x86"
+				ModuleDefinitionFile="exports.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
@@ -154,6 +155,7 @@
 				OutputFile="$(SolutionDir)\WorkDir\Plugins\$(ProjectName)_$(PlatformName).dll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="C:\Program Files\Microsoft DirectX SDK (April 2006)\Lib\x86"
+				ModuleDefinitionFile="exports.def"
 				DelayLoadDLLs=""
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -201,6 +203,10 @@
 			</File>
 			<File
 				RelativePath=".\drkPvr.h"
+				>
+			</File>
+			<File
+				RelativePath=".\exports.def"
 				>
 			</File>
 		</Filter>

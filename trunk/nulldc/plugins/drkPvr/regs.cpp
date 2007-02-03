@@ -7,7 +7,7 @@
 //many things need to be emulated , especialy to support lle emulation but for now that's not needed
 u8 regs[RegSize];
 
-u32 ReadPvrRegister(u32 addr,u32 size)
+u32 FASTCALL ReadPvrRegister(u32 addr,u32 size)
 {
 	if (size!=4)
 	{
@@ -94,7 +94,7 @@ void PrintfInfo()
 		printf("spg_vbl : vbi %x ,vbo %x\n",
 		spg_vbl.hcount,spg_vbl.vcount);
 }
-void WritePvrRegister(u32 addr,u32 data,u32 size)
+void FASTCALL WritePvrRegister(u32 addr,u32 data,u32 size)
 {
 	if (size!=4)
 	{
@@ -147,8 +147,14 @@ void WritePvrRegister(u32 addr,u32 data,u32 size)
 
 	if ((addr&RegMask)>=PALETTE_RAM_START_addr)
 	{
-		pal_needs_update=true;
-		pal_rev++;
+		if (PvrReg(addr)!=data)
+		{
+			u32 pal=addr&1023;
+
+			pal_needs_update=true;
+			pal_rev_256[pal>>8]++;
+			pal_rev_16[pal>>4]++;
+		}
 	}
 	PvrReg(addr)=data;
 }
