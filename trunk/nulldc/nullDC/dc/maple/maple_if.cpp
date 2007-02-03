@@ -208,7 +208,7 @@ void DoMapleDma()
 			u32 resp=0;
 			inlen*=4;
 
-			if (MapleDevices[device].connected && (subport!=0 || MapleDevices[device].subdevices[subport].connected))
+			if (MapleDevices[device].connected && (subport==0 || MapleDevices[device].subdevices[subport-1].connected))
 			{
 				//MaplePlugin[device][0].GotDataCB(header_1,header_2,p_data,plen);
 				//libMapleMain[device]->SendFrame(command,&p_data[0],inlen,&p_out[1],outlen,retv);
@@ -227,7 +227,7 @@ void DoMapleDma()
 				else
 				{
 					MapleDevices[device].subdevices[subport].dma(
-						&MapleDevices[device].subdevices[subport],
+						&MapleDevices[device].subdevices[subport-1],
 						command,
 						&p_data[1],
 						inlen-4,
@@ -264,71 +264,7 @@ dma_end:
 }
 
 void Split(char* in,char* dll,int& id);
-/*
-List<MapleDeviceLoadInfo> maple_plugin_devices;
-List<MapleDeviceLoadInfo>* GetMapleMainDevices()
-{
-	List<MapleDeviceLoadInfo>* rv=new List<MapleDeviceLoadInfo>();
 
-	for (u32 i=0;i<maple_plugin_devices.size();i++)
-	{
-		if (maple_plugin_devices[i].type==0)
-		rv->Add(maple_plugin_devices[i]);
-	}
-
-	return rv;
-}
-
-List<MapleDeviceLoadInfo>* GetMapleSubDevices()
-{
-	List<MapleDeviceLoadInfo>* rv=new List<MapleDeviceLoadInfo>();
-
-	for (u32 i=0;i<maple_plugin_devices.size();i++)
-	{
-		if (maple_plugin_devices[i].type==1)
-		rv->Add(maple_plugin_devices[i]);
-	}
-
-	return rv;
-}*/
-void maple_plugins_enum_devices()
-{/*
-	maple_plugin_devices.clear();
-	List<PluginLoadInfo>* maplepl = EnumeratePlugins(PluginType::MapleDevice);
-
-	for (u32 i=0;i<(*maplepl).size();i++)
-	{
-		nullDC_Maple_plugin mpi;
-		mpi.Load((*maplepl)[i].dll);
-		for (int j=0;mpi.maple_info.Devices[j].CreateInstance;j++)
-		{
-			MapleDeviceLoadInfo dev;
-
-			dev.id=(u8)j;
-			strcpy(dev.dll,(*maplepl)[i].dll);
-
-			dev.type=mpi.maple_info.Devices[j].type;
-			strcpy(dev.name,mpi.maple_info.Devices[j].name);
-			dev.PluginVersion=mpi.info.PluginVersion;
-			maple_plugin_devices.Add(dev);
-		}
-		mpi.Unload();
-	}*/
-}
-
-void maple_plugins_add(char* device)
-{/*
-	char dll[512];
-	int id;
-	Split(device,dll,id);
-	for (u32 i=0;i<libMaple.size();i++)
-	{
-		if ((strcmp(libMaple[i].dll,dll)==0))
-			return;
-	}
-	nullDC_Maple_plugin t;
-	libMaple.Add(t)->Load(dll);*/
-}
 /*
 maple_device* FindMapleDevice(char* device)
 {

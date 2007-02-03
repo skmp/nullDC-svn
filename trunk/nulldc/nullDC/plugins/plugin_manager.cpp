@@ -26,7 +26,7 @@
 nullDC_PowerVR_plugin		libPvr;
 nullDC_GDRom_plugin			libGDR;
 nullDC_AICA_plugin			libAICA;
-List<nullDC_Maple_plugin>	libMaple;
+List<nullDC_Maple_plugin*>	libMaple;
 nullDC_ExtDevice_plugin		libExtDevice;
 /*
 struct
@@ -159,13 +159,13 @@ bool nullDC_plugin::Open(char* plugin)
 	{
 		return false;
 	}
-	strcpy(dll_file,plugins_path);
 	
 	char ttt[512];
-	Split(plugin,ttt,id);
-	
-	strcat(dll_file,ttt);
-	if (!dll.Load(dll_file))
+	Split(plugin,dll_file,id);
+	strcpy(ttt,plugins_path);
+	strcat(ttt,dll_file);
+	strcpy(dll_file,plugin);
+	if (!dll.Load(ttt))
 		return false;
 	dcGetPluginInfoFP* getinfo=(dcGetPluginInfoFP*)dll.GetProcAddress("dcGetPluginInfo");
 	dcGetPluginFP* getplugin=(dcGetPluginFP*)dll.GetProcAddress("dcGetPlugin");
@@ -661,6 +661,83 @@ void SetPluginPath(char* path)
 }
 #include "dc\mem\sb.h"
 char* lcp_name;
+void maple_cfg_plug(int i,int j,char * out)
+{
+	char temp[512];
+	sprintf(temp,"Current_maple%d_%d",i,j);
+	cfgLoadStr("nullDC_plugins",temp,out);
+}
+u32 GetMaplePort(u32 port,u32 device)
+{
+	u32 rv=port<<6;
+	if (device==0)
+		device=5;
+	else
+		device-=1;
+	rv|=1<<device;
+
+	return rv;
+}
+s32 maple_plugins_add(char* dll,emu_info* info)
+{
+	for (u32 i=0;i<libMaple.size();i++)
+	{
+		if ((strcmp(libMaple[i]->dll_file,dll)==0))
+			return rv_ok;
+	}
+	nullDC_Maple_plugin* plug=new nullDC_Maple_plugin();
+	libMaple.Add(plug);
+	lcp_name=plug->dll_file;
+	if (!plug->Open(dll))
+		return rv_error;
+
+	if (s32 rv = plug->Load(info))
+	{
+		return rv;
+	}
+	else
+	{
+		plug->Loaded=true;
+	}
+
+	return rv_ok;
+}
+
+nullDC_Maple_plugin* FindMaplePlugin(int i, int j)
+{
+	char dll[512];
+	maple_cfg_plug(i,j,dll);
+	for (u32 i=0;i<libMaple.size();i++)
+	{
+		if (strcmp(libMaple[i]->dll_file,dll)==0)
+			return libMaple[i];
+	}
+	return 0;
+}
+
+s32 maple_plugins_create_list(emu_info* info)
+{
+	char plugin[512];
+	
+	plugin[0]=0;
+
+	for (int i=0;i<4;i++)
+	{
+		for (int j=0;j<6;j++)
+		{
+			maple_cfg_plug(i,j,plugin);
+			if (strcmp(plugin,"NULL")!=0)
+			{
+				if (s32 rv=maple_plugins_add(plugin,info))
+				{
+					return rv;
+				}
+			}
+			plugin[0]=0;
+		}
+	}
+	return rv_ok;
+}
 s32 plugins_Init_()
 {
 	plugins_inited=true;
@@ -702,10 +779,10 @@ s32 plugins_Init_()
 	maple_init_params maple_info;
 	for (u32 i=0;i<libMaple.size();i++)
 	{
-		lcp_name=libMaple[i].Name;
-		if (s32 rv = libMaple[i].Init(&maple_info))
+		lcp_name=libMaple[i]->Name;
+		if (s32 rv = libMaple[i]->Init(&maple_info))
 			return rv;
-		libMaple[i].Inited=true;
+		libMaple[i]->Inited=true;
 	}
 
 	ext_device_init_params ext_device_info;
@@ -721,10 +798,28 @@ s32 plugins_Init_()
 	for ( int i=0;i<4;i++)
 	{
 		MapleDevices[i].connected=false;
+		nullDC_Maple_plugin* plug_m= FindMaplePlugin(i,0);
+		if (!plug_m)
+			continue;		
+		u32 bitmask=plug_m->subdev_info;
 		for ( int j=0;j<5;j++)
 		{
-			MapleDevices[i].subdevices[j].connected=false;
+			if (bitmask & (1<<j))
+			{
+				nullDC_Maple_plugin* plug= FindMaplePlugin(i,j+1);
+				if (!plug)
+					continue;
+				plug->Create((maple_device_instance*)&MapleDevices[i].subdevices[i],GetMaplePort(i,j+1));
+				MapleDevices[i].subdevices[j].connected=true;
+			}
+			else
+			{
+				MapleDevices[i].subdevices[j].connected=false;
+			}
 		}
+		lcp_name=plug_m->Name;
+		plug_m->Create(&MapleDevices[i],GetMaplePort(i,0));
+		MapleDevices[i].connected=true;
 	}
 	return rv_ok;
 }
@@ -760,7 +855,7 @@ void plugins_Term()
 
 	for (size_t i=libMaple.size();i>0;i--)
 	{
-		libMaple[i-1].Term();
+		libMaple[i-1]->Term();
 	}
 
 	libAICA.Term();
@@ -807,7 +902,7 @@ bool plugins_load_a(char* cfg_name,nullDC_plugin* plg)
 	return plg->Open(dllf);
 }
 #define load_plugin(name,plug) \
-	lcp_name=plug.Name;\
+	lcp_name=plug.dll_file;\
 	if (!plugins_load_a(name,& plug))\
 		return rv_error;\
 	if (s32 rv = plug.Load(&eminf))\
@@ -827,6 +922,11 @@ s32 plugins_Load_()
 	load_plugin("Current_GDR",libGDR);
 	load_plugin("Current_AICA",libAICA);
 	load_plugin("Current_ExtDevice",libExtDevice);
+
+	if (s32 rv = maple_plugins_create_list(&eminf))
+	{
+		return rv;
+	}
 	return rv_ok;
 }
 bool plugins_Load()
@@ -869,6 +969,12 @@ void plugins_Unload()
 		unload_plugin(libAICA);
 		unload_plugin(libGDR);
 		unload_plugin(libPvr);
+
+		for (size_t i=libMaple.size();i>0;i--)
+		{
+			unload_plugin((*libMaple[i-1]));
+		}
+		libMaple.clear();
 	}
 	__except(EXCEPTION_EXECUTE_HANDLER)
 	{

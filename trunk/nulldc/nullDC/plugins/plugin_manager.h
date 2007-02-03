@@ -68,7 +68,7 @@ extern sh4_if*				  sh4_cpu;
 extern nullDC_PowerVR_plugin	libPvr;
 extern nullDC_GDRom_plugin		libGDR;
 extern nullDC_AICA_plugin		libAICA;
-extern List<nullDC_Maple_plugin>libMaple;
+extern List<nullDC_Maple_plugin*>libMaple;
 extern nullDC_ExtDevice_plugin	libExtDevice;
 //more to come
 
