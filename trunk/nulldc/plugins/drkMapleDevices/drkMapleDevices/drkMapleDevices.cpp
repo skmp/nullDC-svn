@@ -108,7 +108,7 @@ void kb_up(u8 kc)
 	}
 }
 typedef INT_PTR CALLBACK dlgp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
-dlgp* oldptr;
+dlgp* oldptr=0;
 s32 old_pos_x=0;
 s32 old_pos_y=0;
 INT_PTR CALLBACK sch( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
@@ -300,7 +300,8 @@ s32 FASTCALL Load(emu_info* emu)
 	memcpy(&host,emu,sizeof(host));
 	//maple_init_params* mpi=(maple_init_params*)aparam;
 	//handle=mpi->WindowHandle;
-	oldptr = (dlgp*)SetWindowLongPtr((HWND)host.WindowHandle,GWL_WNDPROC,(LONG)sch);
+	if (oldptr==0)
+		oldptr = (dlgp*)SetWindowLongPtr((HWND)host.WindowHandle,GWL_WNDPROC,(LONG)sch);
 	Init_kb_map();
 
 	return rv_ok;
@@ -309,23 +310,34 @@ s32 FASTCALL Load(emu_info* emu)
 //called when plugin is unloaded by emu , olny if dcInitPvr is called (eg , not called to enumerate plugins)
 void FASTCALL  Unload()
 {
-	SetWindowLongPtr((HWND)host.WindowHandle,GWL_WNDPROC,(LONG)oldptr);
+	if (oldptr!=0)
+	{
+		SetWindowLongPtr((HWND)host.WindowHandle,GWL_WNDPROC,(LONG)oldptr);
+		oldptr=0;
+	}
 }
 
 //It's suposed to reset anything but vram (vram is set to 0 by emu)
-void dcResetPvr(bool Manual,PluginType type)
+s32 FASTCALL Init(maple_init_params* p)
 {
 	//hahah do what ? ahahahahahaha
+	return rv_ok;
+}
+//It's suposed to reset anything but vram (vram is set to 0 by emu)
+s32 FASTCALL Init_s(maple_sub_init_params* p)
+{
+	//hahah do what ? ahahahahahaha
+	return rv_ok;
 }
 
 //called when entering sh4 thread , from the new thread context (for any thread speciacific init)
-void dcThreadInitPvr(PluginType type)
+void FASTCALL Reset(bool Manual)
 {
 	//maby init here ?
 }
 
 //called when exiting from sh4 thread , from the new thread context (for any thread speciacific de init) :P
-void dcThreadTermPvr(PluginType type)
+void FASTCALL Term()
 {
 	//term here ?
 }
@@ -1588,9 +1600,9 @@ bool EXPORT_CALL dcGetPlugin(u32 id,plugin_info_entry* info)
 		c.Type=Maple;
 		c.PluginVersion=NDC_MakeVersion(1,0,0);
 
-		km.Init=0;
-		km.Reset=0;
-		km.Term=0;
+		km.Init=Init;
+		km.Reset=Reset;
+		km.Term=Term;
 
 		km.Create=CreateController<1>;
 		km.Destroy=DestroyController;
@@ -1604,15 +1616,17 @@ bool EXPORT_CALL dcGetPlugin(u32 id,plugin_info_entry* info)
 		c.Type=MapleSub;
 		c.PluginVersion=NDC_MakeVersion(1,0,0);
 
-		ks.Init=0;
-		ks.Reset=0;
-		ks.Term=0;
+		ks.Init=Init_s;
+		ks.Reset=Reset;
+		ks.Term=Term;
 
 		ks.Create=CreateVmu;
 		ks.Destroy=DestroyVmu;
 
 		ks.ShowConfig=0;
 		break;
+	default :
+		return false;
 	}
 	return true;
 	/*
