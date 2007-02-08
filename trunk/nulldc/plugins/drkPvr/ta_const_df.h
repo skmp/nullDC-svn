@@ -22,9 +22,9 @@ static const  TaPolyParamFP* ta_poly_param_lut[5]=
 {
 	(TaPolyParamFP*)TA_decoder::AppendPolyParam0,
 	(TaPolyParamFP*)TA_decoder::AppendPolyParam1,
-	(TaPolyParamFP*)TA_decoder::AppendPolyParam2A,
+	(TaPolyParamFP*)AppendPolyParam2Full,
 	(TaPolyParamFP*)TA_decoder::AppendPolyParam3,
-	(TaPolyParamFP*)TA_decoder::AppendPolyParam4A
+	(TaPolyParamFP*)AppendPolyParam4Full
 };
 //64b , first part
 static const  TaPolyParamFP* ta_poly_param_a_lut[5]=
@@ -35,12 +35,13 @@ static const  TaPolyParamFP* ta_poly_param_a_lut[5]=
 	(TaPolyParamFP*)0,
 	(TaPolyParamFP*)TA_decoder::AppendPolyParam4A
 };
+
 //64b , , second part
-static const  TaPolyParamFP* ta_poly_param_b_lut[5]=
+static const  TaListFP* ta_poly_param_b_lut[5]=
 {
-	(TaPolyParamFP*)0,
-	(TaPolyParamFP*)0,
-	(TaPolyParamFP*)TA_decoder::AppendPolyParam2B,
-	(TaPolyParamFP*)0,
-	(TaPolyParamFP*)TA_decoder::AppendPolyParam4B
+	(TaListFP*)0,
+	(TaListFP*)0,
+	(TaListFP*)ta_poly_B_32<2>,
+	(TaListFP*)0,
+	(TaListFP*)ta_poly_B_32<4>
 };

@@ -81,9 +81,15 @@ namespace TASplitter
 			return SZ32;
 		}
 		//Second part of poly data
+		template <int t>
 		static u32 fastcall ta_poly_B_32(Ta_Dma* data,u32 size)
 		{
 			//TA_decoder::AppendPolyParam64B((TA_PolyParamB*)data);
+			if (t==2)
+				TA_decoder::AppendPolyParam2B((TA_PolyParam2B*)data);
+			else
+				TA_decoder::AppendPolyParam4B((TA_PolyParam4B*)data);
+	
 			TaCmd=ta_main;
 			return SZ32;
 		}
@@ -176,26 +182,32 @@ namespace TASplitter
 				return SZ64;
 			}
 		}
-		static u32 fastcall ta_sprite1B_data(Ta_Dma* data,u32 size)
+		static u32 fastcall ta_spriteB_data(Ta_Dma* data,u32 size)
 		{
 			//32B more needed , 32B done :)
 			TaCmd=ta_main;
-			TA_decoder::AppendSpriteVertex1B((TA_Sprite1B*)data);
+			
+			TA_decoder::AppendSpriteVertexB((TA_Sprite1B*)data);
+
 			return SZ32;
 		}
-		static u32 fastcall ta_sprite1_data(Ta_Dma* data,u32 size)
+		static u32 fastcall ta_sprite_data(Ta_Dma* data,u32 size)
 		{
 			if (size==1)
 			{
 				//32B more needed , 32B done :)
-				TaCmd=ta_sprite1B_data;
+				TaCmd=ta_spriteB_data;
+				
+				TA_decoder::AppendSpriteVertexA((TA_Sprite1A*)data);
 				return SZ32;
 			}
 			else
 			{
 				TA_VertexParam* vp=(TA_VertexParam*)data;
-				TA_decoder::AppendSpriteVertex1A(&vp->spr1A);
-				TA_decoder::AppendSpriteVertex1B(&vp->spr1B);
+
+				TA_decoder::AppendSpriteVertexA(&vp->spr1A);
+				TA_decoder::AppendSpriteVertexB(&vp->spr1B);
+
 				//all 64B done
 				return SZ64;
 			}
@@ -378,7 +390,7 @@ strip_end:
 			{
 				if ( data->pcw.Col_Type<2 ) //0,1
 				{
-					return SZ32;	//Polygon Type 0
+					return 0  | 0;	//Polygon Type 0 -- SZ32
 				}
 				else if ( data->pcw.Col_Type == 2 )
 				{
@@ -386,40 +398,40 @@ strip_end:
 					{
 						if (data->pcw.Offset)
 						{
-							return SZ64;	//Polygon Type 2
+							return 2 | 0x80;	//Polygon Type 2 -- SZ64
 						}
 						else
 						{
-							return SZ32;	//Polygon Type 1
+							return 1 | 0;	//Polygon Type 1 -- SZ32
 						}
 					}
 					else
 					{
-						return SZ32;	//Polygon Type 1
+						return 1 | 0;	//Polygon Type 1 -- SZ32
 					}
 				}
 				else	//col_type ==3
 				{
-					return SZ32;	//Polygon Type 0
+					return 0 | 0;	//Polygon Type 0 -- SZ32
 				}
 			}
 			else
 			{
 				if ( data->pcw.Col_Type==0 ) //0
 				{
-					return SZ32;	//Polygon Type 3
+					return 3 | 0;	//Polygon Type 3 -- SZ32
 				}
 				else if ( data->pcw.Col_Type==2 ) //2
 				{
-					return SZ64;	//Polygon Type 4
+					return 4 | 0x80;	//Polygon Type 4 -- SZ64
 				}
 				else if ( data->pcw.Col_Type==3 ) //3
 				{
-					return SZ32;	//Polygon Type 3
+					return 3 | 0;	//Polygon Type 3 -- SZ32
 				}
 				else
 				{
-					return 0xFFFFFFFF;//die ("data->pcw.Col_Type==1 && volume ==1");
+					return 0xFFDDEEAA;//die ("data->pcw.Col_Type==1 && volume ==1");
 				}
 			}
 		}
@@ -432,6 +444,18 @@ strip_end:
 			//printf("Starting list %d\n",new_list);
 			CurrentList=new_list;
 			TA_decoder::StartList(CurrentList);
+		}
+		
+		static void fastcall AppendPolyParam2Full(Ta_Dma* pp)
+		{
+			TA_decoder::AppendPolyParam2A((TA_PolyParam2A*)&pp[0]);
+			TA_decoder::AppendPolyParam2B((TA_PolyParam2B*)&pp[1]);
+		}
+
+		static void fastcall AppendPolyParam4Full(Ta_Dma* pp)
+		{
+			TA_decoder::AppendPolyParam4A((TA_PolyParam4A*)&pp[0]);
+			TA_decoder::AppendPolyParam4B((TA_PolyParam4B*)&pp[1]);
 		}
 
 		static u32 fastcall ta_main(Ta_Dma* data,u32 size)
@@ -517,7 +541,7 @@ strip_end:
 								//64b , first part
 								ta_poly_param_a_lut[ppid](data);
 								//Handle next 32B ;)
-								TaCmd=ta_poly_B_32;//ta_poly_param_a_lut[ppid] -> gota fix dat
+								TaCmd=ta_poly_param_b_lut[ppid];
 								data+=SZ32;
 								size-=SZ32;
 							}
@@ -535,7 +559,10 @@ strip_end:
 					//Sets Sprite info , and switches to ta_sprite_data function
 				case ParamType_Sprite:
 					{
-						VerxexDataFP=ta_sprite1_data;
+						if (CurrentList==ListType_None)
+							ta_list_start(data->pcw.ListType);	//start a list ;)
+
+						VerxexDataFP=ta_sprite_data;
 						//printf("Sprite \n");
 						TA_decoder::AppendSpriteParam((TA_SpriteParam*)data);
 						data+=SZ32;
@@ -580,10 +607,17 @@ strip_end:
 			{
 				Ta_Dma t;
 				t.pcw.obj_ctrl=i;
-				ta_type_lut[i]=	poly_data_type_id(&t) | 
-								(poly_header_type_size(&t)<<30) |
-								((poly_header_type_size(&t)==1?0:4)<<8);
+				u32 rv=	poly_data_type_id(&t);
+				u32 type= poly_header_type_size(&t);
 
+				if (type& 0x80)
+					rv|=(SZ64<<30);
+				else
+					rv|=(SZ32<<30);
+
+				rv|=(type&0x7F)<<8;
+
+				ta_type_lut[i]=rv;
 			}
 			return true;
 		}

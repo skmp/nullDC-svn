@@ -222,14 +222,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\ta_alloc.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\ta_alloc.h"
-				>
-			</File>
-			<File
 				RelativePath=".\ta_const_df.h"
 				>
 			</File>

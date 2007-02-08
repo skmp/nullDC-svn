@@ -44,10 +44,10 @@ union ISP_TSP
 		u32	Reserved	: 20;
 		u32	DCalcCtrl	: 1;
 		u32	CacheBypass	: 1;
-		u32	UV_16b		: 1;	// redundant in many places
-		u32	Gouraud		: 1;
-		u32	Offset		: 1;
-		u32	Texture		: 1;
+		u32	UV_16b		: 1;	//In TA they are replaced
+		u32	Gouraud		: 1;	//by the ones on PCW
+		u32	Offset		: 1;	//
+		u32	Texture		: 1;	// -- up to here --
 		u32	ZWriteDis	: 1;
 		u32	CullMode	: 2;
 		u32	DepthMode	: 3;
@@ -227,9 +227,9 @@ struct TA_PolyParam2A
 struct TA_PolyParam2B
 {
 	//Face color
-	f32 FaceColor0A, FaceColor0R,FaceColor0G, FaceColor0B;
-	//Face color 1 / Offset color :)
-	f32 FaceOffset1A, FaceOffset1R, FaceOffset1G, FaceOffset1B;
+	f32 FaceColorA, FaceColorR,FaceColorG, FaceColorB;
+	//Offset color :)
+	f32 FaceOffsetA, FaceOffsetR, FaceOffsetG, FaceOffsetB;
 };
 /*
 Polygon Type 3(Packed Color, with Two Volumes)
@@ -302,20 +302,36 @@ struct TA_PolyParam4A
 //32B
 struct TA_PolyParam4B
 {
-	//Face color
+	//Face color 0
 	f32 FaceColor0A, FaceColor0R,FaceColor0G, FaceColor0B;
-	//Face color 1 / Offset color :)
+	//Face color 1
 	f32 FaceColor1A, FaceColor1R, FaceColor1G, FaceColor1B;
 };
 
 ///Mod vol param types
 struct TA_ModVolParam
 {
-	Ta_Dma nil;
+	PCW pcw;
+	ISP_TSP isp;
+
+	u32  ign[32-8];
 };
+
+//Srpite
 struct TA_SpriteParam
 {
-	Ta_Dma nil;
+	PCW pcw;
+	ISP_TSP isp;
+
+	TSP tsp;
+	TCW tcw;
+
+	u32 BaseCol;
+	u32 OffsCol;
+
+	//for sort dma
+	u32 SDMA_SIZE;
+	u32 SDMA_ADDR;
 };
 
 //	Vertex Param Structs
@@ -391,7 +407,7 @@ struct TA_Vertex6B
 {
 	f32 BaseA, BaseR,
 		BaseG, BaseB;
-	f32 OffsA, Offs,
+	f32 OffsA, OffsR,
 		OffsG, OffsB;
 };
 //28B
