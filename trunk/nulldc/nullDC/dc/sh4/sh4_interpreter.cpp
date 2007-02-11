@@ -557,17 +557,16 @@ int __fastcall UpdateSystem(u32 Cycles)
 	Cycles=Cycles*100/cpu_ratio;
 #endif
 	//Cycles=360;
-	//TODO : Add Update System implementation
 	aica_cycl+=Cycles;
 	if (aica_cycl>(200*1000*1000/(44100*3)))
 	{
-		//~1500 cycles .These devices dont need more precition , so we save a bit here :)
+		//1.5-2k cycles .These devices dont need more precition , so we save a bit here :)
 		UpdateAica(aica_cycl);
 		libExtDevice.UpdateExtDevice(aica_cycl);
-		//~15k cycles
 		gpc_counter++;
 		if (gpc_counter>10)
 		{
+			//~20-15k cycles
 			gpc_counter=0;
 			gcp_timer++;
 			FreeSuspendedBlocks();

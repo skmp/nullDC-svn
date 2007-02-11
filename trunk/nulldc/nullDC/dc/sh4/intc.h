@@ -7,7 +7,7 @@
 //Enums
 
 int UpdateINTC();
-void RaiseInterrupt(InterruptID intr);
+void FASTCALL RaiseInterrupt(InterruptID intr);
 void RaiseExeption(u32 code,u32 vector);
 bool Do_Exeption(u32 lvl, u32 expEvn, u32 CallVect);
 

@@ -4,7 +4,8 @@
 ////////////////////////////////////////////////////////////////////////////////////////
 #include "stdafx.h"
 
-
+  extern bool render_end_pending;
+  extern u32 render_end_pending_cycles;
 bool      g_bUSE_ZWRITE           = FALSE;
 bool      g_bUSE_ALPHATEST_ZWRITE = FALSE;
 ESortMode g_eSortMode             = E_SORT_BATCH;
@@ -1712,6 +1713,10 @@ void TADoRender()
       }
       if(pBuffer && pBuffer->m_pVB && uCount>3)
         aComandsOP.push_back(TDrawPrimitive(&(it->first),pBuffer,uBase,uCount-3));
+	  else
+	  {
+		  __asm int 3;
+	  }
     }
   }
   //  alphatest
@@ -1730,6 +1735,10 @@ void TADoRender()
       }
       if(pBuffer && pBuffer->m_pVB && uCount>3)
         aComandsPT.push_back(TDrawPrimitive(&(it->first),pBuffer,uBase,uCount-3));
+	  	  else
+	  {
+		  __asm int 3;
+	  }
     }
   }
   //  trans
@@ -1748,6 +1757,10 @@ void TADoRender()
       }
       if(pBuffer && pBuffer->m_pVB && uCount>3)
         aComandsTR.push_back(TDrawPrimitive(&(it->first),pBuffer,uBase,uCount-3,(it->second)->m_fAverageZ));
+	  	  else
+	  {
+		  __asm int 3;
+	  }
     }
   }
   if(pBufferCache)
@@ -1857,10 +1870,14 @@ void TADoRender()
   if (pVideoMem)
     *pVideoMem = STAMP_RENDER;
 
+
 //  TSH4_ASIC::EventCompleted(TSH4_ASIC::ASIC_EVT_PVR_RENDERDONE);
+  render_end_pending=true;
+  render_end_pending_cycles=m_uNumVerticesRegistered*170+100000;
+	  /*
   RaiseInterrupt(holly_RENDER_DONE);
   RaiseInterrupt(holly_RENDER_DONE_vd);
-  RaiseInterrupt(holly_RENDER_DONE_isp);
+  RaiseInterrupt(holly_RENDER_DONE_isp);*/
 
 
 

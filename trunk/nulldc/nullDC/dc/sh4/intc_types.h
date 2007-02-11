@@ -110,5 +110,5 @@ enum InterruptID
 
 
 
-void RaiseInterrupt(InterruptID intr);
-typedef void RaiseInterruptFP(InterruptID intr);
+void FASTCALL RaiseInterrupt(InterruptID intr);
+typedef void FASTCALL RaiseInterruptFP(InterruptID intr);

@@ -80,12 +80,6 @@ void aica_Term()
 
 }
 
-//Cycles are sh4 cpu cycles
-void UpdateAica(u32 cycles)
-{
-	libAICA.UpdateAICA(cycles);
-}
-
 void Write_SB_ADST(u32 data)
 {
 	//0x005F7800	SB_ADSTAG	RW	AICA:G2-DMA G2 start address 
@@ -102,7 +96,7 @@ void Write_SB_ADST(u32 data)
 		if (SB_ADEN&1)
 		{
 			if (SB_ADDIR==1)
-				printf("AICA DMA : SB_ADDIR==1 !!!!!!!!\n");
+				msgboxf("AICA DMA : SB_ADDIR==1 !!!!!!!!",MBX_OK | MBX_ICONERROR);
 
 			u32 src=SB_ADSTAR;
 			u32 dst=SB_ADSTAG;
@@ -111,7 +105,6 @@ void Write_SB_ADST(u32 data)
 			for (u32 i=0;i<len;i+=4)
 			{
 				u32 data=ReadMem32_nommu(src+i);
-				//libAICA.WriteMem_aica_ram(dst+i,data,4);
 				WriteMem32_nommu(dst+i,data);
 			}
 

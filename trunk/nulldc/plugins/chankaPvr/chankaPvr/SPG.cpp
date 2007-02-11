@@ -13,7 +13,7 @@ u32 vblk_cnt=0;
 
 u8 VblankInfo()
 {
-	u32 data = SPG_VBLANK_INT;
+	u32 data = SPG_VBLANK;
 	if (data==0)
 		return 0;
 	if (((data & 0x3FFF) <= prv_cur_scanline) || (((data >> 16) & 0x3FFF) <= prv_cur_scanline))
@@ -23,40 +23,82 @@ u8 VblankInfo()
 }
 
 int frame_count=0;
-u32 lasft_fps;
+u32 last_fps;
 double spd_fps=0;
 double spd_cpu=0;
 
 
 extern int CurrentFrame;
+bool render_end_pending=false;
+u32 render_end_pending_cycles;
 //u32 vblLine	= (pvrCycles / (vblCount * 7));	// Current Line
 void vblank_done()
 {
 	CurrentFrame++;
-	if ((timeGetTime()-(double)lasft_fps)>800)
+	if ((timeGetTime()-last_fps)>800)
 	{
-		u32 ctime=timeGetTime();
-		spd_fps=(double)frame_count/(double)((double)(ctime-(double)lasft_fps)/1000);
-		spd_cpu=(double)vblk_cnt/(double)((double)(ctime-(double)lasft_fps)/1000);
+		double spd_fps=(double)(CurrentFrame)/(double)((double)(timeGetTime()-(double)last_fps)/1000);
+		double spd_cpu=(double)vblk_cnt/(double)((double)(timeGetTime()-(double)last_fps)/1000);
 		spd_cpu*=Frame_Cycles;
-		spd_cpu/=1000000;
-
-		//ints=0;
-		lasft_fps=timeGetTime();
-		frame_count=0;
-
+		spd_cpu/=1000000;	//mrhz kthx
 		double fullfps=(spd_fps/spd_cpu)*200;
+		double mv=Unai::m_uNumVerticesRegistered /1000000.0;
+		//(*renderer->VertexCount)=0;
+		last_fps=timeGetTime();
+		//(*renderer->FrameCount)=0;
+		CurrentFrame=0;
+		vblk_cnt=0;
 
 		char fpsStr[256];
-		sprintf(fpsStr," FPS: %4.2f(%4.2f)  -  Sh4: %4.2f mhz (%4.2f%%) - nullDC v0.0.1", spd_fps,fullfps, spd_cpu,spd_cpu*100/200);
+		sprintf(fpsStr,"FPS: %4.2f(%4.2f) Vert : %4.2fM -  Sh4: %4.2f mhz (%4.2f%%) - %s", spd_fps,fullfps,mv, spd_cpu,spd_cpu*100/200,em_inf.Name);
 		SetWindowText((HWND)Hwnd, fpsStr);
-		vblk_cnt=0;
 	}
 }
-
-//called from sh4 context , should update pvr/ta state and evereything else
-void spgUpdatePvr(u32 cycles)
+void FASTCALL spgUpdatePvr(u32 cycles)
 {
+	if (render_end_pending)
+	{
+		if (render_end_pending_cycles<cycles)
+		{
+			render_end_pending=false;
+			RaiseInterrupt(InterruptID::holly_RENDER_DONE);
+			RaiseInterrupt(InterruptID::holly_RENDER_DONE_isp);
+			RaiseInterrupt(InterruptID::holly_RENDER_DONE_vd);
+		}
+		render_end_pending_cycles-=cycles;
+	}
+	/*
+	clcount+=cycles;
+	if (clcount>dc)
+	{
+		
+		clcount-=(DCclock)/60;//faked
+		//ok .. here , after much effort , we reached a full screen redraw :P
+		//now , we will copy everything onto the screen (meh) and raise a vblank interupt
+		RaiseInterrupt(holly_VBLank);//weeeee
+		if (cur_icpl->PvrUpdate)
+			cur_icpl->PvrUpdate(1);
+
+			// didn't look at read i guess this is not needed 
+		*(u32*)&pvr_regs[0x5F810C &0x7fff] |= 0x2000;	// SPG_STATUS
+
+		if ((timeGetTime()-(double)lasft_fps)>800)
+		{
+			spd_fps=(double)fps/(double)((double)(timeGetTime()-(double)lasft_fps)/1000);
+			//printf("FPS : %f ; list type : %x\n",_spd_fps,ints);
+			ints=0;
+			lasft_fps=timeGetTime();
+			fps=0;
+
+			char fpsStr[256];
+			extern HWND g_hWnd;
+			//sprintf(fpsStr," FPS: %f  -  Sh4: %f mhz  - Rx: %d kb/s - Tx %d kb/s  DCtest0r v0.0.0 ", spd_fps, 0,0,0);
+			//SetWindowText(g_hWnd, fpsStr);
+			vblk_cnt=0;
+		}
+		
+	}*/
+
 	clc_pvr_scanline += cycles;
 	if (clc_pvr_scanline >  Line_Cycles)//60 ~herz = 200 mhz / 60=3333333.333 cycles per screen refresh
 	{
@@ -79,14 +121,13 @@ void spgUpdatePvr(u32 cycles)
 		{
 			//Vblank counter
 			vblk_cnt++;
-			RaiseInterrupt(InterruptID::holly_HBLank);
+			RaiseInterrupt(InterruptID::holly_HBLank); // -> This turned out to be HBlank btw , needs to be emulater ;(
 			TAStartVBlank();
 			vblank_done();
 		}
 	}
 }
-
-
+//called from sh4 context , should update pvr/ta state and evereything else
 bool spg_Init()
 {
 	return true;

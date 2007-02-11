@@ -45,14 +45,15 @@
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;DRKPVR_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
-				EnableEnhancedInstructionSet="0"
+				EnableEnhancedInstructionSet="1"
 				FloatingPointModel="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="4"
+				CallingConvention="1"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -68,6 +69,7 @@
 				AdditionalDependencies="winMM.lib opengl32.lib  glu32.lib d3d9.lib"
 				OutputFile="$(SolutionDir)\WorkDir\Plugins\$(ProjectName)_$(PlatformName).dll"
 				LinkIncremental="2"
+				ModuleDefinitionFile="exports.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
@@ -124,16 +126,21 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
+				OmitFramePointers="true"
 				AdditionalIncludeDirectories="&quot;$(ProjectDir)\chanka&quot;;&quot;$(ProjectDir)&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;DRKPVR_EXPORTS"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
-				EnableEnhancedInstructionSet="0"
+				EnableEnhancedInstructionSet="1"
 				FloatingPointModel="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
+				CallingConvention="1"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -149,6 +156,7 @@
 				AdditionalDependencies="winMM.lib opengl32.lib  glu32.lib d3d9.lib"
 				OutputFile="$(SolutionDir)\WorkDir\Plugins\$(ProjectName)_$(PlatformName).dll"
 				LinkIncremental="1"
+				ModuleDefinitionFile="exports.def"
 				TypeLibraryFile=""
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -196,6 +204,10 @@
 			</File>
 			<File
 				RelativePath=".\drkPvr.h"
+				>
+			</File>
+			<File
+				RelativePath=".\exports.def"
 				>
 			</File>
 		</Filter>

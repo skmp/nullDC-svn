@@ -9,6 +9,7 @@
 #include "regs.h"
 
 pvr_init_params param;
+emu_info em_inf;
 
 RaiseInterruptFP* RaiseInterrupt;
 
@@ -92,27 +93,11 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 }
 
 //Give to the emu info for the plugin type
-void dcShowConfigDD(PluginType type,void* window)
+void FASTCALL dcShowConfigDD(void* window)
 {
 	printf("dcShowConfigDD-> wha ? ");
 }
-EXPORT void dcGetPluginInfo(plugin_info* info)
-{
-	info->InterfaceVersion.full=PLUGIN_I_F_VERSION;
-	strcpy(info->Name,"chanka's video [port by drk||Raziel] (" __DATE__ ")");
-	info->PluginVersion.full=NDC_MakeVersion(MAJOR,MINOR,BUILD);
-	
 
-	info->Init=dcInitPvr;
-	info->Term=dcTermPvr;
-	info->Reset=dcResetPvr;
-
-	info->ThreadInit=dcThreadInitPvr;
-	info->ThreadTerm=dcThreadTermPvr;
-
-	info->Type=PluginType::PowerVR;
-	info->ShowConfig=dcShowConfigDD;
-}
 /*
 
   void TASendPackedData(DWORD* pBuffer, DWORD uLength);
@@ -136,7 +121,7 @@ EXPORT void dcGetPluginInfo(plugin_info* info)
 
 */
 
-void vramLockCB(vram_block *bl, u32 addr)
+void FASTCALL vramLockCB(vram_block *bl, u32 addr)
 {
 	InvTexture(bl->userdata);
 
@@ -153,66 +138,54 @@ void* lock_vmem(void* pMem,unsigned __int32 bytes,void* puser)
 	vram_block* pblock =  param.vram_lock_64((u32)offset,(u32)offset + bytes -1,puser);
 	return pblock;
 }
-void TaFIFO(u32 address,u32* data,u32 size)
+void FASTCALL TaFIFO(u32 address,u32* data,u32 size)
 {
 	size*=8;
 	for (int i=0;i<size;i+=8)		
 		TASendPackedData((DWORD*)&data[i],32);
 }
-//Give to the emu pointers for the PowerVR interface
-EXPORT void dcGetPvrInfo(pvr_plugin_if* info)
-{
-	info->InterfaceVersion.full=PVR_PLUGIN_I_F_VERSION;
 
-	info->UpdatePvr=spgUpdatePvr;
-	info->TaFIFO=TaFIFO;
-	info->ReadReg=ReadPvrRegister;
-	info->WriteReg=WritePvrRegister;
-	info->LockedBlockWrite = vramLockCB;
+s32 FASTCALL Load(emu_info* inf)
+{
+	em_inf=*inf;
+
+	Hwnd=em_inf.WindowHandle;
+	g_hWnd=(HWND)Hwnd;
+	return rv_ok;
 }
 
-
+void FASTCALL Unload()
+{
+}
 //called when plugin is used by emu (you should do first time init here)
-void dcInitPvr(void* aparam,PluginType type)
+s32 FASTCALL InitPvr(pvr_init_params* aparam)
 {
 	param=*(pvr_init_params*)aparam;
 
 	vram_64=param.vram;
 	g_pSH4TextureMemory=(char*)vram_64;
-	Hwnd=param.WindowHandle;
-	g_hWnd=(HWND)Hwnd;
+
 	RaiseInterrupt=param.RaiseInterrupt;
-	//param->vram_lock_64
 	//g_bChangeDisplayEnable = true;
 	//g_bDraw = true;
+	TAInit();
+	return rv_ok;
 }
 
-//called when plugin is unloaded by emu , olny if dcInitPvr is called (eg , not called to enumerate plugins)
-void dcTermPvr(PluginType type)
-{
-
-}
 
 //It's suposed to reset anything but vram (vram is set to 0 by emu)
-void dcResetPvr(bool Manual,PluginType type)
+void FASTCALL ResetPvr(bool Manual)
 {
 	Regs_Reset(Manual);
 	TAReset();
 }
 
-//called when entering sh4 thread , from the new thread context (for any thread speciacific init)
-void dcThreadInitPvr(PluginType type)
+//called when plugin is unloaded by emu , olny if dcInitPvr is called (eg , not called to enumerate plugins)
+void FASTCALL TermPvr()
 {
-	//olny the renderer cares about thread speciacific shit ..
-	TAInit();
-}
-
-//called when exiting from sh4 thread , from the new thread context (for any thread speciacific de init) :P
-void dcThreadTermPvr(PluginType type)
-{
-	//olny the renderer cares about thread speciacific shit ..
 	TAEnd();
 }
+
 
 //Helper functions
 float GetSeconds()
@@ -244,3 +217,44 @@ char* GetNullDCSoruceFileName(char* full)
 	return &temp[0];
 }
 
+
+void EXPORT_CALL dcGetPluginInfo(plugin_info* info)
+{
+	info->InterfaceVersion=PLUGIN_I_F_VERSION;
+	info->count=1;
+}
+//Give to the emu pointers for the PowerVR interface
+bool EXPORT_CALL dcGetPlugin(u32 id,plugin_info_entry* info)
+{
+	if (id!=0)
+		return false;
+
+#define c info->common
+#define p info->pvr
+	
+	
+	c.InterfaceVersion=PVR_PLUGIN_I_F_VERSION;
+	c.Type=PowerVR;
+	
+	strcpy(c.Name,"chanka's video [port by drk||Raziel] (" __DATE__ ")");
+	c.PluginVersion=NDC_MakeVersion(MAJOR,MINOR,BUILD);
+	
+	c.Load=Load;
+	c.Unload=Unload;
+
+	
+	p.Init=InitPvr;
+	p.Term=TermPvr;
+	p.Reset=ResetPvr;
+
+	p.ShowConfig=dcShowConfigDD;
+
+	p.UpdatePvr=spgUpdatePvr;
+	p.TaFIFO=TaFIFO;
+	p.ReadReg=ReadPvrRegister;
+	p.WriteReg=WritePvrRegister;
+	p.LockedBlockWrite = vramLockCB;
+	p.ExeptionHanlder=0;	//we don't use that feature , we'l use default locking ;)
+
+	return true;
+}

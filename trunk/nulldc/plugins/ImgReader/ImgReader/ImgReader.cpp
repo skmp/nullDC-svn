@@ -215,7 +215,7 @@ int _cdecl chanka_ReadInfoSession(TInfoSession* pDriveSession)
 	pDriveSession->iNumSessions=session_count;
 	pDriveSession->uLeadOut=(*(u32*)&temp[2]);
 
-	for (int i=0;i<session_count;i++)
+	for (u32 i=0;i<session_count;i++)
 	{
 		GetSessionInfo(temp,i+1);//?
 		pDriveSession->aTrackStart[i]=(*(s32*)(&temp[2]));

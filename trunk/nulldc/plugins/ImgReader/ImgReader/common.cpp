@@ -11,12 +11,12 @@ DriveIF drives[]=
 	{
 		//cdi
 		cdi_DriveReadSector,
-		cdi_DriveGetTocInfo,
-		cdi_DriveGetDiscType,
-		cdi_GetSessionsInfo,
-		cdi_init,
-		cdi_term,
-		"CDI reader"
+			cdi_DriveGetTocInfo,
+			cdi_DriveGetDiscType,
+			cdi_GetSessionsInfo,
+			cdi_init,
+			cdi_term,
+			"CDI reader"
 	},
 	{
 		//cdi
@@ -28,7 +28,7 @@ DriveIF drives[]=
 		mds_term,
 		"NRG/MDS/MDF reader"
 	},
-		{
+	{
 		//iso
 		iso_DriveReadSector,
 		iso_DriveGetTocInfo,
@@ -52,7 +52,7 @@ int msgboxf(char* text,unsigned int type,...)
 	va_end(args);
 
 
-	return MessageBox(NULL,temp,emu.Name,type);
+	return MessageBox(NULL,temp,emu.Name,type | MB_TASKMODAL);
 }
 
 bool ConvertSector(u8* in_buff , u8* out_buff , int from , int to,int sector)
@@ -98,7 +98,8 @@ bool InitDrive()
 	if (GetFile(fn,"CD/GD Images (*.cdi;*.mds;*.nrg;*.gdi) \0*.cdi;*.mds;*.nrg;*.gdi\0\0")==false)
 	{
 		CurrDrive=&drives[Iso];
-		return false;
+		return msgboxf("Would you like to boot w/o GDrom ?",MB_ICONQUESTION | MB_YESNO)==IDYES;
+		//return false;
 	}
 
 	if (CurrDrive !=0 && CurrDrive->Inited==true)

@@ -8,8 +8,8 @@
 
 extern u8 regs[RegSize];
 
-u32 ReadPvrRegister(u32 addr,u32 size);
-void WritePvrRegister(u32 addr,u32 data,u32 size);
+u32 FASTCALL ReadPvrRegister(u32 addr,u32 size);
+void FASTCALL WritePvrRegister(u32 addr,u32 data,u32 size);
 
 bool Regs_Init();
 void Regs_Term();

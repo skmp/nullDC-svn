@@ -11,7 +11,7 @@
 #if REND_API == REND_D3D
 
 #define _float_colors_
-
+//#define _HW_INT_
 //#include <D3dx9shader.h>
 
 using namespace TASplitter;
@@ -38,11 +38,13 @@ namespace Direct3DRenderer
 "struct vertex { float4 pos : POSITION; float4 col : COLOR0;float4 spc : COLOR1; float4 uv : TEXCOORD0; };"
 "float W_min: register(c0);float W_max: register(c1);"
 "  vertex VertexShader_Tutorial_1(in vertex vtx) {"
-"vtx.pos.x=(vtx.pos.x/320)-1;"
-"vtx.pos.y=-(vtx.pos.y/240)+1;"
+"vtx.pos.x=((vtx.pos.x-0.5f)/320)-1;"
+"vtx.pos.y=-((vtx.pos.y-0.5f)/240)+1;"
 
+#ifdef _HW_INT_
 "vtx.col*=vtx.uv.z;"
 "vtx.spc*=vtx.uv.w;"
+#endif
 
 "vtx.uv.xy*=vtx.pos.z;"
 "vtx.uv.z=0;"
@@ -470,7 +472,11 @@ namespace Direct3DRenderer
 		u32 col;
 		u32 spc;
 #endif
-		float u,v,base_int,offset_int;
+		float u,v;
+
+		#ifdef _HW_INT_
+			float base_int,offset_int;
+		#endif
 	};
 	const D3DVERTEXELEMENT9 vertelem[] =
 	{
@@ -478,7 +484,11 @@ namespace Direct3DRenderer
 		#ifdef _float_colors_
 			{0, 12, D3DDECLTYPE_FLOAT4		, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0},	//Base color
 			{0, 28, D3DDECLTYPE_FLOAT4		, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 1},	//Specular(offset) color
-			{0, 44, D3DDECLTYPE_FLOAT4		, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD,0},	//u,v,base intesity , offset intesity
+			#ifdef _HW_INT_
+				{0, 44, D3DDECLTYPE_FLOAT4		, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD,0},	//u,v,base intesity , offset intesity
+			#else
+				{0, 44, D3DDECLTYPE_FLOAT2		, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD,0},	//u,v,base intesity , offset intesity
+			#endif
 		#else
 			{0, 12, D3DDECLTYPE_D3DCOLOR	, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0},	//Base color
 			{0, 16, D3DDECLTYPE_D3DCOLOR	, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 1},	//Specular color
@@ -495,7 +505,6 @@ namespace Direct3DRenderer
 		u32 first;		//entry index , holds vertex/pos data
 		u32 count;
 
-		f32 avgZ;
 		//lets see what more :)
 		
 		TSP tsp;
@@ -830,6 +839,8 @@ namespace Direct3DRenderer
 			float bg=*(float*)&ISP_BACKGND_D; 
 			float c0=1/clamp(0.0000001f,10000000.0f,pvrrc.invW_max);
 			float c1=1/clamp(0.0000001f,10000000.0f,pvrrc.invW_min);
+			c0*=0.99f;
+			c1*=1.01f;
 
 			dev->SetVertexShaderConstantF(0,&c0,1);
 			dev->SetVertexShaderConstantF(1,&c1,1);
@@ -915,7 +926,7 @@ if (!GetAsyncKeyState(VK_F3))
 		verifyc(d3d9->CreateDevice(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,(HWND)emu.WindowHandle,DEV_CREATE_FLAGS,&ppar,&dev));
 
 		//yay , 10 mb -_- =P
-		verifyc(dev->CreateVertexBuffer(10*1024*1024,D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY | VB_CREATE_FLAGS,0,D3DPOOL_DEFAULT,&vb,0));
+		verifyc(dev->CreateVertexBuffer(20*1024*1024,D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY | VB_CREATE_FLAGS,0,D3DPOOL_DEFAULT,&vb,0));
 		
 		verifyc(dev->CreateVertexDeclaration(vertelem,&vdecl));
 
@@ -956,7 +967,9 @@ if (!GetAsyncKeyState(VK_F3))
 	{
 		SetCurrentPVRRC(PARAM_BASE);
 		VertexCount+= pvrrc.verts.used;
-		render_end_pending_cycles=100000+pvrrc.verts.used*100;
+		render_end_pending_cycles= pvrrc.verts.used*25;
+		if (render_end_pending_cycles<500000)
+			render_end_pending_cycles=500000;
 
 		rs.Set();
 		FrameCount++;
@@ -968,11 +981,10 @@ if (!GetAsyncKeyState(VK_F3))
 		re.Wait();
 	}
 
-	static f32 FaceBaseColor[4];
-	static f32 FaceOffsColor[4];
-
-	static f32 SFaceBaseColor[4];
-	static f32 SFaceOffsColor[4];
+	__declspec(align(16)) static f32 FaceBaseColor[4];
+	__declspec(align(16)) static f32 FaceOffsColor[4];
+	__declspec(align(16)) static f32 SFaceBaseColor[4];
+	__declspec(align(16)) static f32 SFaceOffsColor[4];
 
 	struct VertexDecoder
 	{
@@ -1112,6 +1124,8 @@ if (!GetAsyncKeyState(VK_F3))
 		tarc.invW_min=zv;\
 	if (tarc.invW_max<zv)\
 		tarc.invW_max=zv;
+
+	//Append vertex base
 #define vert_cvt_base \
 	Vertex* cv=tarc.verts.Append();\
 	cv->x=vtx->xyz[0];\
@@ -1120,69 +1134,78 @@ if (!GetAsyncKeyState(VK_F3))
 	cv->z=invW;\
 	z_update(invW);
 
-
+	//Resume vertex base (for B part)
 #define vert_res_base \
 	Vertex* cv=&tarc.verts.data[tarc.verts.used - 1];
 
+	//uv 16/32
 #define vert_uv_32(u_name,v_name) \
 		cv->u	=	(vtx->u_name);\
 		cv->v	=	(vtx->v_name);
-		//cv->uv[2]	=	0; 
-		//cv->uv[3]	=	invW; 
 
 #define vert_uv_16(u_name,v_name) \
 		cv->u	=	f16(vtx->u_name);\
 		cv->v	=	f16(vtx->v_name);
-		//cv->uv[2]	=	0; 
-		//cv->uv[3]	=	invW; 
 
-#define vert_int_base(base) \
-		cv->base_int = vtx->base;
-
-#define vert_int_offs(offs) \
-		cv->offset_int = vtx->offs;
-
-#define vert_int_no_base() \
-	cv->base_int = 1;
-
-#define vert_int_no_offs() \
-	cv->offset_int = 1;
-
+	//Color convertions
 #ifdef _float_colors_
-#define vert_packed_color_(to,src) \
-	to[0]	= unkpack_bgp_to_float[(255 & (src >> 16)) ];	\
-	to[1]	= unkpack_bgp_to_float[(255 & (src >> 8))  ];	\
-	to[2]	= unkpack_bgp_to_float[(255 & (src >> 0))  ];	\
-	to[3]	= unkpack_bgp_to_float[(255 & (src >> 24)) ];	
+	#define vert_packed_color_(to,src) \
+		to[0]	= unkpack_bgp_to_float[(255 & (src >> 16)) ];	\
+		to[1]	= unkpack_bgp_to_float[(255 & (src >> 8))  ];	\
+		to[2]	= unkpack_bgp_to_float[(255 & (src >> 0))  ];	\
+		to[3]	= unkpack_bgp_to_float[(255 & (src >> 24)) ];	
 
+	#define vert_float_color_(to,a,r,g,b) \
+			to[0] = r;	\
+			to[1] = g;	\
+			to[2] = b;	\
+			to[3] = a;
+#else
+	#error OLNY floating color is supported for now
+#endif
+
+	//Macros to make thins easyer ;)
 #define vert_packed_color(to,src) \
 	vert_packed_color_(cv->to,vtx->src);
-/*
-		cv->to[0]	= unkpack_bgp_to_float[(255 & (vtx->src >> 16)) ];	\
-		cv->to[1]	= unkpack_bgp_to_float[(255 & (vtx->src >> 8))  ];	\
-		cv->to[2]	= unkpack_bgp_to_float[(255 & (vtx->src >> 0))  ];	\
-		cv->to[3]	= unkpack_bgp_to_float[(255 & (vtx->src >> 24)) ];	*/
-
-#define vert_float_color_(to,a,r,g,b) \
-		to[0] = r;	\
-		to[1] = g;	\
-		to[2] = b;	\
-		to[3] = a;
 
 #define vert_float_color(to,src) \
 	vert_float_color_(cv->to,vtx->src##A,vtx->src##R,vtx->src##G,vtx->src##B)
 
-#define vert_face_base_color(baseint) \
-	vert_float_color_(cv->col,FaceBaseColor[3],FaceBaseColor[0],FaceBaseColor[1],FaceBaseColor[2]);	\
-	vert_int_base(baseint);
+	//Intesity handling
+#ifdef _HW_INT_
+	//Hardware intesinty handling , we just store the int value
+	#define vert_int_base(base) \
+		cv->base_int = vtx->base;
 
-#define vert_face_offs_color(offsint) \
-	vert_float_color_(cv->spc,FaceOffsColor[3],FaceOffsColor[0],FaceOffsColor[1],FaceOffsColor[2]);	\
-	vert_int_offs(offsint);
+	#define vert_int_offs(offs) \
+		cv->offset_int = vtx->offs;
 
+	#define vert_int_no_base() \
+		cv->base_int = 1;
+
+	#define vert_int_no_offs() \
+		cv->offset_int = 1;
+
+	#define vert_face_base_color(baseint) \
+		vert_float_color_(cv->col,FaceBaseColor[3],FaceBaseColor[0],FaceBaseColor[1],FaceBaseColor[2]);	 \
+		vert_int_base(baseint);
+
+	#define vert_face_offs_color(offsint) \
+		vert_float_color_(cv->spc,FaceOffsColor[3],FaceOffsColor[0],FaceOffsColor[1],FaceOffsColor[2]);	 \
+		vert_int_offs(offsint);
 #else
-#error OLNY floating color is supported for now
+	//Precaclulated intesinty (saves 8 bytes / vertex)
+	#define vert_face_base_color(baseint) \
+		vert_float_color_(cv->col,FaceBaseColor[3]*vtx->baseint,FaceBaseColor[0]*vtx->baseint,FaceBaseColor[1]*vtx->baseint,FaceBaseColor[2]*vtx->baseint);
+
+	#define vert_face_offs_color(offsint) \
+		vert_float_color_(cv->spc,FaceOffsColor[3]*vtx->offsint,FaceOffsColor[0]*vtx->offsint,FaceOffsColor[1]*vtx->offsint,FaceOffsColor[2]*vtx->offsint);	
+
+	#define vert_int_no_base()
+	#define vert_int_no_offs()
 #endif
+
+
 
 		//(Non-Textured, Packed Color)
 		__forceinline
@@ -1431,9 +1454,9 @@ if (!GetAsyncKeyState(VK_F3))
 
 #define append_sprite(indx) \
 	vert_float_color_(cv[indx].col,SFaceBaseColor[3],SFaceBaseColor[0],SFaceBaseColor[1],SFaceBaseColor[2])\
-	vert_float_color_(cv[indx].spc,SFaceOffsColor[3],SFaceOffsColor[0],SFaceOffsColor[1],SFaceOffsColor[2])\
-	cv[indx].base_int=1;\
-	cv[indx].offset_int=1;
+	vert_float_color_(cv[indx].spc,SFaceOffsColor[3],SFaceOffsColor[0],SFaceOffsColor[1],SFaceOffsColor[2])
+	//cv[indx].base_int=1;\
+	//cv[indx].offset_int=1;
 
 #define append_sprite_yz(indx,set,st2) \
 	cv[indx].y=sv->y##set; \
@@ -1462,10 +1485,12 @@ if (!GetAsyncKeyState(VK_F3))
 			cv[2].x=sv->x0;
 			cv[2].y=sv->y0;
 			cv[2].z=sv->z0;
+			z_update(sv->z0);
 
 			cv[3].x=sv->x1;
 			cv[3].y=sv->y1;
 			cv[3].z=sv->z1;
+			z_update(sv->z1);
 
 			cv[1].x=sv->x2;
 		}
@@ -1477,6 +1502,7 @@ if (!GetAsyncKeyState(VK_F3))
 
 			cv[1].y=sv->y2;
 			cv[1].z=sv->z2;
+			z_update(sv->z2);
 
 			cv[0].x=sv->x3;
 			cv[0].y=sv->y3;

@@ -147,7 +147,7 @@ enum InterruptID
 
 
 
-typedef void RaiseInterruptFP(InterruptID intr);
+typedef void FASTCALL RaiseInterruptFP(InterruptID intr);
 
 
 struct vram_block

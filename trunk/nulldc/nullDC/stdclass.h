@@ -704,12 +704,12 @@ int msgboxf(char* text,unsigned int type,...);
 
 
 #define MBX_USERICON                 0x00000080L
-#define MBX_ICONWARNING              MB_ICONEXCLAMATION
-#define MBX_ICONERROR                MB_ICONHAND
+#define MBX_ICONWARNING              MBX_ICONEXCLAMATION
+#define MBX_ICONERROR                MBX_ICONHAND
 
 
-#define MBX_ICONINFORMATION          MB_ICONASTERISK
-#define MBX_ICONSTOP                 MB_ICONHAND
+#define MBX_ICONINFORMATION          MBX_ICONASTERISK
+#define MBX_ICONSTOP                 MBX_ICONHAND
 
 #define MBX_DEFBUTTON1               0x00000000L
 #define MBX_DEFBUTTON2               0x00000100L

@@ -10,7 +10,7 @@ void spg_Reset(bool Manual);
 //need to replace 511 with correct value
 #define Line_Cycles (Frame_Cycles/512)
 
-void spgUpdatePvr(u32 cycles);
+void FASTCALL spgUpdatePvr(u32 cycles);
 bool spg_Init();
 void spg_Term();
 void spg_Reset(bool Manual);

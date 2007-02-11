@@ -9,7 +9,7 @@
 //many things need to be emulated , especialy to support lle emulation but for now that's not needed
 u8 regs[RegSize];
 
-u32 ReadPvrRegister(u32 addr,u32 size)
+u32 FASTCALL ReadPvrRegister(u32 addr,u32 size)
 {
 	if (size!=4)
 	{
@@ -75,7 +75,7 @@ void SH4HWRegistersWriteDword(const DWORD uAddress, const DWORD uData)
 }
 
 
-void WritePvrRegister(u32 addr,u32 data,u32 size)
+void FASTCALL WritePvrRegister(u32 addr,u32 data,u32 size)
 {
 
 	if (size!=4)

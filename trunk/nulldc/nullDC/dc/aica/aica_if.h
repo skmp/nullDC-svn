@@ -10,7 +10,8 @@ void aica_Init();
 void aica_Reset(bool Manual);
 void aica_Term();
 
-void UpdateAica(u32 cycles);
+//void UpdateAica(u32 cycles);
+#define UpdateAica(clc) libAICA.UpdateAICA(clc)
 
 
 void aica_sb_Init();

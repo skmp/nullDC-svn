@@ -1,6 +1,6 @@
 #pragma once
 //bleh stupid windoze header
-#include "plugin_header.h"
+#include "../../../nulldc/plugins/plugin_header.h"
 #include <windows.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -32,8 +32,8 @@ void dcUpdatePvr(u32 cycles);
 
 void dcTADma(u32 address,u32* data,u32 size);
 
-u32 ReadPvrRegister(u32 addr,u32 size);
-void WritePvrRegister(u32 addr,u32 data,u32 size);
+u32 FASTCALL ReadPvrRegister(u32 addr,u32 size);
+void FASTCALL WritePvrRegister(u32 addr,u32 data,u32 size);
 
 
 extern u8*	vram_64;
@@ -43,3 +43,4 @@ extern RaiseInterruptFP* RaiseInterrupt;
 float GetSeconds();
 
 extern pvr_init_params param;
+extern emu_info em_inf;

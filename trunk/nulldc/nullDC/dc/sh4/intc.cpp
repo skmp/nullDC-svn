@@ -75,7 +75,7 @@ const InterptSourceList_Entry InterruptSourceList[]=
 	{0,0,0,0}
 };
 
-void RaiseInterrupt(InterruptID intr);
+void FASTCALL RaiseInterrupt(InterruptID intr);
 bool Do_Interrupt(u32 lvl, u32 intEvn, u32 CallVect);
 bool Do_Exeption(u32 lvl, u32 expEvn, u32 CallVect);
 int Check_Ints();
@@ -112,7 +112,7 @@ void RaiseExeption(u32 code,u32 vector)
 	UpdateSR();
 }
 
-void RaiseInterrupt(InterruptID intr)
+void FASTCALL RaiseInterrupt(InterruptID intr)
 {
 	intr_l=intr;
 	InterruptsArePending=true;
