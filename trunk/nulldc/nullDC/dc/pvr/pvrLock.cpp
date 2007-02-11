@@ -81,7 +81,7 @@ u32 vramlock_ConvAddrtoOffset64(u32 Address)
 		//so bank is Address<<3
 		//bits <4 are <<1 to create space for bank num
 		//bank 0 is mapped at 400000 (32b offset) and after
-		u32 bank=((Address>>22)&0x1)<<2;//bank will be used ass uper offset too
+		u32 bank=((Address>>22)&0x1)<<2;//bank will be used as uper offset too
 		u32 lv=Address&0x3; //these will survive
 		Address<<=1;
 		//       |inbank offset    |       bank id        | lower 2 bits (not changed)
@@ -195,14 +195,14 @@ vram_block* FASTCALL vramlock_Lock_64(u32 start_offset64,u32 end_offset64,void* 
 
 	if (end_offset64>(VRAM_SIZE-1))
 	{
-		printf("vramlock_Lock_64: end_offset64>(VRAM_SIZE-1) , Tried to lock area out of vram , possibly bug on the pvr plugin\n");
+		msgboxf("vramlock_Lock_64: end_offset64>(VRAM_SIZE-1) \n Tried to lock area out of vram , possibly bug on the pvr plugin",MBX_OK);
 		//__asm int 3;
 		end_offset64=(VRAM_SIZE-1);
 	}
 
 	if (start_offset64>end_offset64)
 	{
-		printf("vramlock_Lock_64: start_offset64>end_offset64 , Tried to lock negative block , possibly bug on the pvr plugin\n");
+		msgboxf("vramlock_Lock_64: start_offset64>end_offset64 \n Tried to lock negative block , possibly bug on the pvr plugin",MBX_OK);
 		start_offset64=0;
 	}
 
@@ -238,7 +238,7 @@ bool VramLockedWrite(u8* address)
 				//found++;
 				if ((*list)[i])
 				{
-					printf("Error , pvr is suposed to remove lock \n");
+					msgboxf("Error , pvr is suposed to remove lock",MBX_OK);
 					__asm int 3;
 				}
 					//vramlock_list_remove((*list)[i]);
@@ -259,7 +259,7 @@ void FASTCALL vramlock_Unlock_block(vram_block* block)
 {
 	//VRAM_SIZE/PAGE_SIZE;
 	if (block->end>VRAM_SIZE)
-		printf("Error : block end is after vram , skiping unlock\n");
+		msgboxf("Error : block end is after vram , skiping unlock",MBX_OK);
 	else
 	{
 		vramlock_list_remove(block);

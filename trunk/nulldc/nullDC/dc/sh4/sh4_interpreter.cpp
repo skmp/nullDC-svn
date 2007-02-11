@@ -325,6 +325,7 @@ void Sh4_int_Reset(bool Manual)
 void Sh4_int_Init() 
 {
 	BuildOpcodeTables();
+	GenerateSinCos();
 	printf("Sh4 Init\n");
 }
 
@@ -555,6 +556,7 @@ int __fastcall UpdateSystem(u32 Cycles)
 #ifdef cpu_ratio
 	Cycles=Cycles*100/cpu_ratio;
 #endif
+	//Cycles=360;
 	//TODO : Add Update System implementation
 	aica_cycl+=Cycles;
 	if (aica_cycl>(200*1000*1000/(44100*3)))

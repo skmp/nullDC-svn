@@ -303,7 +303,18 @@ void __fastcall CheckBlock(CompiledBlockInfo* block)
 		__asm int 3;
 	}
 }
-
+#ifdef COUNT_BLOCK_LOCKTYPE_USAGE
+u32 manbs=0;
+u32 lockbs=0;
+void printfBBSS()
+{
+	printf ("Manual - %d : locked - %d : ratio(l:m) %f\n",manbs,lockbs,(float)lockbs/(float)manbs);
+	manbs=0;
+	lockbs=0;
+}
+#else
+void printfBBSS() {}
+#endif
 void BasicBlock::Compile()
 {
 	FloatRegAllocator*		fra;
@@ -345,6 +356,9 @@ void BasicBlock::Compile()
 
 	if (flags.ProtectionType==BLOCK_PROTECTIONTYPE_MANUAL)
 	{
+#ifdef COUNT_BLOCK_LOCKTYPE_USAGE
+		x86e->Emit(op_add32,&manbs,1);
+#endif
 		int sz=Size();
 		verify(sz!=0);
 
@@ -390,7 +404,10 @@ void BasicBlock::Compile()
 		x86e->Emit(op_jmp,x86_ptr_imm(Dynarec_Mainloop_no_update));
 		x86e->MarkLabel(execute_block);
 	}
-
+#ifdef COUNT_BLOCK_LOCKTYPE_USAGE
+	else
+		x86e->Emit(op_add32,&lockbs,1);
+#endif
 	//verify(do_hs==false);
 	
 	if (do_hs)

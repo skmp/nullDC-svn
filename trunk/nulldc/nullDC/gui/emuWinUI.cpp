@@ -1005,12 +1005,12 @@ char SelectedPlugin_maple[4][6][512]={0};
 
 int IDC_maple[6]=
 {
-	IDC_MAPLEMAIN,
 	IDC_MAPLESUB0,
 	IDC_MAPLESUB1,
 	IDC_MAPLESUB2,
 	IDC_MAPLESUB3,
-	IDC_MAPLESUB4
+	IDC_MAPLESUB4,
+	IDC_MAPLEMAIN,
 };
 
 int current_maple_port=0;
@@ -1095,7 +1095,7 @@ void SetMapleMain_Mask(char* plugin,HWND hWnd)
 {
 	if (strcmp(plugin,"NULL")==0)
 	{
-		for (int j=1;j<6;j++)
+		for (int j=0;j<5;j++)
 		{
 			SetSelected(GetDlgItem(hWnd,IDC_maple[j]),"NULL");
 			ComboBox_Enable(GetDlgItem(hWnd,IDC_maple[j]),FALSE);
@@ -1114,22 +1114,20 @@ void SetMapleMain_Mask(char* plugin,HWND hWnd)
 		{
 			if ((*lst)[i].subdev_info & (1<<j))
 			{
-				SetSelected(GetDlgItem(hWnd,IDC_maple[j+1]),"NULL");
-				ComboBox_Enable(GetDlgItem(hWnd,IDC_maple[j+1]),FALSE);
+				SetSelected(GetDlgItem(hWnd,IDC_maple[j]),"NULL");
+				ComboBox_Enable(GetDlgItem(hWnd,IDC_maple[j]),FALSE);
 			}
 			else
 			{
-				ComboBox_Enable(GetDlgItem(hWnd,IDC_maple[j+1]),TRUE);
+				ComboBox_Enable(GetDlgItem(hWnd,IDC_maple[j]),TRUE);
 			}
 		}
 	}
 }
 void UpdateMapleSelections(HWND hw,HWND hWnd)
 {
-	//int cs=TabCtrl_GetCurSel(hw);
-	LRESULT new_port=TabCtrl_GetCurSel(hw);//ComboBox_GetItemData(hw,cs);
-//	char temp[512];
-	
+	LRESULT new_port=TabCtrl_GetCurSel(hw);
+
 	//save selected ones
 	if (current_maple_port!=-1)
 	{
@@ -1143,9 +1141,8 @@ void UpdateMapleSelections(HWND hw,HWND hWnd)
 	{
 		SetSelected(GetDlgItem(hWnd,IDC_maple[j]),SelectedPlugin_maple[new_port][j]);
 	}
-	SetMapleMain_Mask(SelectedPlugin_maple[new_port][0],hWnd);
+	SetMapleMain_Mask(SelectedPlugin_maple[new_port][5],hWnd);
 	current_maple_port=new_port;
-	//cfgSaveStr("ASD","Asd","asd");
 }
 void SaveMaple()
 {
@@ -1154,7 +1151,6 @@ void SaveMaple()
 		for (int j=0;j<6;j++)
 		{
 			char temp[512];
-//			char plugin[512];
 			sprintf(temp,"Current_maple%d_%d",i,j);
 			cfgSaveStr("nullDC_plugins",temp,SelectedPlugin_maple[i][j]);
 		}
@@ -1168,7 +1164,6 @@ void LoadMaple()
 		for (int j=0;j<6;j++)
 		{
 			char temp[512];
-//			char plugin[512];
 			sprintf(temp,"Current_maple%d_%d",i,j);
 			cfgLoadStr("nullDC_plugins",temp,SelectedPlugin_maple[i][j]);
 		}
@@ -1222,7 +1217,6 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		GetCurrent(GetDlgItem(hWnd,IDC_C_EXTDEV),SelectedPlugin_ExtDev);
 
 		AddMapleItemsToCB(MapleMain,GetDlgItem(hWnd,IDC_MAPLEMAIN),"NONE");
-		//AddMapleItemsToCB(MapleMain,GetDlgItem(hWnd,IDC_MAPLEMAIN),"NONE");
 
 		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB0),"NONE");
 		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB1),"NONE");
@@ -1232,11 +1226,6 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
 		delete gdrom,pvr,aica,MapleMain,MapleSub;
 
-		//AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB0),"NONE");
-		//AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB1),"NONE");
-		//AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB2),"NONE");
-		//AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB3),"NONE");
-		//AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB4),"NONE");
 		LoadMaple();
 		InitMaplePorts(GetDlgItem(hWnd,IDC_MAPLETAB));
 		UpdateMapleSelections(GetDlgItem(hWnd,IDC_MAPLETAB),hWnd);

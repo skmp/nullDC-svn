@@ -155,7 +155,7 @@ int main___(int argc,char* argv[])
 	
 	if (1==0)
 	{
-		printf("Unable to locate dreamcast bios in \"%s\"\n","bios\dc_boot.bin");
+		printf("Unable to locate dreamcast bios in \"%s\"\n","bios\\dc_boot.bin");
 		return -3; 
 	}
 	int rv= RunDC(argc,argv);

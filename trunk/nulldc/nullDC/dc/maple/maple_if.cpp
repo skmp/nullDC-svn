@@ -140,15 +140,15 @@ u32 GetMaplePort(u32 addr)
 	for (int i=0;i<6;i++)
 	{
 		if ((1<<i)&addr)
-			return i==5?0:i;
+			return i;
 	}
 	return 0;
 }
 u32 GetConnectedDevices(u32 Port)
 {
+	verify(MapleDevices[Port].connected);
+
 	u32 rv=0;
-	if (!MapleDevices[Port].connected)
-		return rv;
 	
 	if(MapleDevices[Port].subdevices[0].connected)
 		rv|=0x01;
@@ -170,7 +170,7 @@ void DoMapleDma()
 #if debug_maple
 	printf("Maple :DoMapleDma\n");
 #endif
-	u32 addr = SB_MDSTAR;	//*MAPLE_DMAADDR;
+	u32 addr = SB_MDSTAR;
 	bool last = false;
 	while (last != true)
 	{
@@ -208,12 +208,10 @@ void DoMapleDma()
 			u32 resp=0;
 			inlen*=4;
 
-			if (MapleDevices[device].connected && (subport==0 || MapleDevices[device].subdevices[subport-1].connected))
+			if (MapleDevices[device].connected && (subport==5 || MapleDevices[device].subdevices[subport].connected))
 			{
-				//MaplePlugin[device][0].GotDataCB(header_1,header_2,p_data,plen);
-				//libMapleMain[device]->SendFrame(command,&p_data[0],inlen,&p_out[1],outlen,retv);
 				//(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce);
-				if (subport==0)
+				if (subport==5)
 				{
 					MapleDevices[device].dma(
 						&MapleDevices[device],
@@ -227,7 +225,7 @@ void DoMapleDma()
 				else
 				{
 					MapleDevices[device].subdevices[subport].dma(
-						&MapleDevices[device].subdevices[subport-1],
+						&MapleDevices[device].subdevices[subport],
 						command,
 						&p_data[1],
 						inlen-4,
@@ -259,127 +257,24 @@ void DoMapleDma()
 		}
 	}
 dma_end:
-//	SB_MDST = 0;	//MAPLE_STATE = 0;//finished :P
 	RaiseInterrupt(holly_MAPLE_DMA);
 }
 
-void Split(char* in,char* dll,int& id);
-
-/*
-maple_device* FindMapleDevice(char* device)
-{
-	char dll[512];
-	int id;
-	Split(device,dll,id);
-	for (u32 i=0;i<libMaple.size();i++)
-	{
-		if (strcmp(libMaple[i].dll,dll)==0)
-			return &(libMaple[i].maple_info.Devices[id]);
-	}
-	return 0;
-}
-*/
+//device : 0 .. 4 -> subdevice , 5 -> main device :)
 u32 GetMapleAddress(u32 port,u32 device)
 {
 	u32 rv=port<<6;
-	if (device==0)
+	/*if (device==0)
 		device=5;
 	else
-		device-=1;
+		device-=1;*/
 	rv|=1<<device;
 
 	return rv;
 }
-/*
-//after plugin init
-void maple_plugins_Init()
-{
-	char plugin[512];
-	char temp[512];
 
-	//Clear all plugin slots
-	for (int i=0;i<4;i++)
-	{
-		for (int j=0;j<6;j++)
-		{
-			sprintf(temp,"Current_maple%d_%d",i,j);
-			cfgLoadStr("nullDC_plugins",temp,plugin);
-			if (strcmp(plugin,"NULL")!=0)
-			{
-				//maple_device* plugin_dev=FindMapleDevice(plugin);
-				//plugin_dev->CreateInstance(plugin_dev,MapleDevices[i][j],(u8)GetMapleAddress(i,j));
-				MapleDevices[i][j].port=(u8)GetMapleAddress(i,j);
-				MapleDevices[i][j].connected=true;
-			}
-			else
-			{
-				MapleDevices[i][j].connected=false;
-			}
-		}
-	}
-}
-//before plugin termination
-void maple_plugins_Term()
-{
-	char plugin[512];
-	char temp[512];
-
-	//Clear all plugin slots
-	for (int i=0;i<4;i++)
-	{
-		for (int j=0;j<6;j++)
-		{
-			sprintf(temp,"Current_maple%d_%d",i,j);
-			cfgLoadStr("nullDC_plugins",temp,plugin);
-			if (strcmp(plugin,"NULL")!=0)
-			{
-				//maple_device* plugin_dev=FindMapleDevice(plugin);
-				//plugin_dev->DestroyInstance(plugin_dev,MapleDevices[i][j]);
-				MapleDevices[i][j].connected=false;
-			}
-			else
-			{
-				MapleDevices[i][j].connected=false;
-			}
-		}
-	}
-}
-
-
-void maple_plugins_create_list()
-{
-	char plugin[512];
-	char temp[512];
-	
-	plugin[0]=0;
-
-	for (int i=0;i<4;i++)
-	{
-		for (int j=0;j<6;j++)
-		{
-			//(const char * lpSection, const char * lpKey, char * lpReturn)
-			sprintf(temp,"Current_maple%d_%d",i,j);
-			cfgLoadStr("nullDC_plugins",temp,plugin);
-			if (strcmp(plugin,"NULL")!=0)
-				maple_plugins_add(plugin);
-			plugin[0]=0;
-		}
-	}
-}
-
-*/
-//Maple plugin enumeration
-//what is needed here is :
-//Enumerate all maple plugin
-//Get a list of all maple devices on em , and keep em on name,file;id list-pair (id is a number)
-//Give out teh lists when called for em :P
-//Also , cache the lists (no need to go trhu all plugins each time)
-//This code is called from main plugin enumeration code (so its easy to redo shit on plugin reenumeration)
-
-//On maple init a list of all used maple plugins is created (so it can be used by plugin manager)
-//These plugins are loaded (but not inited)
-//Maple plugin init is called after plugin manager , so we can atach the varius devices :)
-//done BEFORE initilising plugins
+//plugins are handled from plugin manager code from now :)
+//Init registers :)
 void maple_Init()
 {
 	sb_regs[(SB_MDST_addr-SB_BASE)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA;
@@ -397,12 +292,10 @@ void maple_Init()
 void maple_Reset(bool Manual)
 {
 }
-//On maple term the list of teh created plugins is deleted ;). The plugins are allready unloaded by plugin termination code
-//Maple plugin term is called before plugin manager , so we can de-atach the varius devices :)
-//done AFTER terminating plugins
+
 void maple_Term()
 {
-	libMaple.clear();
+	
 }
 
 #ifdef BUILD_NAOMI

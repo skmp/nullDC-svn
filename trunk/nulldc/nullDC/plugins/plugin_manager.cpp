@@ -27,21 +27,9 @@ nullDC_PowerVR_plugin		libPvr;
 nullDC_GDRom_plugin			libGDR;
 nullDC_AICA_plugin			libAICA;
 List<nullDC_Maple_plugin*>	libMaple;
+List<nullDC_Maple_Sub_plugin*>	libMapleSub;
 nullDC_ExtDevice_plugin		libExtDevice;
-/*
-struct
-{
-	nullDC_plugin* plugin;
-	char cfg_name[512];
-} plugin_cfg_list[] = 
-{
-	{&libPvr,"Current_PVR"},
-	{&libGDR,"Current_GDR"},
-	{&libAICA,"Current_AICA"},
-	{&libExtDevice,"Current_ExtDevice"},
-	{0,""}
-};
-*/
+
 sh4_if*						sh4_cpu;
 //more to come
 
@@ -290,294 +278,16 @@ bool nullDC_ExtDevice_plugin::LoadI(plugin_info_entry* t)
 	return true;
 }
 
-//Class nullDC_plugin
-//must be implemented for each inherited class
-/*
-PluginLoadError nullDC_plugin::PluginExLoad()
-{
-	Loaded=true;
-	return PluginLoadError::NoError;
-}
-
-
-nullDC_plugin::nullDC_plugin()
-{
-	dcGetPluginInfo=0;
-	Loaded=false;
-}
-
-nullDC_plugin::~nullDC_plugin()
-{
-	if (Loaded)
-	{
-		if (lib.IsLoaded())
-		{
-			#ifdef DEBUG_DLL
-			EMUWARN("~nullDC_plugin()  : Plugin still loaded , unloading it");
-			#endif
-			lib.Unload();
-		}
-		else
-		{
-			EMUERROR("~nullDC_plugin() : Plugin still loaded , lib.loaded()=false");
-		}
-	}
-}
-
-//plugin must be in dll:index format
-//dll:-1 , and :-1 are both invalid
-/*
-PluginLoadError nullDC_plugin::Load(char* plugin)
-{
-	if (!lib.Load(plugin))
-	{
-		//retry w/ path
-		char temp[1024];
-		strcpy(temp,plugins_path);
-		strcat(temp,plugin);
-
-		if (!lib.Load(temp))
-			return PluginLoadError::DllLoadError;
-	}
-
-	dcGetPluginInfo=(dcGetPluginInfoFP*)lib.GetProcAddress("dcGetPluginInfo");
-
-	if (!dcGetPluginInfo)
-	{
-		lib.Unload();
-		return PluginLoadError::PluginInterfaceMissing;
-	}
-
-	memset(&info,0,sizeof(info));
-	
-
-	dcGetPluginInfo(&info);
-	
-	if (info.InterfaceVersion!=PLUGIN_I_F_VERSION)
-	{
-		lib.Unload();
-		return PluginLoadError::PluginInterfaceVersionError;
-	}
-	
-	//W00t , plugin loaded so far , call implementation speciacific loads [if any]
-//	PluginLoadError rv= PluginExLoad();
-	
-	//If error on ExLoad free lib
-	//if (rv!=PluginLoadError::NoError)
-	//	lib.Unload();
-
-	strcpy(dll,plugin);
-	return NoError;
-}
-void nullDC_plugin::Unload()
-{
-	if (Loaded)
-	{
-		Loaded=false;
-		dcGetPluginInfo=0;
-		lib.Unload();
-	}
-}
-
-
-
-*/
-//End nullDC_plugin
-
-/*
-//Speciacific plugins
-//PowerVR
-//Class nullDC_PowerVR_plugin
-PluginLoadError nullDC_PowerVR_plugin::PluginExLoad()
-{
-	dcGetPvrInfo=(dcGetPvrInfoFP*)lib.GetProcAddress("dcGetPvrInfo");
-
-	if (!dcGetPvrInfo)
-		return PluginLoadError::PluginInterfaceExMissing;
-
-	dcGetPvrInfo(&pvr_info);
-
-	if (pvr_info.InterfaceVersion.full!=PVR_PLUGIN_I_F_VERSION)
-		return PluginLoadError::PluginInterfaceExVersionError;
-	
-	//All ok !
-	Loaded=true;
-	return PluginLoadError::NoError;
-}
-
-
-nullDC_PowerVR_plugin::nullDC_PowerVR_plugin():nullDC_plugin()
-{
-	dcGetPvrInfo=0;
-}
-nullDC_PowerVR_plugin::~nullDC_PowerVR_plugin()
-{
-}
-
-//End nullDC_PowerVR_plugin
-
-//Class nullDC_GDRom_plugin
-PluginLoadError nullDC_GDRom_plugin::PluginExLoad()
-{
-	dcGetGDRInfo=(dcGetGDRInfoFP*)lib.GetProcAddress("dcGetGDRInfo");
-
-	if (!dcGetGDRInfo)
-		return PluginLoadError::PluginInterfaceExMissing;
-
-	dcGetGDRInfo(&gdr_info);
-
-	if (gdr_info.InterfaceVersion.full!=GDR_PLUGIN_I_F_VERSION)
-		return PluginLoadError::PluginInterfaceExVersionError;
-	
-	//All ok !
-	Loaded=true;
-	return PluginLoadError::NoError;
-}
-
-
-nullDC_GDRom_plugin::nullDC_GDRom_plugin():nullDC_plugin()
-{
-	dcGetGDRInfo=0;
-}
-nullDC_GDRom_plugin::~nullDC_GDRom_plugin()
-{
-}
-
-//End nullDC_GDRom_plugin
-
-//Class nullDC_AICA_plugin
-PluginLoadError nullDC_AICA_plugin::PluginExLoad()
-{
-	dcGetAICAInfo=(dcGetAICAInfoFP*)lib.GetProcAddress("dcGetAICAInfo");
-
-	if (!dcGetAICAInfo)
-		return PluginLoadError::PluginInterfaceExMissing;
-
-	dcGetAICAInfo(&aica_info);
-
-	if (aica_info.InterfaceVersion.full!=AICA_PLUGIN_I_F_VERSION)
-		return PluginLoadError::PluginInterfaceExVersionError;
-	
-	//All ok !
-	Loaded=true;
-	return PluginLoadError::NoError;
-}
-
-
-nullDC_AICA_plugin::nullDC_AICA_plugin():nullDC_plugin()
-{
-	dcGetAICAInfo=0;
-}
-nullDC_AICA_plugin::~nullDC_AICA_plugin()
-{
-}
-//End nullDC_AICA_plugin
-
-//Class nullDC_Maple_plugin
-PluginLoadError nullDC_Maple_plugin::PluginExLoad()
-{
-	dcGetMapleInfo=(dcGetMapleInfoFP*)lib.GetProcAddress("dcGetMapleInfo");
-
-	if (!dcGetMapleInfo)
-		return PluginLoadError::PluginInterfaceExMissing;
-
-	dcGetMapleInfo(&maple_info);
-
-	if (maple_info.InterfaceVersion.full!=MAPLE_PLUGIN_I_F_VERSION)
-		return PluginLoadError::PluginInterfaceExVersionError;
-	
-	//All ok !
-	Loaded=true;
-	return PluginLoadError::NoError;
-}
-
-
-nullDC_Maple_plugin::nullDC_Maple_plugin():nullDC_plugin()
-{
-	dcGetMapleInfo=0;
-}
-nullDC_Maple_plugin::~nullDC_Maple_plugin()
-{
-}
-//End nullDC_Maple_plugin
-
-//Class nullDC_ExtDevice_plugin
-PluginLoadError nullDC_ExtDevice_plugin::PluginExLoad()
-{
-	dcGetExtDeviceInfo=(dcGetExtDeviceInfoFP*)lib.GetProcAddress("dcGetExtDeviceInfo");
-
-	if (!dcGetExtDeviceInfo)
-		return PluginLoadError::PluginInterfaceExMissing;
-
-	dcGetExtDeviceInfo(&ext_device_info);
-
-	if (ext_device_info.InterfaceVersion.full!=EXTDEVICE_PLUGIN_I_F_VERSION)
-		return PluginLoadError::PluginInterfaceExVersionError;
-	
-	//All ok !
-	Loaded=true;
-	return PluginLoadError::NoError;
-}
-
-
-nullDC_ExtDevice_plugin::nullDC_ExtDevice_plugin():nullDC_plugin()
-{
-	dcGetExtDeviceInfo=0;
-}
-nullDC_ExtDevice_plugin::~nullDC_ExtDevice_plugin()
-{
-}
-//End nullDC_AICA_plugin
-*/
 
 //Plguin loading shit
 
 void plugin_FileIsFound(char* file,void* param)
 {
-	//List<plugin_info_entry> temp_list;
-	
 	char dllfile[1024]="";
 	strcat(dllfile,plugins_path);
 	strcat(dllfile,file);
 
 	GetPluginList(dllfile,(List<PluginLoadInfo>*)param);
-	/*size_t len=strlen(file);
-
-	for (size_t i=0;i<temp_list.size();i++)
-	{
-		PluginLoadInfo temp;
-		
-		temp.InterfaceVersion.full=temp_list[i].common.InterfaceVersion;
-		temp.PluginVersion.full=temp_list[i].common.PluginVersion;
-		temp.Type=(PluginType)temp_list[i].common.Type;
-
-		strcpy(temp.Name,temp_list[i].common.Name);
-		
-		strcpy(temp.dll,file);
-		sprintf(&temp.dll[len],":%d",i);
-		b->l->Add(temp);
-	}*/
-
-/*
-	nullDC_plugin plg;
-	
-
-	if (plg.Load(dllfile)!=PluginLoadError::NoError)
-	{
-		plg.Unload();		//prop not needed but call it anyway
-	}
-	else
-	{
-		PluginLoadInfo pli;
-		if (plg.info.Type & b->typemask)
-		{
-			pli.plugin_info=plg.info;//copy em :P
-			strcpy(pli.dll,dllfile);//copy it :P
-			b->l->Add(pli);
-		}
-
-		plg.Unload();
-	}*/
 }
 
 List<PluginLoadInfo>* PluginList_cached;
@@ -611,7 +321,7 @@ List<PluginLoadInfo>* EnumeratePlugins(PluginType type)
 	return rv;
 }
 //Handles Setting/Changing plugin
-
+/*
 bool SetPlugin(char* plugin,PluginType type)
 {
 	if (plugin==0 || strlen(plugin)==0)
@@ -646,6 +356,7 @@ bool SetPlugin(char* plugin,PluginType type)
 
 	return false;
 }
+*/
 
 void SetPluginPath(char* path)
 {
@@ -670,26 +381,23 @@ void maple_cfg_plug(int i,int j,char * out)
 u32 GetMaplePort(u32 port,u32 device)
 {
 	u32 rv=port<<6;
-	if (device==0)
-		device=5;
-	else
-		device-=1;
-	rv|=1<<device;
 
+	rv|=1<<device;
 	return rv;
 }
-s32 maple_plugins_add(char* dll,emu_info* info)
+template<typename T>
+s32 maple_plugins_add(char* dll,emu_info* info,List<T*>& list)
 {
-	for (u32 i=0;i<libMaple.size();i++)
+	for (u32 i=0;i<list.size();i++)
 	{
-		if ((strcmp(libMaple[i]->dll_file,dll)==0))
+		if ((strcmp(list[i]->dll_file,dll)==0))
 			return rv_ok;
 	}
-	nullDC_Maple_plugin* plug=new nullDC_Maple_plugin();
-	libMaple.Add(plug);
+	T* plug=new T();
 	lcp_name=plug->dll_file;
 	if (!plug->Open(dll))
 		return rv_error;
+	list.Add(plug);
 
 	if (s32 rv = plug->Load(info))
 	{
@@ -702,15 +410,15 @@ s32 maple_plugins_add(char* dll,emu_info* info)
 
 	return rv_ok;
 }
-
-nullDC_Maple_plugin* FindMaplePlugin(int i, int j)
+template<typename T>
+T* FindMaplePlugin(int i,int j,List<T*>& list)
 {
 	char dll[512];
 	maple_cfg_plug(i,j,dll);
-	for (u32 i=0;i<libMaple.size();i++)
+	for (u32 i=0;i<list.size();i++)
 	{
-		if (strcmp(libMaple[i]->dll_file,dll)==0)
-			return libMaple[i];
+		if (strcmp(list[i]->dll_file,dll)==0)
+			return list[i];
 	}
 	return 0;
 }
@@ -728,9 +436,19 @@ s32 maple_plugins_create_list(emu_info* info)
 			maple_cfg_plug(i,j,plugin);
 			if (strcmp(plugin,"NULL")!=0)
 			{
-				if (s32 rv=maple_plugins_add(plugin,info))
+				if (j==5)
 				{
-					return rv;
+					if (s32 rv=maple_plugins_add(plugin,info,libMaple))
+					{
+						return rv;
+					}
+				}
+				else
+				{
+					if (s32 rv=maple_plugins_add(plugin,info,libMapleSub))
+					{
+						return rv;
+					}
 				}
 			}
 			plugin[0]=0;
@@ -798,18 +516,18 @@ s32 plugins_Init_()
 	for ( int i=0;i<4;i++)
 	{
 		MapleDevices[i].connected=false;
-		nullDC_Maple_plugin* plug_m= FindMaplePlugin(i,0);
+		nullDC_Maple_plugin* plug_m= FindMaplePlugin(i,5,libMaple);
 		if (!plug_m)
 			continue;		
 		u32 bitmask=plug_m->subdev_info;
 		for ( int j=0;j<5;j++)
 		{
-			if (bitmask & (1<<j))
+			if ((bitmask & (1<<j))==0)
 			{
-				nullDC_Maple_plugin* plug= FindMaplePlugin(i,j+1);
+				nullDC_Maple_Sub_plugin* plug= FindMaplePlugin(i,j,libMapleSub);
 				if (!plug)
 					continue;
-				plug->Create((maple_device_instance*)&MapleDevices[i].subdevices[i],GetMaplePort(i,j+1));
+				plug->Create(&MapleDevices[i].subdevices[j],GetMaplePort(i,j));
 				MapleDevices[i].subdevices[j].connected=true;
 			}
 			else
@@ -818,7 +536,7 @@ s32 plugins_Init_()
 			}
 		}
 		lcp_name=plug_m->Name;
-		plug_m->Create(&MapleDevices[i],GetMaplePort(i,0));
+		plug_m->Create(&MapleDevices[i],GetMaplePort(i,5));
 		MapleDevices[i].connected=true;
 	}
 	return rv_ok;
@@ -975,6 +693,12 @@ void plugins_Unload()
 			unload_plugin((*libMaple[i-1]));
 		}
 		libMaple.clear();
+
+		for (size_t i=libMapleSub.size();i>0;i--)
+		{
+			unload_plugin((*libMapleSub[i-1]));
+		}
+		libMapleSub.clear();
 	}
 	__except(EXCEPTION_EXECUTE_HANDLER)
 	{

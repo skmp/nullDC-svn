@@ -2,7 +2,7 @@
 #include "types.h"
 #include "sh4_if.h"
 
-
+__declspec(align(32)) extern f32 sin_table[0x10000];
 struct Sh4RegContext
 {
 	u32 r[16];
@@ -23,7 +23,7 @@ struct Sh4RegContext
 	StatusReg old_sr;
 	fpscr_type old_fpscr;
 };
-
+void GenerateSinCos();
 __declspec(align(32)) extern u32 r[16];
 __declspec(align(32)) extern u32 r_bank[8];
 

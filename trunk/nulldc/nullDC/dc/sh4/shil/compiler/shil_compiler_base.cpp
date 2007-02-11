@@ -1618,7 +1618,7 @@ __declspec(align(16)) u32 ps_not_data[4]={0x80000000,0x80000000,0x80000000,0x800
 __declspec(align(16)) u32 ps_and_data[4]={0x7FFFFFFF,0x7FFFFFFF,0x7FFFFFFF,0x7FFFFFFF};
 
 __declspec(align(16)) float mm_1[4]={1.0f,1.0f,1.0f,1.0f};
-__declspec(align(16)) float fsca_fpul_adj[4]={((2*pi)/65536.0f),((2*pi)/65536.0f),((2*pi)/65536.0f),((2*pi)/65536.0f)};
+//__declspec(align(16)) float fsca_fpul_adj[4]={((2*pi)/65536.0f),((2*pi)/65536.0f),((2*pi)/65536.0f),((2*pi)/65536.0f)};
 
 void sse_reg_to_reg(shil_opcode* op,x86_opcode_class op_cl)
 {
@@ -2014,6 +2014,10 @@ void __fastcall shil_compile_fsca(shil_opcode* op)
 		assert(!IsReg64((Sh4RegType)op->reg1));
 		//float real_pi=(((float)(s32)fpul)/65536)*(2*pi);
 		//real_pi=(s32)fpul * ((2*pi)/65536.0f);
+		
+		/*
+		//that is the old way :P
+
 		x86e->Emit(op_fild32i,x86_ptr(GetRegPtr(reg_fpul)));		//st(0)=(s32)fpul
 		x86e->Emit(op_fmul32f,x86_ptr(fsca_fpul_adj));			//st(0)=(s32)fpul * ((2*pi)/65536.0f)
 		x86e->Emit(op_fsincos);						//st(0)=sin , st(1)=cos
@@ -2023,6 +2027,32 @@ void __fastcall shil_compile_fsca(shil_opcode* op)
 
 		fra->ReloadRegister(op->reg1+1);
 		fra->ReloadRegister(op->reg1);
+		*/
+
+
+		///THIS IS THE NEW way :p
+		/*
+		u32 pi_index=fpul&0xFFFF;
+		
+		fr[n | 0] = sin_table[pi_index];
+		fr[n | 1] = sin_table[(16384 + pi_index) & 0xFFFF];
+		*/
+		//x86e->Emit(op_int3);
+		x86_sse_reg r1=fra->GetRegister(XMM0,op->reg1,RA_NODATA);	//to store sin
+		x86_sse_reg r2=fra->GetRegister(XMM1,op->reg1+1,RA_NODATA);	//to store cos
+
+		verify(!ira->IsRegAllocated(reg_fpul));
+		x86e->Emit(op_movzx16to32,EAX,GetRegPtr(reg_fpul));			//we do the 'and' here :p
+		x86e->Emit(op_movss,r1,x86_mrm::create(EAX,sib_scale_4,&sin_table[0])); //r1=sin
+		x86e->Emit(op_add32,EAX,0x4000);							//cos(x) = sin (pi/2 + x) , we add 1/4 of 2pi (2^16/4)
+		
+		x86e->Emit(op_movzx16to32,EAX,EAX);		//movzx is smaller .. is it faster/slower tho ??
+		//x86e->Emit(op_and32,EAX,0xFFFF); 
+
+		x86e->Emit(op_movss,r2,x86_mrm::create(EAX,sib_scale_4,&sin_table[0])); //r2=cos
+
+		fra->SaveRegister(op->reg1,r1);
+		fra->SaveRegister(op->reg1 + 1,r2);
 	}
 	else
 	{

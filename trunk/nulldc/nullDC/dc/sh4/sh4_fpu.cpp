@@ -466,12 +466,14 @@ sh4op(i1111_nnn0_1111_1101)
 	int n=GetN(op) & 0xE;
 	 
 	
-	 
+	//cosine(x) = sine(pi/2 + x).
 	if (fpscr.PR==0)
 	{
-		float real_pi=(((float)(s32)fpul)/65536)*(2*pi);
-		fr[n | 0] = sinf(real_pi);
-		fr[n | 1] = cosf(real_pi);
+		//float real_pi=(((float)(s32)fpul)/65536)*(2*pi);
+		u32 pi_index=fpul&0xFFFF;
+		
+		fr[n | 0] = sin_table[pi_index];//sinf(real_pi);
+		fr[n | 1] = sin_table[(16384 + pi_index) & 0xFFFF];//cosf(real_pi);
 
 		CHECK_FPU_32(fr[n]);
 		CHECK_FPU_32(fr[n+1]);

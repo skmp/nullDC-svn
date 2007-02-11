@@ -345,10 +345,6 @@ int ExeptionHandler(u32 dwCode, void* pExceptionPointers)
 	return EXCEPTION_CONTINUE_SEARCH;
 }
 
-int msgbox(char* text,unsigned int type)
-{
-	return MessageBox(NULL,text,"nulldc " VER_STRING,type);
-}
 int msgboxf(char* text,unsigned int type,...)
 {
 	va_list args;

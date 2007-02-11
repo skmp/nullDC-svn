@@ -16,6 +16,8 @@ fpscr_type fpscr;
 __declspec(align(32)) f32 xf[16];
 __declspec(align(32)) f32 fr[16];
 
+__declspec(align(32)) f32 sin_table[0x10000];
+
 u32*  xf_hex=(u32*)xf,*fr_hex=(u32*)fr;
 
 StatusReg old_sr;
@@ -179,7 +181,17 @@ void UpdateFPSCR()
 	old_fpscr=fpscr;
 	SetFloatStatusReg();//ensure they are on sync :)
 }
-
+#include <math.h>
+void GenerateSinCos()
+{
+	#define PI (3.1415926535897932384626433832795)
+	int j=0;
+	for (double i=0;i<0x10000;i++)
+	{
+		sin_table[j]=sin(((2*PI)*i)/65536.0);
+		j++;
+	}
+}
 #ifdef DEBUG
 f64 GetDR(u32 n)
 {

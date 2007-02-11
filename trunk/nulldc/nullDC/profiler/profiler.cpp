@@ -112,6 +112,8 @@ void AnalyseTick(u32 pc,prof_info* to)
 
 			 profile_info.ToText(temp);
 			 printf("%s \n",temp);
+			 void printfBBSS();
+printfBBSS();
 		 }
 
 		 //Sleep , so we dont realy use the cpu much
