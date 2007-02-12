@@ -49,9 +49,17 @@ namespace Direct3DRenderer
 "vtx.uv.xy*=vtx.pos.z;"
 "vtx.uv.z=0;"
 "vtx.uv.w=vtx.pos.z;" 
-
+#ifdef scale_type_1
 "vtx.pos.z=((1/clamp(0.0000001,10000000,vtx.pos.z))-W_min)/W_max;"
 "vtx.pos.z=clamp(0, 1, vtx.pos.z);"
+#else
+"if (vtx.pos.z>1)"
+"	vtx.pos.z=0.99-0.14/vtx.pos.z;"
+"else"
+"	vtx.pos.z=vtx.pos.z * 0.84;"
+"vtx.pos.z=clamp(0.000001, 0.999999,1- vtx.pos.z);"
+
+#endif
 "vtx.pos.w=1;"
 "return vtx; "
 "}";
@@ -655,6 +663,8 @@ namespace Direct3DRenderer
 		//0 vert polys ? why does games even bother sending em  ? =P
 		if (gp->pcw.Texture)
 		{
+			dev->SetRenderState(D3DRS_SPECULARENABLE,gp->pcw.Offset );
+
 			IDirect3DTexture9* tex=GetTexture(gp->tsp,gp->tcw);
 			dev->SetTexture(0,tex);
 
@@ -675,7 +685,17 @@ namespace Direct3DRenderer
 					dev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
 
 					dev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
-					dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+
+					if (gp->tsp.IgnoreTexA)
+					{
+						//a=1
+						dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TFACTOR);
+					}
+					else
+					{
+						//a=tex.a
+						dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+					}
 					break;
 
 					//The texture color value is multiplied by the Shading Color value.  
@@ -688,7 +708,17 @@ namespace Direct3DRenderer
 					dev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
 
 					dev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
-					dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+
+					if (gp->tsp.IgnoreTexA)
+					{
+						//a=1
+						dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TFACTOR);
+					}
+					else
+					{
+						//a=tex.a
+						dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+					}
 					break;
 					//The texture color value is blended with the Shading Color 
 					//value according to the texture a value.
@@ -697,7 +727,15 @@ namespace Direct3DRenderer
 					//OFFSETRGB
 					//PIXA   = COLA
 				case 2:	// Decal Alpha
-					dev->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_BLENDTEXTUREALPHA);
+					if (gp->tsp.IgnoreTexA)
+					{
+						//Tex.a=1 , so Color = Tex
+						dev->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1);
+					}
+					else
+					{
+						dev->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_BLENDTEXTUREALPHA);
+					}
 					dev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
 					dev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
 
@@ -720,13 +758,32 @@ namespace Direct3DRenderer
 					dev->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_MODULATE);
 					dev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
 					dev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+
 					if(gp->tsp.UseAlpha)
 					{
-						dev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_MODULATE);
+						if (gp->tsp.IgnoreTexA)
+						{
+							//a=Col.a
+							dev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG2);
+						}
+						else
+						{
+							//a=Text.a*Col.a
+							dev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_MODULATE);
+						}
 					}
 					else
 					{
-						dev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
+						if (gp->tsp.IgnoreTexA)
+						{
+							//a= 1
+							dev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTA_TFACTOR);
+						}
+						else
+						{
+							//a= Text.a*1
+							dev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
+						}
 					}
 					dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
 					dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
@@ -734,15 +791,30 @@ namespace Direct3DRenderer
 					break;
 				}
 			}
+
+			/*
+			//i use D3DRS_SPECULARENABLE now ..
+			if (gp->pcw.Offset==0)
+			{
+				dev->SetTextureStageState(1, D3DTSS_COLOROP,   D3DTOP_DISABLE);
+				dev->SetTextureStageState(1, D3DTSS_ALPHAOP,   D3DTOP_DISABLE);
+			}
+			else
+			{
+				dev->SetTextureStageState(1, D3DTSS_COLOROP,   D3DTOP_ADD);
+				dev->SetTextureStageState(1, D3DTSS_COLORARG1, D3DTA_CURRENT);
+				dev->SetTextureStageState(1, D3DTSS_COLORARG2, D3DTA_SPECULAR);
+
+				dev->SetTextureStageState(1, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
+				dev->SetTextureStageState(1, D3DTSS_ALPHAARG1, D3DTA_CURRENT);
+			}
+			*/
 		}
 		else
 		{
+			//Offset color is enabled olny if Texture is enabled ;)
+			dev->SetRenderState(D3DRS_SPECULARENABLE,FALSE);
 			dev->SetTexture(0,NULL);
-		}
-
-		//if (gp->pcw.Offset != cache_pcw.Offset)
-		{
-			dev->SetRenderState(D3DRS_SPECULARENABLE,gp->pcw.Offset);
 		}
 
 		if (Type==ListType_Translucent)
@@ -837,6 +909,8 @@ namespace Direct3DRenderer
 
 #define clamp(minv,maxv,x) min(maxv,max(minv,x))
 			float bg=*(float*)&ISP_BACKGND_D; 
+
+#ifdef scale_type_1
 			float c0=1/clamp(0.0000001f,10000000.0f,pvrrc.invW_max);
 			float c1=1/clamp(0.0000001f,10000000.0f,pvrrc.invW_min);
 			c0*=0.99f;
@@ -844,7 +918,7 @@ namespace Direct3DRenderer
 
 			dev->SetVertexShaderConstantF(0,&c0,1);
 			dev->SetVertexShaderConstantF(1,&c1,1);
-
+#endif
 			//dev->SetPixelShader(CompiledPShader);
 
 			dev->SetRenderState(D3DRS_ZENABLE,D3DZB_TRUE);
@@ -1119,11 +1193,15 @@ if (!GetAsyncKeyState(VK_F3))
 		}
 
 		//Poly Vertex handlers
+#ifdef scale_type_1
 #define z_update(zv) \
 	if (tarc.invW_min>zv)\
 		tarc.invW_min=zv;\
 	if (tarc.invW_max<zv)\
 		tarc.invW_max=zv;
+#else
+	#define z_update(zv)
+#endif
 
 	//Append vertex base
 #define vert_cvt_base \
