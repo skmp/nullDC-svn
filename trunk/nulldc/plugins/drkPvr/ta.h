@@ -51,29 +51,26 @@ namespace TASplitter
 		InterruptID::holly_PUNCHTHRU
 	};
 	
-	//TA fifo state variables
-	//Current List
-	extern u32 CurrentList; 
 	//Splitter function (normaly ta_dma_main , modified for split dma's)
 	extern TaListFP* TaCmd;
-	//Vertex Handler function :)
-	extern TaListFP* VerxexDataFP;
-	//finished lists
-	extern bool ListIsFinished[5];
-
-	//splitter function lookup
-	//extern TaListFP* ta_poly_data_lut[15];
-	//extern TaPolyParamFP* ta_poly_param_lut[5];
-	//extern TaPolyParamFP* ta_poly_param_a_lut[5];
-	//extern TaPolyParamFP* ta_poly_param_b_lut[5];
-	extern u32 ta_type_lut[256];
-
-	extern bool StripStarted;
 
 	template<class TA_decoder>
 	class FifoSplitter
 	{
-	public:
+	private:
+		//TA fifo state variables
+		//Current List
+		static u32 CurrentList; 
+		//Vertex Handler function :)
+		static TaListFP* VerxexDataFP;
+		//finished lists
+		static bool ListIsFinished[5];
+
+		//splitter function lookup
+		static u32 ta_type_lut[256];
+
+		static bool StripStarted;
+
 		//helper function for dummy dma's.Handles 32B and then switches to ta_main for next data
 		static u32 fastcall ta_dummy_32(Ta_Dma* data,u32 size)
 		{
@@ -296,7 +293,7 @@ strip_end:
 		(0)	(0)	1	x	(0)	(1)		Sprite	Sprite Type 1
 
 		*/
-		//helpers
+		//helpers 0-14
 		static u32 fastcall poly_data_type_id(PCW pcw)
 		{
 			if (pcw.Texture)
@@ -382,7 +379,7 @@ strip_end:
 			//dbgbreak;
 			return 0xFFFFFFFF;
 		}
-		
+		//0-4 | 0x80
 		static u32 fastcall poly_header_type_size(PCW pcw)
 		{
 			if (pcw.Volume == 0)
@@ -457,6 +454,7 @@ strip_end:
 			TA_decoder::AppendPolyParam4B((TA_PolyParam4B*)&pp[1]);
 		}
 
+public:
 		static u32 fastcall ta_main(Ta_Dma* data,u32 size)
 		{
 			u32 ci=size;
@@ -583,7 +581,8 @@ strip_end:
 
 					//not handled
 					//Assumed to be 32B
-				default:
+				case 3:
+				case 6:
 					{
 						die("Unhadled parameter");
 						data+=SZ32;
@@ -618,6 +617,9 @@ strip_end:
 
 				ta_type_lut[i]=rv;
 			}
+
+			ListIsFinished[0]=ListIsFinished[1]=ListIsFinished[2]=ListIsFinished[3]=ListIsFinished[4]=false;
+			StripStarted=false;
 			return true;
 		}
 
@@ -638,6 +640,9 @@ strip_end:
 		static void SoftReset()
 		{
 			ListIsFinished[0]=ListIsFinished[1]=ListIsFinished[2]=ListIsFinished[3]=ListIsFinished[4]=false;
+			StripStarted=false;
+			CurrentList=ListType_None;
+
 			TA_decoder::SoftReset();
 		}
 		static void ListInit()
@@ -647,6 +652,8 @@ strip_end:
 
 			ListIsFinished[0]=ListIsFinished[1]=ListIsFinished[2]=ListIsFinished[3]=ListIsFinished[4]=false;
 			StripStarted=false;
+			CurrentList=ListType_None;
+
 			TA_decoder::ListInit();
 		}
 		static void ListCont()
@@ -656,4 +663,12 @@ strip_end:
 		}
 	};
 
+
+	//Well , olny in a C++ world you have to do smth like that ...
+	template <class TA_decoder> u32 FifoSplitter<TA_decoder> ::CurrentList;
+	template <class TA_decoder> TaListFP* FifoSplitter<TA_decoder> ::VerxexDataFP;
+	template <class TA_decoder> bool FifoSplitter<TA_decoder> ::ListIsFinished[5];
+	template <class TA_decoder> u32 FifoSplitter<TA_decoder> ::ta_type_lut[256];
+	template <class TA_decoder> bool FifoSplitter<TA_decoder> ::StripStarted;
 }
+

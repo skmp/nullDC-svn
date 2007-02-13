@@ -24,6 +24,22 @@ using namespace TASplitter;
 #else
 	#define VB_CREATE_FLAGS D3DUSAGE_SOFTWAREPROCESSING
 #endif
+#define VRAM_MASK 0x7FFFFF
+//Convert offset32 to offset64
+u32 vramlock_ConvOffset32toOffset64(u32 offset32)
+{
+		//64b wide bus is archevied by interleaving the banks every 32 bits
+		//so bank is Address<<3
+		//bits <4 are <<1 to create space for bank num
+		//bank 1 is mapped at 400000 (32b offset) and after
+		u32 bank=((offset32>>22)&0x1)<<2;//bank will be used ass uper offset too
+		u32 lv=offset32&0x3; //these will survive
+		offset32<<=1;
+		//       |inbank offset    |       bank id        | lower 2 bits (not changed)
+		u32 rv=  (offset32&(VRAM_MASK-7))|bank                  | lv;
+ 
+		return rv;
+}
 
 namespace Direct3DRenderer
 {
@@ -899,7 +915,7 @@ namespace Direct3DRenderer
 
 
 		// Clear the backbuffer to a blue color
-		verifyc(dev->Clear( 0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0,0,255), 1.0f, 0 ));
+		verifyc(dev->Clear( 0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0,122,199), 1.0f, 0 ));
 
 		// Begin the scene
 		if( SUCCEEDED( dev->BeginScene() ) )
@@ -1037,6 +1053,34 @@ if (!GetAsyncKeyState(VK_F3))
 	cThread rth(RenderThead,0);
 
 
+	union _ISP_BACKGND_T_type
+	{
+		struct
+		{
+			u32 tag_offset:3;
+			u32 tag_address:21;
+			u32 skip:3;
+			u32 shadow:1;
+			u32 cache_bypass:1;
+		};
+		u32 full;
+	};
+	union _ISP_BACKGND_D_type
+	{
+		u32 i;
+		f32 f;
+	};
+
+	//functions to read data :p
+	f32 vrf(u32 addr)
+	{
+		return *(f32*)&params.vram[vramlock_ConvOffset32toOffset64(addr)];
+	}
+	u32 vri(u32 addr)
+	{
+		return *(u32*)&params.vram[vramlock_ConvOffset32toOffset64(addr)];
+	}
+	void decode_pvr_vertex(u32 base,u32 ptr,Vertex* to);
 	void StartRender()
 	{
 		SetCurrentPVRRC(PARAM_BASE);
@@ -1044,6 +1088,72 @@ if (!GetAsyncKeyState(VK_F3))
 		render_end_pending_cycles= pvrrc.verts.used*25;
 		if (render_end_pending_cycles<500000)
 			render_end_pending_cycles=500000;
+
+		//--BG poly
+		u32 param_base=PARAM_BASE & 0xF00000;
+		_ISP_BACKGND_D_type bg_d; 
+		_ISP_BACKGND_T_type bg_t;
+
+		bg_d.i=ISP_BACKGND_D & ~(0xF);
+		bg_t.full=ISP_BACKGND_T;
+		
+		PolyParam* bgpp=&pvrrc.global_param_op.data[0];
+		Vertex* cv=&pvrrc.verts.data[0];
+
+		bool PSVM=FPU_SHAD_SCALE&0x100; //double parameters for volumes
+
+		//Get the strip base
+		u32 strip_base=param_base + bg_t.tag_address*4;
+		//Calculate the vertex size
+		u32 strip_vs=3 + bg_t.skip;
+		u32 strip_vert_num=bg_t.tag_offset;
+
+		if (PSVM && bg_t.shadow)
+		{
+			strip_vs+=bg_t.skip;//2x the size needed :p
+		}
+		strip_vs*=4;
+		//Get vertex ptr
+		u32 vertex_ptr=strip_vert_num*strip_vs+strip_base +3*4;
+		//now , all the info is ready :p
+
+		bgpp->isp.full=vri(strip_base);
+		bgpp->tsp.full=vri(strip_base+4);
+		bgpp->tcw.full=vri(strip_base+8);
+		bgpp->count=4;
+		bgpp->first=0;
+
+		bgpp->isp.DepthMode=7;
+
+		//Set some pcw bits .. i should realy get rid of pcw ..
+		bgpp->pcw.UV_16bit=bgpp->isp.UV_16b;
+		bgpp->pcw.Gouraud=bgpp->isp.Gouraud;
+		bgpp->pcw.Offset=bgpp->isp.Offset;
+		bgpp->pcw.Texture=bgpp->isp.Texture;
+
+		for (int i=0;i<3;i++)
+		{
+			decode_pvr_vertex(strip_base,vertex_ptr,&cv[i]);
+			vertex_ptr+=strip_vs;
+		}
+		cv[0].x=0;
+		cv[0].y=480;
+		cv[0].z=bg_d.f;
+
+		cv[1].x=0;
+		cv[1].y=0;
+		cv[1].z=bg_d.f;
+
+		cv[2].x=640;
+		cv[2].y=480;
+		cv[2].z=bg_d.f;
+
+		cv[3]=cv[2];
+		cv[3].x=640;
+		cv[3].y=0;
+		cv[3].z=bg_d.f;
+		
+		
 
 		rs.Set();
 		FrameCount++;
@@ -1228,10 +1338,13 @@ if (!GetAsyncKeyState(VK_F3))
 	//Color convertions
 #ifdef _float_colors_
 	#define vert_packed_color_(to,src) \
-		to[0]	= unkpack_bgp_to_float[(255 & (src >> 16)) ];	\
-		to[1]	= unkpack_bgp_to_float[(255 & (src >> 8))  ];	\
-		to[2]	= unkpack_bgp_to_float[(255 & (src >> 0))  ];	\
-		to[3]	= unkpack_bgp_to_float[(255 & (src >> 24)) ];	
+	{ \
+	u32 t=src; \
+		to[2]	= unkpack_bgp_to_float[(u8)(t)];t>>=8;\
+		to[1]	= unkpack_bgp_to_float[(u8)(t)];t>>=8;\
+		to[0]	= unkpack_bgp_to_float[(u8)(t)];t>>=8;\
+		to[3]	= unkpack_bgp_to_float[(u8)(t)];	\
+	}
 
 	#define vert_float_color_(to,a,r,g,b) \
 			to[0] = r;	\
@@ -1657,12 +1770,68 @@ if (!GetAsyncKeyState(VK_F3))
 			//printf("LI : TA OL base = 0x%X\n",TA_OL_BASE);
 			SetCurrentTARC(TA_ISP_BASE);
 			tarc.Clear();
+
+			//allocate storage for BG poly
+			tarc.global_param_op.Append();
+			tarc.verts.Append(4);
 		}
 		__forceinline
 		static void SoftReset()
 		{
 		}
 	};
+
+	//decode a vertex in the native pvr format
+	//used for bg poly
+	void decode_pvr_vertex(u32 base,u32 ptr,Vertex* cv)
+	{
+		//ISP
+		//TSP
+		//TCW
+		ISP_TSP isp;
+		TSP tsp;
+		TCW tcw;
+
+		isp.full=vri(base);
+		tsp.full=vri(base+4);
+		tcw.full=vri(base+8);
+
+		//XYZ
+		//UV
+		//Base Col
+		//Offset Col
+
+		//XYZ are _allways_ there :)
+		cv->x=vrf(ptr);ptr+=4;
+		cv->y=vrf(ptr);ptr+=4;
+		cv->z=vrf(ptr);ptr+=4;
+
+		if (isp.Texture)
+		{	//Do texture , if any
+			if (isp.UV_16b)
+			{
+				u32 uv=vri(ptr);
+				cv->u	=	f16((u16)uv);
+				cv->v	=	f16((u16)(uv>>16));
+				ptr+=4;
+			}
+			else
+			{
+				cv->u=vrf(ptr);ptr+=4;
+				cv->v=vrf(ptr);ptr+=4;
+			}
+		}
+
+		//Color
+		u32 col=vri(ptr);ptr+=4;
+		vert_packed_color_(cv->col,col);
+		if (isp.Offset)
+		{
+			//Intesity color (can be missing too ;p)
+			u32 col=vri(ptr);ptr+=4;
+			vert_packed_color_(cv->spc,col);
+		}
+	}
 
 
 

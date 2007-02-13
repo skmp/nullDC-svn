@@ -1,5 +1,5 @@
 ///this file is here to make up for C++'s limitations
-static const TaListFP* ta_poly_data_lut[15] = 
+static TaListFP* ta_poly_data_lut[15] = 
 {
 	ta_poly_data<0,SZ32>,
 	ta_poly_data<1,SZ32>,
@@ -18,7 +18,7 @@ static const TaListFP* ta_poly_data_lut[15] =
 	ta_poly_data<14,SZ64>,
 };
 //32/64b , full
-static const  TaPolyParamFP* ta_poly_param_lut[5]=
+static TaPolyParamFP* ta_poly_param_lut[5]=
 {
 	(TaPolyParamFP*)TA_decoder::AppendPolyParam0,
 	(TaPolyParamFP*)TA_decoder::AppendPolyParam1,
@@ -27,7 +27,7 @@ static const  TaPolyParamFP* ta_poly_param_lut[5]=
 	(TaPolyParamFP*)AppendPolyParam4Full
 };
 //64b , first part
-static const  TaPolyParamFP* ta_poly_param_a_lut[5]=
+static TaPolyParamFP* ta_poly_param_a_lut[5]=
 {
 	(TaPolyParamFP*)0,
 	(TaPolyParamFP*)0,
@@ -37,7 +37,7 @@ static const  TaPolyParamFP* ta_poly_param_a_lut[5]=
 };
 
 //64b , , second part
-static const  TaListFP* ta_poly_param_b_lut[5]=
+static TaListFP* ta_poly_param_b_lut[5]=
 {
 	(TaListFP*)0,
 	(TaListFP*)0,
