@@ -84,7 +84,6 @@ namespace TASplitter
 		template <int t>
 		static u32 fastcall ta_poly_B_32(Ta_Dma* data,u32 size)
 		{
-			//TA_decoder::AppendPolyParam64B((TA_PolyParamB*)data);
 			if (t==2)
 				TA_decoder::AppendPolyParam2B((TA_PolyParam2B*)data);
 			else
@@ -298,30 +297,30 @@ strip_end:
 
 		*/
 		//helpers
-		static u32 fastcall poly_data_type_id(Ta_Dma* data)
+		static u32 fastcall poly_data_type_id(PCW pcw)
 		{
-			if (data->pcw.Texture)
+			if (pcw.Texture)
 			{
 				//textured
-				if (data->pcw.Volume==0)
+				if (pcw.Volume==0)
 				{	//single volume
-					if (data->pcw.Col_Type==0)
+					if (pcw.Col_Type==0)
 					{
-						if (data->pcw.UV_16bit==0)
+						if (pcw.UV_16bit==0)
 							return 3;					//(Textured, Packed Color , 32b uv)
 						else
 							return 4;					//(Textured, Packed Color , 16b uv)
 					}
-					else if (data->pcw.Col_Type==1)
+					else if (pcw.Col_Type==1)
 					{
-						if (data->pcw.UV_16bit==0)
+						if (pcw.UV_16bit==0)
 							return 5;					//(Textured, Floating Color , 32b uv)
 						else
 							return 6;					//(Textured, Floating Color , 16b uv)
 					}
 					else
 					{
-						if (data->pcw.UV_16bit==0)
+						if (pcw.UV_16bit==0)
 							return 7;					//(Textured, Intensity , 32b uv)
 						else
 							return 8;					//(Textured, Intensity , 16b uv)
@@ -330,23 +329,23 @@ strip_end:
 				else
 				{
 					//two volumes
-					if (data->pcw.Col_Type==0)
+					if (pcw.Col_Type==0)
 					{
-						if (data->pcw.UV_16bit==0)
+						if (pcw.UV_16bit==0)
 							return 11;					//(Textured, Packed Color, with Two Volumes)	
 
 						else
 							return 12;					//(Textured, Packed Color, 16bit UV, with Two Volumes)
 
 					}
-					else if (data->pcw.Col_Type==1)
+					else if (pcw.Col_Type==1)
 					{
 						//die ("invalid");
 						return 0xFFFFFFFF;
 					}
 					else
 					{
-						if (data->pcw.UV_16bit==0)
+						if (pcw.UV_16bit==0)
 							return 13;					//(Textured, Intensity, with Two Volumes)	
 
 						else
@@ -357,11 +356,11 @@ strip_end:
 			else
 			{
 				//non textured
-				if (data->pcw.Volume==0)
+				if (pcw.Volume==0)
 				{	//single volume
-					if (data->pcw.Col_Type==0)
+					if (pcw.Col_Type==0)
 						return 0;						//(Non-Textured, Packed Color)
-					else if (data->pcw.Col_Type==1)
+					else if (pcw.Col_Type==1)
 						return 1;						//(Non-Textured, Floating Color)
 					else
 						return 2;						//(Non-Textured, Intensity)
@@ -369,9 +368,9 @@ strip_end:
 				else
 				{
 					//two volumes
-					if (data->pcw.Col_Type==0)
+					if (pcw.Col_Type==0)
 						return 9;						//(Non-Textured, Packed Color, with Two Volumes)
-					else if (data->pcw.Col_Type==1)
+					else if (pcw.Col_Type==1)
 					{
 						//die ("invalid");
 						return 0xFFFFFFFF;
@@ -384,19 +383,19 @@ strip_end:
 			return 0xFFFFFFFF;
 		}
 		
-		static u32 fastcall poly_header_type_size(Ta_Dma* data)
+		static u32 fastcall poly_header_type_size(PCW pcw)
 		{
-			if (data->pcw.Volume == 0)
+			if (pcw.Volume == 0)
 			{
-				if ( data->pcw.Col_Type<2 ) //0,1
+				if ( pcw.Col_Type<2 ) //0,1
 				{
 					return 0  | 0;	//Polygon Type 0 -- SZ32
 				}
-				else if ( data->pcw.Col_Type == 2 )
+				else if ( pcw.Col_Type == 2 )
 				{
-					if (data->pcw.Texture)
+					if (pcw.Texture)
 					{
-						if (data->pcw.Offset)
+						if (pcw.Offset)
 						{
 							return 2 | 0x80;	//Polygon Type 2 -- SZ64
 						}
@@ -417,15 +416,15 @@ strip_end:
 			}
 			else
 			{
-				if ( data->pcw.Col_Type==0 ) //0
+				if ( pcw.Col_Type==0 ) //0
 				{
 					return 3 | 0;	//Polygon Type 3 -- SZ32
 				}
-				else if ( data->pcw.Col_Type==2 ) //2
+				else if ( pcw.Col_Type==2 ) //2
 				{
 					return 4 | 0x80;	//Polygon Type 4 -- SZ64
 				}
-				else if ( data->pcw.Col_Type==3 ) //3
+				else if ( pcw.Col_Type==3 ) //3
 				{
 					return 3 | 0;	//Polygon Type 3 -- SZ32
 				}
@@ -605,10 +604,10 @@ strip_end:
 		{
 			for (int i=0;i<256;i++)
 			{
-				Ta_Dma t;
-				t.pcw.obj_ctrl=i;
-				u32 rv=	poly_data_type_id(&t);
-				u32 type= poly_header_type_size(&t);
+				PCW pcw;
+				pcw.obj_ctrl=i;
+				u32 rv=	poly_data_type_id(pcw);
+				u32 type= poly_header_type_size(pcw);
 
 				if (type& 0x80)
 					rv|=(SZ64<<30);
