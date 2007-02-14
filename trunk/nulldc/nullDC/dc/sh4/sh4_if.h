@@ -211,6 +211,9 @@ struct sh4_if
 	ResetFP* Reset;
 	InitFP* Init;
 	TermFP* Term;
+
+	TermFP* ResetCache;
+
 	IsCpuRunningFP* IsCpuRunning;
 	GetRegisterFP* GetRegister;
 	SetRegisterFP* SetRegister;

@@ -304,7 +304,7 @@ void FreeBlocks(BlockList* blocks)
 {
 	for (u32 i=0;i<blocks->ItemCount;i++)
 	{
-		if ((*blocks)[i])
+		if ((*blocks)[i]!=BLOCK_NONE)
 		{
 			FreeBlock((*blocks)[i]);
 		}
@@ -334,10 +334,15 @@ void ResetBlocks()
 	FreeBlocks(&all_block_list);
 	memset(PageInfo,0,sizeof(PageInfo));
 }
+bool reset_cache=false;
+void __fastcall _SuspendAllBlocks();
 //this should not be called from a running block , or it cloud crash
 //free's suspended blocks
 void FreeSuspendedBlocks()
 {
+	if (reset_cache)
+		_SuspendAllBlocks();
+
 	FreeBlocks(&SuspendedBlocks);
 }
 
@@ -612,6 +617,30 @@ void __fastcall SuspendBlock_exept(CompiledBlockInfo* block,u32* sp)
 	//
 	//add it to the "to be suspended" list
 	SuspendedBlocks.Add(block);
+}
+void __fastcall SuspendAllBlocks()
+{
+	reset_cache=true;
+}
+void __fastcall _SuspendAllBlocks()
+{
+	printf("Reseting Dynarec Cache...\n");
+	ResetBlocks();
+	/*
+	for (u32 i=0;i<LOOKUP_HASH_SIZE;i++)
+	{
+		for (u32 j=0;j<BlockLookupLists[i].size();j++)
+		{
+			if (BlockLookupLists[i][j]!=BLOCK_NONE)
+				SuspendBlock(BlockLookupLists[i][j]);
+		}
+		#ifdef BLOCK_LUT_GUESS
+		BlockLookupGuess[i]=BLOCK_NONE;
+		#endif
+	}
+	memset(PageInfo,0,sizeof(PageInfo));
+	*/
+	reset_cache=false;
 }
 //called from a manualy invalidated block
 void __fastcall SuspendBlock(CompiledBlockInfo* block)

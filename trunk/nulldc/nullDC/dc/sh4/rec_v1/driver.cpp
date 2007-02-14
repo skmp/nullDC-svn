@@ -125,6 +125,10 @@ void __fastcall rec_sh4_int_RaiseExeption(u32 ExeptionCode,u32 VectorAddress)
 {
 }
 
+void rec_sh4_ResetCache()
+{
+	SuspendAllBlocks();
+}
 //asm version
 #define LOOKUP_HASH_SIZE	0x4000
 #define LOOKUP_HASH_MASK	(LOOKUP_HASH_SIZE-1)

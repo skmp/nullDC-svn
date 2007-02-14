@@ -36,6 +36,7 @@ void FreeSuspendedBlocks();
 
 CompiledBlockInfo* FindOrRecompileBlock(u32 pc);
 void __fastcall SuspendBlock(CompiledBlockInfo* block);
+void __fastcall SuspendAllBlocks();
 
 void InitBlockManager();
 void ResetBlockManager();

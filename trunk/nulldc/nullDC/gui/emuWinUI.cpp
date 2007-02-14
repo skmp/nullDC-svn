@@ -437,6 +437,12 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 			int val = (int)wParam;
 			switch(val)
 			{
+			case VK_F7:
+				{
+					if (sh4_cpu->ResetCache)
+						sh4_cpu->ResetCache();
+				}
+				break;
 			case VK_F8:
 				{
 					char fn[100];
