@@ -304,6 +304,15 @@
 					RelativePath=".\ps_hlsl.fx"
 					>
 					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+							CommandLine="copy  $(InputFileName)  $(TargetDir)..\"
+							Outputs="$(TargetDir)..\ps_hlsl.fx"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
 						Name="Release|Win32"
 						>
 						<Tool
