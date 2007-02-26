@@ -146,7 +146,7 @@ int main___(int argc,char* argv[])
 	while (!plugins_Load())
 	{
 		//MessageBox(g_hWnd,"Unable to load plugins","nullDC " VER_STRING,MB_OK | MB_ICONEXCLAMATION);
-		if (!plugins_Config())
+		if (!plugins_Select())
 		{
 			printf("Unable to load plugins -- exiting\n");
 			return -2;

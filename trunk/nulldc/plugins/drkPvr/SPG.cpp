@@ -110,7 +110,7 @@ void FASTCALL spgUpdatePvr(u32 cycles)
 
 				char fpsStr[256];
 				sprintf(fpsStr,"FPS: %4.2f(%4.2f) Vert : %4.2fM -  Sh4: %4.2f mhz (%4.2f%%) - %s", spd_fps,fullfps,mv, spd_cpu,spd_cpu*100/200,emu.Name);
-				SetWindowText((HWND)emu.WindowHandle, fpsStr);
+				rend_set_fps_text(fpsStr);
 			}
 		}
 	}

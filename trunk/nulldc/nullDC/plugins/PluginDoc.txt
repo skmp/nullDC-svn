@@ -20,7 +20,7 @@ is for.
 
 
 Common plugin Interface :
-Function : "dcGetPluginInfo" has to be exported exported from the dll
+Function : "dcGetInterfaceInfo" has to be exported exported from the dll
 For more information about the params look at plugin_types.h(or plugin_header.h)
 
 

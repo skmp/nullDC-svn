@@ -5,6 +5,7 @@
 #if REND_API == REND_D3D
 namespace Direct3DRenderer
 {
+	extern bool IsFullscreen;
 
 	bool InitRenderer();
 	void TermRenderer();
@@ -19,6 +20,8 @@ namespace Direct3DRenderer
 	void ListCont();
 	void ListInit();
 	void SoftReset();
+
+	void SetFpsText(char* text);
 
 
 	void VramLockedWrite(vram_block* bl);
@@ -38,4 +41,6 @@ namespace Direct3DRenderer
 #define rend_list_srst Direct3DRenderer::SoftReset
 
 #define rend_text_invl Direct3DRenderer::VramLockedWrite
+#define rend_is_fullscreen Direct3DRenderer::IsFullscreen
+#define rend_set_fps_text Direct3DRenderer::SetFpsText
 #endif

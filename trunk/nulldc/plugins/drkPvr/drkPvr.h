@@ -74,6 +74,9 @@ extern vramlock_Unlock_blockFP* unlock;*/
 extern pvr_init_params params;
 extern emu_info emu;
 
+int cfgGetInt(char* key,int def);
+int cfgSetInt(char* key,int def);
+
 #if REND_API == REND_D3D
 	#define REND_NAME "Direct3D"
 	#define GetRenderer GetDirect3DRenderer

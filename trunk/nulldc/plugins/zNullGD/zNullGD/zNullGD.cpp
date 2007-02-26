@@ -8,9 +8,8 @@ using namespace std;
 #include <commctrl.h>
 
 
-ConfigLoadStrFP	* ConfigLoadStr;
-ConfigSaveStrFP	* ConfigSaveStr;
-
+gdr_init_params params;
+emu_info eminf;
 
 HINSTANCE hInst=NULL;
 
@@ -38,114 +37,43 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 **	returns valid fucntion ptrs
 */
 
-extern "C" __declspec(dllexport) 
-void dcGetPluginInfo(ndcPluginIf* If)
-{
-	If->dwIfVersion	= 0x00020000;	// double check with nullgdr
-	If->dwLibVersion= 0x01;			// 
-	If->dwPluginType= 0x02;			// 2=GDROM
-	strcpy_s(If->szName, "zNullGD, SCSI Passthru GDROM Plugin By _ZeZu_ [" __DATE__ "]");
-
-	If->Init		= gdInit;
-	If->Term		= gdTerm;
-	If->Reset		= gdReset;
-	If->ThreadInit	= gdThreadInit;
-	If->ThreadTerm	= gdThreadTerm;
-	If->Config		= gdConfig;
-
-	ConfigLoadStr	= If->ConfigLoadStr;
-	ConfigSaveStr	= If->ConfigSaveStr;
-}
-
-
 
 // ignore these, we need it all on same thread
-void gdTerm(DWORD)		 { lprintf("gdTerm()\n"); }
-void gdThreadTerm(DWORD) { lprintf("gdThreadTerm()\n"); }
+void FASTCALL gdTerm()		 { lprintf("gdTerm()\n"); }
 
 
+DriveNotifyEventFP* Notify;
+DWORD dwGDMode = CdRom_XA;	// 1=cdrom,2=cdxa,8=GDROM
 
-struct gd_init { gdNotifyFP * notify; } *Notify;
+s32 FASTCALL PluginLoad(emu_info* param)
+{
+	memcpy(&eminf,param,sizeof(eminf));
+	return rv_ok;
+}
 
-DWORD dwGDMode = GDFORMAT_XA;	// 1=cdrom,2=cdxa,8=GDROM
-
-
-void gdReset(bool,DWORD)
+void FASTCALL PluginUnload()
+{
+}
+void FASTCALL gdReset(bool manual)
 {
 	lprintf("gdReset()\n");
 //	Notify->notify(1,(void*)dwGDMode);
 }
 
 
-void gdInit(void* param, DWORD dwfuck)
+s32 FASTCALL gdInit(gdr_init_params* param)
 {
+	memcpy(&params,param,sizeof(params));
 	lprintf("gdInit()\n");
 
 	scsiInit();
 
-	Notify = (gd_init*)param;
+	params.DriveNotifyEvent(1,0);
 
-	Notify->notify(1,NULL);
+	return rv_ok;
 }
 
-void gdThreadInit(DWORD)
-{
-	lprintf("gdThreadInit()\n");
-
-	scsiInit();
-}
-
-extern "C" __declspec(dllexport) 
-void dcGetGDRInfo(gdPluginIf* If)
-{
-	If->dwVersion		= 0x00000200;	
-
-	If->ReadTOC			= gdReadTOC;
-	If->ReadSector		= gdReadSector;
-	If->ReadSubChannel	= gdReadSubChannel;
-	If->ReadSession		= gdReadSession;
-	If->ReadDiskType	= gdReadDiskType;
-}
-
-
-
-DWORD gdReadDiskType(void)
-{
-	return dwGDMode;
-
-	lprintf("gdReadDiskType()\n");
-
-	DWORD toc[102];
-	gdReadTOC(&toc[0], (DiskArea)1);
-
-	int i=0;
-	for(i=98; i>=0; i--) {
-		if (toc[i]!=0xFFFFFFFF)
-			if(4 == (toc[i]&4))
-				break;
-	}
-	if (i==-1)
-		i=0;
-	//	u32 addr = ((toc[i]&0xFF00)<<8) | ((toc[i]>>8)&0xFF00) | ((toc[i]>>24)&255);
-
-	///////////////////////////
-	BYTE * pmem = new BYTE[2048];
-	gdReadSector(pmem, 150, 1, 2048);	// addr (must be 150 at least)
-
-	if(0x41474553 == ((DWORD*)pmem)[0]) {
-		printf("gdReadDiskType() Found IP, Using CDXA \n");
-		dwGDMode = GDFORMAT_XA;
-	} else {
-		printf("gdReadDiskType() Found Not Found!, Using GDROM \n");
-		dwGDMode = GDFORMAT_GDROM;
-	}
-	delete[] pmem;
-	return dwGDMode;
-}
-
-
-
-void gdReadTOC(DWORD * pTOC, DiskArea dwSection)
+void FASTCALL gdReadTOC(u32 * pTOC, u32 dwSection)
 {
 	lprintf("\ngdReadTOC(%X)\n", dwSection);
 
@@ -175,7 +103,7 @@ void gdReadTOC(DWORD * pTOC, DiskArea dwSection)
 		{
 			LBA = (toc.Tracks[i].LBA[1] << 16) | (toc.Tracks[i].LBA[2] << 8) | (toc.Tracks[i].LBA[3]);
 
-			if(GDFORMAT_GDROM == dwGDMode)
+			if(GdRom == dwGDMode)
 			{
 			//	LBA += 0xB05E + 0x100;	// hopefully?
 
@@ -215,7 +143,7 @@ void gdReadTOC(DWORD * pTOC, DiskArea dwSection)
 			(toc.Tracks[toc.LastTrack].LBA[2] << 8) | (toc.Tracks[toc.LastTrack].LBA[3]);
 
 
-		LBA += (GDFORMAT_GDROM == dwGDMode) ? 0xB05E : 150 ;	// hopefully?
+		LBA += (GdRom == dwGDMode) ? 0xB05E : 150 ;	// hopefully?
 
 
 		gdtoc->LeadOut.FAD[0]	= p[2];	//toc.Tracks[toc.LastTrack].LBA[1];
@@ -226,14 +154,14 @@ void gdReadTOC(DWORD * pTOC, DiskArea dwSection)
 }
 
 
-void gdReadSector(BYTE * pBuffer, DWORD dwSector, DWORD dwNumSectors, DWORD dwSize)
+void FASTCALL gdReadSector(u8 * pBuffer, u32 dwSector, u32 dwNumSectors, u32 dwSize)
 {
 	lprintf("gdReadSector(%X, %X, %X)\n", dwSector, dwNumSectors, dwSize);
 
 	if(0x800 != dwSize)
 		lprintf("\n\n\n~!~\tERROR: ReadSector() Size Not 2048 !\n\n\n");
 
-	if(GDFORMAT_GDROM == dwGDMode)
+	if(GdRom == dwGDMode)
 	{
 		lprintf("\nFixing GD Addr: %X To: ", dwSector);
 
@@ -286,13 +214,49 @@ void gdReadSector(BYTE * pBuffer, DWORD dwSector, DWORD dwNumSectors, DWORD dwSi
 		printf("is: %X\n", is);*/
 	}
 }
+u32 FASTCALL gdReadDiskType()
+{
+	return dwGDMode;
 
-void gdReadSubChannel(BYTE * pBuffer, DWORD dwFormat, DWORD dwLen)
+	lprintf("gdReadDiskType()\n");
+
+	DWORD toc[102];
+	gdReadTOC((u32*)&toc[0], 0);
+
+	int i=0;
+	for(i=98; i>=0; i--) {
+		if (toc[i]!=0xFFFFFFFF)
+			if(4 == (toc[i]&4))
+				break;
+	}
+	if (i==-1)
+		i=0;
+	//	u32 addr = ((toc[i]&0xFF00)<<8) | ((toc[i]>>8)&0xFF00) | ((toc[i]>>24)&255);
+
+	///////////////////////////
+	BYTE * pmem = new BYTE[2048];
+	gdReadSector(pmem, 150, 1, 2048);	// addr (must be 150 at least)
+
+	if(0x41474553 == ((DWORD*)pmem)[0]) {
+		printf("gdReadDiskType() Found IP, Using CDXA \n");
+		dwGDMode = CdRom_XA;
+	} else {
+		printf("gdReadDiskType() Found Not Found!, Using GDROM \n");
+		dwGDMode = GdRom;
+	}
+	delete[] pmem;
+	return dwGDMode;
+}
+
+
+
+
+void FASTCALL gdReadSubChannel(u8 * pBuffer, u32 dwFormat, u32 dwLen)
 {
 	memset(pBuffer, 0x00, dwLen);
 }
 
-void gdReadSession(BYTE * pBuffer, BYTE Session)
+void FASTCALL gdReadSession(u8 * pBuffer, u8 Session)
 {
 	lprintf("gdReadSession(%X)\n", Session);
 
@@ -357,17 +321,6 @@ void gdReadSession(BYTE * pBuffer, BYTE Session)
 		pBuffer[0], pBuffer[1], pBuffer[2],
 		pBuffer[3], pBuffer[4], pBuffer[5]);
 }
-
-
-
-
-
-
-
-
-
-
-
 
 // Temp Spot for this prob.
 #include "resource.h"
@@ -506,7 +459,7 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 			char DriveStr[512];
 			sprintf_s(DriveStr, "%c:", devList[uiSel].Letter);
-			ConfigSaveStr("zNullGD","Drive", DriveStr);
+			eminf.ConfigSaveStr("zNullGD","Drive", DriveStr);
 
 			printf("->> Selected Drive[%x]: %c: %s\n", uiSel, devList[uiSel].Letter, devList[uiSel].Label);
 			return TRUE;
@@ -527,7 +480,7 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 			char DriveStr[512];
 			sprintf_s(DriveStr, "%c:", devList[uiSel].Letter);
-			ConfigSaveStr("zNullGD","Drive", DriveStr);
+			eminf.ConfigSaveStr("zNullGD","Drive", DriveStr);
 
 			printf("->> Selected Drive[%x]: %c: %s\n", uiSel, devList[uiSel].Letter, devList[uiSel].Label);
 			return TRUE;
@@ -549,10 +502,42 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 
 
-void gdConfig(DWORD dwType, void * handle)
+void FASTCALL gdConfig(void * handle)
 {
 	if(-1==DialogBox(hInst, MAKEINTRESOURCE(IDD_CONFIG), (HWND)handle, DlgProc))
 		WinErrMB();
+}
+
+////
+void EXPORT_CALL dcGetInterfaceInfo(plugin_interface_info* info)
+{
+	info->InterfaceVersion=PLUGIN_I_F_VERSION;
+	info->count=1;
+}
+void EXPORT_CALL dcGetInterface(u32 id , plugin_interface* info)
+{
+	info->common.InterfaceVersion=GDR_PLUGIN_I_F_VERSION;
+	info->common.PluginVersion=NDC_MakeVersion(1,0,0);
+	info->common.Type=GDRom;
+	strcpy(info->common.Name,"zNullGD, SCSI Passthru GDROM Plugin By _ZeZu_ [" __DATE__ "]");
+
+	info->common.Load=PluginLoad;
+	info->common.Unload=PluginUnload;
+
+	info->gdr.Init=gdInit;
+	info->gdr.Reset=gdReset;
+	info->gdr.Term=gdTerm;
+
+	info->gdr.ShowConfig=0;
+
+	info->gdr.GetDiscType=gdReadDiskType;
+	info->gdr.GetSessionInfo=gdReadSession;
+	info->gdr.GetToc=gdReadTOC;
+	info->gdr.ReadSector=gdReadSector;
+	info->gdr.ReadSubChannel=gdReadSubChannel;
+
+	//not used - not supported
+	info->gdr.ExeptionHanlder=0;
 }
 
 

@@ -83,7 +83,7 @@ typedef void FASTCALL UpdateFP(u32 cycles);
 typedef void FASTCALL PluginResetFP(bool Manual);
 
 /*
-struct plugin_info
+struct plugin_interface_info
 {
 	VersionNumber	InterfaceVersion;	//interface version , current 0.0.1
 	char			Name[128];			//plugin name
@@ -100,7 +100,7 @@ struct plugin_info
 	dcUnhandledWriteExeption* UnhandledWriteExeption;//Called on unhandled write exeption ;)
 };
 */
-struct plugin_info
+struct plugin_interface_info
 {
 	u32 InterfaceVersion;
 	u32 count;
@@ -413,7 +413,7 @@ struct ext_device_plugin_if
 //Plugin Exports
 //These are the functions the plugin has to export :)
 
-struct plugin_info_entry
+struct plugin_interface
 {
 	common_info common;
 	union 
@@ -429,7 +429,7 @@ struct plugin_info_entry
 	};
 };
 
-//exported as dcGetPluginInfo
-typedef void EXPORT_CALL dcGetPluginInfoFP(plugin_info* info);
-//exported as dcGetPlugin
-typedef bool EXPORT_CALL dcGetPluginFP(u32 id,plugin_info_entry* lst);
+//exported as dcGetInterfaceInfo
+typedef void EXPORT_CALL dcGetInterfaceInfoFP(plugin_interface_info* info);
+//exported as dcGetInterface
+typedef void EXPORT_CALL dcGetInterfaceFP(u32 id,plugin_interface* lst);

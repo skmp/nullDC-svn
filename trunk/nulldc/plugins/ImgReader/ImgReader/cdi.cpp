@@ -128,7 +128,7 @@ void cdi_CreateToc()
 			
 			
 
-			cdi_toc.tracks[track].Addr=0;//hmm is that ok ?
+			cdi_toc.tracks[track].Addr=1;//hmm is that ok ?
 			cdi_toc.tracks[track].Session=s;
 			cdi_toc.tracks[track].Control=cdi_track->bCtrl;
 			cdi_toc.tracks[track].FAD=last_FAD;

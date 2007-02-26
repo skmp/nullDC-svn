@@ -6,11 +6,16 @@
 //Plugin handling functions :)
 struct nullDC_plugin
 {
+	nullDC_plugin()
+	{
+		Inited=false;
+		Loaded=false;
+	}
 	cDllHandler dll;
 	int id;
 	char dll_file[512];
-	bool Open(char* plugin);
-	virtual bool LoadI(plugin_info_entry* plugin)=0;
+	s32 Open(char* plugin);
+	virtual bool LoadI(plugin_interface* plugin)=0;
 	bool IsOpened();
 	void Close();
 	bool Inited;
@@ -18,32 +23,32 @@ struct nullDC_plugin
 };
 struct nullDC_PowerVR_plugin:common_info,pvr_plugin_if,nullDC_plugin
 {
-	bool LoadI(plugin_info_entry* plugin);
+	bool LoadI(plugin_interface* plugin);
 };
 
 struct nullDC_GDRom_plugin:common_info,gdr_plugin_if,nullDC_plugin
 {
-	bool LoadI(plugin_info_entry* plugin);
+	bool LoadI(plugin_interface* plugin);
 };
 
 struct nullDC_AICA_plugin:common_info,aica_plugin_if,nullDC_plugin
 {
-	bool LoadI(plugin_info_entry* plugin);
+	bool LoadI(plugin_interface* plugin);
 };
 
 struct nullDC_Maple_plugin:common_info,maple_plugin_if,nullDC_plugin
 {
-	bool LoadI(plugin_info_entry* plugin);
+	bool LoadI(plugin_interface* plugin);
 };
 
 struct nullDC_Maple_Sub_plugin:common_info,maple_sub_plugin_if,nullDC_plugin
 {
-	bool LoadI(plugin_info_entry* plugin);
+	bool LoadI(plugin_interface* plugin);
 };
 
 struct nullDC_ExtDevice_plugin:common_info,ext_device_plugin_if,nullDC_plugin
 {
-	bool LoadI(plugin_info_entry* plugin);
+	bool LoadI(plugin_interface* plugin);
 };
 //Struct to hold plugin info
 struct PluginLoadInfo
@@ -74,7 +79,7 @@ extern nullDC_ExtDevice_plugin	libExtDevice;
 
 bool plugins_Load();
 void plugins_Unload();
-bool plugins_Config();
+bool plugins_Select();
 void plugins_Reset(bool Manual);
 
 //sh4 thread

@@ -23,7 +23,7 @@ mvSCSI_Dev * pDev = &cdDev;
 void scsiInit(void)
 {
 	char DriveStr[512];
-	ConfigLoadStr("zNullGD","Drive", DriveStr);
+	eminf.ConfigLoadStr("zNullGD","Drive", DriveStr);
 	if(0==strcmp(DriveStr,"NULL")) {
 		MessageBox(NULL,"You Need To Configure A Drive!","ERROR: Configure First!",MB_ICONERROR);
 		return;

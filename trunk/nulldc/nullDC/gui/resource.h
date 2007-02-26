@@ -164,13 +164,24 @@
 #define ID_PROFILER_SHOW                40030
 #define ID_PROFILER_SHOW40031           40031
 #define ID_PROFILER_ENABLE              40032
+#define ID_OPTIONS_POWERVR              40033
+#define ID_OPTIONS_G                    40034
+#define ID_OPTIONS_AICA                 40035
+#define ID_OPTIONS_MAPLE                40036
+#define ID_MAPLE_MAPLEXX                40037
+#define ID_MAPLE_MAPLEYY                40038
+#define ID_OPTIONS_EXT                  40039
+#define ID_POWERVR_SHOWCONFIG           40040
+#define ID_GDROM_SHOWCONFIG             40041
+#define ID_AICA_SHOWCONFIG              40042
+#define ID_EXT_SHOWCONFIG               40043
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        120
-#define _APS_NEXT_COMMAND_VALUE         40033
+#define _APS_NEXT_COMMAND_VALUE         40044
 #define _APS_NEXT_CONTROL_VALUE         1116
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

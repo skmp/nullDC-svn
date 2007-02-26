@@ -244,7 +244,7 @@ namespace TASplitter
 				else
 					TaCmd=ta_handle_poly<poly_type,2,false>;
 				ci+=SZ32;
-				size-=SZ32;//0'd
+				size=0;
 			}
 			
 			return ci;

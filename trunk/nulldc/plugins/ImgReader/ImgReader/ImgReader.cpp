@@ -91,14 +91,14 @@ void FASTCALL TermGDR()
 }
 
 //Give to the emu info for the plugin type
-void EXPORT_CALL dcGetPluginInfo(plugin_info* info)
+void EXPORT_CALL dcGetInterfaceInfo(plugin_interface_info* info)
 {
 	info->InterfaceVersion=PLUGIN_I_F_VERSION;
 	info->count=1;
 
 }
 //Give to the emu pointers for the gd rom interface
-bool EXPORT_CALL dcGetPlugin(u32 id , plugin_info_entry* info)
+bool EXPORT_CALL dcGetInterface(u32 id , plugin_interface* info)
 {
 #define c info->common
 #define g info->gdr

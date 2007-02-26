@@ -415,7 +415,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 
 		//Plugin Selection Menu
 		case ID_OPTIONS_SELECTPLUGINS:
-			plugins_Config();
+			plugins_Select();
 			return 0;
 
 		}

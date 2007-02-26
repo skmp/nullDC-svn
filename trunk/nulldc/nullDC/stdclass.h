@@ -732,3 +732,11 @@ int msgboxf(char* text,unsigned int type,...);
 #define MBX_TOPMOST                  0x00040000L
 #define MBX_RIGHT                    0x00080000L
 #define MBX_RTLREADING               0x00100000L
+
+#define MBX_RV_OK                1
+#define MBX_RV_CANCEL            2
+#define MBX_RV_ABORT             3
+#define MBX_RV_RETRY             4
+#define MBX_RV_IGNORE            5
+#define MBX_RV_YES               6
+#define MBX_RV_NO                7

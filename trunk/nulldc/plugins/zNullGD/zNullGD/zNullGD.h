@@ -13,14 +13,14 @@
 #include "gdrom.h"
 #include "zSCSI.h"
 
-
-
+//yes , it is ugly , yes , you have to live w/ it for now :P
+#include "..\..\..\nullDC\plugins\plugin_header.h"
 
 /*
 **	Modified Plugin Specs for NullDC
 **	they are ugly but less so
 */
-
+/*
 typedef void TermFP(DWORD dwPluginType);
 typedef void ThreadTermFP(DWORD dwPluginType);
 typedef void ThreadInitFP(DWORD dwPluginType);
@@ -110,12 +110,12 @@ typedef struct
 
 } gdPluginIf;
 
-
+*/
 
 /*
 **	Prototypes for these ugly bastards
 */
-
+/*
 void gdTerm(DWORD);
 void gdInit(void*,DWORD);
 void gdReset(bool,DWORD);
@@ -132,7 +132,10 @@ void gdReadTOC(DWORD * pTOC, DiskArea dwSection);
 void gdReadSector(BYTE * pBuffer, DWORD dwStartUNK, DWORD dwSector, DWORD dwSize);
 void gdReadSubChannel(BYTE * pBuffer, DWORD dwFormat, DWORD dwLen);
 void gdReadSession(BYTE * pBuffer, BYTE Session);
+*/
 
+extern gdr_init_params params;
+extern emu_info eminf;
 
 //temp?
 void lprintf(char* szFmt, ... );

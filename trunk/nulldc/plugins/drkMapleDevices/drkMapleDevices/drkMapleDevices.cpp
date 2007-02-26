@@ -434,7 +434,7 @@ void Init_kb_map()
 		//8C-FF Not used 
 }
 //Give to the emu info for the plugin type
-void EXPORT_CALL dcGetPluginInfo(plugin_info* info)
+void EXPORT_CALL dcGetInterfaceInfo(plugin_interface_info* info)
 {
 	info->InterfaceVersion=PLUGIN_I_F_VERSION;
 	info->count=2;
@@ -1570,7 +1570,7 @@ void FASTCALL DestroyVmu(maple_subdevice_instance* inst)
 		free(inst->data);
 }
 /*
-plugin_info_entry plugins[] = 
+plugin_interface plugins[] = 
 {
 	{
 		{name,version,type,ifver,load,unload}
@@ -1578,7 +1578,7 @@ plugin_info_entry plugins[] =
 	{CreateInstance<0>,DestroyInstance,
 }*/
 //Give a list of the devices to teh emu
-bool EXPORT_CALL dcGetPlugin(u32 id,plugin_info_entry* info)
+bool EXPORT_CALL dcGetInterface(u32 id,plugin_interface* info)
 {
 	if (id>1)
 		return false;

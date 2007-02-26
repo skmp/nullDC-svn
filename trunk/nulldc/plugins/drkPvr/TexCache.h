@@ -131,6 +131,11 @@ struct PixelBuffer
 
 	u32 pixels_per_line;
 
+	void init(void* data,u32 ppl_bytes)
+	{
+		p_buffer_start=p_current_line=p_current_pixel=(u32*)data;
+		pixels_per_line=ppl_bytes/sizeof(u32);
+	}
 	__forceinline void prel(u32 x,u32 value)
 	{
 		p_current_pixel[x]=value;
@@ -473,6 +478,22 @@ void fastcall texture_PL(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height)
 		pb->rmovey(PixelConvertor::ypp);
 	}
 }
+template <int bore_level>
+void fastcall texture_PL_RAW(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height)
+{
+	u32 sz=Width*2;
+	Height>>=1;	//half
+	
+	pb->amove(0,0);
+	pb->pixels_per_line>>=1;	//half y res , since we use 16 bit color
+
+	for (u32 y=0;y<Height;y++)
+	{
+		memcpy(pb->p_current_line,p_in,sz);
+		p_in+=sz;
+		pb->rmovey(1);
+	}
+}
 
 template<class PixelConvertor>
 void fastcall texture_TW(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height)
@@ -548,6 +569,7 @@ template void fastcall texture_VQ<convPAL8_TW<pp_dx>>(PixelBuffer* pb,u8* p_in,u
 #define argb565to8888 texture_PL<conv565_PL<pp_dx>>
 #define argb4444to8888 texture_PL<conv4444_PL<pp_dx>>
 #define YUV422to8888 texture_PL<convYUV_PL<pp_dx>>
+#define ANYtoRAW texture_PL_RAW<1>
 
 //Twiddle
 #define argb1555to8888_TW texture_TW<conv1555_TW<pp_dx>>

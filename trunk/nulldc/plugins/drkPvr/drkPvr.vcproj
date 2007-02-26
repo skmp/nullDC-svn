@@ -133,7 +133,7 @@
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;DRKPVR_EXPORTS"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
-				EnableEnhancedInstructionSet="2"
+				EnableEnhancedInstructionSet="1"
 				FloatingPointModel="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -299,6 +299,19 @@
 				<File
 					RelativePath=".\d3dRend.h"
 					>
+				</File>
+				<File
+					RelativePath=".\ps_hlsl.fx"
+					>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+							CommandLine="copy  $(InputFileName)  $(TargetDir)..\"
+							Outputs="$(TargetDir)..\ps_hlsl.fx"
+						/>
+					</FileConfiguration>
 				</File>
 			</Filter>
 		</Filter>

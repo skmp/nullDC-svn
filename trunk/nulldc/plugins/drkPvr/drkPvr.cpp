@@ -143,13 +143,13 @@ char* GetNullDCSoruceFileName(char* full)
 }
 
 //Give to the emu info for the plugin type
-void EXPORT_CALL dcGetPluginInfo(plugin_info* info)
+void EXPORT_CALL dcGetInterfaceInfo(plugin_interface_info* info)
 {
 	info->InterfaceVersion=PLUGIN_I_F_VERSION;
 	info->count=1;
 }
 //Give to the emu pointers for the PowerVR interface
-bool EXPORT_CALL dcGetPlugin(u32 id,plugin_info_entry* info)
+bool EXPORT_CALL dcGetInterface(u32 id,plugin_interface* info)
 {
 #define c  info->common
 #define p info->pvr
@@ -244,3 +244,14 @@ void cResetEvent::Wait()//Wait for signal , then reset
 	WaitForSingleObject(hEvent,(u32)-1);
 }
 //End AutoResetEvent
+
+//(const char * lpSection, const char * lpKey, char * lpReturn);
+//(const char * lpSection, const char * lpKey, const char * lpString);
+int cfgGetInt(char* key,int def)
+{
+	char temp[100];
+	emu.ConfigLoadStr("drkpvr",key,temp);
+	if (strcmp("NONE",temp)==0)
+		return def;
+	return atoi(temp);
+}

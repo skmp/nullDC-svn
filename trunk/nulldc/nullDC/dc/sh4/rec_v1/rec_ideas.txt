@@ -1,0 +1,50 @@
+
+.::Shil Compiler (dynarec backend code)::.
+
+Shil Compiler v1 (WIP/first beta , first release)
+currently done : 
+--Block linking , exept unkown jumps (jump to reg , rte , rts).rts returns are guessed based on previus call (13/5/06) , if guess is right , no need to exit from link  
+--Inline mem reads/writes (fully for static ones , or partialy if unkown target) , for 32/16/8b 
+--Linear register allocation on ebx , esi , edi , ebp ; based on usage counts (working finaly[7/5/2006] ) 
+--Specialised code acording to Fpu size and precition mode 
+-- implemented smarter reg alloc , does not write back readed olny regs  (7/5/2006).More improvements on reg alloc (better conditions) [4/6/2006]. 
+--moved register allocation code to a class , so we can swap em around easyly 
+--implement linear reg alloc on xmm , inline xmm mem reads  , then disabled xmm cus it was not worth it
+
+
+todo: 
+--Use a call stack for ret predictions , and a call prediction [per block] for unkown calls 
+--look for new block manager code , possibly based on binary trees
+--Code generaly needs cleanup 
+-- ?
+
+shil compiler v2 (planning -- for next ndc release)
+--Mixed super blocking and block lists (olny link on v1) 
+--Inline Interrupt checks (none on v1) 
+--Native loops (olny local on v1) 
+--XMM register allocation (WIP for linear alloc on v1) 
+--64 bit move block register allocation (fallback to interpeter on v1) 
+--Live range based register allocation , including ecx/edx (eax , ecx and edx are not allocated on v1 , allocation is usage count based) 
+--Not linear regiser allocation (linear register allocation on v1) [still , i duno if it's worth the work] 
+--rts link sugestions (link end on v1) 
+--Multy level block optimisation 
+--Seperate thread for block optimisation 
+--Add 64b mem reads
+--Fast mem mapping using MapViewOfFile() & co
+-- ?
+
+.::Sh4 code analyser (dynarec frontend code)::.
+Done: 
+--implemented most opcodes(missing a few state changing ones , and 64 bit fpu/movs) 
+--detects Div32R[Q|R] , and emit div32[s/u] , uses a hacky way around shil atm , needs fixing [later] 
+--Fake pipeline emulation (no stalls or anything funny atm) 
+--Basic Constant prop. passes
+
+Todo: 
+soon: 
+--Fix CP pass
+
+Later(will propably be stalled til shil compiler v2): 
+--Finish pipeline emulation , add stalls and do smth about cache misses too (?)
+--Change shil encoding to a variable length one , add metadata fields so i can easyly do shil->shil passes w/o loosing info  
+--Finish div* research , add em fully to IL and emit em from front end(requires the above first/partialy done-hacked around current shil) 
