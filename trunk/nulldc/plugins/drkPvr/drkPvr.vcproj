@@ -308,7 +308,7 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
-							CommandLine="copy  $(InputFileName)  $(TargetDir)..\"
+							CommandLine="copy  &quot;$(InputFileName)&quot;  &quot;$(TargetDir)..\&quot;"
 							Outputs="$(TargetDir)..\ps_hlsl.fx"
 						/>
 					</FileConfiguration>
@@ -317,7 +317,7 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
-							CommandLine="copy  $(InputFileName)  $(TargetDir)..\"
+							CommandLine="copy  &quot;$(InputFileName)&quot;  &quot;$(TargetDir)..\&quot;"
 							Outputs="$(TargetDir)..\ps_hlsl.fx"
 						/>
 					</FileConfiguration>
