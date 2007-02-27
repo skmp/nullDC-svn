@@ -63,38 +63,6 @@ namespace Direct3DRenderer
 			SetWindowText((HWND)emu.WindowHandle, fps_text);
 		}
 	}
-	char Shader[] = 
-"struct vertex { float4 pos : POSITION; float4 col : COLOR0;float4 spc : COLOR1; float4 uv : TEXCOORD0; };"
-"float W_min: register(c0);float W_max: register(c1);"
-"  vertex VertexShader_Tutorial_1(in vertex vtx) {"
-"vtx.pos.x=((vtx.pos.x)/319.75)-1;"
-"vtx.pos.y=-((vtx.pos.y)/239.75)+1;"
-
-#ifdef _HW_INT_
-"vtx.col*=vtx.uv.z;"
-"vtx.spc*=vtx.uv.w;"
-#endif
-
-"vtx.uv.xy*=vtx.pos.z;"
-"vtx.uv.z=0;"
-"vtx.uv.w=vtx.pos.z;" 
-#ifdef scale_type_1
-"vtx.pos.z=((1/clamp(0.0000001,10000000,vtx.pos.z))-W_min)/W_max;"
-"vtx.pos.z=clamp(0, 1, vtx.pos.z);"
-#else
-"if (vtx.pos.z>1)"
-"	vtx.pos.z=0.99-0.14/vtx.pos.z;"
-"else"
-"	vtx.pos.z=vtx.pos.z * 0.84;"
-"vtx.pos.z=clamp(0.000001, 0.999999,1- vtx.pos.z);"
-
-#endif
-"vtx.pos.w=1;"
-"return vtx; "
-"}";
-
-	char Pixel[] = 
-		"  float4 VertexShader_Tutorial_1(in float4 zz:COLOR0 ):COLOR0 { return zz; }";
 
 	const static u32 CullMode[]= 
 	{
@@ -903,14 +871,8 @@ namespace Direct3DRenderer
 		{"pp_ShadInstr",0},
 		{"pp_IgnoreTexA",0},
 		{"pp_UseAlpha",0},
+		{"ps_profile",0},	//Shader profile version , just defined , no value :)
 		{0,0}	//end of list
-
-		/*
-		{"pp_TexSamplModeU",0},
-		{"pp_TexSamplModeV",0},
-
-		{0,0}	//end of list
-		*/
 	};
 	char* ps_macro_numers[] =
 	{
@@ -919,16 +881,10 @@ namespace Direct3DRenderer
 		"2",
 		"3",
 	};
-	char* TexSamplMode[4] = 
-	{
-		"warp",	//0,0
-		"mirror",	//0,1
-		"clamp",	//1,0
-		"clamp",	//1,1
-	};
 
-	IDirect3DPixelShader9* shaders[2048]={0};
+	IDirect3DPixelShader9* shaders[128]={0};
 	IDirect3DPixelShader9* last=0;
+	int ddddx=0;
 	void SetPS(u32 mode)
 	{
 		if (shaders[mode]!=0)
@@ -943,9 +899,16 @@ namespace Direct3DRenderer
 			ID3DXBuffer* shader;
 			ID3DXConstantTable* consts;
 
+			char temp[30];
+			strcpy(temp,D3DXGetPixelShaderProfile(dev));
+			temp[2]='0';
+			temp[4]='0';
+			//printf(&temp[3]);
+			
+			ps_macros[5].Definition=&temp[3];
+
 			D3DXCompileShaderFromFileA("ps_hlsl.fx"
 				,ps_macros,NULL,"PixelShader",D3DXGetPixelShaderProfile(dev),NULL,&shader,&perr,&consts);
-			//verifyc(D3DXCompileShader(Pixel,sizeof(Pixel),NULL,NULL,"VertexShader_Tutorial_1",D3DXGetPixelShaderProfile(dev) , NULL, &shader,&perr,&shader_consts));
 			if (perr)
 			{
 				char* text=(char*)perr->GetBufferPointer();
@@ -975,212 +938,44 @@ namespace Direct3DRenderer
 			//if (gp->tsp.ClampU!=cache_tsp.ClampU || gp->tsp.FlipU!=cache_tsp.FlipU)
 				SetTexMode<D3DSAMP_ADDRESSU>(gp->tsp.ClampU,gp->tsp.FlipU);
 			
-				/*
-				if (gp->tsp.FilterMode)
-				{
-					dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-					dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-				}
-				else
-				{
-					dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
-					dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
-				}
-				*/
-				 
-			//dev->SetTextureStageState(D3Drs_
-
-			ps_macros[1].Definition=ps_macro_numers[gp->pcw.Offset];
-			mode|=gp->pcw.Offset;
-			mode<<=2;
-
-			ps_macros[2].Definition=ps_macro_numers[gp->tsp.ShadInstr];
-			mode|=gp->tsp.ShadInstr;
-			mode<<=1;
-
-			ps_macros[3].Definition=ps_macro_numers[gp->tsp.IgnoreTexA];
-			mode|=gp->tsp.IgnoreTexA;
-			mode<<=1;
-
 			/*
-			u32 CFV=(gp->tsp.ClampV<<1) | gp->tsp.FlipV;
-			u32 CFU=(gp->tsp.ClampU<<1) | gp->tsp.FlipU;
-			ps_macros[5].Definition=TexSamplMode[CFV];
-			ps_macros[6].Definition=TexSamplMode[CFU];
-
-			mode|=CFV;
-			mode<<=2;
-			mode|=CFV;
-			mode<<=2;
-			*/
-		}
-
-		ps_macros[0].Definition=ps_macro_numers[gp->pcw.Texture];
-		mode|=gp->pcw.Texture;
-		mode<<=1;
-
-		ps_macros[4].Definition=ps_macro_numers[gp->tsp.UseAlpha];
-		mode|=gp->tsp.UseAlpha;
-		mode<<=1;
-
-		SetPS(mode);
-
-/*
-		if (gp->pcw.Texture)
-		{
-			
-			dev->SetRenderState(D3DRS_SPECULARENABLE,gp->pcw.Offset );
-
-			
-
-			//if (gp->tsp.ClampV!=cache_tsp.ClampV || gp->tsp.FlipV!=cache_tsp.FlipV)
-				SetTexMode<D3DSAMP_ADDRESSV>(gp->tsp.ClampV,gp->tsp.FlipV);
-
-			//if (gp->tsp.ClampU!=cache_tsp.ClampU || gp->tsp.FlipU!=cache_tsp.FlipU)
-				SetTexMode<D3DSAMP_ADDRESSU>(gp->tsp.ClampU,gp->tsp.FlipU);
-
-			//if (gp->tsp.ShadInstr!=cache_tsp.ShadInstr ||  ( gp->tsp.UseAlpha != cache_tsp.UseAlpha) )
+			if (gp->tsp.FilterMode)
 			{
-				switch()	// these should be correct, except offset
-				{
-					//PIXRGB = TEXRGB + OFFSETRGB
-					//PIXA    = TEXA
-				case 0:	// Decal
-					dev->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1);
-					dev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
-
-					dev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
-
-					if ()
-					{
-						//a=1
-						dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TFACTOR);
-					}
-					else
-					{
-						//a=tex.a
-						dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
-					}
-					break;
-
-					//The texture color value is multiplied by the Shading Color value.  
-					//The texture  value is substituted for the Shading a value.
-					//PIXRGB = COLRGB x TEXRGB + OFFSETRGB
-					//PIXA   = TEXA
-				case 1:	// Modulate
-					dev->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_MODULATE);
-					dev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
-					dev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
-
-					dev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
-
-					if (gp->tsp.IgnoreTexA)
-					{
-						//a=1
-						dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TFACTOR);
-					}
-					else
-					{
-						//a=tex.a
-						dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
-					}
-					break;
-					//The texture color value is blended with the Shading Color 
-					//value according to the texture a value.
-					//PIXRGB = (TEXRGB x TEXA) +
-					//(COLRGB x (1- TEXA) ) +
-					//OFFSETRGB
-					//PIXA   = COLA
-				case 2:	// Decal Alpha
-					if (gp->tsp.IgnoreTexA)
-					{
-						//Tex.a=1 , so Color = Tex
-						dev->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1);
-					}
-					else
-					{
-						dev->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_BLENDTEXTUREALPHA);
-					}
-					dev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
-					dev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
-
-					dev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
-					if()
-					{
-						dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
-					}
-					else
-					{
-						dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TFACTOR);
-					}
-					break;
-
-					//The texture color value is multiplied by the Shading Color value. 
-					//The texture a value is multiplied by the Shading a value.
-					//PIXRGB= COLRGB x  TEXRGB + OFFSETRGB
-					//PIXA   = COLA  x TEXA
-				case 3:	// Modulate Alpha
-					dev->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_MODULATE);
-					dev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
-					dev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
-
-					if(gp->tsp.UseAlpha)
-					{
-						if (gp->tsp.IgnoreTexA)
-						{
-							//a=Col.a
-							dev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG2);
-						}
-						else
-						{
-							//a=Text.a*Col.a
-							dev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_MODULATE);
-						}
-					}
-					else
-					{
-						if (gp->tsp.IgnoreTexA)
-						{
-							//a= 1
-							dev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTA_TFACTOR);
-						}
-						else
-						{
-							//a= Text.a*1
-							dev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
-						}
-					}
-					dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
-					dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
-
-					break;
-				}
-			}
-*/
-			/*
-			//i use D3DRS_SPECULARENABLE now ..
-			if (gp->pcw.Offset==0)
-			{
-				dev->SetTextureStageState(1, D3DTSS_COLOROP,   D3DTOP_DISABLE);
-				dev->SetTextureStageState(1, D3DTSS_ALPHAOP,   D3DTOP_DISABLE);
+				dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+				dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 			}
 			else
 			{
-				dev->SetTextureStageState(1, D3DTSS_COLOROP,   D3DTOP_ADD);
-				dev->SetTextureStageState(1, D3DTSS_COLORARG1, D3DTA_CURRENT);
-				dev->SetTextureStageState(1, D3DTSS_COLORARG2, D3DTA_SPECULAR);
-
-				dev->SetTextureStageState(1, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
-				dev->SetTextureStageState(1, D3DTSS_ALPHAARG1, D3DTA_CURRENT);
+				dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+				dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
 			}
+			*/
+
+			ps_macros[1].Definition=ps_macro_numers[gp->pcw.Offset];
+			mode|=gp->pcw.Offset;
+			
+
+			ps_macros[2].Definition=ps_macro_numers[gp->tsp.ShadInstr];
+			mode<<=2;
+			mode|=gp->tsp.ShadInstr;
+			
+
+			ps_macros[3].Definition=ps_macro_numers[gp->tsp.IgnoreTexA];
+			mode<<=1;
+			mode|=gp->tsp.IgnoreTexA;
 			
 		}
-		else
-		{
-			//Offset color is enabled olny if Texture is enabled ;)
-			dev->SetRenderState(D3DRS_SPECULARENABLE,FALSE);
-			dev->SetTexture(0,NULL);
-		}*/
+
+		ps_macros[0].Definition=ps_macro_numers[gp->pcw.Texture];
+		mode<<=1;
+		mode|=gp->pcw.Texture;
+		
+
+		ps_macros[4].Definition=ps_macro_numers[gp->tsp.UseAlpha];
+		mode<<=1;
+		mode|=gp->tsp.UseAlpha;
+
+		SetPS(mode);
 	}
 
 
@@ -1418,10 +1213,6 @@ if (!GetAsyncKeyState(VK_F3))
 		printf(" AA:%dx%x\n",ppar.MultiSampleType,ppar.MultiSampleQuality);
 		
 
-/*D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWnd,
-                                      D3DCREATE_SOFTWARE_VERTEXPROCESSING,
-                                      &d3dpp, &g_pd3dDevice 
-		*/
 		verifyc(d3d9->CreateDevice(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,(HWND)emu.WindowHandle,DEV_CREATE_FLAGS,&ppar,&dev));
 
 		if (ppar.MultiSampleType!=D3DMULTISAMPLE_NONE)
@@ -1434,21 +1225,13 @@ if (!GetAsyncKeyState(VK_F3))
 		ID3DXBuffer* perr;
 		ID3DXBuffer* shader;
 		
-		verifyc(D3DXCompileShader(Shader,sizeof(Shader),NULL,NULL,"VertexShader_Tutorial_1",D3DXGetVertexShaderProfile(dev) , 0, &shader,&perr,&shader_consts));
+		verifyc(D3DXCompileShaderFromFileA("ps_hlsl.fx",NULL,NULL,"VertexShader","vs_1_1" /*D3DXGetVertexShaderProfile(dev)*/ , 0, &shader,&perr,&shader_consts));
 		if (perr)
 		{
 			char* text=(char*)perr->GetBufferPointer();
 			printf("%s\n",text);
 		}
 		verifyc(dev->CreateVertexShader((DWORD*)shader->GetBufferPointer(),&CompiledShader));
-		/*verifyc(D3DXCompileShader(Pixel,sizeof(Pixel),NULL,NULL,"VertexShader_Tutorial_1",D3DXGetPixelShaderProfile(dev) , NULL, &shader,&perr,&shader_consts));
-		if (perr)
-		{
-			char* text=(char*)perr->GetBufferPointer();
-			printf("%s\n",text);
-		}
-		verifyc(dev->CreatePixelShader((DWORD*)shader->GetBufferPointer(),&CompiledPShader));
-		*/
 		
 		D3DXCreateFont( dev, 20, 0, FW_BOLD, 0, FALSE, DEFAULT_CHARSET, 
 			OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"), &font );
