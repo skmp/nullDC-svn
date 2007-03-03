@@ -308,8 +308,29 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
+							CommandLine="copy  &quot;$(InputFileName)&quot;  &quot;$(TargetDir)..\&quot;&#x0D;&#x0A;"
+							Outputs="$(TargetDir)..\$(InputFileName)"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+							CommandLine="copy  &quot;$(InputFileName)&quot;  &quot;$(TargetDir)..\&quot;&#x0D;&#x0A;"
+							Outputs="$(TargetDir)..\$(InputFileName)"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath=".\vs_hlsl.fx"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
 							CommandLine="copy  &quot;$(InputFileName)&quot;  &quot;$(TargetDir)..\&quot;"
-							Outputs="$(TargetDir)..\ps_hlsl.fx"
 						/>
 					</FileConfiguration>
 					<FileConfiguration
@@ -318,7 +339,7 @@
 						<Tool
 							Name="VCCustomBuildTool"
 							CommandLine="copy  &quot;$(InputFileName)&quot;  &quot;$(TargetDir)..\&quot;"
-							Outputs="$(TargetDir)..\ps_hlsl.fx"
+							Outputs="$(TargetDir)..\$(InputFileName)"
 						/>
 					</FileConfiguration>
 				</File>

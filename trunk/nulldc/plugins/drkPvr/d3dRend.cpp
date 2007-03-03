@@ -47,8 +47,10 @@ namespace Direct3DRenderer
 	IDirect3D9* d3d9;
 	IDirect3DDevice9* dev;
 	IDirect3DVertexBuffer9* vb;
-	IDirect3DVertexShader9* CompiledShader;
-	IDirect3DPixelShader9* CompiledPShader;
+	IDirect3DVertexShader9* compiled_vs;
+	IDirect3DPixelShader9* compiled_ps[128]={0};
+	u32 last_ps_mode=0xFFFFFFFF;
+
 	ID3DXFont* font;
 	ID3DXConstantTable* shader_consts;
 	
@@ -864,6 +866,13 @@ namespace Direct3DRenderer
 	//IgnoreTexA -> 1 if on  0 if off , valid only w/ textures on
 	//UseAlpha -> 1 if on  0 if off , works when no textures are used too ?
 
+	#define idx_pp_Texture 0
+	#define idx_pp_Offset 1
+	#define idx_pp_ShadInstr 2
+	#define idx_pp_IgnoreTexA 3
+	#define idx_pp_UseAlpha 4
+	#define idx_pp_profile 5
+
 	D3DXMACRO ps_macros[]=
 	{
 		{"pp_Texture",0},
@@ -882,44 +891,97 @@ namespace Direct3DRenderer
 		"3",
 	};
 
-	IDirect3DPixelShader9* shaders[128]={0};
-	IDirect3DPixelShader9* last=0;
-	int ddddx=0;
-	void SetPS(u32 mode)
+	void CompilePS(u32 mode,const char* profile)
 	{
-		if (shaders[mode]!=0)
-		{
-			if (last!=shaders[mode])
-				dev->SetPixelShader(last=shaders[mode]);
+		verify(mode<128);
+		if (compiled_ps[mode]!=0)
 			return;
-		}
-		else
+		ID3DXBuffer* perr;
+		ID3DXBuffer* shader;
+		ID3DXConstantTable* consts;
+
+		D3DXCompileShaderFromFileA("ps_hlsl.fx"
+			,ps_macros,NULL,"PixelShader",profile,NULL,&shader,&perr,&consts);
+		if (perr)
 		{
-			ID3DXBuffer* perr;
-			ID3DXBuffer* shader;
-			ID3DXConstantTable* consts;
+			char* text=(char*)perr->GetBufferPointer();
+			printf("%s\n",text);
+		}
+		verifyc(dev->CreatePixelShader((DWORD*)shader->GetBufferPointer(),&compiled_ps[mode]));
+		if (perr)
+			perr->Release();
+		shader->Release();
+		consts->Release();
+	}
+	void PrecompilePS()
+	{
+		char temp[30];
+		strcpy(temp,D3DXGetPixelShaderProfile(dev));
+		temp[2]='0';
+		temp[4]='0';
+		//printf(&temp[3]);
 
-			char temp[30];
-			strcpy(temp,D3DXGetPixelShaderProfile(dev));
-			temp[2]='0';
-			temp[4]='0';
-			//printf(&temp[3]);
-			
-			ps_macros[5].Definition=&temp[3];
+		ps_macros[5].Definition=&temp[3];
+		const char * profile=D3DXGetPixelShaderProfile(dev);
 
-			D3DXCompileShaderFromFileA("ps_hlsl.fx"
-				,ps_macros,NULL,"PixelShader",D3DXGetPixelShaderProfile(dev),NULL,&shader,&perr,&consts);
-			if (perr)
+#define forl(n,s,e) for (u32 n=s;n<=e;n++)
+		forl(Texture,0,1)
+		{
+			ps_macros[idx_pp_Texture].Definition=ps_macro_numers[Texture];
+			forl(UseAlpha,0,1)
 			{
-				char* text=(char*)perr->GetBufferPointer();
-				printf("%s\n",text);
+				ps_macros[idx_pp_UseAlpha].Definition=ps_macro_numers[UseAlpha];
+				if (Texture)
+				{
+					forl(Offset,0,1)
+					{
+						ps_macros[idx_pp_Offset].Definition=ps_macro_numers[Offset];
+						forl(ShadInstr,0,3)
+						{
+							ps_macros[idx_pp_ShadInstr].Definition=ps_macro_numers[ShadInstr];
+							forl(IgnoreTexA,0,1)
+							{
+								ps_macros[idx_pp_IgnoreTexA].Definition=ps_macro_numers[IgnoreTexA];
+
+								u32 mode=0;			
+								mode|=Offset;
+								mode<<=2;
+								mode|=ShadInstr;
+								mode<<=1;
+								mode|=IgnoreTexA;
+								mode<<=1;
+								mode|=Texture;
+								mode<<=1;
+								mode|=UseAlpha;
+
+								CompilePS(mode,profile);
+							}
+						}
+					}
+				}
+				else
+				{
+					ps_macros[idx_pp_Offset].Definition=ps_macro_numers[0];
+					ps_macros[idx_pp_ShadInstr].Definition=ps_macro_numers[0];
+					ps_macros[idx_pp_IgnoreTexA].Definition=ps_macro_numers[0];
+
+					u32 mode=0;			
+					mode|=Texture;
+					mode<<=1;
+					mode|=UseAlpha;
+
+					CompilePS(mode,profile);
+				}
 			}
-			verifyc(dev->CreatePixelShader((DWORD*)shader->GetBufferPointer(),&shaders[mode]));
-			dev->SetPixelShader(shaders[mode]);
-			if (perr)
-				perr->Release();
-			shader->Release();
-			consts->Release();
+		}
+#undef forl
+	}
+	void FASTCALL SetPS(u32 mode)
+	{
+		if (last_ps_mode!=mode)
+		{
+			last_ps_mode=mode;
+			dev->SetPixelShader(compiled_ps[mode]);
 		}
 	}
 	__forceinline
@@ -1095,7 +1157,7 @@ namespace Direct3DRenderer
 		if( SUCCEEDED( dev->BeginScene() ) )
 		{			
 			//Init stuff
-			dev->SetVertexShader(CompiledShader);
+			dev->SetVertexShader(compiled_vs);
 
 #define clamp(minv,maxv,x) min(maxv,max(minv,x))
 			float bg=*(float*)&ISP_BACKGND_D; 
@@ -1225,14 +1287,16 @@ if (!GetAsyncKeyState(VK_F3))
 		ID3DXBuffer* perr;
 		ID3DXBuffer* shader;
 		
-		verifyc(D3DXCompileShaderFromFileA("ps_hlsl.fx",NULL,NULL,"VertexShader","vs_1_1" /*D3DXGetVertexShaderProfile(dev)*/ , 0, &shader,&perr,&shader_consts));
+		verifyc(D3DXCompileShaderFromFileA("vs_hlsl.fx",NULL,NULL,"VertexShader",D3DXGetVertexShaderProfile(dev) , 0, &shader,&perr,&shader_consts));
 		if (perr)
 		{
 			char* text=(char*)perr->GetBufferPointer();
 			printf("%s\n",text);
 		}
-		verifyc(dev->CreateVertexShader((DWORD*)shader->GetBufferPointer(),&CompiledShader));
+		verifyc(dev->CreateVertexShader((DWORD*)shader->GetBufferPointer(),&compiled_vs));
 		
+		PrecompilePS();
+
 		D3DXCreateFont( dev, 20, 0, FW_BOLD, 0, FALSE, DEFAULT_CHARSET, 
 			OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"), &font );
 
