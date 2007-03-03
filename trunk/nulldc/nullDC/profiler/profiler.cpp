@@ -120,6 +120,6 @@ printfBBSS();
 		 Sleep(1);
 	 }
 
-	 CloseHandle((HANDLE)param);
+	 //CloseHandle((HANDLE)param);
 	 return 0;
  }
