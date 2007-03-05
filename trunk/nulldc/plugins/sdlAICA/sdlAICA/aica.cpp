@@ -155,7 +155,7 @@ void UpdateSh4Ints()
 		*aica_params.SB_ISTEXT&=~SH4_IRQ_BIT;
 
 }
-void UpdateAICA(u32 Cycles)
+void FASTCALL UpdateAICA(u32 Cycles)
 {
 	//run arm
 	arm_Run(Cycles/(arm_sh4_bias*arm_sh4_ratio));

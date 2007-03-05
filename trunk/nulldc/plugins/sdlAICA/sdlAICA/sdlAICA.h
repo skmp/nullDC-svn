@@ -52,20 +52,63 @@ void dcThreadTerm(PluginType type);
 			{*(u32*)&arr[addr]=data;}}	
 struct setts
 {
-	u32 BufferSize;
+	u32 SoundRenderer;	//0 -> sdl , (1) -> DS
+	u32 HW_mixing;		//0 -> SW , 1 -> HW , (2) -> Auto
+	u32 BufferSize;		//In samples ,*4 for bytes (1024)
+	u32 LimitFPS;		//0 -> no , (1) -> limit
+	u32 GlobalFocus;	//0 -> only hwnd , (1) -> Global
+	u32 BufferCount;	//BufferCount+2 buffers used , max 60 , default 2
 };
 
 extern setts settings;
 extern aica_init_params aica_params;
-
+extern emu_info eminf;
 #define naked   __declspec( naked )
 
 #define dbgbreak  { /*__asm {int 3}*/ printf("Press ANY key to continue\n");getchar(); }
 
 #define fastcall __fastcall
 #define verify(x) if((x)==false){ printf("Verify Failed  : " #x "\n in %s -> %s : %d \n",__FUNCTION__,__FILE__,__LINE__); dbgbreak;}
+#define verifyc(x) if(FAILED(x)){ printf("Verify Failed  : " #x "\n in %s -> %s : %d \n",__FUNCTION__,__FILE__,__LINE__); dbgbreak;}
 #define die(reason) { printf("Fatal error : %s\n in %s -> %s : %d \n",reason,__FUNCTION__,__FILE__,__LINE__); dbgbreak;}
 #define fverify verify
 
 #define PAGE_SIZE 4096
 #define PAGE_MASL (PAGE_SIZE-1)
+
+int cfgGetInt(char* key,int def);
+
+#define THREADCALL __stdcall
+
+typedef  u32 THREADCALL ThreadEntryFP(void* param);
+typedef void* THREADHANDLE;
+
+class cThread
+{
+public:
+	ThreadEntryFP* Entry;
+	void* param;
+	THREADHANDLE hThread;
+public :
+	cThread(ThreadEntryFP* function,void* param);
+	~cThread();
+	//Simple thread functions
+	void Start();
+	void Suspend();
+	void WaitToEnd(u32 msec);
+};
+
+//Wait Events
+typedef void* EVENTHANDLE;
+class cResetEvent
+{
+private:
+	EVENTHANDLE hEvent;
+public :
+	cResetEvent(bool State,bool Auto);
+	~cResetEvent();
+	void Set();		//Set state to signaled
+	void Reset();	//Set state to non signaled
+	void Wait(u32 msec);//Wait for signal , then reset[if auto]
+	void Wait();	//Wait for signal , then reset[if auto]
+};

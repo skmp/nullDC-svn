@@ -6,11 +6,11 @@
 #include "aica.h"
 #include "arm7.h"
 #include "mem.h"
-#include "sdl_audiostream.h"
+#include "audiostream.h"
 
 setts settings;
 aica_init_params aica_params;
-
+emu_info eminf;
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
                        LPVOID lpReserved
@@ -25,6 +25,7 @@ void cfgdlg(PluginType type,void* window)
 	printf("Config coming soon [blame ms/msvc for that , its their fault for making window related code suck so much]");
 }
 
+/*
 //Give to the emu info for the plugin type
 EXPORT void dcGetPluginInfo(plugin_info* info)
 {
@@ -53,25 +54,41 @@ EXPORT void dcGetAICAInfo(aica_plugin_if* info)
 	info->WriteMem_aica_reg=sh4_WriteMem_reg;
 	info->UpdateAICA=UpdateAICA;
 }
+*/
 
+s32 FASTCALL OnLoad(emu_info* em)
+{
+	memcpy(&eminf,em,sizeof(eminf));
+	return rv_ok;
+}
+
+void FASTCALL OnUnload()
+{
+}
 
 //called when plugin is used by emu (you should do first time init here)
-void dcInit(void* param,PluginType type)
+s32 FASTCALL Init(aica_init_params* initp)
 {
-	aica_init_params* initp=(aica_init_params*)param;
 	memcpy(&aica_params,initp,sizeof(aica_params));
 
 	//load default settings before init
-	settings.BufferSize=1024;
+	settings.BufferSize=cfgGetInt("BufferSize",1024);
+	settings.LimitFPS=cfgGetInt("LimitFPS",1);
+	settings.HW_mixing=cfgGetInt("HW_mixing",0);
+	settings.SoundRenderer=cfgGetInt("SoundRenderer",1);
+	settings.GlobalFocus=cfgGetInt("GlobalFocus",1);
+	settings.BufferCount=cfgGetInt("BufferCount",0);
 
 	init_mem();
 	arm_Init();
 	AICA_Init();
 	InitAudio();
+
+	return rv_ok;
 }
 
 //called when plugin is unloaded by emu , olny if dcInit is called (eg , not called to enumerate plugins)
-void dcTerm(PluginType type)
+void FASTCALL Term()
 {
 	TermAudio();
 	AICA_Term();
@@ -79,17 +96,135 @@ void dcTerm(PluginType type)
 }
 
 //It's suposed to reset anything 
-void dcReset(bool Manual,PluginType type)
+void FASTCALL Reset(bool Manual)
 {
 	arm_Reset();
 }
 
-//called when entering sh4 thread , from the new thread context (for any thread speciacific init)
-void dcThreadInit(PluginType type)
+
+//Give to the emu info for the plugin type
+EXPORT void EXPORT_CALL dcGetInterfaceInfo(plugin_interface_info* info)
 {
+	info->InterfaceVersion=PLUGIN_I_F_VERSION;
+	info->count=1;
 }
 
-//called when exiting from sh4 thread , from the new thread context (for any thread speciacific de init) :P
-void dcThreadTerm(PluginType type)
+//Give to the emu pointers for the PowerVR interface
+EXPORT bool EXPORT_CALL dcGetInterface(u32 id,plugin_interface* info)
 {
+	if(id!=0)
+		return false;
+/*
+	info->Init=dcInit;
+	info->Term=dcTerm;
+	info->Reset=dcReset;
+
+	info->ThreadInit=dcThreadInit;
+	info->ThreadTerm=dcThreadTerm;
+	info->ShowConfig=cfgdlg;
+
+	info->Type=PluginType::AICA;
+
+	info->InterfaceVersion.full=AICA_PLUGIN_I_F_VERSION;
+
+	info->ReadMem_aica_ram=ReadMem_ram;
+	info->WriteMem_aica_ram=WriteMem_ram;
+	info->ReadMem_aica_reg=ReadMem_reg;
+	info->WriteMem_aica_reg=WriteMem_reg;
+	info->UpdateAICA=UpdateSystem;
+*/
+#define c info->common
+#define a info->aica
+
+	strcpy(c.Name,"nullDC AICA plugin [sdl] , built :" __DATE__ "");
+	c.PluginVersion=NDC_MakeVersion(MAJOR,MINOR,BUILD);
+
+	c.InterfaceVersion=AICA_PLUGIN_I_F_VERSION;
+	c.Type=AICA;
+
+	c.Load=OnLoad;
+	c.Unload=OnUnload;
+
+	a.Init=Init;
+	a.Reset=Reset;
+	a.Term=Term;
+	a.ShowConfig=0;
+	a.ExeptionHanlder=0;
+
+	a.UpdateAICA=UpdateAICA;
+
+	a.ReadMem_aica_reg=sh4_ReadMem_reg;
+	a.WriteMem_aica_reg=sh4_WriteMem_reg;
+	return true;
 }
+
+int cfgGetInt(char* key,int def)
+{
+	char temp[100];
+	eminf.ConfigLoadStr("sdlaica",key,temp);
+	if (strcmp("NULL",temp)==0)
+		return def;
+	return atoi(temp);
+}
+
+
+//Windoze Code implementation of commong classes from here and after ..
+
+//Thread class
+cThread::cThread(ThreadEntryFP* function,void* prm)
+{
+	Entry=function;
+	param=prm;
+	hThread=CreateThread(NULL,NULL,(LPTHREAD_START_ROUTINE)function,prm,CREATE_SUSPENDED,NULL);
+}
+cThread::~cThread()
+{
+	//gota think of something !
+}
+	
+void cThread::Start()
+{
+	ResumeThread(hThread);
+}
+void cThread::Suspend()
+{
+	SuspendThread(hThread);
+}
+void cThread::WaitToEnd(u32 msec)
+{
+	WaitForSingleObject(hThread,msec);
+}
+//End thread class
+
+//cResetEvent Calss
+cResetEvent::cResetEvent(bool State,bool Auto)
+{
+		hEvent = CreateEvent( 
+        NULL,             // default security attributes
+		Auto?FALSE:TRUE,  // auto-reset event?
+		State?TRUE:FALSE, // initial state is State
+        NULL			  // unnamed object
+        );
+}
+cResetEvent::~cResetEvent()
+{
+	//Destroy the event object ?
+	 CloseHandle(hEvent);
+}
+void cResetEvent::Set()//Signal
+{
+	SetEvent(hEvent);
+}
+void cResetEvent::Reset()//reset
+{
+	ResetEvent(hEvent);
+}
+void cResetEvent::Wait(u32 msec)//Wait for signal , then reset
+{
+	WaitForSingleObject(hEvent,msec);
+}
+void cResetEvent::Wait()//Wait for signal , then reset
+{
+	WaitForSingleObject(hEvent,(u32)-1);
+}
+//End AutoResetEvent

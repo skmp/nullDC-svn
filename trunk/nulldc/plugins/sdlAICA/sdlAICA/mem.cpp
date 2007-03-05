@@ -116,7 +116,7 @@ inline void fastcall arm_WriteMem(u32 addr,T data)
 		WriteReg<2,true>(addr & 0x7FFF,data);
 }
 //Reg reads from sh4 side ...
-u32 sh4_ReadMem_reg(u32 addr,u32 size)
+u32 FASTCALL sh4_ReadMem_reg(u32 addr,u32 size)
 {
 	if (size==1)
 	{
@@ -132,7 +132,7 @@ u32 sh4_ReadMem_reg(u32 addr,u32 size)
 	return 0;
 }
 
-void sh4_WriteMem_reg(u32 addr,u32 data,u32 size)
+void FASTCALL sh4_WriteMem_reg(u32 addr,u32 data,u32 size)
 {
 	if (size==1)
 		WriteReg<1,false>(addr & 0x7FFF,data);
@@ -174,7 +174,8 @@ void sh4_WriteMem_ram(u32 addr,u32 data,u32 size)
 //Map using _vmem .. yay
 void init_mem()
 {
-	aica_ram=(u8*)malloc(AICA_MEM_SIZE);
+	aica_ram=aica_params.aica_ram;
+	//aica_ram=(u8*)malloc(AICA_MEM_SIZE);
 	aica_reg=(u8*)malloc(0x8000);
 	memset(aica_ram,0,AICA_MEM_SIZE);
 	memset(aica_reg,0,0x8000);
@@ -207,5 +208,5 @@ void term_mem()
 {
 	_vmem_term();
 	free(aica_reg);
-	free(aica_ram);
+	//free(aica_ram);
 }

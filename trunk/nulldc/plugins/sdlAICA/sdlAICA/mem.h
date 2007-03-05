@@ -20,8 +20,8 @@ void arm_WriteMem32(u32 addr,u32 value);
 #define arm_WriteMem32 _vmem_WriteMem32
 
 
-u32 sh4_ReadMem_reg(u32 addr,u32 size);
-void sh4_WriteMem_reg(u32 addr,u32 data,u32 size);
+u32 FASTCALL sh4_ReadMem_reg(u32 addr,u32 size);
+void FASTCALL sh4_WriteMem_reg(u32 addr,u32 data,u32 size);
 u32 sh4_ReadMem_ram(u32 addr,u32 size);
 void sh4_WriteMem_ram(u32 addr,u32 data,u32 size);
 

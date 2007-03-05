@@ -1,6 +1,6 @@
 #pragma once
 #include "sdlAICA.h"
-#include "sdl_audiostream.h"
+#include "audiostream.h"
 #include "assert.h"
 
 #define SCIEB_addr 0x289C
@@ -253,7 +253,7 @@ extern InterruptInfo* SCIRE;
 
 extern CommonData_struct* CommonData;
 
-void UpdateAICA(u32 Cycles);
+void FASTCALL UpdateAICA(u32 Cycles);
 
 void AICA_Init();
 void AICA_Term();
