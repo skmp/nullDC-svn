@@ -31,6 +31,9 @@ double spd_cpu=0;
 extern int CurrentFrame;
 bool render_end_pending=false;
 u32 render_end_pending_cycles;
+void DrawFpsText(char*str);
+extern bool g_bShowStats;
+extern int g_bCreationFullScreen;
 //u32 vblLine	= (pvrCycles / (vblCount * 7));	// Current Line
 void vblank_done()
 {
@@ -50,8 +53,12 @@ void vblank_done()
 		vblk_cnt=0;
 
 		char fpsStr[256];
-		sprintf(fpsStr,"FPS: %4.2f(%4.2f) Vert : %4.2fM -  Sh4: %4.2f mhz (%4.2f%%) - %s", spd_fps,fullfps,mv, spd_cpu,spd_cpu*100/200,em_inf.Name);
-		SetWindowText((HWND)Hwnd, fpsStr);
+		
+		sprintf(fpsStr,"FPS: %4.2f(%4.2f) Vert : %4.2fM -  Sh4: %4.2f mhz (%4.2f%%) - %s", spd_fps,fullfps,mv, spd_cpu,spd_cpu*100/200,emu_name);
+		if (!g_bCreationFullScreen)
+			SetWindowText((HWND)Hwnd, fpsStr);
+		if (g_bShowStats || g_bCreationFullScreen)
+			DrawFpsText(fpsStr);
 	}
 }
 void FASTCALL spgUpdatePvr(u32 cycles)

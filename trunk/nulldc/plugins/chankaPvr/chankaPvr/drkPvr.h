@@ -44,3 +44,8 @@ float GetSeconds();
 
 extern pvr_init_params param;
 extern emu_info em_inf;
+extern char emu_name[256];
+
+extern bool g_bForceSVP;
+extern int g_iMultiSampleQuality;
+extern int g_iMultiSampleCount;

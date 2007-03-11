@@ -15,7 +15,7 @@ RaiseInterruptFP* RaiseInterrupt;
 
 int CurrentFrame=0;
 void* Hwnd;
-
+char emu_name[256];
 u8*	vram_64;
 bool g_bWireframe=false;
 char* g_pSH4TextureMemory;
@@ -23,9 +23,34 @@ int g_bCreationFullScreen=0;
 HWND g_hWnd;
 unsigned long g_framesLatency=0;
 bool g_bShowStats=true;
+bool g_bForceSVP=true;
 unsigned long g_dwCreationWidth=1280;
 unsigned long g_dwCreationHeight=1024;
+int g_iMultiSampleQuality;
+int g_iMultiSampleCount;
 
+int cfgGetInt(char* key,int def)
+{
+	return em_inf.ConfigLoadInt("chanka_pvr",key,def);
+}
+extern bool g_bForceSVP;
+void UpdateConfig()
+{
+	g_bUSE_ZWRITE           = cfgGetInt("Use_ZWrite",0);
+    g_bUSE_ALPHATEST_ZWRITE = cfgGetInt("Use_AlphaTest_ZWrite",0);
+
+	g_bShowStats=cfgGetInt("ShowStats",0);
+	g_bWireframe=cfgGetInt("Wireframe",0);
+
+	g_dwCreationWidth=cfgGetInt("Width",1280);
+	g_dwCreationHeight=cfgGetInt("Height",1024);
+	g_bForceSVP=cfgGetInt("ForceSoftwareVertexProceccing",0);
+	g_iMultiSampleCount=cfgGetInt("MultiSampleCount",0);
+	g_iMultiSampleQuality=cfgGetInt("MultiSampleQuality",0);
+	g_bCreationFullScreen=cfgGetInt("FullScreen",0);
+
+	
+}
 
 __declspec(align(32)) byte sse_regs[4*8*4];
 __declspec(align(32)) u32 mxcsr_reg;
@@ -151,6 +176,7 @@ s32 FASTCALL Load(emu_info* inf)
 
 	Hwnd=em_inf.WindowHandle;
 	g_hWnd=(HWND)Hwnd;
+	UpdateConfig();
 	return rv_ok;
 }
 
@@ -168,6 +194,7 @@ s32 FASTCALL InitPvr(pvr_init_params* aparam)
 	RaiseInterrupt=param.RaiseInterrupt;
 	//g_bChangeDisplayEnable = true;
 	//g_bDraw = true;
+	UpdateConfig();
 	TAInit();
 	return rv_ok;
 }
@@ -218,26 +245,26 @@ char* GetNullDCSoruceFileName(char* full)
 }
 
 
-void EXPORT_CALL dcGetPluginInfo(plugin_info* info)
+void EXPORT_CALL dcGetInterfaceInfo(plugin_interface_info* info)
 {
 	info->InterfaceVersion=PLUGIN_I_F_VERSION;
 	info->count=1;
 }
 //Give to the emu pointers for the PowerVR interface
-bool EXPORT_CALL dcGetPlugin(u32 id,plugin_info_entry* info)
+void EXPORT_CALL dcGetInterface(u32 id,plugin_interface* info)
 {
 	if (id!=0)
-		return false;
+		return;
 
 #define c info->common
 #define p info->pvr
 	
 	
 	c.InterfaceVersion=PVR_PLUGIN_I_F_VERSION;
-	c.Type=PowerVR;
+	c.Type=Plugin_PowerVR;
 	
 	strcpy(c.Name,"chanka's video [port by drk||Raziel] (" __DATE__ ")");
-	c.PluginVersion=NDC_MakeVersion(MAJOR,MINOR,BUILD);
+	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD,DC_VER_NORMAL);
 	
 	c.Load=Load;
 	c.Unload=Unload;
@@ -256,5 +283,5 @@ bool EXPORT_CALL dcGetPlugin(u32 id,plugin_info_entry* info)
 	p.LockedBlockWrite = vramLockCB;
 	p.ExeptionHanlder=0;	//we don't use that feature , we'l use default locking ;)
 
-	return true;
+	return;
 }

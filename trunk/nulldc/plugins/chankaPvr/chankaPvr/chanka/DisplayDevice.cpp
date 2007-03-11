@@ -6,11 +6,8 @@
 #include "stdafx.h"
 
 
-
-
-
 #define ATI_ID 0x1002
-
+char fps_text_wkl[512];
 // --------------------------------------------------------------------------------
 // Nombre       : CDisplayDevice::Init()
 // Descripcion  : 
@@ -30,7 +27,10 @@ TError CDisplayDevice::Init(DWORD uWidth, DWORD uHeight, void* hWnd, BOOL bFullS
     return RET_FAIL;
 
   DWORD dwBehavior;
+  
   dwBehavior = D3DCREATE_HARDWARE_VERTEXPROCESSING;
+  if (g_bForceSVP)
+	  dwBehavior = D3DCREATE_SOFTWARE_VERTEXPROCESSING;
   D3DADAPTER_IDENTIFIER9 aIdentifier[2];
 	hr = m_pD3D->GetAdapterIdentifier(0,0,&aIdentifier[0]);
   if (!FAILED(hr))
@@ -58,6 +58,8 @@ TError CDisplayDevice::Init(DWORD uWidth, DWORD uHeight, void* hWnd, BOOL bFullS
   m_d3dpp.BackBufferWidth  = uWidth;
   m_d3dpp.BackBufferHeight = uHeight;
   m_d3dpp.FullScreen_RefreshRateInHz = 0;
+  m_d3dpp.MultiSampleQuality=g_iMultiSampleQuality;
+  m_d3dpp.MultiSampleType=(D3DMULTISAMPLE_TYPE) g_iMultiSampleCount;
   printf("Trying to use 32b Z buffer\n");
   hr = m_pD3D->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, (HWND) m_hWnd,  dwBehavior, &m_d3dpp, &m_pd3dDevice);
 
@@ -95,7 +97,7 @@ TError CDisplayDevice::Init(DWORD uWidth, DWORD uHeight, void* hWnd, BOOL bFullS
     return RET_FAIL;
   }
 
-  m_pFont = NEW(CD3DFont("Arial", 8));
+  m_pFont = NEW(CD3DFont("Arial", 8* float(GetWidth())/640.0f));
   m_pFont->InitDeviceObjects(m_pd3dDevice);
 
   m_bInit          = true;
@@ -288,6 +290,9 @@ bool CDisplayDevice::BeginScene(float zClear)
 
 extern DWORD g_framesLatency;
 extern bool g_bShowStats;
+extern int g_bCreationFullScreen;
+extern unsigned long g_dwCreationWidth;
+extern unsigned long g_dwCreationHeight;
 
 DWORD g_dwFrames  = 0;
 // --------------------------------------------------------------------------------
@@ -312,9 +317,10 @@ void CDisplayDevice::EndScene()
   if (g_framesLatency==0)
     g_framesLatency = 1;
 
-  if (g_bShowStats)
+  if (g_bShowStats || g_bCreationFullScreen)
   {  
-  //  DrawText(0,400,0xff00ff00,"%.2f fps",fFPS);
+	DrawText(10,g_dwCreationHeight-50,0xff00ff00,"%s [%.2f]",fps_text_wkl,fFPS);
+    //DrawText(10,g_dwCreationHeight-50,0xff00ff00,"%.2f fps",fFPS);
 //    DrawText(0,410,0xff00ff00,"CPU: %3d",g_uCPUUsage);
   }
 

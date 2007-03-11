@@ -2151,3 +2151,8 @@ bool TAIsOldGfx()
 }
 
 }
+extern char fps_text_wkl[512];
+void DrawFpsText(char*str)
+{
+	strcpy(fps_text_wkl,str);
+}
