@@ -23,7 +23,7 @@ void UpdateBuff(u8* pos)
 	if (buf==0)
 	{
 		printf("GetReadBuffer -- Out Of Buffers\n");
-		memset(pos,0,wait_buffer_size);
+		//memset(pos,0,wait_buffer_size);
 	}
 	else
 	{
@@ -122,10 +122,10 @@ void ds_InitAudio()
 	buffer_events[0]=CreateEvent(NULL,FALSE,FALSE,NULL);
 	buffer_events[1]=CreateEvent(NULL,FALSE,FALSE,NULL);
 
-	not[0].dwOffset=(desc.dwBufferBytes/3)&(~(wfx.nBlockAlign-1));		//midle of the first half
+	not[0].dwOffset=wfx.nBlockAlign*10;/*(desc.dwBufferBytes/3)&(~(wfx.nBlockAlign-1))*/;		//midle of the first half
 	not[0].hEventNotify=buffer_events[0];
 
-	not[1].dwOffset=(desc.dwBufferBytes*2/3)&(~(wfx.nBlockAlign-1));		//midle of the second half
+	not[1].dwOffset=desc.dwBufferBytes/2 + wfx.nBlockAlign*10;		//midle of the second half
 	not[1].hEventNotify=buffer_events[1];
 
 	buffer_notify->SetNotificationPositions(2,not);
@@ -139,7 +139,7 @@ void ds_InitAudio()
 	verifyc(buffer->Unlock(p1,s1,p2,s2));
 
 	soundthread_running=true;
-	SetThreadPriority((HANDLE)sound_th.hThread,THREAD_PRIORITY_HIGHEST);
+	verify(SetThreadPriority((HANDLE)sound_th.hThread,THREAD_PRIORITY_TIME_CRITICAL));
 	sound_th.Start();
 	//Play the buffer !
 	verifyc(buffer->Play(0,0,DSBPLAY_LOOPING));

@@ -77,7 +77,7 @@ s32 FASTCALL Init(aica_init_params* initp)
 	settings.HW_mixing=cfgGetInt("HW_mixing",0);
 	settings.SoundRenderer=cfgGetInt("SoundRenderer",1);
 	settings.GlobalFocus=cfgGetInt("GlobalFocus",1);
-	settings.BufferCount=cfgGetInt("BufferCount",0);
+	settings.BufferCount=cfgGetInt("BufferCount",1);
 
 	init_mem();
 	arm_Init();
@@ -137,10 +137,10 @@ EXPORT bool EXPORT_CALL dcGetInterface(u32 id,plugin_interface* info)
 #define a info->aica
 
 	strcpy(c.Name,"nullDC AICA plugin [sdl] , built :" __DATE__ "");
-	c.PluginVersion=NDC_MakeVersion(MAJOR,MINOR,BUILD);
+	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD,DC_VER_NORMAL);
 
 	c.InterfaceVersion=AICA_PLUGIN_I_F_VERSION;
-	c.Type=AICA;
+	c.Type=Plugin_AICA;
 
 	c.Load=OnLoad;
 	c.Unload=OnUnload;
@@ -160,11 +160,7 @@ EXPORT bool EXPORT_CALL dcGetInterface(u32 id,plugin_interface* info)
 
 int cfgGetInt(char* key,int def)
 {
-	char temp[100];
-	eminf.ConfigLoadStr("sdlaica",key,temp);
-	if (strcmp("NULL",temp)==0)
-		return def;
-	return atoi(temp);
+	return eminf.ConfigLoadInt("sdlaica",key,def);
 }
 
 

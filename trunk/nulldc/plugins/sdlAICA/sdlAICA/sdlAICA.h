@@ -53,11 +53,11 @@ void dcThreadTerm(PluginType type);
 struct setts
 {
 	u32 SoundRenderer;	//0 -> sdl , (1) -> DS
-	u32 HW_mixing;		//0 -> SW , 1 -> HW , (2) -> Auto
+	u32 HW_mixing;		//(0) -> SW , 1 -> HW , 2 -> Auto
 	u32 BufferSize;		//In samples ,*4 for bytes (1024)
 	u32 LimitFPS;		//0 -> no , (1) -> limit
 	u32 GlobalFocus;	//0 -> only hwnd , (1) -> Global
-	u32 BufferCount;	//BufferCount+2 buffers used , max 60 , default 2
+	u32 BufferCount;	//BufferCount+2 buffers used , max 60 , default 0
 };
 
 extern setts settings;
