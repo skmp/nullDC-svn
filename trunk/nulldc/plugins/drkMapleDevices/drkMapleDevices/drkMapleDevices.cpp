@@ -441,7 +441,7 @@ void EXPORT_CALL dcGetInterfaceInfo(plugin_interface_info* info)
 	/*
 	info->InterfaceVersion.full=PLUGIN_I_F_VERSION;
 	sprintf(info->Name,"ndcMaple");
-	info->PluginVersion.full=NDC_MakeVersion(1,2,3);
+	info->PluginVersion.full=DC_MakeVersion(1,2,3);
 	
 
 	info->Init=dcInitPvr;
@@ -1597,8 +1597,8 @@ bool EXPORT_CALL dcGetInterface(u32 id,plugin_interface* info)
 	case 0:
 		strcpy(c.Name,"nullDC DC controller [WinHook] (" __DATE__ ")");
 
-		c.Type=Maple;
-		c.PluginVersion=NDC_MakeVersion(1,0,0);
+		c.Type=Plugin_Maple;
+		c.PluginVersion=DC_MakeVersion(1,0,0,DC_VER_NORMAL);
 
 		km.Init=Init;
 		km.Reset=Reset;
@@ -1613,8 +1613,8 @@ bool EXPORT_CALL dcGetInterface(u32 id,plugin_interface* info)
 	case 1:
 		strcpy(c.Name,"nullDC VMU (" __DATE__ ")");
 
-		c.Type=MapleSub;
-		c.PluginVersion=NDC_MakeVersion(1,0,0);
+		c.Type=Plugin_MapleSub;
+		c.PluginVersion=DC_MakeVersion(1,0,0,DC_VER_NORMAL);
 
 		ks.Init=Init_s;
 		ks.Reset=Reset;

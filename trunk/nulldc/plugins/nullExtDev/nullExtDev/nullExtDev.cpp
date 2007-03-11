@@ -94,11 +94,11 @@ bool EXPORT_CALL dcGetInterface(u32 id,plugin_interface* info)
 	#define c info->common 
 	#define ed info->ext_dev
 
-	c.Type=PluginType::ExtDevice;
+	c.Type=Plugin_ExtDevice;
 	c.InterfaceVersion=PLUGIN_I_F_VERSION;
 
 	strcpy(c.Name,"nullExtDev (" __DATE__ ")");
-	c.PluginVersion=NDC_MakeVersion(MAJOR,MINOR,BUILD);
+	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD,DC_VER_NORMAL);
 	
 	c.Load=Load;
 	c.Unload=Unload;

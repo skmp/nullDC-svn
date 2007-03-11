@@ -355,5 +355,5 @@ int msgboxf(char* text,unsigned int type,...)
 	va_end(args);
 
 
-	return MessageBox(NULL,temp,"nulldc " VER_STRING,type | MB_TASKMODAL);
+	return MessageBox(NULL,temp,VER_SHORTNAME,type | MB_TASKMODAL);
 }

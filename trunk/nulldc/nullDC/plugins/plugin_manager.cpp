@@ -76,32 +76,32 @@ bool GetPluginList(char* dll,List<PluginLoadInfo>* to)
 
 		switch(temp.common.Type)
 		{
-		case PowerVR:
+		case Plugin_PowerVR:
 			if (temp.common.InterfaceVersion!=PVR_PLUGIN_I_F_VERSION)
 				continue;
 			break;
 
-		case GDRom:
+		case Plugin_GDRom:
 			if (temp.common.InterfaceVersion!=GDR_PLUGIN_I_F_VERSION)
 				continue;
 			break;
 
-		case AICA:
+		case Plugin_AICA:
 			if (temp.common.InterfaceVersion!=AICA_PLUGIN_I_F_VERSION)
 				continue;
 			break;
 
-		case Maple:
+		case Plugin_Maple:
 			if (temp.common.InterfaceVersion!=MAPLE_PLUGIN_I_F_VERSION)
 				continue;
 			break;
 
-		case MapleSub:
+		case Plugin_MapleSub:
 			if (temp.common.InterfaceVersion!=MAPLE_PLUGIN_I_F_VERSION)
 				continue;
 			break;
 
-		case ExtDevice:
+		case Plugin_ExtDevice:
 			if (temp.common.InterfaceVersion!=EXTDEVICE_PLUGIN_I_F_VERSION)
 				continue;
 			break;
@@ -446,7 +446,7 @@ void maple_cfg_plug(int i,int j,char * out)
 {
 	char temp[512];
 	maple_cfg_name(i,j,temp);
-	cfgLoadStr("nullDC_plugins",temp,out);
+	cfgLoadStr("nullDC_plugins",temp,out,"NULL");
 }
 u32 GetMaplePort(u32 port,u32 device)
 {
@@ -701,7 +701,7 @@ s32 plugins_load_a(char* cfg_name,nullDC_plugin* plg)
 {
 	char dllf[512];
 	dllf[0]=0;
-	cfgLoadStr("nullDC_plugins",cfg_name,dllf);
+	cfgLoadStr("nullDC_plugins",cfg_name,dllf,"NULL");
 	
 	return plg->Open(dllf);
 }
@@ -710,7 +710,9 @@ s32 plugins_Load_()
 	emu_info eminf;
 	eminf.ConfigLoadStr=cfgLoadStr;
 	eminf.ConfigSaveStr=cfgSaveStr;
-	strcpy(eminf.Name,"nullDC " VER_STRING);
+	eminf.ConfigLoadInt=cfgLoadInt;
+	eminf.ConfigSaveInt=cfgSaveInt;
+	
 	eminf.WindowHandle=GetRenderTargetHandle();
 
 	#define LOAD_ERR

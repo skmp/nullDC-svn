@@ -27,15 +27,20 @@ struct VersionNumber
 #define CDECL __cdecl
 
 //NDC_ so it's not confused w/ win32 one
-#define NDC_MakeVersion(major,minor,build) ((build<<16)|(minor<<8)|(major))
+#define DC_MakeVersion(major,minor,build,flags) (((flags)<<24)|((build)<<16)|((minor)<<8)|(major))
+#define DC_VER_NORMAL 0
+#define DC_VER_BETA 1
+#define DC_VER_PRIVATE 2
+#define DC_VER_PRIVBETA (DC_VER_BETA|DC_VER_PRIVATE)
+
 enum PluginType
 {
-	PowerVR=1,			//3D ;)
-	GDRom=2,			//guess it
-	AICA=3,				//Sound :p
-	Maple=4,			//controler ,mouse , ect
-	MapleSub=5,			//vmu , ect
-	ExtDevice=6			//BBA , Lan adapter , other 
+	Plugin_PowerVR=1,			//3D ;)
+	Plugin_GDRom=2,			//guess it
+	Plugin_AICA=3,				//Sound :p
+	Plugin_Maple=4,			//controler ,mouse , ect
+	Plugin_MapleSub=5,			//vmu , ect
+	Plugin_ExtDevice=6			//BBA , Lan adapter , other 
 };
 
 enum ndc_error_codes
@@ -46,21 +51,24 @@ enum ndc_error_codes
 	rv_serror=-1,	//silent error , it has been reported to the user
 };
 
-#define PLUGIN_I_F_VERSION NDC_MakeVersion(1,0,0)
+#define PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0,DC_VER_PRIVBETA)
 
 //These are provided by the emu
-typedef void FASTCALL ConfigLoadStrFP(const char * lpSection, const char * lpKey, char * lpReturn);
+typedef void FASTCALL ConfigLoadStrFP(const char * lpSection, const char * lpKey, char * lpReturn,const char* lpDefault);
 typedef void FASTCALL ConfigSaveStrFP(const char * lpSection, const char * lpKey, const char * lpString);
 
+typedef s32 FASTCALL ConfigLoadIntFP(const char * lpSection, const char * lpKey,const s32 Default);
+typedef void FASTCALL ConfigSaveIntFP(const char * lpSection, const char * lpKey, const s32 Value);
+typedef s32 FASTCALL ConfigExistsFP(const char * lpSection, const char * lpKey);
 struct emu_info
 {
-	//Some info about the emu (can be used form pvr plugins to set caption ect ..)
-	char Name[128];
-
 	void*			WindowHandle;		//Handle of the window that rendering is done
 
-	ConfigLoadStrFP*	ConfigLoadStr;	//Can be used to Read/Write ndc's .cfg file ;)
+	ConfigLoadStrFP*	ConfigLoadStr;	//Can be used to Read/Write settings :)
 	ConfigSaveStrFP*	ConfigSaveStr;
+	ConfigLoadIntFP*	ConfigLoadInt;
+	ConfigSaveIntFP*	ConfigSaveInt;
+	ConfigExistsFP*		ConfigExists;
 };
 
 //common plugin functions
@@ -123,7 +131,7 @@ struct common_info
 //*********************** PowerVR **********************
 //******************************************************
 
-#define PVR_PLUGIN_I_F_VERSION NDC_MakeVersion(1,0,0)
+#define PVR_PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0,DC_VER_PRIVBETA)
  
 typedef void FASTCALL vramlock_Unlock_blockFP  (vram_block* block);
 typedef vram_block* FASTCALL vramlock_Lock_32FP(u32 start_offset32,u32 end_offset32,void* userdata);
@@ -200,7 +208,7 @@ typedef void FASTCALL DriveGetSessionInfoFP(u8* pout,u8 session);
 //Get subchannel data
 typedef void FASTCALL DriveReadSubChannelFP(u8 * buff, u32 format, u32 len);
 
-#define GDR_PLUGIN_I_F_VERSION NDC_MakeVersion(1,0,0)
+#define GDR_PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0,DC_VER_PRIVBETA)
 
 //passed on GDRom init call
 struct gdr_init_params
@@ -233,7 +241,7 @@ struct gdr_plugin_if
 
 typedef void FASTCALL CDDA_SectorFP(s16* sector);
 
-#define AICA_PLUGIN_I_F_VERSION NDC_MakeVersion(1,0,0)
+#define AICA_PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0,DC_VER_PRIVBETA)
 
 //passed on AICA init call
 struct aica_init_params
@@ -321,7 +329,7 @@ struct maple_device_instance;
 typedef void FASTCALL MapleDeviceDMAFP(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce);
 
 //Version is shared betwen maple and maple sub :)
-#define MAPLE_PLUGIN_I_F_VERSION NDC_MakeVersion(1,0,0)
+#define MAPLE_PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0,DC_VER_PRIVBETA)
 
 struct maple_device_instance
 {
@@ -375,7 +383,7 @@ struct maple_plugin_if
 //********************* Ext.Device *********************
 //******************************************************
 
-#define EXTDEVICE_PLUGIN_I_F_VERSION NDC_MakeVersion(1,0,0)
+#define EXTDEVICE_PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0,DC_VER_PRIVBETA)
 
 //passed on Ext.Device init call
 struct ext_device_init_params

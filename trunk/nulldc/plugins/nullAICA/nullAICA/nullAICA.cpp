@@ -62,10 +62,10 @@ void EXPORT_CALL dcGetInterface(u32 id , plugin_interface* info)
 #define a info->aica
 
 	strcpy(c.Name,"nullAICA [no sound/reduced compat] (" __DATE__ ")");
-	c.PluginVersion=NDC_MakeVersion(MAJOR,MINOR,BUILD);
+	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD,DC_VER_NORMAL);
 
 	c.InterfaceVersion=AICA_PLUGIN_I_F_VERSION;
-	c.Type=AICA;
+	c.Type=Plugin_AICA;
 
 	c.Load=PluginLoad;
 	c.Unload=PluginUnload;

@@ -54,10 +54,16 @@ void FASTCALL GetSessionInfo(u8* out,u8 ses)
 	GetDriveSessionInfo(out,ses);
 }
 emu_info emu;
+char emu_name[512];
 //called when plugin is used by emu (you should do first time init here)
 s32 FASTCALL Load(emu_info* emu_inf)
 {
+	if (emu_inf==0)
+		return rv_ok;
 	memcpy(&emu,emu_inf,sizeof(emu));
+
+	emu.ConfigLoadStr("emu","shortname",emu_name,0);
+	
 	return rv_ok;
 }
 
@@ -103,11 +109,11 @@ bool EXPORT_CALL dcGetInterface(u32 id , plugin_interface* info)
 #define c info->common
 #define g info->gdr
 	
-	c.Type=GDRom;
+	c.Type=Plugin_GDRom;
 	c.InterfaceVersion=GDR_PLUGIN_I_F_VERSION;
 
 	strcpy(c.Name,PLUGIN_NAME);
-	c.PluginVersion=NDC_MakeVersion(MAJOR,MINOR,BUILD);
+	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD,DC_VER_NORMAL);
 	
 	c.Load=Load;
 	c.Unload=Unload;
@@ -172,10 +178,7 @@ int _cdecl chanka_Init(const char* pszFileName)
 	gdr_init_params params;
 	params.DriveNotifyEvent=chanka_DriveNotifyEvent;
 
-	emu_info emuif;
-	strcpy(emuif.Name,"Chankast 0.2.5");
-
-	Load(&emuif);
+	Load(0);
 	InitGDR(&params);
 	return 0;
 }

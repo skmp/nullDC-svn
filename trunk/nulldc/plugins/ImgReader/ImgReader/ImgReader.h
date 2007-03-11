@@ -11,5 +11,5 @@
 #define MINOR 0
 #define MAJOR 1
 extern emu_info emu;
-
+extern char emu_name[512];
 #define verify(x) if((x)==false){ printf("Verify Failed  : " #x "\n in %s -> %s : %d \n",__FUNCTION__,__FILE__,__LINE__); __asm {int 3}}

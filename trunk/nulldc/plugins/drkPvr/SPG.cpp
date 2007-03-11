@@ -109,7 +109,7 @@ void FASTCALL spgUpdatePvr(u32 cycles)
 				vblk_cnt=0;
 
 				char fpsStr[256];
-				sprintf(fpsStr,"FPS: %4.2f(%4.2f) Vert : %4.2fM -  Sh4: %4.2f mhz (%4.2f%%) - %s", spd_fps,fullfps,mv, spd_cpu,spd_cpu*100/200,emu.Name);
+				sprintf(fpsStr,"FPS: %4.2f(%4.2f) Vert : %4.2fM -  Sh4: %4.2f mhz (%4.2f%%) - %s", spd_fps,fullfps,mv, spd_cpu,spd_cpu*100/200,emu_name);
 				rend_set_fps_text(fpsStr);
 			}
 		}

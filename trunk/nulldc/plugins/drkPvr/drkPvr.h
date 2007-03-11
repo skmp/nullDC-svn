@@ -73,6 +73,7 @@ extern vramlock_Lock_64FP* lock64;
 extern vramlock_Unlock_blockFP* unlock;*/
 extern pvr_init_params params;
 extern emu_info emu;
+extern char emu_name[512];
 
 int cfgGetInt(char* key,int def);
 int cfgSetInt(char* key,int def);

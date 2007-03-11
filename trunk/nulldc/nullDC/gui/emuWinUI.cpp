@@ -132,12 +132,13 @@ void SetWindowPtr( HWND hWnd,int nIndex,void* dwNewLong)
  
 u32 uiInit(void)
 {
+	g_hInst =(HINSTANCE)GetModuleHandle(0);
 	WNDCLASS wc;
 	wc.cbClsExtra		= 0;
 	wc.cbWndExtra		= 0;
 	wc.hbrBackground	= (HBRUSH)GetStockObject(WHITE_BRUSH);
 	wc.hCursor			= LoadCursor(g_hInst, IDC_ARROW);
-	wc.hIcon			= 0;//LoadIcon(g_hInst, MAKEINTRESOURCE(IDI_ICON1));
+	wc.hIcon			= LoadIcon(g_hInst, MAKEINTRESOURCE(IDI_ICON1));
 	wc.hInstance		= g_hInst;
 	wc.lpfnWndProc		= WndProc;
 	wc.lpszClassName	= "Debugger";
@@ -151,7 +152,7 @@ u32 uiInit(void)
 
 	InitCommonControls();
 
-	g_hWnd = CreateWindow( "Debugger", "nullDC " VER_STRING, WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+	g_hWnd = CreateWindow( "Debugger", VER_FULLNAME, WS_OVERLAPPEDWINDOW | WS_VISIBLE,
 		CW_USEDEFAULT, CW_USEDEFAULT, 640,480, NULL, NULL, g_hInst, NULL );
 	if( !IsWindow(g_hWnd) ) {
 		MessageBox( NULL, "Couldn't Create Debug Window!","ERROR",MB_ICONERROR );
@@ -381,7 +382,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 
 			/////// HELP MENU
 		case ID_HELP_ABOUT:
-			DialogBox(NULL,MAKEINTRESOURCE(IDD_ABOUT),hWnd,DlgProcModal_about);
+			DialogBox(g_hInst,MAKEINTRESOURCE(IDD_ABOUT),hWnd,DlgProcModal_about);
 			return 0;
 
 		case ID_PROFILER_SHOW:
@@ -402,15 +403,12 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 					start_Profiler();
 					CheckMenuItem(m,ID_PROFILER_ENABLE,MF_CHECKED);
 				}
-				//()
-				//msgboxf("Profiler gui not yet implementd",MB_ICONERROR);
-				//DialogBox(NULL,MAKEINTRESOURCE(IDD_PROFILER),hWnd,DlgProcModal_about);
 			}
 			return 0;
 
 
 		case ID_OPTIONS_CONFIG:
-			DialogBox(NULL,MAKEINTRESOURCE(IDD_CONFIG),hWnd,DlgProcModal_config);
+			DialogBox(g_hInst,MAKEINTRESOURCE(IDD_CONFIG),hWnd,DlgProcModal_config);
 			return 0;
 
 		//Plugin Selection Menu
@@ -481,7 +479,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 bool plgdlg_cancel=false;
 bool SelectPluginsGui()
 {
-	DialogBox(NULL,MAKEINTRESOURCE(IDD_PLUGIN_SELECT),g_hWnd,PluginDlgProc);
+	DialogBox(g_hInst,MAKEINTRESOURCE(IDD_PLUGIN_SELECT),g_hWnd,PluginDlgProc);
 	return !plgdlg_cancel;
 }
 INT_PTR CALLBACK DlgProcModal_about( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
@@ -490,8 +488,26 @@ INT_PTR CALLBACK DlgProcModal_about( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 	{
 	case WM_INITDIALOG:
 		{
-			Edit_SetText(GetDlgItem(hWnd,IDC_THXLIST),".. gota fill this later ...");
-			Static_SetText(GetDlgItem(hWnd,IDC_NDC_VER),"nullDC " VER_STRING);
+			Edit_SetText(GetDlgItem(hWnd,IDC_THXLIST),
+				"Credits :" "\r\n"
+				" drk||Raziel \t: main coder" "\r\n"
+				" ZeZu \t\t: main coder" "\r\n"
+				" GiGaHeRz \t: plugin work/misc stuff"  "\r\n"
+				" PsyMan \t\t: Mental (and metal) support ,managment, ""\r\n"
+				"        \t\t  beta testing, everything else"  "\r\n"
+				" Xant \t\t: www & forum, beta testing"   "\r\n"
+				"\r\n"
+				"Beta testing :"  "\r\n"
+				" emwearz,Miretank,gb_away,Raziel,General Plot,"  "\r\n"
+				" Refraction,Ckemu"  "\r\n"
+				"\r\n"
+				"Many thanks to :" "\r\n"
+				" •fill this later" "\r\n"
+				"\r\n"
+				"\r\n"
+				"All UR BUGZ BELONGZ TO UZ" "\r\n"
+				);
+			Static_SetText(GetDlgItem(hWnd,IDC_NDC_VER),VER_SHORTNAME);
 		}
 		return true;
 
@@ -525,7 +541,7 @@ INT_PTR CALLBACK DlgProcModal_config( HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 	case WM_INITDIALOG:
 		{
 			int tmp;
-			tmp=cfgLoadInt("nullDC","enable_recompiler");
+			tmp=cfgLoadInt("nullDC","enable_recompiler",1);
 			CheckDlgButton(hWnd,IDC_REC,tmp!=0?BST_CHECKED:BST_UNCHECKED);
 		}
 		return true;
@@ -552,7 +568,7 @@ INT_PTR CALLBACK DlgProcModal_config( HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 						sh4_cpu->Term();
 					}
 				}
-				if(0 != cfgLoadInt("nullDC","enable_recompiler"))
+				if(0 != cfgLoadInt("nullDC","enable_recompiler",1))
 				{
 					sh4_cpu=Get_Sh4Recompiler();
 					printf("Switched to Recompiler\n");
@@ -1109,7 +1125,7 @@ void SetMapleMain_Mask(char* plugin,HWND hWnd)
 	}
 	else
 	{
-		List<PluginLoadInfo>* lst = EnumeratePlugins(Maple);
+		List<PluginLoadInfo>* lst = EnumeratePlugins(Plugin_Maple);
 		int i=0;
 		while(!strcmp(plugin,(*lst)[i].dll))
 		{
@@ -1171,7 +1187,7 @@ void LoadMaple()
 		{
 			char temp[512];
 			sprintf(temp,"Current_maple%d_%d",i,j);
-			cfgLoadStr("nullDC_plugins",temp,SelectedPlugin_maple[i][j]);
+			cfgLoadStr("nullDC_plugins",temp,SelectedPlugin_maple[i][j],"NULL");
 		}
 	}
 }
@@ -1195,30 +1211,30 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		TabCtrl_InsertItem(GetDlgItem(hWnd,IDC_MAPLETAB), 3, &tci); 
 
 		current_maple_port=-1;
-		List<PluginLoadInfo>* pvr= EnumeratePlugins(PluginType::PowerVR);	
-		List<PluginLoadInfo>* gdrom= EnumeratePlugins(PluginType::GDRom);
-		List<PluginLoadInfo>* aica= EnumeratePlugins(PluginType::AICA);
-		List<PluginLoadInfo>* extdev= EnumeratePlugins(PluginType::ExtDevice);
+		List<PluginLoadInfo>* pvr= EnumeratePlugins(Plugin_PowerVR);	
+		List<PluginLoadInfo>* gdrom= EnumeratePlugins(Plugin_GDRom);
+		List<PluginLoadInfo>* aica= EnumeratePlugins(Plugin_AICA);
+		List<PluginLoadInfo>* extdev= EnumeratePlugins(Plugin_ExtDevice);
 
-		List<PluginLoadInfo>* MapleMain=EnumeratePlugins(PluginType::Maple);
-		List<PluginLoadInfo>* MapleSub=EnumeratePlugins(PluginType::MapleSub);
+		List<PluginLoadInfo>* MapleMain=EnumeratePlugins(Plugin_Maple);
+		List<PluginLoadInfo>* MapleSub=EnumeratePlugins(Plugin_MapleSub);
 
 		char temp[512];
 
 		
-		cfgLoadStr("nullDC_plugins","Current_PVR",temp);
+		cfgLoadStr("nullDC_plugins","Current_PVR",temp,"NULL");
 		AddItemsToCB(pvr,GetDlgItem(hWnd,IDC_C_PVR),temp);
 		GetCurrent(GetDlgItem(hWnd,IDC_C_PVR),SelectedPlugin_Pvr);
 
-		cfgLoadStr("nullDC_plugins","Current_GDR",temp);
+		cfgLoadStr("nullDC_plugins","Current_GDR",temp,"NULL");
 		AddItemsToCB(gdrom,GetDlgItem(hWnd,IDC_C_GDR),temp);
 		GetCurrent(GetDlgItem(hWnd,IDC_C_GDR),SelectedPlugin_Gdr);
 
-		cfgLoadStr("nullDC_plugins","Current_AICA",temp);
+		cfgLoadStr("nullDC_plugins","Current_AICA",temp,"NULL");
 		AddItemsToCB(aica,GetDlgItem(hWnd,IDC_C_AICA),temp);
 		GetCurrent(GetDlgItem(hWnd,IDC_C_AICA),SelectedPlugin_Aica);
 
-		cfgLoadStr("nullDC_plugins","Current_ExtDevice",temp);
+		cfgLoadStr("nullDC_plugins","Current_ExtDevice",temp,"NULL");
 		AddItemsToCB(extdev,GetDlgItem(hWnd,IDC_C_EXTDEV),temp);
 		GetCurrent(GetDlgItem(hWnd,IDC_C_EXTDEV),SelectedPlugin_ExtDev);
 

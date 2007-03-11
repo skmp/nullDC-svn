@@ -517,8 +517,8 @@ void EXPORT_CALL dcGetInterfaceInfo(plugin_interface_info* info)
 void EXPORT_CALL dcGetInterface(u32 id , plugin_interface* info)
 {
 	info->common.InterfaceVersion=GDR_PLUGIN_I_F_VERSION;
-	info->common.PluginVersion=NDC_MakeVersion(1,0,0);
-	info->common.Type=GDRom;
+	info->common.PluginVersion=DC_MakeVersion(1,0,0,DC_VER_NORMAL);
+	info->common.Type=Plugin_GDRom;
 	strcpy(info->common.Name,"zNullGD, SCSI Passthru GDROM Plugin By _ZeZu_ [" __DATE__ "]");
 
 	info->common.Load=PluginLoad;

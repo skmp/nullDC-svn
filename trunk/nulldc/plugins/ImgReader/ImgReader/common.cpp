@@ -52,7 +52,7 @@ int msgboxf(char* text,unsigned int type,...)
 	va_end(args);
 
 
-	return MessageBox(NULL,temp,emu.Name,type | MB_TASKMODAL);
+	return MessageBox(NULL,temp,emu_name,type | MB_TASKMODAL);
 }
 
 bool ConvertSector(u8* in_buff , u8* out_buff , int from , int to,int sector)

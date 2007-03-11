@@ -13,6 +13,8 @@
 //void* Hwnd;
 
 emu_info emu;
+char emu_name[512];
+
 pvr_init_params params;
 
 //u8*	params.vram;
@@ -53,6 +55,8 @@ void FASTCALL vramLockCB (vram_block* block,u32 addr)
 s32 FASTCALL Load(emu_info* emu_inf)
 {
 	memcpy(&emu,emu_inf,sizeof(emu));
+	emu.ConfigLoadStr("emu","shortname",emu_name,0);
+	
 //	SetRenderer(RendererType::Hw_D3d,params.WindowHandle);
 	return rv_ok;
 }
@@ -154,11 +158,11 @@ bool EXPORT_CALL dcGetInterface(u32 id,plugin_interface* info)
 #define c  info->common
 #define p info->pvr
 	
-	c.Type=PowerVR;
+	c.Type=Plugin_PowerVR;
 	c.InterfaceVersion=PVR_PLUGIN_I_F_VERSION;
 
 	strcpy(c.Name,"drkpvr -- OpenGL/Direct3D/Software PowerVR plugin");
-	c.PluginVersion=NDC_MakeVersion(0,9,0);
+	c.PluginVersion=DC_MakeVersion(0,9,0,DC_VER_NORMAL);
 
 	c.Load=Load;
 	c.Unload=Unload;
@@ -249,9 +253,14 @@ void cResetEvent::Wait()//Wait for signal , then reset
 //(const char * lpSection, const char * lpKey, const char * lpString);
 int cfgGetInt(char* key,int def)
 {
-	char temp[100];
-	emu.ConfigLoadStr("drkpvr",key,temp);
-	if (strcmp("NONE",temp)==0)
+	/*
+	char temp1[100];
+	char temp2[100];
+	sprintf(temp2,"%d",def);
+	
+	emu.ConfigLoadStr("drkpvr",key,temp,temp1);
+	/*if (strcmp("NULL",temp)==0)
 		return def;
-	return atoi(temp);
+	return atoi(temp1);*/
+	return emu.ConfigLoadInt("drkpvr",key,def);
 }

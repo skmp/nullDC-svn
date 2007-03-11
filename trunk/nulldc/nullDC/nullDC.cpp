@@ -21,7 +21,7 @@ int RunGui(int argc, char* argv[])
 int RunDC(int argc, char* argv[])
 {
 
-	if(0 != cfgLoadInt("nullDC","enable_recompiler"))
+	if(0 != cfgLoadInt("nullDC","enable_recompiler",1))
 	{
 		sh4_cpu=Get_Sh4Recompiler();
 		printf("Using Recompiler\n");
@@ -42,12 +42,12 @@ int RunDC(int argc, char* argv[])
 
 void EnumPlugins()
 {
-	List<PluginLoadInfo>* pvr= EnumeratePlugins(PluginType::PowerVR);
-	List<PluginLoadInfo>* gdrom= EnumeratePlugins(PluginType::GDRom);
-	List<PluginLoadInfo>* aica= EnumeratePlugins(PluginType::AICA);
-	List<PluginLoadInfo>* maple= EnumeratePlugins(PluginType::Maple);
-	List<PluginLoadInfo>* maplesub= EnumeratePlugins(PluginType::MapleSub);
-	List<PluginLoadInfo>* extdev= EnumeratePlugins(PluginType::ExtDevice);
+	List<PluginLoadInfo>* pvr= EnumeratePlugins(Plugin_PowerVR);
+	List<PluginLoadInfo>* gdrom= EnumeratePlugins(Plugin_GDRom);
+	List<PluginLoadInfo>* aica= EnumeratePlugins(Plugin_AICA);
+	List<PluginLoadInfo>* maple= EnumeratePlugins(Plugin_Maple);
+	List<PluginLoadInfo>* maplesub= EnumeratePlugins(Plugin_MapleSub);
+	List<PluginLoadInfo>* extdev= EnumeratePlugins(Plugin_ExtDevice);
 
 	printf("PowerVR plugins :\n");
 	for (u32 i=0;i<pvr->itemcount;i++)
@@ -131,7 +131,7 @@ int main___(int argc,char* argv[])
 //	free(plpath);
 
 	char * plpath = new char[MAX_PATH];
-	cfgLoadStr("nullDC_paths","PluginPath", plpath);
+	cfgLoadStr("nullDC_paths","PluginPath", plpath,"NULL");
 	SetPluginPath(plpath);
 	delete[] plpath;
 	
@@ -145,7 +145,6 @@ int main___(int argc,char* argv[])
 
 	while (!plugins_Load())
 	{
-		//MessageBox(g_hWnd,"Unable to load plugins","nullDC " VER_STRING,MB_OK | MB_ICONEXCLAMATION);
 		if (!plugins_Select())
 		{
 			printf("Unable to load plugins -- exiting\n");

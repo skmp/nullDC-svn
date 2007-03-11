@@ -90,10 +90,10 @@ EXPORT bool EXPORT_CALL dcGetInterface(u32 id,plugin_interface* info)
 #define a info->aica
 
 	strcpy(c.Name,"Chanka's AICA [port by drk||Raziel](" __DATE__ ")");
-	c.PluginVersion=NDC_MakeVersion(MAJOR,MINOR,BUILD);
+	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD,DC_VER_NORMAL);
 
 	c.InterfaceVersion=AICA_PLUGIN_I_F_VERSION;
-	c.Type=AICA;
+	c.Type=Plugin_AICA;
 
 	c.Load=Load;
 	c.Unload=Unload;
