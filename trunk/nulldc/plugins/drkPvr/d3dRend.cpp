@@ -1242,6 +1242,7 @@ if (!GetAsyncKeyState(VK_F3))
 		
 		ppar.hDeviceWindow=(HWND)Hwnd;
 */
+		LoadSettings();
 		ppar.SwapEffect = D3DSWAPEFFECT_DISCARD;
 
 		ppar.PresentationInterval=D3DPRESENT_INTERVAL_IMMEDIATE;
@@ -1249,18 +1250,18 @@ if (!GetAsyncKeyState(VK_F3))
 		ppar.EnableAutoDepthStencil=TRUE;
 		ppar.AutoDepthStencilFormat = D3DFMT_D24X8;
 
-		ppar.MultiSampleType = (D3DMULTISAMPLE_TYPE)cfgGetInt("MultiSampleType",D3DMULTISAMPLE_NONE);
-		ppar.MultiSampleQuality = cfgGetInt("MultiSampleQuality",0);
+		ppar.MultiSampleType = (D3DMULTISAMPLE_TYPE)settings.Enhancements.MultiSampleCount;
+		ppar.MultiSampleQuality = settings.Enhancements.MultiSampleQuality;
 		
-		if (cfgGetInt("Fullscreen",0))
+		if (settings.Fullscreen.Enabled)
 		{
 			ppar.Windowed =   FALSE;
 			ppar.BackBufferFormat = D3DFMT_UNKNOWN;
 
-			ppar.BackBufferWidth        = cfgGetInt("Fullscreen_resX",640);
-			ppar.BackBufferHeight       = cfgGetInt("Fullscreen_resY",480);
+			ppar.BackBufferWidth        = settings.Fullscreen.Res_X;
+			ppar.BackBufferHeight       = settings.Fullscreen.Res_Y;
 			ppar.BackBufferFormat       = D3DFMT_X8R8G8B8;
-			ppar.FullScreen_RefreshRateInHz	=cfgGetInt("Fullscreen_RR",60);
+			ppar.FullScreen_RefreshRateInHz	=settings.Fullscreen.Refresh_Rate ;
 			printf("drkpvr: Initialising fullscreen @%dx%d@%d",ppar.BackBufferWidth,ppar.BackBufferHeight,ppar.FullScreen_RefreshRateInHz);
 			IsFullscreen=true;
 		}

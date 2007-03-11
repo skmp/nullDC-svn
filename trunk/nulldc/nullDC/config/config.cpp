@@ -287,20 +287,24 @@ s32 cfgRead(const char * Section, const char * Key,char* value)
 	{
 		if (!Key)
 		{
+			fclose(f);
 			return 1;
 		}
 		else
 		{
 			if (FindKey(Key,f,value))
 			{
+				fclose(f);
 				return 2;
 			}
 			else
 			{
+				fclose(f);
 				return 0;
 			}
 		}
 	}
+	return 0;
 	fclose(f);
 }
 

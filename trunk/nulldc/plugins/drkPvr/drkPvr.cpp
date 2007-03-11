@@ -16,6 +16,7 @@ emu_info emu;
 char emu_name[512];
 
 pvr_init_params params;
+_settings_type settings;
 
 //u8*	params.vram;
 //vramlock_Lock_32FP* lock32;
@@ -57,6 +58,8 @@ s32 FASTCALL Load(emu_info* emu_inf)
 	memcpy(&emu,emu_inf,sizeof(emu));
 	emu.ConfigLoadStr("emu","shortname",emu_name,0);
 	
+	LoadSettings();
+
 //	SetRenderer(RendererType::Hw_D3d,params.WindowHandle);
 	return rv_ok;
 }
@@ -263,4 +266,15 @@ int cfgGetInt(char* key,int def)
 		return def;
 	return atoi(temp1);*/
 	return emu.ConfigLoadInt("drkpvr",key,def);
+}
+
+void LoadSettings()
+{
+	settings.Fullscreen.Enabled					=	cfgGetInt("Fullscreen.Enabled",0);
+	settings.Fullscreen.Res_X					=	cfgGetInt("Fullscreen.Res_X",640);
+	settings.Fullscreen.Res_Y					=	cfgGetInt("Fullscreen.Res_Y",480);
+	settings.Fullscreen.Refresh_Rate			=	cfgGetInt("Fullscreen.Refresh_Rate",60);
+
+	settings.Enhancements.MultiSampleCount		=	cfgGetInt("Enhancements.MultiSampleCount",0);
+	settings.Enhancements.MultiSampleQuality	=	cfgGetInt("Enhancements.MultiSampleQuality",0);
 }

@@ -75,8 +75,7 @@ extern pvr_init_params params;
 extern emu_info emu;
 extern char emu_name[512];
 
-int cfgGetInt(char* key,int def);
-int cfgSetInt(char* key,int def);
+void LoadSettings();
 
 #if REND_API == REND_D3D
 	#define REND_NAME "Direct3D"
@@ -90,3 +89,21 @@ int cfgSetInt(char* key,int def);
 #else
 	#error invalid config.REND_API must be set with one of REND_D3D/REND_OGL/REND_SW
 #endif
+
+struct _settings_type
+{
+	struct 
+	{
+		u32 Enabled;
+		u32 Res_X;
+		u32 Res_Y;
+		u32 Refresh_Rate;
+	} Fullscreen;
+	struct 
+	{
+		u32 MultiSampleCount;
+		u32 MultiSampleQuality;
+	} Enhancements;
+};
+
+extern _settings_type settings;
