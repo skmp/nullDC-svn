@@ -9,14 +9,19 @@ emu_info host;
 #undef UNICODE
 #endif
 #define _WIN32_WINNT 0x500
+#include <winsock2.h>
 #include <windows.h>
+
+#include <ws2tcpip.h>
 #include <windowsx.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 
 #include <string.h>
 
 u16 kcode=0xFFFF;
+u32 vks=0;
 s8 joyx=0,joyy=0;
 s8 joy2x=0,joy2y=0;
 u8 rt=0,lt=0;
@@ -31,10 +36,12 @@ s32 mo_wheel_delta = 0;
 //1 Right button (B) 
 //2 Left button (A) 
 //3 Thumb button (START) 
-
+#define dbgbreak {while(1) __noop;}
+#define verify(x) if((x)==false){ printf("Verify Failed  : " #x "\n in %s -> %s : %d \n",__FUNCTION__,__FILE__,__LINE__); dbgbreak;}
 #pragma pack(1)
 char testJoy_strName[64] = "Emulated Dreamcast Controler\0";
 char testJoy_strName_nul[64] = "Null Dreamcast Controler\0";
+char testJoy_strName_net[64] = "Net Dreamcast Controler\0";
 char testJoy_strName_vmu[64] = "Emulated VMU\0";
 char testJoy_strName_kbd[64] = "Emulated Dreamcast Keyboard\0";
 char testJoy_strName_mouse[64] = "Emulated Dreamcast Mouse\0";
@@ -44,23 +51,92 @@ char testJoy_strName_mic[64] = "MicDevice for Dreameye\0";
 char testJoy_strBrand[64] = "Faked by drkIIRaziel && ZeZu , made for nullDC\0";
 char testJoy_strBrand_2[64] = "Produced By or Under License From SEGA ENTERPRISES,LTD.\0";
 
-#define key_CONT_C  (1 << 0);
-#define key_CONT_B  (1 << 1);
-#define key_CONT_A  (1 << 2);
-#define key_CONT_START  (1 << 3);
-#define key_CONT_DPAD_UP  (1 << 4);
-#define key_CONT_DPAD_DOWN  (1 << 5);
-#define key_CONT_DPAD_LEFT  (1 << 6);
-#define key_CONT_DPAD_RIGHT  (1 << 7);
-#define key_CONT_Z  (1 << 8);
-#define key_CONT_Y  (1 << 9);
-#define key_CONT_X  (1 << 10);
-#define key_CONT_D  (1 << 11);
-#define key_CONT_DPAD2_UP  (1 << 12);
-#define key_CONT_DPAD2_DOWN  (1 << 13);
-#define key_CONT_DPAD2_LEFT  (1 << 14);
-#define key_CONT_DPAD2_RIGHT  (1 << 15);	
+#define key_CONT_C  (1 << 0)
+#define key_CONT_B  (1 << 1)
+#define key_CONT_A  (1 << 2)
+#define key_CONT_START  (1 << 3)
+#define key_CONT_DPAD_UP  (1 << 4)
+#define key_CONT_DPAD_DOWN  (1 << 5)
+#define key_CONT_DPAD_LEFT  (1 << 6)
+#define key_CONT_DPAD_RIGHT  (1 << 7)
+#define key_CONT_Z  (1 << 8)
+#define key_CONT_Y  (1 << 9)
+#define key_CONT_X  (1 << 10)
+#define key_CONT_D  (1 << 11)
+#define key_CONT_DPAD2_UP  (1 << 12)
+#define key_CONT_DPAD2_DOWN  (1 << 13)
+#define key_CONT_DPAD2_LEFT  (1 << 14)
+#define key_CONT_DPAD2_RIGHT  (1 << 15)
 
+#define key_CONT_ANALOG_UP  (1 << 16)
+#define key_CONT_ANALOG_DOWN  (1 << 17)
+#define key_CONT_ANALOG_LEFT  (1 << 18)
+#define key_CONT_ANALOG_RIGHT  (1 << 19)
+#define key_CONT_LSLIDER  (1 << 20)
+#define key_CONT_RSLIDER  (1 << 21)
+
+struct joy_init_resp
+{
+	u32 ratio;
+	u32 status;
+};
+
+struct joy_init
+{
+	u32 Version;
+	char Name[512];
+	u32 port;
+};
+
+struct joy_state
+{
+	u32 id;
+	u16 state;
+	s8 jy;
+	s8 jx;
+	u8 r;
+	u8 l;
+};
+
+struct _joypad_settings_entry
+{
+	u8 KC;
+	u32 BIT;
+	char* name;
+};
+#define D(x) x ,#x
+_joypad_settings_entry joypad_settings[] = 
+{
+	{'B',D(key_CONT_C)},
+	{'X',D(key_CONT_B)},
+	{'V',D(key_CONT_A)},
+	{VK_SHIFT,D(key_CONT_START)},
+	
+	{VK_UP,D(key_CONT_DPAD_UP)},
+	{VK_DOWN,D(key_CONT_DPAD_DOWN)},
+	{VK_LEFT,D(key_CONT_DPAD_LEFT)},
+	{VK_RIGHT,D(key_CONT_DPAD_RIGHT)},
+
+	{'M',D(key_CONT_Z)},
+	{'Z',D(key_CONT_Y)},
+	{'C',D(key_CONT_X)},
+	{0,D(key_CONT_DPAD2_UP)},
+	{0,D(key_CONT_DPAD2_DOWN)},
+	{0,D(key_CONT_DPAD2_LEFT)},
+	{0,D(key_CONT_DPAD2_RIGHT)},
+
+	{'I',D(key_CONT_ANALOG_UP)},
+	{'K',D(key_CONT_ANALOG_DOWN)},
+	{'J',D(key_CONT_ANALOG_LEFT)},
+	{'L',D(key_CONT_ANALOG_RIGHT)},
+
+	{'A',D(key_CONT_LSLIDER)},
+	{'S',D(key_CONT_RSLIDER)},
+	{0,0,0},
+};
+#undef D
+
+void UpdateConfig();
 u8 kb_shift          ; //shift keys pressed (bitmask)	//1
 u8 kb_led            ; //leds currently lit			//1
 u8 kb_key[6]={0}     ; //normal keys pressed			//6
@@ -150,139 +226,85 @@ INT_PTR CALLBACK sch( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 		break;
 	case WM_KEYDOWN:
 		kb_down(kb_map[wParam & 0xFF]);
-		switch(wParam)
+		for (int i=0;joypad_settings[i].name;i++)
 		{
-		case 'V':
-			kcode &= 0xFFFF - key_CONT_A;
-			break;
-		case 'X':
-			kcode &= 0xFFFF - key_CONT_B;
-			break;
-		case 'B':
-			kcode &= 0xFFFF - key_CONT_C;
-			break;
-		case 'N':
-			kcode &= 0xFFFF - key_CONT_D;
-			break;
-		
-		case 'M':
-			kcode &= 0xFFFF - key_CONT_Z;
-			break;
-		
-		case 'Z':
-			kcode &= 0xFFFF - key_CONT_Y;
-			break;
-		
-		case 'C':
-			kcode &= 0xFFFF - key_CONT_X;
-			break;
-
-		case VK_SHIFT:
-			kcode &= 0xFFFF - key_CONT_START;
-			break;
-
-		case VK_UP:
-			kcode &= 0xFFFF - key_CONT_DPAD_UP;
-			break;
-		case VK_DOWN:
-			kcode &= 0xFFFF - key_CONT_DPAD_DOWN;
-			break;
-		case VK_LEFT:
-			kcode &= 0xFFFF - key_CONT_DPAD_LEFT;
-			break;
-		case VK_RIGHT:
-			kcode &= 0xFFFF - key_CONT_DPAD_RIGHT;
-			break;
-
-		case 'L'://analog right
-			joyx= +126;
-			break;
-		case 'J'://alalog left
-			joyx= -126;
-			break;
-
-		case 'I'://analog up
-			joyy= -126;
-			break;
-		case 'K'://analog down
-			joyy= +126;
-			break;
-
-		case 'A'://ltriger
-			lt=255;
-			break;
-		case 'S'://rtriger
-			rt=255;
-			break;
+			if (wParam==joypad_settings[i].KC)
+			{
+				if (joypad_settings[i].BIT<=0x8000)
+				{
+					kcode &= 0xFFFF -joypad_settings[i].BIT;
+				}
+				else
+				{
+					vks|=joypad_settings[i].BIT;
+					switch(joypad_settings[i].BIT)
+					{
+					case key_CONT_ANALOG_UP:
+						joyy= -126;
+						break;
+					case key_CONT_ANALOG_DOWN:
+						joyy= +126;
+						break;
+					case key_CONT_ANALOG_RIGHT:
+						joyx= +126;
+						break;
+					case key_CONT_ANALOG_LEFT:
+						joyx= -126;
+						break;
+					case key_CONT_LSLIDER:
+						lt=255;
+						break;
+					case key_CONT_RSLIDER:
+						rt=255;
+						break;
+					}
+				}
+			}
 		}
 		break;
 
 	case WM_KEYUP:
 		kb_up(kb_map[wParam & 0xFF]);
-		switch(wParam)
+		for (int i=0;joypad_settings[i].name;i++)
 		{
-		case 'V':
-			kcode |= key_CONT_A;
-			break;
-		case 'X':
-			kcode |= key_CONT_B;
-			break;
-		case 'B':
-			kcode |= key_CONT_C;
-			break;
-		case 'N':
-			kcode |= key_CONT_D;
-			break;
-
-		case 'M':
-			kcode |= key_CONT_Z;
-			break;
-		
-		case 'Z':
-			kcode |= key_CONT_Y;
-			break;
-		
-		case 'C':
-			kcode |= key_CONT_X;
-			break;
-
-		case VK_SHIFT:
-			kcode |= key_CONT_START;
-			break;
-
-		case VK_UP:
-			kcode |= key_CONT_DPAD_UP;
-			break;
-		case VK_DOWN:
-			kcode |= key_CONT_DPAD_DOWN;
-			break;
-		case VK_LEFT:
-			kcode |= key_CONT_DPAD_LEFT;
-			break;
-		case VK_RIGHT:
-			kcode |= key_CONT_DPAD_RIGHT;
-			break;
-
-		case 'J'://analog right
-			joyx=0;
-			break;
-		case 'L'://alalog left
-			joyx=0;
-			break;
-
-		case 'I'://analog up
-			joyy=0;
-			break;
-		case 'K'://analog down
-			joyy=0;
-			break;
-
-		case 'A'://ltriger
-			lt=0;
-			break;
-		case 'S'://rtriger
-			rt=0;
-			break;
+			if (wParam==joypad_settings[i].KC)
+			{
+				if (joypad_settings[i].BIT<=0x8000)
+				{
+					kcode |= joypad_settings[i].BIT;
+				}
+				else
+				{
+					vks &= ~joypad_settings[i].BIT;
+					if ((vks & (key_CONT_ANALOG_UP|key_CONT_ANALOG_DOWN)) !=(key_CONT_ANALOG_UP|key_CONT_ANALOG_DOWN))
+					{
+						if (vks & key_CONT_ANALOG_UP)
+							joyy=-126;
+						else if (vks & key_CONT_ANALOG_DOWN)
+							joyy=+126;
+						else
+							joyy=0;
+					}
+					if ((vks & (key_CONT_ANALOG_LEFT|key_CONT_ANALOG_RIGHT)) !=(key_CONT_ANALOG_LEFT|key_CONT_ANALOG_RIGHT))
+					{
+						if (vks & key_CONT_ANALOG_LEFT)
+							joyx=-126;
+						else if (vks & key_CONT_ANALOG_RIGHT)
+							joyx=+126;
+						else
+							joyx=0;
+					}
+					switch(joypad_settings[i].BIT)
+					{
+					case key_CONT_LSLIDER:
+						lt=0;
+						break;
+					case key_CONT_RSLIDER:
+						rt=0;
+						break;
+					}
+				}
+			}
 		}
 		break;
 	}
@@ -304,6 +326,7 @@ s32 FASTCALL Load(emu_info* emu)
 		oldptr = (dlgp*)SetWindowLongPtr((HWND)host.WindowHandle,GWL_WNDPROC,(LONG)sch);
 	Init_kb_map();
 
+	UpdateConfig();
 	return rv_ok;
 }
 
@@ -320,6 +343,7 @@ void FASTCALL  Unload()
 //It's suposed to reset anything but vram (vram is set to 0 by emu)
 s32 FASTCALL Init(maple_init_params* p)
 {
+	UpdateConfig();
 	//hahah do what ? ahahahahahaha
 	return rv_ok;
 }
@@ -437,7 +461,7 @@ void Init_kb_map()
 void EXPORT_CALL dcGetInterfaceInfo(plugin_interface_info* info)
 {
 	info->InterfaceVersion=PLUGIN_I_F_VERSION;
-	info->count=2;
+	info->count=3;
 	/*
 	info->InterfaceVersion.full=PLUGIN_I_F_VERSION;
 	sprintf(info->Name,"ndcMaple");
@@ -1200,6 +1224,315 @@ void FASTCALL ControllerDMA(maple_device_instance* device_instance,u32 Command,u
 			break;
 	}
 }
+joy_state states[4];
+SOCKET ConnectSocket = INVALID_SOCKET;
+u32 local_port;
+u32 send_ratio;
+char server_addr[512];
+char server_port[512];
+
+#define MSG_WAITALL 0
+void setups(SOCKET s)
+{
+	int flag = 1;
+	int result = setsockopt(s,            /* socket affected */
+		IPPROTO_TCP,     /* set option at TCP level */
+		TCP_NODELAY,     /* name of option */
+		(char *) &flag,  /* the cast is historical
+						 cruft */
+						 sizeof(int));    /* length of option value */
+	flag=0;
+	u_long t=0;
+	ioctlsocket (s,FIONBIO ,&t);
+}
+
+bool np=false;
+int Init_netplay()
+{
+	WSADATA wsaData;
+    if (np)
+		return 0;
+	np=1;
+
+    struct addrinfo *result = NULL,
+                    *ptr = NULL,
+                    hints;
+
+    int iResult;
+    
+
+    // Initialize Winsock
+    iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
+    if (iResult != 0) {
+        printf("WSAStartup failed: %d\n", iResult);
+        return 1;
+    }
+
+    ZeroMemory( &hints, sizeof(hints) );
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+
+    // Resolve the server address and port
+	iResult = getaddrinfo(server_addr, server_port, &hints, &result);
+    if ( iResult != 0 ) {
+        printf("getaddrinfo failed: %d\n", iResult);
+        WSACleanup();
+        return 1;
+    }
+
+    // Attempt to connect to an address until one succeeds
+    for(ptr=result; ptr != NULL ;ptr=ptr->ai_next) {
+
+        // Create a SOCKET for connecting to server
+        ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype, 
+            ptr->ai_protocol);
+        if (ConnectSocket == INVALID_SOCKET) {
+            printf("Error at socket(): %ld\n", WSAGetLastError());
+            freeaddrinfo(result);
+            WSACleanup();
+            return 1;
+        }
+		setups(ConnectSocket);
+        // Connect to server.
+        iResult = connect( ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
+        if (iResult == SOCKET_ERROR && WSAEWOULDBLOCK!=WSAGetLastError()) {
+			int rr=WSAGetLastError();
+            closesocket(ConnectSocket);
+            ConnectSocket = INVALID_SOCKET;
+            continue;
+        }
+		Sleep(200);
+        break;
+    }
+
+    freeaddrinfo(result);
+
+    if (ConnectSocket == INVALID_SOCKET) {
+        printf("Unable to connect to server!\n");
+        WSACleanup();
+        return 1;
+    }
+
+	joy_init t;
+	strcpy(t.Name,"nullDC hookjoy plugin");
+	t.port=local_port;
+	t.Version=DC_MakeVersion(1,0,0,0);
+    // Send an initial buffer
+    iResult = send( ConnectSocket, (char*)&t, (int)sizeof(t), 0 );
+    if (iResult == SOCKET_ERROR) {
+        printf("send failed: %d\n", WSAGetLastError());
+        closesocket(ConnectSocket);
+        WSACleanup();
+        return 1;
+    }
+
+	printf("Bytes Sent: %ld\n", iResult);
+
+	joy_init_resp r;
+
+	int dv=recv(ConnectSocket,(char*)&r,sizeof(r),MSG_WAITALL);
+	//__asm int 3;
+	printf("Server : %d,%d\n",r.ratio,r.status);
+	send_ratio=r.ratio;
+    
+
+
+    // cleanup
+
+
+    return 0;
+}
+
+void net_read()
+{
+	int rv = recv(ConnectSocket,(char*)&states,sizeof(states),MSG_WAITALL);
+	if (rv==0xFFFFFF)
+		printf("net_read fail %d\n",WSAGetLastError());
+}
+void net_send()
+{
+	joy_state t;
+	t.id=0;
+	t.jx=joyx;
+	t.jy=joyy;
+	t.l=lt;
+	t.r=rt;
+	t.state=kcode;
+	int rv = send(ConnectSocket,(char*)&t,sizeof(t),0);
+}
+
+void termnet()
+{
+	closesocket(ConnectSocket);
+    WSACleanup();
+}
+u32 GetMaplePort(u32 addr)
+{
+	/*
+	for (int i=0;i<6;i++)
+	{
+		if ((1<<i)&addr)
+			return i;
+	}*/
+	return addr>>6;
+}
+u32 sync_counter=0;
+u32 next_sync_counter=0;
+void sync_net(u32 port)
+{
+	if (port==0)
+	{
+		if (sync_counter==0)
+			net_send();
+		sync_counter++;
+		verify(sync_counter<=next_sync_counter);
+
+		if (sync_counter==next_sync_counter)
+		{
+			next_sync_counter=sync_counter+send_ratio;
+			net_read();
+			net_send();
+			printf("UPDATE %d-%d\n",sync_counter,port);
+		}
+		printf("%d - %d - %d\n",sync_counter,next_sync_counter,send_ratio);
+		verify(sync_counter<next_sync_counter);
+	}
+}
+void FASTCALL ControllerDMA_net(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+{
+	//printf("ControllerDMA Called 0x%X;Command %d\n",device_instance->port,Command);
+//void testJoy_GotData(u32 header1,u32 header2,u32*data,u32 datalen)
+	u8*buffer_out_b=(u8*)buffer_out;
+	
+	bool islocal=device_instance->port==local_port;
+	switch (Command)
+	{
+		/*typedef struct {
+			DWORD		func;//4
+			DWORD		function_data[3];//3*4
+			u8		area_code;//1
+			u8		connector_direction;//1
+			char		product_name[30];//30*1
+			char		product_license[60];//60*1
+			WORD		standby_power;//2
+			WORD		max_power;//2
+		} maple_devinfo_t;*/
+		case 1:
+			//header
+			//WriteMem32(ptr_out,(u32)(0x05 | //response
+			//			(((u16)sendadr << 8) & 0xFF00) |
+			//			((((recadr == 0x20) ? 0x20 : 0) << 16) & 0xFF0000) |
+			//			(((112/4) << 24) & 0xFF000000))); ptr_out += 4;
+
+			responce=5;
+
+			//caps
+			//4
+			w32(1 << 24);
+
+			//struct data
+			//3*4
+			w32( 0xfe060f00); 
+			w32( 0);
+			w32( 0);
+			//1	area code
+			w8(0xFF);
+			//1	direction
+			w8(0);
+			//30
+			for (u32 i = 0; i < 30; i++)
+			{
+				w8((u8)testJoy_strName_net[i]);
+				//if (!testJoy_strName[i])
+				//	break;
+			}
+			//ptr_out += 30;
+
+			//60
+			for (u32 i = 0; i < 60; i++)
+			{
+				w8((u8)testJoy_strBrand[i]);
+				//if (!testJoy_strBrand[i])
+				//	break;
+			}
+			//ptr_out += 60;
+
+			//2
+			w16(0x04FF); 
+
+			//2
+			w16(0x0069); 
+			break;
+
+		/* controller condition structure 
+		typedef struct {//8 bytes
+		WORD buttons;			///* buttons bitfield	/2
+		u8 rtrig;			///* right trigger			/1
+		u8 ltrig;			///* left trigger 			/1
+		u8 joyx;			////* joystick X 			/1
+		u8 joyy;			///* joystick Y				/1
+		u8 joy2x;			///* second joystick X 		/1
+		u8 joy2y;			///* second joystick Y 		/1
+		} cont_cond_t;*/
+		case 9:
+			{
+				u32 aport=GetMaplePort(device_instance->port);
+				sync_net(aport);
+			/*
+				char file[43];
+			sprintf(file,"log_%d.raw",aport);
+			FILE* log=fopen(file,"a");
+			fseek(log,0,SEEK_END);
+			char* bvvvv=(char*)buffer_out_b;
+			*/
+			//header
+			//WriteMem32(ptr_out, (u32)(0x08 | // data transfer (response)
+			//			(((u16)sendadr << 8) & 0xFF00) |
+			//			((((recadr == 0x20) ? 0x20 : 1) << 16) & 0xFF0000) |
+			//			(((12 / 4 ) << 24) & 0xFF000000))); ptr_out += 4;
+			responce=0x08;
+			//caps
+			//4
+			//WriteMem32(ptr_out, (1 << 24)); ptr_out += 4;
+			w32((1 << 24));
+			//struct data
+			//2
+			w16(states[aport].state); 
+			
+			//triger
+			//1 R
+			w8(states[aport].r);
+			//1 L
+			w8(states[aport].l); 
+			//joyx
+			//1
+			w8(GetBtFromSgn(states[aport].jx));
+			//joyy
+			//1
+			w8(GetBtFromSgn(states[aport].jy));
+
+			//1
+			w8(GetBtFromSgn(0)); 
+			//1
+			w8(GetBtFromSgn(0)); 
+			//are these needed ?
+			//1
+			//WriteMem8(ptr_out, 10); ptr_out += 1;
+			//1
+			//WriteMem8(ptr_out, 10); ptr_out += 1;
+			/*
+			fwrite(bvvvv,12,1,log);
+			fclose(log);
+			*/
+			}
+			break;
+
+		default:
+			printf("UNKOWN MAPLE COMMAND \n");
+			break;
+	}
+}
 
 void FASTCALL ControllerDMA_nul(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
 {
@@ -1500,8 +1833,19 @@ s32 FASTCALL CreateController(maple_device_instance* inst,u8 port)
 {
 	if (has_input)
 	{
+		if (has_input==1)
+		{
 		inst->dma=ControllerDMA;
 		inst->data=0;
+		}
+		else
+		{
+			sync_counter=0;
+			next_sync_counter=1;
+			inst->dma=ControllerDMA_net;
+		inst->data=0;
+			verify(Init_netplay()==0);
+		}
 	}
 	else
 	{
@@ -1548,7 +1892,8 @@ s32 FASTCALL CreateController(maple_device_instance* inst,u8 port)
 
 void FASTCALL DestroyController(maple_device_instance* inst)
 {
-
+	if (inst->data)
+		free( inst->data);
 }
 s32 FASTCALL CreateVmu(maple_subdevice_instance* inst,u8 port)
 {
@@ -1578,10 +1923,8 @@ plugin_interface plugins[] =
 	{CreateInstance<0>,DestroyInstance,
 }*/
 //Give a list of the devices to teh emu
-bool EXPORT_CALL dcGetInterface(u32 id,plugin_interface* info)
+void EXPORT_CALL dcGetInterface(u32 id,plugin_interface* info)
 {
-	if (id>1)
-		return false;
 
 #define km info->maple
 #define ks info->maple_sub
@@ -1625,10 +1968,24 @@ bool EXPORT_CALL dcGetInterface(u32 id,plugin_interface* info)
 
 		ks.ShowConfig=0;
 		break;
-	default :
-		return false;
+	case 2:
+		{
+		strcpy(c.Name,"nullDC DC controller [WinHook,NET] (" __DATE__ ")");
+
+		c.Type=Plugin_Maple;
+		c.PluginVersion=DC_MakeVersion(1,0,0,DC_VER_NORMAL);
+
+		km.Init=Init;
+		km.Reset=Reset;
+		km.Term=Term;
+
+		km.Create=CreateController<2>;
+		km.Destroy=DestroyController;
+
+		km.ShowConfig=0;
+		km.subdev_info=MAPLE_SUBDEVICE_DISABLE_2|MAPLE_SUBDEVICE_DISABLE_3|MAPLE_SUBDEVICE_DISABLE_4;
+		}
 	}
-	return true;
 	/*
 	info->InterfaceVersion.full=MAPLE_PLUGIN_I_F_VERSION;
 
@@ -1684,5 +2041,14 @@ bool EXPORT_CALL dcGetInterface(u32 id,plugin_interface* info)
 	info->Devices[8].DestroyInstance=0;
 	*/
 }
-
+void UpdateConfig()
+{
+	for (int i=0;joypad_settings[i].name;i++)
+	{
+		joypad_settings[i].KC=host.ConfigLoadInt("ndc_hookjoy",joypad_settings[i].name,joypad_settings[i].KC);
+	}
+	local_port=host.ConfigLoadInt("ndc_hookjoy","local_port",0);
+	host.ConfigLoadStr("ndc_hookjoy","server_addr",server_addr,"192.168.1.33");
+	host.ConfigLoadStr("ndc_hookjoy","server_port",server_port,"11122");
+}
 

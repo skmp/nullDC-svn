@@ -90,18 +90,8 @@ bool ConvertSector(u8* in_buff , u8* out_buff , int from , int to,int sector)
 	return true;
 }
 
-
-
-bool InitDrive()
+bool InitDrive_(char* fn)
 {
-	char fn[512]="";
-	if (GetFile(fn,"CD/GD Images (*.cdi;*.mds;*.nrg;*.gdi) \0*.cdi;*.mds;*.nrg;*.gdi\0\0")==false)
-	{
-		CurrDrive=&drives[Iso];
-		return msgboxf("Would you like to boot w/o GDrom ?",MB_ICONQUESTION | MB_YESNO)==IDYES;
-		//return false;
-	}
-
 	if (CurrDrive !=0 && CurrDrive->Inited==true)
 	{
 		//Terminate
@@ -120,9 +110,39 @@ bool InitDrive()
 			return true;
 		}
 	}
-	msgboxf("Unkown format type",MB_ICONERROR);
 	//CurrDrive=&drives[Iso];
 	return false;
+}
+
+bool InitDrive()
+{
+	if (settings.LoadDefaultImage)
+	{
+		printf("Loading default image \"%s\"\n",settings.DefaultImage);
+		if (!InitDrive_(settings.DefaultImage))
+		{
+			msgboxf("Default image \"%s\" failed to load",MB_ICONERROR);
+			return false;
+		}
+		else
+			return true;
+	}
+
+	char fn[512]="";
+	if (GetFile(fn,"CD/GD Images (*.cdi;*.mds;*.nrg;*.gdi) \0*.cdi;*.mds;*.nrg;*.gdi\0\0")==false)
+	{
+		CurrDrive=&drives[Iso];
+		return msgboxf("Would you like to boot w/o GDrom ?",MB_ICONQUESTION | MB_YESNO)==IDYES;
+		//return false;
+	}
+
+	if (!InitDrive_(fn))
+	{
+		msgboxf("Selected image failed to load",MB_ICONERROR);
+		return false;
+	}
+	else
+		return true;
 }
 
 void TermDrive()

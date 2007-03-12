@@ -138,7 +138,7 @@ u32 uiInit(void)
 	wc.cbWndExtra		= 0;
 	wc.hbrBackground	= (HBRUSH)GetStockObject(WHITE_BRUSH);
 	wc.hCursor			= LoadCursor(g_hInst, IDC_ARROW);
-	wc.hIcon			= LoadIcon(g_hInst, MAKEINTRESOURCE(IDI_ICON1));
+	wc.hIcon			= LoadIcon(g_hInst, MAKEINTRESOURCE(IDI_NDC_ICON));
 	wc.hInstance		= g_hInst;
 	wc.lpfnWndProc		= WndProc;
 	wc.lpszClassName	= "Debugger";

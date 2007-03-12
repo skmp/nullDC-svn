@@ -13,6 +13,27 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
+// English (Neutral) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH , SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_NDC_ICON            ICON                    "ndc_icon.ico"
+#endif    // English (Neutral) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
 // English (U.S.) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
@@ -73,7 +94,7 @@ BEGIN
     DEFPUSHBUTTON   "Close",IDOK,102,106,42,15
     LTEXT           "nullDC v[~version~]",IDC_NDC_VER,29,4,192,9
     EDITTEXT        IDC_THXLIST,29,21,215,80,ES_MULTILINE | ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | WS_VSCROLL,WS_EX_STATICEDGE
-    ICON            IDI_ICON1,IDC_STATIC,5,7,20,20
+    ICON            IDI_NDC_ICON,IDC_STATIC,5,7,20,20
 END
 
 IDD_SH4DEBUG DIALOGEX 0, 0, 585, 279
@@ -377,7 +398,7 @@ END
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDI_ICON1               ICON                    "icon1.ico"
+IDI_ICON_OLD            ICON                    "icon1.ico"
 IDI_BRKPT               ICON                    "icon2.ico"
 IDI_BRKPTDIS            ICON                    "icon3.ico"
 

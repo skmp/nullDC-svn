@@ -12,7 +12,7 @@
 #define IDR_FMENU                       101
 #define IDD_MEMVIEW                     103
 #define IDD_ABOUT                       104
-#define IDI_ICON1                       105
+#define IDI_NDC_ICON                    105
 #define IDI_BRKPT                       110
 #define IDI_BRKPTDIS                    111
 #define IDD_SH4DEBUG                    112
@@ -22,6 +22,8 @@
 #define IDD_ARM7DEBUG                   117
 #define IDD_PLUGIN_SELECT               118
 #define IDD_CONFIG                      119
+#define IDI_ICON2                       120
+#define IDI_ICON_OLD                    120
 #define IDC_CUSTOM                      1001
 #define IDC_SEARCH                      1003
 #define IDC_FIND                        1004
@@ -180,7 +182,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        120
+#define _APS_NEXT_RESOURCE_VALUE        121
 #define _APS_NEXT_COMMAND_VALUE         40044
 #define _APS_NEXT_CONTROL_VALUE         1116
 #define _APS_NEXT_SYMED_VALUE           101

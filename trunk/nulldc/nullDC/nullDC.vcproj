@@ -1489,6 +1489,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\gui\ndc_icon.ico"
+				>
+			</File>
+			<File
 				RelativePath=".\gui\resource.h"
 				>
 			</File>

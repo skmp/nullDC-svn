@@ -20,7 +20,20 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 	}
     return TRUE;
 }
-
+_setts settings;
+int cfgGetInt(char* key,int def)
+{
+	return emu.ConfigLoadInt("ImageReader",key,def);
+}
+void cfgGetStr(char* key,char* v,const char*def)
+{
+	emu.ConfigLoadStr("ImageReader",key,v,def);
+}
+void UpdateSettings()
+{
+	settings.LoadDefaultImage=cfgGetInt("LoadDefaultImage",0);
+	cfgGetStr("DefaultImage",settings.DefaultImage,"defualt.cdi");
+}
 #define PLUGIN_NAME "Image Reader plugin by drk||Raziel & GiGaHeRz [" __DATE__ "]"
 void FASTCALL cfgdlg(void* window)
 {
@@ -64,6 +77,7 @@ s32 FASTCALL Load(emu_info* emu_inf)
 
 	emu.ConfigLoadStr("emu","shortname",emu_name,0);
 	
+	UpdateSettings();
 	return rv_ok;
 }
 
@@ -86,7 +100,7 @@ s32 FASTCALL InitGDR(gdr_init_params* prm)
 	if (!InitDrive())
 		return rv_serror;
 	DriveNotifyEvent(DiskChange,0);
-
+	UpdateSettings();
 	return rv_ok;
 }
 

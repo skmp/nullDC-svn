@@ -174,6 +174,17 @@ bool front_str(char* str,char ch)
 	}
 	return true;
 }
+u32 strcmp_ic(const char* p1,const char* p2)
+{
+	char temp1[4096];
+	char temp2[4096];
+	strcpy(temp1,p1);
+	strcpy(temp2,p2);
+
+	_strlwr(temp1);
+	_strlwr(temp2);
+	return strcmp(temp1,temp2);
+}
 bool FindSection(const char* name,FILE* file)
 {
 	if (!file)
@@ -204,7 +215,7 @@ bool FindSection(const char* name,FILE* file)
 		if(!(ptr=trim_str(ptr,' ')))
 			continue;
 		
-		if (strcmp(name,ptr)==0)
+		if (strcmp_ic(name,ptr)==0)
 		{
 			return true;	//found it !
 		}
@@ -245,7 +256,7 @@ bool FindKey(const char* name,FILE* file,char* out)
 		if(!(ptr=trim_str(ptr,' ')))
 			continue;
 
-		if(strcmp(ptr,name)==0)
+		if(strcmp_ic(ptr,name)==0)
 		{
 			if (out==0)
 				return true;
@@ -314,8 +325,8 @@ s32 FASTCALL cfgExists(const char * Section, const char * Key)
 }
 void FASTCALL cfgLoadStr(const char * Section, const char * Key, char * Return,const char* Default)
 {
-	verify(Section!=0);
-	verify(Key!=0);
+	verify(Section!=0 && strlen(Section)!=0);
+	verify(Key!=0 && strlen(Key)!=0);
 	verify(Return!=0);
 	if (Default==0)
 		Default="";

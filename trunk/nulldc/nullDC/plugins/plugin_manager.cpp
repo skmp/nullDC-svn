@@ -613,6 +613,7 @@ s32 plugins_Init_()
 				nullDC_Maple_Sub_plugin* plug= FindMaplePlugin(i,j,libMapleSub);
 				if (!plug)
 					continue;
+				MapleDevices[i].subdevices[j].port=GetMaplePort(i,j);
 				plug->Create(&MapleDevices[i].subdevices[j],GetMaplePort(i,j));
 				MapleDevices[i].subdevices[j].connected=true;
 			}
@@ -622,6 +623,7 @@ s32 plugins_Init_()
 			}
 		}
 		lcp_name=plug_m->Name;
+		MapleDevices[i].port=GetMaplePort(i,5);
 		plug_m->Create(&MapleDevices[i],GetMaplePort(i,5));
 		MapleDevices[i].connected=true;
 	}
