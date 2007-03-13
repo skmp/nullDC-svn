@@ -23,7 +23,6 @@
 #define IDD_PLUGIN_SELECT               118
 #define IDD_CONFIG                      119
 #define IDI_ICON2                       120
-#define IDI_ICON_OLD                    120
 #define IDC_CUSTOM                      1001
 #define IDC_SEARCH                      1003
 #define IDC_FIND                        1004

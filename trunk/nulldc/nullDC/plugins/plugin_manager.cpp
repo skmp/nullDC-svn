@@ -692,7 +692,7 @@ bool plugins_Select()
 {
 	if (plugins_inited)
 	{
-		if (msgboxf("Emulation is started , plugins can't be changed now ..\r\nWant to Continue anyway ? (Changes will will take effect after retart)",MBX_YESNO | MBX_ICONERROR | MBX_TASKMODAL)==MBX_RV_NO)
+		if (msgboxf("Emulation is started , plugins can't be changed now ..\r\nWant to Continue anyway ? (Changes will will take effect after retart)",MBX_YESNO | MBX_ICONEXCLAMATION | MBX_TASKMODAL)==MBX_RV_NO)
 			return false;
 	}
 
