@@ -1,6 +1,9 @@
 //Vertex Shader :)
 //_HW_INT_ -> Intesity needs to be calculated , the factors are stored in z/w of texcoords
 //scale_type_1 -> use old way of scaling , needs W_min/W_max to have valid values
+//RES_X -> x resolution
+//RES_Y -> y resolution
+
 struct vertex 
 { 
 	float4 pos : POSITION; 
@@ -14,8 +17,21 @@ float W_max: register(c1);
 
 vertex VertexShader(in vertex vtx) 
 {
-	vtx.pos.x=((vtx.pos.x-0.5)/319.5)-1;
-	vtx.pos.y=-((vtx.pos.y-0.5)/239.5)+1;
+	float x=vtx.pos.x;
+	float y=vtx.pos.y;
+	//vtx.pos.x=((vtx.pos.x-0.5)/319.5)-1;
+	//vtx.pos.y=-((vtx.pos.y-0.5)/239.5)+1;
+	
+	//x-=0.5;
+	x/=640;
+	//y-=0.5;
+	y/=480;
+	
+	
+	vtx.pos.x=x*2 + (-1.0/res_x)-1.0;
+	vtx.pos.y=-y*2+ (1.0/res_y)+1.0;
+	//vtx.pos.xy+=resfix;
+	
 
 	#ifdef _HW_INT_
 	vtx.col*=vtx.uv.z;

@@ -330,7 +330,8 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
-							CommandLine="copy  &quot;$(InputFileName)&quot;  &quot;$(TargetDir)..\&quot;"
+							CommandLine="copy  &quot;$(InputFileName)&quot;  &quot;$(TargetDir)..\&quot;&#x0D;&#x0A;"
+							Outputs="$(TargetDir)..\$(InputFileName)"
 						/>
 					</FileConfiguration>
 					<FileConfiguration
@@ -338,7 +339,7 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
-							CommandLine="copy  &quot;$(InputFileName)&quot;  &quot;$(TargetDir)..\&quot;"
+							CommandLine="copy  &quot;$(InputFileName)&quot;  &quot;$(TargetDir)..\&quot;&#x0D;&#x0A;"
 							Outputs="$(TargetDir)..\$(InputFileName)"
 						/>
 					</FileConfiguration>

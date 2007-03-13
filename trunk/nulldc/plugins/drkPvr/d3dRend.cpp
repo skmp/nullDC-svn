@@ -993,6 +993,19 @@ namespace Direct3DRenderer
 			IDirect3DTexture9* tex=GetTexture(gp->tsp,gp->tcw);
 			dev->SetTexture(0,tex);
 
+			if (gp->tsp.FilterMode == 0)
+			{
+				dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+				dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+				dev->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
+
+			}
+			else
+			{
+				dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+				dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+				dev->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
+			}
 			
 			//if (gp->tsp.ClampV!=cache_tsp.ClampV || gp->tsp.FlipV!=cache_tsp.FlipV)
 				SetTexMode<D3DSAMP_ADDRESSV>(gp->tsp.ClampV,gp->tsp.FlipV);
@@ -1228,10 +1241,17 @@ if (!GetAsyncKeyState(VK_F3))
 	bool running=true;
 	cResetEvent rs(false,true);
 	cResetEvent re(false,true);
+	D3DXMACRO vs_macros[]=
+	{
+		{"res_x",0},
+		{"res_y",0},
+		{0,0}	//end of list
+	};
+
 	u32 THREADCALL RenderThead(void* param)
 	{
 		d3d9 = Direct3DCreate9(D3D_SDK_VERSION);
-
+		char temp[2][30];
 		D3DPRESENT_PARAMETERS ppar;
 		memset(&ppar,0,sizeof(ppar));
 /*		
@@ -1274,9 +1294,14 @@ if (!GetAsyncKeyState(VK_F3))
 		}
 
 		printf(" AA:%dx%x\n",ppar.MultiSampleType,ppar.MultiSampleQuality);
-		
 
 		verifyc(d3d9->CreateDevice(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,(HWND)emu.WindowHandle,DEV_CREATE_FLAGS,&ppar,&dev));
+
+		sprintf(temp[0],"%d",ppar.BackBufferWidth);
+		sprintf(temp[1],"%d",ppar.BackBufferHeight);
+		vs_macros[0].Definition=temp[0];
+		vs_macros[1].Definition=temp[1];
+
 
 		if (ppar.MultiSampleType!=D3DMULTISAMPLE_NONE)
 			dev->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, true);
@@ -1288,7 +1313,7 @@ if (!GetAsyncKeyState(VK_F3))
 		ID3DXBuffer* perr;
 		ID3DXBuffer* shader;
 		
-		verifyc(D3DXCompileShaderFromFileA("vs_hlsl.fx",NULL,NULL,"VertexShader",D3DXGetVertexShaderProfile(dev) , 0, &shader,&perr,&shader_consts));
+		verifyc(D3DXCompileShaderFromFileA("vs_hlsl.fx",vs_macros,NULL,"VertexShader",D3DXGetVertexShaderProfile(dev) , 0, &shader,&perr,&shader_consts));
 		if (perr)
 		{
 			char* text=(char*)perr->GetBufferPointer();
