@@ -556,7 +556,7 @@ int __fastcall UpdateSystem(u32 Cycles)
 #ifdef cpu_ratio
 	Cycles=Cycles*100/cpu_ratio;
 #endif
-	//Cycles=360;
+	//Cycles=350;
 	aica_cycl+=Cycles;
 	if (aica_cycl>(200*1000*1000/(44100*3)))
 	{

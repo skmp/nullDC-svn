@@ -196,7 +196,6 @@ vram_block* FASTCALL vramlock_Lock_64(u32 start_offset64,u32 end_offset64,void* 
 	if (end_offset64>(VRAM_SIZE-1))
 	{
 		msgboxf("vramlock_Lock_64: end_offset64>(VRAM_SIZE-1) \n Tried to lock area out of vram , possibly bug on the pvr plugin",MBX_OK);
-		//__asm int 3;
 		end_offset64=(VRAM_SIZE-1);
 	}
 
@@ -226,7 +225,6 @@ bool VramLockedWrite(u8* address)
 
 	if (offset<VRAM_SIZE)
 	{
-//		u32 found=0;
 		size_t addr_hash = offset/PAGE_SIZE;
 		vector<vram_block*>* list=&VramLocks[addr_hash];
 			
@@ -235,13 +233,13 @@ bool VramLockedWrite(u8* address)
 			if ((*list)[i])
 			{
 				libPvr.LockedBlockWrite((*list)[i],(u32)offset);
-				//found++;
+				
 				if ((*list)[i])
 				{
 					msgboxf("Error , pvr is suposed to remove lock",MBX_OK);
 					__asm int 3;
 				}
-					//vramlock_list_remove((*list)[i]);
+
 			}
 		}
 		list->clear();
