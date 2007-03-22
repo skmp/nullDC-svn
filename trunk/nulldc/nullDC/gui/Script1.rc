@@ -47,10 +47,10 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,335,250,50,14
     COMBOBOX        IDC_C_PVR,7,23,378,68,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
     COMBOBOX        IDC_C_GDR,7,50,378,68,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "PowerVR Plugin :",IDC_STATIC,7,9,96,10
-    LTEXT           "GDRom Plugin :",IDC_STATIC,7,40,80,9
+    LTEXT           "PowerVR (Graphics) Plugin :",IDC_STATIC,7,9,201,10
+    LTEXT           "GDRom Plugin :",IDC_STATIC,7,40,220,9
     COMBOBOX        IDC_C_AICA,7,79,378,68,CBS_DROPDOWNLIST | CBS_SORT | WS_TABSTOP
-    LTEXT           "AICA/arm7 Plugin :",IDC_STATIC,7,68,80,9
+    LTEXT           "AICA (Sound) Plugin :",IDC_STATIC,7,68,228,9
     LTEXT           "|\n|-\n|\n|-\n|\n|-\n|\n|-\n|\n|-\n",IDC_STATIC,19,128,10,83
     COMBOBOX        IDC_MAPLEMAIN,15,120,360,68,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
     COMBOBOX        IDC_MAPLESUB0,25,135,350,68,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
@@ -59,8 +59,8 @@ BEGIN
     COMBOBOX        IDC_MAPLESUB3,25,183,350,68,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
     COMBOBOX        IDC_MAPLESUB4,25,199,350,68,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
     COMBOBOX        IDC_C_EXTDEV,7,229,378,68,CBS_DROPDOWNLIST | CBS_SORT | WS_TABSTOP
-    LTEXT           "Ext.Device Plugin :",IDC_STATIC,7,219,80,9
-    LTEXT           "Maple Plugins :",IDC_STATIC,7,95,48,8
+    LTEXT           "Ext.Device (Modem/BBA) Plugin :",IDC_STATIC,7,219,218,9
+    LTEXT           "Maple (Input/Saves) Plugins :",IDC_STATIC,7,95,205,8
 END
 
 IDD_MEMVIEW DIALOGEX 0, 0, 423, 230
@@ -281,78 +281,6 @@ BEGIN
     END
 END
 #endif    // APSTUDIO_INVOKED
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Menu
-//
-
-IDR_FMENU MENU 
-BEGIN
-    POPUP "&File"
-    BEGIN
-        MENUITEM "Normal Boot",                 ID_FILE_NORMALBOOT
-        MENUITEM "HLE GDRom Boot",              ID_FILE_BOOTHLE, INACTIVE
-        MENUITEM SEPARATOR
-        MENUITEM "&Open bin/elf",               ID_FILE_OPENBIN
-        MENUITEM "Load bin/elf",                ID_FILE_LOADBIN
-        MENUITEM SEPARATOR
-        MENUITEM "E&xit",                       ID_FILE_EXIT
-    END
-    POPUP "&System"
-    BEGIN
-        MENUITEM "&Start",                      ID_SYSTEM_START
-        MENUITEM "St&op",                       ID_SYSTEM_STOP
-        MENUITEM "&Reset",                      ID_SYSTEM_RESET
-    END
-    POPUP "&Options"
-    BEGIN
-        MENUITEM "&nullDC Settings",            ID_OPTIONS_CONFIG
-        MENUITEM "&Select Plugins",             ID_OPTIONS_SELECTPLUGINS
-        MENUITEM SEPARATOR
-        POPUP "&PowerVR"
-        BEGIN
-            MENUITEM "&Show Config",                ID_POWERVR_SHOWCONFIG
-        END
-        POPUP "&GDrom"
-        BEGIN
-            MENUITEM "&Show Config",                ID_GDROM_SHOWCONFIG
-        END
-        POPUP "&Aica"
-        BEGIN
-            MENUITEM "&Show Config",                ID_AICA_SHOWCONFIG
-        END
-        POPUP "&Maple"
-        BEGIN
-            MENUITEM "Config {Maple Plugin Name} [PORT]", ID_MAPLE_MAPLEXX
-            MENUITEM "Config {Maple Plugin Name} [PORT:SUBPORT]", ID_MAPLE_MAPLEYY
-        END
-        POPUP "&Ext.Device"
-        BEGIN
-            MENUITEM "&Show Config",                ID_EXT_SHOWCONFIG
-        END
-    END
-    POPUP "&Debug"
-    BEGIN
-        MENUITEM "&Debugger",                   ID_DEBUG_DEBUGGER
-        MENUITEM SEPARATOR
-        MENUITEM "ARM7 Debugger",               ID_DEBUG_ARM7DEBUGGER
-        MENUITEM SEPARATOR
-        MENUITEM "&Mem Viewer",                 ID_DEBUG_MEMVIEWER, GRAYED
-        MENUITEM "PvrList Viewer",              ID_DEBUG_PVRLISTVIEWER, GRAYED
-        MENUITEM "ARM_DEBUG",                   ID_DEBUG_ARMDEBUG, GRAYED
-    END
-    POPUP "Profiler"
-    BEGIN
-        MENUITEM "Enable",                      ID_PROFILER_ENABLE
-        MENUITEM "Show",                        ID_PROFILER_SHOW
-    END
-    POPUP "&Help"
-    BEGIN
-        MENUITEM "&About",                      ID_HELP_ABOUT
-    END
-END
 
 
 #ifdef APSTUDIO_INVOKED

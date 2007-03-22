@@ -51,15 +51,58 @@ void FASTCALL vramLockCB (vram_block* block,u32 addr)
 	//renderer->VramLockedWrite(block);
 	rend_text_invl(block);
 }
+#include <vector>
+using std::vector;
 
+vector<u32> res;
+
+void FASTCALL handler_ShowFps(u32 id,void* win,void* puser)
+{
+	if (settings.ShowFPS)
+		settings.ShowFPS=0;
+	else
+		settings.ShowFPS=1;
+
+	emu.SetMenuItemStyle(id,settings.ShowFPS?MIS_Checked:0,MIS_Checked);
+	
+	SaveSettings();
+}
+void FASTCALL handler_SetRes(u32 id,void* win,void* puser)
+{
+	for (size_t i=0;i<res.size();i++)
+		emu.SetMenuItemStyle(res[i],res[i]==id?MIS_Checked:0,MIS_Checked);
+
+	SaveSettings();
+}
+
+void FASTCALL handle_About(u32 id,void* w,void* p)
+{
+	MessageBox((HWND)w,"Made by drk||Raziel","About drkpvr...",MB_ICONINFORMATION);
+}
 //called when plugin is used by emu (you should do first time init here)
-s32 FASTCALL Load(emu_info* emu_inf)
+s32 FASTCALL Load(emu_info* emu_inf,u32 rmenu)
 {
 	memcpy(&emu,emu_inf,sizeof(emu));
 	emu.ConfigLoadStr("emu","shortname",emu_name,0);
 	
 	LoadSettings();
 
+	emu.AddMenuItem(rmenu,-1,"Show Fps",handler_ShowFps,settings.ShowFPS);
+
+	u32 Resolutions_menu=emu.AddMenuItem(rmenu,-1,"Resolution",0,0);
+
+	res.push_back(emu.AddMenuItem(Resolutions_menu,-1,"640x480",handler_SetRes,0));
+	res.push_back(emu.AddMenuItem(Resolutions_menu,-1,"800x600",handler_SetRes,0));
+	res.push_back(emu.AddMenuItem(Resolutions_menu,-1,"1024x768",handler_SetRes,0));
+	res.push_back(emu.AddMenuItem(Resolutions_menu,-1,"1152x864",handler_SetRes,0));
+	res.push_back(emu.AddMenuItem(Resolutions_menu,-1,"1280x1024",handler_SetRes,0));
+
+	emu.SetMenuItemStyle(res[0],MIS_Checked,MIS_Checked);
+	for (size_t i=0;i<res.size();i++)
+		emu.SetMenuItemStyle(res[i],MIS_Radiocheck,MIS_Radiocheck);
+
+
+	emu.AddMenuItem(rmenu,-1,"About",handle_About,0);
 //	SetRenderer(RendererType::Hw_D3d,params.WindowHandle);
 	return rv_ok;
 }
@@ -149,17 +192,13 @@ char* GetNullDCSoruceFileName(char* full)
 	return &temp[0];
 }
 
-//Give to the emu info for the plugin type
-void EXPORT_CALL dcGetInterfaceInfo(plugin_interface_info* info)
-{
-	info->InterfaceVersion=PLUGIN_I_F_VERSION;
-	info->count=1;
-}
 //Give to the emu pointers for the PowerVR interface
-bool EXPORT_CALL dcGetInterface(u32 id,plugin_interface* info)
+void EXPORT_CALL dcGetInterface(plugin_interface* info)
 {
 #define c  info->common
 #define p info->pvr
+
+	info->InterfaceVersion=PLUGIN_I_F_VERSION;
 	
 	c.Type=Plugin_PowerVR;
 	c.InterfaceVersion=PVR_PLUGIN_I_F_VERSION;
@@ -174,7 +213,6 @@ bool EXPORT_CALL dcGetInterface(u32 id,plugin_interface* info)
 	p.Init=InitPvr;
 	p.Reset=ResetPvr;
 	p.Term=TermPvr;
-	p.ShowConfig=dcShowConfig;
 
 	
 	p.ReadReg=ReadPvrRegister;
@@ -186,7 +224,6 @@ bool EXPORT_CALL dcGetInterface(u32 id,plugin_interface* info)
 	
 #undef c
 #undef p
-	return true;
 }
 
 
@@ -267,6 +304,19 @@ int cfgGetInt(char* key,int def)
 	return atoi(temp1);*/
 	return emu.ConfigLoadInt("drkpvr",key,def);
 }
+void cfgSetInt(char* key,int val)
+{
+	/*
+	char temp1[100];
+	char temp2[100];
+	sprintf(temp2,"%d",def);
+	
+	emu.ConfigLoadStr("drkpvr",key,temp,temp1);
+	/*if (strcmp("NULL",temp)==0)
+		return def;
+	return atoi(temp1);*/
+	emu.ConfigSaveInt("drkpvr",key,val);
+}
 
 void LoadSettings()
 {
@@ -275,6 +325,22 @@ void LoadSettings()
 	settings.Fullscreen.Res_Y					=	cfgGetInt("Fullscreen.Res_Y",480);
 	settings.Fullscreen.Refresh_Rate			=	cfgGetInt("Fullscreen.Refresh_Rate",60);
 
+	settings.ShowFPS							=	cfgGetInt("ShowFPS",0);
+
 	settings.Enhancements.MultiSampleCount		=	cfgGetInt("Enhancements.MultiSampleCount",0);
 	settings.Enhancements.MultiSampleQuality	=	cfgGetInt("Enhancements.MultiSampleQuality",0);
+}
+
+
+void SaveSettings()
+{
+	cfgSetInt("Fullscreen.Enabled",settings.Fullscreen.Enabled);
+	cfgSetInt("Fullscreen.Res_X",settings.Fullscreen.Res_X);
+	cfgSetInt("Fullscreen.Res_Y",settings.Fullscreen.Res_Y);
+	cfgSetInt("Fullscreen.Refresh_Rate",settings.Fullscreen.Refresh_Rate);
+
+	cfgSetInt("ShowFPS",settings.ShowFPS);
+
+	cfgSetInt("Enhancements.MultiSampleCount",settings.Enhancements.MultiSampleCount);
+	cfgSetInt("Enhancements.MultiSampleQuality",settings.Enhancements.MultiSampleQuality);
 }

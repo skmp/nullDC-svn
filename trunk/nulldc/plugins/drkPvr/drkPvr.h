@@ -76,6 +76,7 @@ extern emu_info emu;
 extern char emu_name[512];
 
 void LoadSettings();
+void SaveSettings();
 
 #if REND_API == REND_D3D
 	#define REND_NAME "Direct3D"
@@ -104,6 +105,7 @@ struct _settings_type
 		u32 MultiSampleCount;
 		u32 MultiSampleQuality;
 	} Enhancements;
+	u32 ShowFPS;
 };
 
 extern _settings_type settings;

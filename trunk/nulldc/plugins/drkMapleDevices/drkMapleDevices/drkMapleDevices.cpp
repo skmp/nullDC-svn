@@ -317,7 +317,7 @@ void cfgdlg(PluginType type,void* window)
 }//called when plugin is used by emu (you should do first time init here)
 
 void Init_kb_map();
-s32 FASTCALL Load(emu_info* emu)
+s32 FASTCALL Load(emu_info* emu,u32 rmenu)
 {
 	memcpy(&host,emu,sizeof(host));
 	//maple_init_params* mpi=(maple_init_params*)aparam;
@@ -344,12 +344,6 @@ void FASTCALL  Unload()
 s32 FASTCALL Init(maple_init_params* p)
 {
 	UpdateConfig();
-	//hahah do what ? ahahahahahaha
-	return rv_ok;
-}
-//It's suposed to reset anything but vram (vram is set to 0 by emu)
-s32 FASTCALL Init_s(maple_sub_init_params* p)
-{
 	//hahah do what ? ahahahahahaha
 	return rv_ok;
 }
@@ -456,28 +450,6 @@ void Init_kb_map()
 		//65 S3 key 
 		//66-86 Not used 
 		//8C-FF Not used 
-}
-//Give to the emu info for the plugin type
-void EXPORT_CALL dcGetInterfaceInfo(plugin_interface_info* info)
-{
-	info->InterfaceVersion=PLUGIN_I_F_VERSION;
-	info->count=3;
-	/*
-	info->InterfaceVersion.full=PLUGIN_I_F_VERSION;
-	sprintf(info->Name,"ndcMaple");
-	info->PluginVersion.full=DC_MakeVersion(1,2,3);
-	
-
-	info->Init=dcInitPvr;
-	info->Term=dcTermPvr;
-	info->Reset=dcResetPvr;
-
-	info->ThreadInit=dcThreadInitPvr;
-	info->ThreadTerm=dcThreadTermPvr;
-
-	info->ShowConfig=cfgdlg;
-	info->Type=PluginType::MapleDevice;
-	*/
 }
 
 
@@ -1245,7 +1217,8 @@ void setups(SOCKET s)
 	u_long t=0;
 	ioctlsocket (s,FIONBIO ,&t);
 }
-
+u32 sync_counter=0;
+u32 next_sync_counter=0;
 bool np=false;
 int Init_netplay()
 {
@@ -1349,11 +1322,15 @@ void net_read()
 	int rv = recv(ConnectSocket,(char*)&states,sizeof(states),MSG_WAITALL);
 	if (rv==0xFFFFFF)
 		printf("net_read fail %d\n",WSAGetLastError());
+	printf("SYNC1 %d %d\nSYNC2 %d %d %d %d\n",sync_counter,next_sync_counter,states[0].id,states[1].id,states[2].id,states[3].id);
 }
 void net_send()
 {
+	//u32* at1=(u32*)0x00aaa150;
+	//u32* at2=(u32*)0x00aaa17C;
+	
 	joy_state t;
-	t.id=0;
+	//t.id=*at1+*at2;
 	t.jx=joyx;
 	t.jy=joyy;
 	t.l=lt;
@@ -1377,25 +1354,24 @@ u32 GetMaplePort(u32 addr)
 	}*/
 	return addr>>6;
 }
-u32 sync_counter=0;
-u32 next_sync_counter=0;
+
 void sync_net(u32 port)
 {
 	if (port==0)
 	{
-		if (sync_counter==0)
-			net_send();
 		sync_counter++;
+		if (sync_counter==1)
+			net_send();
 		verify(sync_counter<=next_sync_counter);
 
 		if (sync_counter==next_sync_counter)
 		{
-			next_sync_counter=sync_counter+send_ratio;
 			net_read();
+			next_sync_counter=sync_counter+send_ratio;
 			net_send();
-			printf("UPDATE %d-%d\n",sync_counter,port);
+			//printf("UPDATE %d-%d\n",sync_counter,port);
 		}
-		printf("%d - %d - %d\n",sync_counter,next_sync_counter,send_ratio);
+		//printf("%d - %d - %d\n",sync_counter,next_sync_counter,send_ratio);
 		verify(sync_counter<next_sync_counter);
 	}
 }
@@ -1829,7 +1805,7 @@ void FASTCALL VmuDMA(maple_subdevice_instance* device_instance,u32 Command,u32* 
 
 
 template<u32 has_input>
-s32 FASTCALL CreateController(maple_device_instance* inst,u8 port)
+s32 FASTCALL CreateController(maple_device_instance* inst,u8 port,u32 flags)
 {
 	if (has_input)
 	{
@@ -1895,7 +1871,7 @@ void FASTCALL DestroyController(maple_device_instance* inst)
 	if (inst->data)
 		free( inst->data);
 }
-s32 FASTCALL CreateVmu(maple_subdevice_instance* inst,u8 port)
+s32 FASTCALL CreateVmu(maple_subdevice_instance* inst,u8 port,u32 flags)
 {
 	inst->data=malloc(sizeof(VMU_info));
 	sprintf(((VMU_info*)inst->data)->file,"vmu_data_port%x.bin",port);
@@ -1923,69 +1899,46 @@ plugin_interface plugins[] =
 	{CreateInstance<0>,DestroyInstance,
 }*/
 //Give a list of the devices to teh emu
-void EXPORT_CALL dcGetInterface(u32 id,plugin_interface* info)
+void EXPORT_CALL dcGetInterface(plugin_interface* info)
 {
 
 #define km info->maple
-#define ks info->maple_sub
+
 #define c info->common
 	
+	info->InterfaceVersion=PLUGIN_I_F_VERSION;
+
 	c.InterfaceVersion=MAPLE_PLUGIN_I_F_VERSION;
 
 	c.Load=Load;
 	c.Unload=Unload;
+	c.Type=Plugin_Maple;
+	c.PluginVersion=DC_MakeVersion(1,0,0,DC_VER_NORMAL);
+	
+	strcpy(c.Name,"nullDC Maple Devices (" __DATE__ ")");
 
-	switch(id)
-	{
-	case 0:
-		strcpy(c.Name,"nullDC DC controller [WinHook] (" __DATE__ ")");
+	km.Init=Init;
+	km.Reset=Reset;
+	km.Term=Term;
 
-		c.Type=Plugin_Maple;
-		c.PluginVersion=DC_MakeVersion(1,0,0,DC_VER_NORMAL);
+	//0
+	strcpy(km.devices[0].Name,"nullDC DC controller [WinHook] (" __DATE__ ")");
+	km.devices[0].Type=MDT_Main;
+	km.devices[0].Flags=MDTF_Hotplug | MDTF_Sub0 | MDTF_Sub1;
 
-		km.Init=Init;
-		km.Reset=Reset;
-		km.Term=Term;
+	//1
+	strcpy(km.devices[1].Name,"nullDC DC controller [WinHook,NET] (" __DATE__ ")");
+	km.devices[1].Type=MDT_Main;
+	km.devices[1].Flags= 0;
 
-		km.Create=CreateController<1>;
-		km.Destroy=DestroyController;
+	//2
+	strcpy(km.devices[2].Name,"nullDC VMU (" __DATE__ ")");
+	km.devices[1].Type=MDT_Sub;
+	km.devices[1].Flags= MDTF_Hotplug;
 
-		km.ShowConfig=0;
-		km.subdev_info=MAPLE_SUBDEVICE_DISABLE_2|MAPLE_SUBDEVICE_DISABLE_3|MAPLE_SUBDEVICE_DISABLE_4;
-		break;
-	case 1:
-		strcpy(c.Name,"nullDC VMU (" __DATE__ ")");
+	//list terminator :P
+	km.devices[3].Type=MDT_EndOfList;
 
-		c.Type=Plugin_MapleSub;
-		c.PluginVersion=DC_MakeVersion(1,0,0,DC_VER_NORMAL);
-
-		ks.Init=Init_s;
-		ks.Reset=Reset;
-		ks.Term=Term;
-
-		ks.Create=CreateVmu;
-		ks.Destroy=DestroyVmu;
-
-		ks.ShowConfig=0;
-		break;
-	case 2:
-		{
-		strcpy(c.Name,"nullDC DC controller [WinHook,NET] (" __DATE__ ")");
-
-		c.Type=Plugin_Maple;
-		c.PluginVersion=DC_MakeVersion(1,0,0,DC_VER_NORMAL);
-
-		km.Init=Init;
-		km.Reset=Reset;
-		km.Term=Term;
-
-		km.Create=CreateController<2>;
-		km.Destroy=DestroyController;
-
-		km.ShowConfig=0;
-		km.subdev_info=MAPLE_SUBDEVICE_DISABLE_2|MAPLE_SUBDEVICE_DISABLE_3|MAPLE_SUBDEVICE_DISABLE_4;
-		}
-	}
 	/*
 	info->InterfaceVersion.full=MAPLE_PLUGIN_I_F_VERSION;
 
@@ -2051,4 +2004,3 @@ void UpdateConfig()
 	host.ConfigLoadStr("ndc_hookjoy","server_addr",server_addr,"192.168.1.33");
 	host.ConfigLoadStr("ndc_hookjoy","server_port",server_port,"11122");
 }
-

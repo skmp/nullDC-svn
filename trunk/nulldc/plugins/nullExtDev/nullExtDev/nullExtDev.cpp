@@ -53,7 +53,7 @@ void FASTCALL cfgdlg(void* window)
 
 
 //called when plugin is used by emu (you should do first time init here)
-s32 FASTCALL Load(emu_info* param)
+s32 FASTCALL Load(emu_info* param,u32 rmenu)
 {
 	return rv_ok;
 }
@@ -81,18 +81,14 @@ void FASTCALL edTerm()
 {
 }
 
-//Give to the emu info for the plugin type
-void EXPORT_CALL dcGetInterfaceInfo(plugin_interface_info* info)
-{
-	info->InterfaceVersion=PLUGIN_I_F_VERSION;
-	info->count=1;
-}
 
 //Give to the emu pointers for the PowerVR interface
-bool EXPORT_CALL dcGetInterface(u32 id,plugin_interface* info)
+bool EXPORT_CALL dcGetInterface(plugin_interface* info)
 {
 	#define c info->common 
 	#define ed info->ext_dev
+
+	info->InterfaceVersion=PLUGIN_I_F_VERSION;
 
 	c.Type=Plugin_ExtDevice;
 	c.InterfaceVersion=PLUGIN_I_F_VERSION;
@@ -107,9 +103,6 @@ bool EXPORT_CALL dcGetInterface(u32 id,plugin_interface* info)
 	ed.Init=edInit;
 	ed.Reset=edReset;
 	ed.Term=edTerm;
-
-	ed.ShowConfig=cfgdlg;
-	
 
 	ed.ReadMem_A0_006=ReadMem_A0_006;
 	ed.WriteMem_A0_006=WriteMem_A0_006;

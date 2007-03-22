@@ -22,14 +22,7 @@ void cfgdlg(PluginType type,void* window)
 	//ARM_Katana_Driver_Info();
 }
 
-//Give to the emu info for the plugin type
-void EXPORT_CALL dcGetInterfaceInfo(plugin_interface_info* info)
-{
-	info->InterfaceVersion=PLUGIN_I_F_VERSION;
-	info->count=1;
-
-}
-s32 FASTCALL PluginLoad(emu_info* param)
+s32 FASTCALL PluginLoad(emu_info* param,u32 rmenu)
 {
 	return rv_ok;
 }
@@ -56,10 +49,12 @@ void FASTCALL Reset(bool Manual)
 }
 
 //Give to the emu pointers for the PowerVR interface
-void EXPORT_CALL dcGetInterface(u32 id , plugin_interface* info)
+void EXPORT_CALL dcGetInterface(plugin_interface* info)
 {
 #define c info->common
 #define a info->aica
+
+	info->InterfaceVersion=PLUGIN_I_F_VERSION;
 
 	strcpy(c.Name,"nullAICA [no sound/reduced compat] (" __DATE__ ")");
 	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD,DC_VER_NORMAL);
@@ -73,7 +68,6 @@ void EXPORT_CALL dcGetInterface(u32 id , plugin_interface* info)
 	a.Init=Init;
 	a.Reset=Reset;
 	a.Term=Term;
-	a.ShowConfig=0;
 	a.ExeptionHanlder=0;
 
 	a.UpdateAICA=UpdateAICA;

@@ -9,7 +9,6 @@
 #define IDS_LVCOL04                     5
 #define IDS_LVCOL05                     6
 #define IDS_LVCOL06                     7
-#define IDR_FMENU                       101
 #define IDD_MEMVIEW                     103
 #define IDD_ABOUT                       104
 #define IDI_NDC_ICON                    105
@@ -139,43 +138,19 @@
 #define IDC_MAPLESUB4                   1113
 #define IDC_MAPLETAB                    1114
 #define IDC_NDC_VER                     1115
-#define ID_FILE_EXIT                    40001
-#define ID_SYSTEM_START                 40003
-#define ID_SYSTEM_STOP                  40004
-#define ID_SYSTEM_RESET                 40006
-#define ID_DEBUG_MEMVIEWER              40007
 #define ID_DEBUG_REGVIEWER              40008
 #define ID_DEBUG_DISASMVIEWER           40009
-#define ID_DEBUG_PVRLISTVIEWER          40010
-#define ID_DEBUG_ARMDEBUG               40011
-#define ID_HELP_ABOUT                   40012
 #define ID_HELP_HOWTO                   40013
-#define ID_DEBUG_DEBUGGER               40014
-#define ID_FILE_OPENBIN                 40019
-#define ID_DEBUG_ARM7DEBUGGER           40020
 #define ID_OPTIONS_SELECTPLUGIN         40021
-#define ID_OPTIONS_SELECTPLUGINS        40022
 #define ID_FILE_BOOTGDROM               40023
 #define ID_FILE_D                       40024
-#define ID_FILE_BOOTHLE                 40025
 #define ID_OPTIONS_CONFIGURE            40026
-#define ID_OPTIONS_CONFIG               40027
-#define ID_FILE_LOADBIN                 40028
-#define ID_FILE_NORMALBOOT              40029
-#define ID_PROFILER_SHOW                40030
 #define ID_PROFILER_SHOW40031           40031
-#define ID_PROFILER_ENABLE              40032
 #define ID_OPTIONS_POWERVR              40033
 #define ID_OPTIONS_G                    40034
 #define ID_OPTIONS_AICA                 40035
 #define ID_OPTIONS_MAPLE                40036
-#define ID_MAPLE_MAPLEXX                40037
-#define ID_MAPLE_MAPLEYY                40038
 #define ID_OPTIONS_EXT                  40039
-#define ID_POWERVR_SHOWCONFIG           40040
-#define ID_GDROM_SHOWCONFIG             40041
-#define ID_AICA_SHOWCONFIG              40042
-#define ID_EXT_SHOWCONFIG               40043
 
 // Next default values for new objects
 // 

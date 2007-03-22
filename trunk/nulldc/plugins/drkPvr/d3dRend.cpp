@@ -1,4 +1,5 @@
-﻿#include <d3dx9.h>
+﻿#define _WIN32_WINNT 0x0500
+#include <d3dx9.h>
 
 #include "nullRend.h"
 
@@ -50,7 +51,7 @@ namespace Direct3DRenderer
 	IDirect3DVertexShader9* compiled_vs;
 	IDirect3DPixelShader9* compiled_ps[128]={0};
 	u32 last_ps_mode=0xFFFFFFFF;
-
+	CRITICAL_SECTION tex_cache_cs;
 	ID3DXFont* font;
 	ID3DXConstantTable* shader_consts;
 	
@@ -405,8 +406,7 @@ namespace Direct3DRenderer
 
 			sprintf(file,"d:\\textures\\0x%x_%d_%s_VQ%d_TW%d_MM%d_.jpg",Start,Lookups,texFormatName[tcw.NO_PAL.PixelFmt]
 			,tcw.NO_PAL.VQ_Comp,tcw.NO_PAL.ScanOrder,tcw.NO_PAL.MipMapped);
-			D3DXSaveTextureToFileA( file,D3DXIFF_JPG,Texture,0);
-			*/
+			D3DXSaveTextureToFileA( file,D3DXIFF_JPG,Texture,0);*/
 		}
 	};
 
@@ -446,6 +446,7 @@ namespace Direct3DRenderer
 		/*if (addr==RenderToTextureAddr)
 			return RenderToTextureTex;*/
 
+		EnterCriticalSection(&tex_cache_cs);
 		TextureCacheData* tf = TexCache.Find(tcw.full);
 		if (tf)
 		{
@@ -465,7 +466,7 @@ namespace Direct3DRenderer
 				}
 			}
 			if (tcw.PAL.PixelFmt==5)
-			{
+			{				
 				if (tf->pal_rev!=pal_rev_16[tcw.PAL.PalSelect])
 					tf->Update();
 			}
@@ -476,11 +477,13 @@ namespace Direct3DRenderer
 			}
 
 			tf->Lookups++;
+			LeaveCriticalSection(&tex_cache_cs);
 			return tf->Texture;
 		}
 		else
 		{
 			tf = GenText(tsp,tcw);
+			LeaveCriticalSection(&tex_cache_cs);
 			return tf->Texture;
 		}
 		return 0;
@@ -488,6 +491,7 @@ namespace Direct3DRenderer
 	
 	void VramLockedWrite(vram_block* bl)
 	{
+		EnterCriticalSection(&tex_cache_cs);
 		TextureCacheData* tcd = (TextureCacheData*)bl->userdata;
 		tcd->dirty=true;
 		tcd->lock_block=0;
@@ -497,6 +501,7 @@ namespace Direct3DRenderer
 			tcd->Texture=0;
 		}
 		params.vram_unlock(bl);
+		LeaveCriticalSection(&tex_cache_cs);
 	}
 	extern cThread rth;
 
@@ -1226,7 +1231,7 @@ if (!GetAsyncKeyState(VK_F3))
 			RendPolyParamList<ListType_Translucent>(pvrrc.global_param_tr);
 
 }
-			if (IsFullscreen)
+			if (settings.ShowFPS)
 			{
 				DrawFPS();
 			}
@@ -2125,7 +2130,7 @@ if (!GetAsyncKeyState(VK_F3))
 
 	bool InitRenderer()
 	{
-		
+		InitializeCriticalSectionAndSpinCount(&tex_cache_cs,8000);
 		for (u32 i=0;i<256;i++)
 		{
 			unkpack_bgp_to_float[i]=i/255.0f;
@@ -2143,6 +2148,7 @@ if (!GetAsyncKeyState(VK_F3))
 
 	void TermRenderer()
 	{
+		DeleteCriticalSection(&tex_cache_cs); 
 		for (u32 i=0;i<rcnt.size();i++)
 		{
 			rcnt[i].Free();

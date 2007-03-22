@@ -42,12 +42,14 @@ int RunDC(int argc, char* argv[])
 
 void EnumPlugins()
 {
-	List<PluginLoadInfo>* pvr= EnumeratePlugins(Plugin_PowerVR);
-	List<PluginLoadInfo>* gdrom= EnumeratePlugins(Plugin_GDRom);
-	List<PluginLoadInfo>* aica= EnumeratePlugins(Plugin_AICA);
-	List<PluginLoadInfo>* maple= EnumeratePlugins(Plugin_Maple);
-	List<PluginLoadInfo>* maplesub= EnumeratePlugins(Plugin_MapleSub);
-	List<PluginLoadInfo>* extdev= EnumeratePlugins(Plugin_ExtDevice);
+	EnumeratePlugins();
+
+	List<PluginLoadInfo>* pvr= GetPluginList(Plugin_PowerVR);
+	List<PluginLoadInfo>* gdrom= GetPluginList(Plugin_GDRom);
+	List<PluginLoadInfo>* aica= GetPluginList(Plugin_AICA);
+	List<PluginLoadInfo>* maple= GetPluginList(Plugin_Maple);
+	List<PluginLoadInfo>* maplesub= GetPluginList(Plugin_MapleSub);
+	List<PluginLoadInfo>* extdev= GetPluginList(Plugin_ExtDevice);
 
 	printf("PowerVR plugins :\n");
 	for (u32 i=0;i<pvr->itemcount;i++)

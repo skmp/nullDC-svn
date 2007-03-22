@@ -30,6 +30,12 @@
 
 #include "screenshot.h"
 
+u32 PowerVR_menu;
+u32 GDRom_menu;
+u32 Aica_menu;
+u32 Maple_menu;
+u32 ExtDev_menu;
+
 /// i dont like it but ....
 CtrlMemView *cMemView;
 CtrlDisAsmView *cDisView;
@@ -130,10 +136,13 @@ void SetWindowPtr( HWND hWnd,int nIndex,void* dwNewLong)
     return total;
  }
  
+void InitMenu();
+HMENU GetHMenu();
 u32 uiInit(void)
 {
 	g_hInst =(HINSTANCE)GetModuleHandle(0);
 	WNDCLASS wc;
+	memset(&wc,0,sizeof(wc));
 	wc.cbClsExtra		= 0;
 	wc.cbWndExtra		= 0;
 	wc.hbrBackground	= (HBRUSH)GetStockObject(WHITE_BRUSH);
@@ -142,7 +151,7 @@ u32 uiInit(void)
 	wc.hInstance		= g_hInst;
 	wc.lpfnWndProc		= WndProc;
 	wc.lpszClassName	= "Debugger";
-	wc.lpszMenuName		= MAKEINTRESOURCE(IDR_FMENU);
+	//wc.lpszMenuName		= MAKEINTRESOURCE(IDR_FMENU);
 	wc.style			= CS_VREDRAW | CS_HREDRAW ;
 
 	if( !RegisterClass(&wc) ) {
@@ -152,8 +161,10 @@ u32 uiInit(void)
 
 	InitCommonControls();
 
-	g_hWnd = CreateWindow( "Debugger", VER_FULLNAME, WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-		CW_USEDEFAULT, CW_USEDEFAULT, 640,480, NULL, NULL, g_hInst, NULL );
+	InitMenu();
+
+	g_hWnd = CreateWindowA( "Debugger", VER_FULLNAME, WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+		CW_USEDEFAULT, CW_USEDEFAULT, 640,480, NULL, GetHMenu(), g_hInst, NULL );
 	if( !IsWindow(g_hWnd) ) {
 		MessageBox( NULL, "Couldn't Create Debug Window!","ERROR",MB_ICONERROR );
 		return false;
@@ -172,6 +183,7 @@ u32 uiInit(void)
 
 	SetWindowPos(g_hWnd,NULL,0,0,xsz_2+640,ysz_2+480,SWP_NOZORDER|SWP_NOMOVE);
 
+	
 	return UI_OK;
 }
 
@@ -235,11 +247,546 @@ __inline static char* _ext( char* szFN, u32 size ) {
 	}	return szFN;
 }
 
+//Dynamic menu code :)
+struct _MenuItem;
+struct MenuStrip
+{
+	_MenuItem* owner;
+	HMENU hmenu;
+	vector<u32> items;
+
+	bool Empty()  { return items.size()==0; }
+	void AddItem(u32 id,u32 pos);
+	void RemoveItem(u32 id);
+
+	void Delete();
+	MenuStrip(_MenuItem* p=0)
+	{
+		owner=p;
+		hmenu=0;
+	}
+	~MenuStrip()
+	{
+		Delete();
+	}
+};
+struct _MenuItem
+{
+	MenuStrip* owner;
+	MenuStrip submenu;
+	u32 gmid;	//menu item id
+	u32 nid;	//notification id
+	char* txt;
+	void* puser;
+	MenuItemSelectedFP* handler;
+	u32 Style;
+	void* hbitmap;
+
+	_MenuItem(char* text,u32 id,u32 gid)
+	{
+		owner=0;
+		submenu.owner=this;
+		gmid=gid;
+		nid=id;
+		txt=text;
+		puser=0;
+		handler=0;
+		Style=0;
+		hbitmap=0;
+	}
+
+	void Insert(MenuStrip* menu,u32 pos);
+	void Remove(HMENU menu);
+
+	void Update();
+	~_MenuItem();
+	void Create(char* text);
+
+	void AddChild(u32 id);
+	void RemoveChild(u32 id);
+	void Clicked(void* hWnd);
+};
+vector<_MenuItem*> MenuItems;
+MenuStrip MainMenu;
+
+void MenuStrip::AddItem(u32 id,u32 pos)
+{
+	if (hmenu==0)
+	{
+		if (owner!=0)
+			hmenu=CreatePopupMenu();
+		else
+			hmenu=CreateMenu();
+	}
+	items.push_back(id);
+
+	MenuItems[id]->Insert(this,pos);
+	if (owner)
+		owner->AddChild(id);
+	DrawMenuBar(g_hWnd);
+}
+void MenuStrip::RemoveItem(u32 id)
+{
+	verify(hmenu!=0);
+	MenuItems[id]->Remove(hmenu);
+
+	for (size_t i=0;i<items.size();i++)
+	{
+		if (items[i]==id)
+		{
+			items.erase(items.begin()+i);
+			break;
+		}
+	}
+	if (owner)
+		owner->RemoveChild(id);
+	DrawMenuBar(g_hWnd);
+}
+
+void MenuStrip::Delete()
+{
+	while(items.size())
+	{
+		RemoveItem(items[0]);
+	}
+	if (hmenu)
+		DestroyMenu(hmenu);
+
+	hmenu=0;
+}
+
+
+void _MenuItem::Clicked(void* hWnd)
+{
+	if (handler)
+		handler(gmid,hWnd,puser);
+}
+void _MenuItem::Insert(MenuStrip* menu,u32 pos)
+{
+	MENUITEMINFO mif;
+	memset(&mif,0,sizeof(mif));
+	mif.cbSize=sizeof(mif);
+	mif.fMask=MIIM_ID|MIIM_STRING|MIIM_STATE;
+	mif.dwTypeData=txt;
+	mif.wID=nid;
+	if (handler==0)
+		mif.fState=MFS_GRAYED;
+
+	owner=menu;
+	BOOL rv=InsertMenuItem(owner->hmenu,pos,TRUE,&mif);
+}
+void _MenuItem::Remove(HMENU menu)
+{
+	DeleteMenu(menu,nid,MF_BYCOMMAND);
+}
+
+void _MenuItem::Update()
+{
+	MENUITEMINFO mif;
+	memset(&mif,0,sizeof(mif));
+	mif.cbSize=sizeof(mif);
+	mif.fMask=MIIM_SUBMENU | MIIM_STATE | MIIM_FTYPE | MIIM_BITMAP | MIIM_STRING;
+	mif.hSubMenu=submenu.hmenu;
+
+	mif.dwTypeData=txt;
+
+	mif.fType = MFT_STRING;
+
+	if (Style & MIS_Bitmap)
+	{
+		mif.hbmpItem=(HBITMAP)hbitmap;
+	}
+	if (Style & MIS_Radiocheck)
+	{
+		mif.fType|=MFT_RADIOCHECK;
+	}
+	
+	if (Style & MIS_Seperator)
+	{
+		mif.fType|=MFT_SEPARATOR;
+	}
+	
+	if (Style&MIS_Checked)
+	{
+		mif.fState|=MFS_CHECKED;
+	}
+	if (Style&MIS_Grayed)
+	{
+		mif.fState|=MFS_GRAYED;
+	}
+	
+	if (submenu.Empty() && handler==0)
+	{
+		mif.fState|=MFS_GRAYED;
+	}
+
+	SetMenuItemInfo(owner->hmenu,nid,FALSE,&mif);
+}
+_MenuItem::~_MenuItem()
+{
+	owner->RemoveItem(gmid);
+	MenuItems[gmid]=0;
+}
+void _MenuItem::Create(char* text)
+{
+	//smth
+}
+void _MenuItem::AddChild(u32 id)
+{
+	//submenu.AddItem(id,pos);
+
+	//update item info
+	Update();
+}
+void _MenuItem::RemoveChild(u32 id)
+{
+	//submenu.RemoveItem(id);
+	if (submenu.Empty())
+		submenu.Delete();
+
+	//update item info
+	Update();
+}
+u32 CreateMenuItem(char* text,MenuItemSelectedFP* handler , void* puser)
+{
+	u32 gmid = MenuItems.size();
+	_MenuItem* t=new _MenuItem(text,gmid+10,gmid);
+	t->puser=puser;
+	t->handler=handler;
+	MenuItems.push_back(t);
+	return gmid;
+}
+u32 FASTCALL AddMenuItem(u32 parent,s32 pos,char* text,MenuItemSelectedFP* handler ,u32 checked)
+{
+	u32 rv= CreateMenuItem(text,handler,0);
+	
+	if (parent==0)
+		MainMenu.AddItem(rv,pos);
+	else
+	{
+		MenuItems[parent]->submenu.AddItem(rv,(u32)pos);
+	}
+
+	SetMenuItemStyle(rv,checked?MIS_Checked:0,MIS_Checked);
+	
+	return rv;
+}
+void FASTCALL SetMenuItemStyle(u32 id,u32 style,u32 mask)
+{
+	MenuItems[id]->Style= (MenuItems[id]->Style & (~mask))|style;
+	MenuItems[id]->Update();
+}
+void FASTCALL GetMenuItem(u32 id,MenuItem* info,u32 mask)
+{
+	if (mask & MIM_Bitmap)
+		info->Bitmap=MenuItems[id]->hbitmap;
+
+	if (mask & MIM_Handler)
+		info->Handler=MenuItems[id]->handler;
+
+	if (mask & MIM_PUser)
+		info->PUser=MenuItems[id]->puser;
+
+	if (mask & MIM_Style)
+		info->Style=MenuItems[id]->Style;
+
+	if (mask & MIM_Text)
+		info->Text=MenuItems[id]->txt;
+}
+void FASTCALL SetMenuItem(u32 id,MenuItem* info,u32 mask)
+{
+	if (mask & MIM_Bitmap)
+		MenuItems[id]->hbitmap=info->Bitmap;
+
+	if (mask & MIM_Handler)
+		MenuItems[id]->handler=info->Handler;
+
+	if (mask & MIM_PUser)
+		MenuItems[id]->puser=info->PUser;
+
+	if (mask & MIM_Style)
+		MenuItems[id]->Style=info->Style;
+
+	if (mask & MIM_Text)
+		MenuItems[id]->txt=info->Text;
+
+	MenuItems[id]->Update();
+}
+
+void FASTCALL DeleteAllMenuItemChilds(u32 id)
+{
+	MenuItems[id]->submenu.Delete();
+}
+void FASTCALL SetMenuItemHandler(u32 id,MenuItemSelectedFP* h)
+{
+	MenuItems[id]->handler=h;
+	MenuItems[id]->Update();
+}
+void FASTCALL SetMenuItemBitmap(u32 id,void* hbmp)
+{
+	MenuItems[id]->hbitmap=hbmp;
+	MenuItems[id]->Update();
+}
+u32 FASTCALL GetMenuItemStyle(u32 id)
+{
+	return MenuItems[id]->Style;
+}
+void* FASTCALL GetMenuItemBitmap(u32 id)
+{
+	return MenuItems[id]->hbitmap;
+}
+
+void FASTCALL DeleteMenuItem(u32 id)
+{
+	if (id==0)
+		return;
+
+	delete MenuItems[id];
+}
+
+
+//Wow , that was quite big :p
+
+//Nice helper :)
+void AddSeperator(u32 menu)
+{
+	SetMenuItemStyle(AddMenuItem(menu,-1,"-",0,0),MIS_Seperator,MIS_Seperator);
+}
+#define MENU_HANDLER(name) void FASTCALL name (u32 id,void* hWnd,void* stuff)
+///////Menu Handlers\\\\\\\
+
+MENU_HANDLER( HandleMenu1 )
+{
+	DeleteMenuItem(id);
+}
+MENU_HANDLER( HandleMenu0 )
+{
+	msgboxf("Menu %d -- not implemented",MBX_ICONEXCLAMATION,id);
+}
+
+//File 
+MENU_HANDLER(Handle_File_OpenBin)
+{
+	if (!sh4_cpu->IsCpuRunning())	//if cpu is stoped
+	{
+		OPENFILENAME ofn;
+		TCHAR szFile[128];
+
+		ZeroMemory(&ofn, sizeof(OPENFILENAME));
+		ofn.lStructSize		= sizeof(OPENFILENAME);
+		ofn.hwndOwner		= (HWND)hWnd;
+		ofn.lpstrFile		= g_szFileName;
+		ofn.nMaxFile		= MAX_PATH;
+		ofn.lpstrFilter		= "All(.BIN\\.ELF)\0*.BIN;*.ELF\0Binary\0*.BIN\0Elf\0*.ELF\0All\0*.*\0";
+		ofn.nFilterIndex	= 1;
+		ofn.nMaxFileTitle	= 128;
+		ofn.lpstrFileTitle	= szFile;
+		ofn.lpstrInitialDir	= NULL;
+		ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
+
+		if(GetOpenFileName(&ofn)>0)
+		{
+			if (Init_DC())
+			{
+				Reset_DC(false);
+				if(!LoadBinfileToSh4Mem(0x10000, g_szFileName))
+					return;
+				EnablePatch(patch_resets_Misc);//mwhaha
+				sh4_cpu->Reset(false);//do a hard reset
+				sh4_cpu->SetRegister(Sh4RegType::reg_sr,0x70000000);
+				sh4_cpu->SetRegister(Sh4RegType::reg_gbr,0x8c000000);
+				sh4_cpu->SetRegister(Sh4RegType::reg_pc,0x8c008300);
+				Start_DC();
+			}
+		}
+	}
+	//add warn message
+}
+MENU_HANDLER(Handle_File_LoadBin)
+{
+	//if (!sh4_cpu->IsCpuRunning())	//if cpu is stoped
+	{
+		OPENFILENAME ofn;
+		TCHAR szFile[128];
+
+		ZeroMemory(&ofn, sizeof(OPENFILENAME));
+		ofn.lStructSize		= sizeof(OPENFILENAME);
+		ofn.hwndOwner		= (HWND)hWnd;
+		ofn.lpstrFile		= g_szFileName;
+		ofn.nMaxFile		= MAX_PATH;
+		ofn.lpstrFilter		= "All(.BIN\\.ELF)\0*.BIN;*.ELF\0Binary\0*.BIN\0Elf\0*.ELF\0All\0*.*\0";
+		ofn.nFilterIndex	= 1;
+		ofn.nMaxFileTitle	= 128;
+		ofn.lpstrFileTitle	= szFile;
+		ofn.lpstrInitialDir	= NULL;
+		ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
+
+		if(GetOpenFileName(&ofn)>0)
+		{
+			if(!LoadBinfileToSh4Mem(0x10000, g_szFileName))
+				return;
+		}
+	}
+	//add warn message
+}
+MENU_HANDLER(Handle_File_BootHLE)
+{
+	if (Init_DC())
+	{
+		Reset_DC(false);
+		if (gdBootHLE()==false)
+		{
+			MessageBox((HWND)hWnd,"Failed to find ip.bin/bootfile\nTry to boot using the Normal boot method.","HLE Boot Error",MB_ICONEXCLAMATION | MB_OK);
+			return;
+		}
+		EnablePatch(patch_resets_Misc);//mwhaha
+		sh4_cpu->Reset(false);//do a hard reset
+		sh4_cpu->SetRegister(Sh4RegType::reg_sr,0x70000000);
+		sh4_cpu->SetRegister(Sh4RegType::reg_gbr,0x8c000000);
+		sh4_cpu->SetRegister(Sh4RegType::reg_pc,0x8c008300);
+		Start_DC();
+	}
+}
+MENU_HANDLER(Handle_File_Exit)
+{
+	SendMessage((HWND)hWnd, WM_CLOSE, 0,0);
+}
+//System
+MENU_HANDLER( Handle_System_Start)
+{
+	Start_DC();
+}
+MENU_HANDLER( Handle_System_Stop)
+{
+	Stop_DC();
+}
+MENU_HANDLER( Handle_System_Reset)
+{
+	sh4_cpu->Stop();
+	printf(">>\tDreamcast Reset\n");
+	sh4_cpu->Reset(false);//do a hard reset
+	sh4_cpu->SetRegister(Sh4RegType::reg_pc,0xA0000000);
+	DisablePatch(patch_all);
+}
+//Debug
+MENU_HANDLER( Handle_Debug_Sh4Debugger)
+{
+	if (!IsDCInited())
+	{
+		printf("Debugger opened w/o init , initing everything..\n");
+		Init_DC();
+		Reset_DC(false);
+	}
+
+
+	CtrlMemView::init();
+	CtrlDisAsmView::init();
+
+	hDebugger = CreateDialog( g_hInst, MAKEINTRESOURCE(IDD_SH4DEBUG), NULL, DlgProc);
+	if( !IsWindow(hDebugger) )
+		MessageBox( (HWND)hWnd, "Couldn't open Sh4 debugger","",MB_OK );
+}
+/*
+void Handle_ArmDebugger(u32 id,void* stuff)
+{
+	hDebugger = CreateDialog( g_hInst, MAKEINTRESOURCE(IDD_ARM7DEBUG), NULL, ArmDlgProc);
+	if( !IsWindow(hDebugger) )
+	MessageBox( hWnd, "Couldn't open ARM7 debugger","",MB_OK );
+
+	return 0;
+}
+*/
+//Options
+MENU_HANDLER( Handle_Options_Config)
+{
+	DialogBox(g_hInst,MAKEINTRESOURCE(IDD_CONFIG),(HWND)hWnd,DlgProcModal_config);
+}
+MENU_HANDLER( Handle_Options_SelectPlugins)
+{
+	plugins_Select();
+}
+//Profiler
+MENU_HANDLER( Handle_Profiler_Show)
+{
+	msgboxf("Profiler gui not yet implemented",MB_ICONERROR);
+}
+MENU_HANDLER( Handle_Profiler_Enable )
+{
+	if (GetMenuItemStyle(id) & MIS_Checked)
+	{
+		stop_Profiler();
+		SetMenuItemStyle(id,0,MIS_Checked);
+	}
+	else
+	{
+		start_Profiler();
+		SetMenuItemStyle(id,MIS_Checked,MIS_Checked);
+	}
+}
+//Help
+MENU_HANDLER( Handle_Help_About )
+{
+	DialogBox(g_hInst,MAKEINTRESOURCE(IDD_ABOUT),(HWND)hWnd,DlgProcModal_about);
+}
+
+//Create the menus and set the handlers :)
+void CreateBasicMenus()
+{
+	u32 menu_file=AddMenuItem(0,-1,"File",0,0);
+	u32 menu_system=AddMenuItem(0,-1,"System",0,0);
+	u32 menu_options=AddMenuItem(0,-1,"Options",0,0);
+	u32 menu_debug=AddMenuItem(0,-1,"Debug",0,0);
+	u32 menu_profiler=AddMenuItem(0,-1,"Profiler",0,0);
+	u32 menu_help=AddMenuItem(0,-1,"Help",0,0);
+
+	//File menu
+	AddMenuItem(menu_file,-1,"Normal Boot",Handle_System_Start,0);
+	AddMenuItem(menu_file,-1,"Hle GDROM boot",Handle_File_BootHLE,0);
+	AddSeperator(menu_file);
+	AddMenuItem(menu_file,-1,"Open bin/elf",Handle_File_OpenBin,0);
+	AddMenuItem(menu_file,-1,"Load bin/elf",Handle_File_LoadBin,0);
+	AddSeperator(menu_file);
+	AddMenuItem(menu_file,-1,"Exit",Handle_File_Exit,0);
+
+
+	//System Menu
+	AddMenuItem(menu_system,-1,"Start",Handle_System_Start,0);
+	AddMenuItem(menu_system,-1,"Stop",Handle_System_Stop,0);
+	AddMenuItem(menu_system,-1,"Reset",Handle_System_Reset,0);
+
+	//Options Menu
+	AddMenuItem(menu_options,-1,"nullDC Settings",Handle_Options_Config,0);
+	AddMenuItem(menu_options,-1,"Select Plugins",Handle_Options_SelectPlugins,0);
+	AddSeperator(menu_options);
+	PowerVR_menu = AddMenuItem(menu_options,-1,"PowerVR",0,0);
+	GDRom_menu = AddMenuItem(menu_options,-1,"GDRom",0,0);
+	Aica_menu = AddMenuItem(menu_options,-1,"Aica",0,0);
+	Maple_menu = AddMenuItem(menu_options,-1,"Maple",0,0);
+	ExtDev_menu = AddMenuItem(menu_options,-1,"ExtDevice",0,0);
+
+	//Debug
+	AddMenuItem(menu_debug,-1,"Debugger",Handle_Debug_Sh4Debugger,0);
+
+	//Profiler
+	AddMenuItem(menu_profiler,-1,"Enable",Handle_Profiler_Enable,0);
+	AddMenuItem(menu_profiler,-1,"Show",Handle_Profiler_Show,0);
+
+	//Help
+	AddMenuItem(menu_help,-1,"About",Handle_Help_About,0);
+}
+void InitMenu()
+{
+	MenuItems.push_back(0);
+
+	CreateBasicMenus();
+}
+HMENU GetHMenu()
+{
+	return MainMenu.hmenu;
+}
 LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	static RECT rc;
-	static TCHAR szFile[128];
-	static OPENFILENAME ofn;
 
 	switch(uMsg)
 	{
@@ -248,174 +795,16 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 		return 0;
 
 	case WM_COMMAND:
-		switch( LOWORD(wParam) )
 		{
-			//////// FILE MENU
-		case ID_FILE_OPENBIN:
-			if (!sh4_cpu->IsCpuRunning())	//if cpu is stoped
+			for (size_t i=1;i<MenuItems.size();i++)
 			{
-				ZeroMemory(&ofn, sizeof(OPENFILENAME));
-				ofn.lStructSize		= sizeof(OPENFILENAME);
-				ofn.hwndOwner		= hWnd;
-				ofn.lpstrFile		= g_szFileName;
-				ofn.nMaxFile		= MAX_PATH;
-				ofn.lpstrFilter		= "All(.BIN\\.ELF)\0*.BIN;*.ELF\0Binary\0*.BIN\0Elf\0*.ELF\0All\0*.*\0";
-				ofn.nFilterIndex	= 1;
-				ofn.nMaxFileTitle	= 128;
-				ofn.lpstrFileTitle	= szFile;
-				ofn.lpstrInitialDir	= NULL;
-				ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
-
-				if(GetOpenFileName(&ofn)>0)
+				if (MenuItems[i] && MenuItems[i]->nid==LOWORD(wParam))
 				{
-					if (Init_DC())
-					{
-						Reset_DC(false);
-						if(!LoadBinfileToSh4Mem(0x10000, g_szFileName))
-							return 0;
-						EnablePatch(patch_resets_Misc);//mwhaha
-						sh4_cpu->Reset(false);//do a hard reset
-						sh4_cpu->SetRegister(Sh4RegType::reg_sr,0x70000000);
-						sh4_cpu->SetRegister(Sh4RegType::reg_gbr,0x8c000000);
-						sh4_cpu->SetRegister(Sh4RegType::reg_pc,0x8c008300);
-						Start_DC();
-						return 0;
-					}
-				}
-			}
-			//add warn message
-			return 0;
-
-		case ID_FILE_LOADBIN:
-			//if (!sh4_cpu->IsCpuRunning())	//if cpu is stoped
-			{
-				ZeroMemory(&ofn, sizeof(OPENFILENAME));
-				ofn.lStructSize		= sizeof(OPENFILENAME);
-				ofn.hwndOwner		= hWnd;
-				ofn.lpstrFile		= g_szFileName;
-				ofn.nMaxFile		= MAX_PATH;
-				ofn.lpstrFilter		= "All(.BIN\\.ELF)\0*.BIN;*.ELF\0Binary\0*.BIN\0Elf\0*.ELF\0All\0*.*\0";
-				ofn.nFilterIndex	= 1;
-				ofn.nMaxFileTitle	= 128;
-				ofn.lpstrFileTitle	= szFile;
-				ofn.lpstrInitialDir	= NULL;
-				ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
-
-				if(GetOpenFileName(&ofn)>0)
-				{
-					if(!LoadBinfileToSh4Mem(0x10000, g_szFileName))
-						return 0;
+					MenuItems[i]->Clicked(hWnd);
 					return 0;
 				}
 			}
-			//add warn message
-			return 0;
-
-		case ID_FILE_BOOTHLE:
-		 {
-			 if (Init_DC())
-			 {
-				 Reset_DC(false);
-				 if (gdBootHLE()==false)
-				 {
-					 MessageBox(hWnd,"Failed to find ip.bin/bootfile\nTry to boot using the Normal boot method.","HLE Boot Error",MB_ICONEXCLAMATION | MB_OK);
-					 return 0;
-				 }
-				 EnablePatch(patch_resets_Misc);//mwhaha
-				 sh4_cpu->Reset(false);//do a hard reset
-				 sh4_cpu->SetRegister(Sh4RegType::reg_sr,0x70000000);
-				 sh4_cpu->SetRegister(Sh4RegType::reg_gbr,0x8c000000);
-				 sh4_cpu->SetRegister(Sh4RegType::reg_pc,0x8c008300);
-				 Start_DC();
-				 return 0;
-			 }
-		 }
-
-		case ID_FILE_EXIT:
-			SendMessage(hWnd, WM_CLOSE, 0,0);
-			return 0;
-
-			///////// SYSTEM MENU
-		case ID_FILE_NORMALBOOT:
-		case ID_SYSTEM_START:
-			Start_DC();
-			return 0;
-
-		case ID_SYSTEM_STOP:
-			Stop_DC();
-			return 0;
-
-		case ID_SYSTEM_RESET:
-			sh4_cpu->Stop();
-			printf(">>\tDreamcast Reset\n");
-			sh4_cpu->Reset(false);//do a hard reset
-			sh4_cpu->SetRegister(Sh4RegType::reg_pc,0xA0000000);
-			DisablePatch(patch_all);
-			return 0;
-
-
-			//////// DEBUG MENU
-		case ID_DEBUG_DEBUGGER:
-			if (!IsDCInited())
-			{
-				printf("Debugger opened w/o init , initing everything..\n");
-				Init_DC();
-				Reset_DC(false);
-			}
-
-			CtrlMemView::init();
-			CtrlDisAsmView::init();
-
-			hDebugger = CreateDialog( g_hInst, MAKEINTRESOURCE(IDD_SH4DEBUG), NULL, DlgProc);
-			if( !IsWindow(hDebugger) )
-				MessageBox( hWnd, "Couldn't open Sh4 debugger","",MB_OK );
-
-			return 0;
-
-		case ID_DEBUG_ARM7DEBUGGER:
-
-			hDebugger = CreateDialog( g_hInst, MAKEINTRESOURCE(IDD_ARM7DEBUG), NULL, ArmDlgProc);
-			if( !IsWindow(hDebugger) )
-				MessageBox( hWnd, "Couldn't open ARM7 debugger","",MB_OK );
-
-			return 0;
-
-			/////// HELP MENU
-		case ID_HELP_ABOUT:
-			DialogBox(g_hInst,MAKEINTRESOURCE(IDD_ABOUT),hWnd,DlgProcModal_about);
-			return 0;
-
-		case ID_PROFILER_SHOW:
-			msgboxf("Profiler gui not yet implementd",MB_ICONERROR);
-			//DialogBox(NULL,MAKEINTRESOURCE(IDD_PROFILER),hWnd,DlgProcModal_about);
-			return 0;
-
-		case ID_PROFILER_ENABLE:
-			{
-				HMENU m=GetMenu(hWnd);
-				if (GetMenuState(m,ID_PROFILER_ENABLE,0) & MF_CHECKED)
-				{
-					stop_Profiler();
-					CheckMenuItem(m,ID_PROFILER_ENABLE,MF_UNCHECKED);
-				}
-				else
-				{
-					start_Profiler();
-					CheckMenuItem(m,ID_PROFILER_ENABLE,MF_CHECKED);
-				}
-			}
-			return 0;
-
-
-		case ID_OPTIONS_CONFIG:
-			DialogBox(g_hInst,MAKEINTRESOURCE(IDD_CONFIG),hWnd,DlgProcModal_config);
-			return 0;
-
-		//Plugin Selection Menu
-		case ID_OPTIONS_SELECTPLUGINS:
-			plugins_Select();
-			return 0;
-
+			printf("Menu item %d selected\n",LOWORD(wParam));
 		}
 		break;
 
@@ -1115,6 +1504,7 @@ void GetCurrent(HWND hw,char* dest)
 
 void SetMapleMain_Mask(char* plugin,HWND hWnd)
 {
+	/*
 	if (strcmp(plugin,"NULL")==0)
 	{
 		for (int j=0;j<5;j++)
@@ -1145,6 +1535,7 @@ void SetMapleMain_Mask(char* plugin,HWND hWnd)
 			}
 		}
 	}
+	*/
 }
 void UpdateMapleSelections(HWND hw,HWND hWnd)
 {
@@ -1211,13 +1602,13 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		TabCtrl_InsertItem(GetDlgItem(hWnd,IDC_MAPLETAB), 3, &tci); 
 
 		current_maple_port=-1;
-		List<PluginLoadInfo>* pvr= EnumeratePlugins(Plugin_PowerVR);	
-		List<PluginLoadInfo>* gdrom= EnumeratePlugins(Plugin_GDRom);
-		List<PluginLoadInfo>* aica= EnumeratePlugins(Plugin_AICA);
-		List<PluginLoadInfo>* extdev= EnumeratePlugins(Plugin_ExtDevice);
+		List<PluginLoadInfo>* pvr= GetPluginList(Plugin_PowerVR);	
+		List<PluginLoadInfo>* gdrom= GetPluginList(Plugin_GDRom);
+		List<PluginLoadInfo>* aica= GetPluginList(Plugin_AICA);
+		List<PluginLoadInfo>* extdev= GetPluginList(Plugin_ExtDevice);
 
-		List<PluginLoadInfo>* MapleMain=EnumeratePlugins(Plugin_Maple);
-		List<PluginLoadInfo>* MapleSub=EnumeratePlugins(Plugin_MapleSub);
+		List<PluginLoadInfo>* MapleMain=new List<PluginLoadInfo>();//EnumeratePlugins(Plugin_Maple);
+		List<PluginLoadInfo>* MapleSub=new List<PluginLoadInfo>();//EnumeratePlugins(Plugin_MapleSub);
 
 		char temp[512];
 

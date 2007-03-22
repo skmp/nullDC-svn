@@ -45,9 +45,17 @@ void FASTCALL gdTerm()		 { lprintf("gdTerm()\n"); }
 DriveNotifyEventFP* Notify;
 DWORD dwGDMode = CdRom_XA;	// 1=cdrom,2=cdxa,8=GDROM
 
-s32 FASTCALL PluginLoad(emu_info* param)
+void FASTCALL gdConfig(void * handle);
+void FASTCALL handle_config(u32 id,void* hwnd,void* puser)
+{
+	gdConfig(hwnd);
+}
+s32 FASTCALL PluginLoad(emu_info* param,u32 rmenu)
 {
 	memcpy(&eminf,param,sizeof(eminf));
+	MenuItem t;
+	t.Handler=handle_config;
+	eminf.SetMenuItem(rmenu,&t,MIM_Handler);
 	return rv_ok;
 }
 
@@ -369,6 +377,7 @@ vector<DriveDesc> devList;
 
 void EnumDevs(UINT Type, vector<DriveDesc> &devList)
 {
+	devList.clear();
 	DWORD dwDrives = GetLogicalDrives();
 
 	for(int i=2; i<32; i++)		// skips A: && B:
@@ -400,6 +409,7 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 		InitCommonControls();
 		hList  = GetDlgItem(hWnd, IDL_DRIVELIST);
+
 		hSmall = ImageList_Create(16, 16, FALSE, 3, 0);
 		hLarge = ImageList_Create(32, 32, FALSE, 3, 0);
 
@@ -409,6 +419,7 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		if(ImageList_GetImageCount(hSmall) < 1) printf("ERROR: ImageList_GetImageCount(hSmall) < 1 \n");
 		if(ImageList_GetImageCount(hLarge) < 1) printf("ERROR: ImageList_GetImageCount(hLarge) < 1 \n");
 
+		
 		// Set the image lists.
 		ListView_SetImageList(hList, hSmall, LVSIL_SMALL);
 		ListView_SetImageList(hList, hLarge, LVSIL_NORMAL);
@@ -508,14 +519,10 @@ void FASTCALL gdConfig(void * handle)
 		WinErrMB();
 }
 
-////
-void EXPORT_CALL dcGetInterfaceInfo(plugin_interface_info* info)
+void EXPORT_CALL dcGetInterface(plugin_interface* info)
 {
 	info->InterfaceVersion=PLUGIN_I_F_VERSION;
-	info->count=1;
-}
-void EXPORT_CALL dcGetInterface(u32 id , plugin_interface* info)
-{
+
 	info->common.InterfaceVersion=GDR_PLUGIN_I_F_VERSION;
 	info->common.PluginVersion=DC_MakeVersion(1,0,0,DC_VER_NORMAL);
 	info->common.Type=Plugin_GDRom;
@@ -527,8 +534,6 @@ void EXPORT_CALL dcGetInterface(u32 id , plugin_interface* info)
 	info->gdr.Init=gdInit;
 	info->gdr.Reset=gdReset;
 	info->gdr.Term=gdTerm;
-
-	info->gdr.ShowConfig=0;
 
 	info->gdr.GetDiscType=gdReadDiskType;
 	info->gdr.GetSessionInfo=gdReadSession;

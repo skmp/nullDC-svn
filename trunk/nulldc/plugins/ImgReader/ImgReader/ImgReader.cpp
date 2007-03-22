@@ -25,14 +25,27 @@ int cfgGetInt(char* key,int def)
 {
 	return emu.ConfigLoadInt("ImageReader",key,def);
 }
+void cfgSetInt(char* key,int v)
+{
+	emu.ConfigSaveInt("ImageReader",key,v);
+}
 void cfgGetStr(char* key,char* v,const char*def)
 {
 	emu.ConfigLoadStr("ImageReader",key,v,def);
 }
-void UpdateSettings()
+void cfgSetStr(char* key,const char* v)
+{
+	emu.ConfigSaveStr("ImageReader",key,v);
+}
+void LoadSettings()
 {
 	settings.LoadDefaultImage=cfgGetInt("LoadDefaultImage",0);
 	cfgGetStr("DefaultImage",settings.DefaultImage,"defualt.cdi");
+}
+void SaveSettings()
+{
+	cfgSetInt("LoadDefaultImage",settings.LoadDefaultImage);
+	cfgSetStr("DefaultImage",settings.DefaultImage);
 }
 #define PLUGIN_NAME "Image Reader plugin by drk||Raziel & GiGaHeRz [" __DATE__ "]"
 void FASTCALL cfgdlg(void* window)
@@ -68,8 +81,30 @@ void FASTCALL GetSessionInfo(u8* out,u8 ses)
 }
 emu_info emu;
 char emu_name[512];
+void FASTCALL handle_UseDefImg(u32 id,void* w,void* p)
+{
+	if (settings.LoadDefaultImage)
+		settings.LoadDefaultImage=0;
+	else
+		settings.LoadDefaultImage=1;
+
+	emu.SetMenuItemStyle(id,settings.LoadDefaultImage?MIS_Checked:0,MIS_Checked);
+
+	SaveSettings();
+}
+void FASTCALL handle_SelDefImg(u32 id,void* w,void* p)
+{
+	if (GetFile(settings.DefaultImage,"CD/GD Images (*.cdi;*.mds;*.nrg;*.gdi) \0*.cdi;*.mds;*.nrg;*.gdi\0\0"))
+	{
+		SaveSettings();
+	}
+}
+void FASTCALL handle_About(u32 id,void* w,void* p)
+{
+	MessageBox((HWND)w,"Made by drk||Raziel & GiGaHeRz","About ImageReader...",MB_ICONINFORMATION);
+}
 //called when plugin is used by emu (you should do first time init here)
-s32 FASTCALL Load(emu_info* emu_inf)
+s32 FASTCALL Load(emu_info* emu_inf,u32 rmenu)
 {
 	if (emu_inf==0)
 		return rv_ok;
@@ -77,7 +112,12 @@ s32 FASTCALL Load(emu_info* emu_inf)
 
 	emu.ConfigLoadStr("emu","shortname",emu_name,0);
 	
-	UpdateSettings();
+	LoadSettings();
+
+	emu.AddMenuItem(rmenu,-1,"Use Default Image",handle_UseDefImg,settings.LoadDefaultImage);
+	emu.AddMenuItem(rmenu,-1,"Select Default Image",handle_SelDefImg,0);
+	emu.AddMenuItem(rmenu,-1,"About",handle_About,0);
+	
 	return rv_ok;
 }
 
@@ -100,7 +140,7 @@ s32 FASTCALL InitGDR(gdr_init_params* prm)
 	if (!InitDrive())
 		return rv_serror;
 	DriveNotifyEvent(DiskChange,0);
-	UpdateSettings();
+	LoadSettings();
 	return rv_ok;
 }
 
@@ -110,19 +150,14 @@ void FASTCALL TermGDR()
 	TermDrive();
 }
 
-//Give to the emu info for the plugin type
-void EXPORT_CALL dcGetInterfaceInfo(plugin_interface_info* info)
-{
-	info->InterfaceVersion=PLUGIN_I_F_VERSION;
-	info->count=1;
-
-}
 //Give to the emu pointers for the gd rom interface
-bool EXPORT_CALL dcGetInterface(u32 id , plugin_interface* info)
+void EXPORT_CALL dcGetInterface(plugin_interface* info)
 {
 #define c info->common
 #define g info->gdr
 	
+	info->InterfaceVersion=PLUGIN_I_F_VERSION;
+
 	c.Type=Plugin_GDRom;
 	c.InterfaceVersion=GDR_PLUGIN_I_F_VERSION;
 
@@ -136,7 +171,6 @@ bool EXPORT_CALL dcGetInterface(u32 id , plugin_interface* info)
 	g.Init=InitGDR;
 	g.Term=TermGDR;
 	g.Reset=ResetGDR;
-	g.ShowConfig=cfgdlg;
 	
 	g.GetDiscType=DriveGetDiscType;
 	g.GetToc=DriveGetTocInfo;
@@ -144,8 +178,6 @@ bool EXPORT_CALL dcGetInterface(u32 id , plugin_interface* info)
 	g.GetSessionInfo=GetSessionInfo;
 	g.ReadSubChannel=DriveReadSubChannel;
 	g.ExeptionHanlder=0;
-
-	return true;
 }
 
 #define INTERFACE_VERSION	MAKEWORD(1,0)
@@ -192,7 +224,7 @@ int _cdecl chanka_Init(const char* pszFileName)
 	gdr_init_params params;
 	params.DriveNotifyEvent=chanka_DriveNotifyEvent;
 
-	Load(0);
+	Load(0,0);
 	InitGDR(&params);
 	return 0;
 }

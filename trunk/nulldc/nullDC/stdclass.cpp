@@ -208,7 +208,11 @@ void cDllHandler::Unload()
 	}
 	else
 	{
-		FreeLibrary((HMODULE)lib);
+		u32 rv =FreeLibrary((HMODULE)lib);
+		if (!rv)
+		{
+			printf("FreeLibrary -- failed %d\n",GetLastError());
+		}
 		lib=0;
 	}
 }
@@ -257,15 +261,14 @@ void FindAllFiles(FileFoundCB* callback,char* dir,void* param)
 		{
 			callback(FindFileData.cFileName,param);
 		}
-
-		while (FindNextFileA(hFind, &FindFileData) != 0) 
+u32 rv;
+		while ( rv=FindNextFileA(hFind, &FindFileData) != 0) 
 		{ 
 			if ((FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)==0)
 			{
 				callback(FindFileData.cFileName,param);
 			}
 		}
-
 		dwError = GetLastError();
 		FindClose(hFind);
 		if (dwError != ERROR_NO_MORE_FILES) 

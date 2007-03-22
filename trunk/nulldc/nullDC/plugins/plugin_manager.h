@@ -15,7 +15,7 @@ struct nullDC_plugin
 	int id;
 	char dll_file[512];
 	s32 Open(char* plugin);
-	virtual bool LoadI(plugin_interface* plugin)=0;
+	virtual void LoadI(plugin_interface* plugin)=0;
 	bool IsOpened();
 	void Close();
 	bool Inited;
@@ -23,32 +23,28 @@ struct nullDC_plugin
 };
 struct nullDC_PowerVR_plugin:common_info,pvr_plugin_if,nullDC_plugin
 {
-	bool LoadI(plugin_interface* plugin);
+	void LoadI(plugin_interface* plugin);
 };
 
 struct nullDC_GDRom_plugin:common_info,gdr_plugin_if,nullDC_plugin
 {
-	bool LoadI(plugin_interface* plugin);
+	void LoadI(plugin_interface* plugin);
 };
 
 struct nullDC_AICA_plugin:common_info,aica_plugin_if,nullDC_plugin
 {
-	bool LoadI(plugin_interface* plugin);
+	void LoadI(plugin_interface* plugin);
 };
 
 struct nullDC_Maple_plugin:common_info,maple_plugin_if,nullDC_plugin
 {
-	bool LoadI(plugin_interface* plugin);
-};
-
-struct nullDC_Maple_Sub_plugin:common_info,maple_sub_plugin_if,nullDC_plugin
-{
-	bool LoadI(plugin_interface* plugin);
+	u32 ReferenceCount;
+	void LoadI(plugin_interface* plugin);
 };
 
 struct nullDC_ExtDevice_plugin:common_info,ext_device_plugin_if,nullDC_plugin
 {
-	bool LoadI(plugin_interface* plugin);
+	void LoadI(plugin_interface* plugin);
 };
 //Struct to hold plugin info
 struct PluginLoadInfo
@@ -56,13 +52,16 @@ struct PluginLoadInfo
 	char			Name[128];			//plugin name
 	VersionNumber	PluginVersion;		//plugin version
 	PluginType		Type;				//plugin type
-	VersionNumber	InterfaceVersion;	//Note : this version is of the interface for this type of plugin :)
 	char			dll[512];
-
-	u32 subdev_info;//for maple =p
+};
+struct MapleDeviceDefinition:maple_device_definition
+{
+	char dll[512];
+	u32 id;
 };
 
-List<PluginLoadInfo>* EnumeratePlugins(PluginType type);
+void EnumeratePlugins();
+List<PluginLoadInfo>* GetPluginList(PluginType type);
 
 //This is not used for maple
 //bool SetPlugin(char* plugin,PluginType type);

@@ -35,5 +35,46 @@ bool SelectPluginsGui();
 
 #define UI_MAIN_QUIT	0x88888889	// EXECUTION IS FINISHED
 
+#ifndef _MenuItemSelectedFP_
+#define _MenuItemSelectedFP_
+typedef void FASTCALL MenuItemSelectedFP(u32 id,void* WindowHandle,void* user);
+
+
+enum MenuItemMask
+{
+	MIM_Text=1,
+	MIM_Handler=2,
+	MIM_Bitmap=4,
+	MIM_Style=8,
+	MIM_PUser=16,
+	MIM_All=0xFFFFFFFF,
+};
+struct MenuItem
+{
+	char* Text;			//Text of the menu item
+	MenuItemSelectedFP* Handler;	//called when the menu is clicked
+	void* Bitmap;		//bitmap handle
+	u32 Style;			//MIS_* combination
+	void* PUser;		//User defined pointer :)
+};
+#endif
+
+u32 FASTCALL AddMenuItem(u32 parent,s32 pos,char* text,MenuItemSelectedFP* handler ,u32 checked);
+void FASTCALL DeleteAllMenuItemChilds(u32 id);
+void FASTCALL SetMenuItemStyle(u32 id,u32 style,u32 mask);
+void FASTCALL GetMenuItem(u32 id,MenuItem* info,u32 mask);
+void FASTCALL SetMenuItem(u32 id,MenuItem* info,u32 mask);
+void FASTCALL DeleteMenuItem(u32 id);
+//These still exist , but are no longer given to plugins
+void FASTCALL SetMenuItemHandler(u32 id,MenuItemSelectedFP* h);
+void FASTCALL SetMenuItemBitmap(u32 id,void* hbmp);
+u32 FASTCALL GetMenuItemStyle(u32 id);
+void* FASTCALL GetMenuItemBitmap(u32 id);
+
+extern u32 PowerVR_menu;
+extern u32 GDRom_menu;
+extern u32 Aica_menu;
+extern u32 Maple_menu;
+extern u32 ExtDev_menu;
 
 #endif // __EMU_WIN_UI_H__
