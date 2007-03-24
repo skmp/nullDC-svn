@@ -415,11 +415,17 @@ void cm_MampleSubEmpty(u32 root,u32 port,u32 subport)
 {
 	DeleteAllMenuItemChilds(root);
 	//l8r
+	AddMenuItem(root,-1,"Attach Some Crack",0,0);
+	AddMenuItem(root,-1,"Attach Some Crack x2",0,0);
+	AddMenuItem(root,-1,"Click Me To Crash",(MenuItemSelectedFP*)666,0);
 }
 void cm_MampleSubUsed(u32 root,u32 port,u32 subport)
 {
 	DeleteAllMenuItemChilds(root);
 	//l8r
+	AddMenuItem(root,-1,"Unplug",0,0);
+	u32 sep=AddMenuItem(root,-1,"",0,0);
+	SetMenuItemStyle(sep,MIS_Seperator,MIS_Seperator);
 }
 void FASTCALL menu_handle_attach_main(u32 id,void* win,void* p)
 {
@@ -432,6 +438,8 @@ void FASTCALL menu_handle_attach_main(u32 id,void* win,void* p)
 void cm_MampleMainEmpty(u32 root,u32 port)
 {
 	DeleteAllMenuItemChilds(root);
+	for (int i=0;i<5;i++)
+		Maple_menu_ports[port][i]=0;
 	//Add the
 	
 	for (size_t i=0;i<MapleDeviceList_cached.size();i++)
@@ -456,14 +464,18 @@ void cm_MampleMainUsed(u32 root,u32 port,u32 flags)
 {
 	DeleteAllMenuItemChilds(root);
 	//add the 
-
 	//Subdevice X ->[default empty]
-	for (u32 i=0;i<4;i++)
+	for (u32 i=0;i<5;i++)
 	{
 		if (flags & (1<<i))
 		{
 			u32 sdr=AddMenuItem(root,-1,"Subdevice ..",0,0);
+			Maple_menu_ports[port][i]=sdr;
 			cm_MampleSubEmpty(sdr,port,i);
+		}
+		else
+		{
+			Maple_menu_ports[port][i]=0;
 		}
 	}
 	
@@ -494,12 +506,12 @@ s32 CreateMapleDevice(u32 pos,char* device,bool hotplug)
 
 	nullDC_Maple_plugin* plg =FindMaplePlugin(mdd);
 	
-	cm_MampleMainUsed(Maple_menu_ports[pos],pos,mdd->Flags);
+	cm_MampleMainUsed(Maple_menu_ports[pos][5],pos,mdd->Flags);
 	MapleDevices[pos].port=GetMaplePort(pos,5);
 	
-	if (s32 rv= plg->CreateMain(&MapleDevices[pos],mdd->id,hotplug?MDCF_Hotplug:MDCF_None,Maple_menu_ports[pos]))
+	if (s32 rv= plg->CreateMain(&MapleDevices[pos],mdd->id,hotplug?MDCF_Hotplug:MDCF_None,Maple_menu_ports[pos][5]))
 	{
-		cm_MampleMainEmpty(Maple_menu_ports[pos],pos);
+		cm_MampleMainEmpty(Maple_menu_ports[pos][5],pos);
 		if (rv==rv_error)
 			return pmde_failed_create;
 		else
@@ -523,15 +535,62 @@ s32 DestroyMapleDevice(u32 pos)
 	nullDC_Maple_plugin* plg =FindMaplePlugin(mdd);
 
 	plg->DestroyMain(&MapleDevices[pos],mdd->id);
-	cm_MampleMainEmpty(Maple_menu_ports[pos],pos);
+	cm_MampleMainEmpty(Maple_menu_ports[pos][5],pos);
+
+	return rv_ok;
 }
-s32 CreateMapleSubDevice(u32 pos,u32 subport,char* device)
+s32 CreateMapleSubDevice(u32 pos,u32 subport,char* device,bool hotplug)
 {
-	return 0;
+	if (pos>3)
+		return pmde_invalid_pos;
+	if (subport>4)
+		return pmde_invalid_pos;
+
+	if (!MapleDevices[pos].connected)
+		return pmde_device_state;
+
+	if (MapleDevices[pos].subdevices[subport].connected)
+		return pmde_device_state;
+
+	MapleDeviceDefinition* mdd=FindMapleDevice(device);
+
+	nullDC_Maple_plugin* plg =FindMaplePlugin(mdd);
+	
+	cm_MampleSubUsed(Maple_menu_ports[pos][subport],pos,subport);
+	MapleDevices[pos].subdevices[subport].port=GetMaplePort(pos,subport);
+	
+	if (s32 rv= plg->CreateSub(&MapleDevices[pos].subdevices[subport],mdd->id,hotplug?MDCF_Hotplug:MDCF_None,Maple_menu_ports[pos][subport]))
+	{
+		cm_MampleSubEmpty(Maple_menu_ports[pos][subport],pos,subport);
+		if (rv==rv_error)
+			return pmde_failed_create;
+		else
+			return pmde_failed_create_s;
+	}
+	MapleDevices_dd[pos][subport].mdd=mdd;
+	MapleDevices[pos].subdevices[subport].connected=true;
+
+	return rv_ok;
 }
 s32 DestroyMapleSubDevice(u32 pos,u32 subport)
 {
-return 0;
+	if (pos>3)
+		return pmde_invalid_pos;
+
+	if (!MapleDevices[pos].connected)
+		return pmde_device_state;
+	
+	if (!MapleDevices[pos].subdevices[subport].connected)
+		return pmde_device_state;
+
+	MapleDeviceDefinition* mdd=MapleDevices_dd[pos][subport].mdd;
+	MapleDevices_dd[pos][subport].mdd=0;
+	nullDC_Maple_plugin* plg =FindMaplePlugin(mdd);
+
+	plg->DestroySub(&MapleDevices[pos].subdevices[subport],mdd->id);
+	cm_MampleSubEmpty(Maple_menu_ports[pos][subport],pos,subport);
+
+	return rv_ok;
 }
 
 //Misc handling code ~
@@ -594,7 +653,7 @@ s32 plugins_Load_()
 		//if first time load , init the maple menus
 		plugins_first_load=true;
 		for (u32 i=0;i<4;i++)
-			cm_MampleMainEmpty(Maple_menu_ports[i],i);
+			cm_MampleMainEmpty(Maple_menu_ports[i][5],i);
 	}
 	eminf.ConfigLoadStr=cfgLoadStr;
 	eminf.ConfigSaveStr=cfgSaveStr;
@@ -646,23 +705,40 @@ s32 plugins_Load_()
 		{
 			if (!MapleDevices_dd[port][5].Created)
 			{
-				u32 rv=CreateMapleDevice(port,plug_name,false);
+				s32 rv=CreateMapleDevice(port,plug_name,false);
 				if (rv!=rv_ok)
 				{
 					return rv;
 				}
 				MapleDevices_dd[port][5].Created=true;
 			}
-			/*
-			for (int subport=0;subport<4;subport++)
+			u32 flags=MapleDevices_dd[port][5].mdd->Flags;
+
+			for (int subport=0;subport<5;subport++)
 			{
-				if (!MapleDevices_dd[port][subport].Created)
+				if (!(flags & (1<<subport)))
 				{
-					//Create it
-					MapleDevices_dd[port][subport].Created=true
+					MapleDevices_dd[port][subport].Created=false;
+					continue;
+				}
+
+				maple_cfg_plug(port,subport,plug_name);
+				lcp_name=plug_name;
+				if (strcmp(plug_name,"NULL")!=0)
+				{
+					if (!MapleDevices_dd[port][subport].Created)
+					{
+						//Create it
+						s32 rv=CreateMapleSubDevice(port,subport,plug_name,false);
+						if (rv!=rv_ok)
+						{
+							return rv;
+						}
+
+						MapleDevices_dd[port][subport].Created=true;
+					}
 				}
 			}
-			*/
 		}
 	}
 
@@ -704,8 +780,21 @@ void plugins_Unload()
 		{
 			if (MapleDevices_dd[port][5].Created)
 			{
+				for (int subport=4;subport>=0;subport--)
+				{
+					if (MapleDevices_dd[port][subport].Created)
+					{
+						MapleDevices_dd[port][subport].Created=false;
+
+						s32 rv=DestroyMapleSubDevice(port,subport);
+						if (rv!=rv_ok)
+						{
+							printf("DestroyMapleSubDevice(port,subport) failed: %d\n",rv);
+						}
+					}
+				}
 				MapleDevices_dd[port][5].Created=false;
-				u32 rv=DestroyMapleDevice(port);
+				s32 rv=DestroyMapleDevice(port);
 				if (rv!=rv_ok)
 				{
 					printf("DestroyMapleDevice(port) failed: %d\n",rv);
@@ -833,7 +922,7 @@ s32 plugins_Init_()
 	{
 		if (MapleDevices_dd[i][5].Created)
 		{
-			lcp_name="Made Devices";
+			lcp_name="Made Device";
 			verify(MapleDevices_dd[i][5].mdd!=0);
 			//Init
 			nullDC_Maple_plugin *nmp=FindMaplePlugin(MapleDevices_dd[i][5].mdd);
@@ -842,6 +931,20 @@ s32 plugins_Init_()
 				return rv;
 			
 			MapleDevices_dd[i][5].Inited=true;
+
+			for (int j=0;j<5;j++)
+			{
+				if (MapleDevices_dd[i][j].Created)
+				{
+					lcp_name="Made SubDevice";
+					verify(MapleDevices_dd[i][j].mdd!=0);
+					//Init
+					nullDC_Maple_plugin *nmp=FindMaplePlugin(MapleDevices_dd[i][j].mdd);
+					lcp_name=MapleDevices_dd[i][j].mdd->Name;
+					if (s32 rv=nmp->InitSub(&MapleDevices[i].subdevices[j],MapleDevices_dd[i][j].mdd->id,&mip))
+						return rv;
+				}
+			}
 		}
 		else
 			MapleDevices_dd[i][5].Inited=false;
@@ -889,10 +992,23 @@ void plugins_Term()
 	plugins_inited=false;
 
 	//Term inited maple devices
-	for ( int i=4;i>=0;i--)
+	for ( int i=3;i>=0;i--)
 	{
 		if (MapleDevices_dd[i][5].Inited)
 		{ 
+			for (int j=4;j>=0;j--)
+			{
+				if (MapleDevices_dd[i][j].Inited)
+				{
+					MapleDevices_dd[i][j].Inited=false;
+
+					verify(MapleDevices_dd[i][j].mdd!=0);
+					//term
+					nullDC_Maple_plugin *nmp=FindMaplePlugin(MapleDevices_dd[i][j].mdd);
+					nmp->TermSub(&MapleDevices[i].subdevices[j],MapleDevices_dd[i][j].mdd->id);
+				}
+			}
+
 			MapleDevices_dd[i][5].Inited=false;
 
 			verify(MapleDevices_dd[i][5].mdd!=0);

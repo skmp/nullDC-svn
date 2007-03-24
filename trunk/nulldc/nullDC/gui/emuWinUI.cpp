@@ -34,7 +34,7 @@ u32 PowerVR_menu;
 u32 GDRom_menu;
 u32 Aica_menu;
 u32 Maple_menu;
-u32 Maple_menu_ports[4];
+u32 Maple_menu_ports[4][6];
 u32 ExtDev_menu;
 
 /// i dont like it but ....
@@ -776,10 +776,10 @@ void CreateBasicMenus()
 	ExtDev_menu = AddMenuItem(menu_options,-1,"ExtDevice",0,0);
 
 	//Maple Menu
-	Maple_menu_ports[0]=AddMenuItem(Maple_menu,-1,"Port 1",0,0);
-	Maple_menu_ports[1]=AddMenuItem(Maple_menu,-1,"Port 2",0,0);
-	Maple_menu_ports[2]=AddMenuItem(Maple_menu,-1,"Port 3",0,0);
-	Maple_menu_ports[3]=AddMenuItem(Maple_menu,-1,"Port 4",0,0);
+	Maple_menu_ports[0][5]=AddMenuItem(Maple_menu,-1,"Port 1",0,0);
+	Maple_menu_ports[1][5]=AddMenuItem(Maple_menu,-1,"Port 2",0,0);
+	Maple_menu_ports[2][5]=AddMenuItem(Maple_menu,-1,"Port 3",0,0);
+	Maple_menu_ports[3][5]=AddMenuItem(Maple_menu,-1,"Port 4",0,0);
 
 	//Debug
 	AddMenuItem(menu_debug,-1,"Debugger",Handle_Debug_Sh4Debugger,0);
