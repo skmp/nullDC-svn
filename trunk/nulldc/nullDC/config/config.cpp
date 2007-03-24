@@ -69,6 +69,8 @@ bool cfgVerify()
 		fcfg = fopen(cfgPath,"wt");
 		fprintf(fcfg,";; nullDC cfg file ;;\n\n");
 	}
+	fclose(fcfg);
+
 	//temp
 	cfgSaveStr("emu","AppPath",appPath);
 	cfgSaveStr("emu","PluginPath",pluginPath);
@@ -78,8 +80,6 @@ bool cfgVerify()
 	cfgSaveStr("emu","ShortName",VER_SHORTNAME);
 	cfgSaveStr("emu","Name",VER_EMUNAME);
 	cfgSaveInt("emu","Version",1);
-
-	fclose(fcfg);
 
 	return true;
 }
