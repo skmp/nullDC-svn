@@ -15,7 +15,7 @@ struct vertex
 float W_min: register(c0);
 float W_max: register(c1);
 
-vertex VertexShader(in vertex vtx) 
+vertex VertexShader_main(in vertex vtx) 
 {
 	float x=vtx.pos.x;
 	float y=vtx.pos.y;

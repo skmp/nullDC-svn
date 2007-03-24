@@ -22,7 +22,7 @@ struct pixel
 sampler2D samplr : register(s0);
 
 //Pvr only supports ARGB8888 colors , so we have to clamp em (in case they are float colors inputed directly)
-float4 PixelShader(in pixel s ) : COLOR0
+float4 PixelShader_main(in pixel s ) : COLOR0
 { 
 	float4 color=saturate(s.col);
 	

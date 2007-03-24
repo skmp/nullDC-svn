@@ -906,7 +906,7 @@ namespace Direct3DRenderer
 		ID3DXConstantTable* consts;
 
 		D3DXCompileShaderFromFileA("ps_hlsl.fx"
-			,ps_macros,NULL,"PixelShader",profile,NULL,&shader,&perr,&consts);
+			,ps_macros,NULL,"PixelShader_main",profile,NULL,&shader,&perr,&consts);
 		if (perr)
 		{
 			char* text=(char*)perr->GetBufferPointer();
@@ -1318,7 +1318,7 @@ if (!GetAsyncKeyState(VK_F3))
 		ID3DXBuffer* perr;
 		ID3DXBuffer* shader;
 		
-		verifyc(D3DXCompileShaderFromFileA("vs_hlsl.fx",vs_macros,NULL,"VertexShader",D3DXGetVertexShaderProfile(dev) , 0, &shader,&perr,&shader_consts));
+		verifyc(D3DXCompileShaderFromFileA("vs_hlsl.fx",vs_macros,NULL,"VertexShader_main",D3DXGetVertexShaderProfile(dev) , 0, &shader,&perr,&shader_consts));
 		if (perr)
 		{
 			char* text=(char*)perr->GetBufferPointer();
