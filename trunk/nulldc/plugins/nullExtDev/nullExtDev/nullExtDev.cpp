@@ -46,15 +46,18 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 }
 
 
-void FASTCALL cfgdlg(void* window)
+void FASTCALL handle_about(u32 id,void* window,void* p)
 {
-//	MessageBox((HWND)window,"Nothing to configure","nullExtDev plugin",MB_OK | MB_ICONINFORMATION);
+	MessageBox((HWND)window,"Made by the nullDC team\nThis plugin ,unlike the rest of the emulator,is actualy null.\n\nNow , go back before its too late ...","nullExtDev plugin",MB_OK | MB_ICONINFORMATION);
 }
 
 
 //called when plugin is used by emu (you should do first time init here)
 s32 FASTCALL Load(emu_info* param,u32 rmenu)
 {
+	MenuItem mi;
+	mi.Handler=handle_about;
+	param->SetMenuItem(rmenu,&mi,MIM_Handler);
 	return rv_ok;
 }
 

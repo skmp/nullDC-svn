@@ -36,15 +36,15 @@ int cfgGetInt(char* key,int def)
 extern bool g_bForceSVP;
 void UpdateConfig()
 {
-	g_bUSE_ZWRITE           = cfgGetInt("Use_ZWrite",0);
-    g_bUSE_ALPHATEST_ZWRITE = cfgGetInt("Use_AlphaTest_ZWrite",0);
+	g_bUSE_ZWRITE           = cfgGetInt("Use_ZWrite",0)!=0;
+    g_bUSE_ALPHATEST_ZWRITE = cfgGetInt("Use_AlphaTest_ZWrite",0)!=0;
 
-	g_bShowStats=cfgGetInt("ShowStats",0);
-	g_bWireframe=cfgGetInt("Wireframe",0);
+	g_bShowStats=cfgGetInt("ShowStats",0)!=0;
+	g_bWireframe=cfgGetInt("Wireframe",0)!=0;
 
 	g_dwCreationWidth=cfgGetInt("Width",1280);
 	g_dwCreationHeight=cfgGetInt("Height",1024);
-	g_bForceSVP=cfgGetInt("ForceSoftwareVertexProceccing",0);
+	g_bForceSVP=cfgGetInt("ForceSoftwareVertexProceccing",0)!=0;
 	g_iMultiSampleCount=cfgGetInt("MultiSampleCount",0);
 	g_iMultiSampleQuality=cfgGetInt("MultiSampleQuality",0);
 	g_bCreationFullScreen=cfgGetInt("FullScreen",0);
@@ -117,11 +117,6 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     return TRUE;
 }
 
-//Give to the emu info for the plugin type
-void FASTCALL dcShowConfigDD(void* window)
-{
-	printf("dcShowConfigDD-> wha ? ");
-}
 
 /*
 
@@ -166,17 +161,24 @@ void* lock_vmem(void* pMem,unsigned __int32 bytes,void* puser)
 void FASTCALL TaFIFO(u32 address,u32* data,u32 size)
 {
 	size*=8;
-	for (int i=0;i<size;i+=8)		
+	for (u32 i=0;i<size;i+=8)		
 		TASendPackedData((DWORD*)&data[i],32);
 }
+void FASTCALL handle_About(u32 id,void* w,void* p)
+{
+	MessageBox((HWND)w,"Chankast PowerVR core , made by the chankast team\nPort by drk||Raziel","About ChankaPvr...",MB_ICONINFORMATION);
+}
 
-s32 FASTCALL Load(emu_info* inf)
+s32 FASTCALL Load(emu_info* inf,u32 rmenu)
 {
 	em_inf=*inf;
 
 	Hwnd=em_inf.WindowHandle;
 	g_hWnd=(HWND)Hwnd;
 	UpdateConfig();
+
+	em_inf.AddMenuItem(rmenu,-1,"About",handle_About,0);
+
 	return rv_ok;
 }
 
@@ -244,17 +246,10 @@ char* GetNullDCSoruceFileName(char* full)
 	return &temp[0];
 }
 
-
-void EXPORT_CALL dcGetInterfaceInfo(plugin_interface_info* info)
+//Give to the emu pointers for the PowerVR interface
+void EXPORT_CALL dcGetInterface(plugin_interface* info)
 {
 	info->InterfaceVersion=PLUGIN_I_F_VERSION;
-	info->count=1;
-}
-//Give to the emu pointers for the PowerVR interface
-void EXPORT_CALL dcGetInterface(u32 id,plugin_interface* info)
-{
-	if (id!=0)
-		return;
 
 #define c info->common
 #define p info->pvr
@@ -274,14 +269,10 @@ void EXPORT_CALL dcGetInterface(u32 id,plugin_interface* info)
 	p.Term=TermPvr;
 	p.Reset=ResetPvr;
 
-	p.ShowConfig=dcShowConfigDD;
-
 	p.UpdatePvr=spgUpdatePvr;
 	p.TaFIFO=TaFIFO;
 	p.ReadReg=ReadPvrRegister;
 	p.WriteReg=WritePvrRegister;
 	p.LockedBlockWrite = vramLockCB;
 	p.ExeptionHanlder=0;	//we don't use that feature , we'l use default locking ;)
-
-	return;
 }

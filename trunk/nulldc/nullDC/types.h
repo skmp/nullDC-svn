@@ -148,8 +148,8 @@ using namespace std;
 #define MINOR_VER 0
 
 #define VER_EMUNAME		"nullDC"
-#define VER_FULLNAME	VER_EMUNAME " v1.0.0 private beta 2 (built " __DATE__ "@" __TIME__ ")"
-#define VER_SHORTNAME	VER_EMUNAME " 1.0.0pb2"
+#define VER_FULLNAME	VER_EMUNAME " v1.0.0 private beta 3 (built " __DATE__ "@" __TIME__ ")"
+#define VER_SHORTNAME	VER_EMUNAME " 1.0.0pb3"
 
 #define dbgbreak __asm {int 3}
 

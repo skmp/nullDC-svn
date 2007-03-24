@@ -55,10 +55,15 @@ EXPORT void dcGetAICAInfo(aica_plugin_if* info)
 	info->UpdateAICA=UpdateAICA;
 }
 */
-
-s32 FASTCALL OnLoad(emu_info* em)
+void FASTCALL handle_About(u32 id,void* w,void* p)
+{
+	MessageBoxA((HWND)w,"Made by drk||Raziel","About nullDC Aica...",MB_ICONINFORMATION);
+}
+s32 FASTCALL OnLoad(emu_info* em,u32 rmenu)
 {
 	memcpy(&eminf,em,sizeof(eminf));
+
+	eminf.AddMenuItem(rmenu,-1,"About",handle_About,0);
 	return rv_ok;
 }
 
@@ -102,18 +107,10 @@ void FASTCALL Reset(bool Manual)
 }
 
 
-//Give to the emu info for the plugin type
-EXPORT void EXPORT_CALL dcGetInterfaceInfo(plugin_interface_info* info)
+//Give to the emu pointers for the PowerVR interface
+EXPORT void EXPORT_CALL dcGetInterface(plugin_interface* info)
 {
 	info->InterfaceVersion=PLUGIN_I_F_VERSION;
-	info->count=1;
-}
-
-//Give to the emu pointers for the PowerVR interface
-EXPORT bool EXPORT_CALL dcGetInterface(u32 id,plugin_interface* info)
-{
-	if(id!=0)
-		return false;
 /*
 	info->Init=dcInit;
 	info->Term=dcTerm;
@@ -148,14 +145,13 @@ EXPORT bool EXPORT_CALL dcGetInterface(u32 id,plugin_interface* info)
 	a.Init=Init;
 	a.Reset=Reset;
 	a.Term=Term;
-	a.ShowConfig=0;
+
 	a.ExeptionHanlder=0;
 
 	a.UpdateAICA=UpdateAICA;
 
 	a.ReadMem_aica_reg=sh4_ReadMem_reg;
 	a.WriteMem_aica_reg=sh4_WriteMem_reg;
-	return true;
 }
 
 int cfgGetInt(char* key,int def)

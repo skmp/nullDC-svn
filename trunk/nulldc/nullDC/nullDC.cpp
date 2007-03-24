@@ -114,6 +114,12 @@ void EnumPlugins()
 
 int main___(int argc,char* argv[])
 {
+	if (!CreateGUI())
+	{
+		printf("Creating GUI failed\n");
+		return -1;
+	}
+
 	PrintSerialIPUsage(argc,argv);
 	char * currpath=GetEmuPath("");
 	SetCurrentDirectoryA(currpath);
@@ -122,28 +128,8 @@ int main___(int argc,char* argv[])
 	// Could Change plugin path even, do first, is always relative to execution dir.
 	if(!cfgVerify())
 		printf("~ERROR: cfgVerify() Failed!\n");
-/*
-	if(TRUE == cfgLoadInt("nullDC","bNeedsCfg"))
-		printf(" >>>>>>>>>>> NEEDS A CFG !\n");
-	*/
 
-	//get curent path and set plugin path
-//	("plugins\\");
-//	SetPluginPath(plpath);
-//	free(plpath);
-
-	char * plpath = new char[MAX_PATH];
-	cfgLoadStr("nullDC_paths","PluginPath", plpath,"NULL");
-	SetPluginPath(plpath);
-	delete[] plpath;
-	
 	EnumPlugins();
-
-	if (!CreateGUI())
-	{
-		printf("Creating GUI failed\n");
-		return -1;
-	}
 
 	while (!plugins_Load())
 	{
@@ -170,8 +156,7 @@ int main(int argc, char* argv[])
 {
 	if (!_vmem_reserve())
 	{
-		printf("Unable to reserve nullDC memory ...\n");
-		getchar();
+		msgboxf("Unable to reserve nullDC memory ...",MBX_OK | MBX_ICONERROR);
 		return -1;
 	}
 	int rv=0;

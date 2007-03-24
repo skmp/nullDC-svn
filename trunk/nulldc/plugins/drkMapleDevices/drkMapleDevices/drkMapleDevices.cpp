@@ -340,6 +340,7 @@ void FASTCALL  Unload()
 	}
 }
 
+/*
 //It's suposed to reset anything but vram (vram is set to 0 by emu)
 s32 FASTCALL Init(maple_init_params* p)
 {
@@ -359,6 +360,7 @@ void FASTCALL Term()
 {
 	//term here ?
 }
+*/
 
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
@@ -1803,25 +1805,25 @@ void FASTCALL VmuDMA(maple_subdevice_instance* device_instance,u32 Command,u32* 
 
 }
 
-
-template<u32 has_input>
-s32 FASTCALL CreateController(maple_device_instance* inst,u8 port,u32 flags)
+void FASTCALL config_keys(u32 id,void* w,void* p)
 {
-	if (has_input)
+	MessageBox((HWND)w,"Hahaha nice joke ..","Shittie Controller Device ...",MB_APPLMODAL | MB_OK | MB_ICONHAND);
+}
+s32 FASTCALL CreateMain(maple_device_instance* inst,u32 id,u32 flags,u32 rootmenu)
+{
+	host.AddMenuItem(rootmenu,-1,"Config keys",config_keys,0);
+	if (id==0)
 	{
-		if (has_input==1)
-		{
 		inst->dma=ControllerDMA;
 		inst->data=0;
-		}
-		else
-		{
-			sync_counter=0;
-			next_sync_counter=1;
-			inst->dma=ControllerDMA_net;
+	}
+	else if (id==1)
+	{
+		sync_counter=0;
+		next_sync_counter=1;
+		inst->dma=ControllerDMA_net;
 		inst->data=0;
-			verify(Init_netplay()==0);
-		}
+		verify(Init_netplay()==0);
 	}
 	else
 	{
@@ -1866,15 +1868,16 @@ s32 FASTCALL CreateController(maple_device_instance* inst,u8 port,u32 flags)
 }
 
 
-void FASTCALL DestroyController(maple_device_instance* inst)
+void FASTCALL DestroyMain(maple_device_instance* inst)
 {
 	if (inst->data)
 		free( inst->data);
 }
-s32 FASTCALL CreateVmu(maple_subdevice_instance* inst,u8 port,u32 flags)
+s32 FASTCALL CreateSub(maple_subdevice_instance* inst,u32 id,u32 flags,u32 rootmenu)
 {
+	host.AddMenuItem(rootmenu,-1,"VMU SUB MENU YAY",0,0);
 	inst->data=malloc(sizeof(VMU_info));
-	sprintf(((VMU_info*)inst->data)->file,"vmu_data_port%x.bin",port);
+	sprintf(((VMU_info*)inst->data)->file,"vmu_data_port%x.bin",inst->port);
 	FILE* f=fopen(((VMU_info*)inst->data)->file,"rb");
 	if (f)
 	{
@@ -1885,7 +1888,7 @@ s32 FASTCALL CreateVmu(maple_subdevice_instance* inst,u8 port,u32 flags)
 
 	return rv_ok;
 }
-void FASTCALL DestroyVmu(maple_subdevice_instance* inst)
+void FASTCALL DestroySub(maple_subdevice_instance* inst)
 {
 	if (inst->data)
 		free(inst->data);
@@ -1917,9 +1920,10 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	
 	strcpy(c.Name,"nullDC Maple Devices (" __DATE__ ")");
 
-	km.Init=Init;
-	km.Reset=Reset;
-	km.Term=Term;
+	km.CreateMain=CreateMain;
+	km.CreateSub=CreateSub;
+	km.DestroyMain=DestroyMain;
+	km.DestroySub=DestroySub;
 
 	//0
 	strcpy(km.devices[0].Name,"nullDC DC controller [WinHook] (" __DATE__ ")");
@@ -1933,8 +1937,8 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 
 	//2
 	strcpy(km.devices[2].Name,"nullDC VMU (" __DATE__ ")");
-	km.devices[1].Type=MDT_Sub;
-	km.devices[1].Flags= MDTF_Hotplug;
+	km.devices[2].Type=MDT_Sub;
+	km.devices[2].Flags= MDTF_Hotplug;
 
 	//list terminator :P
 	km.devices[3].Type=MDT_EndOfList;

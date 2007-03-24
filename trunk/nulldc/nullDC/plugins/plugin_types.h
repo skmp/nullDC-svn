@@ -334,20 +334,24 @@ struct maple_device_instance
 	//MapleDeviceDMA
 	MapleDeviceDMAFP* dma;
 	bool connected;
-	u32 reserved;	//reserved for the emu , DO NOT EDIT
 
 	maple_subdevice_instance subdevices[5];
 };
-typedef s32 FASTCALL MapleSubCreateInstanceFP(maple_subdevice_instance* inst,u32 id,u8 port,u32 flags);
-typedef void FASTCALL MapleSubDestroyInstanceFP(maple_subdevice_instance* inst);
-
-typedef s32 FASTCALL MapleCreateInstanceFP(maple_device_instance* inst,u32 id,u8 port,u32 flags);
-typedef void FASTCALL MapleDestroyInstanceFP(maple_device_instance* inst);
 
 struct maple_init_params
 {
 	RaiseInterruptFP*	RaiseInterrupt;
 };
+
+typedef s32 FASTCALL MapleSubCreateInstanceFP(maple_subdevice_instance* inst,u32 id,u32 flags,u32 rootmenu);
+typedef s32 FASTCALL MapleSubInitInstanceFP(maple_subdevice_instance* inst,maple_init_params* params);
+typedef s32 FASTCALL MapleSubTermInstanceFP(maple_subdevice_instance* inst);
+typedef void FASTCALL MapleSubDestroyInstanceFP(maple_subdevice_instance* inst);
+
+typedef s32 FASTCALL MapleCreateInstanceFP(maple_device_instance* inst,u32 id,u32 flags,u32 rootmenu);
+typedef s32 FASTCALL MapleInitInstanceFP(maple_device_instance* inst,maple_init_params* params);
+typedef s32 FASTCALL MapleTermInstanceFP(maple_device_instance* inst);
+typedef void FASTCALL MapleDestroyInstanceFP(maple_device_instance* inst);
 
 typedef s32 FASTCALL MapleInitFP(maple_init_params* param);
 
@@ -375,16 +379,20 @@ struct maple_device_definition
 };
 struct maple_plugin_if
 {
-	MapleInitFP*	Init;
-	PluginResetFP*	Reset;
-	PluginTermFP*	Term;
-
+	//*Main functions are ingored if no main devices are exported
+	//*Sub functions are ingored if no main devices are exported
 	//Create Instance
-	MapleCreateInstanceFP* CreateMain;		//Set to 0 if main devices are not used
-	MapleSubCreateInstanceFP* CreateSub;	//Set to 0 if sub devices are not used
+	MapleCreateInstanceFP* CreateMain;
+	MapleSubCreateInstanceFP* CreateSub;
 	//Destroy Instance
-	MapleDestroyInstanceFP* DestroyMain;	//Set to 0 if main devices are not used
-	MapleSubDestroyInstanceFP* DestroySub;	//Set to 0 if sub devices are not used
+	MapleDestroyInstanceFP* DestroyMain;
+	MapleSubDestroyInstanceFP* DestroySub;
+	//Init
+	MapleInitInstanceFP*	InitMain;
+	MapleSubInitInstanceFP*	InitSub;
+	//Term
+	MapleTermInstanceFP*	TermMain;
+	MapleSubTermInstanceFP*	TermSub;
 	
 	maple_device_definition devices[16];	//Last one must be of type MDT_EndOfList , uless all 16 are used
 };

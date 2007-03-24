@@ -11,6 +11,7 @@
 #include "plugins/plugin_manager.h"
 #include "dc/sh4/rec_v1/blockmanager.h"
 
+eMDevInf MapleDevices_dd[4][5];
 maple_device_instance MapleDevices[4];
 
 #ifdef BUILD_NAOMI
@@ -256,7 +257,7 @@ void DoMapleDma()
 			addr += 1 * 4;
 		}
 	}
-dma_end:
+//dma_end:
 	RaiseInterrupt(holly_MAPLE_DMA);
 }
 

@@ -34,6 +34,7 @@ u32 PowerVR_menu;
 u32 GDRom_menu;
 u32 Aica_menu;
 u32 Maple_menu;
+u32 Maple_menu_ports[4];
 u32 ExtDev_menu;
 
 /// i dont like it but ....
@@ -146,16 +147,16 @@ u32 uiInit(void)
 	wc.cbClsExtra		= 0;
 	wc.cbWndExtra		= 0;
 	wc.hbrBackground	= (HBRUSH)GetStockObject(WHITE_BRUSH);
-	wc.hCursor			= LoadCursor(g_hInst, IDC_ARROW);
+	wc.hCursor			= LoadCursor(NULL, IDC_ARROW);
 	wc.hIcon			= LoadIcon(g_hInst, MAKEINTRESOURCE(IDI_NDC_ICON));
 	wc.hInstance		= g_hInst;
 	wc.lpfnWndProc		= WndProc;
-	wc.lpszClassName	= "Debugger";
-	//wc.lpszMenuName		= MAKEINTRESOURCE(IDR_FMENU);
+	wc.lpszClassName	= "ndc_main_window";
+	wc.lpszMenuName		= 0;
 	wc.style			= CS_VREDRAW | CS_HREDRAW ;
 
 	if( !RegisterClass(&wc) ) {
-		MessageBox( NULL, "Couldn't Register DbgWnd Class !","ERROR",MB_ICONERROR );
+		MessageBox( NULL, "Couldn't Register ndc_main_window Class !","ERROR",MB_ICONERROR );
 		return false;
 	}
 
@@ -163,10 +164,10 @@ u32 uiInit(void)
 
 	InitMenu();
 
-	g_hWnd = CreateWindowA( "Debugger", VER_FULLNAME, WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+	g_hWnd = CreateWindowA( "ndc_main_window", VER_FULLNAME, WS_OVERLAPPEDWINDOW | WS_VISIBLE,
 		CW_USEDEFAULT, CW_USEDEFAULT, 640,480, NULL, GetHMenu(), g_hInst, NULL );
 	if( !IsWindow(g_hWnd) ) {
-		MessageBox( NULL, "Couldn't Create Debug Window!","ERROR",MB_ICONERROR );
+		MessageBox( NULL, "Couldn't Create nullDC Window!","ERROR",MB_ICONERROR );
 		return false;
 	}
 	RECT rect;
@@ -378,6 +379,7 @@ void _MenuItem::Insert(MenuStrip* menu,u32 pos)
 void _MenuItem::Remove(HMENU menu)
 {
 	DeleteMenu(menu,nid,MF_BYCOMMAND);
+	owner=0;
 }
 
 void _MenuItem::Update()
@@ -424,6 +426,9 @@ void _MenuItem::Update()
 }
 _MenuItem::~_MenuItem()
 {
+	if (txt)
+		free(txt);
+	if (owner)
 	owner->RemoveItem(gmid);
 	MenuItems[gmid]=0;
 }
@@ -446,11 +451,13 @@ void _MenuItem::RemoveChild(u32 id)
 
 	//update item info
 	Update();
+
+	//delete MenuItems[id];
 }
 u32 CreateMenuItem(char* text,MenuItemSelectedFP* handler , void* puser)
 {
 	u32 gmid = MenuItems.size();
-	_MenuItem* t=new _MenuItem(text,gmid+10,gmid);
+	_MenuItem* t=new _MenuItem(strdup(text),gmid+10,gmid);
 	t->puser=puser;
 	t->handler=handler;
 	MenuItems.push_back(t);
@@ -508,7 +515,11 @@ void FASTCALL SetMenuItem(u32 id,MenuItem* info,u32 mask)
 		MenuItems[id]->Style=info->Style;
 
 	if (mask & MIM_Text)
-		MenuItems[id]->txt=info->Text;
+	{
+		if (MenuItems[id]->txt)
+			free(MenuItems[id]->txt);
+		MenuItems[id]->txt=strdup(info->Text);
+	}
 
 	MenuItems[id]->Update();
 }
@@ -764,6 +775,12 @@ void CreateBasicMenus()
 	Maple_menu = AddMenuItem(menu_options,-1,"Maple",0,0);
 	ExtDev_menu = AddMenuItem(menu_options,-1,"ExtDevice",0,0);
 
+	//Maple Menu
+	Maple_menu_ports[0]=AddMenuItem(Maple_menu,-1,"Port 1",0,0);
+	Maple_menu_ports[1]=AddMenuItem(Maple_menu,-1,"Port 2",0,0);
+	Maple_menu_ports[2]=AddMenuItem(Maple_menu,-1,"Port 3",0,0);
+	Maple_menu_ports[3]=AddMenuItem(Maple_menu,-1,"Port 4",0,0);
+
 	//Debug
 	AddMenuItem(menu_debug,-1,"Debugger",Handle_Debug_Sh4Debugger,0);
 
@@ -792,7 +809,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 	{
 	case WM_CREATE:
 		InitCommonControls();
-		return 0;
+		break;
 
 	case WM_COMMAND:
 		{
@@ -801,10 +818,10 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 				if (MenuItems[i] && MenuItems[i]->nid==LOWORD(wParam))
 				{
 					MenuItems[i]->Clicked(hWnd);
-					return 0;
+					break;
 				}
 			}
-			printf("Menu item %d selected\n",LOWORD(wParam));
+			//printf("Menu item %d selected\n",LOWORD(wParam));
 		}
 		break;
 
@@ -814,7 +831,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 		PostQuitMessage(0);
 		break;
 
-	case WM_SIZE:
+	//case WM_SIZE:
 	//	GetClientRect(hWnd, &rc);
 //		PvrPlugin.UpdatePvr(0);
 		//TODO : Fix that
@@ -1458,7 +1475,8 @@ void SetSelected(HWND hw,char* selected)
 	ComboBox_SetCurSel(hw,0);
 }
 
-void AddItemsToCB(List<PluginLoadInfo>* list,HWND hw,char* selected)
+template<typename T>
+void AddItemsToCB(List<T>* list,HWND hw,char* selected)
 {
 		for (u32 i=0;i<list->itemcount;i++)
 		{
@@ -1480,7 +1498,7 @@ void AddItemsToCB(List<PluginLoadInfo>* list,HWND hw,char* selected)
 		SetSelected(hw,selected);
 }
 
-void AddMapleItemsToCB(List<PluginLoadInfo>* list,HWND hw,char* selected)
+void AddMapleItemsToCB(List<MapleDeviceDefinition>* list,HWND hw,char* selected)
 {
 		char temp[512]="None";
 		char dll[512]="NULL";
@@ -1490,6 +1508,7 @@ void AddMapleItemsToCB(List<PluginLoadInfo>* list,HWND hw,char* selected)
 		
 		int i2 = ComboBox_AddString(hw, temp); 
 		ComboBox_SetItemData(hw, i2, lp); 
+
 		AddItemsToCB(list,hw,selected);
 }
 
@@ -1504,7 +1523,6 @@ void GetCurrent(HWND hw,char* dest)
 
 void SetMapleMain_Mask(char* plugin,HWND hWnd)
 {
-	/*
 	if (strcmp(plugin,"NULL")==0)
 	{
 		for (int j=0;j<5;j++)
@@ -1515,27 +1533,32 @@ void SetMapleMain_Mask(char* plugin,HWND hWnd)
 	}
 	else
 	{
-		List<PluginLoadInfo>* lst = EnumeratePlugins(Plugin_Maple);
-		int i=0;
-		while(!strcmp(plugin,(*lst)[i].dll))
+		List<MapleDeviceDefinition>* lst=GetMapleDeviceList(MDT_Main);
+		int i;
+		for (i=0;i<lst->size();i++)
 		{
-
+			if (strcmp(plugin,(*lst)[i].dll)==0)
+				break;
+		}
+		if (i==lst->size())
+		{
+			//wtf ?
+			return;
 		}
 
 		for (int j=0;j<5;j++)
 		{
-			if ((*lst)[i].subdev_info & (1<<j))
+			if ((*lst)[i].Flags & (1<<j))
+			{
+				ComboBox_Enable(GetDlgItem(hWnd,IDC_maple[j]),TRUE);
+			}
+			else
 			{
 				SetSelected(GetDlgItem(hWnd,IDC_maple[j]),"NULL");
 				ComboBox_Enable(GetDlgItem(hWnd,IDC_maple[j]),FALSE);
 			}
-			else
-			{
-				ComboBox_Enable(GetDlgItem(hWnd,IDC_maple[j]),TRUE);
-			}
 		}
 	}
-	*/
 }
 void UpdateMapleSelections(HWND hw,HWND hWnd)
 {
@@ -1607,8 +1630,8 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		List<PluginLoadInfo>* aica= GetPluginList(Plugin_AICA);
 		List<PluginLoadInfo>* extdev= GetPluginList(Plugin_ExtDevice);
 
-		List<PluginLoadInfo>* MapleMain=new List<PluginLoadInfo>();//EnumeratePlugins(Plugin_Maple);
-		List<PluginLoadInfo>* MapleSub=new List<PluginLoadInfo>();//EnumeratePlugins(Plugin_MapleSub);
+		List<MapleDeviceDefinition>* MapleMain=GetMapleDeviceList(MDT_Main);
+		List<MapleDeviceDefinition>* MapleSub=GetMapleDeviceList(MDT_Sub);
 
 		char temp[512];
 

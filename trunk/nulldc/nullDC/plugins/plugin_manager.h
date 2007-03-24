@@ -56,16 +56,17 @@ struct PluginLoadInfo
 };
 struct MapleDeviceDefinition:maple_device_definition
 {
-	char dll[512];
+	char dll[512];		//xxxx.dll:id
+	char dll_file[512];	//xxxx.dll
+	VersionNumber	PluginVersion;
 	u32 id;
 };
 
 void EnumeratePlugins();
 List<PluginLoadInfo>* GetPluginList(PluginType type);
+List<MapleDeviceDefinition>* GetMapleDeviceList(MapleDeviceType type);
 
 //This is not used for maple
-//bool SetPlugin(char* plugin,PluginType type);
-void SetPluginPath(char* path);
 
 extern sh4_if*				  sh4_cpu;
 //Currently used plugins

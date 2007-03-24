@@ -64,16 +64,16 @@ void GetPathFromFileName(char* path)
 void GetFileNameFromPath(char* path,char* outp)
 {
 	
-	size_t i=strlen(path)-1;
+	size_t i=strlen(path);
 	
-	while (i>=0)
+	while (i>0)
 	{
+		i--;
 		if (path[i]=='\\')
 		{
 			strcpy(outp,&path[i+1]);
 			return;
 		}
-		i--;
 	}
 
 	strcpy(outp,path);
@@ -262,7 +262,7 @@ void FindAllFiles(FileFoundCB* callback,char* dir,void* param)
 			callback(FindFileData.cFileName,param);
 		}
 u32 rv;
-		while ( rv=FindNextFileA(hFind, &FindFileData) != 0) 
+		while ( (rv=FindNextFileA(hFind, &FindFileData)) != 0) 
 		{ 
 			if ((FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)==0)
 			{

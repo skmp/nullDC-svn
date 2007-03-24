@@ -4,6 +4,8 @@
 
 
 static char appPath[MAX_PATH];
+static char pluginPath[MAX_PATH];
+static char dataPath[MAX_PATH];
 static char cfgPath[MAX_PATH];
 
 
@@ -11,15 +13,6 @@ void FASTCALL cfgSaveStr(const char * Section, const char * Key, const char * St
 {
 	WritePrivateProfileString(Section,Key,String,cfgPath);
 }
-
-
-
-
-
-
-// prospect to use, and use the id to parse out what section to use..
-//void cfgLoadByID(cfgID id);
-
 //New config code
 
 /*
@@ -42,7 +35,7 @@ void FASTCALL cfgSaveStr(const char * Section, const char * Key, const char * St
 
 	These are readonly :
 
-	emu:ExePath		: Returns the path where the emulator is stored
+	emu:AppPath		: Returns the path where the emulator is stored
 	emu:PluginPath	: Returns the path where the plugins are loaded from
 	emu:DataPath	: Returns the path where the bios/data files are
 
@@ -58,7 +51,7 @@ void FASTCALL cfgSaveStr(const char * Section, const char * Key, const char * St
 ///////////////////////////////
 /*
 **	This will verify there is a working file @ ./szIniFn
-**	- if not present, it will write defaults and set needsCfg
+**	- if not present, it will write defaults
 */
 bool cfgVerify()
 {
@@ -67,42 +60,27 @@ bool cfgVerify()
 	strcpy(appPath, tmpPath);
 	free(tmpPath);
 
-//	if(0==GetCurrentDirectory(MAX_PATH,appPath)) {
-//		printf("\n~ERROR: cfgVerify: GetCurrentDirector() Failed!\n");
-//		sprintf(appPath, ".\\");
-//	}
-//	strcat(appPath,"\\");
 	sprintf(cfgPath,"%snullDC.cfg", appPath);
+	sprintf(dataPath,"%sdata\\", appPath);
+	sprintf(pluginPath,"%splugins\\", appPath);
 
 	FILE * fcfg = fopen(cfgPath,"r");
 	if(!fcfg) {
 		fcfg = fopen(cfgPath,"wt");
 		fprintf(fcfg,";; nullDC cfg file ;;\n\n");
 	}
+	//temp
+	cfgSaveStr("emu","AppPath",appPath);
+	cfgSaveStr("emu","PluginPath",pluginPath);
+	cfgSaveStr("emu","DataPath",dataPath);
+
+	cfgSaveStr("emu","FullName",VER_FULLNAME);
+	cfgSaveStr("emu","ShortName",VER_SHORTNAME);
+	cfgSaveStr("emu","Name",VER_EMUNAME);
+	cfgSaveInt("emu","Version",1);
+
 	fclose(fcfg);
 
-	if(-1 == cfgLoadInt("nullDC", "magic",-1))
-	{
-		cfgSaveStr("nullDC",NULL,NULL);			// this will delete all
-		cfgSaveStr("nullDC","magic","0x420");	// now write it ...
-
-		// defaults
-		//cfgSaveInt("nullDC","bNeedsCfg",TRUE);	// set configure needed
-
-		// Default Paths:
-		char finalPath[MAX_PATH];
-		cfgSaveStr("nullDC_paths","AppPath",appPath);	// this is nice, you can always get real curr. path with this
-
-		sprintf(finalPath,"%sdata\\", appPath);
-		cfgSaveStr("nullDC_paths","DataPath",finalPath);
-
-		sprintf(finalPath,"%splugins\\", appPath);
-		cfgSaveStr("nullDC_paths","PluginPath",finalPath);
-
-		return false;
-	}
-
-	cfgSaveStr("nullDC_paths","AppPath",appPath);
 	return true;
 }
 char* trim_str(char* str,char ch)
@@ -277,18 +255,6 @@ bool FindKey(const char* name,FILE* file,char* out)
 	}
 	return false;
 }
-
-/*void booboo(char*p)
-{
-	char test[512];
-	FILE* f=fopen(p,"r");
-	FindSection("nullDCa",f);
-	FindKey("enable_recompilera",f,test);
-
-	fclose(f);
-}
-*/
-
 s32 cfgRead(const char * Section, const char * Key,char* value)
 {
 	FILE* f=fopen(cfgPath,"r");
@@ -315,10 +281,10 @@ s32 cfgRead(const char * Section, const char * Key,char* value)
 			}
 		}
 	}
-	return 0;
 	fclose(f);
+	return 0;
 }
-
+//Implementations of the interface :)
 s32 FASTCALL cfgExists(const char * Section, const char * Key)
 {
 	return cfgRead(Section,Key,0);
