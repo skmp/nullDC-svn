@@ -1819,11 +1819,8 @@ s32 FASTCALL CreateMain(maple_device_instance* inst,u32 id,u32 flags,u32 rootmen
 	}
 	else if (id==1)
 	{
-		sync_counter=0;
-		next_sync_counter=1;
 		inst->dma=ControllerDMA_net;
 		inst->data=0;
-		verify(Init_netplay()==0);
 	}
 	else
 	{
@@ -1870,6 +1867,12 @@ s32 FASTCALL CreateMain(maple_device_instance* inst,u32 id,u32 flags,u32 rootmen
 
 s32 FASTCALL InitMain(maple_device_instance* inst,u32 id,maple_init_params* params)
 {
+	if (id==1)
+	{
+		sync_counter=0;
+		next_sync_counter=1;
+		verify(Init_netplay()==0);
+	}
 	return rv_ok;
 }
 void FASTCALL TermMain(maple_device_instance* inst,u32 id)

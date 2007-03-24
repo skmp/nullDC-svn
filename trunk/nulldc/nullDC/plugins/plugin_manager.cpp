@@ -637,11 +637,11 @@ void unload_plugin(T* plug,u32 rootmenu)
 	}
 }
 
-#define load_plugin_(cfg_name,to,menu) \
+#define load_plugin_(cfg_name,to,menu,def) \
 { \
 	char dllf[512]; \
 	dllf[0]=0; \
-	cfgLoadStr("nullDC_plugins",cfg_name,dllf,"NULL"); \
+	cfgLoadStr("nullDC_plugins",cfg_name,dllf,def); \
 	if (s32 rv=load_plugin(dllf,to,menu)) \
 		return rv; \
 }
@@ -668,10 +668,10 @@ s32 plugins_Load_()
 
 	eminf.WindowHandle=GetRenderTargetHandle();
 
-	load_plugin_("Current_PVR",&libPvr,PowerVR_menu);
-	load_plugin_("Current_GDR",&libGDR,GDRom_menu);
-	load_plugin_("Current_AICA",&libAICA,Aica_menu);
- 	load_plugin_("Current_ExtDevice",&libExtDevice,ExtDev_menu);
+	load_plugin_("Current_PVR",&libPvr,PowerVR_menu,"nullDC_Pvr.dll");
+	load_plugin_("Current_GDR",&libGDR,GDRom_menu,"nullDC_GDR.dll");
+	load_plugin_("Current_AICA",&libAICA,Aica_menu,"nullDC_Aica.dll");
+ 	load_plugin_("Current_ExtDevice",&libExtDevice,ExtDev_menu,"nullDC_ExtDev.dll");
 
 	List<PluginLoadInfo>* mpl= GetPluginList(Plugin_Maple);
 
