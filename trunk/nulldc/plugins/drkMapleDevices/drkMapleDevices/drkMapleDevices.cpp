@@ -1868,7 +1868,14 @@ s32 FASTCALL CreateMain(maple_device_instance* inst,u32 id,u32 flags,u32 rootmen
 }
 
 
-void FASTCALL DestroyMain(maple_device_instance* inst)
+s32 FASTCALL InitMain(maple_device_instance* inst,u32 id,maple_init_params* params)
+{
+	return rv_ok;
+}
+void FASTCALL TermMain(maple_device_instance* inst,u32 id)
+{
+}
+void FASTCALL DestroyMain(maple_device_instance* inst,u32 id)
 {
 	if (inst->data)
 		free( inst->data);
@@ -1888,19 +1895,18 @@ s32 FASTCALL CreateSub(maple_subdevice_instance* inst,u32 id,u32 flags,u32 rootm
 
 	return rv_ok;
 }
-void FASTCALL DestroySub(maple_subdevice_instance* inst)
+s32 FASTCALL InitSub(maple_subdevice_instance* inst,u32 id,maple_init_params* params)
+{
+	return rv_ok;
+}
+void FASTCALL TermSub(maple_subdevice_instance* inst,u32 id)
+{
+}
+void FASTCALL DestroySub(maple_subdevice_instance* inst,u32 id)
 {
 	if (inst->data)
 		free(inst->data);
 }
-/*
-plugin_interface plugins[] = 
-{
-	{
-		{name,version,type,ifver,load,unload}
-	}
-	{CreateInstance<0>,DestroyInstance,
-}*/
 //Give a list of the devices to teh emu
 void EXPORT_CALL dcGetInterface(plugin_interface* info)
 {
@@ -1921,8 +1927,13 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	strcpy(c.Name,"nullDC Maple Devices (" __DATE__ ")");
 
 	km.CreateMain=CreateMain;
-	km.CreateSub=CreateSub;
+	km.InitMain=InitMain;
+	km.TermMain=TermMain;
 	km.DestroyMain=DestroyMain;
+
+	km.CreateSub=CreateSub;
+	km.InitSub=InitSub;
+	km.TermSub=TermSub;
 	km.DestroySub=DestroySub;
 
 	//0

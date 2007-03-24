@@ -344,14 +344,14 @@ struct maple_init_params
 };
 
 typedef s32 FASTCALL MapleSubCreateInstanceFP(maple_subdevice_instance* inst,u32 id,u32 flags,u32 rootmenu);
-typedef s32 FASTCALL MapleSubInitInstanceFP(maple_subdevice_instance* inst,maple_init_params* params);
-typedef s32 FASTCALL MapleSubTermInstanceFP(maple_subdevice_instance* inst);
-typedef void FASTCALL MapleSubDestroyInstanceFP(maple_subdevice_instance* inst);
+typedef s32 FASTCALL MapleSubInitInstanceFP(maple_subdevice_instance* inst,u32 id,maple_init_params* params);
+typedef void FASTCALL MapleSubTermInstanceFP(maple_subdevice_instance* inst,u32 id);
+typedef void FASTCALL MapleSubDestroyInstanceFP(maple_subdevice_instance* inst,u32 id);
 
 typedef s32 FASTCALL MapleCreateInstanceFP(maple_device_instance* inst,u32 id,u32 flags,u32 rootmenu);
-typedef s32 FASTCALL MapleInitInstanceFP(maple_device_instance* inst,maple_init_params* params);
-typedef s32 FASTCALL MapleTermInstanceFP(maple_device_instance* inst);
-typedef void FASTCALL MapleDestroyInstanceFP(maple_device_instance* inst);
+typedef s32 FASTCALL MapleInitInstanceFP(maple_device_instance* inst,u32 id,maple_init_params* params);
+typedef void FASTCALL MapleTermInstanceFP(maple_device_instance* inst,u32 id);
+typedef void FASTCALL MapleDestroyInstanceFP(maple_device_instance* inst,u32 id);
 
 typedef s32 FASTCALL MapleInitFP(maple_init_params* param);
 

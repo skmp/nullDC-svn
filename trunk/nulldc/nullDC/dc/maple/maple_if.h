@@ -8,7 +8,7 @@ struct eMDevInf
 	bool Created;
 	bool Inited;
 };
-extern eMDevInf MapleDevices_dd[4][5];
+extern eMDevInf MapleDevices_dd[4][6];
 
 extern maple_device_instance MapleDevices[4];
 

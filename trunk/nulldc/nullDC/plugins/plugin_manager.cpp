@@ -499,14 +499,13 @@ s32 CreateMapleDevice(u32 pos,char* device,bool hotplug)
 	
 	if (s32 rv= plg->CreateMain(&MapleDevices[pos],mdd->id,hotplug?MDCF_Hotplug:MDCF_None,Maple_menu_ports[pos]))
 	{
-		MapleDevices_dd[pos][5].mdd=mdd;
-
 		cm_MampleMainEmpty(Maple_menu_ports[pos],pos);
 		if (rv==rv_error)
 			return pmde_failed_create;
 		else
 			return pmde_failed_create_s;
 	}
+	MapleDevices_dd[pos][5].mdd=mdd;
 	MapleDevices[pos].connected=true;
 
 	return rv_ok;
@@ -523,7 +522,7 @@ s32 DestroyMapleDevice(u32 pos)
 	MapleDevices_dd[pos][5].mdd=0;
 	nullDC_Maple_plugin* plg =FindMaplePlugin(mdd);
 
-	plg->DestroyMain(&MapleDevices[pos]);
+	plg->DestroyMain(&MapleDevices[pos],mdd->id);
 	cm_MampleMainEmpty(Maple_menu_ports[pos],pos);
 }
 s32 CreateMapleSubDevice(u32 pos,u32 subport,char* device)
@@ -642,6 +641,7 @@ s32 plugins_Load_()
 	for (int port=0;port<4;port++)
 	{
 		maple_cfg_plug(port,5,plug_name);
+		lcp_name=plug_name;
 		if (strcmp(plug_name,"NULL")!=0)
 		{
 			if (!MapleDevices_dd[port][5].Created)
@@ -825,12 +825,22 @@ s32 plugins_Init_()
 		return rv;
 	libExtDevice.Inited=true;
 
+	maple_init_params mip;
+	mip.RaiseInterrupt=sh4_cpu->RaiseInterrupt;
+
 	//Init Created maple devices
 	for ( int i=0;i<4;i++)
 	{
 		if (MapleDevices_dd[i][5].Created)
 		{
-			//init 
+			lcp_name="Made Devices";
+			verify(MapleDevices_dd[i][5].mdd!=0);
+			//Init
+			nullDC_Maple_plugin *nmp=FindMaplePlugin(MapleDevices_dd[i][5].mdd);
+			lcp_name=MapleDevices_dd[i][5].mdd->Name;
+			if (s32 rv=nmp->InitMain(&MapleDevices[i],MapleDevices_dd[i][5].mdd->id,&mip))
+				return rv;
+			
 			MapleDevices_dd[i][5].Inited=true;
 		}
 		else
@@ -884,7 +894,11 @@ void plugins_Term()
 		if (MapleDevices_dd[i][5].Inited)
 		{ 
 			MapleDevices_dd[i][5].Inited=false;
+
+			verify(MapleDevices_dd[i][5].mdd!=0);
 			//term
+			nullDC_Maple_plugin *nmp=FindMaplePlugin(MapleDevices_dd[i][5].mdd);
+			nmp->TermMain(&MapleDevices[i],MapleDevices_dd[i][5].mdd->id);
 		}
 	}
 	

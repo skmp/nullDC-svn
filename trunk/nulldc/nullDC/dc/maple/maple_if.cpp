@@ -11,7 +11,7 @@
 #include "plugins/plugin_manager.h"
 #include "dc/sh4/rec_v1/blockmanager.h"
 
-eMDevInf MapleDevices_dd[4][5];
+eMDevInf MapleDevices_dd[4][6];
 maple_device_instance MapleDevices[4];
 
 #ifdef BUILD_NAOMI
