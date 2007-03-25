@@ -90,6 +90,7 @@ void maple_vblank()
 			{
 				//printf("DDT vblank\n");
 				DoMapleDma();
+				SB_MDST = 0;
 				if ((SB_MSYS>>12)&1)
 				{
 					maple_ddt_pending_reset=true;
@@ -218,7 +219,7 @@ void DoMapleDma()
 						&MapleDevices[device],
 						command,
 						&p_data[1],
-						inlen-4,
+						inlen,
 						&p_out[1],
 						outlen,
 						resp);
@@ -229,7 +230,7 @@ void DoMapleDma()
 						&MapleDevices[device].subdevices[subport],
 						command,
 						&p_data[1],
-						inlen-4,
+						inlen,
 						&p_out[1],
 						outlen,
 						resp);
