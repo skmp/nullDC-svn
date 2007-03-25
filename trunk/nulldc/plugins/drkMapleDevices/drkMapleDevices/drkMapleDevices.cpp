@@ -514,7 +514,7 @@ void FASTCALL KbdDMA(maple_device_instance* device_instance,u32 Command,u32* buf
 			//60
 			for (u32 i = 0; i < 60; i++)
 			{
-				w8((u8)testJoy_strBrand[i]);
+				w8((u8)testJoy_strBrand_2[i]);
 				//if (!testJoy_strBrand[i])
 				//	break;
 			}
@@ -560,7 +560,7 @@ void FASTCALL KbdDMA(maple_device_instance* device_instance,u32 Command,u32* buf
 			break;
 
 		default:
-			printf("UNKOWN MAPLE COMMAND \n");
+			printf("UNKOWN MAPLE COMMAND %d\n",Command);
 			break;
 	}
 }
@@ -640,7 +640,7 @@ void FASTCALL DreamEye_mainDMA(maple_device_instance* device_instance,u32 Comman
 			//60
 			for (u32 i = 0; i < 60; i++)
 			{
-				w8((u8)testJoy_strBrand[i]);
+				w8((u8)testJoy_strBrand_2[i]);
 				//if (!testJoy_strBrand[i])
 				//	break;
 			}
@@ -775,7 +775,7 @@ void FASTCALL DreamEye_subDMA(maple_device_instance* device_instance,u32 Command
 			//60
 			for (u32 i = 0; i < 60; i++)
 			{
-				w8((u8)testJoy_strBrand[i]);
+				w8((u8)testJoy_strBrand_2[i]);
 				//if (!testJoy_strBrand[i])
 				//	break;
 			}
@@ -928,7 +928,7 @@ void FASTCALL MicDMA(maple_device_instance* device_instance,u32 Command,u32* buf
 			//60
 			for (u32 i = 0; i < 60; i++)
 			{
-				w8((u8)testJoy_strBrand[i]);
+				w8((u8)testJoy_strBrand_2[i]);
 				//if (!testJoy_strBrand[i])
 				//	break;
 			}
@@ -1007,7 +1007,7 @@ void FASTCALL MouseDMA(maple_device_instance* device_instance,u32 Command,u32* b
 			//60
 			for (u32 i = 0; i < 60; i++)
 			{
-				w8((u8)testJoy_strBrand[i]);
+				w8((u8)testJoy_strBrand_2[i]);
 				//if (!testJoy_strBrand[i])
 				//	break;
 			}
@@ -1071,7 +1071,7 @@ void FASTCALL MouseDMA(maple_device_instance* device_instance,u32 Command,u32* b
 			break;
 
 		default:
-			printf("UNKOWN MAPLE COMMAND \n");
+			printf("UNKOWN MAPLE COMMAND %d\n",Command);
 			break;
 	}
 }
@@ -1129,7 +1129,7 @@ void FASTCALL ControllerDMA(maple_device_instance* device_instance,u32 Command,u
 			//60
 			for (u32 i = 0; i < 60; i++)
 			{
-				w8((u8)testJoy_strBrand[i]);
+				w8((u8)testJoy_strBrand_2[i]);
 				//if (!testJoy_strBrand[i])
 				//	break;
 			}
@@ -1194,7 +1194,7 @@ void FASTCALL ControllerDMA(maple_device_instance* device_instance,u32 Command,u
 			break;
 
 		default:
-			printf("UNKOWN MAPLE COMMAND \n");
+			printf("UNKOWN MAPLE COMMAND %d\n",Command);
 			break;
 	}
 }
@@ -1430,7 +1430,7 @@ void FASTCALL ControllerDMA_net(maple_device_instance* device_instance,u32 Comma
 			//60
 			for (u32 i = 0; i < 60; i++)
 			{
-				w8((u8)testJoy_strBrand[i]);
+				w8((u8)testJoy_strBrand_2[i]);
 				//if (!testJoy_strBrand[i])
 				//	break;
 			}
@@ -1507,7 +1507,7 @@ void FASTCALL ControllerDMA_net(maple_device_instance* device_instance,u32 Comma
 			break;
 
 		default:
-			printf("UNKOWN MAPLE COMMAND \n");
+			printf("UNKOWN MAPLE COMMAND %d\n",Command);
 			break;
 	}
 }
@@ -1564,7 +1564,7 @@ void FASTCALL ControllerDMA_nul(maple_device_instance* device_instance,u32 Comma
 			//60
 			for (u32 i = 0; i < 60; i++)
 			{
-				w8((u8)testJoy_strBrand[i]);
+				w8((u8)testJoy_strBrand_2[i]);
 				//if (!testJoy_strBrand[i])
 				//	break;
 			}
@@ -1629,7 +1629,7 @@ void FASTCALL ControllerDMA_nul(maple_device_instance* device_instance,u32 Comma
 			break;
 
 		default:
-			printf("UNKOWN MAPLE COMMAND \n");
+			printf("UNKOWN MAPLE COMMAND %d\n",Command);
 			break;
 	}
 }
@@ -1709,7 +1709,7 @@ void FASTCALL VmuDMA(maple_subdevice_instance* device_instance,u32 Command,u32* 
 			//60
 			for (u32 i = 0; i < 60; i++)
 			{
-				w8((u8)testJoy_strBrand[i]);
+				w8((u8)testJoy_strBrand_2[i]);
 				//if (!testJoy_strBrand[i])
 				//	break;
 			}
@@ -1799,7 +1799,7 @@ void FASTCALL VmuDMA(maple_subdevice_instance* device_instance,u32 Command,u32* 
 			break;
 
 		default:
-			printf("UNKOWN MAPLE COMMAND \n");
+			printf("UNKOWN MAPLE COMMAND %d\n",Command);
 			break;
 	}
 

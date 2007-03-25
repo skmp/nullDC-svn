@@ -1203,13 +1203,20 @@ static void FillBltTexture()
 
 void TAStartVBlank()
 {
+	if (GetAsyncKeyState(VK_DELETE))
+	{
+
+	}
+	else
+	{
   if ((m_uNumVerticesRegistered != 0) || (CurrentFrame-m_uEndFrameTimeStamp)<8)
     return;
+	
 
 
   if (m_uLastFrameRegisteredVertex > m_uEndFrameTimeStamp)
     return;
-
+}
   DWORD uDisplayAddress = SH4HWRegistersGetValue(TPVR::PVR_DISPLAY_ADDR1);
 
   DWORD* pVideoMem = (DWORD*) SH4GetVideoRAMPtr(SH4VideoRAM_START+uDisplayAddress);
