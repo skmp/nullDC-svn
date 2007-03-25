@@ -3,14 +3,24 @@
 */
 #pragma once
 
+#include "plugin_header.h"	// plugin header, we'll typedef some shit to make it match my naming schemes etc
+
+
+#define PL_CALL	FASTCALL
+
+#define MAPLE_SUBDEVICE_DISABLE_ALL \
+	(MAPLE_SUBDEVICE_DISABLE_1 | MAPLE_SUBDEVICE_DISABLE_2 | MAPLE_SUBDEVICE_DISABLE_3 | MAPLE_SUBDEVICE_DISABLE_4)
+
+
+
+
+#ifdef __USE_OLD_MAPLE_HEADER
 typedef signed __int8		s8;
 typedef signed __int16		s16;
 typedef signed __int32		s32;
 typedef unsigned __int32	u32;
 typedef unsigned __int16	u16;
 typedef unsigned __int8		u8;
-
-
 
 
 /*
@@ -133,3 +143,4 @@ void MapleDevDMA(MapleDevInst* pDevInst, u32 Command,
 
 
 
+#endif

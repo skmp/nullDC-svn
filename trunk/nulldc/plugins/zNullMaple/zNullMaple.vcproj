@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="zNullMaple"
 	ProjectGUID="{B44CF6A8-A9AB-4C80-8A20-D4BFC2687FCC}"
 	RootNamespace="zNullMaple"
@@ -40,6 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				AdditionalIncludeDirectories="&quot;C:\Documents and Settings\null\My Documents\projects\nulldc\trunk\nulldc\nullDC\plugins&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;ZNULLMAPLE_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -119,6 +120,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalIncludeDirectories="&quot;C:\Documents and Settings\null\My Documents\projects\nulldc\trunk\nulldc\nullDC\plugins&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;ZNULLMAPLE_EXPORTS"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
@@ -182,6 +184,10 @@
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
+			<File
+				RelativePath="..\drkMapleDevices\drkMapleDevices\exports.def"
+				>
+			</File>
 			<File
 				RelativePath=".\zNullMaple.cpp"
 				>

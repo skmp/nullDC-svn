@@ -1,5 +1,5 @@
 /*
-**
+**	zNullMaple.cpp,	David Miller (2007)
 */
 #include <stdio.h>
 #include <windows.h>
@@ -7,9 +7,6 @@
 #include "MapleBus.h"
 
 
-
-ConfigLoadStrFP	* ConfigLoadStr;
-ConfigSaveStrFP	* ConfigSaveStr;
 
 
 HINSTANCE hInst=NULL;
@@ -32,44 +29,65 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 }
 
 
+
+
+
+
+
+
+
+emu_info * ei;
+maple_init_params * mip;
+
+void FASTCALL Unload();
+s32	 FASTCALL Load(emu_info*);
+
+s32  FASTCALL Init(maple_init_params*);
+void FASTCALL Term();
+void FASTCALL Reset(bool);
+
+s32 FASTCALL Create(maple_device_instance*,u8);
+void FASTCALL Destroy(maple_device_instance*);
+
+
+void FASTCALL SubDeviceDMA(maple_subdevice_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce);
+void FASTCALL DeviceDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce);
+
+
+
+
+
 /*
-**	NullDC specific Interface,
-**	returns valid fucntion ptrs
-*/
-
-extern "C" __declspec(dllexport) 
-void dcGetPluginInfo(ndcPluginIf* If)
+void EXPORT_CALL dcGetInterfaceInfo(plugin_interface_info* info)
 {
-	If->dwIfVersion	= 0x00020000;	// double check with nullgdr
-	If->dwLibVersion= 0x01;			// 
-	If->dwPluginType= 0x08;			// 8=Maple
-	strcpy_s(If->szName, "zNullMaple, Maple bus Plugin By _ZeZu_ [" __DATE__ "]");
-
-	If->Init		= mplInit;
-	If->Term		= mplTerm;
-	If->Reset		= mplReset;
-	If->ThreadInit	= mplThreadInit;
-	If->ThreadTerm	= mplThreadTerm;
-	If->Config		= mplConfig;
-
-	ConfigLoadStr	= If->ConfigLoadStr;
-	ConfigSaveStr	= If->ConfigSaveStr;
-}
+	info->count				= 1;
+	info->InterfaceVersion	= PLUGIN_I_F_VERSION;
+}*/
 
 
-extern "C" __declspec(dllexport)
-void dcGetMapleInfo(MapleIf * If)
-{
-	If->IfVersion=0x200;	// *FIXME*
+void EXPORT_CALL dcGetInterface(u32 id, plugin_interface* info)
+{/*
+	maple_plugin_if		* pm	= &info->maple;
+	common_info			* pci	= &info->common;
+	maple_sub_plugin_if	* pms	= &info->maple_sub;
 
-	If->Devices[0].CreateInstance	= CreateInstance;
-	If->Devices[0].DestroyInstance	= DestroyInstance;
-	If->Devices[0].type				= 0;//Controller
-	If->Devices[0].id				= 0;
-	strcpy(If->Devices[0].name,"nullDC controller [DInput] (" __DATE__ ")");
+	if(0 == id)
+	{
+		pci->Load				= Load;
+		pci->Unload				= Unload;
+		pci->Type				= Plugin_Maple;
+		pci->PluginVersion		= DC_MakeVersion(1,0,0,DC_VER_NORMAL);
+		pci->InterfaceVersion	= MAPLE_PLUGIN_I_F_VERSION;
 
-	If->Devices[1].CreateInstance	=0;
-	If->Devices[1].DestroyInstance	=0;
+		pm->Init				= Init;
+		pm->Reset				= Reset;
+		pm->Term				= Term;
+		pm->Create				= Create;
+		pm->Destroy				= Destroy;
+
+		pm->ShowConfig			= 0;
+		pm->subdev_info			= 0;//MAPLE_SUBDEVICE_DISABLE_ALL;
+	}*/
 }
 
 
@@ -77,18 +95,74 @@ void dcGetMapleInfo(MapleIf * If)
 
 
 
-void mplTerm(DWORD)
+
+
+
+
+
+
+
+
+void FASTCALL Unload()				{ ei = NULL; }
+s32	 FASTCALL Load(emu_info* emu)	{ ei = emu; return 0; }
+
+s32  FASTCALL Init(maple_init_params* p)
+{
+	mip = p;
+	return 0;
+}
+void FASTCALL Term()
+{
+	mip = NULL;
+}
+
+
+void FASTCALL Reset(bool Manual)
 {
 
 }
-void mplInit(void* params, DWORD PluginType)
+
+s32  FASTCALL Create(maple_device_instance* pMDI, u8 port)
 {
-	//*MapleInit * mi = */((MapleInit*)params)->WindowHandle;
+//	pMDI->dma=ControllerDMA;
+//	pMDI->data=0;
+	return 0;
+}
 
-
-
+void FASTCALL Destroy(maple_device_instance* pMDI)
+{
 
 }
+
+
+
+
+
+
+
+void FASTCALL SubDeviceDMA(maple_subdevice_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+{
+
+}
+void FASTCALL DeviceDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+{
+
+}
+
+
+
+
+
+
+
+
+
+
+#ifdef __USE_OLD_MAPLE_SOURCE__
+
+
+
+
 
 
 void mplReset(bool,DWORD){}
@@ -508,4 +582,4 @@ void MapleDevReset( MapleTrans * pTrans )
 }
 
 #endif
-
+#endif

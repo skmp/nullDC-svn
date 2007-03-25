@@ -7,7 +7,11 @@
 #endif
 
 #define _CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES 1
+
+#ifdef _CRT_SECURE_NO_DEPRECATE
+#undef _CRT_SECURE_NO_DEPRECATE
 #define _CRT_SECURE_NO_DEPRECATE 
+#endif
 
 //Do not complain when i use enum::member
 #pragma warning( disable : 4482)
@@ -36,7 +40,14 @@ typedef double f64;
 
 #define EXPORT_CALL __stdcall
 #define FASTCALL __fastcall
+
+
+
+#ifdef CDECL
+#undef CDECL
 #define CDECL __cdecl
+#endif
+
 
 //intc function pointer and enums
 enum InterruptType
