@@ -1,6 +1,6 @@
 #pragma once
 #include "nullPVR.h"
-#define fastcall FASTCALL
+
 namespace TASplitter
 {
 	extern void FASTCALL Dma(u32 address,u32* data,u32 size);

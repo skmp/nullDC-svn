@@ -63,7 +63,7 @@ void FASTCALL pvrLockCB(vram_block *bl, u32 addr);
 #define verify(x) if((x)==false){ printf("Verify Failed  : " #x "\n in %s -> %s : %d \n",__FUNCTION__,__FILE__,__LINE__); dbgbreak;}
 #define die(reason) { printf("Fatal error : %s\n in %s -> %s : %d \n",reason,__FUNCTION__,__FILE__,__LINE__); dbgbreak;}
 #define fverify verify
-
+#define fastcall FASTCALL
 
 #endif //__NULLPVR_H___
 
