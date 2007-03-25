@@ -198,6 +198,10 @@
 				RelativePath=".\nullPVR.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\pvrMemory.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -206,6 +210,10 @@
 			>
 			<File
 				RelativePath=".\nullPVR.h"
+				>
+			</File>
+			<File
+				RelativePath=".\pvrMemory.h"
 				>
 			</File>
 		</Filter>

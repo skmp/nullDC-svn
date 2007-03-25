@@ -18,8 +18,25 @@
 
 
 
+/*
+**	Minor debugging facilities
+*/
 
+//#ifdef _DEBUG
+#define DEBUG_LIB (1)
+//#endif
 
+#ifdef DEBUG_LIB
+#define INLINE		inline
+#define S_INLINE	static inline
+#define ASSERT_T(cond,str) if((cond)) printf("#!T\tERROR: ASSERTION FAILED: %s !\n", str);
+#define ASSERT_F(cond,str) if(!(cond)) printf("#!F\tERROR: ASSERTION FAILED: %s !\n", str);
+#else
+#define INLINE		__forceinline
+#define S_INLINE	static __forceinline
+#define ASSERT_T(cond,str)
+#define ASSERT_F(cond,str)
+#endif
 
 
 
@@ -36,9 +53,6 @@ s32  FASTCALL pvrLoad(emu_info*,u32);
 void FASTCALL pvrUnload();
 void FASTCALL pvrConfig(void*);
 
-void FASTCALL pvrUpdate(u32 cycles);
-u32  FASTCALL pvrReadReg(u32 addr,u32 size);
-void FASTCALL pvrWriteReg(u32 addr,u32 data,u32 size);
 void FASTCALL pvrWriteFifo(u32 address, u32* data, u32 size);
 void FASTCALL pvrLockCB(vram_block *bl, u32 addr);
 
