@@ -65,5 +65,8 @@ void FASTCALL pvrLockCB(vram_block *bl, u32 addr);
 #define fverify verify
 #define fastcall FASTCALL
 
+extern pvr_init_params params;
+extern emu_info		emu;
+
 #endif //__NULLPVR_H___
 

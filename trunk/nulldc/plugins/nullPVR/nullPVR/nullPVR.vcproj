@@ -246,6 +246,10 @@
 				RelativePath=".\ta_structs.h"
 				>
 			</File>
+			<File
+				RelativePath=".\ta_vdec.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Render"

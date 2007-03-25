@@ -5,9 +5,10 @@
 #include "nullPVR.h"
 #include "pvrMemory.h"
 #include "ta.h"
+#include "ta_vdec.h"
 
-
-
+pvr_init_params params;
+emu_info		emu;
 
 HINSTANCE hInst=NULL;
 
@@ -68,22 +69,28 @@ void EXPORT_CALL dcGetInterface(plugin_interface* plIf)
 
 
 
-s32  FASTCALL pvrInit(pvr_init_params*)
+s32  FASTCALL pvrInit(pvr_init_params* e)
 {
+	memcpy(&params,e,sizeof(params));
+	InitTA_Regs();
+	InitRenderer();
 	return 0;
 }
 
 void FASTCALL pvrTerm()
 {
+	TermRenderer();
 }
 
-void FASTCALL pvrReset(bool)
+void FASTCALL pvrReset(bool m)
 {
+	ResetRenderer(m);
 }
 
-s32  FASTCALL pvrLoad(emu_info*,u32)
+s32  FASTCALL pvrLoad(emu_info* e,u32)
 {
 	printf("pvrLoad() \n");
+	memcpy(&emu,e,sizeof(emu_info));
 	return 0;
 }
 
@@ -147,7 +154,6 @@ u32 pvrCycles=0;
 
 void FASTCALL pvrUpdate(u32 cycles)
 {
-	/*
 	static u32 lastLine=8000;
 
 	pvrCycles += (cycles);
@@ -167,11 +173,11 @@ void FASTCALL pvrUpdate(u32 cycles)
 	*pSPG_STATUS = (*pSPG_STATUS & ~0x3FF) | (vblLine & 0x3FF);
 
 	if(vblLine >= (*pSPG_VBLANK_INT &0x3FF) && !(vblState&2)) {
-		emuIf.RaiseInterrupt(holly_SCANINT1);
+		params.RaiseInterrupt(holly_SCANINT1);
 		vblState |= 2;
 	}
 	if(vblLine >= (*pSPG_VBLANK_INT >>16 &0x3FF) && !(vblState&4)) {
-		emuIf.RaiseInterrupt(holly_SCANINT2);
+		params.RaiseInterrupt(holly_SCANINT2);
 		vblState |= 4;
 	}
 
@@ -183,7 +189,7 @@ void FASTCALL pvrUpdate(u32 cycles)
 			vblank_done();
 			*pSPG_STATUS |= 0x00002000;
 
-			emuIf.RaiseInterrupt(holly_HBLank);
+			params.RaiseInterrupt(holly_HBLank);
 		}
 		if((vblState&1) && (vblEnd <= vblLine))
 		{
@@ -199,7 +205,7 @@ void FASTCALL pvrUpdate(u32 cycles)
 			vblank_done();
 			*pSPG_STATUS |= 0x00002000;
 
-			emuIf.RaiseInterrupt(holly_HBLank);
+			params.RaiseInterrupt(holly_HBLank);
 		}
 		if((vblState&1) && (vblEnd <= vblLine) && (vblStart > vblLine))
 		{
@@ -207,5 +213,4 @@ void FASTCALL pvrUpdate(u32 cycles)
 			*pSPG_STATUS &= ~0x00002000;
 		}
 	}
-*/
 }

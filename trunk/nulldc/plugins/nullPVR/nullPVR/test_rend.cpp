@@ -216,22 +216,12 @@ struct VertexDecoder
 
 	//Sprite Vertex Handlers
 	__forceinline
-		static void AppendSpriteVertex0A(TA_Sprite0A* sv)
+		static void AppendSpriteVertexA(TA_Sprite1A* sv)
 	{
 
 	}
 	__forceinline
-		static void AppendSpriteVertex0B(TA_Sprite0B* sv)
-	{
-
-	}
-	__forceinline
-		static void AppendSpriteVertex1A(TA_Sprite1A* sv)
-	{
-
-	}
-	__forceinline
-		static void AppendSpriteVertex1B(TA_Sprite1B* sv)
+		static void AppendSpriteVertexB(TA_Sprite1B* sv)
 	{
 
 	}
@@ -300,4 +290,19 @@ void ResetRenderer(bool Manual)
 	TileAccel.Reset(Manual);
 	VertexCount=0;
 	FrameCount=0;
+}
+
+
+void ListCont()
+{
+	TileAccel.ListCont();
+}
+
+void ListInit()
+{
+	TileAccel.ListInit();
+}
+void SoftReset()
+{
+	TileAccel.SoftReset();
 }

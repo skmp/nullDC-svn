@@ -3,7 +3,7 @@
 */
 #include "nullPVR.h"
 #include "pvrMemory.h"
-
+#include "ta_vdec.h"
 
 
 
@@ -53,7 +53,7 @@ void FASTCALL pvrWriteReg(u32 addr,u32 data,u32 size)
 	addr &= 0xFFFF;
 	ASSERT_F((4==size), "pvrWriteReg, Len != 4");
 
-#ifdef __TEMPHOLD__
+//#ifdef __TEMPHOLD__
 	if(addr>=TA_REG_START && TA_REG_END>=addr)
 	{
 //		ASSERT_T(TA_State.Processing,"Write to Regs While Processing Fifo");
@@ -62,11 +62,11 @@ void FASTCALL pvrWriteReg(u32 addr,u32 data,u32 size)
 		{
 		case SOFTRESET:
 			printf("PVR SOFTRESET\n");
-			ResetState();
+			SoftReset();
 			break;
 
 		case TA_ALLOC_CTRL:
-			combine_ac();
+			//combine_ac();
 			break;	// useless to do anything until after write, use eol instead
 
 		case TA_LIST_CONT:
@@ -78,7 +78,8 @@ void FASTCALL pvrWriteReg(u32 addr,u32 data,u32 size)
 			after the OPB that was input last time.
 			*/
 			printf( ")>\tPVR2: TA_LIST_CONT Write <= %X\n", data);
-			lprintf(")>\tPVR2: TA_LIST_CONT Write <= %X\n", data);
+			//lprintf(")>\tPVR2: TA_LIST_CONT Write <= %X\n", data);
+			ListCont();
 			break;	// write it
 
 		case TA_LIST_INIT:
@@ -89,27 +90,28 @@ void FASTCALL pvrWriteReg(u32 addr,u32 data,u32 size)
 			from the address that is specified in the TA_OL_BASE register to the address that is specified in the
 			TA_NEXT_OPB_INIT register.
 			*/
-			TA_State.ListInit=1;
+			//TA_State.ListInit=1;
 			printf("LIST_INIT:\n");
 
-			*pTA_NEXT_OPB = *pTA_NEXT_OPB_INIT ;	// Load Next OPB Init to Next OPB
+			//*pTA_NEXT_OPB = *pTA_NEXT_OPB_INIT ;	// Load Next OPB Init to Next OPB
 
-			if(TA_State.RenderPending)
-			{
-				printf("LIST_INIT && RenderPending, Rendering !\n");
-				TA_State.RenderPending = 0;
-				PvrIf::Render();
-			}
+			//if(TA_State.RenderPending)
+			//{
+			//	printf("LIST_INIT && RenderPending, Rendering !\n");
+			//	TA_State.RenderPending = 0;
+			//	PvrIf::Render();
+			//}
 
-			lists_complete=0;
-			combine_ac();
+			//lists_complete=0;
+			//combine_ac();
 			//	lprintf("\n**************** TA_LIST_INIT ****************\n\n");
+			ListInit();
 			break;
 
 		case STARTRENDER:
 			if(0 != data) {
 				//	lprintf(")>\tSTART RENDER ! lists_complete; %X Full: %X\n", lists_complete, LT_FULL);
-
+/*
 				// *FIXME*
 				if(0x1F==lists_complete)
 				{
@@ -119,13 +121,14 @@ void FASTCALL pvrWriteReg(u32 addr,u32 data,u32 size)
 					TA_State.RenderPending = 1;
 					ASSERT_T((1),"STARTRENDER && Lists Not Complete !");
 				}
+				*/
 
-				emuIf.RaiseInterrupt(holly_RENDER_DONE);
-				emuIf.RaiseInterrupt(holly_RENDER_DONE_vd);
-				emuIf.RaiseInterrupt(holly_RENDER_DONE_isp);
+				params.RaiseInterrupt(holly_RENDER_DONE);
+				params.RaiseInterrupt(holly_RENDER_DONE_vd);
+				params.RaiseInterrupt(holly_RENDER_DONE_isp);
 				return;
 			}
-			lprintf(")>\tSTART RENDER ! Write Zero: %X\n",data);
+			//lprintf(")>\tSTART RENDER ! Write Zero: %X\n",data);
 			return;
 		}
 		//lprintf("<PVR>\t pvrWriteReg: @ %08X <= %X Unhandled!\n", addr, data);
@@ -152,7 +155,7 @@ void FASTCALL pvrWriteReg(u32 addr,u32 data,u32 size)
 			ASSERT_F((0),"<PVR> WRITE TO PAL RAM, SIZE NOT SUPPORTED!\n");
 		return;
 	}
-#endif
+//#endif
 	printf("#!\tERROR: pvrWriteReg @ %08X <= %X (%d) Illegal!\n", addr, data, size);
 }
 
