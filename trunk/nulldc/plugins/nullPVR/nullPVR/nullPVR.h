@@ -9,7 +9,7 @@
 #ifndef linux
 #include <windows.h>
 #else
-#error "FIXME"
+#error "FIXME - EWW LINUZ EWW"
 #endif
 
 

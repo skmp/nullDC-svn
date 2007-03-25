@@ -4,6 +4,7 @@
 
 #include "nullPVR.h"
 #include "pvrMemory.h"
+#include "ta.h"
 
 
 
@@ -55,7 +56,7 @@ void EXPORT_CALL dcGetInterface(plugin_interface* plIf)
 	pvrIf.WriteReg			= pvrWriteReg;
 	pvrIf.UpdatePvr			= pvrUpdate;
 	pvrIf.LockedBlockWrite	= pvrLockCB;
-	pvrIf.TaFIFO			= pvrWriteFifo;
+	pvrIf.TaFIFO			= TASplitter::Dma;
 
 	pvrIf.ExeptionHanlder	= 0;
 
@@ -91,12 +92,6 @@ void FASTCALL pvrUnload()
 }
 
 void FASTCALL pvrConfig(void*)
-{
-}
-
-
-
-void FASTCALL pvrWriteFifo(u32 address, u32* data, u32 size)
 {
 }
 
