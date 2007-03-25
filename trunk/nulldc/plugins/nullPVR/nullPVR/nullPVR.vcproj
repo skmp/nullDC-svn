@@ -231,33 +231,33 @@
 			Name="TA"
 			>
 			<File
-				RelativePath=".\ta.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\ta.h"
-				>
-			</File>
-			<File
-				RelativePath=".\ta_const_df.h"
-				>
-			</File>
-			<File
-				RelativePath=".\ta_structs.h"
+				RelativePath=".\ta_vdec.cpp"
 				>
 			</File>
 			<File
 				RelativePath=".\ta_vdec.h"
 				>
 			</File>
-		</Filter>
-		<Filter
-			Name="Render"
-			>
-			<File
-				RelativePath=".\test_rend.cpp"
+			<Filter
+				Name="TASplitter"
 				>
-			</File>
+				<File
+					RelativePath=".\ta.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\ta.h"
+					>
+				</File>
+				<File
+					RelativePath=".\ta_const_df.h"
+					>
+				</File>
+				<File
+					RelativePath=".\ta_structs.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 	</Files>
 	<Globals>
