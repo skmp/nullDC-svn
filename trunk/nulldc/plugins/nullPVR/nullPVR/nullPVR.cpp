@@ -67,8 +67,6 @@ void EXPORT_CALL dcGetInterface(plugin_interface* plIf)
 
 
 
-
-
 s32  FASTCALL pvrInit(pvr_init_params*)
 {
 	return 0;
