@@ -75,7 +75,7 @@ s32  FASTCALL pvrInit(pvr_init_params* e)
 	// for now use OpenGL //
 
 	RendInit=1;
-	nRendIf = (RenderInterface *)&riGL;
+	nRendIf = (RenderInterface *)&riGL;		// 8riD3D, riSoft
 
 	memcpy(&params,e,sizeof(params));
 	InitTA_Regs();

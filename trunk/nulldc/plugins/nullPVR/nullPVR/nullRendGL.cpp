@@ -246,7 +246,7 @@ void FASTCALL RenderGL(void * buffer)
 		if(pplist_op[op].len >= 3)
 		{
 			nRendIf->nrSetState(NULL);
-			glDrawArrays(GL_TRIANGLE_STRIP, pplist_op[op].first, pplist_op[op].len-2);
+			glDrawArrays(GL_TRIANGLE_STRIP, pplist_op[op].first, pplist_op[op].len);
 
 	/*		printf("Strip, Start: %d, Len: %d\n{\n", pplist_op[op].first, pplist_op[op].len);
 			for(int i=0; i<pplist_op[op].len; i++)
@@ -285,9 +285,8 @@ void FASTCALL SetStateGL(void * state)
 {
 	glShadeModel(GL_SMOOTH);
 	glDisable(GL_TEXTURE_2D);
+	glDepthFunc(DepthModeGL[GL_GEQUAL]);
 	glDisable(GL_DEPTH_TEST);
-//	glDepthFunc(DepthModeGL[GL_LEQUAL]);
-
 	glDisable(GL_BLEND);
 	glDisable(GL_ALPHA_TEST);
 }
