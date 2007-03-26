@@ -96,7 +96,7 @@ struct VertexDecoder
 	__forceinline
 		static void EndPolyStrip()
 	{
-		current_pp->len=vertex_count - current_pp->first +1;
+		current_pp->len=vertex_count - current_pp->first;
 		current_pp++;
 	}
 
