@@ -99,12 +99,18 @@ s32  FASTCALL InitGL(void * handle)
 	LoadFProgram("FProgram.cg","PVR_FragmentInput");	*/\
 
 //#ifdef USE_VBOS
-	glGenBuffers(nVBuffers, vbuff);
+
+	glGenBuffers(1, vbuff);
+	if(0==vbuff[0]) return false;
+	glBindBuffer(GL_ARRAY_BUFFER_ARB, vbuff[0]);
+	glBufferData(GL_ARRAY_BUFFER_ARB, VB_DEFSIZE*8, NULL, GL_STREAM_DRAW);
+
+/*	glGenBuffers(nVBuffers, vbuff);
 	for(int vb=0; vb<nVBuffers; vb++) {
 		if(0==vbuff[vb]) return false;
 		glBindBuffer(GL_ARRAY_BUFFER_ARB, vbuff[vb]);
 		glBufferData(GL_ARRAY_BUFFER_ARB, VB_DEFSIZE, NULL, GL_STREAM_DRAW);
-	}
+	}*/
 //	CheckErrorsGL("InitGL()->Creating VBOs");
 //#endif
 
@@ -120,10 +126,11 @@ void FASTCALL TermGL(void * handle)
 //	ClearDCache();
 //	TCache.ClearTCache();		// Textures
 
+	glDeleteBuffers(1,vbuff);
 
-	for(int vb=0; vb<nVBuffers; vb++) {
+/*	for(int vb=0; vb<nVBuffers; vb++) {
 		glDeleteBuffers(nVBuffers,vbuff);
-	}
+	}*/
 
 	if (hRC && (!wglMakeCurrent(NULL,NULL)) || (!wglDeleteContext(hRC)) ) {
 		MessageBox((HWND)handle, "Release Rendering Context Failed.","SHUTDOWN ERROR",MB_ICONERROR);
@@ -169,30 +176,36 @@ void FASTCALL RenderGL(void * buffer)
 
 	printf("-------RENDER GL_-----------------\n");
 
-	GLvoid * pBuffer[nVBuffers];
+	GLvoid * pBuffer = NULL;
+/*	GLvoid * pBuffer[nVBuffers];
 
 	for(int vb=0; vb<nVBuffers; vb++)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, vbuff[vb]);
 		glBufferData(GL_ARRAY_BUFFER, VB_DEFSIZE, NULL, GL_STREAM_DRAW);
 		pBuffer[vb] = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-	}
+	}*/
+
+	glBindBuffer(GL_ARRAY_BUFFER, vbuff[0]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(verts), NULL, GL_STREAM_DRAW);
+	pBuffer = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
 	//u32 pplist_op_size;
 	//PolyParam pplist_op[48*1024];
 
-	Vertex * pVert = (Vertex *)pBuffer;
-	for(u32 pp=0; pp<pplist_op_size; pp++)
-	{
-		pplist_op[pp] = 0;
-	}
+	memcpy(pBuffer, verts, sizeof(verts));
 
-	for(int vb=0; vb<nVBuffers; vb++)
+	glBindBuffer(GL_ARRAY_BUFFER, vbuff[0]);
+	glUnmapBuffer(GL_ARRAY_BUFFER);
+
+	// RENDER //
+
+/*	for(int vb=0; vb<nVBuffers; vb++)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, vbuff[vb]);
 		glUnmapBuffer(GL_ARRAY_BUFFER);
 
 		// RenderBuffer:
-	}
+	}*/
 
 //	ClearDCache();
 //	TCache.ClearTInvalids();
