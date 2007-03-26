@@ -23,6 +23,7 @@ enum
 };
 GLuint vbuff[nVBuffers] = { 0, 0, 0, 0, 0, 0 };
 
+GLvoid CheckErrorsGL(char * szFunc);
 
 s32  FASTCALL InitGL(void * handle)
 {
@@ -114,8 +115,12 @@ s32  FASTCALL InitGL(void * handle)
 //	CheckErrorsGL("InitGL()->Creating VBOs");
 //#endif
 
+	CheckErrorsGL("InitGL");
+
+
 	ResizeGL(handle);
 	RenderGL(NULL);
+
 
 	return true;
 }
@@ -166,9 +171,9 @@ void FASTCALL ResizeGL(void * handle)
 void FASTCALL RenderGL(void * buffer)
 {
 	u32 dwValue = *pVO_BORDER_COL;
-	f32	R=((dwValue>>0x10)&0xFF)/255.f,
-		G=((dwValue>>0x08)&0xFF)/255.f,
-		B=((dwValue>>0x00)&0xFF)/255.f;
+	f32	R=1.0,	//((dwValue>>0x10)&0xFF)/255.f,
+		G=0.0,	//((dwValue>>0x08)&0xFF)/255.f,
+		B=0.8;	//((dwValue>>0x00)&0xFF)/255.f;
 
 	glClearColor( R,G,B, 1.f );
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // | GL_ACCUM_BUFFER_BIT);
@@ -192,6 +197,9 @@ void FASTCALL RenderGL(void * buffer)
 	//u32 pplist_op_size;
 	//PolyParam pplist_op[48*1024];
 
+
+	CheckErrorsGL("RenderGL->MapBuffer()");
+
 	memcpy(pBuffer, verts, sizeof(Vertex)*vertex_count);	//copy only used part of the buffer
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbuff[0]);
@@ -204,6 +212,7 @@ void FASTCALL RenderGL(void * buffer)
 		// RenderBuffer:
 	}*/
 
+	CheckErrorsGL("RenderGL->UnmapBuffer()");
 
 #define VBUFF_P(ix)	(void*)((char*)NULL + (ix))
 
@@ -224,14 +233,21 @@ void FASTCALL RenderGL(void * buffer)
 	// RENDER //
 
 
+	CheckErrorsGL("RenderGL->ClientState()");
 
 	for(u32 op=0; op<pplist_op_size; op++)
 	{
-		nRendIf->nrSetState(NULL);
-		glDrawArrays(GL_TRIANGLES, pplist_op[op].first, pplist_op[op].len);
+		ASSERT_T(((pplist_op[op].first + pplist_op[op].len) > vertex_count),"PPLIST OFFSETS ARE TOO LARGE !");
+
+		if(pplist_op[op].len >= 3)
+		{
+			nRendIf->nrSetState(NULL);
+			glDrawArrays(GL_TRIANGLE_STRIP, pplist_op[op].first, pplist_op[op].len);
+		}
 	}
 
 
+	CheckErrorsGL("RenderGL->DrawArrays()");
 
 
 
@@ -250,13 +266,34 @@ void FASTCALL RenderGL(void * buffer)
 	
 	SwapBuffers(hDC);
 
+	CheckErrorsGL("RenderGL");
 }
 void FASTCALL SetStateGL(void * state)
 {
 	glShadeModel(GL_SMOOTH);
 	glDisable(GL_TEXTURE_2D);
-	glDepthFunc(DepthModeGL[GL_LEQUAL]);
+	glDepthFunc(DepthModeGL[GL_GEQUAL]);
 
 	glDisable(GL_BLEND);
 	glDisable(GL_ALPHA_TEST);
+}
+
+
+
+
+/*
+**	Util/Error functions
+*/
+
+
+GLvoid CheckErrorsGL( char *szFunc )
+{
+	GLenum err;
+	const GLubyte *pszErrStr;
+
+	if((err = glGetError()) != GL_NO_ERROR)
+	{
+		pszErrStr = gluErrorString(err);
+		printf("OpenGL Error in %s\n\t %s\n", szFunc, pszErrStr );
+	}
 }
