@@ -237,12 +237,25 @@ void FASTCALL RenderGL(void * buffer)
 
 	for(u32 op=0; op<pplist_op_size; op++)
 	{
-		ASSERT_T(((pplist_op[op].first + pplist_op[op].len) > vertex_count),"PPLIST OFFSETS ARE TOO LARGE !");
+		if((pplist_op[op].first + pplist_op[op].len) > vertex_count)
+		{
+	//		printf("VCOUNT: %d < PPLIST %d + %d\n", 
+	//			vertex_count, pplist_op[op].first, pplist_op[op].len);
+		}
 
 		if(pplist_op[op].len >= 3)
 		{
 			nRendIf->nrSetState(NULL);
-			glDrawArrays(GL_TRIANGLE_STRIP, pplist_op[op].first, pplist_op[op].len);
+			glDrawArrays(GL_TRIANGLE_STRIP, pplist_op[op].first, pplist_op[op].len-2);
+
+	/*		printf("Strip, Start: %d, Len: %d\n{\n", pplist_op[op].first, pplist_op[op].len);
+			for(int i=0; i<pplist_op[op].len; i++)
+			{
+				printf("\t- %f %f %f - %08X - \n", 
+					verts[pplist_op[op].first+i].x, verts[pplist_op[op].first+i].y, 
+					verts[pplist_op[op].first+i].z, verts[pplist_op[op].first+i].argb); 
+			}
+			printf("}\n\n");*/
 		}
 	}
 
@@ -272,7 +285,8 @@ void FASTCALL SetStateGL(void * state)
 {
 	glShadeModel(GL_SMOOTH);
 	glDisable(GL_TEXTURE_2D);
-	glDepthFunc(DepthModeGL[GL_GEQUAL]);
+	glDisable(GL_DEPTH_TEST);
+//	glDepthFunc(DepthModeGL[GL_LEQUAL]);
 
 	glDisable(GL_BLEND);
 	glDisable(GL_ALPHA_TEST);
