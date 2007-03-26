@@ -5,6 +5,8 @@ using namespace TASplitter;
 
 u32 VertexCount=0;
 extern u32 FrameCount;
+
+//Fill that in w/ some vertex decoding :)
 struct VertexDecoder
 {
 	//list handling
