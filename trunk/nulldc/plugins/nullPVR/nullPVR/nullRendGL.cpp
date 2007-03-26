@@ -196,9 +196,6 @@ void FASTCALL RenderGL(void * buffer)
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbuff[0]);
 	glUnmapBuffer(GL_ARRAY_BUFFER);
-
-	// RENDER //
-
 /*	for(int vb=0; vb<nVBuffers; vb++)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, vbuff[vb]);
@@ -206,6 +203,36 @@ void FASTCALL RenderGL(void * buffer)
 
 		// RenderBuffer:
 	}*/
+
+
+	// RENDER //
+
+//#ifndef USE_SHADERS
+
+	glEnableClientState(GL_COLOR_ARRAY);
+	glEnableClientState(GL_VERTEX_ARRAY);
+
+//#else
+//	glEnableVertexAttribArray(GLuint index);
+//#endif
+
+
+
+
+
+
+
+	// RENDER //
+
+//#ifndef USE_SHADERS
+
+	glDisableClientState(GL_COLOR_ARRAY);
+	glDisableClientState(GL_VERTEX_ARRAY);
+
+//#else
+//	glDisableVertexAttribArray(GLuint index);
+//#endif
+
 
 //	ClearDCache();
 //	TCache.ClearTInvalids();
