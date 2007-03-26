@@ -54,17 +54,17 @@ struct VertexDecoder
 	__forceinline
 		static void fastcall AppendPolyParam0(TA_PolyParam0* pp)
 	{
-		glob_param_bdc;
+		//glob_param_bdc;
 	}
 	__forceinline
 		static void fastcall AppendPolyParam1(TA_PolyParam1* pp)
 	{
-		glob_param_bdc;
+		//glob_param_bdc;
 	}
 	__forceinline
 		static void fastcall AppendPolyParam2A(TA_PolyParam2A* pp)
 	{
-		glob_param_bdc;
+		//glob_param_bdc;
 	}
 	__forceinline
 		static void fastcall AppendPolyParam2B(TA_PolyParam2B* pp)
@@ -74,12 +74,12 @@ struct VertexDecoder
 	__forceinline
 		static void fastcall AppendPolyParam3(TA_PolyParam3* pp)
 	{
-		glob_param_bdc;
+		//glob_param_bdc;
 	}
 	__forceinline
 		static void fastcall AppendPolyParam4A(TA_PolyParam4A* pp)
 	{
-		glob_param_bdc;
+		//glob_param_bdc;
 	}
 	__forceinline
 		static void fastcall AppendPolyParam4B(TA_PolyParam4B* pp)
