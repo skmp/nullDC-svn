@@ -205,7 +205,11 @@ void FASTCALL RenderGL(void * buffer)
 	}*/
 
 
-	// RENDER //
+#define VBUFF_P(ix)	(void*)((char*)NULL + (ix))
+
+	glVertexPointer(3, GL_FLOAT, sizeof(Vertex), VBUFF_P(0));
+	glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(Vertex), VBUFF_P(12));
+
 
 //#ifndef USE_SHADERS
 
@@ -217,12 +221,19 @@ void FASTCALL RenderGL(void * buffer)
 //#endif
 
 
-
-
-
-
-
 	// RENDER //
+
+
+
+	for(u32 op=0; op<pplist_op_size; op++)
+	{
+		nRendIf->nrSetState(NULL);
+		glDrawArrays(GL_TRIANGLES, pplist_op[op].first, pplist_op[op].len);
+	}
+
+
+
+
 
 //#ifndef USE_SHADERS
 
