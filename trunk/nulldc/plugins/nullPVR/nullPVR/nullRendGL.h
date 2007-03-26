@@ -7,8 +7,8 @@
 #include <GL/glew.h>
 #include <GL/gl.h>
 #include <GL/glu.h>
-//#include <GL/glext.h>
-//#include <cg/cggl.h>	
+#include <GL/glext.h>
+#include <cg/cggl.h>	
 
 
 

@@ -66,7 +66,7 @@ void EXPORT_CALL dcGetInterface(plugin_interface* plIf)
 }
 
 static u32 RendInit = 0;
-RenderInterface * nRendIf;
+
 
 
 

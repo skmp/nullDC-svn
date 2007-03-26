@@ -2,6 +2,7 @@
 **	pvrMemory.cpp,	nullDC::nullPVR	(2007) ZeZu & drk||Raziel
 */
 #include "nullPVR.h"
+#include "nullRend.h"
 #include "pvrMemory.h"
 #include "ta_vdec.h"
 
@@ -121,6 +122,8 @@ void FASTCALL pvrWriteReg(u32 addr,u32 data,u32 size)
 					ASSERT_T((1),"STARTRENDER && Lists Not Complete !");
 				}
 				*/
+
+				nRendIf->nrRender(NULL);
 
 				params.RaiseInterrupt(holly_RENDER_DONE);
 				params.RaiseInterrupt(holly_RENDER_DONE_vd);

@@ -5,3 +5,4 @@
 #include "nullPvr.h"
 #include "nullRend.h"
 
+RenderInterface * nRendIf;

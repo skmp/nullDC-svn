@@ -22,7 +22,7 @@ struct RenderInterface {
 	SetStateFP	* nrSetState;
 	// TODO, Add Texture Load/Del
 };
-
+extern RenderInterface * nRendIf;
 
 #include "nullRendGL.h"
 #include "nullRendSoft.h"

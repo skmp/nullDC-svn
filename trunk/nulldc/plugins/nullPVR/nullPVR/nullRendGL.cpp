@@ -5,10 +5,23 @@
 #include "nullPvr.h"
 #include "nullRend.h"
 #include "pvrMemory.h"
+#include "ta_vdec.h"
 
 HDC hDC;
 HGLRC hRC;
 
+enum
+{
+	OPQ=0,
+	TRS,
+	PTU,
+	SPR,
+	OPM,
+	TRM,
+	nVBuffers,
+	VB_DEFSIZE=1024*1024		// 1MB *FIXME* sizeof(Vertex)*MAX_VCACHE
+};
+GLuint vbuff[nVBuffers] = { 0, 0, 0, 0, 0, 0 };
 
 
 s32  FASTCALL InitGL(void * handle)
@@ -80,25 +93,20 @@ s32  FASTCALL InitGL(void * handle)
 	glClearColor(1.f, 1.f, 1.f, 0.f);
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-	/*	InitCg();
+	/*	
+	InitCg();
 	LoadVProgram("VProgram.cg","PVR_VertexInput");
 	LoadFProgram("FProgram.cg","PVR_FragmentInput");	*/\
 
-#ifdef USE_VBOS
-
-	glGenBuffers(3, vbo_ptr);
-	if(0==vbo_ptr[0] || 0==vbo_ptr[1] || 0==vbo_ptr[2])
-		return false;
-
-	glBindBuffer(GL_ARRAY_BUFFER_ARB, vbo_ptr[vbo_opq]);
-	glBufferData(GL_ARRAY_BUFFER_ARB, DCACHE_SIZE, NULL, GL_DYNAMIC_DRAW_ARB);
-	glBindBuffer(GL_ARRAY_BUFFER_ARB, vbo_ptr[vbo_trs]);
-	glBufferData(GL_ARRAY_BUFFER_ARB, DCACHE_SIZE, NULL, GL_DYNAMIC_DRAW_ARB);
-	glBindBuffer(GL_ARRAY_BUFFER_ARB, vbo_ptr[vbo_ptu]);
-	glBufferData(GL_ARRAY_BUFFER_ARB, DCACHE_SIZE, NULL, GL_DYNAMIC_DRAW_ARB);
-	CheckErrorsGL("InitGL()->Creating VBOs");
-
-#endif
+//#ifdef USE_VBOS
+	glGenBuffers(nVBuffers, vbuff);
+	for(int vb=0; vb<nVBuffers; vb++) {
+		if(0==vbuff[vb]) return false;
+		glBindBuffer(GL_ARRAY_BUFFER_ARB, vbuff[vb]);
+		glBufferData(GL_ARRAY_BUFFER_ARB, VB_DEFSIZE, NULL, GL_STREAM_DRAW);
+	}
+//	CheckErrorsGL("InitGL()->Creating VBOs");
+//#endif
 
 	ResizeGL(handle);
 	RenderGL(NULL);
@@ -111,6 +119,11 @@ void FASTCALL TermGL(void * handle)
 	// *FIXME* re-enable these
 //	ClearDCache();
 //	TCache.ClearTCache();		// Textures
+
+
+	for(int vb=0; vb<nVBuffers; vb++) {
+		glDeleteBuffers(nVBuffers,vbuff);
+	}
 
 	if (hRC && (!wglMakeCurrent(NULL,NULL)) || (!wglDeleteContext(hRC)) ) {
 		MessageBox((HWND)handle, "Release Rendering Context Failed.","SHUTDOWN ERROR",MB_ICONERROR);
@@ -156,10 +169,33 @@ void FASTCALL RenderGL(void * buffer)
 
 	printf("-------RENDER GL_-----------------\n");
 
+	GLvoid * pBuffer[nVBuffers];
+
+	for(int vb=0; vb<nVBuffers; vb++)
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, vbuff[vb]);
+		glBufferData(GL_ARRAY_BUFFER, VB_DEFSIZE, NULL, GL_STREAM_DRAW);
+		pBuffer[vb] = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+	}
+	//u32 pplist_op_size;
+	//PolyParam pplist_op[48*1024];
+
+	Vertex * pVert = (Vertex *)pBuffer;
+	for(u32 pp=0; pp<pplist_op_size; pp++)
+	{
+		pplist_op[pp] = 0;
+	}
+
+	for(int vb=0; vb<nVBuffers; vb++)
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, vbuff[vb]);
+		glUnmapBuffer(GL_ARRAY_BUFFER);
+
+		// RenderBuffer:
+	}
 
 //	ClearDCache();
 //	TCache.ClearTInvalids();
-
 	
 	SwapBuffers(hDC);
 
