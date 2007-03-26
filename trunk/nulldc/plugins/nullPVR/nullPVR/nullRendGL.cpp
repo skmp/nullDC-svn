@@ -192,7 +192,7 @@ void FASTCALL RenderGL(void * buffer)
 	//u32 pplist_op_size;
 	//PolyParam pplist_op[48*1024];
 
-	memcpy(pBuffer, verts, sizeof(verts));
+	memcpy(pBuffer, verts, sizeof(Vertex)*vertex_count);	//copy only used part of the buffer
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbuff[0]);
 	glUnmapBuffer(GL_ARRAY_BUFFER);
