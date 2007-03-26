@@ -23,6 +23,7 @@ struct PolyParam
 	//TCW/TSP/Stuff here
 };
 
+extern u32 vertex_count;
 extern Vertex verts[128*1024];
 extern u32 pplist_op_size;
 extern PolyParam pplist_op[48*1024];

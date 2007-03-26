@@ -3,7 +3,7 @@
 
 using namespace TASplitter;
 
-u32 VertexCount=0;
+u32 vertex_count=0;
 extern u32 FrameCount;
 
 Vertex verts[128*1024];
@@ -49,7 +49,7 @@ struct VertexDecoder
 
 	//Polys
 #define glob_param_bdc (*current_pp_count)++; \
-		current_pp->first=VertexCount;
+		current_pp->first=vertex_count;
 
 	__forceinline
 		static void fastcall AppendPolyParam0(TA_PolyParam0* pp)
@@ -96,12 +96,12 @@ struct VertexDecoder
 	__forceinline
 		static void EndPolyStrip()
 	{
-		current_pp->len=VertexCount - current_pp->first +1;
+		current_pp->len=vertex_count - current_pp->first +1;
 		current_pp++;
 	}
 
 	//Poly Vertex handlers
-#define vert_cvt_base VertexCount++; \
+#define vert_cvt_base vertex_count++; \
 	current_vert->x=vtx->xyz[0];\
 	current_vert->y=vtx->xyz[1];\
 	current_vert->z=vtx->xyz[2];\
@@ -357,7 +357,7 @@ struct VertexDecoder
 		pplist_op_size=0;
 		pplist_tr_size=0;
 		pplist_pt_size=0;
-		VertexCount=0;
+		vertex_count=0;
 		current_vert = &verts[0];
 
 	}
@@ -367,7 +367,7 @@ struct VertexDecoder
 		pplist_op_size=0;
 		pplist_tr_size=0;
 		pplist_pt_size=0;
-		VertexCount=0;
+		vertex_count=0;
 		current_vert = &verts[0];
 
 	}
@@ -389,7 +389,7 @@ void TermRenderer()
 void ResetRenderer(bool Manual)
 {
 	TileAccel.Reset(Manual);
-	VertexCount=0;
+	vertex_count=0;
 	FrameCount=0;
 }
 
