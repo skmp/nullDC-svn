@@ -415,17 +415,36 @@ void cm_MampleSubEmpty(u32 root,u32 port,u32 subport)
 {
 	DeleteAllMenuItemChilds(root);
 	//l8r
-	AddMenuItem(root,-1,"Attach Some Crack",0,0);
-	AddMenuItem(root,-1,"Attach Some Crack x2",0,0);
+	/*
+	for (size_t i=0;i<MapleDeviceList_cached.size();i++)
+	{
+		if (!(MapleDeviceList_cached[i].Flags & MDTF_Hotplug))
+			continue;
+		if (MapleDeviceList_cached[i].Type!=MDT_Sub)
+			continue;
+		char text[512];
+		sprintf(text,"Attach %s %d.%d.%d",MapleDeviceList_cached[i].Name,MapleDeviceList_cached[i].PluginVersion.major,MapleDeviceList_cached[i].PluginVersion.minnor,MapleDeviceList_cached[i].PluginVersion.build);
+		//Attach NAME
+		u32 menu=AddMenuItem(root,-1,text,0,0);
+		MenuItem mi;
+		u8* t=0;
+		t+=MapleDeviceList_cached[i].id;
+		t+=(port<<24);
+		mi.PUser=t;
+		SetMenuItem(menu,&mi,MIM_PUser);
+	}
 	AddMenuItem(root,-1,"Click Me To Crash",(MenuItemSelectedFP*)666,0);
+	*/
 }
 void cm_MampleSubUsed(u32 root,u32 port,u32 subport)
 {
 	DeleteAllMenuItemChilds(root);
 	//l8r
+	/*
 	AddMenuItem(root,-1,"Unplug",0,0);
 	u32 sep=AddMenuItem(root,-1,"",0,0);
 	SetMenuItemStyle(sep,MIS_Seperator,MIS_Seperator);
+	*/
 }
 void FASTCALL menu_handle_attach_main(u32 id,void* win,void* p)
 {
@@ -441,7 +460,7 @@ void cm_MampleMainEmpty(u32 root,u32 port)
 	for (int i=0;i<5;i++)
 		Maple_menu_ports[port][i]=0;
 	//Add the
-	
+	/*
 	for (size_t i=0;i<MapleDeviceList_cached.size();i++)
 	{
 		if (!(MapleDeviceList_cached[i].Flags & MDTF_Hotplug))
@@ -459,6 +478,7 @@ void cm_MampleMainEmpty(u32 root,u32 port)
 		mi.PUser=t;
 		SetMenuItem(menu,&mi,MIM_PUser);
 	}
+	*/
 }
 void cm_MampleMainUsed(u32 root,u32 port,u32 flags)
 {
@@ -469,7 +489,9 @@ void cm_MampleMainUsed(u32 root,u32 port,u32 flags)
 	{
 		if (flags & (1<<i))
 		{
-			u32 sdr=AddMenuItem(root,-1,"Subdevice ..",0,0);
+			char temp[512];
+			sprintf(temp,"Subdevice %d",i+1);
+			u32 sdr=AddMenuItem(root,-1,temp,0,0);
 			Maple_menu_ports[port][i]=sdr;
 			cm_MampleSubEmpty(sdr,port,i);
 		}
@@ -479,11 +501,13 @@ void cm_MampleMainUsed(u32 root,u32 port,u32 flags)
 		}
 	}
 	
+	/*
 	//-
 	u32 sep=AddMenuItem(root,-1,"",0,0);
 	SetMenuItemStyle(sep,MIS_Seperator,MIS_Seperator);
 	//Unplug
 	AddMenuItem(root,-1,"Unplug",0,0);
+	*/
 }
 //These are the 'raw' functions , they handle creation/destruction of a device *only*
 enum pmd_errors
@@ -537,6 +561,8 @@ s32 DestroyMapleDevice(u32 pos)
 	plg->DestroyMain(&MapleDevices[pos],mdd->id);
 	cm_MampleMainEmpty(Maple_menu_ports[pos][5],pos);
 
+	MapleDevices[pos].connected=false;
+
 	return rv_ok;
 }
 s32 CreateMapleSubDevice(u32 pos,u32 subport,char* device,bool hotplug)
@@ -589,7 +615,7 @@ s32 DestroyMapleSubDevice(u32 pos,u32 subport)
 
 	plg->DestroySub(&MapleDevices[pos].subdevices[subport],mdd->id);
 	cm_MampleSubEmpty(Maple_menu_ports[pos][subport],pos,subport);
-
+	MapleDevices[pos].subdevices[subport].connected=false;
 	return rv_ok;
 }
 
@@ -740,6 +766,10 @@ s32 plugins_Load_()
 				}
 			}
 		}
+		else
+		{
+			MapleDevices_dd[port][5].Created=false;
+		}
 	}
 
 	return rv_ok;
@@ -842,6 +872,10 @@ void CheckPlugin(char*cfg_name, T* plug,u32 rootmenu)
 		unload_plugin(plug,rootmenu);
 	}
 }
+void CheckMapleMD()
+{
+
+}
 bool plugins_Select()
 {
 	if (plugins_inited)
@@ -859,6 +893,42 @@ bool plugins_Select()
 		CheckPlugin("Current_AICA",&libAICA,Aica_menu);
  		CheckPlugin("Current_ExtDevice",&libExtDevice,ExtDev_menu);
 
+		//Maple plugins
+		for (int port =0;port<4;port++)
+		{
+			char dllf[512];
+			maple_cfg_plug(port,5,dllf);
+			if (MapleDevices_dd[port][5].Created)
+			{
+				//Check if main device is changed 
+				if (strcmp(dllf,MapleDevices_dd[port][5].mdd->dll)!=0)
+				{
+					//if it is destroy it & its childs
+					for (int i=4;i>=0;i--)
+					{
+						DestroyMapleSubDevice(port,i);
+						MapleDevices_dd[port][i].Created=false;
+					}
+					DestroyMapleDevice(port);
+					MapleDevices_dd[port][5].Created=false;
+				}
+				else
+				{
+					for (int i=4;i>=0;i--)
+					{
+						if (!MapleDevices_dd[port][i].Created)
+							continue;
+						maple_cfg_plug(port,i,dllf);
+						//else , check if a child is changed & destroy it
+						if (strcmp(dllf,MapleDevices_dd[port][i].mdd->dll)!=0)
+						{
+							DestroyMapleSubDevice(port,i);
+							MapleDevices_dd[port][i].Created=false;
+						}
+					}
+				}
+			}
+		}
 		return plugins_Load();
 	}
 	return rv;
