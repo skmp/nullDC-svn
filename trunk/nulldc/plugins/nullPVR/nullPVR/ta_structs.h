@@ -31,6 +31,7 @@ union PCW
 		u32	ParaType		: 3;	
 	};
 	u8 obj_ctrl;
+	u8 bytes[4];
 	u32 full;
 };
 
@@ -642,5 +643,29 @@ struct TA_VertexParam
 	};
 
 };
+
+
+
+
+
+struct AllocCtrl
+{
+	u32	O_OPB	: 2;
+	u32	Ra		: 2;
+	u32	OM_OPB	: 2;
+	u32	Rb		: 2;
+	u32	T_OPB	: 2;
+	u32	Rc		: 2;
+	u32	TM_OPB	: 2;
+	u32	Rd		: 2;
+	u32	PT_OPB	: 2;
+	u32	Re		: 2;
+	u32	OPB_Mode: 1;
+	u32	Rsvd	:11;
+};
+
+
+
+
 
 #pragma pack(pop)

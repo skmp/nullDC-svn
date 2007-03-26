@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="nullPVR"
 	ProjectGUID="{4A98B197-EB69-4906-A816-BA866A3B7A5D}"
 	RootNamespace="nullPVR"
@@ -258,6 +258,34 @@
 					>
 				</File>
 			</Filter>
+		</Filter>
+		<Filter
+			Name="Renderer"
+			>
+			<File
+				RelativePath=".\nullRend.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\nullRend.h"
+				>
+			</File>
+			<File
+				RelativePath=".\nullRendD3D.h"
+				>
+			</File>
+			<File
+				RelativePath=".\nullRendGL.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\nullRendGL.h"
+				>
+			</File>
+			<File
+				RelativePath=".\nullRendSoft.h"
+				>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>

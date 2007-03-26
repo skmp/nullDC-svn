@@ -53,7 +53,6 @@ void FASTCALL pvrWriteReg(u32 addr,u32 data,u32 size)
 	addr &= 0xFFFF;
 	ASSERT_F((4==size), "pvrWriteReg, Len != 4");
 
-//#ifdef __TEMPHOLD__
 	if(addr>=TA_REG_START && TA_REG_END>=addr)
 	{
 //		ASSERT_T(TA_State.Processing,"Write to Regs While Processing Fifo");
@@ -155,7 +154,6 @@ void FASTCALL pvrWriteReg(u32 addr,u32 data,u32 size)
 			ASSERT_F((0),"<PVR> WRITE TO PAL RAM, SIZE NOT SUPPORTED!\n");
 		return;
 	}
-//#endif
 	printf("#!\tERROR: pvrWriteReg @ %08X <= %X (%d) Illegal!\n", addr, data, size);
 }
 

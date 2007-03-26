@@ -277,6 +277,7 @@ struct VertexDecoder
 	}
 };
 
+
 FifoSplitter<VertexDecoder> TileAccel;
 
 bool InitRenderer()

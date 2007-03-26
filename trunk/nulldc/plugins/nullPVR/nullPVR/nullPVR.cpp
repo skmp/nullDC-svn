@@ -3,9 +3,10 @@
 */
 
 #include "nullPVR.h"
-#include "pvrMemory.h"
+#include "nullRend.h"
 #include "ta.h"
 #include "ta_vdec.h"
+#include "pvrMemory.h"
 
 pvr_init_params params;
 emu_info		emu;
@@ -64,22 +65,31 @@ void EXPORT_CALL dcGetInterface(plugin_interface* plIf)
 //	pvrIf.Config			= pvrConfig;
 }
 
-
-
+static u32 RendInit = 0;
+RenderInterface * nRendIf;
 
 
 
 s32  FASTCALL pvrInit(pvr_init_params* e)
 {
+	// for now use OpenGL //
+
+	RendInit=1;
+	nRendIf = (RenderInterface *)&riGL;
+
 	memcpy(&params,e,sizeof(params));
 	InitTA_Regs();
 	InitRenderer();
+
+	if(!nRendIf->nrInit(emu.WindowHandle)) return -1;
 	return 0;
 }
 
 void FASTCALL pvrTerm()
 {
+	RendInit=0;
 	TermRenderer();
+	nRendIf->nrTerm(emu.WindowHandle);
 }
 
 void FASTCALL pvrReset(bool m)
@@ -96,6 +106,9 @@ s32  FASTCALL pvrLoad(emu_info* e,u32)
 
 void FASTCALL pvrUnload()
 {
+	if(1==RendInit)
+		nRendIf->nrTerm(emu.WindowHandle);
+	RendInit=0;
 }
 
 void FASTCALL pvrConfig(void*)
@@ -139,8 +152,7 @@ void vblank_done()
 
 		char fpsStr[256];
 		sprintf(fpsStr," FPS: %4.2f(%4.2f)  -  Sh4: %4.2f mhz (%4.2f%%) - nullDC v0.0.1", spd_fps,fullfps, spd_cpu,spd_cpu*100/200);
-//		SetWindowText((HWND)emuIf.handle, fpsStr);
-
+		SetWindowText((HWND)emu.WindowHandle, fpsStr);
 	}
 
 	//printf(" vbl1 :: ListInit: %d\n", TA_State.ListInit);

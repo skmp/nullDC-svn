@@ -9,7 +9,7 @@
 #ifndef linux
 #include <windows.h>
 #else
-#error "FIXME - EWW LINUZ EWW"
+#error "FIXME - EWW LINUZ EWW :: h4w"
 #endif
 
 
@@ -53,7 +53,6 @@ s32  FASTCALL pvrLoad(emu_info*,u32);
 void FASTCALL pvrUnload();
 void FASTCALL pvrConfig(void*);
 
-void FASTCALL pvrWriteFifo(u32 address, u32* data, u32 size);
 void FASTCALL pvrLockCB(vram_block *bl, u32 addr);
 
 
