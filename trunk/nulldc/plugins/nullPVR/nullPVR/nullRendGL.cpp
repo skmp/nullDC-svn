@@ -253,4 +253,10 @@ void FASTCALL RenderGL(void * buffer)
 }
 void FASTCALL SetStateGL(void * state)
 {
+	glShadeModel(GL_SMOOTH);
+	glDisable(GL_TEXTURE_2D);
+	glDepthFunc(DepthModeGL[GL_LEQUAL]);
+
+	glDisable(GL_BLEND);
+	glDisable(GL_ALPHA_TEST);
 }
