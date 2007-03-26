@@ -106,6 +106,7 @@ bool InitDrive_(char* fn)
 		if (drives[i].Init(fn))
 		{
 			CurrDrive=&drives[i];
+			CurrDrive->Inited=true;
 			printf("Using %s \n",CurrDrive->name);
 			return true;
 		}
@@ -131,7 +132,7 @@ bool InitDrive()
 	char fn[512]="";
 	if (GetFile(fn,"CD/GD Images (*.cdi;*.mds;*.nrg;*.gdi) \0*.cdi;*.mds;*.nrg;*.gdi\0\0")==false)
 	{
-		CurrDrive=&drives[Iso];
+		CurrDrive=0;
 		return msgboxf("Would you like to boot w/o GDrom ?",MB_ICONQUESTION | MB_YESNO)==IDYES;
 		//return false;
 	}

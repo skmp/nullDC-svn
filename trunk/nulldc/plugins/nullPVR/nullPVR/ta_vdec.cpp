@@ -1,4 +1,6 @@
 #include "ta.h"
+#include "ta_vdec.h"
+
 using namespace TASplitter;
 
 u32 VertexCount=0;

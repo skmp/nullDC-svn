@@ -177,8 +177,8 @@ bool cdi_init(char* file)
 	if(pfctoc_mod==NULL)
 		return false;
 
-	PfcFreeTocFP* PfcFreeToc=(PfcFreeTocFP*)GetProcAddress(pfctoc_mod,"PfcFreeToc");
-	PfcGetTocFP*  PfcGetToc=(PfcGetTocFP*)GetProcAddress(pfctoc_mod,"PfcGetToc");
+	PfcFreeToc=(PfcFreeTocFP*)GetProcAddress(pfctoc_mod,"PfcFreeToc");
+	PfcGetToc=(PfcGetTocFP*)GetProcAddress(pfctoc_mod,"PfcGetToc");
 	verify(PfcFreeToc!=NULL && PfcFreeToc!=NULL);
 
 	//char fn[512]="";
@@ -205,6 +205,8 @@ void cdi_term()
 		PfcFreeToc(pstToc);
 	if (pfctoc_mod)
 		FreeLibrary(pfctoc_mod);
+	pstToc=0;
+	pfctoc_mod=0;
 }
 
 u32 FASTCALL cdi_DriveGetDiscType()

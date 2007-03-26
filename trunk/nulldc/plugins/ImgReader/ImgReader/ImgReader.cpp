@@ -48,12 +48,8 @@ void SaveSettings()
 	cfgSetStr("DefaultImage",settings.DefaultImage);
 }
 #define PLUGIN_NAME "Image Reader plugin by drk||Raziel & GiGaHeRz [" __DATE__ "]"
-void FASTCALL cfgdlg(void* window)
-{
-	printf("No config kthx\n");
-}
-void FASTCALL GetSessionInfo(u8* out,u8 ses);
 
+void FASTCALL GetSessionInfo(u8* out,u8 ses);
 
 void FASTCALL DriveReadSubChannel(u8 * buff, u32 format, u32 len)
 {
@@ -62,7 +58,8 @@ void FASTCALL DriveReadSubChannel(u8 * buff, u32 format, u32 len)
 
 void FASTCALL DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 {
-	CurrDrive->ReadSector(buff,StartSector,SectorCount,secsz);
+	if (CurrDrive)
+		CurrDrive->ReadSector(buff,StartSector,SectorCount,secsz);
 }
 
 void FASTCALL DriveGetTocInfo(u32* toc,u32 area)
@@ -72,7 +69,10 @@ void FASTCALL DriveGetTocInfo(u32* toc,u32 area)
 //TODO : fix up
 u32 FASTCALL DriveGetDiscType()
 {
-	return CurrDrive->GetDiscType();
+	if (CurrDrive)
+		return CurrDrive->GetDiscType();
+	else
+		return NoDisk;
 }
 
 void FASTCALL GetSessionInfo(u8* out,u8 ses)
@@ -103,6 +103,14 @@ void FASTCALL handle_About(u32 id,void* w,void* p)
 {
 	MessageBox((HWND)w,"Made by drk||Raziel & GiGaHeRz","About ImageReader...",MB_ICONINFORMATION);
 }
+void FASTCALL handle_SwitchDisc(u32 id,void* w,void* p)
+{
+	TermDrive();
+	DriveNotifyEvent(DiskChange,0);
+	
+	InitDrive();
+	DriveNotifyEvent(DiskChange,0);
+}
 //called when plugin is used by emu (you should do first time init here)
 s32 FASTCALL Load(emu_info* emu_inf,u32 rmenu)
 {
@@ -114,9 +122,12 @@ s32 FASTCALL Load(emu_info* emu_inf,u32 rmenu)
 	
 	LoadSettings();
 
+	emu.AddMenuItem(rmenu,-1,"Swap Disc",handle_SwitchDisc,settings.LoadDefaultImage);
+	emu.SetMenuItemStyle(emu.AddMenuItem(rmenu,-1,"-",handle_About,0),MIS_Seperator,MIS_Seperator);
 	emu.AddMenuItem(rmenu,-1,"Use Default Image",handle_UseDefImg,settings.LoadDefaultImage);
 	emu.AddMenuItem(rmenu,-1,"Select Default Image",handle_SelDefImg,0);
 	emu.AddMenuItem(rmenu,-1,"About",handle_About,0);
+	
 	
 	return rv_ok;
 }

@@ -575,6 +575,7 @@ int __fastcall UpdateSystem(u32 Cycles)
 			gpc_counter=0;
 			gcp_timer++;
 			FreeSuspendedBlocks();
+			UpdateGDRom();
 		}
 		aica_cycl=0;
 	}
