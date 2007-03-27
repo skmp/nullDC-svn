@@ -66,11 +66,11 @@ u32 vertex_count=0;
 extern u32 FrameCount;
 
 Vertex verts[128*1024];
-u32 pplist_op_size;
+u32 ppsize_op;
 PolyParam pplist_op[48*1024];
-u32 pplist_pt_size;
+u32 ppsize_pt;
 PolyParam pplist_pt[16*1024];
-u32 pplist_tr_size;
+u32 ppsize_tr;
 PolyParam pplist_tr[16*1024];
 PolyParam null_pp;
 
@@ -115,15 +115,15 @@ struct VertexDecoder
 	{
 		if (ListType==ListType_Opaque)
 		{
-			current_pp=&pplist_op[pplist_op_size];
+			current_pp=&pplist_op[ppsize_op];
 		}
 		else if (ListType==ListType_Punch_Through)
 		{
-			current_pp=&pplist_pt[pplist_pt_size];
+			current_pp=&pplist_pt[ppsize_pt];
 		}
 		else if (ListType==ListType_Translucent)
 		{
-			current_pp=&pplist_tr[pplist_tr_size];
+			current_pp=&pplist_tr[ppsize_tr];
 		}
 		else
 		{
@@ -139,15 +139,15 @@ struct VertexDecoder
 		//Caclulate list size ..
 		if (ListType==ListType_Opaque)
 		{
-			pplist_op_size = (current_pp - &pplist_op[0]) + 1;
+			ppsize_op = (u32)(current_pp - &pplist_op[0]) + 1;
 		}
 		else if (ListType==ListType_Punch_Through)
 		{
-			pplist_pt_size = (current_pp - &pplist_pt[0]) + 1;
+			ppsize_pt = (u32)(current_pp - &pplist_pt[0]) + 1;
 		}
 		else if (ListType==ListType_Translucent)
 		{
-			pplist_tr_size = (current_pp - &pplist_tr[0]) + 1;
+			ppsize_tr = (u32)(current_pp - &pplist_tr[0]) + 1;
 		}
 
 		_debug_only(current_pp=0;)
@@ -202,7 +202,7 @@ struct VertexDecoder
 	__forceinline
 		static void EndPolyStrip()
 	{
-		vertex_count+=current_vert-strip_start;
+		vertex_count += (u32)(current_vert-strip_start);
 	}
 
 	//Poly Vertex handlers
@@ -459,9 +459,9 @@ struct VertexDecoder
 	__forceinline
 		static void ListInit()
 	{
-		pplist_op_size=0;
-		pplist_tr_size=0;
-		pplist_pt_size=0;
+		ppsize_op=0;
+		ppsize_tr=0;
+		ppsize_pt=0;
 		vertex_count=0;
 		current_vert = &verts[0];
 
@@ -469,9 +469,9 @@ struct VertexDecoder
 	__forceinline
 		static void SoftReset()
 	{
-		pplist_op_size=0;
-		pplist_tr_size=0;
-		pplist_pt_size=0;
+		ppsize_op=0;
+		ppsize_tr=0;
+		ppsize_pt=0;
 		vertex_count=0;
 		current_vert = &verts[0];
 

@@ -36,9 +36,9 @@ union PCW
 };
 
 
-//// ISP/TSP Instruction Word
+//// ISP Instruction Word
 
-union ISP_TSP
+union ISP
 {
 	struct
 	{
@@ -57,7 +57,7 @@ union ISP_TSP
 };
 
 
-//// END ISP/TSP Instruction Word
+//// END ISP Instruction Word
 
 
 //// TSP Instruction Word
@@ -149,7 +149,7 @@ Polygon Type 0(Packed/Floating Color)
 struct TA_PolyParam0
 {
 	PCW pcw;
-	ISP_TSP isp;
+	ISP isp;
 
 	TSP tsp;
 	TCW tcw;
@@ -177,7 +177,7 @@ Polygon Type 1(Intensity, no Offset Color)
 struct TA_PolyParam1
 {
 	PCW pcw;
-	ISP_TSP isp;
+	ISP isp;
 
 	TSP tsp;
 	TCW tcw;
@@ -212,7 +212,7 @@ Polygon Type 2(Intensity, use Offset Color)
 struct TA_PolyParam2A
 {
 	PCW pcw;
-	ISP_TSP isp;
+	ISP isp;
 
 	TSP tsp;
 	TCW tcw;
@@ -247,7 +247,7 @@ Polygon Type 3(Packed Color, with Two Volumes)
 struct TA_PolyParam3
 {
 	PCW pcw;
-	ISP_TSP isp;
+	ISP isp;
 
 	//for 1st volume
 	TSP tsp;
@@ -286,7 +286,7 @@ Polygon Type 4(Intensity, with Two Volumes)
 struct TA_PolyParam4A
 {
 	PCW pcw;
-	ISP_TSP isp;
+	ISP isp;
 
 	//for 1st volume
 	TSP tsp;
@@ -313,7 +313,7 @@ struct TA_PolyParam4B
 struct TA_ModVolParam
 {
 	PCW pcw;
-	ISP_TSP isp;
+	ISP isp;
 
 	u32  ign[32-8];
 };
@@ -322,7 +322,7 @@ struct TA_ModVolParam
 struct TA_SpriteParam
 {
 	PCW pcw;
-	ISP_TSP isp;
+	ISP isp;
 
 	TSP tsp;
 	TCW tcw;

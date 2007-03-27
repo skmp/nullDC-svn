@@ -24,7 +24,7 @@ IDirect3DVertexDeclaration9 *g_pVD;	// Vertex Decl.
 
 s32  FASTCALL InitD3D(void * handle)
 {
-	if(FAILED(g_pD3D = Direct3DCreate9(D3D_SDK_VERSION)))
+	if(NULL == (g_pD3D = Direct3DCreate9(D3D_SDK_VERSION)))
 		goto fail;
 
 	D3DDISPLAYMODE d3ddm;
@@ -128,7 +128,7 @@ void FASTCALL RenderD3D(void * buffer)
 //	ClearDCache();
 //	TCache.ClearTInvalids();
 }
-void FASTCALL SetStateD3D(void * state)
+void FASTCALL SetStateD3D__(void * state)
 {
 	g_pDev->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
 	g_pDev->SetRenderState(D3DRS_SHADEMODE, D3DSHADE_GOURAUD);

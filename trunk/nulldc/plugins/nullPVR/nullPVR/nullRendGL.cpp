@@ -10,18 +10,11 @@
 HDC hDC;
 HGLRC hRC;
 
-enum
-{
-	OPQ=0,
-	TRS,
-	PTU,
-	SPR,
-	OPM,
-	TRM,
-	nVBuffers,
-	VB_DEFSIZE=1024*1024		// 1MB *FIXME* sizeof(Vertex)*MAX_VCACHE
-};
-GLuint vbuff[nVBuffers] = { 0, 0, 0, 0, 0, 0 };
+GLuint vbuff[2] = { 0, 0 };
+
+#define VB_DEFSIZE (1024*1024)		// 1MB *FIXME* sizeof(Vertex)*MAX_VCACHE
+
+
 
 GLvoid CheckErrorsGL(char * szFunc);
 
@@ -168,6 +161,90 @@ void FASTCALL ResizeGL(void * handle)
 	glLoadIdentity();
 }
 
+
+static __forceinline void SetStateCommon(PolyParam * state)
+{
+	glShadeModel(state->isp.Gouraud ? GL_SMOOTH : GL_FLAT);
+
+	glDepthFunc(DepthModeGL[state->isp.DepthMode]);
+	glDepthMask(state->isp.ZWriteDis ? GL_FALSE : GL_TRUE);
+
+	// *FIXME* Texturing //
+}
+static __forceinline void SetState_op(PolyParam * state)
+{
+	SetStateCommon(state);
+
+	glDisable(GL_BLEND);
+	glDisable(GL_ALPHA_TEST);
+}
+
+static __forceinline void SetState_tr(PolyParam * state)
+{
+	SetStateCommon(state);
+	
+	if(state->tsp.UseAlpha)
+		glEnable(GL_BLEND);
+	else
+		glDisable(GL_BLEND);
+
+	// *FIXME* Should I just mask, or disable?
+	glDepthMask(GL_TRUE);		// no zbuffering for transparencies
+
+	if(!state->tsp.IgnoreTexA) {
+		glEnable(GL_ALPHA_TEST);
+		glAlphaFunc(GL_GREATER, 0.f);
+	} else {
+		glDisable(GL_ALPHA_TEST);
+	}
+
+	glBlendFunc(SrcBlendGL[state->tsp.SrcInstr], DstBlendGL[state->tsp.DstInstr]);
+}
+
+static __forceinline void SetState_pt(PolyParam * state)
+{
+	SetStateCommon(state);
+
+	if(!state->tsp.IgnoreTexA) {
+		glEnable(GL_ALPHA_TEST);
+		glAlphaFunc(GL_GEQUAL, (float)(*pPT_ALPHA_REF &0xFF)/255.f);
+	} else {
+		glDisable(GL_ALPHA_TEST);
+	}
+	glDisable(GL_BLEND);
+}
+
+#define SetStateGL(state, type)	SetState_##type((state))
+
+// This little function is abstractable, useable for D3D as well
+
+
+#define RenderList(type)					\
+{											\
+	PolyParam * pplist	= pplist_##type;	\
+	u32 pplist_size		= ppsize_##type;	\
+											\
+	for(u32 p=0; p<pplist_size; p++)		\
+	{										\
+		ASSERT_T(((pplist[p].first + pplist[p].len) > vertex_count), "PP First+Len > VCount");	\
+											\
+		if(pplist[p].len >= 3) {			\
+			SetStateGL(&pplist[p], ##type);	\
+			glDrawArrays(GL_TRIANGLE_STRIP, pplist[p].first, pplist[p].len);	\
+		}									\
+	}										\
+}
+
+		// VertLogging
+	/*		printf("Strip, Start: %d, Len: %d\n{\n", pplist_op[op].first, pplist_op[op].len);
+			for(int i=0; i<pplist_op[op].len; i++)
+			{
+				printf("\t- %f %f %f - %08X - \n", 
+					verts[pplist_op[op].first+i].x, verts[pplist_op[op].first+i].y, 
+					verts[pplist_op[op].first+i].z, verts[pplist_op[op].first+i].argb); 
+			}
+			printf("}\n\n");*/
+
 void FASTCALL RenderGL(void * buffer)
 {
 	u32 dwValue = *pVO_BORDER_COL;
@@ -179,40 +256,16 @@ void FASTCALL RenderGL(void * buffer)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // | GL_ACCUM_BUFFER_BIT);
 
 
-	printf("-------RENDER GL_-----------------\n");
-
 	GLvoid * pBuffer = NULL;
-/*	GLvoid * pBuffer[nVBuffers];
-
-	for(int vb=0; vb<nVBuffers; vb++)
-	{
-		glBindBuffer(GL_ARRAY_BUFFER, vbuff[vb]);
-		glBufferData(GL_ARRAY_BUFFER, VB_DEFSIZE, NULL, GL_STREAM_DRAW);
-		pBuffer[vb] = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-	}*/
-
 	glBindBuffer(GL_ARRAY_BUFFER, vbuff[0]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(verts), NULL, GL_STREAM_DRAW);
 	pBuffer = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-	//u32 pplist_op_size;
-	//PolyParam pplist_op[48*1024];
-
-
-	CheckErrorsGL("RenderGL->MapBuffer()");
 
 	memcpy(pBuffer, verts, sizeof(Vertex)*vertex_count);	//copy only used part of the buffer
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbuff[0]);
 	glUnmapBuffer(GL_ARRAY_BUFFER);
-/*	for(int vb=0; vb<nVBuffers; vb++)
-	{
-		glBindBuffer(GL_ARRAY_BUFFER, vbuff[vb]);
-		glUnmapBuffer(GL_ARRAY_BUFFER);
 
-		// RenderBuffer:
-	}*/
-
-	CheckErrorsGL("RenderGL->UnmapBuffer()");
 
 #define VBUFF_P(ix)	(void*)((char*)NULL + (ix))
 
@@ -230,38 +283,11 @@ void FASTCALL RenderGL(void * buffer)
 //#endif
 
 
-	// RENDER //
+	// -RENDER- //
 
-
-	CheckErrorsGL("RenderGL->ClientState()");
-
-	for(u32 op=0; op<pplist_op_size; op++)
-	{
-		if((pplist_op[op].first + pplist_op[op].len) > vertex_count)
-		{
-	//		printf("VCOUNT: %d < PPLIST %d + %d\n", 
-	//			vertex_count, pplist_op[op].first, pplist_op[op].len);
-		}
-
-		if(pplist_op[op].len >= 3)
-		{
-			nRendIf->nrSetState(NULL);
-			glDrawArrays(GL_TRIANGLE_STRIP, pplist_op[op].first, pplist_op[op].len);
-
-	/*		printf("Strip, Start: %d, Len: %d\n{\n", pplist_op[op].first, pplist_op[op].len);
-			for(int i=0; i<pplist_op[op].len; i++)
-			{
-				printf("\t- %f %f %f - %08X - \n", 
-					verts[pplist_op[op].first+i].x, verts[pplist_op[op].first+i].y, 
-					verts[pplist_op[op].first+i].z, verts[pplist_op[op].first+i].argb); 
-			}
-			printf("}\n\n");*/
-		}
-	}
-
-
-	CheckErrorsGL("RenderGL->DrawArrays()");
-
+	RenderList(op);
+	RenderList(tr);
+	RenderList(pt);
 
 
 //#ifndef USE_SHADERS
@@ -279,16 +305,35 @@ void FASTCALL RenderGL(void * buffer)
 	
 	SwapBuffers(hDC);
 
-	CheckErrorsGL("RenderGL");
+//	CheckErrorsGL("RenderGL");
 }
-void FASTCALL SetStateGL(void * state)
+
+void FASTCALL SetStateGL__(PolyParam * state)
 {
-	glShadeModel(GL_SMOOTH);
-	glDisable(GL_TEXTURE_2D);
-	glDepthFunc(DepthModeGL[GL_GEQUAL]);
-	glDisable(GL_DEPTH_TEST);
+	PolyParam * pp = (PolyParam*)state;
+	//PCW * pcw = &((PolyParam*)state)->pcw;
+	ISP * isp = &((PolyParam*)state)->isp;
+
+
+	glShadeModel(GL_SMOOTH);	// Needs PCW
+
+	glDepthFunc(DepthModeGL[isp->DepthMode]);
+	glDepthMask(isp->ZWriteDis ? GL_FALSE : GL_TRUE);
+
+	if(0) {
+		__noop;
+	} else {
+		glDisable(GL_TEXTURE_2D);
+	}
+
+	//switch(pcw->ListType)
+
+
+	// opaque
 	glDisable(GL_BLEND);
 	glDisable(GL_ALPHA_TEST);
+
+
 }
 
 

@@ -61,7 +61,7 @@ void FASTCALL pvrWriteReg(u32 addr,u32 data,u32 size)
 		switch(addr &0xFFF)
 		{
 		case SOFTRESET:
-			printf("PVR SOFTRESET\n");
+		//	printf("PVR SOFTRESET\n");
 			SoftReset();
 			break;
 
@@ -91,7 +91,7 @@ void FASTCALL pvrWriteReg(u32 addr,u32 data,u32 size)
 			TA_NEXT_OPB_INIT register.
 			*/
 			//TA_State.ListInit=1;
-			printf("LIST_INIT:\n");
+		//	printf("LIST_INIT:\n");
 
 			//*pTA_NEXT_OPB = *pTA_NEXT_OPB_INIT ;	// Load Next OPB Init to Next OPB
 

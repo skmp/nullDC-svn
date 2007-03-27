@@ -12,14 +12,12 @@ typedef s32  FASTCALL InitFP(void * handle);
 typedef void FASTCALL TermFP(void * handle);
 typedef void FASTCALL ResizeFP(void * handle);
 typedef void FASTCALL RenderFP(void * buffer);
-typedef void FASTCALL SetStateFP(void * state);
 
 struct RenderInterface {
 	InitFP		* nrInit;
 	TermFP		* nrTerm;
 	ResizeFP	* nrResize;
 	RenderFP	* nrRender;
-	SetStateFP	* nrSetState;
 	// TODO, Add Texture Load/Del
 };
 extern RenderInterface * nRendIf;

@@ -16,11 +16,10 @@ s32  FASTCALL InitGL(void * handle);
 void FASTCALL TermGL(void * handle);
 void FASTCALL ResizeGL(void * handle);
 void FASTCALL RenderGL(void * buffer);
-void FASTCALL SetStateGL(void * state);
 
 
 const static RenderInterface riGL = {
-	InitGL, TermGL, ResizeGL, RenderGL, SetStateGL
+	InitGL, TermGL, ResizeGL, RenderGL
 };
 
 

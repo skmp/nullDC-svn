@@ -13,10 +13,9 @@ s32  FASTCALL InitD3D(void * handle);
 void FASTCALL TermD3D(void * reserved);
 void FASTCALL ResizeD3D(void * handle);
 void FASTCALL RenderD3D(void * buffer);
-void FASTCALL SetStateD3D(void * state);
 
 const static RenderInterface riD3D = {
-	InitD3D, TermD3D, ResizeD3D, RenderD3D, SetStateD3D
+	InitD3D, TermD3D, ResizeD3D, RenderD3D
 };
 
 

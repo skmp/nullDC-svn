@@ -22,7 +22,8 @@ struct PolyParam
 	u32 first;
 	u32 len;
 
-	ISP_TSP isp;
+//	PCW pcw;
+	ISP isp;
 	TSP tsp;
 	TCW tcw;
 
@@ -31,9 +32,9 @@ struct PolyParam
 
 extern u32 vertex_count;
 extern Vertex verts[128*1024];
-extern u32 pplist_op_size;
+extern u32 ppsize_op;
 extern PolyParam pplist_op[48*1024];
-extern u32 pplist_pt_size;
+extern u32 ppsize_pt;
 extern PolyParam pplist_pt[16*1024];
-extern u32 pplist_tr_size;
+extern u32 ppsize_tr;
 extern PolyParam pplist_tr[16*1024];
