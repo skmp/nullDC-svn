@@ -45,7 +45,7 @@ union ISP_TSP
 		u32	Reserved	: 20;
 		u32	DCalcCtrl	: 1;
 		u32	CacheBypass	: 1;
-		u32	UV_16b		: 1;	//In TA they are replaced
+		u32	UV_16bit	: 1;	//In TA they are replaced
 		u32	Gouraud		: 1;	//by the ones on PCW
 		u32	Offset		: 1;	//
 		u32	Texture		: 1;	// -- up to here --

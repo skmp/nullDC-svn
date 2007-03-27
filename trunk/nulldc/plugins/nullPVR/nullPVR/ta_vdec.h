@@ -1,5 +1,7 @@
 #pragma once
 #include "ta.h"
+
+using namespace TASplitter;
 bool InitRenderer();
 void TermRenderer();
 void ResetRenderer(bool Manual);
@@ -19,6 +21,10 @@ struct PolyParam
 {
 	u32 first;
 	u32 len;
+
+	ISP_TSP isp;
+	TSP tsp;
+	TCW tcw;
 
 	//TCW/TSP/Stuff here
 };

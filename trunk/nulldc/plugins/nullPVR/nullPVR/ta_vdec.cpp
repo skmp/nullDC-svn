@@ -3,6 +3,65 @@
 
 using namespace TASplitter;
 
+/*
+	Vertex Decoding code
+
+	The TASplitter splits the dma's according to their type/function/data/command , and calls the callbacks
+	of the vertex decoder.
+
+	All of the functions are inlined , so they must be as small as possible , and as generic as possible 
+	(no special cases) to keep speed up.
+
+	Typicaly , on a game we have (per frame):
+	
+	~ 4 to 8 Lists
+	~ 0.3k to 2k strips (united strips , each one around 20 verts)
+	~	0.3k to 2k PolyParams
+	~	0.4k to 7k 'raw' strips
+	~ 5k-30k verts (the most iv seen is 1.4M verts/sec on doa2/SC , @60 fps) 
+	
+	-> Note to self : double check the numbers by profiling later
+
+	The plan is to make the inner code (Vert handling) as fast as possible , and move the complex code as up 
+	as possible.
+
+	The Vertex handlers should ONLY care about converting data , and advancing the vertex pointer.Even a single
+	opcode less is important here....
+
+	The strip handlers ONLY have to unite the strips.That needs a bit of work , but not too much.
+
+	The parameter handlers should take care of Vertex counting/params
+
+	The List handlers will have to do some misc work (like setting up list pointers) and to close the last
+	PParam.
+
+
+	How all that stuff is stored :
+	Atm we use static arrays , witch is fast & simple.However , we will need to handle memory more efficiently,
+	in order to get multythreaded rendering and TA contexts working.
+
+	A good idea i just had :D (27/3/2007)
+	
+	A list usualy involves lota work to get an item.Howerver , we can use a normal pointer and just write to it.
+	The list will allocate (SIZE+1) pages , and it will mark the last one as no access.When a write is done to it ,
+	we can automaticaly grow the list :)
+
+	Current Implementation :
+
+	StartList	-> Setups pointers and first , null , poly param
+	EndList		-> Ends the last PolyParam (if none , then it ends the null one ;) ) , and does PParam counts
+
+	AppendPolyParam -> 
+		Ends the last PolyParam (the first time it ends the null one)
+		Increases PP pointer
+		Converts & writes PP
+
+	StartString -> 
+	EndStrip ->
+
+	AppendVertex : Convert & write vertex ,increase vertex pointer
+*/
+
 u32 vertex_count=0;
 extern u32 FrameCount;
 
@@ -13,11 +72,40 @@ u32 pplist_pt_size;
 PolyParam pplist_pt[16*1024];
 u32 pplist_tr_size;
 PolyParam pplist_tr[16*1024];
+PolyParam null_pp;
 
 PolyParam* current_pp;
-u32* current_pp_count;
+//u32* current_pp_count;
 Vertex* current_vert;
+Vertex* strip_start;
 
+#define _debug_only(code) code
+
+#define EndPolyParam current_pp->len=vertex_count - current_pp->first;
+
+//Takes care of pcw/isp_tsp , poly param ending & count ;)
+template<typename T>
+__forceinline PolyParam* NextPolyParam(T* pparam_raw)
+{
+	EndPolyParam;
+
+	current_pp++;
+	/*
+	u32	UV_16b		: 1;	//In TA they are replaced
+	u32	Gouraud		: 1;	//by the ones on PCW
+	u32	Offset		: 1;	//
+	u32	Texture		: 1;	// -- up to here --
+	*/
+
+	current_pp->isp.full=pparam_raw->isp.full;
+
+	current_pp->isp.UV_16bit= pparam_raw->pcw.UV_16bit;
+	current_pp->isp.Gouraud	= pparam_raw->pcw.Gouraud;
+	current_pp->isp.Offset	= pparam_raw->pcw.Offset;
+	current_pp->isp.Texture = pparam_raw->pcw.Texture;
+
+	return current_pp;
+}
 //Fill that in w/ some vertex decoding :)
 struct VertexDecoder
 {
@@ -28,43 +116,61 @@ struct VertexDecoder
 		if (ListType==ListType_Opaque)
 		{
 			current_pp=&pplist_op[pplist_op_size];
-			current_pp_count=&pplist_op_size;
 		}
 		else if (ListType==ListType_Punch_Through)
 		{
 			current_pp=&pplist_pt[pplist_pt_size];
-			current_pp_count=&pplist_pt_size;
 		}
 		else if (ListType==ListType_Translucent)
 		{
 			current_pp=&pplist_tr[pplist_tr_size];
-			current_pp_count=&pplist_tr_size;
+		}
+		else
+		{
+			current_pp=&null_pp;
 		}
 	}
 	__forceinline
 		static void EndList(u32 ListType)
 	{
-		current_pp=0;
+		//end last PParam
+		EndPolyParam;
+
+		//Caclulate list size ..
+		if (ListType==ListType_Opaque)
+		{
+			pplist_op_size = (current_pp - &pplist_op[0]) + 1;
+		}
+		else if (ListType==ListType_Punch_Through)
+		{
+			pplist_pt_size = (current_pp - &pplist_pt[0]) + 1;
+		}
+		else if (ListType==ListType_Translucent)
+		{
+			pplist_tr_size = (current_pp - &pplist_tr[0]) + 1;
+		}
+
+		_debug_only(current_pp=0;)
 	}
 
 	//Polys
-#define glob_param_bdc (*current_pp_count)++; \
+#define glob_param_bdc PolyParam* cpp=NextPolyParam(pp); \
 		current_pp->first=vertex_count;
 
 	__forceinline
 		static void fastcall AppendPolyParam0(TA_PolyParam0* pp)
 	{
-		//glob_param_bdc;
+		glob_param_bdc;
 	}
 	__forceinline
 		static void fastcall AppendPolyParam1(TA_PolyParam1* pp)
 	{
-		//glob_param_bdc;
+		glob_param_bdc;
 	}
 	__forceinline
 		static void fastcall AppendPolyParam2A(TA_PolyParam2A* pp)
 	{
-		//glob_param_bdc;
+		glob_param_bdc;
 	}
 	__forceinline
 		static void fastcall AppendPolyParam2B(TA_PolyParam2B* pp)
@@ -74,12 +180,12 @@ struct VertexDecoder
 	__forceinline
 		static void fastcall AppendPolyParam3(TA_PolyParam3* pp)
 	{
-		//glob_param_bdc;
+		glob_param_bdc;
 	}
 	__forceinline
 		static void fastcall AppendPolyParam4A(TA_PolyParam4A* pp)
 	{
-		//glob_param_bdc;
+		glob_param_bdc;
 	}
 	__forceinline
 		static void fastcall AppendPolyParam4B(TA_PolyParam4B* pp)
@@ -91,17 +197,16 @@ struct VertexDecoder
 	__forceinline
 		static void StartPolyStrip()
 	{
-		glob_param_bdc;
+		strip_start=current_vert;
 	}
 	__forceinline
 		static void EndPolyStrip()
 	{
-		current_pp->len=vertex_count - current_pp->first;
-		current_pp++;
+		vertex_count+=current_vert-strip_start;
 	}
 
 	//Poly Vertex handlers
-#define vert_cvt_base vertex_count++; \
+#define vert_cvt_base \
 	current_vert->x=vtx->xyz[0];\
 	current_vert->y=vtx->xyz[1];\
 	current_vert->z=vtx->xyz[2];\
