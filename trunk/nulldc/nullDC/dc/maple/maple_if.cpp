@@ -205,10 +205,12 @@ void DoMapleDma()
 			u32 command=p_data[0] &0xFF;
 			u32 reci=(p_data[0] >> 8) & 0xFF;//0-5;
 			u32 subport=GetMaplePort(reci);
+			u32 wtfport=reci>>6;
 			u32 send=(p_data[0] >> 16) & 0xFF;
 			u32 inlen=(p_data[0]>>24) & 0xFF;
 			u32 resp=0;
 			inlen*=4;
+			//device=wtfport;
 
 			if (MapleDevices[device].connected && (subport==5 || MapleDevices[device].subdevices[subport].connected))
 			{
@@ -238,7 +240,7 @@ void DoMapleDma()
 
 
 				if(reci&0x20)
-					reci|=GetConnectedDevices((reci>>6)&3);
+					reci|=GetConnectedDevices(device);
 
 				p_out[0]=(resp<<0)|(send<<8)|(reci<<16)|((outlen/4)<<24);
 				outlen+=4;

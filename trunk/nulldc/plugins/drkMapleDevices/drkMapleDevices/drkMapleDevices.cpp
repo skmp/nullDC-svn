@@ -874,8 +874,7 @@ void FASTCALL MicDMA(maple_device_instance* device_instance,u32 Command,u32* buf
 
 	printf("MicDMA[0x%x | %d %x] : UNKOWN MAPLE COMMAND %d \n",device_instance->port,device_instance->port>>6,device_instance->port&63,Command);
 	printf(" buffer in size : %d\n",buffer_in_len);
-	if (buffer_in_len==-4)
-		buffer_in_len=0;
+
 	for (u32 i=0;i<buffer_in_len;i+=4)
 	{
 		printf("%08X ",*buffer_in++);
@@ -1164,7 +1163,7 @@ void FASTCALL ControllerDMA(maple_device_instance* device_instance,u32 Command,u
 			//caps
 			//4
 			//WriteMem32(ptr_out, (1 << 24)); ptr_out += 4;
-			w32((1 << 24));
+			w32((1 << 0));
 			//struct data
 			//2
 			w16(kcode); 
@@ -1761,7 +1760,7 @@ void FASTCALL VmuDMA(maple_subdevice_instance* device_instance,u32 Command,u32* 
 				{
 					printf("Block read : %d\n",Block);
 					printf("BLOCK READ ERROR\n");
-					Block&=256;
+					Block&=255;
 				}
 				memcpy(&buffer_out[2],(dev->data)+Block*512,512);
 				buffer_out_len=(512+8);
@@ -1777,8 +1776,8 @@ void FASTCALL VmuDMA(maple_subdevice_instance* device_instance,u32 Command,u32* 
 
 				u32 Block = (SWAP32(buffer_in[1]))&0xffff;
 				u32 Phase = ((SWAP32(buffer_in[1]))>>16)&0xff; 
-				//printf("Block wirte : %d:%d , %d bytes\n",Block,Phase,(buffer_in_len-4));
-				memcpy(&dev->data[Block*512+Phase*(512/4)],&buffer_in[2],(buffer_in_len-4));
+				//printf("Block wirte : %d:%d , %d bytes\n",Block,Phase,(buffer_in_len-8));
+				memcpy(&dev->data[Block*512+Phase*(512/4)],&buffer_in[2],(buffer_in_len-8));
 				buffer_out_len=0;
 				FILE* f=fopen(dev->file,"wb");
 				if (f)
@@ -1811,22 +1810,28 @@ void FASTCALL config_keys(u32 id,void* w,void* p)
 }
 s32 FASTCALL CreateMain(maple_device_instance* inst,u32 id,u32 flags,u32 rootmenu)
 {
-	host.AddMenuItem(rootmenu,-1,"Config keys",config_keys,0);
+	char temp[512];
+	sprintf(temp,"Config keys for Player %d",(inst->port>>6)+1);
+	host.AddMenuItem(rootmenu,-1,temp,config_keys,0);
 	if (id==0)
 	{
 		inst->dma=ControllerDMA;
 		inst->data=0;
+		sprintf(temp,"Controller[winhook] : 0x%02X",inst->port);
 	}
 	else if (id==1)
 	{
 		inst->dma=ControllerDMA_net;
 		inst->data=0;
+		sprintf(temp,"Controller[winhook,net] : 0x%02X",inst->port);
 	}
 	else
 	{
 		inst->dma=ControllerDMA_nul;
 		inst->data=0;
+		sprintf(temp,"Controller[no input] : 0x%02X",inst->port);
 	}
+	host.AddMenuItem(rootmenu,-1,temp,0,0);
 /*
 	else if (id==2)
 	{
@@ -1885,9 +1890,11 @@ void FASTCALL DestroyMain(maple_device_instance* inst,u32 id)
 }
 s32 FASTCALL CreateSub(maple_subdevice_instance* inst,u32 id,u32 flags,u32 rootmenu)
 {
-	host.AddMenuItem(rootmenu,-1,"VMU SUB MENU YAY",0,0);
+	char temp[512];
+	sprintf(temp,"VMU :vmu_data_port%02X.bin",inst->port);
+	host.AddMenuItem(rootmenu,-1,temp,0,0);
 	inst->data=malloc(sizeof(VMU_info));
-	sprintf(((VMU_info*)inst->data)->file,"vmu_data_port%x.bin",inst->port);
+	sprintf(((VMU_info*)inst->data)->file,"vmu_data_port%02X.bin",inst->port);
 	FILE* f=fopen(((VMU_info*)inst->data)->file,"rb");
 	if (f)
 	{
@@ -1910,6 +1917,20 @@ void FASTCALL DestroySub(maple_subdevice_instance* inst,u32 id)
 	if (inst->data)
 		free(inst->data);
 }
+
+#define MMD(name,flags) \
+	strcpy(km.devices[mdi].Name,name);	\
+	km.devices[mdi].Type=MDT_Main;	\
+	km.devices[mdi].Flags= flags;	\
+	mdi++;
+
+#define MSD(name,flags)	\
+	strcpy(km.devices[2].Name,name);	\
+	km.devices[mdi].Type=MDT_Sub;	\
+	km.devices[mdi].Flags= flags;	\
+	mdi++;
+
+#define MDLE() km.devices[mdi].Type=MDT_EndOfList;
 //Give a list of the devices to teh emu
 void EXPORT_CALL dcGetInterface(plugin_interface* info)
 {
@@ -1939,23 +1960,30 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	km.TermSub=TermSub;
 	km.DestroySub=DestroySub;
 
+	u32 mdi=0;
 	//0
-	strcpy(km.devices[0].Name,"nullDC DC controller [WinHook] (" __DATE__ ")");
-	km.devices[0].Type=MDT_Main;
-	km.devices[0].Flags=MDTF_Hotplug | MDTF_Sub0 | MDTF_Sub1;
+	MMD("nullDC Controller [WinHook] (" __DATE__ ")",MDTF_Hotplug|MDTF_Sub0|MDTF_Sub1);
 
 	//1
-	strcpy(km.devices[1].Name,"nullDC DC controller [WinHook,NET] (" __DATE__ ")");
-	km.devices[1].Type=MDT_Main;
-	km.devices[1].Flags= 0;
+	MMD("nullDC Controller [WinHook,NET] (" __DATE__ ")",MDTF_Hotplug|MDTF_Sub0|MDTF_Sub1);
 
 	//2
-	strcpy(km.devices[2].Name,"nullDC VMU (" __DATE__ ")");
-	km.devices[2].Type=MDT_Sub;
-	km.devices[2].Flags= MDTF_Hotplug;
+	MSD("nullDC VMU (" __DATE__ ")",MDTF_Hotplug);
+
+	//3
+	MMD("nullDC Keyboard [WinHook] (" __DATE__ ")",MDTF_Hotplug);
+
+	//4
+	MMD("nullDC Mouse [WinHook] (" __DATE__ ")",MDTF_Hotplug);
+
+	//5
+	MMD("nullDC DreamEye  (" __DATE__ ")",MDTF_Hotplug);
+
+	//6
+	MSD("nullDC Mic [WinHook,NET] (" __DATE__ ")",MDTF_Hotplug);
 
 	//list terminator :P
-	km.devices[3].Type=MDT_EndOfList;
+	MDLE();
 
 	/*
 	info->InterfaceVersion.full=MAPLE_PLUGIN_I_F_VERSION;

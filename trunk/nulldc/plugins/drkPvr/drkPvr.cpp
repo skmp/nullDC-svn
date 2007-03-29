@@ -203,7 +203,7 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	c.Type=Plugin_PowerVR;
 	c.InterfaceVersion=PVR_PLUGIN_I_F_VERSION;
 
-	strcpy(c.Name,"drkpvr -- OpenGL/Direct3D/Software PowerVR plugin");
+	strcpy(c.Name,"drkpvr -- " REND_NAME);
 	c.PluginVersion=DC_MakeVersion(0,9,0,DC_VER_NORMAL);
 
 	c.Load=Load;

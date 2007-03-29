@@ -1,39 +1,233 @@
 #include "nullRend.h"
 
-#include "oglRend.h"
-#include "windows.h"
-#include "gl\gl.h"
+#if REND_API == REND_SW
+
+#include <windows.h>
+#include <sdl.h>
+#include <SDL/SDL_syswm.h>
+#include <gl\gl.h>
 #include "regs.h"
 
-#if REND_API == REND_SW
+using namespace TASplitter;
+
+
 //SW rendering .. yay (?)
-namespace NullRenderer
+namespace SWRenderer
 {
-	bool running=true;
-	cResetEvent rs(false,true);
-	u32 THREADCALL RenderThead(void* param)
+	char fps_text[512];
+	SDL_Surface *screen;
+	HWND SdlWnd;
+	struct VertexDecoder;
+	FifoSplitter<VertexDecoder> TileAccel;
+	
+	struct Vertex
 	{
-		while(1)
+		u32 x,y;
+		f32 z;
+	};
+	List<Vertex> vertlist;
+
+	template<u32 mode,u32 pbw>
+	void ConvertBuffer(u32* out,u32* in,u32 outstride,u32 instride)
+	{
+		#define ARGB0555( word )	(((word>>10) & 0x1F)<<27) | (((word>>5) & 0x1F)<<19) | ((word&0x1F)<<3) 
+
+		#define ARGB565( word )		(((word>>11) & 0x1F)<<27) | (((word>>5) & 0x3F)<<18) | ((word&0x1F)<<3) 
+		/*
+		
+		ARGB8888(0xFF,unpack_5_to_8[(word>>11) & 0x1F],	\
+		unpack_6_to_8[(word>>5) & 0x3F],unpack_5_to_8[word&0x1F])
+		*/
+		for (u32 y=0;y<480;y++)
 		{
-			rs.Wait();
-			if (!running)
-				break;
-			//render
+			for (u32 x=0;x<640;x+=pbw)
+			{
+				if (mode==0)
+				{
+					//0555 , 16b
+					u32 dc=in[x];
+					u32 c2=dc>>16;
+					u32 c1=dc & 0xFFFF;
+					out[x+0]=ARGB0555(c1);
+					out[x+1]=ARGB0555(c2);
+				}
+				else if (mode==1)
+				{
+					//565 , 16b
+					u32 dc=in[x];
+					u32 c2=dc>>16;
+					u32 c1=dc & 0xFFFF;
+					out[x+0]=ARGB565(c1);
+					out[x+1]=ARGB565(c2);
+				}
+				else if (mode==3)
+				{
+					//0888 , 32b
+					out[x]=in[x*2];
+				}
+			}
+			out+=outstride/4;
+			in+=instride*2/4;
 		}
-		return 0;
 	}
+	typedef void ConvertBufferFP(u32* out,u32* in,u32 outstride,u32 instride);
 
-	cThread rth(RenderThead,0);
+	ConvertBufferFP* ___hahaha__[4]=
+	{
+		ConvertBuffer<0,2>,
+		ConvertBuffer<1,2>,
+		ConvertBuffer<2,1>,
+		ConvertBuffer<3,1> 
+	};
+#define VRAM_SIZE (0x00800000)
 
+#define VRAM_MASK (VRAM_SIZE-1)
+	//Convert offset32 to offset64
+	u32 vramlock_ConvOffset32toOffset64(u32 offset32)
+	{
+		//64b wide bus is archevied by interleaving the banks every 32 bits
+		//so bank is Address<<3
+		//bits <4 are <<1 to create space for bank num
+		//bank 1 is mapped at 400000 (32b offset) and after
+		u32 bank=((offset32>>22)&0x1)<<2;//bank will be used ass uper offset too
+		u32 lv=offset32&0x3; //these will survive
+		offset32<<=1;
+		//       |inbank offset    |       bank id        | lower 2 bits (not changed)
+		u32 rv=  (offset32&(VRAM_MASK-7))|bank                  | lv;
+
+		return rv;
+	}
 	//use that someday
 	void VBlank()
 	{
 		//present the vram to FB
+		SDL_Event ev;
+		while(SDL_PollEvent(&ev))
+			__noop;
+
+		//SetWindowPos(SdlWnd,0,0,640,480,0,SWP_NOZORDER);	 
+		//FB_R_CTRL & 0x1000000
+		u32* fba=(u32*)&params.vram[vramlock_ConvOffset32toOffset64(FB_R_SOF1 & 0x7FFFFF)];
+
+		u32 mode=(FB_R_CTRL>>2)&3;
+		u32 sz=(640+640*(mode>>1))*2;
+		verify(SDL_LockSurface(screen)==0)
+		//memset(screen->pixels,rand(),640*480*4);
+		___hahaha__[mode]((u32*)screen->pixels,fba,screen->pitch,sz);
+
+		SDL_UnlockSurface(screen);
+		SDL_UpdateRect(screen,0,0,0,0);
 	}
 
-	//u32 VertexCount;
-	//u32 FrameCount;
+	struct Span
+	{
+		struct
+		{
+			u32 x;
+			f32 z;
+		} start;
+		struct
+		{
+			u32 x;
+			f32 z;
+		} end;
+	};
+	List<Span> spans[480];
 
+	template<typename T>
+	void swap(T& t1,T& t2)
+	{
+		T t3=t1;
+		t1=t2;
+		t2=t3;
+	}
+	void DrawTrig(Vertex* verts)
+	{
+		for (int i=0;i<3;i++)
+		{
+			verts[i].x=max(min((s32)verts[i].x,639),0);
+			verts[i].y=max(min((s32)verts[i].y,479),0);
+		}
+		Vertex& top=verts[0];
+		Vertex& down=verts[1];
+		Vertex& other=verts[2];
+
+		if (top.y>down.y)
+		{
+			if (top.y>other.y)
+			{
+				
+				if (down.y>other.y)
+				{
+					//top>down>other
+					swap(down,other);
+				}
+				else
+				{
+					//top>other>down
+				}
+
+			}
+			else
+			{
+				//other>top>down
+				swap(top,other);
+			}
+		}
+		else
+		{
+			if (down.y>other.y)
+			{
+				//down>top && down>other
+				if (top.y>other.y)
+				{
+					//down>top>other
+					swap(down,top);
+					//top>down>other
+					swap(down,other);
+					//top>other>down
+				}
+				else
+				{
+					//down>other>top
+					swap(down,top);
+					//top>other>down
+				}
+
+				top=verts[1];
+			}
+			else
+			{
+				//other>down>top
+				swap(other,top);
+				//top>down>other
+				swap(other,down);
+				//top>other>down
+			}
+		}
+
+		Vertex& left;
+		Vertex& right;
+		if (down.x>other.x)
+		{
+			left=other;
+			right=down;
+			//other .. top
+		}
+		else
+		{
+			left=down;
+			right=other;
+			//top .. other
+		}
+		u32 h=top.y-other.y;
+		u32 s1=left
+		for (u32 y=top.y;y<other.y;y++)
+		{
+			
+		}
+
+	}
 	void StartRender()
 	{
 		
@@ -41,14 +235,41 @@ namespace NullRenderer
 		if (FB_W_SOF1 & 0x1000000)
 			return;
 		FrameCount++;
+
+		//Render frame
+		u16* fba=(u16*)&params.vram[vramlock_ConvOffset32toOffset64(FB_R_SOF1 & 0x7FFFFF)];
+
+		if (vertlist.used<3)
+			return;
+		for (u32 i=0;i<vertlist.used-2;i++)
+		{
+			DrawTrig(&vertlist.data[i]);
+		}
+
+		for (u32 y=0;y<480;y++)
+		{
+			u16* pline=&fba[640*2];
+			for (u32 i=0;i<spans[y].used;i++)
+			{
+				Span* s=&spans[y].data[i];
+				u32 sx=s->start.x*2;
+				u32 ex=s->end.x*2;
+
+				u16* pstart=&pline[sx];
+
+				for (int cp=sx;cp<=ex;cp+=4)
+				{
+					pstart[cp]=0xFFFF;
+				}
+			}
+		}
 	}
 	void EndRender()
 	{
 	}
 
-	using namespace TASplitter;
 
-
+	//Vertex Decoding-Converting
 	struct VertexDecoder
 	{
 		//list handling
@@ -115,7 +336,7 @@ namespace NullRenderer
 		}
 
 		//Poly Vertex handlers
-#define vert_cvt_base VertexCount++;
+#define vert_cvt_base VertexCount++; Vertex* cv=vertlist.Append();cv->x=vtx->xyz[0];cv->y=vtx->xyz[1];cv->z=vtx->xyz[2];
 
 
 		//(Non-Textured, Packed Color)
@@ -261,6 +482,7 @@ namespace NullRenderer
 		}
 
 		//Sprite Vertex Handlers
+		/*
 		__forceinline
 		static void AppendSpriteVertex0A(TA_Sprite0A* sv)
 		{
@@ -271,13 +493,14 @@ namespace NullRenderer
 		{
 
 		}
+		*/
 		__forceinline
-		static void AppendSpriteVertex1A(TA_Sprite1A* sv)
+		static void AppendSpriteVertexA(TA_Sprite1A* sv)
 		{
 
 		}
 		__forceinline
-		static void AppendSpriteVertex1B(TA_Sprite1B* sv)
+		static void AppendSpriteVertexB(TA_Sprite1B* sv)
 		{
 
 		}
@@ -321,24 +544,71 @@ namespace NullRenderer
 		__forceinline
 		static void ListInit()
 		{
-
+			vertlist.Clear();
 		}
 		__forceinline
 		static void SoftReset()
 		{
+			vertlist.Clear();
 		}
 	};
+	//Setup related
 
-	FifoSplitter<VertexDecoder> TileAccel;
+	bool InitSDL()
+	{
+		
+		char tmp[512];
+		sprintf(tmp, "SDL_WINDOWID=%u", (unsigned long)emu.WindowHandle);
+		_putenv(tmp);
+		
+		 if ( SDL_Init(SDL_INIT_NOPARACHUTE|SDL_INIT_VIDEO) < 0 )
+		 {
+			 //msgboxf("SDL init failed");
+			 return false;
+		 }
 
+		 screen = SDL_SetVideoMode(640, 480, 32, SDL_SWSURFACE);
+		 if ( screen == NULL ) {
+			 return false;
+			 //die("Unable to set 640x480 video: %s\n", SDL_GetError());
+		 }
+
+		 
+		 SDL_SysWMinfo wmInfo;
+		 SDL_VERSION(&wmInfo.version);
+		 SDL_GetWMInfo(&wmInfo);
+		 SdlWnd = wmInfo.window;
+
+		 SetWindowPos(SdlWnd,0,0,0,640,480,SWP_NOZORDER | SWP_HIDEWINDOW);
+		 SetWindowLong(SdlWnd, GWL_STYLE, WS_POPUP);
+		// SetWindowLongPtr(SdlWnd, GWL_WNDPROC, GetWindowLongPtr((HWND)emu.WindowHandle,GWL_WNDPROC));
+		 SetParent(SdlWnd,(HWND)emu.WindowHandle);
+		 SetWindowPos(SdlWnd,0,0,0,640,480,SWP_NOZORDER | SWP_SHOWWINDOW);	 
+		 EnableWindow(SdlWnd,FALSE);
+	}
+	void TermSDL()
+	{
+		SDL_Quit();
+	}
+	//Misc setup
+	void SetFpsText(char* text)
+	{
+		strcpy(fps_text,text);
+		//if (!IsFullscreen)
+		{
+			SetWindowText((HWND)emu.WindowHandle, fps_text);
+		}
+	}
 	bool InitRenderer()
 	{
+		InitSDL();
 		return TileAccel.Init();
 	}
 
 	void TermRenderer()
 	{
 		TileAccel.Term();
+		TermSDL();
 	}
 
 	void ResetRenderer(bool Manual)
@@ -350,14 +620,12 @@ namespace NullRenderer
 
 	bool ThreadStart()
 	{
-		rth.Start();
 		return true;
 	}
 
 	void ThreadEnd()
 	{
-		rs.Set();
-		rth.WaitToEnd(0xFFFFFFFF);
+
 	}
 	void ListCont()
 	{

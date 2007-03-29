@@ -81,7 +81,7 @@ Vertex* strip_start;
 
 #define _debug_only(code) code
 
-#define EndPolyParam current_pp->len=vertex_count - current_pp->first;
+#define EndPolyParam current_pp->len=vertex_count - current_pp->first; strip_start=0;
 
 //Takes care of pcw/isp_tsp , poly param ending & count ;)
 template<typename T>
@@ -197,6 +197,17 @@ struct VertexDecoder
 	__forceinline
 		static void StartPolyStrip()
 	{
+/*
+	yeah , this needs some fixing ...
+		if (strip_start==0)
+		{
+			strip_start=current_vert;// first strip
+		}
+		else
+		{
+			//more strips
+		}
+*/
 		strip_start=current_vert;
 	}
 	__forceinline
