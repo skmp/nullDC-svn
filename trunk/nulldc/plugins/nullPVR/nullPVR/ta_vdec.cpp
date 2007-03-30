@@ -106,6 +106,18 @@ __forceinline PolyParam* NextPolyParam(T* pparam_raw)
 
 	return current_pp;
 }
+
+#define colfa(to,from)	to[0]=from[0];to[1]=from[1];to[2]=from[2];to[3]=from[3];
+#define colf(to,from)	to[0]=from##A;to[1]=from##R;to[2]=from##G;to[3]=from##B;
+#define coli(to,from)	to[0]=1;to[1]=1;to[2]=1;to[3]=1;
+
+#define vcolfa(to,from) colfa(current_vert->to,from)
+#define vcolf(to,from) colf(current_vert->to,vtx->from)
+#define vcoli(to,from) coli(current_vert->to,vtx->from)
+
+float BaseIntesity[4]={1,1,1,1};
+float OffsIntesity[4]={1,1,1,1};
+
 //Fill that in w/ some vertex decoding :)
 struct VertexDecoder
 {
@@ -230,7 +242,7 @@ struct VertexDecoder
 	{
 		vert_cvt_base;
 		
-		current_vert->argb = vtx->BaseCol;
+		vcoli(base,BaseCol);
 
 		current_vert++;
 	}
@@ -241,7 +253,7 @@ struct VertexDecoder
 	{
 		vert_cvt_base;
 
-		current_vert->argb = 0xFFFFFFFF;
+		vcolf(base,Base);
 
 		current_vert++;
 	}
@@ -252,7 +264,7 @@ struct VertexDecoder
 	{
 		vert_cvt_base;
 		
-		current_vert->argb = 0xFFFFFFFF;
+		vcolfa(base,BaseIntesity);
 
 		current_vert++;
 	}
@@ -263,7 +275,7 @@ struct VertexDecoder
 	{
 		vert_cvt_base;
 
-		current_vert->argb = vtx->BaseCol;
+		vcoli(base,vtx->BaseCol);
 
 		current_vert++;
 	}
@@ -274,7 +286,7 @@ struct VertexDecoder
 	{
 		vert_cvt_base;
 
-		current_vert->argb = vtx->BaseCol;
+		vcoli(base,vtx->BaseCol);
 
 		current_vert++;
 	}
@@ -285,13 +297,14 @@ struct VertexDecoder
 	{
 		vert_cvt_base;
 
-		current_vert->argb = 0xFFFFFFFF;
-
+		
 	}
 	__forceinline
 		static void AppendPolyVertex5B(TA_Vertex5B* vtx)
 	{
 
+		vcolf(base,Base);
+		vcolf(offs,Offs);
 		current_vert++;
 	}
 
@@ -300,12 +313,13 @@ struct VertexDecoder
 		static void AppendPolyVertex6A(TA_Vertex6A* vtx)
 	{
 		vert_cvt_base;
-
-		current_vert->argb = 0xFFFFFFFF;
 	}
 	__forceinline
 		static void AppendPolyVertex6B(TA_Vertex6B* vtx)
 	{
+
+		vcolf(base,Base);
+		vcolf(offs,Offs);
 
 		current_vert++;
 	}
@@ -316,7 +330,7 @@ struct VertexDecoder
 	{
 		vert_cvt_base;
 
-		current_vert->argb = 0xFFFFFFFF;
+		vcolfa(base,BaseIntesity);
 
 		current_vert++;
 	}
@@ -327,7 +341,7 @@ struct VertexDecoder
 	{
 		vert_cvt_base;
 
-		current_vert->argb = 0xFFFFFFFF;
+		vcolfa(base,BaseIntesity);
 
 		current_vert++;
 	}
@@ -338,6 +352,8 @@ struct VertexDecoder
 	{
 		vert_cvt_base;
 
+		vcoli(base,Base);
+
 		current_vert++;
 	}
 
@@ -347,7 +363,7 @@ struct VertexDecoder
 	{
 		vert_cvt_base;
 
-		current_vert->argb = 0xFFFFFFFF;
+		vcolfa(base,BaseIntesity);
 
 		current_vert++;
 	}
@@ -358,7 +374,7 @@ struct VertexDecoder
 	{
 		vert_cvt_base;
 
-		current_vert->argb = vtx->BaseCol0;
+		vcoli(base,BaseCol0);
 	}
 	__forceinline
 		static void AppendPolyVertex11B(TA_Vertex11B* vtx)
@@ -373,7 +389,7 @@ struct VertexDecoder
 	{
 		vert_cvt_base;
 
-		current_vert->argb = vtx->BaseCol0;
+		vcoli(base,vtx->BaseCol0);
 	}
 	__forceinline
 		static void AppendPolyVertex12B(TA_Vertex12B* vtx)
@@ -388,7 +404,7 @@ struct VertexDecoder
 	{
 		vert_cvt_base;		
 
-		current_vert->argb = 0xFFFFFFFF;
+		vcolfa(base,BaseIntesity);
 	}
 	__forceinline
 		static void AppendPolyVertex13B(TA_Vertex13B* vtx)
@@ -403,7 +419,7 @@ struct VertexDecoder
 	{
 		vert_cvt_base;
 
-		current_vert->argb = 0xFFFFFFFF;
+		vcolfa(base,BaseIntesity);
 	}
 	__forceinline
 		static void AppendPolyVertex14B(TA_Vertex14B* vtx)

@@ -14,7 +14,10 @@ struct Vertex
 	f32 x,y,z;
 
 	//we may want to switch to fp colors for speed
-	u32 argb;
+	f32 base[4];
+	f32 offs[4];
+	f32 u;
+	f32 v;
 };
 
 struct PolyParam
