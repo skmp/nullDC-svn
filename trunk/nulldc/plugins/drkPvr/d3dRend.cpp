@@ -51,7 +51,7 @@ namespace Direct3DRenderer
 	IDirect3DVertexShader9* compiled_vs;
 	IDirect3DPixelShader9* compiled_ps[128]={0};
 	u32 last_ps_mode=0xFFFFFFFF;
-	CRITICAL_SECTION tex_cache_cs;
+	//CRITICAL_SECTION tex_cache_cs;
 	ID3DXFont* font;
 	ID3DXConstantTable* shader_consts;
 	
@@ -219,6 +219,8 @@ namespace Direct3DRenderer
 		D3DFMT_A1R5G5B5,//7 -> undefined , handled as 0
 	};
 	*/
+	struct TextureCacheData;
+	std::vector<TextureCacheData*> lock_list;
 	//Texture Cache :)
 	struct TextureCacheData
 	{
@@ -233,7 +235,7 @@ namespace Direct3DRenderer
 		u32 size;
 		bool dirty;
 		u32 pal_rev;
-		vram_block* lock_block;
+		volatile vram_block* lock_block;
 
 		//Called when texture entry is reused , resets any texture type info (dynamic/static)
 		void Reset()
@@ -392,15 +394,8 @@ namespace Direct3DRenderer
 			//done , unlock texture !
 			Texture->UnlockRect(0);
 			//PrintTextureName();
-			u32 ea=sa+w*h*2;
-			if (ea>=(8*1024*1024))
-			{
-				ea=(8*1024*1024)-1;
-			}
-			//(u32 start_offset64,u32 end_offset64,void* userdata);
 			if (!lock_block)
-				lock_block = params.vram_lock_64(sa,ea,this);
-			
+				lock_list.push_back(this);
 			/*
 			char file[512];
 
@@ -408,10 +403,19 @@ namespace Direct3DRenderer
 			,tcw.NO_PAL.VQ_Comp,tcw.NO_PAL.ScanOrder,tcw.NO_PAL.MipMapped);
 			D3DXSaveTextureToFileA( file,D3DXIFF_JPG,Texture,0);*/
 		}
+		void LockVram()
+		{
+			u32 sa=(tcw.NO_PAL.TexAddr<<3) & 0x7FFFFF;
+			u32 ea=sa+w*h*2;
+			if (ea>=(8*1024*1024))
+			{
+				ea=(8*1024*1024)-1;
+			}
+			lock_block = params.vram_lock_64(sa,ea,this);
+		}
 	};
 
 	TexCacheList<TextureCacheData> TexCache;
-
 
 	TextureCacheData* __fastcall GenText(TSP tsp,TCW tcw,TextureCacheData* tf)
 	{
@@ -446,7 +450,7 @@ namespace Direct3DRenderer
 		/*if (addr==RenderToTextureAddr)
 			return RenderToTextureTex;*/
 
-		EnterCriticalSection(&tex_cache_cs);
+		//EnterCriticalSection(&tex_cache_cs);
 		TextureCacheData* tf = TexCache.Find(tcw.full);
 		if (tf)
 		{
@@ -477,13 +481,13 @@ namespace Direct3DRenderer
 			}
 
 			tf->Lookups++;
-			LeaveCriticalSection(&tex_cache_cs);
+			//LeaveCriticalSection(&tex_cache_cs);
 			return tf->Texture;
 		}
 		else
 		{
 			tf = GenText(tsp,tcw);
-			LeaveCriticalSection(&tex_cache_cs);
+			//LeaveCriticalSection(&tex_cache_cs);
 			return tf->Texture;
 		}
 		return 0;
@@ -491,7 +495,7 @@ namespace Direct3DRenderer
 	
 	void VramLockedWrite(vram_block* bl)
 	{
-		EnterCriticalSection(&tex_cache_cs);
+		//EnterCriticalSection(&tex_cache_cs);
 		TextureCacheData* tcd = (TextureCacheData*)bl->userdata;
 		tcd->dirty=true;
 		tcd->lock_block=0;
@@ -501,7 +505,7 @@ namespace Direct3DRenderer
 			tcd->Texture=0;
 		}
 		params.vram_unlock(bl);
-		LeaveCriticalSection(&tex_cache_cs);
+		//LeaveCriticalSection(&tex_cache_cs);
 	}
 	extern cThread rth;
 
@@ -1454,6 +1458,14 @@ if (!GetAsyncKeyState(VK_F3))
 	void EndRender()
 	{
 		re.Wait();
+		for (size_t i=0;i<lock_list.size();i++)
+		{
+			TextureCacheData* tcd=lock_list[i];
+			if (tcd->lock_block==0 && tcd->dirty==false)
+				tcd->LockVram();
+			
+		}
+		lock_list.clear();
 	}
 
 	__declspec(align(16)) static f32 FaceBaseColor[4];
@@ -2130,7 +2142,7 @@ if (!GetAsyncKeyState(VK_F3))
 
 	bool InitRenderer()
 	{
-		InitializeCriticalSectionAndSpinCount(&tex_cache_cs,8000);
+		//InitializeCriticalSectionAndSpinCount(&tex_cache_cs,8000);
 		for (u32 i=0;i<256;i++)
 		{
 			unkpack_bgp_to_float[i]=i/255.0f;
@@ -2148,7 +2160,7 @@ if (!GetAsyncKeyState(VK_F3))
 
 	void TermRenderer()
 	{
-		DeleteCriticalSection(&tex_cache_cs); 
+		//DeleteCriticalSection(&tex_cache_cs); 
 		for (u32 i=0;i<rcnt.size();i++)
 		{
 			rcnt[i].Free();
