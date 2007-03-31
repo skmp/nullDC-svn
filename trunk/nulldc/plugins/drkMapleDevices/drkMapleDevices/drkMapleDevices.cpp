@@ -1163,7 +1163,7 @@ void FASTCALL ControllerDMA(maple_device_instance* device_instance,u32 Command,u
 			//caps
 			//4
 			//WriteMem32(ptr_out, (1 << 24)); ptr_out += 4;
-			w32((1 << 0));
+			w32(1 << 24);
 			//struct data
 			//2
 			w16(kcode); 
@@ -1925,7 +1925,7 @@ void FASTCALL DestroySub(maple_subdevice_instance* inst,u32 id)
 	mdi++;
 
 #define MSD(name,flags)	\
-	strcpy(km.devices[2].Name,name);	\
+	strcpy(km.devices[mdi].Name,name);	\
 	km.devices[mdi].Type=MDT_Sub;	\
 	km.devices[mdi].Flags= flags;	\
 	mdi++;
