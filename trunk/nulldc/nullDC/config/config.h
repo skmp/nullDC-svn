@@ -9,7 +9,7 @@
 **	} ** Strings passed to LoadStr should be MAX_PATH in size ! **
 */
 
-bool cfgVerify();
+bool cfgOpen();
 s32  FASTCALL cfgLoadInt(const char * lpSection, const char * lpKey,s32 Default);
 void FASTCALL cfgSaveInt(const char * lpSection, const char * lpKey, s32 Int);
 void FASTCALL cfgLoadStr(const char * lpSection, const char * lpKey, char * lpReturn,const char* lpDefault);

@@ -1970,6 +1970,7 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	//2
 	MSD("nullDC VMU (" __DATE__ ")",MDTF_Hotplug);
 
+	/*
 	//3
 	MMD("nullDC Keyboard [WinHook] (" __DATE__ ")",MDTF_Hotplug);
 
@@ -1977,10 +1978,11 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	MMD("nullDC Mouse [WinHook] (" __DATE__ ")",MDTF_Hotplug);
 
 	//5
-	MMD("nullDC DreamEye  (" __DATE__ ")",MDTF_Hotplug);
+	MMD("nullDC DreamEye (" __DATE__ ")",MDTF_Hotplug);
 
 	//6
-	MSD("nullDC Mic [WinHook,NET] (" __DATE__ ")",MDTF_Hotplug);
+	MSD("nullDC Mic (" __DATE__ ")",MDTF_Hotplug);
+	*/
 
 	//list terminator :P
 	MDLE();

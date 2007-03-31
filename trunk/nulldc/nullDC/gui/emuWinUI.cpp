@@ -739,7 +739,84 @@ MENU_HANDLER( Handle_Help_About )
 {
 	DialogBox(g_hInst,MAKEINTRESOURCE(IDD_ABOUT),(HWND)hWnd,DlgProcModal_about);
 }
+template<bool* setting>
+MENU_HANDLER( Handle_Option_Bool_Template )
+{
+	if (*setting)
+		*setting=0;
+	else
+		*setting=1;
 
+	SetMenuItemStyle(id,*setting?MIS_Checked:0,MIS_Checked);
+	SaveSettings();
+}
+
+u32 rec_cpp_mid;
+u32 rec_enb_mid;
+void SwitchCpu()
+{
+	if((settings.dynarec.Enable==0 && sh4_cpu->ResetCache==0) ||
+	   (settings.dynarec.Enable!=0 && sh4_cpu->ResetCache!=0)  )
+	{
+		return;//nothing to do ...
+	}
+	bool bStart=false;
+	if (sh4_cpu)
+	{
+		if (sh4_cpu->IsCpuRunning())
+		{
+			bStart=true;
+			Stop_DC();
+			sh4_cpu->Term();
+		}
+	}
+	if(settings.dynarec.Enable)
+	{
+		sh4_cpu=Get_Sh4Recompiler();
+		printf("Switched to Recompiler\n");
+	}
+	else
+	{
+		sh4_cpu=Get_Sh4Interpreter();
+		printf("Switched to Interpreter\n");
+	}
+
+	if (bStart)
+	{
+		sh4_cpu->Init();
+		Start_DC();
+	}
+}
+
+void UpdateMenus()
+{
+	if(settings.dynarec.Enable)
+	{
+		SetMenuItemStyle(rec_enb_mid,MIS_Checked,MIS_Checked);
+		SetMenuItemStyle(rec_cpp_mid,0,MIS_Grayed);
+	}
+	else
+	{
+		SetMenuItemStyle(rec_enb_mid,0,MIS_Checked);
+		SetMenuItemStyle(rec_cpp_mid,MIS_Grayed,MIS_Grayed);
+	}
+
+	SetMenuItemStyle(rec_cpp_mid,settings.dynarec.CPpass?MIS_Checked:0,MIS_Checked);
+}
+MENU_HANDLER( Handle_Option_EnableRec )
+{
+	Handle_Option_Bool_Template<&settings.dynarec.Enable>(id,hWnd,stuff);
+
+	SwitchCpu();
+	UpdateMenus();
+}
+MENU_HANDLER( Handle_Option_EnableCP )
+{
+	Handle_Option_Bool_Template<&settings.dynarec.CPpass>(id,hWnd,stuff);
+	if (sh4_cpu->ResetCache)
+		sh4_cpu->ResetCache();
+	UpdateMenus();
+}
 //Create the menus and set the handlers :)
 void CreateBasicMenus()
 {
@@ -766,7 +843,12 @@ void CreateBasicMenus()
 	AddMenuItem(menu_system,-1,"Reset",Handle_System_Reset,0);
 
 	//Options Menu
-	AddMenuItem(menu_options,-1,"nullDC Settings",Handle_Options_Config,0);
+	u32 menu_setts=AddMenuItem(menu_options,-1,"nullDC Settings",Handle_Options_Config,0);
+		AddMenuItem(menu_setts,-1,"Show",Handle_Options_Config,0);
+		AddSeperator(menu_setts);
+		rec_enb_mid=AddMenuItem(menu_setts,-1,"Enable Dynarec",Handle_Option_EnableRec,0);
+		rec_cpp_mid=AddMenuItem(menu_setts,-1,"Enable CP pass",Handle_Option_EnableCP,0);
+
 	AddMenuItem(menu_options,-1,"Select Plugins",Handle_Options_SelectPlugins,0);
 	AddSeperator(menu_options);
 	PowerVR_menu = AddMenuItem(menu_options,-1,"PowerVR",0,0);
@@ -790,6 +872,9 @@ void CreateBasicMenus()
 
 	//Help
 	AddMenuItem(menu_help,-1,"About",Handle_Help_About,0);
+
+	//Update menu ticks to match settings :)
+	UpdateMenus();
 }
 void InitMenu()
 {
@@ -939,7 +1024,6 @@ INT_PTR CALLBACK DlgProcModal_about( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 	return false;
 }
 
-
 INT_PTR CALLBACK DlgProcModal_config( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	switch( uMsg )
@@ -947,8 +1031,8 @@ INT_PTR CALLBACK DlgProcModal_config( HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 	case WM_INITDIALOG:
 		{
 			int tmp;
-			tmp=cfgLoadInt("nullDC","enable_recompiler",1);
-			CheckDlgButton(hWnd,IDC_REC,tmp!=0?BST_CHECKED:BST_UNCHECKED);
+			CheckDlgButton(hWnd,IDC_REC,settings.dynarec.Enable!=0?BST_CHECKED:BST_UNCHECKED);
+			CheckDlgButton(hWnd,IDC_REC_CPP,settings.dynarec.CPpass!=0?BST_CHECKED:BST_UNCHECKED);
 		}
 		return true;
 
@@ -958,42 +1042,12 @@ INT_PTR CALLBACK DlgProcModal_config( HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 		{
 		case IDOK:
 			{
-				int tmp = 0;
-				tmp = (BST_CHECKED==IsDlgButtonChecked(hWnd,IDC_REC)) ? 1 : 0 ;
-				cfgSaveInt("nullDC","enable_recompiler",tmp);
-				bool bStart=false;
-				if (sh4_cpu)
-				{
-					if (sh4_cpu->IsCpuRunning())
-					{
-						//SwitchCPU_DC();
-						//sh4_cpu->Stop();
-						//Stop_DC();
-						bStart=true;
-						Stop_DC();
-						sh4_cpu->Term();
-					}
-				}
-				if(0 != cfgLoadInt("nullDC","enable_recompiler",1))
-				{
-					sh4_cpu=Get_Sh4Recompiler();
-					printf("Switched to Recompiler\n");
-				}
-				else
-				{
-					sh4_cpu=Get_Sh4Interpreter();
-					printf("Switched to Interpreter\n");
-				}
-
-				if (bStart)
-				{
-					sh4_cpu->Init();
-					//sh4_cpu->Reset(false);
-					//SwitchCPU_DC();
-					Start_DC();
-					//sh4_cpu->Run();
-
-				}
+				settings.dynarec.Enable = (BST_CHECKED==IsDlgButtonChecked(hWnd,IDC_REC)) ? 1 : 0 ;
+				settings.dynarec.CPpass = (BST_CHECKED==IsDlgButtonChecked(hWnd,IDC_REC_CPP)) ? 1 : 0 ;
+				
+				SaveSettings();
+				SwitchCpu();
+				UpdateMenus();
 			}
 		case IDCANCEL:
 			EndDialog(hWnd,0);

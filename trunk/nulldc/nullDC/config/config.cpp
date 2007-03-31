@@ -42,7 +42,6 @@ void FASTCALL cfgSaveStr(const char * Section, const char * Key, const char * St
 	emu:FullName	: str,returns the emulator's name + version string (ex."nullDC v1.0.0 Private Beta 2 built on {datetime}")
 	emu:ShortName	: str,returns the emulator's name + version string , short form (ex."nullDC 1.0.0pb2")
 	emu:Name		: str,returns the emulator's name (ex."nullDC")
-	emu:Version		: int,returns the emulator's version
 
 	These are read/write
 	emu:Caption		: str , get/set the window caption
@@ -53,7 +52,7 @@ void FASTCALL cfgSaveStr(const char * Section, const char * Key, const char * St
 **	This will verify there is a working file @ ./szIniFn
 **	- if not present, it will write defaults
 */
-bool cfgVerify()
+bool cfgOpen()
 {
 
 	char * tmpPath = GetEmuPath("");
@@ -79,7 +78,6 @@ bool cfgVerify()
 	cfgSaveStr("emu","FullName",VER_FULLNAME);
 	cfgSaveStr("emu","ShortName",VER_SHORTNAME);
 	cfgSaveStr("emu","Name",VER_EMUNAME);
-	cfgSaveInt("emu","Version",1);
 
 	return true;
 }

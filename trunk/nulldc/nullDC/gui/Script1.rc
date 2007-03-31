@@ -229,14 +229,6 @@ BEGIN
     LTEXT           "This function is not yet enabled",IDC_STATIC,72,70,108,13
 END
 
-IDD_ARM7DEBUG DIALOGEX 0, 0, 481, 195
-STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
-CAPTION "ARM7 Debugger"
-FONT 10, "Courier New", 400, 0, 0x1
-BEGIN
-    LTEXT           "fuck somethin",IDC_ARM7INFO,244,45,160,32
-END
-
 IDD_CONFIG DIALOGEX 0, 0, 211, 131
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "nullDC Settings"
@@ -244,7 +236,10 @@ FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,154,110,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,154,93,50,14
-    CONTROL         "Enable Recompiler",IDC_REC,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,7,197,15
+    CONTROL         "Enable Dynarec",IDC_REC,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,7,197,15
+    CONTROL         "Enable Constant Propagation",IDC_REC_CPP,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,39,197,10
+    LTEXT           "Enabling the dynarec will make the emulator much faster.There are no known bugs on it :)",IDC_STATIC,7,20,197,19
+    LTEXT           "Constant propagation is a dynarec optimisation pass.Enabling it will make the dynarec faster , however due to a known bug some games may not work correctly (Soul Reaver,Toy Commander missles , more) ",IDC_STATIC,7,49,197,34
 END
 
 

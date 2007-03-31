@@ -58,6 +58,7 @@ sh4_if* Get_Sh4Interpreter()
 	rv->SetRegister=Sh4_int_SetRegister;
 	rv->RaiseInterrupt=RaiseInterrupt;
 	rv->RaiseExeption=sh4_int_RaiseExeption;
+	rv->ResetCache=0;
 	return rv;
 }
 

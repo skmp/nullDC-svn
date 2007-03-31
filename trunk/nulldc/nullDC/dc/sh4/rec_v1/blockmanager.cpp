@@ -340,10 +340,10 @@ void __fastcall _SuspendAllBlocks();
 //free's suspended blocks
 void FreeSuspendedBlocks()
 {
+	FreeBlocks(&SuspendedBlocks);
+
 	if (reset_cache)
 		_SuspendAllBlocks();
-
-	FreeBlocks(&SuspendedBlocks);
 }
 
 

@@ -13,6 +13,8 @@
 #include "plugins/plugin_manager.h"
 #include "serial_ipc/serial_ipc_client.h"
 
+__settings settings;
+
 int RunGui(int argc, char* argv[])
 {
 	return 0;
@@ -21,7 +23,7 @@ int RunGui(int argc, char* argv[])
 int RunDC(int argc, char* argv[])
 {
 
-	if(0 != cfgLoadInt("nullDC","enable_recompiler",1))
+	if(settings.dynarec.Enable)
 	{
 		sh4_cpu=Get_Sh4Recompiler();
 		printf("Using Recompiler\n");
@@ -48,7 +50,6 @@ void EnumPlugins()
 	List<PluginLoadInfo>* gdrom= GetPluginList(Plugin_GDRom);
 	List<PluginLoadInfo>* aica= GetPluginList(Plugin_AICA);
 	List<PluginLoadInfo>* maple= GetPluginList(Plugin_Maple);
-	List<PluginLoadInfo>* maplesub= GetPluginList(Plugin_MapleSub);
 	List<PluginLoadInfo>* extdev= GetPluginList(Plugin_ExtDevice);
 
 	printf("PowerVR plugins :\n");
@@ -82,19 +83,11 @@ void EnumPlugins()
 	printf("\nMaple plugins :\n");
 	for (u32 i=0;i<maple->itemcount;i++)
 	{
-		printf("*\tFound %s v%d.%d.%d [main]\n" ,(*maple)[i].Name,
+		printf("*\tFound %s v%d.%d.%d\n" ,(*maple)[i].Name,
 			(*maple)[i].PluginVersion.major,
 			(*maple)[i].PluginVersion.minnor,
 			(*maple)[i].PluginVersion.build);
 	}
-	for (u32 i=0;i<maplesub->itemcount;i++)
-	{
-		printf("*\tFound %s v%d.%d.%d [sub]\n" ,(*maplesub)[i].Name,
-			(*maplesub)[i].PluginVersion.major,
-			(*maplesub)[i].PluginVersion.minnor,
-			(*maplesub)[i].PluginVersion.build);
-	}
-	
 	printf("\nExtDevice plugins :\n");
 	for (u32 i=0;i<extdev->itemcount;i++)
 	{
@@ -108,18 +101,21 @@ void EnumPlugins()
 	delete gdrom;
 	delete aica;
 	delete maple;
-	delete maplesub;
 	delete extdev;
 }
 
 int main___(int argc,char* argv[])
 {
-	if(!cfgVerify())
-		printf("~ERROR: cfgVerify() Failed!\n");
+	if(!cfgOpen())
+	{
+		msgboxf("Unable to open config file",MBX_ICONERROR);
+		return -4;
+	}
+	LoadSettings();
 
 	if (!CreateGUI())
 	{
-		printf("Creating GUI failed\n");
+		msgboxf("Creating GUI failed\n",MBX_ICONERROR);
 		return -1;
 	}
 
@@ -134,14 +130,14 @@ int main___(int argc,char* argv[])
 	{
 		if (!plugins_Select())
 		{
-			printf("Unable to load plugins -- exiting\n");
+			msgboxf("Unable to load plugins -- exiting\n",MBX_ICONERROR);
 			return -2;
 		}
 	}
 	
 	if (1==0)
 	{
-		printf("Unable to locate dreamcast bios in \"%s\"\n","bios\\dc_boot.bin");
+		msgboxf("Unable to locate dreamcast bios in \"%s\"\n",MBX_ICONERROR,"bios\\dc_boot.bin");
 		return -3; 
 	}
 	int rv= RunDC(argc,argv);
@@ -156,7 +152,7 @@ int main(int argc, char* argv[])
 	if (!_vmem_reserve())
 	{
 		msgboxf("Unable to reserve nullDC memory ...",MBX_OK | MBX_ICONERROR);
-		return -1;
+		return -5;
 	}
 	int rv=0;
 	__try
@@ -171,3 +167,14 @@ int main(int argc, char* argv[])
 	return rv;
 }
 
+
+void LoadSettings()
+{
+	settings.dynarec.Enable=cfgLoadInt("nullDC","Dynarec.Enabled",1);
+	settings.dynarec.CPpass=cfgLoadInt("nullDC","Dynarec.DoConstantPropagation",1);
+}
+void SaveSettings()
+{
+	cfgSaveInt("nullDC","Dynarec.Enabled",settings.dynarec.Enable);
+	cfgSaveInt("nullDC","Dynarec.DoConstantPropagation",settings.dynarec.CPpass);
+}

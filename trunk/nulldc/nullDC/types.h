@@ -148,15 +148,15 @@ using namespace std;
 #define MINOR_VER 0
 
 #define VER_EMUNAME		"nullDC"
-#define VER_FULLNAME	VER_EMUNAME " v1.0.0 private beta 3 (built " __DATE__ "@" __TIME__ ")"
-#define VER_SHORTNAME	VER_EMUNAME " 1.0.0pb3"
+#define VER_FULLNAME	VER_EMUNAME " v1.0.0 beta 1 (built " __DATE__ "@" __TIME__ ")"
+#define VER_SHORTNAME	VER_EMUNAME " 1.0.0b1"
 
 #define dbgbreak __asm {int 3}
 
 #define fastcall __fastcall
 #define FASTCALL __fastcall
-#define verify(x) if((x)==false){ printf("Verify Failed  : " #x "\n in %s -> %s : %d \n",__FUNCTION__,__FILE__,__LINE__); dbgbreak;}
-#define die(reason) { printf("Fatal error : %s\n in %s -> %s : %d \n",reason,__FUNCTION__,__FILE__,__LINE__); dbgbreak;}
+#define verify(x) if((x)==false){ msgboxf("Verify Failed  : " #x "\n in %s -> %s : %d \n",MBX_ICONERROR,__FUNCTION__,__FILE__,__LINE__); dbgbreak;}
+#define die(reason) { msgboxf("Fatal error : %s\n in %s -> %s : %d \n",MBX_ICONERROR,reason,__FUNCTION__,__FILE__,__LINE__); dbgbreak;}
 #define fverify verify
 
 //will be removed sometime soon
@@ -194,3 +194,17 @@ struct RegisterStruct
 };
 
 #define NO_MMU
+
+
+struct __settings
+{
+	struct
+	{
+		bool Enable;
+		bool CPpass;
+	} dynarec;
+};
+extern __settings settings;
+
+void LoadSettings();
+void SaveSettings();

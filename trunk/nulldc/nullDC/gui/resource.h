@@ -18,7 +18,6 @@
 #define IDD_MEMVIEW__                   113
 #define IDD_DISVIEW                     115
 #define IDD_PVRVIEW                     116
-#define IDD_ARM7DEBUG                   117
 #define IDD_PLUGIN_SELECT               118
 #define IDD_CONFIG                      119
 #define IDI_ICON2                       120
@@ -111,7 +110,6 @@
 #define IDC_THXLIST                     1091
 #define IDC_XF                          1092
 #define IDS_CallStack                   1093
-#define IDC_ARM7INFO                    1094
 #define IDC_CALLSTACK                   1095
 #define IDC_EDIT2                       1096
 #define IDC_COMBO1                      1097
@@ -138,6 +136,7 @@
 #define IDC_MAPLESUB4                   1113
 #define IDC_MAPLETAB                    1114
 #define IDC_NDC_VER                     1115
+#define IDC_REC_CPP                     1116
 #define ID_DEBUG_REGVIEWER              40008
 #define ID_DEBUG_DISASMVIEWER           40009
 #define ID_HELP_HOWTO                   40013
@@ -158,7 +157,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        121
 #define _APS_NEXT_COMMAND_VALUE         40044
-#define _APS_NEXT_CONTROL_VALUE         1116
+#define _APS_NEXT_CONTROL_VALUE         1117
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
