@@ -118,7 +118,32 @@ int main___(int argc,char* argv[])
 		msgboxf("Creating GUI failed\n",MBX_ICONERROR);
 		return -1;
 	}
+	int rv= 0;
 
+	char* temp_path=GetEmuPath("data\\dc_boot.bin");
+	
+	FILE* fr=fopen(temp_path,"r");
+	if (!fr)
+	{
+		msgboxf("Unable to find bios -- exiting\n%s",MBX_ICONERROR,temp_path);
+		rv=-3;
+		goto cleanup;
+	}
+	free(temp_path);
+
+	temp_path=GetEmuPath("data\\dc_flash.bin");
+	
+	fr=fopen(temp_path,"r");
+	if (!fr)
+	{
+		msgboxf("Unable to find flash -- exiting\n%s",MBX_ICONERROR,temp_path);
+		rv=-6;
+		goto cleanup;
+	}
+
+	free(temp_path);
+
+	fclose(fr);
 	PrintSerialIPUsage(argc,argv);
 	char * currpath=GetEmuPath("");
 	SetCurrentDirectoryA(currpath);
@@ -131,17 +156,22 @@ int main___(int argc,char* argv[])
 		if (!plugins_Select())
 		{
 			msgboxf("Unable to load plugins -- exiting\n",MBX_ICONERROR);
-			return -2;
+			rv = -2;
+			goto cleanup;
 		}
 	}
 	
+	/*
 	if (1==0)
 	{
 		msgboxf("Unable to locate dreamcast bios in \"%s\"\n",MBX_ICONERROR,"bios\\dc_boot.bin");
-		return -3; 
+		rv = -3; 
+		goto cleanup;
 	}
-	int rv= RunDC(argc,argv);
+	*/
+	rv = RunDC(argc,argv);
 	
+cleanup:
 	DestroyGUI();
 	
 	return rv;

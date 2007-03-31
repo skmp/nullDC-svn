@@ -105,6 +105,8 @@ void FASTCALL handle_About(u32 id,void* w,void* p)
 }
 void FASTCALL handle_SwitchDisc(u32 id,void* w,void* p)
 {
+	msgboxf("This feature is not yet implemented",MB_ICONWARNING);
+	return;
 	TermDrive();
 	DriveNotifyEvent(DiskChange,0);
 	

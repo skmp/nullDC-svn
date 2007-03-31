@@ -13,17 +13,17 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     return TRUE;
 }
 
-void cfgdlg(PluginType type,void* window)
+void FASTCALL handle_About(u32 id,void* w,void* p)
 {
-	printf("Chanka's AICA [port by drk||Raziel]:No config kthx\n");
+	MessageBox((HWND)w,"Made by the Chankast Team\nPort by drk||Raziel","About Chankast Aica...",MB_ICONINFORMATION);
 }
-
-
 //called when plugin is used by emu (you should do first time init here)
-s32 FASTCALL Load(emu_info * p,u32 rootmenu)
+s32 FASTCALL Load(emu_info * p,u32 rmenu)
 {
 	memcpy(&emu,p,sizeof(*p));
-	
+
+	emu.AddMenuItem(rmenu,-1,"About",handle_About,0);
+
 	return rv_ok;
 }
 
@@ -81,7 +81,7 @@ EXPORT void EXPORT_CALL dcGetInterface(plugin_interface* info)
 #define c info->common
 #define a info->aica
 
-	strcpy(c.Name,"Chanka's AICA [port by drk||Raziel](" __DATE__ ")");
+	strcpy(c.Name,"Chankast's AICA (" __DATE__ ")");
 	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD,DC_VER_NORMAL);
 
 	c.InterfaceVersion=AICA_PLUGIN_I_F_VERSION;

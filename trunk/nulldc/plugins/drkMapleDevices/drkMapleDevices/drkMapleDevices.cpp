@@ -9,6 +9,7 @@ emu_info host;
 #undef UNICODE
 #endif
 #define _WIN32_WINNT 0x500
+#include <windowsx.h>
 #include <winsock2.h>
 #include <windows.h>
 
@@ -19,6 +20,8 @@ emu_info host;
 #include <stdlib.h>
 
 #include <string.h>
+#include <commctrl.h>
+#include "resource.h"
 
 u16 kcode=0xFFFF;
 u32 vks=0;
@@ -311,6 +314,55 @@ INT_PTR CALLBACK sch( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 	return oldptr(hWnd,uMsg,wParam,lParam);
 }
 
+u32 current_port=0;
+INT_PTR CALLBACK ConfigKeysDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
+{
+	switch( uMsg )
+	{
+	case WM_INITDIALOG:
+		{
+			TCITEM tci; 
+			tci.mask = TCIF_TEXT | TCIF_IMAGE; 
+			tci.iImage = -1; 
+			tci.pszText = "Port A"; 
+			TabCtrl_InsertItem(GetDlgItem(hWnd,IDC_PORTTAB), 0, &tci); 
+			tci.pszText = "Port B"; 
+			TabCtrl_InsertItem(GetDlgItem(hWnd,IDC_PORTTAB), 1, &tci); 
+			tci.pszText = "Port C"; 
+			TabCtrl_InsertItem(GetDlgItem(hWnd,IDC_PORTTAB), 2, &tci); 
+			tci.pszText = "Port D"; 
+			TabCtrl_InsertItem(GetDlgItem(hWnd,IDC_PORTTAB), 3, &tci); 
+
+			TabCtrl_SetCurSel(GetDlgItem(hWnd,IDC_PORTTAB),current_port);
+		}
+		return true;
+
+	case WM_COMMAND:
+
+		switch( LOWORD(wParam) )
+		{
+		case IDOK:
+			{
+			
+			}
+		case IDCANCEL:
+			EndDialog(hWnd,0);
+			return true;
+
+		default: break;
+		}
+		return false;
+
+	case WM_CLOSE:
+	case WM_DESTROY:
+		EndDialog(hWnd,0);
+		return true;
+
+	default: break;
+	}
+
+	return false;
+}
 void cfgdlg(PluginType type,void* window)
 {
 	printf("ndcMAPLE :No config kthx\n");
@@ -361,12 +413,15 @@ void FASTCALL Term()
 	//term here ?
 }
 */
-
+HMODULE hModule;
+HINSTANCE hInstance;
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
                        LPVOID lpReserved
 					 )
 {
+	::hModule=hModule;
+	hInstance=(HINSTANCE)hModule;
     return TRUE;
 }
 #define sk(num,key)kb_map[key]=0x##num;
@@ -1806,13 +1861,18 @@ void FASTCALL VmuDMA(maple_subdevice_instance* device_instance,u32 Command,u32* 
 
 void FASTCALL config_keys(u32 id,void* w,void* p)
 {
-	MessageBox((HWND)w,"Hahaha nice joke ..","Shittie Controller Device ...",MB_APPLMODAL | MB_OK | MB_ICONHAND);
+	maple_device_instance* mdd=(maple_device_instance*)p;
+	current_port=mdd->port>>6;
+	DialogBox(hInstance,MAKEINTRESOURCE(IDD_ConfigKeys),(HWND)w,ConfigKeysDlgProc);
 }
 s32 FASTCALL CreateMain(maple_device_instance* inst,u32 id,u32 flags,u32 rootmenu)
 {
 	char temp[512];
 	sprintf(temp,"Config keys for Player %d",(inst->port>>6)+1);
-	host.AddMenuItem(rootmenu,-1,temp,config_keys,0);
+	u32 ckid=host.AddMenuItem(rootmenu,-1,temp,config_keys,0);
+	MenuItem mi;
+	mi.PUser=inst;
+	host.SetMenuItem(ckid,&mi,MIM_PUser);
 	if (id==0)
 	{
 		inst->dma=ControllerDMA;

@@ -78,18 +78,66 @@ void FASTCALL handler_VerPTex(u32 id,void* win,void* puser)
 	
 	SaveSettings();
 }
+u32 enable_FS_mid;
+void FASTCALL handler_SetFullscreen(u32 id,void* win,void* puser)
+{
+	if (settings.Fullscreen.Enabled)
+		settings.Fullscreen.Enabled=0;
+	else
+		settings.Fullscreen.Enabled=1;
+
+	emu.SetMenuItemStyle(id,settings.Fullscreen.Enabled?MIS_Checked:0,MIS_Checked);
+	
+	SaveSettings();
+}
 
 void FASTCALL handler_SetRes(u32 id,void* win,void* puser)
 {
 	for (size_t i=0;i<res.size();i++)
+	{
 		emu.SetMenuItemStyle(res[i],res[i]==id?MIS_Checked:0,MIS_Checked);
+		if (res[i]==id)
+		{
+			switch(i)
+			{
+			case 0:
+				settings.Fullscreen.Res_X=640;
+				settings.Fullscreen.Res_Y=480;
+				break;
+			case 1:
+				settings.Fullscreen.Res_X=800;
+				settings.Fullscreen.Res_Y=600;
+				break;
+			case 2:
+				settings.Fullscreen.Res_X=1024;
+				settings.Fullscreen.Res_Y=768;
+				break;
+			case 3:
+				settings.Fullscreen.Res_X=1152;
+				settings.Fullscreen.Res_Y=864;
+				break;
+			case 4:
+				settings.Fullscreen.Res_X=1280;
+				settings.Fullscreen.Res_Y=800;
+				break;
+			case 5:
+				settings.Fullscreen.Res_X=1280;
+				settings.Fullscreen.Res_Y=960;
+				break;
+			case 6:
+				settings.Fullscreen.Res_X=1280;
+				settings.Fullscreen.Res_Y=1024;
+				break;
+			}
+		}
+	}
 
 	SaveSettings();
 }
 
 void FASTCALL handle_About(u32 id,void* w,void* p)
 {
-	MessageBox((HWND)w,"Made by drk||Raziel","About drkpvr...",MB_ICONINFORMATION);
+	MessageBox((HWND)w,"Made by the nullDC Team","About nullPVR...",MB_ICONINFORMATION);
 }
 //called when plugin is used by emu (you should do first time init here)
 s32 FASTCALL Load(emu_info* emu_inf,u32 rmenu)
@@ -99,10 +147,13 @@ s32 FASTCALL Load(emu_info* emu_inf,u32 rmenu)
 	
 	LoadSettings();
 
-	u32 Resolutions_menu=emu.AddMenuItem(rmenu,-1,"Resolution",0,0);
+	u32 Resolutions_menu=emu.AddMenuItem(rmenu,-1,"Fullscreen",0,0);
 	
 	emu.SetMenuItemStyle(emu.AddMenuItem(rmenu,-1,"-",0,0),MIS_Seperator,MIS_Seperator);
 
+	
+	enable_FS_mid=emu.AddMenuItem(Resolutions_menu,-1,"Enable",handler_SetFullscreen,settings.Fullscreen.Enabled);
+	emu.SetMenuItemStyle(emu.AddMenuItem(Resolutions_menu,-1,"-",0,0),MIS_Seperator,MIS_Seperator);
 	res.push_back(emu.AddMenuItem(Resolutions_menu,-1,"640x480",handler_SetRes,0));
 	res.push_back(emu.AddMenuItem(Resolutions_menu,-1,"800x600",handler_SetRes,0));
 	res.push_back(emu.AddMenuItem(Resolutions_menu,-1,"1024x768",handler_SetRes,0));
@@ -167,6 +218,7 @@ s32 FASTCALL InitPvr(pvr_init_params* param)
 		return rv_error;
 	}
 
+	emu.SetMenuItemStyle(enable_FS_mid,MIS_Grayed,MIS_Grayed);
 	return rv_ok;
 }
 
@@ -178,6 +230,8 @@ void FASTCALL TermPvr()
 	rend_term();
 	spg_Term();
 	Regs_Term();
+
+	emu.SetMenuItemStyle(enable_FS_mid,0,MIS_Grayed);
 }
 
 //Helper functions
@@ -221,8 +275,8 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	c.Type=Plugin_PowerVR;
 	c.InterfaceVersion=PVR_PLUGIN_I_F_VERSION;
 
-	strcpy(c.Name,"drkpvr -- " REND_NAME);
-	c.PluginVersion=DC_MakeVersion(0,9,0,DC_VER_NORMAL);
+	strcpy(c.Name,"nullPVR -- " REND_NAME);
+	c.PluginVersion=DC_MakeVersion(1,0,0,DC_VER_NORMAL);
 
 	c.Load=Load;
 	c.Unload=Unload;

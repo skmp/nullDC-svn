@@ -9,7 +9,7 @@
 
 #define BUILD 0
 #define MINOR 0
-#define MAJOR 1
+#define MAJOR 0
 
 #define DCclock (200*1000*1000)
 

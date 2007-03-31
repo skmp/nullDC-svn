@@ -694,10 +694,10 @@ s32 plugins_Load_()
 
 	eminf.WindowHandle=GetRenderTargetHandle();
 
-	load_plugin_("Current_PVR",&libPvr,PowerVR_menu,"nullDC_Pvr.dll");
-	load_plugin_("Current_GDR",&libGDR,GDRom_menu,"nullDC_GDR.dll");
-	load_plugin_("Current_AICA",&libAICA,Aica_menu,"nullDC_Aica.dll");
- 	load_plugin_("Current_ExtDevice",&libExtDevice,ExtDev_menu,"nullDC_ExtDev.dll");
+	load_plugin_("Current_PVR",&libPvr,PowerVR_menu,"nullPvr_Win32.dll");
+	load_plugin_("Current_GDR",&libGDR,GDRom_menu,"nullGDR_Win32.dll");
+	load_plugin_("Current_AICA",&libAICA,Aica_menu,"nullAica_Win32.dll");
+ 	load_plugin_("Current_ExtDevice",&libExtDevice,ExtDev_menu,"nullExtDev_Win32.dll");
 
 	List<PluginLoadInfo>* mpl= GetPluginList(Plugin_Maple);
 

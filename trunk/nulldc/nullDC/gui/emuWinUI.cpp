@@ -858,10 +858,10 @@ void CreateBasicMenus()
 	ExtDev_menu = AddMenuItem(menu_options,-1,"ExtDevice",0,0);
 
 	//Maple Menu
-	Maple_menu_ports[0][5]=AddMenuItem(Maple_menu,-1,"Port 1",0,0);
-	Maple_menu_ports[1][5]=AddMenuItem(Maple_menu,-1,"Port 2",0,0);
-	Maple_menu_ports[2][5]=AddMenuItem(Maple_menu,-1,"Port 3",0,0);
-	Maple_menu_ports[3][5]=AddMenuItem(Maple_menu,-1,"Port 4",0,0);
+	Maple_menu_ports[0][5]=AddMenuItem(Maple_menu,-1,"Port A",0,0);
+	Maple_menu_ports[1][5]=AddMenuItem(Maple_menu,-1,"Port B",0,0);
+	Maple_menu_ports[2][5]=AddMenuItem(Maple_menu,-1,"Port C",0,0);
+	Maple_menu_ports[3][5]=AddMenuItem(Maple_menu,-1,"Port D",0,0);
 
 	//Debug
 	AddMenuItem(menu_debug,-1,"Debugger",Handle_Debug_Sh4Debugger,0);

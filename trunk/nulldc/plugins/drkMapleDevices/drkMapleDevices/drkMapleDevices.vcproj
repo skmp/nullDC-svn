@@ -377,7 +377,15 @@
 			</File>
 		</Filter>
 		<File
+			RelativePath=".\drkMapleDevices.rc"
+			>
+		</File>
+		<File
 			RelativePath=".\ReadMe.txt"
+			>
+		</File>
+		<File
+			RelativePath=".\resource.h"
 			>
 		</File>
 	</Files>

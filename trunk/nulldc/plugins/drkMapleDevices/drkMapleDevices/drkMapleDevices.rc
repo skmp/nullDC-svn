@@ -1,0 +1,112 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// Greek resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ELL)
+#ifdef _WIN32
+LANGUAGE LANG_GREEK, SUBLANG_DEFAULT
+#pragma code_page(1253)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ConfigKeys DIALOGEX 0, 0, 235, 173
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "nullDC Controller Key config"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,178,152,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,7,152,50,14
+    CONTROL         "",IDC_PORTTAB,"SysTabControl32",0x0,7,7,221,131
+    LTEXT           "Left",IDC_STATIC,23,86,43,10
+    LTEXT           "Right",IDC_STATIC,23,96,43,10
+    LTEXT           "Down",IDC_STATIC,23,107,43,10
+    LTEXT           "Up",IDC_STATIC,23,75,43,10
+    LTEXT           "Analog Left",IDC_STATIC,24,36,43,10
+    LTEXT           "Analog Right",IDC_STATIC,24,46,43,10
+    LTEXT           "Analog Down",IDC_STATIC,24,57,43,10
+    LTEXT           "Analog Up",IDC_STATIC,24,25,43,10
+    LTEXT           "X",IDC_STATIC,169,68,8,10
+    LTEXT           "B",IDC_STATIC,192,68,8,10
+    LTEXT           "A",IDC_STATIC,180,79,8,10
+    LTEXT           "Y",IDC_STATIC,180,57,8,10
+    CTEXT           "~[STATUS]~",IDC_STATIC,7,141,221,10
+    LTEXT           "Start",IDC_STATIC,109,119,19,10
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO 
+BEGIN
+    IDD_ConfigKeys, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 228
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 166
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+#endif    // Greek resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+
