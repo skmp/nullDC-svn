@@ -295,7 +295,7 @@ namespace Direct3DRenderer
 			}
 			D3DLOCKED_RECT rect;
 
-			verifyc(Texture->LockRect(0,&rect,NULL,D3DLOCK_NOSYSLOCK | D3DLOCK_DISCARD));
+			verifyc(Texture->LockRect(0,&rect,NULL,D3DLOCK_DISCARD));
 			
 
 			PixelBuffer pbt; 
@@ -1618,12 +1618,13 @@ if (!GetAsyncKeyState(VK_F3))
 	#define z_update(zv)
 #endif
 
+		//if ((*(u32*)&invW)==0x7F800000) return;\
 	//Append vertex base
 #define vert_cvt_base \
+	f32 invW=vtx->xyz[2];\
 	Vertex* cv=tarc.verts.Append();\
 	cv->x=vtx->xyz[0];\
 	cv->y=vtx->xyz[1];\
-	f32 invW=vtx->xyz[2];\
 	cv->z=invW;\
 	z_update(invW);
 
