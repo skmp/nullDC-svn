@@ -76,6 +76,7 @@ struct _settings_type
 		u32 MultiSampleQuality;
 	} Enhancements;
 	u32 ShowFPS;
+	u32 VersionedPalleteTextures;
 };
 
 extern _settings_type settings;

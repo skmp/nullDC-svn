@@ -67,6 +67,18 @@ void FASTCALL handler_ShowFps(u32 id,void* win,void* puser)
 	
 	SaveSettings();
 }
+void FASTCALL handler_VerPTex(u32 id,void* win,void* puser)
+{
+	if (settings.VersionedPalleteTextures)
+		settings.VersionedPalleteTextures=0;
+	else
+		settings.VersionedPalleteTextures=1;
+
+	emu.SetMenuItemStyle(id,settings.VersionedPalleteTextures?MIS_Checked:0,MIS_Checked);
+	
+	SaveSettings();
+}
+
 void FASTCALL handler_SetRes(u32 id,void* win,void* puser)
 {
 	for (size_t i=0;i<res.size();i++)
@@ -87,20 +99,26 @@ s32 FASTCALL Load(emu_info* emu_inf,u32 rmenu)
 	
 	LoadSettings();
 
-	emu.AddMenuItem(rmenu,-1,"Show Fps",handler_ShowFps,settings.ShowFPS);
-
 	u32 Resolutions_menu=emu.AddMenuItem(rmenu,-1,"Resolution",0,0);
+	
+	emu.SetMenuItemStyle(emu.AddMenuItem(rmenu,-1,"-",0,0),MIS_Seperator,MIS_Seperator);
 
 	res.push_back(emu.AddMenuItem(Resolutions_menu,-1,"640x480",handler_SetRes,0));
 	res.push_back(emu.AddMenuItem(Resolutions_menu,-1,"800x600",handler_SetRes,0));
 	res.push_back(emu.AddMenuItem(Resolutions_menu,-1,"1024x768",handler_SetRes,0));
 	res.push_back(emu.AddMenuItem(Resolutions_menu,-1,"1152x864",handler_SetRes,0));
+	res.push_back(emu.AddMenuItem(Resolutions_menu,-1,"1280x800",handler_SetRes,0));
+	res.push_back(emu.AddMenuItem(Resolutions_menu,-1,"1280x960",handler_SetRes,0));
 	res.push_back(emu.AddMenuItem(Resolutions_menu,-1,"1280x1024",handler_SetRes,0));
 
 	emu.SetMenuItemStyle(res[0],MIS_Checked,MIS_Checked);
 	for (size_t i=0;i<res.size();i++)
 		emu.SetMenuItemStyle(res[i],MIS_Radiocheck,MIS_Radiocheck);
 
+	emu.AddMenuItem(rmenu,-1,"Versioned Textures",handler_VerPTex,settings.VersionedPalleteTextures);
+	emu.AddMenuItem(rmenu,-1,"Show Fps",handler_ShowFps,settings.ShowFPS);
+
+	emu.SetMenuItemStyle(emu.AddMenuItem(rmenu,-1,"-",0,0),MIS_Seperator,MIS_Seperator);
 
 	emu.AddMenuItem(rmenu,-1,"About",handle_About,0);
 //	SetRenderer(RendererType::Hw_D3d,params.WindowHandle);
@@ -326,6 +344,7 @@ void LoadSettings()
 	settings.Fullscreen.Refresh_Rate			=	cfgGetInt("Fullscreen.Refresh_Rate",60);
 
 	settings.ShowFPS							=	cfgGetInt("ShowFPS",0);
+	settings.VersionedPalleteTextures			=	cfgGetInt("VersionedPalleteTextures",1);
 
 	settings.Enhancements.MultiSampleCount		=	cfgGetInt("Enhancements.MultiSampleCount",0);
 	settings.Enhancements.MultiSampleQuality	=	cfgGetInt("Enhancements.MultiSampleQuality",0);
@@ -340,6 +359,7 @@ void SaveSettings()
 	cfgSetInt("Fullscreen.Refresh_Rate",settings.Fullscreen.Refresh_Rate);
 
 	cfgSetInt("ShowFPS",settings.ShowFPS);
+	cfgSetInt("VersionedPalleteTextures",settings.VersionedPalleteTextures);
 
 	cfgSetInt("Enhancements.MultiSampleCount",settings.Enhancements.MultiSampleCount);
 	cfgSetInt("Enhancements.MultiSampleQuality",settings.Enhancements.MultiSampleQuality);

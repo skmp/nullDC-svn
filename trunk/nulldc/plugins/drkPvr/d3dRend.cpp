@@ -469,17 +469,19 @@ namespace Direct3DRenderer
 					GenText(tsp,tcw,tf);
 				}
 			}
-			if (tcw.PAL.PixelFmt==5)
-			{				
-				if (tf->pal_rev!=pal_rev_16[tcw.PAL.PalSelect])
-					tf->Update();
-			}
-			else if (tcw.PAL.PixelFmt==6)
+			if (settings.VersionedPalleteTextures)
 			{
-				if (tf->pal_rev!=pal_rev_256[tcw.PAL.PalSelect>>4])
-					tf->Update();
+				if (tcw.PAL.PixelFmt==5)
+				{				
+					if (tf->pal_rev!=pal_rev_16[tcw.PAL.PalSelect])
+						tf->Update();
+				}
+				else if (tcw.PAL.PixelFmt==6)
+				{
+					if (tf->pal_rev!=pal_rev_256[tcw.PAL.PalSelect>>4])
+						tf->Update();
+				}
 			}
-
 			tf->Lookups++;
 			//LeaveCriticalSection(&tex_cache_cs);
 			return tf->Texture;
