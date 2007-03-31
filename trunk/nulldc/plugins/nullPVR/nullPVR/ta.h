@@ -194,7 +194,9 @@ namespace TASplitter
 				//32B more needed , 32B done :)
 				TaCmd=ta_spriteB_data;
 				
-				TA_decoder::AppendSpriteVertexA((TA_Sprite1A*)data);
+				TA_VertexParam* vp=(TA_VertexParam*)data;
+
+				TA_decoder::AppendSpriteVertexA(&vp->spr1A);
 				return SZ32;
 			}
 			else
