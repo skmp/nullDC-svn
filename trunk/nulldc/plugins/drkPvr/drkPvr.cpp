@@ -91,6 +91,28 @@ void FASTCALL handler_SetFullscreen(u32 id,void* win,void* puser)
 	SaveSettings();
 }
 
+#define makeres(a,b) {#a "x" #b,a,b},
+struct 
+{
+	char* name;
+	u32 x;
+	u32 y;
+} resolutions[]=
+{
+	makeres(640,480)
+	makeres(800,600)
+	makeres(1024,768)
+	makeres(1280,800)
+	makeres(1280,960)
+	makeres(1280,1024)
+	makeres(1440,1050)
+	makeres(1600,900)
+	makeres(1600,1200)
+	makeres(1920,1080)
+	makeres(2048,1536)
+	{0,0,0}
+};
+u32 special_res=0;
 void FASTCALL handler_SetRes(u32 id,void* win,void* puser)
 {
 	for (size_t i=0;i<res.size();i++)
@@ -98,40 +120,16 @@ void FASTCALL handler_SetRes(u32 id,void* win,void* puser)
 		emu.SetMenuItemStyle(res[i],res[i]==id?MIS_Checked:0,MIS_Checked);
 		if (res[i]==id)
 		{
-			switch(i)
-			{
-			case 0:
-				settings.Fullscreen.Res_X=640;
-				settings.Fullscreen.Res_Y=480;
-				break;
-			case 1:
-				settings.Fullscreen.Res_X=800;
-				settings.Fullscreen.Res_Y=600;
-				break;
-			case 2:
-				settings.Fullscreen.Res_X=1024;
-				settings.Fullscreen.Res_Y=768;
-				break;
-			case 3:
-				settings.Fullscreen.Res_X=1152;
-				settings.Fullscreen.Res_Y=864;
-				break;
-			case 4:
-				settings.Fullscreen.Res_X=1280;
-				settings.Fullscreen.Res_Y=800;
-				break;
-			case 5:
-				settings.Fullscreen.Res_X=1280;
-				settings.Fullscreen.Res_Y=960;
-				break;
-			case 6:
-				settings.Fullscreen.Res_X=1280;
-				settings.Fullscreen.Res_Y=1024;
-				break;
-			}
+			settings.Fullscreen.Res_X=resolutions[i].x;
+			settings.Fullscreen.Res_Y=resolutions[i].y;
 		}
 	}
 
+	if (special_res)
+	{
+		emu.DeleteMenuItem(special_res);
+		special_res=0;
+	}
 	SaveSettings();
 }
 
@@ -154,17 +152,26 @@ s32 FASTCALL Load(emu_info* emu_inf,u32 rmenu)
 	
 	enable_FS_mid=emu.AddMenuItem(Resolutions_menu,-1,"Enable",handler_SetFullscreen,settings.Fullscreen.Enabled);
 	emu.SetMenuItemStyle(emu.AddMenuItem(Resolutions_menu,-1,"-",0,0),MIS_Seperator,MIS_Seperator);
-	res.push_back(emu.AddMenuItem(Resolutions_menu,-1,"640x480",handler_SetRes,0));
-	res.push_back(emu.AddMenuItem(Resolutions_menu,-1,"800x600",handler_SetRes,0));
-	res.push_back(emu.AddMenuItem(Resolutions_menu,-1,"1024x768",handler_SetRes,0));
-	res.push_back(emu.AddMenuItem(Resolutions_menu,-1,"1152x864",handler_SetRes,0));
-	res.push_back(emu.AddMenuItem(Resolutions_menu,-1,"1280x800",handler_SetRes,0));
-	res.push_back(emu.AddMenuItem(Resolutions_menu,-1,"1280x960",handler_SetRes,0));
-	res.push_back(emu.AddMenuItem(Resolutions_menu,-1,"1280x1024",handler_SetRes,0));
 
-	emu.SetMenuItemStyle(res[0],MIS_Checked,MIS_Checked);
-	for (size_t i=0;i<res.size();i++)
-		emu.SetMenuItemStyle(res[i],MIS_Radiocheck,MIS_Radiocheck);
+	bool sel_any=false;
+	for (u32 rc=0;resolutions[rc].name;rc++)
+	{
+		bool sel=(resolutions[rc].x==settings.Fullscreen.Res_X) && (resolutions[rc].y==settings.Fullscreen.Res_Y);
+		if (sel)
+			sel_any=true;
+		u32 nmi=emu.AddMenuItem(Resolutions_menu,-1,resolutions[rc].name,handler_SetRes,sel);
+		res.push_back(nmi);
+		emu.SetMenuItemStyle(nmi,MIS_Radiocheck,MIS_Radiocheck);
+	}
+	special_res=0;
+	if (!sel_any)
+	{
+		char temp[512];
+		sprintf(temp,"%dx%d",settings.Fullscreen.Res_X,settings.Fullscreen.Res_Y);
+		special_res=emu.AddMenuItem(Resolutions_menu,-1,temp,handler_SetRes,1);
+		emu.SetMenuItemStyle(special_res,MIS_Grayed|MIS_Checked,MIS_Grayed|MIS_Checked);
+	}
+
 
 	emu.AddMenuItem(rmenu,-1,"Versioned Textures",handler_VerPTex,settings.VersionedPalleteTextures);
 	emu.AddMenuItem(rmenu,-1,"Show Fps",handler_ShowFps,settings.ShowFPS);
