@@ -685,7 +685,11 @@ MENU_HANDLER( Handle_Debug_Sh4Debugger)
 	if (!IsDCInited())
 	{
 		printf("Debugger opened w/o init , initing everything..\n");
-		Init_DC();
+		if(!Init_DC())
+		{
+			msgboxf("Init failed , cannot open debugger",MBX_ICONEXCLAMATION);
+			return;
+		}
 		Reset_DC(false);
 	}
 
