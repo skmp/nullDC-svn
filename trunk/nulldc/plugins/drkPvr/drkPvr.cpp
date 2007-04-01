@@ -79,6 +79,8 @@ void FASTCALL handler_VerPTex(u32 id,void* win,void* puser)
 	SaveSettings();
 }
 u32 enable_FS_mid;
+u32 AA_mid_menu;
+u32 AA_mid_0;
 void FASTCALL handler_SetFullscreen(u32 id,void* win,void* puser)
 {
 	if (settings.Fullscreen.Enabled)
@@ -282,7 +284,7 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	c.Type=Plugin_PowerVR;
 	c.InterfaceVersion=PVR_PLUGIN_I_F_VERSION;
 
-	strcpy(c.Name,"nullPVR -- " REND_NAME);
+	strcpy(c.Name,"nullPVR -- " REND_NAME " built : " __DATE__);
 	c.PluginVersion=DC_MakeVersion(1,0,0,DC_VER_NORMAL);
 
 	c.Load=Load;

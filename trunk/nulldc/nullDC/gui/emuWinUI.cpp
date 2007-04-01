@@ -910,6 +910,9 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 					break;
 				}
 			}
+			if (IDCANCEL==LOWORD(wParam))
+				PostQuitMessage(0);
+			break;
 			//printf("Menu item %d selected\n",LOWORD(wParam));
 		}
 		break;
@@ -930,6 +933,9 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 			int val = (int)wParam;
 			switch(val)
 			{
+			case VK_ESCAPE:
+				SendMessage(hWnd,WM_CLOSE,0,0);
+				break;
 			case VK_F7:
 				{
 					if (sh4_cpu->ResetCache)
@@ -985,22 +991,22 @@ INT_PTR CALLBACK DlgProcModal_about( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 		{
 			Edit_SetText(GetDlgItem(hWnd,IDC_THXLIST),
 				"Credits :" "\r\n"
-				" drk||Raziel \t: main coder" "\r\n"
-				" ZeZu \t\t: main coder" "\r\n"
-				" GiGaHeRz \t: plugin work/misc stuff"  "\r\n"
-				" PsyMan \t\t: Mental (and metal) support ,managment, ""\r\n"
-				"        \t\t  beta testing, everything else"  "\r\n"
+				" drk||Raziel \t: Main coder" "\r\n"
+				" ZeZu \t\t: Main coder" "\r\n"
+				" GiGaHeRz \t: Plugin work/misc stuff"  "\r\n"
+				" PsyMan \t\t: Mental support, managment,""\r\n"
+				"        \t\t  beta testing & everything else"  "\r\n"
 				" Xant \t\t: www & forum, beta testing"   "\r\n"
 				"\r\n"
 				"Beta testing :"  "\r\n"
-				" emwearz,Miretank,gb_away,Raziel,General Plot,"  "\r\n"
-				" Refraction,Ckemu"  "\r\n"
+				" emwearz, Miretank, gb_away, Raziel, General Plot,"  "\r\n"
+				" Refraction, Ckemu"  "\r\n"
 				"\r\n"
 				"Many thanks to :" "\r\n"
-				" •fill this later" "\r\n"
+				"Jim Denson, Flea, Jupi, Chankast tream" "\r\n"
+				"and everyone else we forgot" "\r\n"
 				"\r\n"
 				"\r\n"
-				"All UR BUGZ BELONGZ TO UZ" "\r\n"
 				);
 			Static_SetText(GetDlgItem(hWnd,IDC_NDC_VER),VER_SHORTNAME);
 		}
