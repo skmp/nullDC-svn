@@ -29,28 +29,47 @@ unsigned long g_dwCreationHeight=1024;
 int g_iMultiSampleQuality;
 int g_iMultiSampleCount;
 
+void cfgSetInt(char* key,int v)
+{
+	em_inf.ConfigSaveInt("chankast_pvr",key,v);
+}
 int cfgGetInt(char* key,int def)
 {
-	return em_inf.ConfigLoadInt("chanka_pvr",key,def);
+	return em_inf.ConfigLoadInt("chankast_pvr",key,def);
 }
 extern bool g_bForceSVP;
-void UpdateConfig()
+void LoadSettings()
 {
-	g_bUSE_ZWRITE           = cfgGetInt("Use_ZWrite",0)!=0;
-    g_bUSE_ALPHATEST_ZWRITE = cfgGetInt("Use_AlphaTest_ZWrite",0)!=0;
+	g_bUSE_ZWRITE           = cfgGetInt("Use_ZWrite",1)!=0;
+    g_bUSE_ALPHATEST_ZWRITE = cfgGetInt("Use_AlphaTest_ZWrite",1)!=0;
 
 	g_bShowStats=cfgGetInt("ShowStats",0)!=0;
 	g_bWireframe=cfgGetInt("Wireframe",0)!=0;
 
-	g_dwCreationWidth=cfgGetInt("Width",1280);
-	g_dwCreationHeight=cfgGetInt("Height",1024);
+	g_dwCreationWidth=cfgGetInt("Width",640);
+	g_dwCreationHeight=cfgGetInt("Height",480);
 	g_bForceSVP=cfgGetInt("ForceSoftwareVertexProceccing",0)!=0;
 	g_iMultiSampleCount=cfgGetInt("MultiSampleCount",0);
 	g_iMultiSampleQuality=cfgGetInt("MultiSampleQuality",0);
-	g_bCreationFullScreen=cfgGetInt("FullScreen",0);
-
-	
+	g_bCreationFullScreen=cfgGetInt("FullScreen",0);	
 }
+
+void SaveSettings()
+{
+	cfgSetInt("Use_ZWrite",g_bUSE_ZWRITE);
+	cfgSetInt("Use_AlphaTest_ZWrite",g_bUSE_ALPHATEST_ZWRITE);
+
+	cfgSetInt("ShowStats",g_bShowStats);
+	cfgSetInt("Wireframe",g_bWireframe);
+
+	cfgSetInt("Width",g_dwCreationWidth);
+	cfgSetInt("Height",g_dwCreationHeight);
+	cfgSetInt("ForceSoftwareVertexProceccing",g_bForceSVP);
+	cfgSetInt("MultiSampleCount",g_iMultiSampleCount);
+	cfgSetInt("MultiSampleQuality",g_iMultiSampleQuality);
+	cfgSetInt("FullScreen",g_bCreationFullScreen);	
+}
+
 
 __declspec(align(32)) byte sse_regs[4*8*4];
 __declspec(align(32)) u32 mxcsr_reg;
@@ -169,13 +188,32 @@ void FASTCALL handle_About(u32 id,void* w,void* p)
 	MessageBox((HWND)w,"Chankast PowerVR core , made by the chankast team\nPort by drk||Raziel","About ChankaPvr...",MB_ICONINFORMATION);
 }
 
+template<bool* stuff>
+void FASTCALL handle_TCH(u32 id,void* w,void* p)
+{
+	if (*stuff)
+		*stuff=0;
+	else
+		*stuff=1;
+
+	em_inf.SetMenuItemStyle(id,*stuff?MIS_Checked:0,MIS_Checked);
+	SaveSettings();
+}
+
 s32 FASTCALL Load(emu_info* inf,u32 rmenu)
 {
 	em_inf=*inf;
 
 	Hwnd=em_inf.WindowHandle;
 	g_hWnd=(HWND)Hwnd;
-	UpdateConfig();
+	LoadSettings();
+
+	em_inf.AddMenuItem(rmenu,-1,"Use ZWrite",handle_TCH<&g_bUSE_ZWRITE>,g_bUSE_ZWRITE);
+	em_inf.AddMenuItem(rmenu,-1,"Use Alpha Test ZWrite",handle_TCH<&g_bUSE_ALPHATEST_ZWRITE>,g_bUSE_ALPHATEST_ZWRITE);
+	em_inf.AddMenuItem(rmenu,-1,"Wireframe",handle_TCH<&g_bWireframe>,g_bWireframe);
+	em_inf.AddMenuItem(rmenu,-1,"Show Stats",handle_TCH<&g_bShowStats>,g_bShowStats);
+
+	em_inf.SetMenuItemStyle(em_inf.AddMenuItem(rmenu,-1,"-",0,0),MIS_Seperator,MIS_Seperator);
 
 	em_inf.AddMenuItem(rmenu,-1,"About",handle_About,0);
 
@@ -196,7 +234,7 @@ s32 FASTCALL InitPvr(pvr_init_params* aparam)
 	RaiseInterrupt=param.RaiseInterrupt;
 	//g_bChangeDisplayEnable = true;
 	//g_bDraw = true;
-	UpdateConfig();
+	LoadSettings();
 	TAInit();
 	return rv_ok;
 }
@@ -258,7 +296,7 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	c.InterfaceVersion=PVR_PLUGIN_I_F_VERSION;
 	c.Type=Plugin_PowerVR;
 	
-	strcpy(c.Name,"chanka's video [port by drk||Raziel] (" __DATE__ ")");
+	strcpy(c.Name,"Chankast's video(" __DATE__ ")");
 	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD,DC_VER_NORMAL);
 	
 	c.Load=Load;

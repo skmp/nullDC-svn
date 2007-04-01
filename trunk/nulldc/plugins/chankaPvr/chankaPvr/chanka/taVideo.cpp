@@ -1997,6 +1997,7 @@ static DWORD drkConvOffset32toOffset64(DWORD offset32)
 }
 static void DrawBackground()
 {
+	return;
   DWORD uValue = SH4HWRegistersGetValue(TPVR::PVR_BGPLANE_CFG);
 
 
@@ -2019,8 +2020,12 @@ static void DrawBackground()
 
   float zValue;
 
-  BYTE* pDataVideo = (BYTE* ) SH4GetVideoRAMPtr(uAddress + SH4VideoRAM_START);
-
+  BYTE pDataVideo_[256];// = (BYTE* ) SH4GetVideoRAMPtr(uAddress + SH4VideoRAM_START);
+  for (int i=-128;i<128;i++)
+  {
+		pDataVideo_[i+128]=*SH4GetVideoRAMPtr(drkConvOffset32toOffset64(uAddress+i));
+  }
+BYTE*pDataVideo=&pDataVideo_[128];
   if (!pDataVideo)
     return;
 
@@ -2065,7 +2070,7 @@ static void DrawBackground()
   {
     bkg_poly2* pBkg = (bkg_poly2*) pDataVideo;
 
-    DWORD* pBuffer = (DWORD*) (DWORD*)  SH4GetVideoRAMPtr(uAddress + SH4VideoRAM_START-4);;;
+    DWORD* pBuffer = (DWORD*) (DWORD*)  pDataVideo-4;;;
     //pBuffer = pBuffer -1;
 
     pTextureD3D = GetTexture(pBuffer);
@@ -2084,7 +2089,7 @@ static void DrawBackground()
   {
     bkg_poly3* pBkg = (bkg_poly3*) pDataVideo;
 
-    DWORD* pBuffer = (DWORD*)  SH4GetVideoRAMPtr(uAddress + SH4VideoRAM_START-4);;
+    DWORD* pBuffer = (DWORD*)  pDataVideo-4;;
     //pBuffer = pBuffer -1;
 
     pTextureD3D = GetTexture(pBuffer);

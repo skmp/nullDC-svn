@@ -142,6 +142,7 @@ u32 __stdcall client_thread(SOCKET sock)
 			con->has_data=0;
 			con->connected=0;
 			printf("%d dissconected\n",in_init.port);
+			UNLOCK();
 			return -1;
 		}
 		
@@ -186,12 +187,12 @@ u32 __stdcall send_thread(SOCKET sock)
 				memcpy(&st[i],(void*)&states[i].info,sizeof(st[i]));
 			}
 		}
-		printf("SEND\n");
+		//printf("SEND\n");
 		for(int i=0;i<4;i++)
 		{
 			if (states[i].connected==1)
 			{
-				printf("SENT %d\n",i);
+				//printf("SENT %d\n",i);
 				states[i].has_data=0;
 				u32 rvva=send(states[i].connection,(char*)st,sizeof(st),0);
 				/*{
