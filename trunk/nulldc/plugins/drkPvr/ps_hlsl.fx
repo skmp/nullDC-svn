@@ -35,7 +35,7 @@ float4 PixelShader_main(in pixel s ) : COLOR0
 		//get texture color
 		//s.uv.xy/=s.uv.w;
 		//tex2D -> same as tex2Dproj
-		#if ps_profile <= 103
+		#if ps_no_tex2D == 1
 			float4 texcol=tex2D( samplr, s.uv); //ps 1.1 , 1.2 and 1.3 use this one.tex2Dproj is not supported on em
 												//and , tex2D lookups take in acount the PROJECTED flag (witch i set)
 		#else

@@ -891,7 +891,7 @@ namespace Direct3DRenderer
 		{"pp_ShadInstr",0},
 		{"pp_IgnoreTexA",0},
 		{"pp_UseAlpha",0},
-		{"ps_profile",0},	//Shader profile version , just defined , no value :)
+		{"ps_no_tex2D",0},	//Shader profile version , just defined , no value :)
 		{0,0}	//end of list
 	};
 	char* ps_macro_numers[] =
@@ -928,11 +928,18 @@ namespace Direct3DRenderer
 	{
 		char temp[30];
 		strcpy(temp,D3DXGetPixelShaderProfile(dev));
-		temp[2]='0';
-		temp[4]='0';
 		//printf(&temp[3]);
 
-		ps_macros[5].Definition=&temp[3];
+		//Old shaders don't have tex2DProj
+		if (strcmp(temp,"ps_1_3")==0 || 
+			strcmp(temp,"ps_1_2")==0 ||
+			strcmp(temp,"ps_1_1")==0 ||
+			strcmp(temp,"ps_1_0")==0 
+			)
+			ps_macros[5].Definition="1";
+		else
+			ps_macros[5].Definition="0";
+
 		const char * profile=D3DXGetPixelShaderProfile(dev);
 
 #define forl(n,s,e) for (u32 n=s;n<=e;n++)

@@ -673,11 +673,15 @@ MENU_HANDLER( Handle_System_Stop)
 }
 MENU_HANDLER( Handle_System_Reset)
 {
+	msgboxf("Reset is not implemented",MBX_ICONERROR);
+
+	/*
 	sh4_cpu->Stop();
 	printf(">>\tDreamcast Reset\n");
 	sh4_cpu->Reset(false);//do a hard reset
 	sh4_cpu->SetRegister(Sh4RegType::reg_pc,0xA0000000);
 	DisablePatch(patch_all);
+	*/
 }
 //Debug
 MENU_HANDLER( Handle_Debug_Sh4Debugger)
@@ -1003,7 +1007,7 @@ INT_PTR CALLBACK DlgProcModal_about( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 				" Refraction, Ckemu"  "\r\n"
 				"\r\n"
 				"Many thanks to :" "\r\n"
-				"Jim Denson, Flea, Jupi, Chankast tream" "\r\n"
+				"Jim Denson, Flea, Jupi, Chankast team" "\r\n"
 				"and everyone else we forgot" "\r\n"
 				"\r\n"
 				"\r\n"
