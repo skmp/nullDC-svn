@@ -297,6 +297,14 @@
 			RelativePath=".\ReadMe.txt"
 			>
 		</File>
+		<File
+			RelativePath=".\resource.h"
+			>
+		</File>
+		<File
+			RelativePath=".\sdlAICA.rc"
+			>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>

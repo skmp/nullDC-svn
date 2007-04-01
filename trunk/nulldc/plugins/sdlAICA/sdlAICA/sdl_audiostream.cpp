@@ -2,6 +2,7 @@
 #include "audiostream_rif.h"
 #include "audiostream.h"
 
+#ifdef _INCLUDE_SDL
 /* Prototype of our callback function */
 void sdl_fill_audio(void *userdata, Uint8 *stream, int len);
 void sdl_InitAudio()
@@ -55,3 +56,4 @@ void sdl_fill_audio(void *userdata, Uint8 *stream, int len)
 	//if (len!=settings.BufferSize*4)
 	//	printf("Error [sdl_fill_audio]: len!=buffersz\n");
 }
+#endif

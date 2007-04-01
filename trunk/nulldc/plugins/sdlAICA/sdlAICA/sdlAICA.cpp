@@ -7,63 +7,163 @@
 #include "arm7.h"
 #include "mem.h"
 #include "audiostream.h"
+#include "resource.h"
+#include <windowsx.h>
 
 setts settings;
 aica_init_params aica_params;
 emu_info eminf;
+HINSTANCE hinst;
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
                        LPVOID lpReserved
 					 )
 {
+	hinst=(HINSTANCE)hModule;
     return TRUE;
 }
-
-
-void cfgdlg(PluginType type,void* window)
+void UpdateMenuSelections();
+u32 scmi=0,stami=0;
+INT_PTR CALLBACK ConfigDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
-	printf("Config coming soon [blame ms/msvc for that , its their fault for making window related code suck so much]");
+	switch( uMsg )
+	{
+	case WM_INITDIALOG:
+		{
+			CheckDlgButton(hWnd,IDC_HWMIX,settings.HW_mixing!=0?BST_CHECKED:BST_UNCHECKED);
+			CheckDlgButton(hWnd,IDC_GFOCUS,settings.GlobalFocus!=0?BST_CHECKED:BST_UNCHECKED);
+			CheckDlgButton(hWnd,IDC_FSYNC,settings.LimitFPS!=0?BST_CHECKED:BST_UNCHECKED);
+
+			bool hideo=true;
+			if (settings.BufferSize==884)
+			{
+				CheckDlgButton(hWnd,IDC_RADIO1,BST_CHECKED);
+			}
+			else if (settings.BufferSize==1024)
+			{
+				CheckDlgButton(hWnd,IDC_RADIO2,BST_CHECKED);
+			}
+			else if (settings.BufferSize==1536)
+			{
+				CheckDlgButton(hWnd,IDC_RADIO3,BST_CHECKED);
+			}
+			else if (settings.BufferSize==1768)
+			{
+				CheckDlgButton(hWnd,IDC_RADIO4,BST_CHECKED);
+			}
+			else if (settings.BufferSize==2048)
+			{
+				CheckDlgButton(hWnd,IDC_RADIO5,BST_CHECKED);
+			}
+			else if (settings.BufferSize==4096)
+			{
+				CheckDlgButton(hWnd,IDC_RADIO6,BST_CHECKED);
+			}
+			else
+			{
+				ShowWindow(GetDlgItem(hWnd,IDC_RADIO7),  SW_SHOWNORMAL);
+				CheckDlgButton(hWnd,IDC_RADIO7,BST_CHECKED);
+				char temp[512];
+				sprintf(temp,"%d",settings.BufferSize);
+				SetDlgItemTextA(hWnd,IDC_RADIO7,temp);
+				hideo=false;
+			}
+			if (hideo)
+				ShowWindow(GetDlgItem(hWnd,IDC_RADIO7), SW_HIDE);
+		}
+		return true;
+
+	case WM_COMMAND:
+
+		switch( LOWORD(wParam) )
+		{
+		case IDOK:
+			{
+				if (IsDlgButtonChecked(hWnd,IDC_RADIO1))
+				{
+					settings.BufferSize==884;
+				}
+				else if (IsDlgButtonChecked(hWnd,IDC_RADIO1))
+				{
+					settings.BufferSize==1024;
+				}
+				else if (IsDlgButtonChecked(hWnd,IDC_RADIO1))
+				{
+					settings.BufferSize==1536;
+				}
+				else if (IsDlgButtonChecked(hWnd,IDC_RADIO1))
+				{
+					settings.BufferSize==1768;
+				}
+				else if (IsDlgButtonChecked(hWnd,IDC_RADIO1))
+				{
+					settings.BufferSize==2048;
+				}
+				else if (IsDlgButtonChecked(hWnd,IDC_RADIO1))
+				{
+					settings.BufferSize==4096;
+				}
+
+				settings.HW_mixing=IsDlgButtonChecked(hWnd,IDC_HWMIX);
+				settings.GlobalFocus=IsDlgButtonChecked(hWnd,IDC_GFOCUS);
+				settings.LimitFPS=IsDlgButtonChecked(hWnd,IDC_FSYNC);
+				
+				SaveSettings();
+			}
+		case IDCANCEL:
+			EndDialog(hWnd,0);
+			return true;
+
+		default: break;
+		}
+		return false;
+
+	case WM_CLOSE:
+	case WM_DESTROY:
+		EndDialog(hWnd,0);
+		return true;
+
+	default: break;
+	}
+
+	return false;
 }
 
-/*
-//Give to the emu info for the plugin type
-EXPORT void dcGetPluginInfo(plugin_info* info)
-{
-	info->InterfaceVersion.full=PLUGIN_I_F_VERSION;
-	strcpy(info->Name,"nullDC AICA plugin [sdl] , built :" __DATE__ "");
-	info->PluginVersion.full=NDC_MakeVersion(MAJOR,MINOR,BUILD);
-	
-	info->Init=dcInit;
-	info->Term=dcTerm;
-	info->Reset=dcReset;
 
-	info->ThreadInit=dcThreadInit;
-	info->ThreadTerm=dcThreadTerm;
-	info->ShowConfig=cfgdlg;
-	info->Type=PluginType::AICA;
-}
-
-//Give to the emu pointers for the PowerVR interface
-EXPORT void dcGetAICAInfo(aica_plugin_if* info)
-{
-	info->InterfaceVersion.full=AICA_PLUGIN_I_F_VERSION;
-
-	info->ReadMem_aica_ram=sh4_ReadMem_ram;
-	info->WriteMem_aica_ram=sh4_WriteMem_ram;
-	info->ReadMem_aica_reg=sh4_ReadMem_reg;
-	info->WriteMem_aica_reg=sh4_WriteMem_reg;
-	info->UpdateAICA=UpdateAICA;
-}
-*/
 void FASTCALL handle_About(u32 id,void* w,void* p)
 {
-	MessageBoxA((HWND)w,"Made by drk||Raziel","About nullDC Aica...",MB_ICONINFORMATION);
+	MessageBoxA((HWND)w,"Made by the nullDC Team","About nullAica...",MB_ICONINFORMATION);
+}
+void FASTCALL handle_Config(u32 id,void* w,void* p)
+{
+	DialogBox(hinst,MAKEINTRESOURCE(IDD_SETTINGS),(HWND)w,ConfigDlgProc);
+}
+void FASTCALL handle_SA(u32 id,void* w,void* p)
+{
+	if (settings.LimitFPS)
+		settings.LimitFPS=0;
+	else
+		settings.LimitFPS=1;
+
+	eminf.SetMenuItemStyle(id,settings.LimitFPS?MIS_Checked:0,MIS_Checked);
+	SaveSettings();
+}
+void UpdateMenuSelections()
+{
+	eminf.SetMenuItemStyle(stami,settings.LimitFPS?MIS_Checked:0,MIS_Checked);
 }
 s32 FASTCALL OnLoad(emu_info* em,u32 rmenu)
 {
 	memcpy(&eminf,em,sizeof(eminf));
 
+	LoadSettings();
+
+	scmi=eminf.AddMenuItem(rmenu,-1,"Config",handle_Config,0);
+	stami=eminf.AddMenuItem(rmenu,-1,"Sync Audio",handle_SA,settings.LimitFPS);
+
+	eminf.SetMenuItemStyle(eminf.AddMenuItem(rmenu,-1,"-",0,0),MIS_Seperator,MIS_Seperator);
 	eminf.AddMenuItem(rmenu,-1,"About",handle_About,0);
+
 	return rv_ok;
 }
 
@@ -76,19 +176,12 @@ s32 FASTCALL Init(aica_init_params* initp)
 {
 	memcpy(&aica_params,initp,sizeof(aica_params));
 
-	//load default settings before init
-	settings.BufferSize=cfgGetInt("BufferSize",1024);
-	settings.LimitFPS=cfgGetInt("LimitFPS",1);
-	settings.HW_mixing=cfgGetInt("HW_mixing",0);
-	settings.SoundRenderer=cfgGetInt("SoundRenderer",1);
-	settings.GlobalFocus=cfgGetInt("GlobalFocus",1);
-	settings.BufferCount=cfgGetInt("BufferCount",1);
-
 	init_mem();
 	arm_Init();
 	AICA_Init();
 	InitAudio();
 
+	eminf.SetMenuItemStyle(scmi,MIS_Grayed,MIS_Grayed);
 	return rv_ok;
 }
 
@@ -98,6 +191,8 @@ void FASTCALL Term()
 	TermAudio();
 	AICA_Term();
 	term_mem();
+
+	eminf.SetMenuItemStyle(scmi,0,MIS_Grayed);
 }
 
 //It's suposed to reset anything 
@@ -133,7 +228,7 @@ EXPORT void EXPORT_CALL dcGetInterface(plugin_interface* info)
 #define c info->common
 #define a info->aica
 
-	strcpy(c.Name,"nullDC AICA plugin [sdl] , built :" __DATE__ "");
+	strcpy(c.Name,"nullAICA , built :" __DATE__ "");
 	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD,DC_VER_NORMAL);
 
 	c.InterfaceVersion=AICA_PLUGIN_I_F_VERSION;
@@ -156,9 +251,35 @@ EXPORT void EXPORT_CALL dcGetInterface(plugin_interface* info)
 
 int cfgGetInt(char* key,int def)
 {
-	return eminf.ConfigLoadInt("sdlaica",key,def);
+	return eminf.ConfigLoadInt("nullAica",key,def);
+}
+void cfgSetInt(char* key,int def)
+{
+	eminf.ConfigSaveInt("nullAica",key,def);
 }
 
+void LoadSettings()
+{
+	//load default settings before init
+	settings.BufferSize=cfgGetInt("BufferSize",1024);
+	settings.LimitFPS=cfgGetInt("LimitFPS",1);
+	settings.HW_mixing=cfgGetInt("HW_mixing",0);
+	settings.SoundRenderer=cfgGetInt("SoundRenderer",1);
+	settings.GlobalFocus=cfgGetInt("GlobalFocus",1);
+	settings.BufferCount=cfgGetInt("BufferCount",1);
+}
+
+void SaveSettings()
+{
+	UpdateMenuSelections();
+	//load default settings before init
+	cfgGetInt("BufferSize",settings.BufferSize);
+	cfgGetInt("LimitFPS",settings.LimitFPS);
+	cfgGetInt("HW_mixing",settings.HW_mixing);
+	cfgGetInt("SoundRenderer",settings.SoundRenderer);
+	cfgGetInt("GlobalFocus",settings.GlobalFocus);
+	cfgGetInt("BufferCount",settings.BufferCount);
+}
 
 //Windoze Code implementation of commong classes from here and after ..
 

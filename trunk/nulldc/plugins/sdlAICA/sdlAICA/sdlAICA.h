@@ -65,6 +65,9 @@ extern aica_init_params aica_params;
 extern emu_info eminf;
 #define naked   __declspec( naked )
 
+void LoadSettings();
+void SaveSettings();
+
 #define dbgbreak  { /*__asm {int 3}*/ printf("Press ANY key to continue\n");getchar(); }
 
 #define fastcall __fastcall
