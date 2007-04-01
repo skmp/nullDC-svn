@@ -536,6 +536,9 @@ void Init_kb_map();
 s32 FASTCALL Load(emu_info* emu,u32 rmenu)
 {
 	memcpy(&host,emu,sizeof(host));
+	for (int set=0;set<4;set++)
+		memcpy(joypad_settings[set],joypad_settings_K,sizeof(joypad_settings_K));
+
 	//maple_init_params* mpi=(maple_init_params*)aparam;
 	//handle=mpi->WindowHandle;
 	if (oldptr==0)
