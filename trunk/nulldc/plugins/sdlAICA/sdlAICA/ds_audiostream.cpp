@@ -22,7 +22,7 @@ void UpdateBuff(u8* pos)
 	u8* buf=GetReadBuffer();
 	if (buf==0)
 	{
-		printf("GetReadBuffer -- Out Of Buffers\n");
+		//printf("GetReadBuffer -- Out Of Buffers\n");
 		//memset(pos,0,wait_buffer_size);
 	}
 	else

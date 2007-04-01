@@ -262,7 +262,7 @@
 			</Filter>
 		</Filter>
 		<Filter
-			Name="SDL"
+			Name="audio streaming"
 			>
 			<File
 				RelativePath=".\audiostream.cpp"
