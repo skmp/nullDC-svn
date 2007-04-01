@@ -23,11 +23,11 @@ emu_info host;
 #include <commctrl.h>
 #include "resource.h"
 
-u16 kcode=0xFFFF;
-u32 vks=0;
-s8 joyx=0,joyy=0;
-s8 joy2x=0,joy2y=0;
-u8 rt=0,lt=0;
+u16 kcode[4]={0xFFFF,0xFFFF,0xFFFF,0xFFFF};
+u32 vks[4]={0};
+s8 joyx[4]={0},joyy[4]={0};
+s8 joy2x[4]={0},joy2y[4]={0};
+u8 rt[4]={0},lt[4]={0};
 u32 mo_buttons = 0xFFFFFFFF;
 s32 mo_x_delta = 0;
 s32 mo_y_delta = 0;
@@ -108,7 +108,7 @@ struct _joypad_settings_entry
 	char* name;
 };
 #define D(x) x ,#x
-_joypad_settings_entry joypad_settings[] = 
+_joypad_settings_entry joypad_settings_K[] = 
 {
 	{'B',D(key_CONT_C)},
 	{'X',D(key_CONT_B)},
@@ -137,9 +137,11 @@ _joypad_settings_entry joypad_settings[] =
 	{'S',D(key_CONT_RSLIDER)},
 	{0,0,0},
 };
+_joypad_settings_entry joypad_settings[4][32];
 #undef D
 
-void UpdateConfig();
+void LoadSettings();
+void SaveSettings();
 u8 kb_shift          ; //shift keys pressed (bitmask)	//1
 u8 kb_led            ; //leds currently lit			//1
 u8 kb_key[6]={0}     ; //normal keys pressed			//6
@@ -229,37 +231,40 @@ INT_PTR CALLBACK sch( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 		break;
 	case WM_KEYDOWN:
 		kb_down(kb_map[wParam & 0xFF]);
-		for (int i=0;joypad_settings[i].name;i++)
+		for (int port=0;port<4;port++)
 		{
-			if (wParam==joypad_settings[i].KC)
+			for (int i=0;joypad_settings_K[i].name;i++)
 			{
-				if (joypad_settings[i].BIT<=0x8000)
+				if (wParam==joypad_settings[port][i].KC)
 				{
-					kcode &= 0xFFFF -joypad_settings[i].BIT;
-				}
-				else
-				{
-					vks|=joypad_settings[i].BIT;
-					switch(joypad_settings[i].BIT)
+					if (joypad_settings[port][i].BIT<=0x8000)
 					{
-					case key_CONT_ANALOG_UP:
-						joyy= -126;
-						break;
-					case key_CONT_ANALOG_DOWN:
-						joyy= +126;
-						break;
-					case key_CONT_ANALOG_RIGHT:
-						joyx= +126;
-						break;
-					case key_CONT_ANALOG_LEFT:
-						joyx= -126;
-						break;
-					case key_CONT_LSLIDER:
-						lt=255;
-						break;
-					case key_CONT_RSLIDER:
-						rt=255;
-						break;
+						kcode[port] &= 0xFFFF -joypad_settings[port][i].BIT;
+					}
+					else
+					{
+						vks[port]|=joypad_settings[port][i].BIT;
+						switch(joypad_settings[port][i].BIT)
+						{
+						case key_CONT_ANALOG_UP:
+							joyy[port]= -126;
+							break;
+						case key_CONT_ANALOG_DOWN:
+							joyy[port]= +126;
+							break;
+						case key_CONT_ANALOG_RIGHT:
+							joyx[port]= +126;
+							break;
+						case key_CONT_ANALOG_LEFT:
+							joyx[port]= -126;
+							break;
+						case key_CONT_LSLIDER:
+							lt[port]=255;
+							break;
+						case key_CONT_RSLIDER:
+							rt[port]=255;
+							break;
+						}
 					}
 				}
 			}
@@ -268,43 +273,46 @@ INT_PTR CALLBACK sch( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 
 	case WM_KEYUP:
 		kb_up(kb_map[wParam & 0xFF]);
-		for (int i=0;joypad_settings[i].name;i++)
+		for (int port=0;port<4;port++)
 		{
-			if (wParam==joypad_settings[i].KC)
+			for (int i=0;joypad_settings_K[i].name;i++)
 			{
-				if (joypad_settings[i].BIT<=0x8000)
+				if (wParam==joypad_settings[port][i].KC)
 				{
-					kcode |= joypad_settings[i].BIT;
-				}
-				else
-				{
-					vks &= ~joypad_settings[i].BIT;
-					if ((vks & (key_CONT_ANALOG_UP|key_CONT_ANALOG_DOWN)) !=(key_CONT_ANALOG_UP|key_CONT_ANALOG_DOWN))
+					if (joypad_settings[port][i].BIT<=0x8000)
 					{
-						if (vks & key_CONT_ANALOG_UP)
-							joyy=-126;
-						else if (vks & key_CONT_ANALOG_DOWN)
-							joyy=+126;
-						else
-							joyy=0;
+						kcode[port] |= joypad_settings[port][i].BIT;
 					}
-					if ((vks & (key_CONT_ANALOG_LEFT|key_CONT_ANALOG_RIGHT)) !=(key_CONT_ANALOG_LEFT|key_CONT_ANALOG_RIGHT))
+					else
 					{
-						if (vks & key_CONT_ANALOG_LEFT)
-							joyx=-126;
-						else if (vks & key_CONT_ANALOG_RIGHT)
-							joyx=+126;
-						else
-							joyx=0;
-					}
-					switch(joypad_settings[i].BIT)
-					{
-					case key_CONT_LSLIDER:
-						lt=0;
-						break;
-					case key_CONT_RSLIDER:
-						rt=0;
-						break;
+						vks[port] &= ~joypad_settings[port][i].BIT;
+						if ((vks[port] & (key_CONT_ANALOG_UP|key_CONT_ANALOG_DOWN)) !=(key_CONT_ANALOG_UP|key_CONT_ANALOG_DOWN))
+						{
+							if (vks[port] & key_CONT_ANALOG_UP)
+								joyy[port]=-126;
+							else if (vks[port] & key_CONT_ANALOG_DOWN)
+								joyy[port]=+126;
+							else
+								joyy[port]=0;
+						}
+						if ((vks[port] & (key_CONT_ANALOG_LEFT|key_CONT_ANALOG_RIGHT)) !=(key_CONT_ANALOG_LEFT|key_CONT_ANALOG_RIGHT))
+						{
+							if (vks[port] & key_CONT_ANALOG_LEFT)
+								joyx[port]=-126;
+							else if (vks[port] & key_CONT_ANALOG_RIGHT)
+								joyx[port]=+126;
+							else
+								joyx[port]=0;
+						}
+						switch(joypad_settings[port][i].BIT)
+						{
+						case key_CONT_LSLIDER:
+							lt[port]=0;
+							break;
+						case key_CONT_RSLIDER:
+							rt[port]=0;
+							break;
+						}
 					}
 				}
 			}
@@ -315,6 +323,75 @@ INT_PTR CALLBACK sch( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 }
 
 u32 current_port=0;
+bool waiting_key=false;
+u32 edited_key=0;
+u32 waiting_key_timer=6*4;
+
+u32 kid_to_did[]=
+{
+	IDC_BUTTON1,
+	IDC_BUTTON2,
+	IDC_BUTTON3,
+	IDC_BUTTON4,
+	IDC_BUTTON5,
+	IDC_BUTTON6,
+	IDC_BUTTON7,
+	IDC_BUTTON8,
+	IDC_BUTTON9,
+	IDC_BUTTON10,
+	IDC_BUTTON11,
+	IDC_BUTTON12,
+	IDC_BUTTON13,
+	IDC_BUTTON14,
+	IDC_BUTTON15,
+	IDC_BUTTON16,
+	IDC_BUTTON17,
+	IDC_BUTTON18,
+	IDC_BUTTON19,
+	IDC_BUTTON20,
+	IDC_BUTTON21,
+	IDC_BUTTON22,
+	//IDC_BUTTON22,
+};
+u8 kbs[256];
+const u32 kbratio=20;
+void ENABLESHITFACE(HWND hWnd,u32 state)
+{
+	Static_Enable(hWnd,state);
+	for (int kk=0;joypad_settings_K[kk].name;kk++)
+	{
+		Static_Enable(GetDlgItem(hWnd,kid_to_did[kk]),state);
+	}
+}
+void get_name(int VK,char* text)
+{
+	int scancode = MapVirtualKey(VK,0);
+	switch(VK) {
+	  case VK_INSERT:
+	  case VK_DELETE:
+	  case VK_HOME:
+	  case VK_END:
+	  case VK_NEXT:  // Page down
+	  case VK_PRIOR: // Page up
+	  case VK_LEFT:
+	  case VK_RIGHT:
+	  case VK_UP:
+	  case VK_DOWN:
+		  scancode |= 0x100; // Add extended bit
+	}
+	GetKeyNameText(scancode*0x10000,text,512);
+}
+void UpdateKeySelectionNames(HWND hWnd)
+{
+	char temp[512];
+	for (int i=0;joypad_settings_K[i].name;i++)
+	{
+		if (kid_to_did[i]==0)
+			continue;
+		get_name(joypad_settings[current_port][i].KC,temp);
+		Button_SetText(GetDlgItem(hWnd,kid_to_did[i]),temp);
+	}
+}
 INT_PTR CALLBACK ConfigKeysDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	switch( uMsg )
@@ -334,13 +411,42 @@ INT_PTR CALLBACK ConfigKeysDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 			TabCtrl_InsertItem(GetDlgItem(hWnd,IDC_PORTTAB), 3, &tci); 
 
 			TabCtrl_SetCurSel(GetDlgItem(hWnd,IDC_PORTTAB),current_port);
+
+			SetTimer(hWnd,0,1000/kbratio,0);
+			Static_SetText(GetDlgItem(hWnd,IDC_STATUS),"Click a button , then press the key you want to use for it.If you want to use joysticks try the joy2key utility");
+			UpdateKeySelectionNames(hWnd);
 		}
 		return true;
-
+	case WM_NOTIFY:
+		{
+			if ( ((LPNMHDR)lParam)->idFrom==IDC_PORTTAB && 
+				 ((LPNMHDR)lParam)->code == TCN_SELCHANGE  )
+			{
+				current_port=TabCtrl_GetCurSel(GetDlgItem(hWnd,IDC_PORTTAB));
+				UpdateKeySelectionNames(hWnd);
+			}
+			return true;
+		}
 	case WM_COMMAND:
+
+		for (int i=0;joypad_settings_K[i].name;i++)
+		{
+			if (kid_to_did[i]==LOWORD(wParam))
+			{
+				edited_key=i;
+				GetKeyboardState(kbs);
+				ENABLESHITFACE(hWnd,0);
+				waiting_key_timer=6*kbratio;
+				waiting_key=true;
+				return true;
+			}
+		}
 
 		switch( LOWORD(wParam) )
 		{
+
+			break;
+			
 		case IDOK:
 			{
 			
@@ -352,9 +458,67 @@ INT_PTR CALLBACK ConfigKeysDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 		default: break;
 		}
 		return false;
+	case WM_TIMER:
+	{
+		char temp[512];
+		if (waiting_key)
+		{
+			int VK_down=-1;
+			u8 temp_kbs[256];
+			GetKeyboardState(temp_kbs);
+			for (int i=0;i<256;i++)
+			{
+				if (temp_kbs[i]!=kbs[i] && temp_kbs[i]!=0)
+				{
+					VK_down=i;
+				}
+			}
 
+			if (VK_down!=-1)
+			{
+				waiting_key=false;
+
+				sprintf(temp,"Updated Key Mapping,%d",VK_down);
+				Static_SetText(GetDlgItem(hWnd,IDC_STATUS),temp);
+				joypad_settings[current_port][edited_key].KC=VK_down;
+				SaveSettings();
+				UpdateKeySelectionNames(hWnd);
+			}	
+		}
+
+		if(waiting_key)
+		{
+			char temp[512];
+			
+			waiting_key_timer--;
+			if (waiting_key_timer==0)
+			{
+				Static_Enable(hWnd,1);
+				for (int kk=IDC_BUTTON1;kk<(IDC_BUTTON1+16);kk++)
+				{
+					Static_Enable(GetDlgItem(hWnd,kk),1);
+				}
+				waiting_key=false;
+				waiting_key_timer=6;
+
+				sprintf(temp,"Timed out while waiting for new key",waiting_key_timer/kbratio);
+				Static_SetText(GetDlgItem(hWnd,IDC_STATUS),temp);
+			}
+			else
+			{
+				sprintf(temp,"Waiting for key ...%d\n",waiting_key_timer/kbratio);
+				Static_SetText(GetDlgItem(hWnd,IDC_STATUS),temp);
+			}
+		}
+
+		if (!waiting_key)
+			ENABLESHITFACE(hWnd,1);
+		GetKeyboardState(kbs);
+	}
+	return true;
 	case WM_CLOSE:
 	case WM_DESTROY:
+		KillTimer(hWnd,0);
 		EndDialog(hWnd,0);
 		return true;
 
@@ -378,7 +542,7 @@ s32 FASTCALL Load(emu_info* emu,u32 rmenu)
 		oldptr = (dlgp*)SetWindowLongPtr((HWND)host.WindowHandle,GWL_WNDPROC,(LONG)sch);
 	Init_kb_map();
 
-	UpdateConfig();
+	LoadSettings();
 	return rv_ok;
 }
 
@@ -1136,7 +1300,7 @@ void FASTCALL ControllerDMA(maple_device_instance* device_instance,u32 Command,u
 	//printf("ControllerDMA Called 0x%X;Command %d\n",device_instance->port,Command);
 //void testJoy_GotData(u32 header1,u32 header2,u32*data,u32 datalen)
 	u8*buffer_out_b=(u8*)buffer_out;
-
+	u32 port=device_instance->port>>6;
 	switch (Command)
 	{
 		/*typedef struct {
@@ -1221,24 +1385,24 @@ void FASTCALL ControllerDMA(maple_device_instance* device_instance,u32 Command,u
 			w32(1 << 24);
 			//struct data
 			//2
-			w16(kcode); 
+			w16(kcode[port]); 
 			
 			//triger
 			//1 R
-			w8(rt);
+			w8(rt[port]);
 			//1 L
-			w8(lt); 
+			w8(lt[port]); 
 			//joyx
 			//1
-			w8(GetBtFromSgn(joyx));
+			w8(GetBtFromSgn(joyx[port]));
 			//joyy
 			//1
-			w8(GetBtFromSgn(joyy));
+			w8(GetBtFromSgn(joyy[port]));
 
 			//1
-			w8(GetBtFromSgn(joy2x)); 
+			w8(GetBtFromSgn(joy2x[port])); 
 			//1
-			w8(GetBtFromSgn(joy2y)); 
+			w8(GetBtFromSgn(joy2y[port])); 
 			//are these needed ?
 			//1
 			//WriteMem8(ptr_out, 10); ptr_out += 1;
@@ -1387,11 +1551,11 @@ void net_send()
 	
 	joy_state t;
 	//t.id=*at1+*at2;
-	t.jx=joyx;
-	t.jy=joyy;
-	t.l=lt;
-	t.r=rt;
-	t.state=kcode;
+	t.jx=joyx[local_port];
+	t.jy=joyy[local_port];
+	t.l=lt[local_port];
+	t.r=rt[local_port];
+	t.state=kcode[local_port];
 	int rv = send(ConnectSocket,(char*)&t,sizeof(t),0);
 }
 
@@ -2102,13 +2266,34 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	info->Devices[8].DestroyInstance=0;
 	*/
 }
-void UpdateConfig()
+void LoadSettings()
 {
-	for (int i=0;joypad_settings[i].name;i++)
+	for (int port=0;port<4;port++)
 	{
-		joypad_settings[i].KC=host.ConfigLoadInt("ndc_hookjoy",joypad_settings[i].name,joypad_settings[i].KC);
+		for (int i=0;joypad_settings_K[i].name;i++)
+		{
+			char temp[512];
+			sprintf(temp,"Port%c_%s",port+'A',&joypad_settings_K[i].name[4]);
+			joypad_settings[port][i].KC=host.ConfigLoadInt("ndc_hookjoy",temp,joypad_settings_K[i].KC);
+		}
 	}
 	local_port=host.ConfigLoadInt("ndc_hookjoy","local_port",0);
 	host.ConfigLoadStr("ndc_hookjoy","server_addr",server_addr,"192.168.1.33");
 	host.ConfigLoadStr("ndc_hookjoy","server_port",server_port,"11122");
+}
+
+void SaveSettings()
+{
+	for (int port=0;port<4;port++)
+	{
+		for (int i=0;joypad_settings_K[i].name;i++)
+		{
+			char temp[512];
+			sprintf(temp,"Port%c_%s",port+'A',&joypad_settings_K[i].name[4]);
+			host.ConfigSaveInt("ndc_hookjoy",temp,joypad_settings[port][i].KC);
+		}
+	}
+	host.ConfigSaveInt("ndc_hookjoy","local_port",0);
+	host.ConfigSaveStr("ndc_hookjoy","server_addr",server_addr);
+	host.ConfigSaveStr("ndc_hookjoy","server_port",server_port);
 }
