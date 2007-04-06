@@ -3,6 +3,7 @@
 */
 #pragma once
 
+#pragma pack(push,1)
 
 /*	Notes
 *
@@ -114,68 +115,56 @@ The contents of FD1, FD2, and FD3 vary depending on the function designated by F
 
 
 
-/*A command file is set up in system memory, containing the instructions (settings like communications port selection,
-the received data storage address, and the transfer data length) for the Maple controller and the transmission data.
-The command file consists of units formed by "instruction to the controller," "received data storage address,"
-and "transmission data," in that order.  Each of these units are located consecutively in system memory.
-*/
-
-typedef struct sMapleInstruction
+struct Controller_ReadFormat
 {
-	u32 DataLen	: 8;	// Send data length selection bits
-	u32 Pattern	: 3;	// Pattern selection bits
-	u32 _Res0	: 5;
-	u32 PortSel	: 2;	// Port selection bits
-	u32 _Res1	:13;
-	u32 EndFlag	: 1;	// Last instruction bit
+	union {
+		struct {
+			unsigned char C:		1;
+			unsigned char B:		1;
+			unsigned char A:		1;
+			unsigned char Start:	1;
+			unsigned char Ua:		1;
+			unsigned char Da:		1;
+			unsigned char La:		1;
+			unsigned char Ra:		1;
 
-} MapleInstr, MapleInstruction ;
+			unsigned char Z:		1;
+			unsigned char Y:		1;
+			unsigned char X:		1;
+			unsigned char D:		1;
+			unsigned char Ub:		1;
+			unsigned char Db:		1;
+			unsigned char Lb:		1;
+			unsigned char Rb:		1;
+		};
 
-// fix this later .. 
+		unsigned short Buttons;
+	};
 
-typedef struct sMapleFrame
-{
-	// Start Data Pattern
-	u8 CmdCode;
-	u8 DestAP;
-	u8 OrigAP;
-	u8 DataLen;
-
-} MapleFrame, MapleFrame;
-
-typedef struct sMapleEndPatttern
-{
-	u8 Parity;
-	u8 EndPattern;
-
-} MapleEnd, MapleEndPattern;
-
-/*	this should be wrong ??
-*/
-typedef struct sMapleTransfer
-{
-	MapleInstr Instr;
-
-	u32 Addr;
-
-	MapleFrame Frame;
-
-	u32 Data[256];
-
-	// MapleEnd
+	union {
+		struct {
+			signed char Ax1, Ax2, Ax3, Ax4, Ax5, Ax6;
+		};
+		signed char Av[6];
+	};
+};
 
 
-} MapleTrans, MapleTransfer ;
 
 
-////////////////////////////////////////////////////
 
-typedef struct sDeviceID
+
+
+
+
+
+
+
+struct DeviceID	// *FIXME*
 {
 	u32 FT;
 	u32 FD[3];
-
-} DeviceID;
+};
 
 #define FT_CONTROLLER	0x01000000
 #define FT_STORAGE		0x02000000
@@ -190,7 +179,7 @@ typedef struct sDeviceID
 
 // Fixed Device Status 112bytes
 
-typedef struct sFixedDevStatus
+struct FixedDevStatus
 {
 	DeviceID DevID;			// 16B Device ID
 
@@ -203,12 +192,12 @@ typedef struct sFixedDevStatus
 	u16	StandbyCurrent;		// in units of 0.1 mA - 10.5 mA is designated by 00-69h.
 	u16	MaximumCurrent;		// in units of 0.1 mA - 127.9 mA is designated by 04-FFh.
 
-} FixedDevStatus, fxDevStatus ;
+} ;
 
 // items should be separeted by a ',' spaces are 0x20 
 
 
-typedef struct sFreeDevStatus
+struct FreeDevStatus
 {
 	// first 40 bytes should conform
 	// "Version 1.000,1998/05/11,315-6125-AB". 
@@ -217,7 +206,7 @@ typedef struct sFreeDevStatus
 	u8 ReleaseDate[11];		// 10->11 including comma
 	u8 IC_PartNo[14];		// 14->15 including comma ?
 
-} FreeDevStatus, frDevStatus ;
+} ;
 
 // Destination Codes
 #define DEST_NORTH_AMERICA	0x01
@@ -234,7 +223,7 @@ typedef struct sFreeDevStatus
 
 
 
-
+#pragma pack(pop)
 
 
 
