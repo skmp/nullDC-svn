@@ -42,7 +42,7 @@ s32 mo_wheel_delta = 0;
 #define dbgbreak {while(1) __noop;}
 #define verify(x) if((x)==false){ printf("Verify Failed  : " #x "\n in %s -> %s : %d \n",__FUNCTION__,__FILE__,__LINE__); dbgbreak;}
 #pragma pack(1)
-char testJoy_strName[64] = "Emulated Dreamcast Controler\0";
+char testJoy_strName[64] = "Dreamcast Controller\0";
 char testJoy_strName_nul[64] = "Null Dreamcast Controler\0";
 char testJoy_strName_net[64] = "Net Dreamcast Controler\0";
 char testJoy_strName_vmu[64] = "Emulated VMU\0";
@@ -1341,7 +1341,14 @@ void FASTCALL ControllerDMA(maple_device_instance* device_instance,u32 Command,u
 			//30
 			for (u32 i = 0; i < 30; i++)
 			{
-				w8((u8)testJoy_strName[i]);
+				if (testJoy_strName[i]!=0)
+				{
+					w8((u8)testJoy_strName[i]);
+				}
+				else
+				{
+					w8(0x20);
+				}
 				//if (!testJoy_strName[i])
 				//	break;
 			}
@@ -1350,17 +1357,24 @@ void FASTCALL ControllerDMA(maple_device_instance* device_instance,u32 Command,u
 			//60
 			for (u32 i = 0; i < 60; i++)
 			{
-				w8((u8)testJoy_strBrand_2[i]);
+				if (testJoy_strBrand_2[i]!=0)
+				{
+					w8((u8)testJoy_strBrand_2[i]);
+				}
+				else
+				{
+					w8(0x20);
+				}
 				//if (!testJoy_strBrand[i])
 				//	break;
 			}
 			//ptr_out += 60;
 
 			//2
-			w16(0x04FF); 
+			w16(0xAE01); 
 
 			//2
-			w16(0x0069); 
+			w16(0xF401); 
 			break;
 
 		/* controller condition structure 
@@ -1388,7 +1402,7 @@ void FASTCALL ControllerDMA(maple_device_instance* device_instance,u32 Command,u
 			w32(1 << 24);
 			//struct data
 			//2
-			w16(kcode[port]); 
+			w16(kcode[port] | 0xF901); 
 			
 			//triger
 			//1 R
@@ -1403,9 +1417,9 @@ void FASTCALL ControllerDMA(maple_device_instance* device_instance,u32 Command,u
 			w8(GetBtFromSgn(joyy[port]));
 
 			//1
-			w8(GetBtFromSgn(joy2x[port])); 
+			w8(0x80); 
 			//1
-			w8(GetBtFromSgn(joy2y[port])); 
+			w8(0x80); 
 			//are these needed ?
 			//1
 			//WriteMem8(ptr_out, 10); ptr_out += 1;
