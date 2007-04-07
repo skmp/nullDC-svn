@@ -107,8 +107,6 @@ void DMAC_Ch2St()
 	// The DMA end interrupt flag (SB_ISTNRM - bit 19: DTDE2INT) is set to "1."
 	//-> fixed , holly_PVR_DMA is for diferent use now (fixed the interrupts enum too)
 	RaiseInterrupt(holly_CH2_DMA);
-	//TODO : *CHECKME* is that ok here ? the docs don't say here it's used [PVR-DMA , bit 11]
-	RaiseInterrupt(holly_PVR_DMA);
 }
 
 //Init term res
