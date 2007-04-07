@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8,00"
-	Name="sdlAICA"
+	Name="nullAICA"
 	ProjectGUID="{70FF77F6-E0CE-44EF-AF61-1BBAF3F60CD2}"
 	RootNamespace="nullAICA"
 	Keyword="Win32Proj"

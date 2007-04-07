@@ -61,7 +61,6 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			}
 			else
 			{
-				ShowWindow(GetDlgItem(hWnd,IDC_RADIO7),  SW_SHOWNORMAL);
 				CheckDlgButton(hWnd,IDC_RADIO7,BST_CHECKED);
 				char temp[512];
 				sprintf(temp,"%d",settings.BufferSize);
@@ -83,25 +82,25 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 				{
 					settings.BufferSize==884;
 				}
-				else if (IsDlgButtonChecked(hWnd,IDC_RADIO1))
+				else if (IsDlgButtonChecked(hWnd,IDC_RADIO2))
 				{
-					settings.BufferSize==1024;
+					settings.BufferSize=1024;
 				}
-				else if (IsDlgButtonChecked(hWnd,IDC_RADIO1))
+				else if (IsDlgButtonChecked(hWnd,IDC_RADIO3))
 				{
-					settings.BufferSize==1536;
+					settings.BufferSize=1536;
 				}
-				else if (IsDlgButtonChecked(hWnd,IDC_RADIO1))
+				else if (IsDlgButtonChecked(hWnd,IDC_RADIO4))
 				{
-					settings.BufferSize==1768;
+					settings.BufferSize=1768;
 				}
-				else if (IsDlgButtonChecked(hWnd,IDC_RADIO1))
+				else if (IsDlgButtonChecked(hWnd,IDC_RADIO5))
 				{
-					settings.BufferSize==2048;
+					settings.BufferSize=2048;
 				}
-				else if (IsDlgButtonChecked(hWnd,IDC_RADIO1))
+				else if (IsDlgButtonChecked(hWnd,IDC_RADIO6))
 				{
-					settings.BufferSize==4096;
+					settings.BufferSize=4096;
 				}
 
 				settings.HW_mixing=IsDlgButtonChecked(hWnd,IDC_HWMIX);
@@ -273,12 +272,12 @@ void SaveSettings()
 {
 	UpdateMenuSelections();
 	//load default settings before init
-	cfgGetInt("BufferSize",settings.BufferSize);
-	cfgGetInt("LimitFPS",settings.LimitFPS);
-	cfgGetInt("HW_mixing",settings.HW_mixing);
-	cfgGetInt("SoundRenderer",settings.SoundRenderer);
-	cfgGetInt("GlobalFocus",settings.GlobalFocus);
-	cfgGetInt("BufferCount",settings.BufferCount);
+	cfgSetInt("BufferSize",settings.BufferSize);
+	cfgSetInt("LimitFPS",settings.LimitFPS);
+	cfgSetInt("HW_mixing",settings.HW_mixing);
+	cfgSetInt("SoundRenderer",settings.SoundRenderer);
+	cfgSetInt("GlobalFocus",settings.GlobalFocus);
+	cfgSetInt("BufferCount",settings.BufferCount);
 }
 
 //Windoze Code implementation of commong classes from here and after ..
