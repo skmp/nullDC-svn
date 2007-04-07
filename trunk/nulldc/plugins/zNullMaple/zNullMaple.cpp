@@ -107,11 +107,6 @@ s32  FASTCALL Load(emu_info* emu, u32 rmenu)
 	if(!InitDInput(hInst))
 		printf("DInput is fucked !\n");
 
-	FILE * f=fopen("this.txt","wt");
-	for(int c=0; c<256; c++)
-		fprintf(f, "\"Key %c\",%s", ((char)c), (15==(c&15))?"\n":" ");
-	fclose(f);
-
 	ei = *(emu_info*)emu;
 	return rv_ok;
 }

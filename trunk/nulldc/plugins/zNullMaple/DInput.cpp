@@ -30,7 +30,7 @@ s32 GetChInput(InputDevice &iDev)
 		if(DI_OK != iDev.diDev->GetDeviceState(256, iDev.diKeys)) 
 			return -1;
 
-		int test = DIK_ENTER;
+		int test = DIK_J;
 
 		for(int k=0; k<256; k++) {
 			if(iDev.diKeys[k] & 0x80)

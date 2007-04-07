@@ -44,23 +44,55 @@ static const char * MapNames[] =
 {
 	"[unmapped]",
 
-	// Keyboard //
-	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
-	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
-	"Key  ", "Key !", "Key \"", "Key #", "Key $", "Key %", "Key &", "Key '", "Key (", "Key )", "Key *", "Key +", "Key ,", "Key -", "Key .", "Key /",
-	"Key 0", "Key 1", "Key 2", "Key 3", "Key 4", "Key 5", "Key 6", "Key 7", "Key 8", "Key 9", "Key :", "Key ;", "Key <", "Key =", "Key >", "Key ?",
-	"Key @", "Key A", "Key B", "Key C", "Key D", "Key E", "Key F", "Key G", "Key H", "Key I", "Key J", "Key K", "Key L", "Key M", "Key N", "Key O",
-	"Key P", "Key Q", "Key R", "Key S", "Key T", "Key U", "Key V", "Key W", "Key X", "Key Y", "Key Z", "Key [", "Key \\", "Key ]", "Key ^", "Key _",
-	"Key `", "Key a", "Key b", "Key c", "Key d", "Key e", "Key f", "Key g", "Key h", "Key i", "Key j", "Key k", "Key l", "Key m", "Key n", "Key o",
-	"Key p", "Key q", "Key r", "Key s", "Key t", "Key u", "Key v", "Key w", "Key x", "Key y", "Key z", "Key {", "Key |", "Key }", "Key ~", "Key ",
-	"Key Ä", "Key Å", "Key Ç", "Key É", "Key Ñ", "Key Ö", "Key Ü", "Key á", "Key à", "Key â", "Key ä", "Key ã", "Key å", "Key ç", "Key é", "Key è",
-	"Key ê", "Key ë", "Key í", "Key ì", "Key î", "Key ï", "Key ñ", "Key ó", "Key ò", "Key ô", "Key ö", "Key õ", "Key ú", "Key ù", "Key û", "Key ü",
-	"Key †", "Key °", "Key ¢", "Key £", "Key §", "Key •", "Key ¶", "Key ß", "Key ®", "Key ©", "Key ™", "Key ´", "Key ¨", "Key ≠", "Key Æ", "Key Ø",
-	"Key ∞", "Key ±", "Key ≤", "Key ≥", "Key ¥", "Key µ", "Key ∂", "Key ∑", "Key ∏", "Key π", "Key ∫", "Key ª", "Key º", "Key Ω", "Key æ", "Key ø",
-	"Key ¿", "Key ¡", "Key ¬", "Key √", "Key ƒ", "Key ≈", "Key ∆", "Key «", "Key »", "Key …", "Key  ", "Key À", "Key Ã", "Key Õ", "Key Œ", "Key œ",
-	"Key –", "Key —", "Key “", "Key ”", "Key ‘", "Key ’", "Key ÷", "Key ◊", "Key ÿ", "Key Ÿ", "Key ⁄", "Key €", "Key ‹", "Key ›", "Key ﬁ", "Key ﬂ",
-	"Key ‡", "Key ·", "Key ‚", "Key „", "Key ‰", "Key Â", "Key Ê", "Key Á", "Key Ë", "Key È", "Key Í", "Key Î", "Key Ï", "Key Ì", "Key Ó", "Key Ô",
-	"Key ", "Key Ò", "Key Ú", "Key Û", "Key Ù", "Key ı", "Key ˆ", "Key ˜", "Key ¯", "Key ˘", "Key ˙", "Key ˚", "Key ¸", "Key ˝", "Key ˛", "Key ˇ",
+
+
+
+	// *FIXME* THERE ARE HUGE GAPS HERE //
+
+	"Key ?",	
+	"DIK_ESCAPE", 
+	"DIK_1", "DIK_2", "DIK_3", "DIK_4", "DIK_5", "DIK_6", "DIK_7", "DIK_8", "DIK_9", "DIK_0", 
+	"DIK_MINUS", "DIK_EQUALS", "DIK_BACK", "DIK_TAB", 
+	"DIK_Q", "DIK_W", "DIK_E", "DIK_R", "DIK_T", "DIK_Y", "DIK_U", "DIK_I", "DIK_O", "DIK_P", 
+	"DIK_LBRACKET", "DIK_RBRACKET", "DIK_RETURN", "DIK_LCONTROL", 
+	"DIK_A", "DIK_S", "DIK_D", "DIK_F", "DIK_G", "DIK_H", "DIK_J", "DIK_K", "DIK_L", 
+	"DIK_SEMICOLON", "DIK_APOSTROPHE", "DIK_GRAVE", "DIK_LSHIFT", "DIK_BACKSLASH", 
+	"DIK_Z", "DIK_X", "DIK_C", "DIK_V", "DIK_B", "DIK_N", "DIK_M", 
+	"DIK_COMMA", "DIK_PERIOD", "DIK_SLASH", "DIK_RSHIFT", "DIK_MULTIPLY", "DIK_LMENU", "DIK_SPACE", "DIK_CAPITAL", 
+	"DIK_F1", "DIK_F2", "DIK_F3", "DIK_F4", "DIK_F5", "DIK_F6", "DIK_F7", "DIK_F8", "DIK_F9", "DIK_F10", 
+	"DIK_NUMLOCK", "DIK_SCROLL", "DIK_NUMPAD7", "DIK_NUMPAD8", "DIK_NUMPAD9", "DIK_SUBTRACT", "DIK_NUMPAD4", 
+	"DIK_NUMPAD5", "DIK_NUMPAD6", "DIK_ADD", "DIK_NUMPAD1", "DIK_NUMPAD2", "DIK_NUMPAD3", "DIK_NUMPAD0", "DIK_DECIMAL", 
+
+	// Watch from here out
+
+	"Key ?",	"Key ?",	// 0x54,55
+
+
+	"DIK_OEM_102", 
+	"DIK_F11", "DIK_F12", 
+
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 	// 0x59 - 0x63
+	
+	"DIK_F13", "DIK_F14", "DIK_F15", 
+
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?",	// 67-6F
+
+	"DIK_KANA",
+	"Key ?", "Key ?",	// 
+
+	"DIK_ABNT_C1", "DIK_CONVERT", "DIK_NOCONVERT", "DIK_YEN", "DIK_ABNT_C2", 
+	"DIK_NUMPADEQUALS", "DIK_PREVTRACK", "DIK_AT", "DIK_COLON", "DIK_UNDERLINE", "DIK_KANJI", 
+	"DIK_STOP", "DIK_AX", "DIK_UNLABELED", "DIK_NEXTTRACK", "DIK_NUMPADENTER", "DIK_RCONTROL", 
+	"DIK_MUTE", "DIK_CALCULATOR", "DIK_PLAYPAUSE", "DIK_MEDIASTOP", "DIK_VOLUMEDOWN", "DIK_VOLUMEUP", 
+	"DIK_WEBHOME", "DIK_NUMPADCOMMA", "DIK_DIVIDE", "DIK_SYSRQ", "DIK_RMENU", 
+	"DIK_PAUSE", "DIK_HOME", "DIK_UP", "DIK_PRIOR",
+	"DIK_LEFT", "DIK_RIGHT", "DIK_END", "DIK_DOWN", "DIK_NEXT",
+	"DIK_INSERT", "DIK_DELETE", "DIK_LWIN", "DIK_RWIN", 
+	"DIK_APPS", "DIK_POWER", "DIK_SLEEP", "DIK_WAKE", 
+	"DIK_WEBSEARCH", "DIK_WEBFAVORITES", "DIK_WEBREFRESH", "DIK_WEBSTOP", "DIK_WEBFORWARD", "DIK_WEBBACK", 
+	"DIK_MYCOMPUTER", "DIK_MAIL", "DIK_MEDIASELECT", 
+
+
 
 
 	// GamePad //
