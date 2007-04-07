@@ -1,12 +1,14 @@
 /*
 **	zNullMaple.cpp,	David Miller (2007)
 */
-#include <stdio.h>
 #include <windows.h>
+#include <dinput.h>
+#include <stdio.h>
+
 #include "zNullMaple.h"
 #include "MapleBus.h"
 #include "DInput.h"
-
+#include "resource.h"
 
 
 HINSTANCE hInst=NULL;
@@ -36,8 +38,8 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 
 
 
-emu_info * ei;
-maple_init_params * mip;
+emu_info ei;
+maple_init_params mip;
 
 void FASTCALL Unload();
 s32  FASTCALL Load(emu_info* emu,u32 rmenu);
@@ -61,8 +63,8 @@ void FASTCALL DeviceDMA(maple_device_instance* device_instance,u32 Command,u32* 
 
 void EXPORT_CALL dcGetInterface(plugin_interface* info)
 {
-	maple_plugin_if		* pm	= &info->maple;
-	common_info			* pci	= &info->common;
+	maple_plugin_if	* pm	= &info->maple;
+	common_info		* pci	= &info->common;
 	
 	info->InterfaceVersion	= PLUGIN_I_F_VERSION;
 
@@ -82,7 +84,6 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	pm->DestroyMain			= Destroy;
 	pm->DestroySub			= DestroySub;
 
-
 	sprintf(pm->devices[0].Name, "Controller Device");
 	pm->devices[1].Type		= MDT_EndOfList;
 	pm->devices[0].Type		= MDT_Main;
@@ -101,35 +102,142 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 
 
 
-s32  FASTCALL Load(emu_info* emu,u32 rmenu)
+s32  FASTCALL Load(emu_info* emu, u32 rmenu)
 {
 	if(!InitDInput(hInst))
 		printf("DInput is fucked !\n");
 
-	ei = emu;
+	ei = *(emu_info*)emu;
 	return rv_ok;
 }
 
 void FASTCALL Unload()
 {
-	ei = NULL;
+	ei.WindowHandle = NULL;
 	TermDInput();
 }
 
 s32  FASTCALL Init(maple_device_instance* inst, u32 id, maple_init_params* params)
 {
-	mip = params;
+	mip = *(maple_init_params*)params;
 	return rv_ok;
 }
 void FASTCALL Term(maple_device_instance* inst, u32 id)
 {
-	mip = NULL;
+	mip.RaiseInterrupt = NULL;
 }
+
+
+	/////////////////////// TEMP //////////////////////
+
+u32 curr_port=0, curr_sel=0;
+
+DWORD WINAPI ThreadStart(LPVOID lpParameter)
+{
+	printf("ThreadStart() Curr Port: %d\n", curr_port);
+
+	while(5 != curr_port)
+	{
+		if(GetChInput(InputDev[curr_port]) > 0)
+		{
+			printf("Input Change on %d\n", curr_port);
+
+			if(420 != curr_sel)
+			{
+				SetDlgItemText((HWND)lpParameter, IDC_EDIT1+curr_sel, "EN_CHANGE");
+			}
+		}
+
+		Sleep(100);
+	}
+
+	return 0;
+}
+
+INT_PTR CALLBACK dlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	static u32 ThreadID=0;
+	static HANDLE hThread=NULL;
+
+	switch(uMsg)
+	{
+	case WM_INITDIALOG:
+
+		hThread = CreateThread(NULL, 0, ThreadStart, (LPVOID)hDlg, 0, (LPDWORD)&ThreadID);
+		if(NULL == hThread) {
+			printf("CreateThread Failed in dlgProc for nullMaple\n");
+			return false;
+		}
+		for(int i=0; i<11; i++)
+			SetDlgItemText(hDlg, IDC_EDIT1+i, "[unmapped]");
+		return true;
+
+	case WM_COMMAND:
+	{
+		switch(LOWORD(wParam))
+		{
+		case IDC_EDIT1:		case IDC_EDIT2:		case IDC_EDIT3:		case IDC_EDIT4:
+		case IDC_EDIT5:		case IDC_EDIT6:		case IDC_EDIT7:		case IDC_EDIT8:
+		case IDC_EDIT9:		case IDC_EDIT10:	case IDC_EDIT11:
+		{
+			// Note, specific to dc cont. UI only //
+			curr_sel = 10 - (IDC_EDIT11 - LOWORD(wParam));
+
+			switch(HIWORD(wParam))
+			{
+			case EN_SETFOCUS:
+				curr_sel = 10 - (IDC_EDIT11 - LOWORD(wParam));
+			case EN_KILLFOCUS:
+				curr_sel = 420;
+				return true;
+
+		/*	case EN_CHANGE:
+				return true;	*/
+
+			default: break;
+			}
+
+			return false;
+		}	
+
+		case IDOK:
+			EndDialog(hDlg,0);
+			return true;
+
+		case IDCANCEL:
+			EndDialog(hDlg,0);
+			return true;
+
+		default: break;
+		}
+		return false;
+	}
+
+	default: break;
+	}
+	return false;
+}
+void FASTCALL menu_cb(u32 id, void* handle, void* p)
+{
+	curr_port = ((maple_device_instance*)p)->port>>6;
+	DialogBox(hInst, MAKEINTRESOURCE(IDD_DICFG), (HWND)handle, dlgProc);
+}
+/////////////////////// TEMP //////////////////////
 
 
 
 s32  FASTCALL Create(maple_device_instance* inst,u32 id,u32 flags,u32 rootmenu)
 {
+	char menu_str[512];
+	sprintf(menu_str, "Maple Device Config, Port: %d", (inst->port>>6)+1);
+	u32 mID = ei.AddMenuItem(rootmenu, -1, menu_str, menu_cb, 0);
+
+	MenuItem mi;
+	mi.PUser=inst;
+	ei.SetMenuItem(mID, &mi, MIM_PUser);
+
+
+
 	inst->dma = DeviceDMA;
 	inst->data= 0;
 	return rv_ok;

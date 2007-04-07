@@ -8,26 +8,86 @@ using namespace std;
 
 #include "zNullMaple.h"
 #include "MapleBus.h"
+#include "DInput.h"
 
 
 
-LPDIRECTINPUT8			dInputObj;
-vector<GUID>			dInputDevList;
-char					KeyBuffer[256];
+LPDIRECTINPUT8		dInputObj;
+vector<GUID>		dInputDevList;
+
+InputDevice			InputDev[4];
 
 
-struct ControlElement
+
+s32 GetChInput(InputDevice &iDev)
 {
-	struct {
-		u8  Connected;
-		u8  DevType;
-		u16 OtherFlags;
-	};
+	if(false==iDev.Connected)
+		return -1;
 
-	LPDIRECTINPUTDEVICE8	diDev;
+	iDev.diDev->Poll();
 
-} InputDev[4];
+	switch(iDev.DevType)
+	{
+	case DI8DEVCLASS_KEYBOARD:
+		{
+			if(DI_OK != iDev.diDev->GetDeviceState(256, iDev.diKeys)) 
+				return -1;
 
+			for(int k=0; k<256; k++) {
+				if(iDev.diKeys[k] & 0x80)
+					return 0x30000000 | (k+1);	// *FIXME* yea just remember the +1
+			}
+
+			return 0;
+		}
+
+	case DI8DEVCLASS_GAMECTRL:
+		{
+			if(DI_OK != iDev.diDev->GetDeviceState(sizeof(DIJOYSTATE), &iDev.diJoyState)) 
+				return -1;
+
+
+			//if(diJoyState.lX)
+			//if(diJoyState.lY)
+			//if(diJoyState.lZ)
+			//if(diJoyState.lRx)
+			//if(diJoyState.lRy)
+			//if(diJoyState.lRz)
+
+			//if(diJoyState.rglSlider)
+			//if(diJoyState.rgdwPOV)
+
+			for(int b=0; b<32; b++)
+				if(iDev.diJoyState.rgbButtons[b])
+					return 0x40000000 | (b+1);	// *FIXME* yea just remember the +b
+
+
+	/*		typedef struct DIJOYSTATE {
+				LONG    lX;                     // x-axis position              
+				LONG    lY;                     // y-axis position              
+				LONG    lZ;                     // z-axis position              
+				LONG    lRx;                    // x-axis rotation              
+				LONG    lRy;                    // y-axis rotation              
+				LONG    lRz;                    // z-axis rotation              
+				LONG    rglSlider[2];           // extra axes positions         
+				DWORD   rgdwPOV[4];             // POV directions               
+				BYTE    rgbButtons[32];         // 32 buttons                   
+			} DIJOYSTATE, *LPDIJOYSTATE;
+*/
+		}
+
+
+	case DI8DEVCLASS_POINTER:
+		printf("Mouse Input Type, Unsupported!\n");
+		return -2;
+
+	default:
+		printf("Default Input Type, WTF?\n");
+		return -3;
+	}
+
+	return -6;
+}
 
 bool GetDInput(u32 port, Controller_ReadFormat *crf)
 {
@@ -38,8 +98,6 @@ bool GetDInput(u32 port, Controller_ReadFormat *crf)
 
 	if(false==InputDev[port].Connected)
 		return false;
-
-	printf("GetDInput(%d)\n", port);
 
 	InputDev[port].diDev->Poll();
 
@@ -72,16 +130,41 @@ bool GetDInput(u32 port, Controller_ReadFormat *crf)
 	}
 
 	case DI8DEVCLASS_GAMECTRL:
+	{
+		DIJOYSTATE diJoyState;
+		if(DI_OK != InputDev[port].diDev->GetDeviceState(sizeof(DIJOYSTATE), &diJoyState)) 
+			return false;
+
+		crf->C		= diJoyState.rgbButtons[0];
+		crf->B		= diJoyState.rgbButtons[1];
+		crf->A		= diJoyState.rgbButtons[2];
+		crf->Start	= diJoyState.rgbButtons[3];
+		crf->Ua		= diJoyState.rgbButtons[4];
+		crf->Da		= diJoyState.rgbButtons[5];
+		crf->La		= diJoyState.rgbButtons[6];
+		crf->Ra		= diJoyState.rgbButtons[7];
+
+		crf->Z		= diJoyState.rgbButtons[8];
+		crf->Y		= diJoyState.rgbButtons[9];
+		crf->X		= diJoyState.rgbButtons[10];
+		crf->D		= diJoyState.rgbButtons[11];
+		crf->Ub		= 0;
+		crf->Db		= 0;
+		crf->Lb		= 0;
+		crf->Rb		= 0;
+
+		return true;
+	}
+
+
 	case DI8DEVCLASS_POINTER:
-	//	return false;
+		printf("Mouse Input Type, Unsupported!\n");
+		return false;
 
 	default:
 		printf("Default Input Type, WTF?\n");
 		return false;
 	}
-
-
-	
 }
 
 BOOL EnumDevsCB(LPCDIDEVICEINSTANCE lpddi, LPVOID Ref)

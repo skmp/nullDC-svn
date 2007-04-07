@@ -1,0 +1,141 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_DICFG DIALOGEX 0, 0, 387, 226
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Configure Controls"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,330,205,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,276,205,50,14
+    CONTROL         102,IDC_SIMG,"Static",SS_BITMAP,7,7,263,212,WS_EX_TRANSPARENT
+    LTEXT           "A",IDC_STATIC,281,28,8,8
+    LTEXT           "B",IDC_STATIC,281,44,8,8
+    LTEXT           "X",IDC_STATIC,281,60,8,8
+    LTEXT           "Y",IDC_STATIC,281,76,8,8
+    LTEXT           "U",IDC_STATIC,281,92,8,8
+    LTEXT           "D",IDC_STATIC,281,108,8,8
+    LTEXT           "L",IDC_STATIC,281,124,8,8
+    LTEXT           "R",IDC_STATIC,281,140,8,8
+    LTEXT           "Ax1",IDC_STATIC,276,156,13,8
+    LTEXT           "Ax2",IDC_STATIC,276,172,13,8
+    EDITTEXT        IDC_EDIT1,291,25,89,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT2,291,41,89,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT3,291,57,89,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT4,291,73,89,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT5,291,89,89,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT6,291,105,89,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT7,291,121,89,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT8,291,137,89,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT9,291,153,89,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT10,291,169,89,12,ES_AUTOHSCROLL
+    LTEXT           "Start",IDC_STATIC,272,188,17,8
+    EDITTEXT        IDC_EDIT11,291,185,89,12,ES_AUTOHSCROLL
+    COMBOBOX        IDC_SELECT,275,7,105,77,CBS_DROPDOWN | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO 
+BEGIN
+    IDD_DICFG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 380
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 219
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDB_DC_CONT             BITMAP                  "bitmap1.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog Info
+//
+
+IDD_DICFG DLGINIT
+BEGIN
+    IDC_SELECT, 0x403, 16, 0
+0x6553, 0x656c, 0x7463, 0x4120, 0x4420, 0x7665, 0x6369, 0x0065, 
+    0
+END
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+
