@@ -37,6 +37,20 @@ void do_pvr_dma()
 		return;
 	}
 
+	if (SB_PDDIR)
+	{
+		//PVR -> System
+		for (u32 i=0;i<len;i+=4)
+		{
+			u32 temp=ReadMem32_nommu(dst+i);
+			WriteMem32_nommu(src+i,temp);
+		}
+	}
+	else
+	{
+		//System -> PVR
+		WriteMemBlock_nommu(dst,(u32*)GetMemPtr(src,len),len);
+	}
 
 	DMAC_SAR0 = (src + len);
 	DMAC_CHCR0 &= 0xFFFFFFFE;
