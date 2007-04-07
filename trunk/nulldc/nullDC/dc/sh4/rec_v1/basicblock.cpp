@@ -373,13 +373,13 @@ void BasicBlock::Compile()
 			u32* pmem=(u32*)GetMemPtr(start+i,4);
 			x86e->Emit(op_cmp32 ,pmem,*pmem);
 			
-			if (sz!=4)
+			if (sz==4)
 			{
-				x86e->Emit(op_jne ,exit_discard_block);
+				x86e->Emit(op_je ,execute_block);
 			}
 			else
 			{
-				x86e->Emit(op_je ,execute_block);
+				x86e->Emit(op_jne ,exit_discard_block);
 			}
 			i+=4;
 			sz-=4;
