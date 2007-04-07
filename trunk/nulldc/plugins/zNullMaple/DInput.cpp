@@ -3,8 +3,6 @@
 */
 #include <windows.h>
 #include <dinput.h>
-#include <vector>
-using namespace std;
 
 #include "zNullMaple.h"
 #include "MapleBus.h"
@@ -13,8 +11,7 @@ using namespace std;
 
 
 LPDIRECTINPUT8		dInputObj;
-vector<GUID>		dInputDevList;
-
+vector<DI_DevInfo>	dInputDevList;
 InputDevice			InputDev[4];
 
 
@@ -29,52 +26,38 @@ s32 GetChInput(InputDevice &iDev)
 	switch(iDev.DevType)
 	{
 	case DI8DEVCLASS_KEYBOARD:
-		{
-			if(DI_OK != iDev.diDev->GetDeviceState(256, iDev.diKeys)) 
-				return -1;
+	{
+		if(DI_OK != iDev.diDev->GetDeviceState(256, iDev.diKeys)) 
+			return -1;
 
-			for(int k=0; k<256; k++) {
-				if(iDev.diKeys[k] & 0x80)
-					return 0x30000000 | (k+1);	// *FIXME* yea just remember the +1
-			}
+		int test = DIK_ENTER;
 
-			return 0;
+		for(int k=0; k<256; k++) {
+			if(iDev.diKeys[k] & 0x80)
+				return (DINPUT_KB_FIRST + k);
 		}
+		return 0;
+	}
 
 	case DI8DEVCLASS_GAMECTRL:
-		{
-			if(DI_OK != iDev.diDev->GetDeviceState(sizeof(DIJOYSTATE), &iDev.diJoyState)) 
-				return -1;
+	{
+		if(DI_OK != iDev.diDev->GetDeviceState(sizeof(DIJOYSTATE), &iDev.diJoyState)) 
+			return -1;
 
+	/*	if(iDev.diJoyState.lX)
+		if(iDev.diJoyState.lY)
+		if(iDev.diJoyState.lZ)
+		if(iDev.diJoyState.lRx)
+		if(iDev.diJoyState.lRy)
+		if(iDev.diJoyState.lRz)
 
-			//if(diJoyState.lX)
-			//if(diJoyState.lY)
-			//if(diJoyState.lZ)
-			//if(diJoyState.lRx)
-			//if(diJoyState.lRy)
-			//if(diJoyState.lRz)
+		if(iDev.diJoyState.rglSlider)	[2]
+		if(iDev.diJoyState.rgdwPOV)		[4]	*/
 
-			//if(diJoyState.rglSlider)
-			//if(diJoyState.rgdwPOV)
-
-			for(int b=0; b<32; b++)
-				if(iDev.diJoyState.rgbButtons[b])
-					return 0x40000000 | (b+1);	// *FIXME* yea just remember the +b
-
-
-	/*		typedef struct DIJOYSTATE {
-				LONG    lX;                     // x-axis position              
-				LONG    lY;                     // y-axis position              
-				LONG    lZ;                     // z-axis position              
-				LONG    lRx;                    // x-axis rotation              
-				LONG    lRy;                    // y-axis rotation              
-				LONG    lRz;                    // z-axis rotation              
-				LONG    rglSlider[2];           // extra axes positions         
-				DWORD   rgdwPOV[4];             // POV directions               
-				BYTE    rgbButtons[32];         // 32 buttons                   
-			} DIJOYSTATE, *LPDIJOYSTATE;
-*/
-		}
+		for(int b=0; b<32; b++)
+			if(iDev.diJoyState.rgbButtons[b])
+				return DINPUT_GP_BUT1 + b;
+	}
 
 
 	case DI8DEVCLASS_POINTER:
@@ -167,14 +150,68 @@ bool GetDInput(u32 port, Controller_ReadFormat *crf)
 	}
 }
 
-BOOL EnumDevsCB(LPCDIDEVICEINSTANCE lpddi, LPVOID Ref)
+BOOL EnumObjsCB(LPCDIDEVICEOBJECTINSTANCE lpddoi, LPVOID pvRef)
 {
-	dInputDevList.push_back(lpddi->guidInstance);
-	printf("Found: %s\n", lpddi->tszProductName);
+	printf("\tFound: %s\n", lpddoi->tszName);
 	return DIENUM_CONTINUE;
 }
 
+BOOL EnumDevsCB(LPCDIDEVICEINSTANCE lpddi, LPVOID Ref)
+{
+	DI_DevInfo didi;
 
+	didi.guid = lpddi->guidInstance;
+	strcpy(didi.name, lpddi->tszInstanceName);
+	
+	dInputDevList.push_back(didi);
+/*	printf("Found: %s\n{\n", lpddi->tszProductName);
+
+	LPDIRECTINPUTDEVICE8 diDev;
+	if(FAILED(dInputObj->CreateDevice(lpddi->guidInstance, &diDev, NULL)))
+		printf("EnumDevsCB::CreateDevice Failed!\n");
+	else
+	{
+		diDev->EnumObjects((LPDIENUMDEVICEOBJECTSCALLBACK)EnumObjsCB,0,DIDFT_ALL);
+		diDev->Release();
+	}
+
+	printf("}\n");*/
+	return DIENUM_CONTINUE;
+}
+
+	// *FIXME* this shit is broke //
+bool GetDInputNameByGUID(char * dest, int len, GUID guid)
+{
+	LPDIRECTINPUTDEVICE8 diDev;
+	if(FAILED(dInputObj->CreateDevice(guid, &diDev, NULL))) {
+		printf("GetDInputNameByGUID::CreateDevice Failed!\n");
+		return false;
+	} else {
+		DIPROPSTRING dips;
+		dips.diph.dwSize		= sizeof(DIPROPSTRING);
+		dips.diph.dwHeaderSize	= sizeof(DIPROPHEADER); 
+		dips.diph.dwObj			= 0; // device property 
+		dips.diph.dwHow			= DIPH_DEVICE; 
+
+		diDev->Acquire();
+
+		HRESULT hr = diDev->GetProperty(DIPROP_PRODUCTNAME, &dips.diph);
+		if(FAILED(hr)) {
+			printf("GetDInputNameByGUID::GetProperty() Failed, hr=%X!\n",hr);
+			printf("Vals: %X %X %X %X %X\n", DIERR_INVALIDPARAM,
+				DIERR_NOTEXCLUSIVEACQUIRED, DIERR_NOTINITIALIZED, DIERR_OBJECTNOTFOUND, DIERR_UNSUPPORTED);
+
+		}
+
+
+		printf("GetNameByGUID: %ws \n", dips.wsz);
+		strcpy_s(dest, len, (char *)dips.wsz);
+
+		diDev->Unacquire();
+		diDev->Release();
+	}
+	return true;
+}
  
  
 

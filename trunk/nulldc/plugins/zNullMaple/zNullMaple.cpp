@@ -107,6 +107,11 @@ s32  FASTCALL Load(emu_info* emu, u32 rmenu)
 	if(!InitDInput(hInst))
 		printf("DInput is fucked !\n");
 
+	FILE * f=fopen("this.txt","wt");
+	for(int c=0; c<256; c++)
+		fprintf(f, "\"Key %c\",%s", ((char)c), (15==(c&15))?"\n":" ");
+	fclose(f);
+
 	ei = *(emu_info*)emu;
 	return rv_ok;
 }
@@ -138,19 +143,19 @@ DWORD WINAPI ThreadStart(LPVOID lpParameter)
 
 	while(5 != curr_port)
 	{
-		if(GetChInput(InputDev[curr_port]) > 0)
-		{
-			printf("Input Change on %d\n", curr_port);
+		s32 rv = GetChInput(InputDev[curr_port]);
 
-			if(420 != curr_sel)
-			{
-				SetDlgItemText((HWND)lpParameter, IDC_EDIT1+curr_sel, "EN_CHANGE");
-			}
+		if(rv > 0 && 420 != curr_sel)
+		{
+			printf("Input Change on %d:%d <= %X\n", curr_port, curr_sel, rv);
+
+			SetDlgItemText((HWND)lpParameter, IDC_EDIT1+curr_sel, MapNames[rv]);
 		}
 
 		Sleep(100);
 	}
 
+	printf("Input Thread Finished \n");
 	return 0;
 }
 
@@ -168,8 +173,17 @@ INT_PTR CALLBACK dlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			printf("CreateThread Failed in dlgProc for nullMaple\n");
 			return false;
 		}
-		for(int i=0; i<11; i++)
+
+		// Setup ComboBox Selection
+		for(size_t x=0; x<dInputDevList.size(); x++)
+			SendMessage(GetDlgItem(hDlg,IDC_SELECT), CB_ADDSTRING, 0, (LPARAM)dInputDevList[x].name);
+		SendMessage(GetDlgItem(hDlg,IDC_SELECT), CB_SETCURSEL, 0, 0);
+
+		// Setup Initial Mappings
+		for(int i=0; i<11; i++) {
+			// GetCfg for controller and set
 			SetDlgItemText(hDlg, IDC_EDIT1+i, "[unmapped]");
+		}
 		return true;
 
 	case WM_COMMAND:

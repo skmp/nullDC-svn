@@ -102,7 +102,7 @@
 			OutputDirectory="\"
 			IntermediateDirectory="$(SolutionDir)\obj\$(ProjectName)\$(PlatformName)\$(ConfigurationName)\"
 			ConfigurationType="2"
-			CharacterSet="2"
+			CharacterSet="0"
 			WholeProgramOptimization="1"
 			>
 			<Tool
