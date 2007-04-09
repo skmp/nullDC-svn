@@ -283,6 +283,11 @@ s32 cfgRead(const char * Section, const char * Key,char* value)
 	return 0;
 }
 //Implementations of the interface :)
+//Section must be set
+//If key is 0 , it looks for the function
+//0 : not found
+//1 : found section , key was 0
+//2 : found section & key
 s32 FASTCALL cfgExists(const char * Section, const char * Key)
 {
 	return cfgRead(Section,Key,0);

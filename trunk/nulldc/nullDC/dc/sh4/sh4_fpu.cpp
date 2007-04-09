@@ -453,7 +453,7 @@ sh4op(i1111_nnnn_0101_1101)
 	if (fpscr.PR ==0)
 		fr_hex[n]&=0x7FFFFFFF;
 	else
-		fr_hex[(n&0xE)+1]&=0x7FFFFFFF;
+		fr_hex[(n&0xE)]&=0x7FFFFFFF;
 
 }
 

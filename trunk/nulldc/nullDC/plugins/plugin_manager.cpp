@@ -685,6 +685,7 @@ s32 plugins_Load_()
 	eminf.ConfigSaveStr=cfgSaveStr;
 	eminf.ConfigLoadInt=cfgLoadInt;
 	eminf.ConfigSaveInt=cfgSaveInt;
+	eminf.ConfigExists=cfgExists;
 
 	eminf.AddMenuItem=AddMenuItem;
 	eminf.SetMenuItemStyle=SetMenuItemStyle;
