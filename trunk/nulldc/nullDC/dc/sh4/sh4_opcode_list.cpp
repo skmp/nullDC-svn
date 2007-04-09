@@ -416,7 +416,7 @@ void d1111_nnnn_1011_1101(char* text,const char* tx1,u32 pc,u16 opcode)
 	}
 	else
 	{
-		OpDissCFS(text,"fcnvds <DR_N>,FPUL",pc,opcode);
+		OpDissCFS(text,"fcnvds <DFREG_N>,FPUL",pc,opcode);
 	}     
 }
 
