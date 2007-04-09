@@ -1756,7 +1756,7 @@ void __fastcall shil_compile_fneg(shil_opcode* op)
 		assert(sz==FLAG_64);
 		assert(IsReg64((Sh4RegType)op->reg1));
 		u32 reg=GetSingleFromDouble(op->reg1);
-		x86e->Emit(op_xor32,GetRegPtr(reg+1),0x80000000);
+		x86e->Emit(op_xor32,GetRegPtr(reg+0),0x80000000);
 	}
 }
 
