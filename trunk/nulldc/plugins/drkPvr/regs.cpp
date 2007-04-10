@@ -1,6 +1,7 @@
 #include "regs.h"
 #include "renderer_if.h"
 #include "ta.h"
+#include "spg.h"
 
 
 //seems to work allright .. ;P
@@ -73,7 +74,7 @@ void FASTCALL WritePvrRegister(u32 paddr,u32 data,u32 size)
 	}
 
 	if (addr>=SPG_HBLANK_INT_addr && addr<=SPG_WIDTH_addr)
-		PrintfInfo();
+		CalculateSync();
 
 	if (addr>=PALETTE_RAM_START_addr)
 	{

@@ -17,7 +17,7 @@ u32 last_fps=0;
 #define PIXEL_CLOCK (54*1000*1000)
 u32 Line_Cycles=0;
 u32 Frame_Cycles=0;
-void PrintfInfo()
+void CalculateSync()
 {
 	//clc_pvr_scanline=0;
 
@@ -177,4 +177,5 @@ void spg_Term()
 
 void spg_Reset(bool Manual)
 {
+	CalculateSync();
 }
