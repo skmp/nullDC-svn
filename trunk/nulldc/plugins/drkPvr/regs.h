@@ -4,7 +4,7 @@
 #define RegSize (0x8000)
 #define RegMask (RegSize-1)
 
-#define PvrReg(x) (*(u32*)&regs[(x) & RegMask])
+#define PvrReg(x,t) (*(t*)&regs[(x) & RegMask])
 
 extern u8 regs[RegSize];
 
@@ -82,6 +82,130 @@ void Regs_Reset(bool Manual);
 
 #define PT_ALPHA_REF_addr		0x0000011C	//	RW	Alpha value for Punch Through polygon comparison	
 
+union FB_R_CTRL_type
+{
+	struct
+	{
+		u32 fb_enable:1;			//0
+		u32 fb_line_double:1;		//1
+		u32 fb_depth:2;			//3-2
+		u32 fb_concat:3;			//6-4
+		u32 R:1;					//7
+		u32 fb_chroma_threshold:8;	//15-8
+		u32 fb_stripsize:6;		//21-16
+		u32 fb_strip_buf_en:1;		//22
+		u32 vclk_div:1;	//		23
+		u32 Reserved:8;	//		bit 31-24
+	};
+	u32 full;
+};
+
+
+union SPG_STATUS_type
+{
+	struct
+	{
+		u32 scanline : 10;//9-0
+		u32 fieldnum : 1 ;	//10
+		u32 blank: 1;//11
+		u32 hsync : 1 ;	//12
+		u32 vsync : 1 ;	//13
+		u32 res : 18 ;	//31-14
+	};
+	u32 full;
+};
+
+union SPG_HBLANK_INT_type
+{
+	struct
+	{
+		u32 line_comp_val : 10;//9-0
+		u32 res1 : 2 ;	//10-11
+		u32 hblank_int_mode: 2;//12-13
+		u32 res2 : 2 ;	//14-15
+		u32 hblank_in_interrupt : 10 ;	//25-16
+		u32 res3 : 6 ;	//31-26
+	};
+	u32 full;
+};
+
+union SPG_VBLANK_INT_type
+{
+	struct
+	{
+		u32 vblank_in_interrupt_line_number : 10;//9-0
+		u32 res : 6 ;	//15-10	
+		u32 vblank_out_interrupt_line_number : 10;//25-16
+		u32 res1 : 6 ;	//31-26
+	};
+	u32 full;
+};
+union SPG_CONTROL_type
+{
+	struct
+	{
+		u32 mhsync_pol:1;			//0
+		u32 mvsync_pol:1;			//1
+		u32 mcsync_pol:1;			//2
+		u32 spg_lock:1;			//3
+		u32 interlace:1;			//4
+		u32 force_field2:1;		//5
+		u32 NTSC:1;				//6
+		u32 PAL	:1;				//7
+		u32 sync_direction:1;		//8
+		u32 csync_on_h:1;			//9
+		u32 Reserved:22;			//31-10
+	};
+	u32 full;
+};
+union SPG_HBLANK_type
+{
+	struct
+	{
+		u32 hstart : 10;//9-0
+		u32 res : 6 ;	//15-10	
+		u32 hbend : 10;//25-16
+		u32 res1 : 6 ;	//31-26
+	};
+	u32 full;
+};
+
+union SPG_LOAD_type
+{
+	struct
+	{
+		u32 hcount : 10;//9-0
+		u32 res : 6 ;	//15-10	
+		u32 vcount : 10;//25-16
+		u32 res1 : 6 ;	//31-26
+	};
+	u32 full;
+};
+
+union SPG_VBLANK_type
+{
+	struct
+	{
+		u32 vstart : 10;//9-0
+		u32 res : 6 ;	//15-10	
+		u32 vbend : 10;//25-16
+		u32 res1 : 6 ;	//31-26
+	};
+	u32 full;
+};
+
+union SPG_WIDTH_type
+{
+	struct
+	{
+		u32 hswidth : 7;//6-0
+		u32 res : 1 ;	//7-7
+		u32 vswidth : 4;//8-11
+		u32 bpwidth : 10 ;	//21-12
+		u32 eqwidth : 10 ;	//31-22
+	};
+	u32 full;
+};
 
 
 //	TA REGS
@@ -116,92 +240,92 @@ void Regs_Reset(bool Manual);
 
 // Regs -- Start
 
-#define ID					PvrReg(ID_addr)	//	R	Device ID	
-#define REVISION			PvrReg(REVISION_addr)	//	R	Revision number	
-#define SOFTRESET			PvrReg(SOFTRESET_addr)	//	RW	CORE & TA software reset	
+#define ID					PvrReg(ID_addr,u32)	//	R	Device ID	
+#define REVISION			PvrReg(REVISION_addr,u32)	//	R	Revision number	
+#define SOFTRESET			PvrReg(SOFTRESET_addr,u32)	//	RW	CORE & TA software reset	
 	
-#define STARTRENDER			PvrReg(STARTRENDER_addr)	//	RW	Drawing start	
-#define TEST_SELECT			PvrReg(TEST_SELECT_addr)	//	RW	Test (writing this register is prohibited)	
+#define STARTRENDER			PvrReg(STARTRENDER_addr,u32)	//	RW	Drawing start	
+#define TEST_SELECT			PvrReg(TEST_SELECT_addr,u32)	//	RW	Test (writing this register is prohibited)	
 
-#define PARAM_BASE			PvrReg(PARAM_BASE_addr)	//	RW	Base address for ISP parameters	
+#define PARAM_BASE			PvrReg(PARAM_BASE_addr,u32)	//	RW	Base address for ISP parameters	
 
-#define REGION_BASE			PvrReg(REGION_BASE_addr)	//	RW	Base address for Region Array	
-#define SPAN_SORT_CFG		PvrReg(SPAN_SORT_CFG_addr)	//	RW	Span Sorter control	
+#define REGION_BASE			PvrReg(REGION_BASE_addr,u32)	//	RW	Base address for Region Array	
+#define SPAN_SORT_CFG		PvrReg(SPAN_SORT_CFG_addr,u32)	//	RW	Span Sorter control	
 
-#define VO_BORDER_COL		PvrReg(VO_BORDER_COL_addr)	//	RW	Border area color	
-#define FB_R_CTRL			PvrReg(FB_R_CTRL_addr)	//	RW	Frame buffer read control	
-#define FB_W_CTRL			PvrReg(FB_W_CTRL_addr)	//	RW	Frame buffer write control	
-#define FB_W_LINESTRIDE		PvrReg(FB_W_LINESTRIDE_addr)	//	RW	Frame buffer line stride	
-#define FB_R_SOF1			PvrReg(FB_R_SOF1_addr)	//	RW	Read start address for field - 1/strip - 1	
-#define FB_R_SOF2			PvrReg(FB_R_SOF2_addr)	//	RW	Read start address for field - 2/strip - 2	
+#define VO_BORDER_COL		PvrReg(VO_BORDER_COL_addr,u32)	//	RW	Border area color	
+#define FB_R_CTRL			PvrReg(FB_R_CTRL_addr,FB_R_CTRL_type)	//	RW	Frame buffer read control	
+#define FB_W_CTRL			PvrReg(FB_W_CTRL_addr,u32)	//	RW	Frame buffer write control	
+#define FB_W_LINESTRIDE		PvrReg(FB_W_LINESTRIDE_addr,u32)	//	RW	Frame buffer line stride	
+#define FB_R_SOF1			PvrReg(FB_R_SOF1_addr,u32)	//	RW	Read start address for field - 1/strip - 1	
+#define FB_R_SOF2			PvrReg(FB_R_SOF2_addr,u32)	//	RW	Read start address for field - 2/strip - 2	
 
-#define FB_R_SIZE			PvrReg(FB_R_SIZE_addr)	//	RW	Frame buffer XY size	
-#define FB_W_SOF1			PvrReg(FB_W_SOF1_addr)	//	RW	Write start address for field - 1/strip - 1	
-#define FB_W_SOF2			PvrReg(FB_W_SOF2_addr)	//	RW	Write start address for field - 2/strip - 2	
-#define FB_X_CLIP			PvrReg(FB_X_CLIP_addr)	//	RW	Pixel clip X coordinate	
-#define FB_Y_CLIP			PvrReg(FB_Y_CLIP_addr)	//	RW	Pixel clip Y coordinate	
+#define FB_R_SIZE			PvrReg(FB_R_SIZE_addr,u32)	//	RW	Frame buffer XY size	
+#define FB_W_SOF1			PvrReg(FB_W_SOF1_addr,u32)	//	RW	Write start address for field - 1/strip - 1	
+#define FB_W_SOF2			PvrReg(FB_W_SOF2_addr,u32)	//	RW	Write start address for field - 2/strip - 2	
+#define FB_X_CLIP			PvrReg(FB_X_CLIP_addr,u32)	//	RW	Pixel clip X coordinate	
+#define FB_Y_CLIP			PvrReg(FB_Y_CLIP_addr,u32)	//	RW	Pixel clip Y coordinate	
 
 
-#define FPU_SHAD_SCALE		PvrReg(FPU_SHAD_SCALE_addr)	//	RW	Intensity Volume mode	
-#define FPU_CULL_VAL		PvrReg(FPU_CULL_VAL_addr)	//	RW	Comparison value for culling	
-#define FPU_PARAM_CFG		PvrReg(FPU_PARAM_CFG_addr)	//	RW	Parameter read control	
-#define HALF_OFFSET			PvrReg(HALF_OFFSET_addr)	//	RW	Pixel sampling control
-#define FPU_PERP_VAL		PvrReg(FPU_PERP_VAL_addr)	//	RW	Comparison value for perpendicular polygons	
-#define ISP_BACKGND_D		PvrReg(ISP_BACKGND_D_addr)	//	RW	Background surface depth	
-#define ISP_BACKGND_T		PvrReg(ISP_BACKGND_T_addr)	//	RW	Background surface tag	
+#define FPU_SHAD_SCALE		PvrReg(FPU_SHAD_SCALE_addr,u32)	//	RW	Intensity Volume mode	
+#define FPU_CULL_VAL		PvrReg(FPU_CULL_VAL_addr,u32)	//	RW	Comparison value for culling	
+#define FPU_PARAM_CFG		PvrReg(FPU_PARAM_CFG_addr,u32)	//	RW	Parameter read control	
+#define HALF_OFFSET			PvrReg(HALF_OFFSET_addr,u32)	//	RW	Pixel sampling control
+#define FPU_PERP_VAL		PvrReg(FPU_PERP_VAL_addr,u32)	//	RW	Comparison value for perpendicular polygons	
+#define ISP_BACKGND_D		PvrReg(ISP_BACKGND_D_addr,u32)	//	RW	Background surface depth	
+#define ISP_BACKGND_T		PvrReg(ISP_BACKGND_T_addr,u32)	//	RW	Background surface tag	
 
-#define ISP_FEED_CFG		PvrReg(ISP_FEED_CFG_addr)	//	RW	Translucent polygon sort mode	
+#define ISP_FEED_CFG		PvrReg(ISP_FEED_CFG_addr,u32)	//	RW	Translucent polygon sort mode	
 
-#define SDRAM_REFRESH		PvrReg(SDRAM_REFRESH_addr)	//	RW	Texture memory refresh counter	
-#define SDRAM_ARB_CFG		PvrReg(SDRAM_ARB_CFG_addr)	//	RW	Texture memory arbiter control	
-#define SDRAM_CFG			PvrReg(SDRAM_CFG_addr)	//	RW	Texture memory control	
+#define SDRAM_REFRESH		PvrReg(SDRAM_REFRESH_addr,u32)	//	RW	Texture memory refresh counter	
+#define SDRAM_ARB_CFG		PvrReg(SDRAM_ARB_CFG_addr,u32)	//	RW	Texture memory arbiter control	
+#define SDRAM_CFG			PvrReg(SDRAM_CFG_addr,u32)	//	RW	Texture memory control	
 
-#define FOG_COL_RAM			PvrReg(FOG_COL_RAM_addr)	//	RW	Color for Look Up table Fog	
-#define FOG_COL_VERT		PvrReg(FOG_COL_VERT_addr)	//	RW	Color for vertex Fog
-#define FOG_DENSITY			PvrReg(FOG_DENSITY_addr)	//	RW	Fog scale value	
-#define FOG_CLAMP_MAX		PvrReg(FOG_CLAMP_MAX_addr)	//	RW	Color clamping maximum value	
-#define FOG_CLAMP_MIN		PvrReg(FOG_CLAMP_MIN_addr)	//	RW	Color clamping minimum value	
-#define SPG_TRIGGER_POS		PvrReg(SPG_TRIGGER_POS_addr)	//	RW	External trigger signal HV counter value	
-#define SPG_HBLANK_INT		PvrReg(SPG_HBLANK_INT_addr)	//	RW	H-blank interrupt control	
-#define SPG_VBLANK_INT		PvrReg(SPG_VBLANK_INT_addr)	//	RW	V-blank interrupt control	
-#define SPG_CONTROL			PvrReg(SPG_CONTROL_addr)	//	RW	Sync pulse generator control	
-#define SPG_HBLANK			PvrReg(SPG_HBLANK_addr)	//	RW	H-blank control	
-#define SPG_LOAD			PvrReg(SPG_LOAD_addr)	//	RW	HV counter load value	
-#define SPG_VBLANK			PvrReg(SPG_VBLANK_addr)	//	RW	V-blank control	
-#define SPG_WIDTH			PvrReg(SPG_WIDTH_addr)	//	RW	Sync width control	
-#define TEXT_CONTROL		PvrReg(TEXT_CONTROL_addr)	//	RW	Texturing control	
-#define VO_CONTROL			PvrReg(VO_CONTROL_addr)	//	RW	Video output control	
-#define VO_STARTX			PvrReg(VO_STARTX_addr)	//	RW	Video output start X position	
-#define VO_STARTY			PvrReg(VO_STARTY_addr)	//	RW	Video output start Y position	
-#define SCALER_CTL			PvrReg(SCALER_CTL_addr)	//	RW	X & Y scaler control	
-#define PAL_RAM_CTRL		PvrReg(PAL_RAM_CTRL_addr)	//	RW	Palette RAM control	
-#define SPG_STATUS			PvrReg(SPG_STATUS_addr)	//	R	Sync pulse generator status	
-#define FB_BURSTCTRL		PvrReg(FB_BURSTCTRL_addr)	//	RW	Frame buffer burst control	
-#define FB_C_SOF			PvrReg(FB_C_SOF_addr)	//	R	Current frame buffer start address	
-#define Y_COEFF				PvrReg(Y_COEFF_addr)	//	RW	Y scaling coefficient	
+#define FOG_COL_RAM			PvrReg(FOG_COL_RAM_addr,u32)	//	RW	Color for Look Up table Fog	
+#define FOG_COL_VERT		PvrReg(FOG_COL_VERT_addr,u32)	//	RW	Color for vertex Fog
+#define FOG_DENSITY			PvrReg(FOG_DENSITY_addr,u32)	//	RW	Fog scale value	
+#define FOG_CLAMP_MAX		PvrReg(FOG_CLAMP_MAX_addr,u32)	//	RW	Color clamping maximum value	
+#define FOG_CLAMP_MIN		PvrReg(FOG_CLAMP_MIN_addr,u32)	//	RW	Color clamping minimum value	
+#define SPG_TRIGGER_POS		PvrReg(SPG_TRIGGER_POS_addr,u32)	//	RW	External trigger signal HV counter value	
+#define SPG_HBLANK_INT		PvrReg(SPG_HBLANK_INT_addr,SPG_HBLANK_INT_type)	//	RW	H-blank interrupt control	
+#define SPG_VBLANK_INT		PvrReg(SPG_VBLANK_INT_addr,SPG_VBLANK_INT_type)	//	RW	V-blank interrupt control	
+#define SPG_CONTROL			PvrReg(SPG_CONTROL_addr,SPG_CONTROL_type)	//	RW	Sync pulse generator control	
+#define SPG_HBLANK			PvrReg(SPG_HBLANK_addr,SPG_HBLANK_type)	//	RW	H-blank control	
+#define SPG_LOAD			PvrReg(SPG_LOAD_addr,SPG_LOAD_type)	//	RW	HV counter load value	
+#define SPG_VBLANK			PvrReg(SPG_VBLANK_addr,SPG_VBLANK_type)	//	RW	V-blank control	
+#define SPG_WIDTH			PvrReg(SPG_WIDTH_addr,SPG_WIDTH_type)	//	RW	Sync width control	
+#define TEXT_CONTROL		PvrReg(TEXT_CONTROL_addr,u32)	//	RW	Texturing control	
+#define VO_CONTROL			PvrReg(VO_CONTROL_addr,u32)	//	RW	Video output control	
+#define VO_STARTX			PvrReg(VO_STARTX_addr,u32)	//	RW	Video output start X position	
+#define VO_STARTY			PvrReg(VO_STARTY_addr,u32)	//	RW	Video output start Y position	
+#define SCALER_CTL			PvrReg(SCALER_CTL_addr,u32)	//	RW	X & Y scaler control	
+#define PAL_RAM_CTRL		PvrReg(PAL_RAM_CTRL_addr,u32)	//	RW	Palette RAM control	
+#define SPG_STATUS			PvrReg(SPG_STATUS_addr,SPG_STATUS_type)	//	R	Sync pulse generator status	
+#define FB_BURSTCTRL		PvrReg(FB_BURSTCTRL_addr,u32)	//	RW	Frame buffer burst control	
+#define FB_C_SOF			PvrReg(FB_C_SOF_addr,u32)	//	R	Current frame buffer start address	
+#define Y_COEFF				PvrReg(Y_COEFF_addr,u32)	//	RW	Y scaling coefficient	
 
-#define PT_ALPHA_REF		PvrReg(PT_ALPHA_REF_addr)	//	RW	Alpha value for Punch Through polygon comparison	
+#define PT_ALPHA_REF		PvrReg(PT_ALPHA_REF_addr,u32)	//	RW	Alpha value for Punch Through polygon comparison	
 
 
 
 //	TA REGS
-#define TA_OL_BASE			PvrReg(TA_OL_BASE_addr)	//	RW	Object list write start address	
-#define TA_ISP_BASE			PvrReg(TA_ISP_BASE_addr)	//	RW	ISP/TSP Parameter write start address	
-#define TA_OL_LIMIT			PvrReg(TA_OL_LIMIT_addr)	//	RW	Start address of next Object Pointer Block	
-#define TA_ISP_LIMIT		PvrReg(TA_ISP_LIMIT_addr)	//	RW	Current ISP/TSP Parameter write address	
-#define TA_NEXT_OPB			PvrReg(TA_NEXT_OPB_addr)	//	R	Global Tile clip control	
-#define TA_ITP_CURRENT		PvrReg(TA_ITP_CURRENT_addr)	//	R	Current ISP/TSP Parameter write address	
-#define TA_GLOB_TILE_CLIP	PvrReg(TA_GLOB_TILE_CLIP_addr)	//	RW	Global Tile clip control
-#define TA_ALLOC_CTRL		PvrReg(TA_ALLOC_CTRL_addr)	//	RW	Object list control	
-#define TA_LIST_INIT		PvrReg(TA_LIST_INIT_addr)	//	RW	TA initialization	
-#define TA_YUV_TEX_BASE		PvrReg(TA_YUV_TEX_BASE_addr)	//	RW	YUV422 texture write start address	
-#define TA_YUV_TEX_CTRL		PvrReg(TA_YUV_TEX_CTRL_addr)	//	RW	YUV converter control	
-#define TA_YUV_TEX_CNT		PvrReg(TA_YUV_TEX_CNT_addr)	//	R	YUV converter macro block counter value	
+#define TA_OL_BASE			PvrReg(TA_OL_BASE_addr,u32)	//	RW	Object list write start address	
+#define TA_ISP_BASE			PvrReg(TA_ISP_BASE_addr,u32)	//	RW	ISP/TSP Parameter write start address	
+#define TA_OL_LIMIT			PvrReg(TA_OL_LIMIT_addr,u32)	//	RW	Start address of next Object Pointer Block	
+#define TA_ISP_LIMIT		PvrReg(TA_ISP_LIMIT_addr,u32)	//	RW	Current ISP/TSP Parameter write address	
+#define TA_NEXT_OPB			PvrReg(TA_NEXT_OPB_addr,u32)	//	R	Global Tile clip control	
+#define TA_ITP_CURRENT		PvrReg(TA_ITP_CURRENT_addr,u32)	//	R	Current ISP/TSP Parameter write address	
+#define TA_GLOB_TILE_CLIP	PvrReg(TA_GLOB_TILE_CLIP_addr,u32)	//	RW	Global Tile clip control
+#define TA_ALLOC_CTRL		PvrReg(TA_ALLOC_CTRL_addr,u32)	//	RW	Object list control	
+#define TA_LIST_INIT		PvrReg(TA_LIST_INIT_addr,u32)	//	RW	TA initialization	
+#define TA_YUV_TEX_BASE		PvrReg(TA_YUV_TEX_BASE_addr,u32)	//	RW	YUV422 texture write start address	
+#define TA_YUV_TEX_CTRL		PvrReg(TA_YUV_TEX_CTRL_addr,u32)	//	RW	YUV converter control	
+#define TA_YUV_TEX_CNT		PvrReg(TA_YUV_TEX_CNT_addr,u32)	//	R	YUV converter macro block counter value	
 
-#define TA_LIST_CONT		PvrReg(TA_LIST_CONT_addr)	//	RW	TA continuation processing	
-#define TA_NEXT_OPB_INIT	PvrReg(TA_NEXT_OPB_INIT_addr)	//	RW	Additional OPB starting address	
+#define TA_LIST_CONT		PvrReg(TA_LIST_CONT_addr,u32)	//	RW	TA continuation processing	
+#define TA_NEXT_OPB_INIT	PvrReg(TA_NEXT_OPB_INIT_addr,u32)	//	RW	Additional OPB starting address	
 
 
-#define FOG_TABLE			(&PvrReg(FOG_TABLE_START_addr))	//	RW	Look-up table Fog data	
-#define TA_OL_POINTERS		(&PvrReg(TA_OL_POINTERS_START_addr))	//	R	TA object List Pointer data	
-#define PALETTE_RAM			(&PvrReg(PALETTE_RAM_START_addr))	//	RW	Palette RAM	
+#define FOG_TABLE			(&PvrReg(FOG_TABLE_START_addr,u32))	//	RW	Look-up table Fog data	
+#define TA_OL_POINTERS		(&PvrReg(TA_OL_POINTERS_START_addr),u32)	//	R	TA object List Pointer data	
+#define PALETTE_RAM			(&PvrReg(PALETTE_RAM_START_addr,u32))	//	RW	Palette RAM	

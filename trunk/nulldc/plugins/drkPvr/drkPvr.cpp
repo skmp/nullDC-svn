@@ -427,3 +427,16 @@ void SaveSettings()
 	cfgSetInt("Enhancements.MultiSampleCount",settings.Enhancements.MultiSampleCount);
 	cfgSetInt("Enhancements.MultiSampleQuality",settings.Enhancements.MultiSampleQuality);
 }
+
+int msgboxf(char* text,unsigned int type,...)
+{
+	va_list args;
+
+	char temp[2048];
+	va_start(args, type);
+	vsprintf(temp, text, args);
+	va_end(args);
+
+
+	return MessageBox(NULL,temp,emu_name,type | MB_TASKMODAL);
+}

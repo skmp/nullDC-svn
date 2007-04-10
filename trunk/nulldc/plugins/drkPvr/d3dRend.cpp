@@ -18,6 +18,9 @@
 
 using namespace TASplitter;
 
+bool UseSVP=false;
+bool UseFixedFunction=false;
+/*
 #define DEV_CREATE_FLAGS D3DCREATE_HARDWARE_VERTEXPROCESSING
 //#define DEV_CREATE_FLAGS D3DCREATE_SOFTWARE_VERTEXPROCESSING
 
@@ -26,6 +29,7 @@ using namespace TASplitter;
 #else
 	#define VB_CREATE_FLAGS D3DUSAGE_SOFTWAREPROCESSING
 #endif
+*/
 #define VRAM_MASK 0x7FFFFF
 //Convert offset32 to offset64
 u32 vramlock_ConvOffset32toOffset64(u32 offset32)
@@ -720,6 +724,20 @@ namespace Direct3DRenderer
 			IDirect3DTexture9* tex=GetTexture(gp->tsp,gp->tcw);
 			dev->SetTexture(0,tex);
 
+			if (gp->tsp.FilterMode == 0)
+			{
+				dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+				dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+				dev->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
+
+			}
+			else
+			{
+				dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+				dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+				dev->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
+
+			}
 			//if (gp->tsp.ClampV!=cache_tsp.ClampV || gp->tsp.FlipV!=cache_tsp.FlipV)
 				SetTexMode<D3DSAMP_ADDRESSV>(gp->tsp.ClampV,gp->tsp.FlipV);
 
@@ -1030,19 +1048,6 @@ namespace Direct3DRenderer
 
 			//if (gp->tsp.ClampU!=cache_tsp.ClampU || gp->tsp.FlipU!=cache_tsp.FlipU)
 				SetTexMode<D3DSAMP_ADDRESSU>(gp->tsp.ClampU,gp->tsp.FlipU);
-			
-			/*
-			if (gp->tsp.FilterMode)
-			{
-				dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-				dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-			}
-			else
-			{
-				dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
-				dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
-			}
-			*/
 
 			ps_macros[1].Definition=ps_macro_numers[gp->pcw.Offset];
 			mode|=gp->pcw.Offset;
@@ -1073,11 +1078,19 @@ namespace Direct3DRenderer
 
 
 	//
-	template <u32 Type>
+	template <u32 Type,bool FFunction>
 	__forceinline
 	void SetGPState(PolyParam* gp)
 	{
-		SetGPState_ps(gp);
+		if (FFunction)
+		{
+			SetGPState_fp(gp);
+		}
+		else
+		{
+			SetGPState_ps(gp);
+		}
+		
 		//up to here , has to be replaced by a shader
 		if (Type==ListType_Translucent)
 		{
@@ -1121,25 +1134,25 @@ namespace Direct3DRenderer
 		//cache_pcw=gp->pcw;
 		//cache_tcw=gp->tcw;
 	}
-	template <u32 Type>
+	template <u32 Type,bool FFunction>
 	__forceinline
 	void RendStrips(PolyParam* gp)
 	{
 		//0 vert polys ? why does games even bother sending em  ? =P
 		if (gp->count>2)
 		{		
-			SetGPState<Type>(gp);
+			SetGPState<Type,FFunction>(gp);
 			dev->DrawPrimitive(D3DPT_TRIANGLESTRIP,gp->first ,
 				gp->count-2);
 		}
 	}
 
-	template <u32 Type>
+	template <u32 Type,bool FFunction>
 	void RendPolyParamList(List<PolyParam>& gpl)
 	{
 		for (u32 i=0;i<gpl.used;i++)
 		{		
-			RendStrips<Type>(&gpl.data[i]);
+			RendStrips<Type,FFunction>(&gpl.data[i]);
 		}
 	}
 	//
@@ -1221,8 +1234,17 @@ namespace Direct3DRenderer
 			//Opaque
 			dev->SetRenderState(D3DRS_ALPHABLENDENABLE,FALSE);
 			dev->SetRenderState(D3DRS_ALPHATESTENABLE,FALSE);
-if (!GetAsyncKeyState(VK_F1))
-			RendPolyParamList<ListType_Opaque>(pvrrc.global_param_op);
+			if (!GetAsyncKeyState(VK_F1))
+			{
+				if (UseFixedFunction)
+				{
+					RendPolyParamList<ListType_Opaque,true>(pvrrc.global_param_op);
+				}
+				else
+				{
+					RendPolyParamList<ListType_Opaque,false>(pvrrc.global_param_op);
+				}
+			}
 
 			//Punch Through
 			dev->SetRenderState(D3DRS_ALPHATESTENABLE,TRUE);
@@ -1231,19 +1253,34 @@ if (!GetAsyncKeyState(VK_F1))
 
 			dev->SetRenderState(D3DRS_ALPHAREF,PT_ALPHA_REF &0xFF);
 			if (!GetAsyncKeyState(VK_F2))
-			RendPolyParamList<ListType_Punch_Through>(pvrrc.global_param_pt);
+			{
+				if (UseFixedFunction)
+				{
+					RendPolyParamList<ListType_Punch_Through,true>(pvrrc.global_param_pt);
+				}
+				else
+				{
+					RendPolyParamList<ListType_Punch_Through,false>(pvrrc.global_param_pt);
+				}
+			}
 
 			//translucent
 			
 			dev->SetRenderState(D3DRS_ALPHABLENDENABLE,TRUE);
 			dev->SetRenderState(D3DRS_ALPHAFUNC,D3DCMP_GREATER);
 			dev->SetRenderState(D3DRS_ALPHAREF,0);
-if (!GetAsyncKeyState(VK_F3))
-{
-			//if (!UsingAutoSort())
-			RendPolyParamList<ListType_Translucent>(pvrrc.global_param_tr);
-
-}
+			if (!GetAsyncKeyState(VK_F3))
+			{
+				if (UseFixedFunction)
+				{
+					//if (!UsingAutoSort())
+					RendPolyParamList<ListType_Translucent,true>(pvrrc.global_param_tr);
+				}
+				else
+				{
+					RendPolyParamList<ListType_Translucent,false>(pvrrc.global_param_tr);
+				}
+			}
 			if (settings.ShowFPS)
 			{
 				DrawFPS();
@@ -1313,7 +1350,14 @@ if (!GetAsyncKeyState(VK_F3))
 
 		printf(" AA:%dx%x\n",ppar.MultiSampleType,ppar.MultiSampleQuality);
 
-		verifyc(d3d9->CreateDevice(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,(HWND)emu.WindowHandle,DEV_CREATE_FLAGS,&ppar,&dev));
+		if (FAILED(d3d9->CreateDevice(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,(HWND)emu.WindowHandle,D3DCREATE_HARDWARE_VERTEXPROCESSING,&ppar,&dev)))
+		{
+			UseSVP=true;
+			verifyc(d3d9->CreateDevice(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,(HWND)emu.WindowHandle,D3DCREATE_SOFTWARE_VERTEXPROCESSING,&ppar,&dev));
+		}
+		D3DCAPS9 caps;
+		dev->GetDeviceCaps(&caps);
+			//caps.PixelShaderVersion
 
 		sprintf(temp[0],"%d",ppar.BackBufferWidth);
 		sprintf(temp[1],"%d",ppar.BackBufferHeight);
@@ -1324,7 +1368,7 @@ if (!GetAsyncKeyState(VK_F3))
 		if (ppar.MultiSampleType!=D3DMULTISAMPLE_NONE)
 			dev->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, true);
 		//yay , 20 mb -_- =P
-		verifyc(dev->CreateVertexBuffer(20*1024*1024,D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY | VB_CREATE_FLAGS,0,D3DPOOL_DEFAULT,&vb,0));
+		verifyc(dev->CreateVertexBuffer(20*1024*1024,D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY | (UseSVP?D3DUSAGE_SOFTWAREPROCESSING:0),0,D3DPOOL_DEFAULT,&vb,0));
 		
 		verifyc(dev->CreateVertexDeclaration(vertelem,&vdecl));
 
@@ -1337,10 +1381,22 @@ if (!GetAsyncKeyState(VK_F3))
 			char* text=(char*)perr->GetBufferPointer();
 			printf("%s\n",text);
 		}
+		
 		verifyc(dev->CreateVertexShader((DWORD*)shader->GetBufferPointer(),&compiled_vs));
 		
-		PrecompilePS();
+		printf("caps.PixelShaderVersion=%X\n",caps.PixelShaderVersion);
+		if (caps.PixelShaderVersion>=D3DPS_VERSION(1, 0))
+		{
+			UseFixedFunction=false;
+			PrecompilePS();
+		}
+		else
+		{
+			UseFixedFunction=true;
+		}
 
+		printf(UseSVP?"Using SVP\n":"Using Vertex Shaders\n");
+		printf(UseFixedFunction?"Using Fixed Function\n":"Using Pixel Shaders\n");
 		D3DXCreateFont( dev, 20, 0, FW_BOLD, 0, FALSE, DEFAULT_CHARSET, 
 			OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"), &font );
 

@@ -141,6 +141,7 @@ namespace SWRenderer
 		t1=t2;
 		t2=t3;
 	}
+	/*
 	void DrawTrig(Vertex* verts)
 	{
 		for (int i=0;i<3;i++)
@@ -228,6 +229,7 @@ namespace SWRenderer
 		}
 
 	}
+	*/
 	void StartRender()
 	{
 		
@@ -243,7 +245,7 @@ namespace SWRenderer
 			return;
 		for (u32 i=0;i<vertlist.used-2;i++)
 		{
-			DrawTrig(&vertlist.data[i]);
+			//DrawTrig(&vertlist.data[i]);
 		}
 
 		for (u32 y=0;y<480;y++)

@@ -24,7 +24,7 @@ sampler2D samplr : register(s0);
 //Pvr only supports ARGB8888 colors , so we have to clamp em (in case they are float colors inputed directly)
 float4 PixelShader_main(in pixel s ) : COLOR0
 { 
-	float4 color=saturate(s.col);
+	float4 color=s.col;
 	
 	#if pp_UseAlpha==0
 		color.a=1;
@@ -73,7 +73,7 @@ float4 PixelShader_main(in pixel s ) : COLOR0
 	
 		//if offset is enabled , add it :)
 		#if pp_Offset==1
-			color.rgb+=saturate(s.offs.rgb);
+			color.rgb+=s.offs.rgb;
 		#endif
 	#else
 		//we don't realy have anything to do here -- just return the color ...

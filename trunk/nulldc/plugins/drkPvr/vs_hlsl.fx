@@ -32,7 +32,10 @@ vertex VertexShader_main(in vertex vtx)
 	vtx.pos.y=-y*2+ (1.0/res_y)+1.0;
 	//vtx.pos.xy+=resfix;
 	
-
+	//Saturate the colors here , no need to do it on pixel shaders
+	vtx.col=saturate(vtx.col);
+	vtx.spc=saturate(vtx.spc);
+	
 	#ifdef _HW_INT_
 	vtx.col*=vtx.uv.z;
 	vtx.spc*=vtx.uv.w;
