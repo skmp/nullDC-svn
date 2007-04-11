@@ -256,6 +256,7 @@ CC_NB			=3,				// above or equal (CF=0)
 CC_NC			=3,				//
 CC_AE			=CC_NB,			//
 CC_E			=4,				// zero (ZF=1)
+CC_FPU_E		=0xF0,			// zero (ZF=1)
 CC_Z			=CC_E,			//
 SaveZF			=CC_Z,
 CC_NE			=5,				// not zero (ZF=0)

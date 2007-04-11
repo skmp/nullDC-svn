@@ -1182,7 +1182,7 @@ sh4op(i1111_nnnn_mmmm_0100)
 
 		//sr.T = (fr[m] == fr[n]) ? 1 : 0;
 		ilst->fcmp(fr[n],fr[m]);
-		ilst->SaveT(cmd_cond::CC_E);
+		ilst->SaveT(cmd_cond::CC_FPU_E);
 	}
 	else
 	{

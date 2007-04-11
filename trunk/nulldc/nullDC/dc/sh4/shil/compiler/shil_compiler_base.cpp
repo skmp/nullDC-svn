@@ -1298,12 +1298,27 @@ void __fastcall shil_compile_SaveT(shil_opcode* op)
 
 	//x86e->Emit(SetCC[op->imm1],x86_ptr(GetRegPtr(reg_sr_T)));	 -> LOADS slower
 	//strange .. anyway :p
-	
-	x86e->Emit(SetCC[op->imm1],EAX);
+	if (op->imm1==CC_FPU_E)
+	{
+		//special case
+		//We want to take in account the 'unordered' case on the fpu
+		x86e->Emit(op_lahf);
+		x86e->Emit(op_test8,AH,0x44);
+		x86e->Emit(op_setnp,EAX);
+		//x86e->Emit(op_sete,EAX); old code :)
+	}
+	else
+	{
+		x86e->Emit(SetCC[op->imm1],EAX);
+	}
+
+	//meh , it just LOVES that way more :P
 	x86e->Emit(op_movzx8to32, EAX,EAX);				//zero out rest of eax
 	x86e->Emit(op_mov32,GetRegPtr(reg_sr_T),EAX);
-
 	
+	//x86e->Emit(op_mov8,GetRegPtr(reg_sr_T),EAX);
+	//x86e->Emit(op_xor32,EAX,EAX);
+
 }
 void __fastcall shil_compile_LoadT(shil_opcode* op)
 {
