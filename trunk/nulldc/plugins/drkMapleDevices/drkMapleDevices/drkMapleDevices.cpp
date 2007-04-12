@@ -153,10 +153,18 @@ struct VMU_info
 	u8 data[256*1024];
 	char file[512];
 };
+bool ikbmap=false;
 void kb_down(u8 kc)
 {
-	void Init_kb_map();
-	Init_kb_map();
+	if (ikbmap==false)
+	{
+		ikbmap=true;
+		void Init_kb_map();
+		Init_kb_map();
+	}
+	if (kc==VK_SHIFT)
+		kb_shift|=0x02 | 0x20; //both shifts ;p
+	kc=kb_map[kc & 0xFF];
 	if (kc==0)
 		return;
 	if (kb_used<6)
@@ -172,6 +180,9 @@ void kb_down(u8 kc)
 }
 void kb_up(u8 kc)
 {
+	if (kc==VK_SHIFT)
+		kb_shift&=~(0x02 | 0x20); //both shifts ;p
+	kc=kb_map[kc & 0xFF];
 	if (kc==0)
 		return;
 	if (kb_used>0)
@@ -230,7 +241,7 @@ INT_PTR CALLBACK sch( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 		}
 		break;
 	case WM_KEYDOWN:
-		kb_down(kb_map[wParam & 0xFF]);
+		kb_down(wParam);
 		for (int port=0;port<4;port++)
 		{
 			for (int i=0;joypad_settings_K[i].name;i++)
@@ -272,7 +283,7 @@ INT_PTR CALLBACK sch( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 		break;
 
 	case WM_KEYUP:
-		kb_up(kb_map[wParam & 0xFF]);
+		kb_up(wParam & 0xFF);
 		for (int port=0;port<4;port++)
 		{
 			for (int i=0;joypad_settings_K[i].name;i++)
@@ -618,7 +629,7 @@ void Init_kb_map()
 		sk(2C,VK_SPACE);
 		//2D-2E "-" and "^" (the 2 keys right of the numbers) 
 		//sk(28,VK_SUBTRACT);
-		sk(2d,'-');
+		sk(2d,VK_SUBTRACT);
 		//2F-30 "@" and "[" (the 2 keys right of P) 
 		sk(30,'[');
 		//31 Not used 
@@ -641,7 +652,7 @@ void Init_kb_map()
 		//50 Cursor left 
 		sk(50,VK_LEFT);
 		//51 Cursor down 
-		sk(28,VK_DOWN);
+		sk(51,VK_DOWN);
 		//52 Cursor up 
 		sk(52,VK_UP);
 		//53 Num Lock (Numeric keypad) 
@@ -2049,11 +2060,14 @@ void FASTCALL config_keys(u32 id,void* w,void* p)
 s32 FASTCALL CreateMain(maple_device_instance* inst,u32 id,u32 flags,u32 rootmenu)
 {
 	char temp[512];
-	sprintf(temp,"Config keys for Player %d",(inst->port>>6)+1);
-	u32 ckid=host.AddMenuItem(rootmenu,-1,temp,config_keys,0);
-	MenuItem mi;
-	mi.PUser=inst;
-	host.SetMenuItem(ckid,&mi,MIM_PUser);
+	if (id<=1)
+	{
+		sprintf(temp,"Config keys for Player %d",(inst->port>>6)+1);
+		u32 ckid=host.AddMenuItem(rootmenu,-1,temp,config_keys,0);
+		MenuItem mi;
+		mi.PUser=inst;
+		host.SetMenuItem(ckid,&mi,MIM_PUser);
+	}
 	if (id==0)
 	{
 		inst->dma=ControllerDMA;
@@ -2066,11 +2080,23 @@ s32 FASTCALL CreateMain(maple_device_instance* inst,u32 id,u32 flags,u32 rootmen
 		inst->data=0;
 		sprintf(temp,"Controller[winhook,net] : 0x%02X",inst->port);
 	}
-	else
+	else if (id==3)
+	{
+		inst->dma=KbdDMA;
+		inst->data=0;
+		sprintf(temp,"Keyboard : 0x%02X",inst->port);
+	}
+	else if (id==4)
 	{
 		inst->dma=ControllerDMA_nul;
 		inst->data=0;
-		sprintf(temp,"Controller[no input] : 0x%02X",inst->port);
+		sprintf(temp,"Controller [no input] : 0x%02X",inst->port);
+	}
+	else if (id==5)
+	{
+		inst->dma=MouseDMA;
+		inst->data=0;
+		sprintf(temp,"Mouse [winhook] : 0x%02X",inst->port);
 	}
 	host.AddMenuItem(rootmenu,-1,temp,0,0);
 /*
@@ -2211,17 +2237,21 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	//2
 	MSD("nullDC VMU (" __DATE__ ")",MDTF_Hotplug);
 
-	/*
 	//3
 	MMD("nullDC Keyboard [WinHook] (" __DATE__ ")",MDTF_Hotplug);
 
 	//4
-	MMD("nullDC Mouse [WinHook] (" __DATE__ ")",MDTF_Hotplug);
+	MMD("nullDC Controller [no input] (" __DATE__ ")",MDTF_Hotplug|MDTF_Sub0|MDTF_Sub1);
 
 	//5
-	MMD("nullDC DreamEye (" __DATE__ ")",MDTF_Hotplug);
+	MMD("nullDC Mouse [WinHook] (" __DATE__ ")",MDTF_Hotplug);
+
+	/*
 
 	//6
+	MMD("nullDC DreamEye (" __DATE__ ")",MDTF_Hotplug);
+
+	//7
 	MSD("nullDC Mic (" __DATE__ ")",MDTF_Hotplug);
 	*/
 
