@@ -147,6 +147,26 @@ void FASTCALL handle_SA(u32 id,void* w,void* p)
 	eminf.SetMenuItemStyle(id,settings.LimitFPS?MIS_Checked:0,MIS_Checked);
 	SaveSettings();
 }
+void FASTCALL handle_MCDDA(u32 id,void* w,void* p)
+{
+	if (settings.CDDAMute)
+		settings.CDDAMute=0;
+	else
+		settings.CDDAMute=1;
+
+	eminf.SetMenuItemStyle(id,settings.CDDAMute?MIS_Checked:0,MIS_Checked);
+	SaveSettings();
+}
+void FASTCALL handle_GS(u32 id,void* w,void* p)
+{
+	if (settings.GlobalMute)
+		settings.GlobalMute=0;
+	else
+		settings.GlobalMute=1;
+
+	eminf.SetMenuItemStyle(id,settings.GlobalMute?MIS_Checked:0,MIS_Checked);
+	SaveSettings();
+}
 void UpdateMenuSelections()
 {
 	eminf.SetMenuItemStyle(stami,settings.LimitFPS?MIS_Checked:0,MIS_Checked);
@@ -159,6 +179,8 @@ s32 FASTCALL OnLoad(emu_info* em,u32 rmenu)
 
 	scmi=eminf.AddMenuItem(rmenu,-1,"Config",handle_Config,0);
 	stami=eminf.AddMenuItem(rmenu,-1,"Sync Audio",handle_SA,settings.LimitFPS);
+	eminf.AddMenuItem(rmenu,-1,"Mute CDDA",handle_MCDDA,settings.CDDAMute);
+	eminf.AddMenuItem(rmenu,-1,"Mute Sound",handle_GS,settings.GlobalMute);
 
 	eminf.SetMenuItemStyle(eminf.AddMenuItem(rmenu,-1,"-",0,0),MIS_Seperator,MIS_Seperator);
 	eminf.AddMenuItem(rmenu,-1,"About",handle_About,0);
@@ -266,6 +288,8 @@ void LoadSettings()
 	settings.SoundRenderer=cfgGetInt("SoundRenderer",1);
 	settings.GlobalFocus=cfgGetInt("GlobalFocus",1);
 	settings.BufferCount=cfgGetInt("BufferCount",1);
+	settings.CDDAMute=cfgGetInt("CDDAMute",0);
+	settings.GlobalMute=cfgGetInt("GlobalMute",0);
 }
 
 void SaveSettings()
@@ -278,6 +302,8 @@ void SaveSettings()
 	cfgSetInt("SoundRenderer",settings.SoundRenderer);
 	cfgSetInt("GlobalFocus",settings.GlobalFocus);
 	cfgSetInt("BufferCount",settings.BufferCount);
+	cfgSetInt("CDDAMute",settings.CDDAMute);
+	cfgSetInt("GlobalMute",settings.GlobalMute);
 }
 
 //Windoze Code implementation of commong classes from here and after ..

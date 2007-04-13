@@ -20,14 +20,21 @@ void UpdateBuff(u8* pos)
 	speed_limit.Set();
 
 	u8* buf=GetReadBuffer();
-	if (buf==0)
+	if (settings.GlobalMute)
 	{
-		//printf("GetReadBuffer -- Out Of Buffers\n");
-		//memset(pos,0,wait_buffer_size);
+		memset(pos,0,wait_buffer_size);
 	}
 	else
 	{
-		memcpy(pos,buf,wait_buffer_size);
+		if (buf==0)
+		{
+			//printf("GetReadBuffer -- Out Of Buffers\n");
+			//memset(pos,0,wait_buffer_size);
+		}
+		else
+		{
+			memcpy(pos,buf,wait_buffer_size);
+		}
 	}
 }
 u32 THREADCALL SoundThread(void* param)

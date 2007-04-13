@@ -58,6 +58,8 @@ struct setts
 	u32 LimitFPS;		//0 -> no , (1) -> limit
 	u32 GlobalFocus;	//0 -> only hwnd , (1) -> Global
 	u32 BufferCount;	//BufferCount+2 buffers used , max 60 , default 0
+	u32 CDDAMute;
+	u32 GlobalMute;
 };
 
 extern setts settings;
