@@ -617,6 +617,7 @@ void Init_kb_map()
 		for (int i=0x1E;i<=0x27;i++)
 			kb_map['1'+i-0x1E]=i;
 		kb_map['0']=0x27;
+		sk(1F,'\'');
 		//28 Enter 
 		sk(28,'\r');
 		//29 Esc 
@@ -631,6 +632,7 @@ void Init_kb_map()
 		//sk(28,VK_SUBTRACT);
 		sk(2d,VK_SUBTRACT);
 		//2F-30 "@" and "[" (the 2 keys right of P) 
+		sk(2F,';');
 		sk(30,'[');
 		//31 Not used 
 		//32-34 "]", ";" and ":" (the 3 keys right of L) 
