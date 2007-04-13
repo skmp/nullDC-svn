@@ -938,7 +938,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 			switch(val)
 			{
 			case VK_ESCAPE:
-				SendMessage(hWnd,WM_CLOSE,0,0);
+				//SendMessage(hWnd,WM_CLOSE,0,0);
 				break;
 			case VK_F7:
 				{

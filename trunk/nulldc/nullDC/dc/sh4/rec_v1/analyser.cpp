@@ -56,7 +56,13 @@ void StepPipeline(u32 opcode)
 
 		s32 lc=OpDesc[opcode]->LatencyCycles;
 		lc-=rv;//if it has latency>issue
-		
+		if (opcode>=0xF000)
+		{
+			lc=0;
+			rv/=3;
+			if (rv==0)
+				rv=1;
+		}
 		if (lc>0)
 			execution_groop_busy[OpDesc[opcode]->unit]+=lc;
 		//we allways count issue cycles

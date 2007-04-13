@@ -941,20 +941,7 @@ s32 plugins_Init_()
 {
 	if (plugins_inited)
 		return rv_ok;
-	plugins_inited=true;
-	//pvr
-	pvr_init_params pvr_info;
-	pvr_info.RaiseInterrupt=sh4_cpu->RaiseInterrupt;
-	pvr_info.vram=&vram[0];
-	pvr_info.vram_lock_32=vramlock_Lock_32;
-	pvr_info.vram_lock_64=vramlock_Lock_64;
-	pvr_info.vram_unlock=vramlock_Unlock_block;
-
-	lcp_name=libPvr.Name;
-	if (s32 rv = libPvr.Init(&pvr_info))
-		return rv;
-	libPvr.Inited=true;
-	
+	plugins_inited=true;	
 
 	gdr_init_params gdr_info;
 	gdr_info.DriveNotifyEvent=NotifyEvent_gdrom;
@@ -1021,6 +1008,19 @@ s32 plugins_Init_()
 			MapleDevices_dd[i][5].Inited=false;
 	}
 
+	//pvr
+	pvr_init_params pvr_info;
+	pvr_info.RaiseInterrupt=sh4_cpu->RaiseInterrupt;
+	pvr_info.vram=&vram[0];
+	pvr_info.vram_lock_32=vramlock_Lock_32;
+	pvr_info.vram_lock_64=vramlock_Lock_64;
+	pvr_info.vram_unlock=vramlock_Unlock_block;
+
+	lcp_name=libPvr.Name;
+	if (s32 rv = libPvr.Init(&pvr_info))
+		return rv;
+	libPvr.Inited=true;
+
 	return rv_ok;
 }
 
@@ -1062,6 +1062,9 @@ void plugins_Term()
 		return;
 	plugins_inited=false;
 
+	//Term pvr
+	term_plugin(libPvr);
+
 	//Term inited maple devices
 	for ( int i=3;i>=0;i--)
 	{
@@ -1093,7 +1096,6 @@ void plugins_Term()
 	term_plugin(libExtDevice);
 	term_plugin(libAICA);
 	term_plugin(libGDR);
-	term_plugin(libPvr);
 }
 
 void plugins_Reset(bool Manual)
