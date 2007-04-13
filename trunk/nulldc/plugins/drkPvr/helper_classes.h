@@ -68,19 +68,17 @@ public :
 		avg_sz+=used;
 
 		u32 real_avg=avg_sz/8;
-
-		u32 avg_chunk_avg=real_avg/FreeStepChunk;
-		u32 used_chunk_avg=used/FreeStepChunk;
-
-
-		if (avg_chunk_avg<used_chunk_avg)//try to free olny if we used less items this time (if not , we propably start an increase period)
+		if (used<real_avg)
 		{
-			u32 allocated_chunk=size/FreeStepChunk;
-			avg_chunk_avg++;
-			if (allocated_chunk>avg_chunk_avg)
-				resize(avg_chunk_avg*FreeStepChunk);
+			//consider resizing ONLY if the used is less than the average
+			//if diff is > FreeStepChunk
+			u32 used_top=used+FreeStepChunk;
+
+			if (used_top<real_avg)
+			{
+				resize(real_avg + FreeStepChunk/2);
+			}
 		}
-		
 		//printf("Clear , size = %d:%d\n",size,used);
 		used=0;
 	}

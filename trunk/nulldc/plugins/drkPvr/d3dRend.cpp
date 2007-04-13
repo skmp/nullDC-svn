@@ -518,7 +518,6 @@ namespace Direct3DRenderer
 	//use that someday
 	void VBlank()
 	{
-		rth.Start();
 		//we need to actualy draw the image here :)
 		//dev->
 	}
@@ -1293,7 +1292,7 @@ namespace Direct3DRenderer
 		dev->Present( NULL, NULL, NULL, NULL );
 	}
 	//
-	bool running=true;
+	bool running=false;
 	cResetEvent rs(false,true);
 	cResetEvent re(false,true);
 	D3DXMACRO vs_macros[]=
@@ -1305,6 +1304,7 @@ namespace Direct3DRenderer
 
 	u32 THREADCALL RenderThead(void* param)
 	{
+		running=true;
 		d3d9 = Direct3DCreate9(D3D_SDK_VERSION);
 		char temp[2][30];
 		D3DPRESENT_PARAMETERS ppar;
@@ -1350,14 +1350,45 @@ namespace Direct3DRenderer
 
 		printf(" AA:%dx%x\n",ppar.MultiSampleType,ppar.MultiSampleQuality);
 
-		if (FAILED(d3d9->CreateDevice(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,(HWND)emu.WindowHandle,D3DCREATE_HARDWARE_VERTEXPROCESSING,&ppar,&dev)))
+		D3DCAPS9 caps;
+		d3d9->GetDeviceCaps(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,&caps);
+
+		printf("Device caps... VS : %X ; PS : %X\n",caps.VertexShaderVersion,caps.PixelShaderVersion);
+
+		if (caps.VertexShaderVersion<D3DVS_VERSION(1, 0))
 		{
+			UseSVP=true;
+		}
+		if (caps.PixelShaderVersion>=D3DPS_VERSION(1, 0))
+		{
+			UseFixedFunction=false;
+		}
+		else
+		{
+			UseFixedFunction=true;
+		}
+
+		printf(UseSVP?"Will use SVP\n":"Will use Vertex Shaders\n");
+
+
+		if (UseSVP || FAILED(d3d9->CreateDevice(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,(HWND)emu.WindowHandle,D3DCREATE_HARDWARE_VERTEXPROCESSING,&ppar,&dev)))
+		{
+			if (!UseSVP)
+				printf("We had to use SVP after all ...");
+
 			UseSVP=true;
 			verifyc(d3d9->CreateDevice(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,(HWND)emu.WindowHandle,D3DCREATE_SOFTWARE_VERTEXPROCESSING,&ppar,&dev));
 		}
-		D3DCAPS9 caps;
-		dev->GetDeviceCaps(&caps);
-			//caps.PixelShaderVersion
+
+		LPCSTR vsp= D3DXGetVertexShaderProfile(dev);
+		if (vsp==0)
+		{
+			vsp="vs_3_0";
+			printf("Strange , D3DXGetVertexShaderProfile(dev) failed , defaulting to \"vs_3_0\"\n");
+		}
+
+		printf(UseSVP?"Using SVP/%s\n":"Using Vertex Shaders/%s\n",vsp);
+		printf(UseFixedFunction?"Using Fixed Function\n":"Using Pixel Shaders/%s\n",D3DXGetPixelShaderProfile(dev));
 
 		sprintf(temp[0],"%d",ppar.BackBufferWidth);
 		sprintf(temp[1],"%d",ppar.BackBufferHeight);
@@ -1374,8 +1405,9 @@ namespace Direct3DRenderer
 
 		ID3DXBuffer* perr;
 		ID3DXBuffer* shader;
-		
-		verifyc(D3DXCompileShaderFromFileA("vs_hlsl.fx",vs_macros,NULL,"VertexShader_main",D3DXGetVertexShaderProfile(dev) , 0, &shader,&perr,&shader_consts));
+
+
+		verifyc(D3DXCompileShaderFromFileA("vs_hlsl.fx",vs_macros,NULL,"VertexShader_main",vsp , 0, &shader,&perr,&shader_consts));
 		if (perr)
 		{
 			char* text=(char*)perr->GetBufferPointer();
@@ -1384,19 +1416,9 @@ namespace Direct3DRenderer
 		
 		verifyc(dev->CreateVertexShader((DWORD*)shader->GetBufferPointer(),&compiled_vs));
 		
-		printf("caps.PixelShaderVersion=%X\n",caps.PixelShaderVersion);
-		if (caps.PixelShaderVersion>=D3DPS_VERSION(1, 0))
-		{
-			UseFixedFunction=false;
+		if (!UseFixedFunction)
 			PrecompilePS();
-		}
-		else
-		{
-			UseFixedFunction=true;
-		}
 
-		printf(UseSVP?"Using SVP\n":"Using Vertex Shaders\n");
-		printf(UseFixedFunction?"Using Fixed Function\n":"Using Pixel Shaders\n");
 		D3DXCreateFont( dev, 20, 0, FW_BOLD, 0, FALSE, DEFAULT_CHARSET, 
 			OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"), &font );
 
@@ -2221,6 +2243,8 @@ namespace Direct3DRenderer
 		tarc.Address=0xFFFFFFFF;
 		tarc.Init();
 		//pvrrc needs no init , it is ALLWAYS copied from a valid tarc :)
+
+		rth.Start();
 		return TileAccel.Init();
 	}
 
@@ -2252,10 +2276,13 @@ namespace Direct3DRenderer
 	void ThreadEnd()
 	{
 		printf("ThreadEnd\n");
-		running=false;
-		rth.Start();
-		rs.Set();
-		rth.WaitToEnd(0xFFFFFFFF);
+		if (running)
+		{
+			running=false;
+			rth.Start();
+			rs.Set();
+			rth.WaitToEnd(0xFFFFFFFF);
+		}
 	}
 
 	void ListCont()
