@@ -13,11 +13,11 @@
 #include "dc\mem\sh4_mem.h"
 #include "emitter\regalloc\x86_sseregalloc.h"
 
-
+#include "shil_compiler_base.h"
 
 FloatRegAllocator*		fra;
 IntegerRegAllocator*	ira;
-
+vector<roml_patch> roml_patch_list;
 
 x86_block* x86e;
 
@@ -1168,6 +1168,7 @@ x86_reg  readwrteparams(shil_opcode* op)
 	case flag_imm:
 		x86e->Emit(op_mov32,ECX,op->imm1);
 		reg=ECX;
+		dbgbreak;//must never ever happen
 		break;
 
 	case flag_r2:
@@ -1230,7 +1231,21 @@ x86_reg  readwrteparams(shil_opcode* op)
 
 
 const u32 m_unpack_sz[3]={1,2,4};
-
+//Ram Only Mem Lookup
+void roml(x86_reg reg,x86_Label* lbl)
+{
+	//mov ecx,reg_addr
+	if (reg!=ECX)
+		x86e->Emit(op_mov32,ECX,reg);
+	x86e->Emit(op_mov32,EAX,reg);
+	//cmp ecx,mask1
+	x86e->Emit(op_cmp32,ECX,0xE0000000);
+	//jae full_lookup
+	x86e->Emit(op_jae,lbl);
+	//and ecx,mask2
+	x86e->Emit(op_and32,ECX,~0xE0000000);
+}
+const x86_opcode_class rm_table[4]={op_movsx8to32,op_movsx16to32,op_mov32,op_int3};
 void __fastcall shil_compile_readm(shil_opcode* op)
 {
 	u32 size=op->flags&3;
@@ -1259,12 +1274,78 @@ void __fastcall shil_compile_readm(shil_opcode* op)
 
 	x86_reg reg_addr = readwrteparams(op);
 
-	emit_vmem_read(reg_addr,op->reg1,m_unpack_sz[size]);
+	x86_Label* patch_point= x86e->CreateLabel(true,0);
+	x86_Label* p4_handler = x86e->CreateLabel(false,0);
+	//Ram Only Mem Lookup
+	roml(reg_addr,p4_handler);
+
+	//mov to dest or temp
+	u32 is_float=IsInFReg(op->reg1);
+	x86_reg destreg;
+	if (is_float)
+	{
+		destreg=EAX;
+	}
+	else
+	{
+		destreg=LoadReg_nodata(EAX,op->reg1);
+	}
+	x86e->Emit(rm_table[size],destreg,x86_mrm::create(ECX,sh4_reserved_mem));
+	roml_patch t;
+	t.exit_point=x86e->CreateLabel(true,0);
+	if (is_float)
+	{
+		fra->SaveRegisterGPR(op->reg1,destreg);
+	}
+	else
+	{
+		SaveReg(op->reg1,destreg);
+	}
+
+	t.p4_access=p4_handler;
+	t.patch_point=patch_point;
+	t.asz=size;
+	t.type=0;
+	t.is_float=false;
+	t.reg_addr=reg_addr;
+	t.reg_data=destreg;
+	//emit_vmem_read(reg_addr,op->reg1,m_unpack_sz[size]);
+	roml_patch_list.push_back(t);
 }
+const x86_opcode_class wm_table[4]={op_mov8,op_mov16,op_mov32,op_int3};
 void __fastcall shil_compile_writem(shil_opcode* op)
 {
 	//sse_WBF(op->reg1);//Write back possibly readed reg
 	u32 size=op->flags&3;
+	u32 is_float=IsInFReg(op->reg1);
+	u32 was_float=is_float;
+
+	x86_reg rsrc;
+	if (!is_float)
+	{
+		rsrc=LoadReg(EDX,op->reg1);
+		if (size==0)
+		{
+			if (rsrc>BL)
+			{
+				x86e->Emit(op_mov32,EDX,rsrc);
+				rsrc=EDX;
+			}
+		}
+	}
+	else
+	{
+		if (fra->IsRegAllocated(op->reg1))
+		{
+			rsrc=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
+		}
+		else
+		{
+			rsrc=EDX;
+			x86e->Emit(op_mov32,EDX,GetRegPtr(op->reg1));
+			was_float=0;
+		}
+	}
 
 	//if constant read , and on ram area , make it a direct mem access
 	//_watch_ mmu
@@ -1272,24 +1353,110 @@ void __fastcall shil_compile_writem(shil_opcode* op)
 	{//[reg2+imm] form
 		assert(op->flags & FLAG_IMM1);
 		//[imm1] form
-		if (!IsInFReg(op->reg1))
+		if (!is_float)
 		{
-			x86_gpr_reg rall=LoadReg(EDX,op->reg1);
-			emit_vmem_op_compat_const(x86e,op->imm1,rall,XMM0,false,m_unpack_sz[size],1);
+			emit_vmem_op_compat_const(x86e,op->imm1,rsrc,XMM0,false,m_unpack_sz[size],1);
 		}
 		else
 		{
-			x86_sse_reg rall=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
-			emit_vmem_op_compat_const(x86e,op->imm1,EAX,rall,true,m_unpack_sz[size],1);
+			emit_vmem_op_compat_const(x86e,op->imm1,EAX,rsrc,true,m_unpack_sz[size],1);
 		}
 		return;
 	}
 
 	x86_reg reg_addr = readwrteparams(op);
+	
+	x86_Label* patch_point= x86e->CreateLabel(true,0);
+	x86_Label* p4_handler = x86e->CreateLabel(false,0);
+	//Ram Only Mem Lookup
+	roml(reg_addr,p4_handler);
+	//mov [ecx],src
+	if (was_float)
+		x86e->Emit(op_movss,x86_mrm::create(ECX,sh4_reserved_mem),rsrc);
+	else
+	{
+			x86e->Emit(wm_table[size],x86_mrm::create(ECX,sh4_reserved_mem),rsrc);
+	}
+	//if  (is_float)
+	//x86e->Emit(op_jmp,p4_handler);
 
-	emit_vmem_write(reg_addr,op->reg1,m_unpack_sz[size]);
+	roml_patch t;
+	t.p4_access=p4_handler;
+	t.patch_point=patch_point;
+	t.exit_point=x86e->CreateLabel(true,0);
+	t.asz=size;
+	t.type=1;
+	t.is_float=was_float;
+	t.reg_addr=reg_addr;
+	t.reg_data=rsrc;
+
+	roml_patch_list.push_back(t);
+	
+	//emit_vmem_write(reg_addr,op->reg1,m_unpack_sz[size]);
 }
+void* nvw_lut[3]={WriteMem8,WriteMem16,WriteMem32};
+void* nvr_lut[3]={ReadMem8,ReadMem16,ReadMem32};
+#include "dc/mem/sh4_internal_reg.h"
+void apply_roml_patches()
+{
+	for (int i=0;i<roml_patch_list.size();i++)
+	{
+		void * function=roml_patch_list[i].type==1 ?nvw_lut[roml_patch_list[i].asz]:nvr_lut[roml_patch_list[i].asz];
 
+		u32 offset=x86e->x86_indx;
+		x86e->write32(0);
+		
+		x86e->MarkLabel(roml_patch_list[i].p4_access);
+		if (roml_patch_list[i].type==1)
+		{
+			//check for SQ write
+			x86e->Emit(op_cmp32,ECX,0xE3FFFFFF);
+			x86_Label* normal_write=x86e->CreateLabel(false,8);
+			x86e->Emit(op_ja,normal_write);
+			//x86e->Emit(op_int3);
+			x86e->Emit(op_and32,ECX,0x3C);
+			x86e->Emit(op_mov32,x86_mrm::create(ECX,sq_both),roml_patch_list[i].reg_data);
+			x86e->Emit(op_jmp,roml_patch_list[i].exit_point);
+			x86e->MarkLabel(normal_write);
+			*(u32*)&x86e->x86_buff[offset]=x86e->x86_indx-offset-4;
+		}
+		if (roml_patch_list[i].reg_addr!=ECX)
+			x86e->Emit(op_mov32,ECX,roml_patch_list[i].reg_addr);
+		if (roml_patch_list[i].is_float)
+		{
+			//meh ?
+			dbgbreak;
+		}
+		else
+		{
+			if (roml_patch_list[i].type==1)
+			{
+				//if write make sure data is on edx
+				if (roml_patch_list[i].reg_data!=EDX)
+					x86e->Emit(op_mov32,EDX,roml_patch_list[i].reg_data);
+			}
+		}
+		x86e->Emit(op_call,x86_ptr_imm(function));
+		if (roml_patch_list[i].type==0)
+		{
+			if (roml_patch_list[i].asz==0)
+				x86e->Emit(op_movsx8to32,roml_patch_list[i].reg_data,EAX);
+			else if (roml_patch_list[i].asz==1)
+				x86e->Emit(op_movsx16to32,roml_patch_list[i].reg_data,EAX);
+			else if (roml_patch_list[i].asz==2)
+			{
+				if (roml_patch_list[i].reg_data!=EAX)
+					x86e->Emit(op_mov32,roml_patch_list[i].reg_data,EAX);
+			}
+		}
+		x86e->Emit(op_jmp,roml_patch_list[i].exit_point);
+		//x86e->MarkLabel(roml_patch_list[i].p4_access);
+		
+		//roml_patch_list[i].reg_data;
+		//emit_vmem_write(roml_patch_list[i].reg_addr,
+	}
+	roml_patch_list.clear();
+}
 //save-loadT
 void __fastcall shil_compile_SaveT(shil_opcode* op)
 {

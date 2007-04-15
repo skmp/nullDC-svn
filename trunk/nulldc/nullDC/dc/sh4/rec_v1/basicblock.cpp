@@ -610,6 +610,9 @@ void BasicBlock::Compile()
 
 	x86e->Emit(op_int3);
 
+	//apply roml patches and generate needed code
+	apply_roml_patches();
+
 	void* codeptr=x86e->Generate();//heh
 
 	cBB->cbi.Code=(BasicBlockEP*)codeptr;

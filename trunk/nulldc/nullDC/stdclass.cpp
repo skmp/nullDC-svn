@@ -1,7 +1,7 @@
 #include "types.h"
 #include <string.h>
 #include <windows.h>
-
+#include "dc/mem/_vmem.h"
 //comonly used classes across the project
 
 //bah :P since it's template needs to be on .h pfftt
@@ -340,10 +340,33 @@ int ExeptionHandler(u32 dwCode, void* pExceptionPointers)
 	
 	u8* address=(u8*)pExceptionRecord->ExceptionInformation[1];
 
-	if (!(VramLockedWrite(address) || RamLockedWrite(address,(u32*)ep->ContextRecord->Esp)))
-		printf("Unhandled write to : 0x%X\n",address);
-	else
+	if (VramLockedWrite(address))
 		return EXCEPTION_CONTINUE_EXECUTION;
+	else if (RamLockedWrite(address,(u32*)ep->ContextRecord->Esp))
+		return EXCEPTION_CONTINUE_EXECUTION;
+	else if (((u32)(address-sh4_reserved_mem))<(512*1024*1024))
+	{
+		//k
+		//
+		//cmp ecx,mask1
+		//jae full_lookup
+		//and ecx,mask2
+		//the write 
+		u32 pos=ep->ContextRecord->Eip; //<- the write
+		u32* ptr_jae_offset=(u32*)(pos-4-6);
+		u32* offset_2=(u32*)(*ptr_jae_offset + pos -6-4);
+		u8* ptr_cmp=(u8*)(pos-6-6-6);
+		*ptr_cmp=0xE9;
+		*(u32*) (ptr_cmp+1)=*ptr_jae_offset+7 + *offset_2;
+		ep->ContextRecord->Eip=(pos-6-6-6);
+		printf("Patched %08X,%08X<-%08X\n",ep->ContextRecord->Eip,ep->ContextRecord->Ecx,ep->ContextRecord->Eax);
+		ep->ContextRecord->Ecx=ep->ContextRecord->Eax;
+		return EXCEPTION_CONTINUE_EXECUTION;
+	}
+	else
+	{
+		printf("Unhandled write to : 0x%X\n",address);
+	}
 
 	return EXCEPTION_CONTINUE_SEARCH;
 }

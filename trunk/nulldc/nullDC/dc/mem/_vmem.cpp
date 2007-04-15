@@ -334,7 +334,7 @@ void _vmem_term()
 #include <windows.h>
 #include "dc\pvr\pvr_if.h"
 #include "sh4_mem.h"
-
+/*
 HANDLE mem_handle;
 bool _vmem_reserve()
 {
@@ -406,6 +406,88 @@ bool _vmem_reserve()
 	if (ptr==0)
 		return false;
 
+	return sh4_reserved_mem!=0;
+}
+
+*/
+bool _vmem_reserve()
+{
+	void* ptr=0;
+	sh4_reserved_mem=(u8*)VirtualAlloc(0,512*1024*1024,MEM_RESERVE,PAGE_NOACCESS);
+	if (sh4_reserved_mem==0)
+		return false;
+	//VirtualFree(sh4_reserved_mem,0,MEM_RELEASE);
+	
+	//Area 0
+	//[0 ,0x04000000) -> unused
+	//ptr=VirtualAlloc(&sh4_reserved_mem[0x00000000],0x04000000,MEM_RESERVE,PAGE_NOACCESS);
+	//if (ptr==0)
+	//	return false;
+	//Area 1
+	//[0x04000000,0x05000000) -> vram | mirror
+	//[0x05000000,0x06000000) -> unused
+	//[0x06000000,0x07000000) -> vram   mirror
+	//[0x07000000,0x08000000) -> unused mirror
+	ptr=VirtualAlloc(&sh4_reserved_mem[0x04000000],VRAM_SIZE,MEM_COMMIT,PAGE_READWRITE);
+	if (ptr==0)
+		return false;
+	vram.size=VRAM_SIZE;
+	vram.data=(u8*)ptr;
+/*
+	//vram #0
+	ptr= MapViewOfFileEx(mem_handle,FILE_MAP_READ |FILE_MAP_WRITE,0,RAM_SIZE,VRAM_SIZE,&sh4_reserved_mem[0x04000000]);
+	ptr= MapViewOfFileEx(mem_handle,FILE_MAP_READ |FILE_MAP_WRITE,0,RAM_SIZE,VRAM_SIZE,&sh4_reserved_mem[0x05000000]);
+	if (ptr==0)
+		return false;
+	vram.size=VRAM_SIZE;
+	vram.data=(u8*)ptr;
+
+	//vram #1
+	ptr= MapViewOfFileEx(mem_handle,FILE_MAP_READ |FILE_MAP_WRITE,0,RAM_SIZE,VRAM_SIZE,&sh4_reserved_mem[0x06000000]);
+	if (ptr==0)
+		return false;
+*/
+	//Area 2
+	//[0x08000000,0x0C000000) -> unused
+	/*
+	ptr=VirtualAlloc(&sh4_reserved_mem[0x08000000],0x04000000,MEM_RESERVE,PAGE_NOACCESS);
+	if (ptr==0)
+		return false;
+	*/
+	//Area 3
+	//[0x0C000000,0x0D000000) -> main ram
+	//[0x0D000000,0x0E000000) -> main ram mirror
+	//[0x0E000000,0x0F000000) -> main ram mirror
+	//[0x0F000000,0x10000000) -> main ram mirror
+		//ram #0
+	ptr=VirtualAlloc(&sh4_reserved_mem[0x0C000000],RAM_SIZE,MEM_COMMIT,PAGE_READWRITE);
+	if (ptr==0)
+		return false;
+	mem_b.size=RAM_SIZE;
+	mem_b.data=(u8*)ptr;
+	/*
+	ptr= MapViewOfFileEx(mem_handle,FILE_MAP_READ |FILE_MAP_WRITE,0,0,RAM_SIZE,&sh4_reserved_mem[0x0C000000]);
+	if (ptr==0)
+		return false;
+	mem_b.size=RAM_SIZE;
+	mem_b.data=(u8*)ptr;
+
+	//ram #1
+	ptr= MapViewOfFileEx(mem_handle,FILE_MAP_READ |FILE_MAP_WRITE,0,0,RAM_SIZE,&sh4_reserved_mem[0x0D000000]);
+	if (ptr==0)
+		return false;
+*/
+	//Area 4
+	//Area 5
+	//Area 6
+	//Area 7
+	//all -> Unused 
+	//[0x10000000,0x20000000) -> unused
+/*	
+	ptr=VirtualAlloc(&sh4_reserved_mem[0x10000000],0x10000000,MEM_RESERVE,PAGE_NOACCESS);
+	if (ptr==0)
+		return false;
+*/
 	return sh4_reserved_mem!=0;
 }
 
