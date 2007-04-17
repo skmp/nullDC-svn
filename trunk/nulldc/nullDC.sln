@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 9.00
 # Visual Studio 2005
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nullDC", "nullDC\nullDC.vcproj", "{47CE9BF1-542B-4C45-A22A-353A9FC97322}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nullAICA", "plugins\nullAICA\nullAICA\nullAICA.vcproj", "{8004518C-2321-4CFC-BA6C-873736195691}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EmptyAICA", "plugins\nullAICA\nullAICA\nullAICA.vcproj", "{8004518C-2321-4CFC-BA6C-873736195691}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "chankaAICA", "plugins\chankaAICA\chankaAICA\chankaAICA.vcproj", "{71E731E3-8111-41B6-BD13-F2249DBF9928}"
 EndProject

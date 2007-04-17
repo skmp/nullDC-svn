@@ -39,11 +39,13 @@ void cfgSetStr(char* key,const char* v)
 }
 void LoadSettings()
 {
+	settings.PatchRegion=cfgGetInt("PatchRegion",0);
 	settings.LoadDefaultImage=cfgGetInt("LoadDefaultImage",0);
 	cfgGetStr("DefaultImage",settings.DefaultImage,"defualt.cdi");
 }
 void SaveSettings()
 {
+	cfgSetInt("PatchRegion",settings.PatchRegion);
 	cfgSetInt("LoadDefaultImage",settings.LoadDefaultImage);
 	cfgSetStr("DefaultImage",settings.DefaultImage);
 }
@@ -81,6 +83,18 @@ void FASTCALL GetSessionInfo(u8* out,u8 ses)
 }
 emu_info emu;
 char emu_name[512];
+void FASTCALL handle_PatchRegion(u32 id,void* w,void* p)
+{
+	if (settings.PatchRegion)
+		settings.PatchRegion=0;
+	else
+		settings.PatchRegion=1;
+
+	emu.SetMenuItemStyle(id,settings.PatchRegion?MIS_Checked:0,MIS_Checked);
+
+	SaveSettings();
+}
+
 void FASTCALL handle_UseDefImg(u32 id,void* w,void* p)
 {
 	if (settings.LoadDefaultImage)
@@ -128,6 +142,8 @@ s32 FASTCALL Load(emu_info* emu_inf,u32 rmenu)
 	emu.SetMenuItemStyle(emu.AddMenuItem(rmenu,-1,"-",handle_About,0),MIS_Seperator,MIS_Seperator);
 	emu.AddMenuItem(rmenu,-1,"Use Default Image",handle_UseDefImg,settings.LoadDefaultImage);
 	emu.AddMenuItem(rmenu,-1,"Select Default Image",handle_SelDefImg,0);
+	emu.AddMenuItem(rmenu,-1,"Patch GDROM region",handle_PatchRegion,settings.PatchRegion);
+	emu.SetMenuItemStyle(emu.AddMenuItem(rmenu,-1,"-",handle_About,0),MIS_Seperator,MIS_Seperator);
 	emu.AddMenuItem(rmenu,-1,"About",handle_About,0);
 	
 	

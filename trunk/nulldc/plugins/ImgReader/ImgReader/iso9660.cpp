@@ -36,6 +36,10 @@ struct file_TrackInfo
 				}
 			//	printf("readed %d bytes from file 0x%X , converting to %d [sec %d]\n",
 			//		SectorSize,f,secsz,sector);
+				if (sector==45000)
+					PatchRegion_0(ptr,SectorSize);
+				if (sector==45006)
+					PatchRegion_6(ptr,SectorSize);
 				ConvertSector(ptr,buff,SectorSize,secsz,sector);
 			}
 			return true;

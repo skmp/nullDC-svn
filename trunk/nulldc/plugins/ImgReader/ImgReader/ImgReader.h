@@ -15,6 +15,7 @@ extern char emu_name[512];
 #define verify(x) if((x)==false){ printf("Verify Failed  : " #x "\n in %s -> %s : %d \n",__FUNCTION__,__FILE__,__LINE__); __asm {int 3}}
 struct _setts
 {
+	bool PatchRegion;
 	bool LoadDefaultImage;
 	char DefaultImage[512];
 };

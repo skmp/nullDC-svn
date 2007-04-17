@@ -54,7 +54,54 @@ int msgboxf(char* text,unsigned int type,...)
 
 	return MessageBox(NULL,temp,emu_name,type | MB_TASKMODAL);
 }
+void PatchRegion_0(u8* sector,int size)
+{
+	if (settings.PatchRegion==0)
+		return;
 
+	u8* usersect=sector;
+	if ((size == 2352) || (size == 2448))
+	{
+		usersect+=0x18;
+	}
+	else if (size ==2336)
+	{
+		usersect+=0x8;
+	}
+	else if (size!=2048)
+	{
+		printf("PatchRegion_0 -> Unkown sector size %d\n",size);
+	}
+
+	//patch meta info
+	u8* p_area_symbol=&usersect[0x30];
+	memcpy(p_area_symbol,"JUE        ",8);
+}
+void PatchRegion_6(u8* sector,int size)
+{
+	if (settings.PatchRegion==0)
+		return;
+
+	u8* usersect=sector;
+	if ((size == 2352) || (size == 2448))
+	{
+		usersect+=0x18;
+	}
+	else if (size ==2336)
+	{
+		usersect+=0x8;
+	}
+	else if (size!=2048)
+	{
+		printf("PatchRegion_4 -> Unkown sector size %d\n",size);
+	}
+
+	//patch area symbols
+	u8* p_area_text=&usersect[0x700];
+	memcpy(&p_area_text[4],"For JAPAN,TAIWAN,PHILIPINES.",28);
+	memcpy(&p_area_text[4 + 32],"For USA and CANADA.         ",28);
+	memcpy(&p_area_text[4 + 32 + 32],"For EUROPE.                 ",28);
+}
 bool ConvertSector(u8* in_buff , u8* out_buff , int from , int to,int sector)
 {
 	//if no convertion

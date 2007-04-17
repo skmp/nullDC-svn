@@ -149,7 +149,9 @@ void shil_stream::emit32(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2,u32 ex
 {
 	emit(op,reg1,reg2,0,0,FLAG_32 | FLAG_REG1| FLAG_REG2 | extraflags);
 }
-
+void shil_stream::pref(Sh4RegType addr)
+{
+}
 void shil_stream::emitReg(shil_opcodes op,Sh4RegType reg1,u32 flags)
 {
 	//emit

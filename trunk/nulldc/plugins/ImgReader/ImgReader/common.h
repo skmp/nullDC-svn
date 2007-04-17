@@ -64,6 +64,8 @@ bool ConvertSector(u8* in_buff , u8* out_buff , int from , int to,int sector);
 bool InitDrive();
 void TermDrive();
 
+void PatchRegion_0(u8* sector,int size);
+void PatchRegion_6(u8* sector,int size);
 void ConvToc(u32* to,TocInfo* from);
 void GetDriveToc(u32* to,DiskArea area);
 void GetDriveSessionInfo(u8* to,u8 session);

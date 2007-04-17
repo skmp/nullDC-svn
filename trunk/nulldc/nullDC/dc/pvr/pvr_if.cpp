@@ -289,7 +289,7 @@ void TAWrite(u32 address,u32* data,u32 count)
 	{
 		//shoudn't realy get here (?)
 		printf("Vram Write 0x%X , size %d\n",address,count*32);
-		memcpy(&vram.data[address&VRAM_MASK],data,32);
+		memcpy(&vram.data[address&VRAM_MASK],data,count*32);
 	}
 }
 //Misc interface
