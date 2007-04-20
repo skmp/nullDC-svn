@@ -208,6 +208,11 @@ s32 FASTCALL Load(emu_info* inf,u32 rmenu)
 	g_hWnd=(HWND)Hwnd;
 	LoadSettings();
 
+	u32 fs_menu=em_inf.AddMenuItem(rmenu,-1,"Fullscreen",0,0);
+	em_inf.AddMenuItem(fs_menu,-1,"Enable",handle_TCH<(bool*)&g_bCreationFullScreen>,g_bCreationFullScreen);
+	em_inf.SetMenuItemStyle(em_inf.AddMenuItem(fs_menu,-1,"-",0,0),MIS_Seperator,MIS_Seperator);
+	em_inf.AddMenuItem(fs_menu,-1,"640x480",0,0);
+
 	em_inf.AddMenuItem(rmenu,-1,"Use ZWrite",handle_TCH<&g_bUSE_ZWRITE>,g_bUSE_ZWRITE);
 	em_inf.AddMenuItem(rmenu,-1,"Use Alpha Test ZWrite",handle_TCH<&g_bUSE_ALPHATEST_ZWRITE>,g_bUSE_ALPHATEST_ZWRITE);
 	em_inf.AddMenuItem(rmenu,-1,"Wireframe",handle_TCH<&g_bWireframe>,g_bWireframe);
