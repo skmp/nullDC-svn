@@ -11,8 +11,8 @@
 
 
 LPDIRECTINPUT8		dInputObj;
-vector<DI_DevInfo>	dInputDevList;
 InputDevice			InputDev[4];
+vector<DI_DevInfo>	diDevInfoList;
 
 
 
@@ -147,7 +147,6 @@ bool GetDInput(u32 port, Controller_ReadFormat *crf)
 		return false;
 
 	default:
-		printf("Default Input Type, WTF?\n");
 		return false;
 	}
 }
@@ -161,23 +160,11 @@ BOOL EnumObjsCB(LPCDIDEVICEOBJECTINSTANCE lpddoi, LPVOID pvRef)
 BOOL EnumDevsCB(LPCDIDEVICEINSTANCE lpddi, LPVOID Ref)
 {
 	DI_DevInfo didi;
-
+	didi.devType = lpddi->dwDevType;
 	didi.guid = lpddi->guidInstance;
 	strcpy(didi.name, lpddi->tszInstanceName);
 	
-	dInputDevList.push_back(didi);
-/*	printf("Found: %s\n{\n", lpddi->tszProductName);
-
-	LPDIRECTINPUTDEVICE8 diDev;
-	if(FAILED(dInputObj->CreateDevice(lpddi->guidInstance, &diDev, NULL)))
-		printf("EnumDevsCB::CreateDevice Failed!\n");
-	else
-	{
-		diDev->EnumObjects((LPDIENUMDEVICEOBJECTSCALLBACK)EnumObjsCB,0,DIDFT_ALL);
-		diDev->Release();
-	}
-
-	printf("}\n");*/
+	diDevInfoList.push_back(didi);
 	return DIENUM_CONTINUE;
 }
 
@@ -221,43 +208,55 @@ bool InitDInput(HINSTANCE hInst)
 	if(FAILED(DirectInput8Create(hInst,DIRECTINPUT_VERSION,IID_IDirectInput8,(void**)&dInputObj,NULL)))
 		return false;
 
-	if(DI_OK != dInputObj->EnumDevices(DI8DEVCLASS_GAMECTRL, (LPDIENUMDEVICESCALLBACK)EnumDevsCB,(void*)0, DIEDFL_ATTACHEDONLY))	{	return false;	}
-	if(DI_OK != dInputObj->EnumDevices(DI8DEVCLASS_KEYBOARD, (LPDIENUMDEVICESCALLBACK)EnumDevsCB,(void*)1, DIEDFL_ATTACHEDONLY))	{	return false;	}
 	if(DI_OK != dInputObj->EnumDevices(DI8DEVCLASS_POINTER , (LPDIENUMDEVICESCALLBACK)EnumDevsCB,(void*)2, DIEDFL_ATTACHEDONLY))	{	return false;	}
+	if(DI_OK != dInputObj->EnumDevices(DI8DEVCLASS_KEYBOARD, (LPDIENUMDEVICESCALLBACK)EnumDevsCB,(void*)3, DIEDFL_ATTACHEDONLY))	{	return false;	}
+	if(DI_OK != dInputObj->EnumDevices(DI8DEVCLASS_GAMECTRL, (LPDIENUMDEVICESCALLBACK)EnumDevsCB,(void*)4, DIEDFL_ATTACHEDONLY))	{	return false;	}
 
 	for(int d=0; d<4; d++)
 	{
+		int guidIdx = -1;
 		InputDev[d].diDev = NULL;
+		for(size_t x=0; x<diDevInfoList.size(); x++)
+			if(diDevInfoList[x].guid == InputDev[d].guidDev)
+				guidIdx = (int)x;
+
+		InputDev[d].Connected = (-1==guidIdx) ;
+
 		if(InputDev[d].Connected)
 		{
-			if(FAILED(dInputObj->CreateDevice(InputDev[d].guidDev, &InputDev[d].diDev, NULL)))
-			{
-				printf("Couldn't Attach InputDev[%d], DisConnecting!\n",d);
+			if(!InputDev[d].ReAqcuire(guidIdx))
 				InputDev[d].Connected = false;
-			}
+
+		/*	if(FAILED(dInputObj->CreateDevice(InputDev[d].guidDev, &InputDev[d].diDev, NULL)))
+			{
+				printf("Couldn't Create Obj for %s, DisConnecting!\n", diDevInfoList[guidIdx].name);
+				InputDev[d].Connected = false;
+			}*/
 		}
-		if(InputDev[d].Connected)
+	/*	if(InputDev[d].Connected)
 		{
 		//	if(FAILED(dInputDev[d]->SetCooperativeLevel(hwnd, DISCL_NONEXCLUSIVE | DISCL_FOREGROUND))) { return false; }
 
 			switch(InputDev[d].DevType)
 			{
 			case DI8DEVCLASS_GAMECTRL:
-				if(FAILED(InputDev[0].diDev->SetDataFormat(&c_dfDIJoystick)))
+				if(FAILED(InputDev[d].diDev->SetDataFormat(&c_dfDIJoystick)))
 					return false;
 				break;
 
 			case DI8DEVCLASS_KEYBOARD:
-				if(FAILED(InputDev[0].diDev->SetDataFormat(&c_dfDIKeyboard)))
+				if(FAILED(InputDev[d].diDev->SetDataFormat(&c_dfDIKeyboard)))
 					return false;
 				break;
 
 			case DI8DEVCLASS_POINTER:
+			//	if(FAILED(InputDev[d].diDev->SetDataFormat(&c_dfDIPointer)))
+			//		return false;
 				return false;
 			}
 			if(FAILED(InputDev[d].diDev->Acquire()))
 				return false;
-		}
+		}*/
 	}
 
 	return true;
@@ -274,4 +273,83 @@ void TermDInput()
 	}
 	dInputObj->Release();
 	dInputObj = NULL;
+}
+
+u32 GetDevClass(u32 DevType)
+{
+	printf("GetDevClass(%X)\n",DevType);
+
+	switch(DevType & 0xFF)
+	{
+	case DI8DEVCLASS_ALL:			return DI8DEVCLASS_POINTER;
+	case DI8DEVCLASS_DEVICE:		return DI8DEVCLASS_POINTER;
+	case DI8DEVCLASS_POINTER:		return DI8DEVCLASS_POINTER;
+	case DI8DEVCLASS_KEYBOARD:		return DI8DEVCLASS_KEYBOARD;
+	case DI8DEVCLASS_GAMECTRL:		return DI8DEVCLASS_GAMECTRL;
+	case DI8DEVTYPE_DEVICE:			return DI8DEVCLASS_POINTER;
+	case DI8DEVTYPE_MOUSE:			return DI8DEVCLASS_POINTER;
+	case DI8DEVTYPE_KEYBOARD:		return DI8DEVCLASS_KEYBOARD;
+	case DI8DEVTYPE_JOYSTICK:		return DI8DEVCLASS_GAMECTRL;
+	case DI8DEVTYPE_GAMEPAD:		return DI8DEVCLASS_GAMECTRL;
+	case DI8DEVTYPE_DRIVING:		return DI8DEVCLASS_GAMECTRL;
+	case DI8DEVTYPE_FLIGHT:			return DI8DEVCLASS_GAMECTRL;
+	case DI8DEVTYPE_1STPERSON:		return DI8DEVCLASS_GAMECTRL;
+	case DI8DEVTYPE_DEVICECTRL:		return DI8DEVCLASS_POINTER;
+	case DI8DEVTYPE_SCREENPOINTER:	return DI8DEVCLASS_POINTER;
+	case DI8DEVTYPE_REMOTE:			return DI8DEVCLASS_POINTER;
+	case DI8DEVTYPE_SUPPLEMENTAL:	return DI8DEVCLASS_GAMECTRL;
+	default:
+		printf("Warning: GetDevClass Def. Type (%X)!\n", DevType&0xFF);
+		break;
+	}
+	return DI8DEVCLASS_POINTER;
+}
+
+bool InputDevice::ReAqcuire(int idx)
+{
+	if(diDevInfoList.size() < idx)
+		return false;
+
+	if(NULL != diDev) {
+		diDev->Unacquire();
+		diDev->Release();
+		diDev = NULL;
+	}
+
+	Connected = true;
+	guidDev = diDevInfoList[idx].guid;
+	DevType = GetDevClass(diDevInfoList[idx].devType);
+
+	printf("ReAqcuiring: %s, Type: %X\n", diDevInfoList[idx].name, DevType);
+	if(FAILED(dInputObj->CreateDevice(diDevInfoList[idx].guid, &diDev, NULL)))
+		return false;
+
+	//	if(FAILED(dInputDev[d]->SetCooperativeLevel(hwnd, DISCL_NONEXCLUSIVE | DISCL_FOREGROUND))) { return false; }
+
+	switch(DevType)
+	{
+	case DI8DEVCLASS_GAMECTRL:
+		if(FAILED(diDev->SetDataFormat(&c_dfDIJoystick)))
+			return false;
+		break;
+
+	case DI8DEVCLASS_KEYBOARD:
+		if(FAILED(diDev->SetDataFormat(&c_dfDIKeyboard)))
+			return false;
+		break;
+
+	case DI8DEVCLASS_POINTER:
+		if(FAILED(diDev->SetDataFormat(&c_dfDIMouse)))
+			return false;
+		break;
+
+	default:
+		printf("DevType Default in ReAqcuire!\n");
+		return false;
+	}
+
+	if(FAILED(diDev->Acquire()))
+		return false;
+
+	return true;
 }

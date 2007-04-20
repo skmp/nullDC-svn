@@ -99,6 +99,7 @@ void WriteDefCfg()
 	char cfg_key[512], cfg_sub[512];
 	for(int p=0; p<4; p++) {
 		sprintf(cfg_key, "zNullMaple_port%02X", p);
+		printf("Writing DefCfg for %s\n", cfg_key);
 
 		ei.ConfigSaveInt(cfg_key, "DGUID_Data1", 0);	// long
 		ei.ConfigSaveInt(cfg_key, "DGUID_Data2", 0);	// short
@@ -232,6 +233,7 @@ DWORD WINAPI ThreadStart(LPVOID lpParameter)
 void UpdateDlg(HWND hDlg, u32 port)
 {	
 	CheckDlgButton(hDlg, IDC_CONNECTED, InputDev[port].Connected);
+	//SendMessage(GetDlgItem(hDlg,IDC_SELECT),CB_SETCURSEL,(InputDev[port].DevType-DI8DEVCLASS_POINTER),0);
 
 	for(int i=0; i<11; i++) {
 		EnableWindow(GetDlgItem(hDlg,IDC_EDIT1+i), InputDev[port].Connected);
@@ -253,7 +255,6 @@ INT_PTR CALLBACK dlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 	case WM_INITDIALOG:
 	{
-
 		// Create Thread for DInput Checking //
 		hThread = CreateThread(NULL, 0, ThreadStart, (LPVOID)hDlg, 0, (LPDWORD)&ThreadID);
 		if(NULL == hThread) {
@@ -262,8 +263,8 @@ INT_PTR CALLBACK dlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		}
 
 		// Setup ComboBox Selection
-		for(size_t x=0; x<dInputDevList.size(); x++)
-			SendMessage(GetDlgItem(hDlg,IDC_SELECT), CB_ADDSTRING, 0, (LPARAM)dInputDevList[x].name);
+		for(size_t x=0; x<diDevInfoList.size(); x++)
+			SendMessage(GetDlgItem(hDlg,IDC_SELECT), CB_ADDSTRING, 0, (LPARAM)diDevInfoList[x].name);
 		SendMessage(GetDlgItem(hDlg,IDC_SELECT), CB_SETCURSEL, 0, 0);
 
 
@@ -288,13 +289,14 @@ INT_PTR CALLBACK dlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			{
 			case EN_SETFOCUS:
 				curr_sel = 10 - (IDC_EDIT11 - LOWORD(wParam));
+
 			case EN_KILLFOCUS:
 				curr_sel = 420;
 				return true;
 
-				// *FIXME* Need to use this IF keyboard input is not in-use, else you can type shit ....
-		/*	case EN_CHANGE:
-				return true;	*/
+				// *FIXME* Use IF kboard not in-use, else you can type shit ....
+			case EN_CHANGE:
+				return true;	
 
 			default: break;
 			}
@@ -303,12 +305,19 @@ INT_PTR CALLBACK dlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		}
 
 		case IDC_CONNECTED:
-
 			if(BN_CLICKED == HIWORD(wParam)) {
 				InputDev[curr_port].Connected = 
 					(BST_CHECKED==IsDlgButtonChecked(hDlg,IDC_CONNECTED)) ? true : false ;
-
 				UpdateDlg(hDlg,curr_port);
+			}
+			return true;
+
+		case IDC_SELECT:
+			if(CBN_SELCHANGE==HIWORD(wParam)) {
+				int guidIdx = SendMessage((HWND)lParam,CB_GETCURSEL,0,0);
+				if(!InputDev[curr_port].ReAqcuire(guidIdx))
+					printf("IDC_SELECT::InputDev[%02X].ReAqcuire(%X) Failed!\n", curr_port, guidIdx);
+//				UpdateDlg(hDlg,curr_port);
 			}
 			return true;
 
@@ -330,6 +339,7 @@ INT_PTR CALLBACK dlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	}
 	return false;
 }
+
 void FASTCALL menu_cb(u32 id, void* handle, void* p)
 {
 	curr_port = ((maple_device_instance*)p)->port>>6;

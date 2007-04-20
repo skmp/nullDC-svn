@@ -8,13 +8,12 @@ using namespace std;
 
 
 
-struct InputDevice
+class InputDevice
 {
-	struct {
-		u8  Connected;
-		u8  DevType;
-		u16 OtherFlags;
-	};
+public:
+
+	u32 DevType;
+	u32 Connected;
 
 	GUID					guidDev;
 	LPDIRECTINPUTDEVICE8	diDev;
@@ -24,14 +23,18 @@ struct InputDevice
 		u8 diKeys[256]; 
 		DIJOYSTATE diJoyState;
 	};
+
+
+	bool ReAqcuire(int idx);
 };
 
 struct DI_DevInfo {
 	GUID guid;
 	char name[MAX_PATH];
+	DWORD devType;
 };
 extern InputDevice			InputDev[4];
-extern vector<DI_DevInfo>	dInputDevList;
+extern vector<DI_DevInfo>	diDevInfoList;
 
 s32 GetChInput(InputDevice &iDev);
 bool GetDInput(u32 port, Controller_ReadFormat *crf);
