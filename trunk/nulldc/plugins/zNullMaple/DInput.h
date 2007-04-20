@@ -16,8 +16,9 @@ struct InputDevice
 		u16 OtherFlags;
 	};
 
+	GUID					guidDev;
 	LPDIRECTINPUTDEVICE8	diDev;
-	vector<GUID>			KeyMap;
+	vector<u32>				KeyMap;
 
 	union {
 		u8 diKeys[256]; 

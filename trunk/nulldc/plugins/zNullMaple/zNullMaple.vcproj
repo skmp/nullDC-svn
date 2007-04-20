@@ -237,6 +237,14 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="Devices"
+			>
+			<File
+				RelativePath=".\sega_controller.cpp"
+				>
+			</File>
+		</Filter>
 	</Files>
 	<Globals>
 	</Globals>

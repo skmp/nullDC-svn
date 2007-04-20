@@ -20,6 +20,8 @@ s32 GetChInput(InputDevice &iDev)
 {
 	if(false==iDev.Connected)
 		return -1;
+	if(NULL==iDev.diDev)
+		return -2;
 
 	iDev.diDev->Poll();
 
@@ -228,7 +230,7 @@ bool InitDInput(HINSTANCE hInst)
 		InputDev[d].diDev = NULL;
 		InputDev[d].Connected = false;
 	}
-
+/*
 	dInputObj->CreateDevice(GUID_SysKeyboard, &InputDev[0].diDev, NULL);
 	if(NULL == InputDev[0].diDev)
 		return false;
@@ -241,7 +243,7 @@ bool InitDInput(HINSTANCE hInst)
 
 	InputDev[0].Connected = true;
 	InputDev[0].DevType = DI8DEVCLASS_KEYBOARD;
-
+*/
 	return true;
 }
 

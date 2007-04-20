@@ -21,10 +21,10 @@ enum DINPUT_MAPPING
 	DINPUT_RET_OK	=	0,
 
 	DINPUT_KB_FIRST	=	DINPUT_RET_OK+1,
-	DINPUT_KB_LAST	=	DINPUT_KB_FIRST+256,
+	DINPUT_KB_LAST	=	DINPUT_KB_FIRST+255,
 
 	DINPUT_GP_BUT1	=	DINPUT_KB_LAST+1,
-	DINPUT_GP_BUT32	=	DINPUT_GP_BUT1+32,
+	DINPUT_GP_BUT32	=	DINPUT_GP_BUT1+31,
 
 	DINPUT_GP_AX1	=	DINPUT_GP_BUT32+1,
 	DINPUT_GP_AY1	=	DINPUT_GP_AX1+1,
@@ -38,6 +38,11 @@ enum DINPUT_MAPPING
 	DINPUT_GP_POV2	=	DINPUT_GP_POV1+1,
 	DINPUT_GP_POV3	=	DINPUT_GP_POV2+1,
 	DINPUT_GP_POV4	=	DINPUT_GP_POV3+1,
+
+	DINPUT_GP_SL1	=	DINPUT_GP_POV4+1,
+	DINPUT_GP_SL2	=	DINPUT_GP_SL1+1,
+
+	DINPUT_LAST
 };
 
 static const char * MapNames[] = 
@@ -48,11 +53,15 @@ static const char * MapNames[] =
 
 
 	// *FIXME* THERE ARE HUGE GAPS HERE //
-
 	"Key ?",	
 	"DIK_ESCAPE", 
 	"DIK_1", "DIK_2", "DIK_3", "DIK_4", "DIK_5", "DIK_6", "DIK_7", "DIK_8", "DIK_9", "DIK_0", 
 	"DIK_MINUS", "DIK_EQUALS", "DIK_BACK", "DIK_TAB", 
+
+//	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+//	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+
+
 	"DIK_Q", "DIK_W", "DIK_E", "DIK_R", "DIK_T", "DIK_Y", "DIK_U", "DIK_I", "DIK_O", "DIK_P", 
 	"DIK_LBRACKET", "DIK_RBRACKET", "DIK_RETURN", "DIK_LCONTROL", 
 	"DIK_A", "DIK_S", "DIK_D", "DIK_F", "DIK_G", "DIK_H", "DIK_J", "DIK_K", "DIK_L", 
@@ -61,7 +70,64 @@ static const char * MapNames[] =
 	"DIK_COMMA", "DIK_PERIOD", "DIK_SLASH", "DIK_RSHIFT", "DIK_MULTIPLY", "DIK_LMENU", "DIK_SPACE", "DIK_CAPITAL", 
 	"DIK_F1", "DIK_F2", "DIK_F3", "DIK_F4", "DIK_F5", "DIK_F6", "DIK_F7", "DIK_F8", "DIK_F9", "DIK_F10", 
 	"DIK_NUMLOCK", "DIK_SCROLL", "DIK_NUMPAD7", "DIK_NUMPAD8", "DIK_NUMPAD9", "DIK_SUBTRACT", "DIK_NUMPAD4", 
-	"DIK_NUMPAD5", "DIK_NUMPAD6", "DIK_ADD", "DIK_NUMPAD1", "DIK_NUMPAD2", "DIK_NUMPAD3", "DIK_NUMPAD0", "DIK_DECIMAL", 
+	"DIK_NUMPAD5", "DIK_NUMPAD6", "DIK_ADD", "DIK_NUMPAD1",
+
+/*	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", */
+
+
+	"DIK_NUMPAD2", "DIK_NUMPAD3", "DIK_NUMPAD0", "DIK_DECIMAL", 
+
+//	"Key ?", "Key ?", "Key ?", "Key ?",
+
+	"Key ?", "Key ?", "Key ?", "Key ?", 
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+	"Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", "Key ?", 
+
+/*	"Key ?",	
+	"DIK_ESCAPE", 
+	"DIK_1", "DIK_2", "DIK_3", "DIK_4", "DIK_5", "DIK_6", "DIK_7", "DIK_8", "DIK_9", "DIK_0", 
+	"DIK_MINUS", "DIK_EQUALS", "DIK_BACK", "DIK_TAB", 
+
+
+
+
+	"DIK_Q", "DIK_W", "DIK_E", "DIK_R", "DIK_T", "DIK_Y", "DIK_U", "DIK_I", "DIK_O", "DIK_P", 
+	"DIK_LBRACKET", "DIK_RBRACKET", "DIK_RETURN", "DIK_LCONTROL", 
+	"DIK_A", "DIK_S", "DIK_D", "DIK_F", "DIK_G", "DIK_H", "DIK_J", "DIK_K", "DIK_L", 
+	"DIK_SEMICOLON", "DIK_APOSTROPHE", "DIK_GRAVE", "DIK_LSHIFT", "DIK_BACKSLASH", 
+	"DIK_Z", "DIK_X", "DIK_C", "DIK_V", "DIK_B", "DIK_N", "DIK_M", 
+	"DIK_COMMA", "DIK_PERIOD", "DIK_SLASH", "DIK_RSHIFT", "DIK_MULTIPLY", "DIK_LMENU", "DIK_SPACE", "DIK_CAPITAL", 
+	"DIK_F1", "DIK_F2", "DIK_F3", "DIK_F4", "DIK_F5", "DIK_F6", "DIK_F7", "DIK_F8", "DIK_F9", "DIK_F10", 
+	"DIK_NUMLOCK", "DIK_SCROLL", "DIK_NUMPAD7", "DIK_NUMPAD8", "DIK_NUMPAD9", "DIK_SUBTRACT", "DIK_NUMPAD4", 
+	"DIK_NUMPAD5", "DIK_NUMPAD6", "DIK_ADD", "DIK_NUMPAD1",
+	
+	"DIK_NUMPAD2", "DIK_NUMPAD3", "DIK_NUMPAD0", "DIK_DECIMAL", 
 
 	// Watch from here out
 
@@ -91,7 +157,7 @@ static const char * MapNames[] =
 	"DIK_APPS", "DIK_POWER", "DIK_SLEEP", "DIK_WAKE", 
 	"DIK_WEBSEARCH", "DIK_WEBFAVORITES", "DIK_WEBREFRESH", "DIK_WEBSTOP", "DIK_WEBFORWARD", "DIK_WEBBACK", 
 	"DIK_MYCOMPUTER", "DIK_MAIL", "DIK_MEDIASELECT", 
-
+*/
 
 
 
