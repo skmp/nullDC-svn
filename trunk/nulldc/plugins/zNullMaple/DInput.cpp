@@ -205,7 +205,6 @@ bool GetDInputNameByGUID(char * dest, int len, GUID guid)
 
 		}
 
-
 		printf("GetNameByGUID: %ws \n", dips.wsz);
 		strcpy_s(dest, len, (char *)dips.wsz);
 
@@ -226,24 +225,41 @@ bool InitDInput(HINSTANCE hInst)
 	if(DI_OK != dInputObj->EnumDevices(DI8DEVCLASS_KEYBOARD, (LPDIENUMDEVICESCALLBACK)EnumDevsCB,(void*)1, DIEDFL_ATTACHEDONLY))	{	return false;	}
 	if(DI_OK != dInputObj->EnumDevices(DI8DEVCLASS_POINTER , (LPDIENUMDEVICESCALLBACK)EnumDevsCB,(void*)2, DIEDFL_ATTACHEDONLY))	{	return false;	}
 
-	for(int d=0; d<4; d++) {
+	for(int d=0; d<4; d++)
+	{
 		InputDev[d].diDev = NULL;
-		InputDev[d].Connected = false;
+		if(InputDev[d].Connected)
+		{
+			if(FAILED(dInputObj->CreateDevice(InputDev[d].guidDev, &InputDev[d].diDev, NULL)))
+			{
+				printf("Couldn't Attach InputDev[%d], DisConnecting!\n",d);
+				InputDev[d].Connected = false;
+			}
+		}
+		if(InputDev[d].Connected)
+		{
+		//	if(FAILED(dInputDev[d]->SetCooperativeLevel(hwnd, DISCL_NONEXCLUSIVE | DISCL_FOREGROUND))) { return false; }
+
+			switch(InputDev[d].DevType)
+			{
+			case DI8DEVCLASS_GAMECTRL:
+				if(FAILED(InputDev[0].diDev->SetDataFormat(&c_dfDIJoystick)))
+					return false;
+				break;
+
+			case DI8DEVCLASS_KEYBOARD:
+				if(FAILED(InputDev[0].diDev->SetDataFormat(&c_dfDIKeyboard)))
+					return false;
+				break;
+
+			case DI8DEVCLASS_POINTER:
+				return false;
+			}
+			if(FAILED(InputDev[d].diDev->Acquire()))
+				return false;
+		}
 	}
-/*
-	dInputObj->CreateDevice(GUID_SysKeyboard, &InputDev[0].diDev, NULL);
-	if(NULL == InputDev[0].diDev)
-		return false;
 
-//	if(FAILED(dInputDev[d]->SetCooperativeLevel(hwnd, DISCL_NONEXCLUSIVE | DISCL_FOREGROUND))) { return false; }
-	if(FAILED(InputDev[0].diDev->SetDataFormat(&c_dfDIKeyboard)))
-		return false;
-	if(FAILED(InputDev[0].diDev->Acquire()))
-		return false;
-
-	InputDev[0].Connected = true;
-	InputDev[0].DevType = DI8DEVCLASS_KEYBOARD;
-*/
 	return true;
 }
 

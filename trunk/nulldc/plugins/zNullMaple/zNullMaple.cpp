@@ -94,12 +94,9 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 
 
 
-
-
-
 void WriteDefCfg()
 {
-	char cfg_key[512];
+	char cfg_key[512], cfg_sub[512];
 	for(int p=0; p<4; p++) {
 		sprintf(cfg_key, "zNullMaple_port%02X", p);
 
@@ -111,13 +108,18 @@ void WriteDefCfg()
 
 		ei.ConfigSaveInt(cfg_key, "Connected", 0);
 		ei.ConfigSaveInt(cfg_key, "DevType", 0);
-		ei.ConfigSaveInt(cfg_key, "KeyMap[00]", 0);
+
+		for(size_t k=0; k<32; k++) {
+			sprintf(cfg_sub, "KeyMap[%02X]", k);
+			ei.ConfigSaveInt(cfg_key, cfg_sub, 0);
+		}
 	}
 }
+
 void SaveCfg()
 {
 	GUID tguid;
-	char cfg_key[512];
+	char cfg_key[512], cfg_sub[512];
 	for(int p=0; p<4; p++) {
 		tguid = InputDev[p].guidDev;
 		sprintf(cfg_key, "zNullMaple_port%02X", p);
@@ -131,60 +133,56 @@ void SaveCfg()
 		ei.ConfigSaveInt(cfg_key, "Connected", InputDev[p].Connected);
 		ei.ConfigSaveInt(cfg_key, "DevType", InputDev[p].DevType);
 
-		// *FIXME*
-		ei.ConfigSaveInt(cfg_key, "KeyMap[00]", 0);
+		for(size_t k=0; k<InputDev[p].KeyMap.size(); k++) {
+			sprintf(cfg_sub, "KeyMap[%02X]", k);
+			ei.ConfigSaveInt(cfg_key, cfg_sub, InputDev[p].KeyMap[k]);
+		}
 	}
-
 }
 
-
-
-
-s32  FASTCALL Load(emu_info* emu, u32 rmenu)
+void LoadCfg()
 {
-	if(!InitDInput(hInst))
-		printf("DInput is fucked !\n");
-
-	ei = *(emu_info*)emu;
-	/////////////////////
-
-
-	u32 temp=0;
 	GUID tguid;
-	char cfg_key[512], cfg_str[512];
-
-	// Load Config //
-	for(int p=0; p<4; p++)
-	{
+	char cfg_key[512], cfg_sub[512];
+	for(int p=0; p<4; p++) {
 		sprintf(cfg_key, "zNullMaple_port%02X", p);
 
 		if(!ei.ConfigExists(cfg_key, "Connected"))
 			WriteDefCfg();
 
-		tguid.Data1				= (long )ei.ConfigLoadInt(cfg_key, "DGUID_Data1", 0);	// long
-		tguid.Data2				= (short)ei.ConfigLoadInt(cfg_key, "DGUID_Data2", 0);	// short
-		tguid.Data3				= (short)ei.ConfigLoadInt(cfg_key, "DGUID_Data3", 0);	// short
-
-		((u32*)tguid.Data4)[0]	= (u32)ei.ConfigLoadInt(cfg_key, "DGUID_Data4a", 0);	// char[0-3] -> long
-		((u32*)tguid.Data4)[1]	= (u32)ei.ConfigLoadInt(cfg_key, "DGUID_Data4b", 0);	// char[4-7] -> long
+		tguid.Data1	= ei.ConfigLoadInt(cfg_key, "DGUID_Data1", 0);	// long
+		tguid.Data2	= ei.ConfigLoadInt(cfg_key, "DGUID_Data2", 0);	// short
+		tguid.Data3	= ei.ConfigLoadInt(cfg_key, "DGUID_Data3", 0);	// short
+		((u32*)tguid.Data4)[0]	= ei.ConfigLoadInt(cfg_key, "DGUID_Data4a", 0);	// char[0-3] -> long
+		((u32*)tguid.Data4)[1]	= ei.ConfigLoadInt(cfg_key, "DGUID_Data4b", 0);	// char[4-7] -> long
 
 		InputDev[p].guidDev		= tguid;
-		InputDev[p].DevType		= (u32)ei.ConfigLoadInt(cfg_key, "DevType", 0);
-		InputDev[p].Connected	= (u32)ei.ConfigLoadInt(cfg_key, "Connected", 0);
-
-		// We need 11 for this one //
+		InputDev[p].Connected	= ei.ConfigLoadInt(cfg_key, "Connected", 0);
+		InputDev[p].DevType		= ei.ConfigLoadInt(cfg_key, "DevType", 0);
 
 		if(InputDev[p].KeyMap.size() > 0)
 			InputDev[p].KeyMap.clear();
 
-		for(int k=0; k<11; k++) {
-			sprintf(cfg_str, "KeyMap[%02X]", k);
-			InputDev[p].KeyMap.push_back(ei.ConfigLoadInt(cfg_key, cfg_str, 0));
+		for(size_t k=0; k<InputDev[p].KeyMap.size(); k++) {
+			sprintf(cfg_sub, "KeyMap[%02X]", k);
+			InputDev[p].KeyMap.push_back(ei.ConfigLoadInt(cfg_key, cfg_sub, 0));
 		}
-
-		// Get DInput Device from GUID //
 	}
+}
 
+
+
+s32  FASTCALL Load(emu_info* emu, u32 rmenu)
+{
+	/////////////////////
+	ei = *(emu_info*)emu;
+	/////////////////////
+
+	// Load Config //
+	LoadCfg();
+
+	if(!InitDInput(hInst))
+		printf("DInput is fucked !\n");
 
 	return rv_ok;
 }
@@ -237,7 +235,11 @@ void UpdateDlg(HWND hDlg, u32 port)
 
 	for(int i=0; i<11; i++) {
 		EnableWindow(GetDlgItem(hDlg,IDC_EDIT1+i), InputDev[port].Connected);
-		SetDlgItemText(hDlg, IDC_EDIT1+i, MapNames[InputDev[port].KeyMap[i]]);
+
+		if(i<InputDev[port].KeyMap.size())
+			SetDlgItemText(hDlg, IDC_EDIT1+i, MapNames[InputDev[port].KeyMap[i]]);
+		else
+			SetDlgItemText(hDlg, IDC_EDIT1+i, MapNames[0]);
 	}
 }
 
@@ -290,6 +292,7 @@ INT_PTR CALLBACK dlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				curr_sel = 420;
 				return true;
 
+				// *FIXME* Need to use this IF keyboard input is not in-use, else you can type shit ....
 		/*	case EN_CHANGE:
 				return true;	*/
 
@@ -310,9 +313,7 @@ INT_PTR CALLBACK dlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			return true;
 
 		case IDOK:
-
-			// Save Shit here //
-
+			SaveCfg();
 			EndDialog(hDlg,0);
 			return true;
 
