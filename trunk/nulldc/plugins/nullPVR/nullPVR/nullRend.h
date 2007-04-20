@@ -44,10 +44,10 @@ enum TEX_INP_FMT
 	TXI_4444,
 	TXI_32B,
 
-}
+};
 
 
-typedef s32  FASTCALL UploadTexFP(TEX_INP_FMT in, TEX_OUTP_FMT out, u32 addr);
+//typedef s32  FASTCALL UploadTexFP(TEX_INP_FMT in, TEX_OUTP_FMT out, u32 addr);
 
 struct TexInterface
 {

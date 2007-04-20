@@ -5,7 +5,8 @@
 #define __NULLREND_D3D_H__
 
 #include <D3D9.h>
-#include <cg/cgd3d9.h>	
+#include <D3DX9.h>
+//#include <cg/cgd3d9.h>	
 
 
 
