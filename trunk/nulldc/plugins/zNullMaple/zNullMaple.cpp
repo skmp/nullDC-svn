@@ -116,31 +116,25 @@ void WriteDefCfg()
 }
 void SaveCfg()
 {
+	GUID tguid;
 	char cfg_key[512];
 	for(int p=0; p<4; p++) {
+		tguid = InputDev[p].guidDev;
 		sprintf(cfg_key, "zNullMaple_port%02X", p);
 
-		ei.ConfigSaveInt(cfg_key, "DGUID_Data1", 0);	// long
-		ei.ConfigSaveInt(cfg_key, "DGUID_Data2", 0);	// short
-		ei.ConfigSaveInt(cfg_key, "DGUID_Data3", 0);	// short
-		ei.ConfigSaveInt(cfg_key, "DGUID_Data4a", 0);	// char[0-3] -> long
-		ei.ConfigSaveInt(cfg_key, "DGUID_Data4b", 0);	// char[4-7] -> long
+		ei.ConfigSaveInt(cfg_key, "DGUID_Data1", tguid.Data1);	// long
+		ei.ConfigSaveInt(cfg_key, "DGUID_Data2", tguid.Data2);	// short
+		ei.ConfigSaveInt(cfg_key, "DGUID_Data3", tguid.Data3);	// short
+		ei.ConfigSaveInt(cfg_key, "DGUID_Data4a", ((u32*)tguid.Data4)[0]);	// char[0-3] -> long
+		ei.ConfigSaveInt(cfg_key, "DGUID_Data4b", ((u32*)tguid.Data4)[1]);	// char[4-7] -> long
 
-		ei.ConfigSaveInt(cfg_key, "Connected", 0);
-		ei.ConfigSaveInt(cfg_key, "DevType", 0);
+		ei.ConfigSaveInt(cfg_key, "Connected", InputDev[p].Connected);
+		ei.ConfigSaveInt(cfg_key, "DevType", InputDev[p].DevType);
+
+		// *FIXME*
 		ei.ConfigSaveInt(cfg_key, "KeyMap[00]", 0);
 	}
-/*	tguid.Data1				= (long )ei.ConfigLoadInt(cfg_key, "DGUID_Data1", 0);	// long
-	tguid.Data2				= (short)ei.ConfigLoadInt(cfg_key, "DGUID_Data2", 0);	// short
-	tguid.Data3				= (short)ei.ConfigLoadInt(cfg_key, "DGUID_Data3", 0);	// short
 
-	((u32*)tguid.Data4)[0]	= (u32)ei.ConfigLoadInt(cfg_key, "DGUID_Data4a", 0);	// char[0-3] -> long
-	((u32*)tguid.Data4)[1]	= (u32)ei.ConfigLoadInt(cfg_key, "DGUID_Data4b", 0);	// char[4-7] -> long
-
-	InputDev[p].guidDev		= tguid;
-	InputDev[p].DevType		= (u32)ei.ConfigLoadInt(cfg_key, "DevType", 0);
-	InputDev[p].Connected	= (u32)ei.ConfigLoadInt(cfg_key, "Connected", 0);
-*/
 }
 
 
