@@ -108,6 +108,8 @@ void BasicBlock::SetCompiledBlockInfo(CompiledBasicBlock* cBl)
 {
 	verify(cBl->cbi.block_type.type==COMPILED_BASIC_BLOCK);
 	cBB= cBl;
+	
+	cBB->cbi.block_type.ProtectionType=flags.ProtectionType;
 
 	cBB->cbi.start=start;
 	cBB->cbi.end=end;

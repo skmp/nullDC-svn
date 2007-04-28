@@ -56,6 +56,8 @@ struct bm_stats
 {
 	u32 block_count;
 	u32 cache_size;
+	u32 locked_blocks;
+	u32 manual_blocks;
 };
 
 void bm_GetStats(bm_stats* stats);

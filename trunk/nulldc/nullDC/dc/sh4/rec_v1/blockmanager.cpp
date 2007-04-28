@@ -244,6 +244,8 @@ BlockList					BlockLookupLists[LOOKUP_HASH_SIZE];
 CompiledBlockInfo*			BlockLookupGuess[LOOKUP_HASH_SIZE];
 #endif
 
+u32 bm_locked_block_count=0;
+u32 bm_manual_block_count=0;
 //Memory managment :)
 class MemoryChunk
 {
@@ -329,6 +331,8 @@ void ResetBlocks()
 	FreeBlocks(&all_block_list);
 	reset_memalloc();
 	memset(PageInfo,0,sizeof(PageInfo));
+	bm_locked_block_count=0;
+	bm_manual_block_count=0;
 }
 void bm_GetStats(bm_stats* stats)
 {
@@ -340,6 +344,8 @@ void bm_GetStats(bm_stats* stats)
 		sz+=MemChunks[i].index;
 	}
 	stats->cache_size=sz;
+	stats->manual_blocks=bm_manual_block_count;
+	stats->locked_blocks=bm_locked_block_count;
 }
 bool reset_cache=false;
 void __fastcall _SuspendAllBlocks();
@@ -556,6 +562,11 @@ void RegisterBlock(CompiledBlockInfo* block)
 
 	//AddToBlockList(GetLookupBlockList(block->start),block);
 	GetLookupBlockList(block->start)->Add(block);
+	
+	if (block->block_type.ProtectionType)
+		bm_manual_block_count++;
+	else
+		bm_locked_block_count++;
 
 	if (((block->start >>26)&0x7)==3)
 	{	//Care about invalidates olny if on ram
@@ -583,6 +594,11 @@ void UnRegisterBlock(CompiledBlockInfo* block)
 	if (BlockLookupGuess[GetLookupHash(block->start)]==block)
 		BlockLookupGuess[GetLookupHash(block->start)]=BLOCK_NONE;
 	#endif
+
+	if (block->block_type.ProtectionType)
+		bm_manual_block_count--;
+	else
+		bm_locked_block_count--;
 
 	if (block->OnRam())
 	{	//Care about invalidates olny if on ram

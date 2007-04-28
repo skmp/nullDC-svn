@@ -36,6 +36,7 @@ public :
 			u32 type:8;
 			u32 nullProf:1;
 			u32 HotSpot:1;
+			u32 ProtectionType:1;
 		};
 		u32 full;
 	} block_type;
