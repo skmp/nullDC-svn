@@ -125,7 +125,7 @@ void FASTCALL spgUpdatePvr(u32 cycles)
 		{
 			//Vblank counter
 			vblk_cnt++;
-			params.RaiseInterrupt(InterruptID::holly_HBLank);// -> This turned out to be HBlank btw , needs to be emulater ;(
+			params.RaiseInterrupt(holly_HBLank);// -> This turned out to be HBlank btw , needs to be emulater ;(
 			//TODO : rend_if_VBlank();
 			rend_vblank();//notify for vblank :)
 
@@ -167,9 +167,9 @@ void FASTCALL spgUpdatePvr(u32 cycles)
 		if (render_end_pending_cycles<cycles)
 		{
 			render_end_pending=false;
-			params.RaiseInterrupt(InterruptID::holly_RENDER_DONE);
-			params.RaiseInterrupt(InterruptID::holly_RENDER_DONE_isp);
-			params.RaiseInterrupt(InterruptID::holly_RENDER_DONE_vd);
+			params.RaiseInterrupt(holly_RENDER_DONE);
+			params.RaiseInterrupt(holly_RENDER_DONE_isp);
+			params.RaiseInterrupt(holly_RENDER_DONE_vd);
 			rend_end_render();
 		}
 		render_end_pending_cycles-=cycles;

@@ -48,11 +48,11 @@ namespace TASplitter
 
 	const InterruptID ListEndInterrupt[5]=
 	{
-		InterruptID::holly_OPAQUE,
-		InterruptID::holly_OPAQUEMOD,
-		InterruptID::holly_TRANS,
-		InterruptID::holly_TRANSMOD,
-		InterruptID::holly_PUNCHTHRU
+		holly_OPAQUE,
+		holly_OPAQUEMOD,
+		holly_TRANS,
+		holly_TRANSMOD,
+		holly_PUNCHTHRU
 	};
 	
 	//Splitter function (normaly ta_dma_main , modified for split dma's)
