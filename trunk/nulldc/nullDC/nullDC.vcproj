@@ -1769,6 +1769,10 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="cl"
+			>
+		</Filter>
 		<File
 			RelativePath=".\basic_types.h"
 			>

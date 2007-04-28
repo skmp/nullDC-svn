@@ -8,7 +8,9 @@
 //RTC is emulated here tho xD
 //Gota check what to do about the rest regs that are not aica olny .. pfftt [display mode , any other ?]
 #include <time.h>
-u8 aica_ram[2*1024*1024];
+//u8 aica_ram[2*1024*1024];
+VArray2 aica_ram;
+u32 VREG;//video reg =P
 u32 ReadMem_aica_rtc(u32 addr,u32 sz)
 {
 	
@@ -60,7 +62,55 @@ void WriteMem_aica_rtc(u32 addr,u32 data,u32 sz)
 {
 	
 }
-
+u32 FASTCALL ReadMem_aica_reg(u32 addr,u32 sz)
+{
+	if (sz==1)
+	{
+		if ((addr & 0x7FFF)==0x2C01)
+		{
+			return VREG;
+		}
+		else
+			return libAICA.ReadMem_aica_reg(addr,sz);
+	}
+	else
+	{
+		if ((addr & 0x7FFF)==0x2C00)
+		{
+			return libAICA.ReadMem_aica_reg(addr,sz) | (VREG<<8);
+		}
+		else
+			return libAICA.ReadMem_aica_reg(addr,sz);
+	}
+}
+void FASTCALL WriteMem_aica_reg(u32 addr,u32 data,u32 sz)
+{
+	if (sz==1)
+	{
+		if ((addr & 0x7FFF)==0x2C01)
+		{
+			VREG=data;
+			printf("VREG = %02X\n",VREG);
+		}
+		else
+		{
+			libAICA.WriteMem_aica_reg(addr,data,sz);
+		}
+	}
+	else
+	{
+		if ((addr & 0x7FFF)==0x2C00)
+		{
+			VREG=(data>>8)&0xFF;
+			printf("VREG = %02X\n",VREG);
+			libAICA.WriteMem_aica_reg(addr,data&(~0xFF00),sz);
+		}
+		else
+		{
+			libAICA.WriteMem_aica_reg(addr,data,sz);
+		}
+	}
+}
 //Init/res/term
 void aica_Init()
 {
@@ -71,7 +121,7 @@ void aica_Reset(bool Manual)
 {
 	if (!Manual)
 	{
-		
+		aica_ram.Zero();
 	}
 }
 

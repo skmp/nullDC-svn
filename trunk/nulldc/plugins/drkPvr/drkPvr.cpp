@@ -300,7 +300,8 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	p.WriteReg=WritePvrRegister;
 	p.UpdatePvr=spgUpdatePvr;
 
-	p.TaFIFO=TASplitter::Dma;
+	p.TaDMA=TASplitter::Dma;
+	p.TaSQ=TASplitter::SQ;
 	p.LockedBlockWrite=vramLockCB;
 	
 #undef c

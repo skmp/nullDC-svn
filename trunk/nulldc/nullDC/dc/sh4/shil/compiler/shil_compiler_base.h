@@ -13,7 +13,7 @@ void shil_compile(shil_opcode* op);
 struct roml_patch
 {
 	x86_Label* p4_access;
-	x86_Label* patch_point;
+	u8 resume_offset;
 	x86_Label* exit_point;
 	u32 asz;
 	u32 type;

@@ -14,7 +14,7 @@ u32 vblk_cnt=0;
 u32 last_fps=0;
 
 //54 mhz pixel clock :)
-#define PIXEL_CLOCK (54*1000*1000)
+#define PIXEL_CLOCK (54*1000*1000/2)
 u32 Line_Cycles=0;
 u32 Frame_Cycles=0;
 void CalculateSync()
@@ -35,21 +35,22 @@ void CalculateSync()
 	}
 
 	//We need to caclulate the pixel clock
-	u32 frame_cycles;
+
 	u32 sync_cycles=(SPG_LOAD.hcount+1)*(SPG_LOAD.vcount+1);
 	pvr_numscanlines=SPG_LOAD.vcount+1;
+	
+	Line_Cycles=(u64)DCclock*(u64)(SPG_LOAD.hcount+1)/(u64)pixel_clock;
+
 	if (SPG_CONTROL.interlace)
 	{
-		frame_cycles=sync_cycles*2;
-	}
-	else
-	{
-		frame_cycles=sync_cycles;
+		//this is a temp hack
+		Line_Cycles/=2;
 	}
 	
 	
-	Frame_Cycles=(u64)DCclock*(u64)sync_cycles/(u64)pixel_clock;
-	Line_Cycles=(u64)DCclock*(u64)(SPG_LOAD.hcount+1)/(u64)pixel_clock;
+	//Frame_Cycles=(u64)DCclock*(u64)sync_cycles/(u64)pixel_clock;
+	
+	Frame_Cycles=pvr_numscanlines*Line_Cycles;
 
 	/*
 	printf("*******************************\n");
@@ -142,8 +143,18 @@ void FASTCALL spgUpdatePvr(u32 cycles)
 				vblk_cnt=0;
 
 				char fpsStr[256];
-				sprintf(fpsStr,"%s - %4.2f%% - VPS: %4.2f(%4.2f) RPS: %4.2f Vert: %4.2fM Sh4: %4.2f mhz", 
-					emu_name,spd_cpu*100/200,spd_vbs,fullvbs,
+				char* mode=0;
+
+				if (SPG_CONTROL.NTSC==0 && SPG_CONTROL.PAL==1)
+					mode="PAL";
+				else if (SPG_CONTROL.NTSC==1 && SPG_CONTROL.PAL==0)
+					mode="NTSC";
+				else
+					mode="VGA";
+
+				sprintf(fpsStr,"%s/%c - %4.2f%% - VPS: %4.2f(%s%s%4.2f) RPS: %4.2f Vert: %4.2fM Sh4: %4.2f mhz", 
+					emu_name,'n',spd_cpu*100/200,spd_vbs,
+					mode,SPG_CONTROL.interlace?"480i":"240p",fullvbs,
 					spd_fps,mv, spd_cpu);
 
 				rend_set_fps_text(fpsStr);

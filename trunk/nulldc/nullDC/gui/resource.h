@@ -137,6 +137,8 @@
 #define IDC_MAPLETAB                    1114
 #define IDC_NDC_VER                     1115
 #define IDC_REC_CPP                     1116
+#define IDC_CHECK1                      1117
+#define IDC_REC_UFPU                    1117
 #define ID_DEBUG_REGVIEWER              40008
 #define ID_DEBUG_DISASMVIEWER           40009
 #define ID_HELP_HOWTO                   40013
@@ -157,7 +159,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        121
 #define _APS_NEXT_COMMAND_VALUE         40044
-#define _APS_NEXT_CONTROL_VALUE         1117
+#define _APS_NEXT_CONTROL_VALUE         1118
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

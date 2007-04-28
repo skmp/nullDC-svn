@@ -29,7 +29,9 @@ void pvr_Term();
 //Reset -> Reset - Initialise
 void pvr_Reset(bool Manual);
 
-void TAWrite(u32 address,u32* data,u32 count);
+void FASTCALL TAWrite(u32 address,u32* data,u32 count);
+void FASTCALL TAWriteSQ(u32 address,u32* data);
+
 //
 #define UpdatePvr(clc) libPvr.UpdatePvr(clc)
 

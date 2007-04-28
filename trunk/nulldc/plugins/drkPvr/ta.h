@@ -3,7 +3,11 @@
 
 namespace TASplitter
 {
-	extern void FASTCALL Dma(u32 address,u32* data,u32 size);
+	void TA_ListCont();
+	void TA_ListInit();
+	void TA_SoftReset();
+	extern void FASTCALL Dma(u32* data,u32 size);
+    extern void FASTCALL SQ(u32* data);
 
 	//hehe
 	//as it sems , bit 1,2 are type , bit 0 is mod volume :p
@@ -641,6 +645,7 @@ public:
 		//called when writes are made to these registers..
 		static void SoftReset()
 		{
+			TA_SoftReset();
 			ListIsFinished[0]=ListIsFinished[1]=ListIsFinished[2]=ListIsFinished[3]=ListIsFinished[4]=false;
 			StripStarted=false;
 			CurrentList=ListType_None;
@@ -649,6 +654,7 @@ public:
 		}
 		static void ListInit()
 		{
+			TA_ListInit();
 			//reset TA input
 			TaCmd=ta_main;
 
@@ -660,6 +666,7 @@ public:
 		}
 		static void ListCont()
 		{
+			TA_ListCont();
 			ListIsFinished[0]=ListIsFinished[1]=ListIsFinished[2]=ListIsFinished[3]=ListIsFinished[4]=false;
 			TA_decoder::ListCont();
 		}

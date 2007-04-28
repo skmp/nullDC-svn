@@ -1525,7 +1525,7 @@ void sb_Init()
 	
 	SB_SBREV=0xB;
 	SB_G2ID=0x12;
-	SB_G1SYSM=(0x0<<4) | (0xC);
+	SB_G1SYSM=((0x0<<4) | (0x1));
 
 	asic_reg_Init();
 	gdrom_reg_Init();

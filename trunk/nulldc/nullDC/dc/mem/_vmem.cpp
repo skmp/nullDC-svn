@@ -1,7 +1,7 @@
 //new memory mapping code ..."_vmem" ... Don't ask where i got the name , it somehow poped on my head :p
 //
 #include "_vmem.h"
-
+#include "dc/aica/aica_if.h"
 
 //top registed handler
 _vmem_handler			_vmem_lrp;
@@ -419,6 +419,12 @@ bool _vmem_reserve()
 	//VirtualFree(sh4_reserved_mem,0,MEM_RELEASE);
 	
 	//Area 0
+	//[0x00800000,0x00A00000);
+	ptr=VirtualAlloc(&sh4_reserved_mem[0x00800000],0x00200000,MEM_COMMIT,PAGE_READWRITE);
+	if (ptr==0)
+		return false;
+	aica_ram.size=0x00200000;
+	aica_ram.data=(u8*)ptr;
 	//[0 ,0x04000000) -> unused
 	//ptr=VirtualAlloc(&sh4_reserved_mem[0x00000000],0x04000000,MEM_RESERVE,PAGE_NOACCESS);
 	//if (ptr==0)

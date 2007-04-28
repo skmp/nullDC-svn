@@ -274,12 +274,12 @@ void __fastcall pvr_write_area1_32(u32 addr,u32 data)
 	*(u32*)&vram[addr]=data;
 }
 
-void TAWrite(u32 address,u32* data,u32 count)
+void FASTCALL TAWrite(u32 address,u32* data,u32 count)
 {
 	u32 address_w=address&0x1FFFFFF;//correct ?
 	if (address_w<0x800000)//TA poly
 	{
-		libPvr.TaFIFO(address,data,count);
+		libPvr.TaDMA(data,count);
 	}
 	else if(address_w<0x1000000) //Yuv Converter
 	{
@@ -290,6 +290,24 @@ void TAWrite(u32 address,u32* data,u32 count)
 		//shoudn't realy get here (?)
 		printf("Vram Write 0x%X , size %d\n",address,count*32);
 		memcpy(&vram.data[address&VRAM_MASK],data,count*32);
+	}
+}
+void FASTCALL TAWriteSQ(u32 address,u32* data)
+{
+	u32 address_w=address&0x1FFFFFF;//correct ?
+	if (address_w<0x800000)//TA poly
+	{
+		libPvr.TaSQ(data);
+	}
+	else if(address_w<0x1000000) //Yuv Converter
+	{
+		YUV_data(data,1);
+	}
+	else //Vram Writef
+	{
+		//shoudn't realy get here (?)
+		printf("Vram Write 0x%X , size %d\n",address,32);
+		memcpy(&vram.data[address&VRAM_MASK],data,32);
 	}
 }
 //Misc interface

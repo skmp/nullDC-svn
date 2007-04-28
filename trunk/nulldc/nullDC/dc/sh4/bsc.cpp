@@ -54,31 +54,107 @@ PDTRB_type BSC_PDTRB;
 
 //16 bits
 GPIOIC_type BSC_GPIOIC;
+u32 vreg_2=0;
+u32 mask_read=0;
+u32 mask_pull_up=0;
+u32 mask_write=0;
 
+void write_BSC_PCTRA(u32 data)
+{
+	printf("C:BSC_PCTRA = %08X\n",data);
+
+	mask_read=0;
+	mask_pull_up=0;
+	mask_write=0;
+
+	for (int i=0;i<16;i++)
+	{
+		u32 mode=(data>>(i<<1))&3;
+
+		if ((mode & 2)==0) //Pull UP
+		{
+			mask_pull_up|=(1<<i);
+		}
+
+		if (mode & 1) //IO
+		{
+			mask_write|=(1<<i);
+			mask_pull_up&=~(1<<i);
+			data|=(2<<(i<<1));
+			//rv |= BSC_PDTRA.full & (1<<i);	//register IS used as output , preserve old value
+		}
+		else
+		{
+			mask_read|=(1<<i);
+			//rv |=input & (1<<i);//register IS used as input
+		}
+	}
+
+	BSC_PCTRA.full=data;
+	vreg_2&=~mask_write;
+	vreg_2|=BSC_PDTRA.full&mask_write;
+}
+//u32 port_out_data;
+void write_BSC_PDTRA(u32 data)
+{
+	BSC_PDTRA.full=data;
+	printf("D:BSC_PDTRA = %08X\n",data);
+
+	vreg_2&=~mask_write;
+	vreg_2|=BSC_PDTRA.full&mask_write;
+}
 u32 read_BSC_PDTRA()
 {
 	/* chankast */
 	u32 tpctra = BSC_PCTRA.full;
 	u32 tpdtra = BSC_PDTRA.full;
+	
 	u32 tfinal=0;
 	// magic values
-	if ((tpctra&0xf) == 0x8)
+	if ((tpctra&0xf) == 0x8)		//if bit 1 is input , and not pulled up , set bit 0 (input , puled up)(hack ?)
 		tfinal = 3;
-	else if ((tpctra&0xf) == 0xB)
-		tfinal = 3;
+	else if ((tpctra&0xf) == 0xB)   //bit 1 : input , npu , bit 0 : output , npu , set bit 0 (?)
+		tfinal = 3;				//this preserves tpdtra value
 	else			
-		tfinal = 0;
+		tfinal = 0;				//huh ?
 
 
+	//bit 1 : input , npu , bit 0 : output , npu
+	//if writen to bit 1 was '1' then return 0 (o.O ?)
 	if ((tpctra&0xf) == 0xB && (tpdtra&0xf) == 2)
 		tfinal = 0;
 	else if ((tpctra&0xf) == 0xC && (tpdtra&0xf) == 2)
 		tfinal = 3;      
 
+	tfinal |= 2<<8;  
+/*
 	if (tpctra == 0x0)
-		tfinal = 3<<8;  
+		tfinal| = 3<<8;  
+*/
 
-	return tfinal | 3<<8;
+	return tfinal;
+	//printf("-Sett : %08X Data : %08X\n",tpctra,tpdtra);	
+	printf("-Sett : %08X Data : %08X\n",tpctra,tfinal);	
+
+	u32 rv=0;
+	u32 input=(2<<8) | (0) | (vreg_2&0x1C); //VBS/H+S/C mode
+
+	rv=0;
+	rv|=mask_read  & input;		//bits to input
+	rv&=~mask_pull_up ;//bits to pull up
+	rv|=(mask_pull_up | mask_write)  & BSC_PDTRA.full;//bits to preserve
+	
+	rv&=0xFFFF;
+	verify((mask_pull_up & mask_write)==0);
+
+	printf("+Sett : %08X Data : %08X\n",tpctra,rv);
+	printf("+Read : %08X Presrve : %08X Pull UP : %08X\n",mask_read,mask_write,mask_pull_up);
+	return rv;
+}
+u32 read_BSC_PDTRB()
+{
+	die("read_BSC_PDTRB");
+	return 0;
 }
 //Init term res
 void bsc_Init()
@@ -161,18 +237,18 @@ void bsc_Init()
 	BSC[(BSC_RFCR_addr&0xFF)>>2].data16=&BSC_RFCR.full;
 
 	//BSC PCTRA 0xFF80002C 0x1F80002C 32 0x00000000 Held Held Held Bclk
-	BSC[(BSC_PCTRA_addr&0xFF)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
+	BSC[(BSC_PCTRA_addr&0xFF)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA;
 	BSC[(BSC_PCTRA_addr&0xFF)>>2].NextCange=0;
 	BSC[(BSC_PCTRA_addr&0xFF)>>2].readFunction=0;
-	BSC[(BSC_PCTRA_addr&0xFF)>>2].writeFunction=0;
+	BSC[(BSC_PCTRA_addr&0xFF)>>2].writeFunction=write_BSC_PCTRA;
 	BSC[(BSC_PCTRA_addr&0xFF)>>2].data32=&BSC_PCTRA.full;
 
 	//BSC PDTRA 0xFF800030 0x1F800030 16 Undefined Held Held Held Bclk
-	BSC[(BSC_PDTRA_addr&0xFF)>>2].flags=REG_16BIT_READWRITE | REG_WRITE_DATA;
+	BSC[(BSC_PDTRA_addr&0xFF)>>2].flags=REG_16BIT_READWRITE;
 	BSC[(BSC_PDTRA_addr&0xFF)>>2].NextCange=0;
 	BSC[(BSC_PDTRA_addr&0xFF)>>2].readFunction=read_BSC_PDTRA;
-	BSC[(BSC_PDTRA_addr&0xFF)>>2].writeFunction=0;
-	BSC[(BSC_PDTRA_addr&0xFF)>>2].data16=&BSC_PDTRA.full;
+	BSC[(BSC_PDTRA_addr&0xFF)>>2].writeFunction=write_BSC_PDTRA;
+	BSC[(BSC_PDTRA_addr&0xFF)>>2].data16=0;//&BSC_PDTRA.full;
 
 	//BSC PCTRB 0xFF800040 0x1F800040 32 0x00000000 Held Held Held Bclk
 	BSC[(BSC_PCTRB_addr&0xFF)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
@@ -184,7 +260,7 @@ void bsc_Init()
 	//BSC PDTRB 0xFF800044 0x1F800044 16 Undefined Held Held Held Bclk
 	BSC[(BSC_PDTRB_addr&0xFF)>>2].flags=REG_16BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
 	BSC[(BSC_PDTRB_addr&0xFF)>>2].NextCange=0;
-	BSC[(BSC_PDTRB_addr&0xFF)>>2].readFunction=0;
+	BSC[(BSC_PDTRB_addr&0xFF)>>2].readFunction=read_BSC_PDTRB;
 	BSC[(BSC_PDTRB_addr&0xFF)>>2].writeFunction=0;
 	BSC[(BSC_PDTRB_addr&0xFF)>>2].data16=&BSC_PDTRB.full;
 

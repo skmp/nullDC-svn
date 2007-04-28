@@ -126,7 +126,7 @@ T __fastcall ReadMem_area0(u32 addr)
 	else if ((base_start >=0x0070) && (base_end <=0x0070) /*&& (addr>= 0x00700000)*/ && (addr<=0x00707FFF)) //	:AICA- Sound Cntr. Reg.
 	{
 		//EMUERROR2("Read from area0_32 not implemented [AICA- Sound Cntr. Reg], addr=%x",addr);
-		return (T)libAICA.ReadMem_aica_reg(addr,sz);
+		return (T) ReadMem_aica_reg(addr,sz);//libAICA.ReadMem_aica_reg(addr,sz);
 	}
 	//map 0x0071 to 0x0071
 	else if ((base_start >=0x0071) && (base_end <=0x0071) /*&& (addr>= 0x00710000)*/ && (addr<= 0x0071000B)) //	:AICA- RTC Cntr. Reg.
@@ -237,7 +237,8 @@ void  __fastcall WriteMem_area0(u32 addr,T data)
 	{
 		//EMUERROR4("Write to area0_32 not implemented [AICA- Sound Cntr. Reg], addr=%x,data=%x,size=%d",addr,data,sz);
 		//aica_writereg(addr,data,sz);
-		libAICA.WriteMem_aica_reg(addr,data,sz);
+		//libAICA.WriteMem_aica_reg(addr,data,sz);
+		WriteMem_aica_reg(addr,data,sz);
 		return;
 	}
 	//map 0x0071 to 0x0071
@@ -349,10 +350,10 @@ void map_area0(u32 base)
 	_vmem_map_handler(area0_handler_71_71,0x0071|base,0x0071|base);
 	//0x0080-0x00FF
 	//_vmem_map_handler(area0_handler_80_FF,0x0080|base,0x00FF|base);
-	_vmem_map_block(aica_ram,0x0080|base,0x009F|base);
-	_vmem_map_block(aica_ram,0x00A0|base,0x00BF|base);
-	_vmem_map_block(aica_ram,0x00C0|base,0x00DF|base);
-	_vmem_map_block(aica_ram,0x00E0|base,0x00FF|base);
+	_vmem_map_block(aica_ram.data,0x0080|base,0x009F|base);
+	_vmem_map_block(aica_ram.data,0x00A0|base,0x00BF|base);
+	_vmem_map_block(aica_ram.data,0x00C0|base,0x00DF|base);
+	_vmem_map_block(aica_ram.data,0x00E0|base,0x00FF|base);
 	//0x0100-0x01FF
 	_vmem_map_handler(area0_handler_100_1FF,0x0100|base,0x01FF|base);
 

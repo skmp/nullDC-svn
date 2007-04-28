@@ -202,6 +202,7 @@ struct __settings
 	{
 		bool Enable;
 		bool CPpass;
+		bool UnderclockFpu;
 	} dynarec;
 };
 extern __settings settings;

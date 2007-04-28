@@ -354,13 +354,13 @@ int ExeptionHandler(u32 dwCode, void* pExceptionPointers)
 		//the write 
 		u32 pos=ep->ContextRecord->Eip; //<- the write
 		u32* ptr_jae_offset=(u32*)(pos-4-6);
-		u32* offset_2=(u32*)(*ptr_jae_offset + pos -6-4);
+		u8* offset_2=(u8*)(*ptr_jae_offset + pos -6-2);
 		u8* ptr_cmp=(u8*)(pos-6-6-6);
 		*ptr_cmp=0xE9;
-		*(u32*) (ptr_cmp+1)=*ptr_jae_offset+7 + *offset_2;
-		ep->ContextRecord->Eip=(pos-6-6-6);
-		printf("Patched %08X,%08X<-%08X\n",ep->ContextRecord->Eip,ep->ContextRecord->Ecx,ep->ContextRecord->Eax);
-		ep->ContextRecord->Ecx=ep->ContextRecord->Eax;
+		*(u32*) (ptr_cmp+1)=*ptr_jae_offset+7 + offset_2[0];
+		ep->ContextRecord->Eip=(pos-6-6-6- offset_2[1]);
+		//printf("Patched %08X,%08X<-%08X %d %d\n",ep->ContextRecord->Eip,ep->ContextRecord->Ecx,offset_2[0],offset_2[1]);
+//		ep->ContextRecord->Ecx=ep->ContextRecord->Eax;
 		return EXCEPTION_CONTINUE_EXECUTION;
 	}
 	else

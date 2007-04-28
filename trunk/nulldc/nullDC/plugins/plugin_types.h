@@ -51,7 +51,7 @@ enum ndc_error_codes
 	rv_serror=-1,	//silent error , it has been reported to the user
 };
 
-#define PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0,DC_VER_PRIVBETA)
+#define PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0,DC_VER_BETA)
 
 //These are provided by the emu
 typedef void FASTCALL ConfigLoadStrFP(const char * lpSection, const char * lpKey, char * lpReturn,const char* lpDefault);
@@ -155,7 +155,7 @@ struct common_info
 //*********************** PowerVR **********************
 //******************************************************
 
-#define PVR_PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0,DC_VER_PRIVBETA)
+#define PVR_PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0,DC_VER_BETA)
  
 typedef void FASTCALL vramlock_Unlock_blockFP  (vram_block* block);
 typedef vram_block* FASTCALL vramlock_LockFP(u32 start_offset,u32 end_offset,void* userdata);
@@ -174,7 +174,8 @@ struct pvr_init_params
 };
 
 typedef s32 FASTCALL PvrInitFP(pvr_init_params* param);
-typedef void FASTCALL TaFIFOFP(u32 address,u32* data,u32 size);
+typedef void FASTCALL TaDMAFP(u32* data,u32 size);
+typedef void FASTCALL TaSQFP(u32* data);
 
 struct pvr_plugin_if
 {
@@ -186,7 +187,8 @@ struct pvr_plugin_if
 										//it disables the internal locking system
 
 	UpdateFP*		UpdatePvr;			//called every ~ 1800 cycles , set to 0 if not used
-	TaFIFOFP*		TaFIFO;				//size is 32 byte transfer counts
+	TaDMAFP*		TaDMA;				//size is 32 byte transfer counts
+	TaSQFP*			TaSQ;				//size is 32 byte transfer counts
 	ReadMemFP*		ReadReg;
 	WriteMemFP*		WriteReg;
 
@@ -231,7 +233,7 @@ typedef void FASTCALL DriveGetSessionInfoFP(u8* pout,u8 session);
 //Get subchannel data
 typedef void FASTCALL DriveReadSubChannelFP(u8 * buff, u32 format, u32 len);
 
-#define GDR_PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0,DC_VER_PRIVBETA)
+#define GDR_PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0,DC_VER_BETA)
 
 //passed on GDRom init call
 struct gdr_init_params
@@ -263,16 +265,16 @@ struct gdr_plugin_if
 
 typedef void FASTCALL CDDA_SectorFP(s16* sector);
 
-#define AICA_PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0,DC_VER_PRIVBETA)
+#define AICA_PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0,DC_VER_BETA)
 
 //passed on AICA init call
 struct aica_init_params
 {
 	RaiseInterruptFP*	RaiseInterrupt;
-	u8*				aica_ram;
-
-	u32*			SB_ISTEXT;			//SB_ISTEXT register , so that aica can cancel interrupts =)
 	CDDA_SectorFP*	CDDA_Sector;		//For CDDA , returns a silent sector or cdda :)
+
+	u8*				aica_ram;
+	u32*			SB_ISTEXT;			//SB_ISTEXT register , so that aica can cancel interrupts =)
 };
 
 typedef s32 FASTCALL AicaInitFP(aica_init_params* param);
@@ -297,7 +299,7 @@ struct aica_plugin_if
 //****************** Maple devices ******************
 //******************************************************
 
-#define MAPLE_PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0,DC_VER_PRIVBETA)
+#define MAPLE_PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0,DC_VER_BETA)
 
 enum MapleDeviceCreationFlags
 {
@@ -401,7 +403,7 @@ struct maple_plugin_if
 //********************* Ext.Device *********************
 //******************************************************
 
-#define EXTDEVICE_PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0,DC_VER_PRIVBETA)
+#define EXTDEVICE_PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0,DC_VER_BETA)
 
 //passed on Ext.Device init call
 struct ext_device_init_params

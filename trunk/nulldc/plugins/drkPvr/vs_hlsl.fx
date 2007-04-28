@@ -51,7 +51,14 @@ vertex VertexShader_main(in vertex vtx)
 	#else
 		if (vtx.pos.z>1)
 		{
-			vtx.pos.z=0.99-0.14/vtx.pos.z;
+			if (vtx.pos.z>1000)
+			{
+				vtx.pos.z=0.999-90/vtx.pos.z;	//max 0.09
+			}
+			else
+			{
+				vtx.pos.z=0.899-0.05/vtx.pos.z;	//max 0.05
+			}
 		}
 		else
 			vtx.pos.z=vtx.pos.z * 0.84;

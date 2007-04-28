@@ -956,7 +956,7 @@ s32 plugins_Init_()
 	aica_info.RaiseInterrupt=sh4_cpu->RaiseInterrupt;
 	aica_info.SB_ISTEXT=&SB_ISTEXT;
 	aica_info.CDDA_Sector=gdrom_get_cdda;
-	aica_info.aica_ram=aica_ram;
+	aica_info.aica_ram=aica_ram.data;
 
 	lcp_name=libAICA.Name;
 	if (s32 rv = libAICA.Init(&aica_info))

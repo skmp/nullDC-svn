@@ -761,6 +761,7 @@ MENU_HANDLER( Handle_Option_Bool_Template )
 
 u32 rec_cpp_mid;
 u32 rec_enb_mid;
+u32 rec_ufpu_mid;
 void SwitchCpu()
 {
 	if((settings.dynarec.Enable==0 && sh4_cpu->ResetCache==0) ||
@@ -802,14 +803,17 @@ void UpdateMenus()
 	{
 		SetMenuItemStyle(rec_enb_mid,MIS_Checked,MIS_Checked);
 		SetMenuItemStyle(rec_cpp_mid,0,MIS_Grayed);
+		SetMenuItemStyle(rec_ufpu_mid,0,MIS_Grayed);
 	}
 	else
 	{
 		SetMenuItemStyle(rec_enb_mid,0,MIS_Checked);
 		SetMenuItemStyle(rec_cpp_mid,MIS_Grayed,MIS_Grayed);
+		SetMenuItemStyle(rec_ufpu_mid,MIS_Grayed,MIS_Grayed);
 	}
 
 	SetMenuItemStyle(rec_cpp_mid,settings.dynarec.CPpass?MIS_Checked:0,MIS_Checked);
+	SetMenuItemStyle(rec_ufpu_mid,settings.dynarec.UnderclockFpu?MIS_Checked:0,MIS_Checked);
 }
 MENU_HANDLER( Handle_Option_EnableRec )
 {
@@ -821,6 +825,13 @@ MENU_HANDLER( Handle_Option_EnableRec )
 MENU_HANDLER( Handle_Option_EnableCP )
 {
 	Handle_Option_Bool_Template<&settings.dynarec.CPpass>(id,hWnd,stuff);
+	if (sh4_cpu->ResetCache)
+		sh4_cpu->ResetCache();
+	UpdateMenus();
+}
+MENU_HANDLER( Handle_Option_UnderclockFpu )
+{
+	Handle_Option_Bool_Template<&settings.dynarec.UnderclockFpu>(id,hWnd,stuff);
 	if (sh4_cpu->ResetCache)
 		sh4_cpu->ResetCache();
 	UpdateMenus();
@@ -856,6 +867,21 @@ void CreateBasicMenus()
 		AddSeperator(menu_setts);
 		rec_enb_mid=AddMenuItem(menu_setts,-1,"Enable Dynarec",Handle_Option_EnableRec,0);
 		rec_cpp_mid=AddMenuItem(menu_setts,-1,"Enable CP pass",Handle_Option_EnableCP,0);
+		rec_ufpu_mid=AddMenuItem(menu_setts,-1,"Underclock FPU",Handle_Option_UnderclockFpu,0);
+		AddSeperator(menu_setts);
+		u32 cable_type=AddMenuItem(menu_setts,-1,"Cable Type",0,0);
+			AddMenuItem(cable_type,-1,"VGA (RGB)",0,0);
+			AddMenuItem(cable_type,-1,"TV  (RGB)",0,0);
+			AddMenuItem(cable_type,-1,"TV  (VBS/Y+S/C)",0,0);
+		u32 system_region=AddMenuItem(menu_setts,-1,"System Region",0,0);
+			AddMenuItem(system_region,-1,"JAP",0,0);
+			AddMenuItem(system_region,-1,"USA",0,0);
+			AddMenuItem(system_region,-1,"EUR",0,0);
+		u32 broadcast_format=AddMenuItem(menu_setts,-1,"Broadcast Format",0,0);
+			AddMenuItem(broadcast_format,-1,"NTSC",0,0);
+			AddMenuItem(broadcast_format,-1,"PAL",0,0);
+			AddMenuItem(broadcast_format,-1,"PAL_M",0,0);
+			AddMenuItem(broadcast_format,-1,"PAL_N",0,0);
 
 	AddMenuItem(menu_options,-1,"Select Plugins",Handle_Options_SelectPlugins,0);
 	AddSeperator(menu_options);
@@ -1047,6 +1073,7 @@ INT_PTR CALLBACK DlgProcModal_config( HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 			int tmp;
 			CheckDlgButton(hWnd,IDC_REC,settings.dynarec.Enable!=0?BST_CHECKED:BST_UNCHECKED);
 			CheckDlgButton(hWnd,IDC_REC_CPP,settings.dynarec.CPpass!=0?BST_CHECKED:BST_UNCHECKED);
+			CheckDlgButton(hWnd,IDC_REC_UFPU,settings.dynarec.UnderclockFpu!=0?BST_CHECKED:BST_UNCHECKED);
 		}
 		return true;
 
@@ -1058,6 +1085,7 @@ INT_PTR CALLBACK DlgProcModal_config( HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 			{
 				settings.dynarec.Enable = (BST_CHECKED==IsDlgButtonChecked(hWnd,IDC_REC)) ? 1 : 0 ;
 				settings.dynarec.CPpass = (BST_CHECKED==IsDlgButtonChecked(hWnd,IDC_REC_CPP)) ? 1 : 0 ;
+				settings.dynarec.UnderclockFpu = (BST_CHECKED==IsDlgButtonChecked(hWnd,IDC_REC_UFPU)) ? 1 : 0 ;
 				
 				SaveSettings();
 				SwitchCpu();

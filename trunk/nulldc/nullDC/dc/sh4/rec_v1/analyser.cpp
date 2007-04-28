@@ -56,7 +56,7 @@ void StepPipeline(u32 opcode)
 
 		s32 lc=OpDesc[opcode]->LatencyCycles;
 		lc-=rv;//if it has latency>issue
-		if (opcode>=0xF000)
+		if (opcode>=0xF000 && !settings.dynarec.UnderclockFpu)
 		{
 			lc=0;
 			rv/=3;

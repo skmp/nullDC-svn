@@ -1026,13 +1026,14 @@ void __fastcall shil_compile_and(shil_opcode* op)
 }
 //readm/writem 
 //Address calculation helpers
-void readwrteparams1(u8 reg1,u32 imm)
+void readwrteparams1(u8 reg1,u32 imm,x86_reg* fast_nimm)
 {
 	if (ira->IsRegAllocated(reg1))
 	{
 		//lea ecx,[reg1+imm]
 		x86_reg reg=LoadReg(ECX,reg1);
 		assert(reg!=ECX);
+		*fast_nimm=reg;
 		x86e->Emit(op_lea32 ,ECX, x86_mrm::create(reg,x86_ptr::create(imm)));
 	}
 	else
@@ -1119,11 +1120,11 @@ void readwrteparams3(u8 reg1,u8 reg2,u32 imm)
 	}
 }
 //Emit needed calc. asm and return register that has the address :)
-x86_reg  readwrteparams(shil_opcode* op)
+x86_reg  readwrteparams(shil_opcode* op,x86_reg* fast_reg,u32* fast_offset)
 {
 	assert(0==(op->flags & FLAG_IMM2));
 	assert(op->flags & FLAG_REG1);
-
+	*fast_reg=ERROR_REG;
 	bool Loaded=false;
 
 	//can use
@@ -1185,17 +1186,20 @@ x86_reg  readwrteparams(shil_opcode* op)
 
 		//2 olny
 	case flag_imm | flag_r2:
-		readwrteparams1(op->reg2,op->imm1);
+		*fast_offset=op->imm1;
+		readwrteparams1(op->reg2,op->imm1,fast_reg);
 		reg=ECX;
 		break;
 
 	case flag_imm | flag_r0:
-		readwrteparams1((u8)r0,op->imm1);
+		*fast_offset=op->imm1;
+		readwrteparams1((u8)r0,op->imm1,fast_reg);
 		reg=ECX;
 		break;
 
 	case flag_imm | flag_gbr:
-		readwrteparams1((u8)reg_gbr,op->imm1);
+		*fast_offset=op->imm1;
+		readwrteparams1((u8)reg_gbr,op->imm1,fast_reg);
 		reg=ECX;
 		break;
 
@@ -1232,14 +1236,28 @@ x86_reg  readwrteparams(shil_opcode* op)
 
 const u32 m_unpack_sz[3]={1,2,4};
 //Ram Only Mem Lookup
-void roml(x86_reg reg,x86_Label* lbl)
+void roml(x86_reg reg,x86_Label* lbl,u32* offset_Edit,x86_reg fast_reg,u32 fast_offset)
 {
 	//mov ecx,reg_addr
 	if (reg!=ECX)
+	{
+		u32 old=x86e->x86_indx;
 		x86e->Emit(op_mov32,ECX,reg);
-	x86e->Emit(op_mov32,EAX,reg);
+		old=x86e->x86_indx-old;
+		*offset_Edit+=old;
+	}
+	//x86e->Emit(op_mov32,EAX,reg); <- no longer used , since i have the offset for it :)
 	//cmp ecx,mask1
-	x86e->Emit(op_cmp32,ECX,0xE0000000);
+	if (fast_reg!=ERROR_REG)
+	{
+		//fast_reg has the reg before adding the imm and moving to ecx
+		x86e->Emit(op_cmp32,fast_reg,0xE0000000-fast_offset);
+		//printf("fast reG !!!%X\n",fast_offset);
+	}
+	else
+	{
+		x86e->Emit(op_cmp32,reg,0xE0000000);
+	}
 	//jae full_lookup
 	x86e->Emit(op_jae,lbl);
 	//and ecx,mask2
@@ -1271,13 +1289,15 @@ void __fastcall shil_compile_readm(shil_opcode* op)
 		return;
 	}
 
-
-	x86_reg reg_addr = readwrteparams(op);
-
-	x86_Label* patch_point= x86e->CreateLabel(true,0);
+	u32 old_offset=x86e->x86_indx;
+	x86_reg fast_reg;
+	u32 fast_reg_offset;
+	x86_reg reg_addr = readwrteparams(op,&fast_reg,&fast_reg_offset);
+	old_offset=x86e->x86_indx-old_offset;
+	//x86_Label* patch_point= x86e->CreateLabel(true,0);
 	x86_Label* p4_handler = x86e->CreateLabel(false,0);
 	//Ram Only Mem Lookup
-	roml(reg_addr,p4_handler);
+	roml(reg_addr,p4_handler,&old_offset,fast_reg,fast_reg_offset);
 
 	//mov to dest or temp
 	u32 is_float=IsInFReg(op->reg1);
@@ -1303,7 +1323,7 @@ void __fastcall shil_compile_readm(shil_opcode* op)
 	}
 
 	t.p4_access=p4_handler;
-	t.patch_point=patch_point;
+	t.resume_offset=(u8)old_offset;
 	t.asz=size;
 	t.type=0;
 	t.is_float=false;
@@ -1364,12 +1384,16 @@ void __fastcall shil_compile_writem(shil_opcode* op)
 		return;
 	}
 
-	x86_reg reg_addr = readwrteparams(op);
+	u32 old_offset=x86e->x86_indx;
+	x86_reg fast_reg;
+	u32 fast_reg_offset;
+	x86_reg reg_addr = readwrteparams(op,&fast_reg,&fast_reg_offset);
+	old_offset=x86e->x86_indx-old_offset;
 	
 	x86_Label* patch_point= x86e->CreateLabel(true,0);
 	x86_Label* p4_handler = x86e->CreateLabel(false,0);
 	//Ram Only Mem Lookup
-	roml(reg_addr,p4_handler);
+	roml(reg_addr,p4_handler,&old_offset,fast_reg,fast_reg_offset);
 	//mov [ecx],src
 	if (was_float)
 		x86e->Emit(op_movss,x86_mrm::create(ECX,sh4_reserved_mem),rsrc);
@@ -1382,7 +1406,7 @@ void __fastcall shil_compile_writem(shil_opcode* op)
 
 	roml_patch t;
 	t.p4_access=p4_handler;
-	t.patch_point=patch_point;
+	t.resume_offset=old_offset;
 	t.exit_point=x86e->CreateLabel(true,0);
 	t.asz=size;
 	t.type=1;
@@ -1404,8 +1428,9 @@ void apply_roml_patches()
 		void * function=roml_patch_list[i].type==1 ?nvw_lut[roml_patch_list[i].asz]:nvr_lut[roml_patch_list[i].asz];
 
 		u32 offset=x86e->x86_indx;
-		x86e->write32(0);
-		
+		x86e->write8(0);
+		x86e->write8(roml_patch_list[i].resume_offset);
+		//printf("Resume offset: %d\n",roml_patch_list[i].resume_offset);
 		x86e->MarkLabel(roml_patch_list[i].p4_access);
 		if (roml_patch_list[i].type==1)
 		{
@@ -1418,7 +1443,8 @@ void apply_roml_patches()
 			x86e->Emit(op_mov32,x86_mrm::create(ECX,sq_both),roml_patch_list[i].reg_data);
 			x86e->Emit(op_jmp,roml_patch_list[i].exit_point);
 			x86e->MarkLabel(normal_write);
-			*(u32*)&x86e->x86_buff[offset]=x86e->x86_indx-offset-4;
+			*(u8*)&x86e->x86_buff[offset]=x86e->x86_indx-offset-2;
+			//printf("patch offset: %d\n",x86e->x86_indx-offset-2);
 		}
 		if (roml_patch_list[i].reg_addr!=ECX)
 			x86e->Emit(op_mov32,ECX,roml_patch_list[i].reg_addr);
