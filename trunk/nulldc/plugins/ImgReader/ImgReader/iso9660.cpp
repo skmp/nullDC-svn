@@ -227,9 +227,9 @@ void iso_DriveGetTocInfo(TocInfo* toc,DiskArea area)
 u32 FASTCALL iso_DriveGetDiscType()
 {
 	if (iso_tc==0)
-		return DiscType::NoDisk;
+		return NoDisk;
 	else
-		return DiscType::GdRom;
+		return GdRom;
 } 
 
 bool load_gdi(char* file)
@@ -279,7 +279,7 @@ bool iso_init(char* file)
 	size_t len=strlen(file);
 	if (len>4)
 	{
-		if (strcmp(&file[len-4],".gdi")==0)
+		if (_stricmp( &file[len-4],".gdi")==0)
 		{
 			return load_gdi(file);
 		}

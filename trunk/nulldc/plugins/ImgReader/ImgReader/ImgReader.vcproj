@@ -183,7 +183,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="\"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(SolutionDir)\obj\$(ProjectName)\$(PlatformName)\$(ConfigurationName)\"
 			ConfigurationType="2"
 			CharacterSet="2"
@@ -206,6 +206,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				WholeProgramOptimization="true"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;NULLGDR_EXPORTS;X86"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"

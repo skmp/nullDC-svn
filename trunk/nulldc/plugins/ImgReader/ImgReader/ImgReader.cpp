@@ -159,7 +159,7 @@ void FASTCALL Unload()
 //It's suposed to reset everything (if not a manual reset)
 void FASTCALL ResetGDR(bool Manual)
 {
-	DriveNotifyEvent(DriveEvent::DiskChange,0);
+	DriveNotifyEvent(DiskChange,0);
 }
 
 //called when entering sh4 thread , from the new thread context (for any thread speciacific init)
