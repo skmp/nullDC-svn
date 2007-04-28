@@ -135,15 +135,15 @@ void OpDissCFS(char* text,const char* tx1,u32 pc,u16 opcode)
 			}
 			else if (strcmp2(tx1,"GBRdisp8b>"))
 			{
-				text+=sprintf(text,"0x%X",GetImm8(opcode)*1 + sh4_cpu->GetRegister(Sh4RegType::reg_gbr));
+				text+=sprintf(text,"0x%X",GetImm8(opcode)*1 + sh4_cpu->GetRegister(reg_gbr));
 			}
 			else if (strcmp2(tx1,"GBRdisp8w>"))
 			{
-				text+=sprintf(text,"0x%X",GetImm8(opcode)*2 + sh4_cpu->GetRegister(Sh4RegType::reg_gbr));
+				text+=sprintf(text,"0x%X",GetImm8(opcode)*2 + sh4_cpu->GetRegister(reg_gbr));
 			}
 			else if (strcmp2(tx1,"GBRdisp8dw>"))
 			{
-				text+=sprintf(text,"0x%X",GetImm8(opcode)*4 + sh4_cpu->GetRegister(Sh4RegType::reg_gbr));
+				text+=sprintf(text,"0x%X",GetImm8(opcode)*4 + sh4_cpu->GetRegister(reg_gbr));
 			}
 			else if (strcmp2(tx1,"bdisp8>"))
 			{

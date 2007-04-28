@@ -156,9 +156,9 @@ u32 THREADCALL emulation_thead(void* ptar)
 					aica_Reset(false);
 
 					//when we boot from ip.bin , it's nice to have it seted up
-					sh4_cpu->SetRegister(Sh4RegType::reg_gbr,0x8c000000);
-					sh4_cpu->SetRegister(Sh4RegType::reg_sr,0x700000F0);
-					sh4_cpu->SetRegister(Sh4RegType::reg_fpscr,0x0004001);
+					sh4_cpu->SetRegister(reg_gbr,0x8c000000);
+					sh4_cpu->SetRegister(reg_sr,0x700000F0);
+					sh4_cpu->SetRegister(reg_fpscr,0x0004001);
 
 					emu_thread_rv=RV_OK;
 					break;
@@ -173,9 +173,9 @@ u32 THREADCALL emulation_thead(void* ptar)
 					aica_Reset(true);
 
 					//when we boot from ip.bin , it's nice to have it seted up
-					sh4_cpu->SetRegister(Sh4RegType::reg_gbr,0x8c000000);
-					sh4_cpu->SetRegister(Sh4RegType::reg_sr,0x700000F0);
-					sh4_cpu->SetRegister(Sh4RegType::reg_fpscr,0x0004001);
+					sh4_cpu->SetRegister(reg_gbr,0x8c000000);
+					sh4_cpu->SetRegister(reg_sr,0x700000F0);
+					sh4_cpu->SetRegister(reg_fpscr,0x0004001);
 
 					emu_thread_rv=RV_OK;
 					break;

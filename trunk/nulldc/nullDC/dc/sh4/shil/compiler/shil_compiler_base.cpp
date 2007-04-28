@@ -180,7 +180,7 @@ bool Ensure32()
 //Get a pointer to a reg
 u32* GetRegPtr(u32 reg)
 {
-	if (reg==Sh4RegType::reg_pc_temp)
+	if (reg==reg_pc_temp)
 		return &reg_pc_temp_value;
 
 	u32* rv=Sh4_int_GetRegisterPtr((Sh4RegType)reg);
@@ -1521,7 +1521,7 @@ void __fastcall shil_compile_LoadT(shil_opcode* op)
 
 	assert( (op->imm1==x86_flags::CF) || (op->imm1==x86_flags::jcond_flag) );
 
-	if (op->imm1==x86_flags::jcond_flag)
+	if (op->imm1==jcond_flag)
 	{
 		LoadReg_force(EAX,reg_sr_T);
 		x86e->Emit(op_mov32,&T_jcond_value,EAX);//T_jcond_value;
@@ -2384,7 +2384,7 @@ void __fastcall shil_compile_fipr(shil_opcode* op)
 
 //decoding table ;)
 
-shil_compileFP* sclt[shil_count]=
+shil_compileFP* sclt[shilop_count]=
 {
 	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,
 	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,
@@ -2401,7 +2401,7 @@ shil_compileFP* sclt[shil_count]=
 
 void SetH(shil_opcodes op,shil_compileFP* ha)
 {
-	if (op>(shil_count-1))
+	if (op>(shilop_count-1))
 	{
 		printf("SHIL COMPILER ERROR\n");
 	}
@@ -2416,64 +2416,64 @@ bool sclt_inited=false;
 void sclt_Init()
 {
 	//
-	SetH(shil_opcodes::adc,shil_compile_adc);
-	SetH(shil_opcodes::add,shil_compile_add);
-	SetH(shil_opcodes::and,shil_compile_and);
-	SetH(shil_opcodes::cmp,shil_compile_cmp);
-	SetH(shil_opcodes::fabs,shil_compile_fabs);
-	SetH(shil_opcodes::fadd,shil_compile_fadd);
-	SetH(shil_opcodes::fdiv,shil_compile_fdiv);
-	SetH(shil_opcodes::fmac,shil_compile_fmac);
+	SetH(shilop_adc,shil_compile_adc);
+	SetH(shilop_add,shil_compile_add);
+	SetH(shilop_and,shil_compile_and);
+	SetH(shilop_cmp,shil_compile_cmp);
+	SetH(shilop_fabs,shil_compile_fabs);
+	SetH(shilop_fadd,shil_compile_fadd);
+	SetH(shilop_fdiv,shil_compile_fdiv);
+	SetH(shilop_fmac,shil_compile_fmac);
 
-	SetH(shil_opcodes::fmul,shil_compile_fmul);
-	SetH(shil_opcodes::fneg,shil_compile_fneg);
-	SetH(shil_opcodes::fsub,shil_compile_fsub);
-	SetH(shil_opcodes::LoadT,shil_compile_LoadT);
-	SetH(shil_opcodes::mov,shil_compile_mov);
-	SetH(shil_opcodes::movex,shil_compile_movex);
-	SetH(shil_opcodes::neg,shil_compile_neg);
-	SetH(shil_opcodes::not,shil_compile_not);
+	SetH(shilop_fmul,shil_compile_fmul);
+	SetH(shilop_fneg,shil_compile_fneg);
+	SetH(shilop_fsub,shil_compile_fsub);
+	SetH(shilop_LoadT,shil_compile_LoadT);
+	SetH(shilop_mov,shil_compile_mov);
+	SetH(shilop_movex,shil_compile_movex);
+	SetH(shilop_neg,shil_compile_neg);
+	SetH(shilop_not,shil_compile_not);
 
-	SetH(shil_opcodes::or,shil_compile_or);
-	SetH(shil_opcodes::rcl,shil_compile_rcl);
-	SetH(shil_opcodes::rcr,shil_compile_rcr);
-	SetH(shil_opcodes::readm,shil_compile_readm);
-	SetH(shil_opcodes::rol,shil_compile_rol);
-	SetH(shil_opcodes::ror,shil_compile_ror);
-	SetH(shil_opcodes::sar,shil_compile_sar);
-	SetH(shil_opcodes::SaveT,shil_compile_SaveT);
+	SetH(shilop_or,shil_compile_or);
+	SetH(shilop_rcl,shil_compile_rcl);
+	SetH(shilop_rcr,shil_compile_rcr);
+	SetH(shilop_readm,shil_compile_readm);
+	SetH(shilop_rol,shil_compile_rol);
+	SetH(shilop_ror,shil_compile_ror);
+	SetH(shilop_sar,shil_compile_sar);
+	SetH(shilop_SaveT,shil_compile_SaveT);
 
-	SetH(shil_opcodes::shil_ifb,shil_compile_shil_ifb);
-	SetH(shil_opcodes::shl,shil_compile_shl);
-	SetH(shil_opcodes::shr,shil_compile_shr);
-	SetH(shil_opcodes::sub,shil_compile_sub);
-	SetH(shil_opcodes::swap,shil_compile_swap);
-	SetH(shil_opcodes::test,shil_compile_test);
-	SetH(shil_opcodes::writem,shil_compile_writem);
-	SetH(shil_opcodes::xor,shil_compile_xor);
-	SetH(shil_opcodes::jcond,shil_compile_jcond);
-	SetH(shil_opcodes::jmp,shil_compile_jmp);
-	SetH(shil_opcodes::mul,shil_compile_mul);
+	SetH(shilop_ifb,shil_compile_shil_ifb);
+	SetH(shilop_shl,shil_compile_shl);
+	SetH(shilop_shr,shil_compile_shr);
+	SetH(shilop_sub,shil_compile_sub);
+	SetH(shilop_swap,shil_compile_swap);
+	SetH(shilop_test,shil_compile_test);
+	SetH(shilop_writem,shil_compile_writem);
+	SetH(shilop_xor,shil_compile_xor);
+	SetH(shilop_jcond,shil_compile_jcond);
+	SetH(shilop_jmp,shil_compile_jmp);
+	SetH(shilop_mul,shil_compile_mul);
 
-	SetH(shil_opcodes::ftrv,shil_compile_ftrv);
-	SetH(shil_opcodes::fsqrt,shil_compile_fsqrt);
-	SetH(shil_opcodes::fipr,shil_compile_fipr);
-	SetH(shil_opcodes::floatfpul,shil_compile_floatfpul);
-	SetH(shil_opcodes::ftrc,shil_compile_ftrc);
-	SetH(shil_opcodes::fsca,shil_compile_fsca);
-	SetH(shil_opcodes::fsrra,shil_compile_fsrra);
-	SetH(shil_opcodes::div32,shil_compile_div32);
-	SetH(shil_opcodes::fcmp,shil_compile_fcmp);
+	SetH(shilop_ftrv,shil_compile_ftrv);
+	SetH(shilop_fsqrt,shil_compile_fsqrt);
+	SetH(shilop_fipr,shil_compile_fipr);
+	SetH(shilop_floatfpul,shil_compile_floatfpul);
+	SetH(shilop_ftrc,shil_compile_ftrc);
+	SetH(shilop_fsca,shil_compile_fsca);
+	SetH(shilop_fsrra,shil_compile_fsrra);
+	SetH(shilop_div32,shil_compile_div32);
+	SetH(shilop_fcmp,shil_compile_fcmp);
 
 	/*
-	u32 shil_nimp=shil_opcodes::shil_count;
-	for (int i=0;i<shil_opcodes::shil_count;i++)
+	u32 shil_nimp=shilop_count;
+	for (int i=0;i<shilop_count;i++)
 	{
 		if (sclt[i]==shil_compile_nimp)
 			shil_nimp--;
 	}
 
-	//printf("lazy shil compiler stats : %d%% opcodes done\n",shil_nimp*100/shil_opcodes::shil_count);
+	//printf("lazy shil compiler stats : %d%% opcodes done\n",shil_nimp*100/shilop_count);
 	*/
 	if(profiler_dll.Load("nullprof_server.dll"))
 	{
@@ -2491,7 +2491,7 @@ void sclt_Init()
 
 void shil_compile(shil_opcode* op)
 {
-	if (op->opcode>(shil_opcodes::shil_count-1))
+	if (op->opcode>(shilop_count-1))
 	{
 		printf("SHIL COMPILER ERROR\n");
 	}

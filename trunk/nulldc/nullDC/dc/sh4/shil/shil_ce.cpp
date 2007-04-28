@@ -16,7 +16,7 @@ shilh(nimp)
 	return false;
 }
 
-shil_ce_FP* shil_ce_lut[shil_count]=
+shil_ce_FP* shil_ce_lut[shilop_count]=
 {
 	shil_ce_nimp,shil_ce_nimp,shil_ce_nimp,shil_ce_nimp,
 	shil_ce_nimp,shil_ce_nimp,shil_ce_nimp,shil_ce_nimp,
@@ -32,7 +32,7 @@ shil_ce_FP* shil_ce_lut[shil_count]=
 };
 void SetShilHanlder(shil_opcodes op,shil_ce_FP* ha)
 {
-	if (op>(shil_count-1))
+	if (op>(shilop_count-1))
 	{
 		printf("SHIL COMPILER ERROR\n");
 	}
@@ -112,54 +112,54 @@ void Init_ce()
 
 	Inited_ce_pass=true;
 	//
-	SetShilHanlder(shil_opcodes::adc,shil_ce_adc);
-	SetShilHanlder(shil_opcodes::add,shil_ce_add);
-	SetShilHanlder(shil_opcodes::and,shil_ce_and);
-	SetShilHanlder(shil_opcodes::cmp,shil_ce_cmp);
-	SetShilHanlder(shil_opcodes::fabs,shil_ce_fabs);
-	SetShilHanlder(shil_opcodes::fadd,shil_ce_fadd);
-	SetShilHanlder(shil_opcodes::fdiv,shil_ce_fdiv);
-	SetShilHanlder(shil_opcodes::fmac,shil_ce_fmac);
+	SetShilHanlder(shilop_adc,shil_ce_adc);
+	SetShilHanlder(shilop_add,shil_ce_add);
+	SetShilHanlder(shilop_and,shil_ce_and);
+	SetShilHanlder(shilop_cmp,shil_ce_cmp);
+	SetShilHanlder(shilop_fabs,shil_ce_fabs);
+	SetShilHanlder(shilop_fadd,shil_ce_fadd);
+	SetShilHanlder(shilop_fdiv,shil_ce_fdiv);
+	SetShilHanlder(shilop_fmac,shil_ce_fmac);
 
-	SetShilHanlder(shil_opcodes::fmul,shil_ce_fmul);
-	SetShilHanlder(shil_opcodes::fneg,shil_ce_fneg);
-	SetShilHanlder(shil_opcodes::fsub,shil_ce_fsub);
-	SetShilHanlder(shil_opcodes::LoadT,shil_ce_LoadT);
-	SetShilHanlder(shil_opcodes::mov,shil_ce_mov);
-	SetShilHanlder(shil_opcodes::movex,shil_ce_movex);
-	SetShilHanlder(shil_opcodes::neg,shil_ce_neg);
-	SetShilHanlder(shil_opcodes::not,shil_ce_not);
+	SetShilHanlder(shilop_fmul,shil_ce_fmul);
+	SetShilHanlder(shilop_fneg,shil_ce_fneg);
+	SetShilHanlder(shilop_fsub,shil_ce_fsub);
+	SetShilHanlder(shilop_LoadT,shil_ce_LoadT);
+	SetShilHanlder(shilop_mov,shil_ce_mov);
+	SetShilHanlder(shilop_movex,shil_ce_movex);
+	SetShilHanlder(shilop_neg,shil_ce_neg);
+	SetShilHanlder(shilop_not,shil_ce_not);
 
-	SetShilHanlder(shil_opcodes::or,shil_ce_or);
-	SetShilHanlder(shil_opcodes::rcl,shil_ce_rcl);
-	SetShilHanlder(shil_opcodes::rcr,shil_ce_rcr);
-	SetShilHanlder(shil_opcodes::readm,shil_ce_readm);
-	SetShilHanlder(shil_opcodes::rol,shil_ce_rol);
-	SetShilHanlder(shil_opcodes::ror,shil_ce_ror);
-	SetShilHanlder(shil_opcodes::sar,shil_ce_sar);
-	SetShilHanlder(shil_opcodes::SaveT,shil_ce_SaveT);
+	SetShilHanlder(shilop_or,shil_ce_or);
+	SetShilHanlder(shilop_rcl,shil_ce_rcl);
+	SetShilHanlder(shilop_rcr,shil_ce_rcr);
+	SetShilHanlder(shilop_readm,shil_ce_readm);
+	SetShilHanlder(shilop_rol,shil_ce_rol);
+	SetShilHanlder(shilop_ror,shil_ce_ror);
+	SetShilHanlder(shilop_sar,shil_ce_sar);
+	SetShilHanlder(shilop_SaveT,shil_ce_SaveT);
 
-	SetShilHanlder(shil_opcodes::shil_ifb,shil_ce_shil_ifb);
-	SetShilHanlder(shil_opcodes::shl,shil_ce_shl);
-	SetShilHanlder(shil_opcodes::shr,shil_ce_shr);
-	SetShilHanlder(shil_opcodes::sub,shil_ce_sub);
-	SetShilHanlder(shil_opcodes::swap,shil_ce_swap);
-	SetShilHanlder(shil_opcodes::test,shil_ce_test);
-	SetShilHanlder(shil_opcodes::writem,shil_ce_writem);
-	SetShilHanlder(shil_opcodes::xor,shil_ce_xor);
-	SetShilHanlder(shil_opcodes::jcond,shil_ce_jcond);
-	SetShilHanlder(shil_opcodes::jmp,shil_ce_jmp);
-	SetShilHanlder(shil_opcodes::mul,shil_ce_mul);
+	SetShilHanlder(shilop_ifb,shil_ce_shil_ifb);
+	SetShilHanlder(shilop_shl,shil_ce_shl);
+	SetShilHanlder(shilop_shr,shil_ce_shr);
+	SetShilHanlder(shilop_sub,shil_ce_sub);
+	SetShilHanlder(shilop_swap,shil_ce_swap);
+	SetShilHanlder(shilop_test,shil_ce_test);
+	SetShilHanlder(shilop_writem,shil_ce_writem);
+	SetShilHanlder(shilop_xor,shil_ce_xor);
+	SetShilHanlder(shilop_jcond,shil_ce_jcond);
+	SetShilHanlder(shilop_jmp,shil_ce_jmp);
+	SetShilHanlder(shilop_mul,shil_ce_mul);
 
-	SetShilHanlder(shil_opcodes::ftrv,shil_ce_ftrv);
-	SetShilHanlder(shil_opcodes::fsqrt,shil_ce_fsqrt);
-	SetShilHanlder(shil_opcodes::fipr,shil_ce_fipr);
-	SetShilHanlder(shil_opcodes::floatfpul,shil_ce_floatfpul);
-	SetShilHanlder(shil_opcodes::ftrc,shil_ce_ftrc);
-	SetShilHanlder(shil_opcodes::fsca,shil_ce_fsca);
-	SetShilHanlder(shil_opcodes::fsrra,shil_ce_fsrra);
-	SetShilHanlder(shil_opcodes::div32,shil_ce_div32);
-	SetShilHanlder(shil_opcodes::fcmp,shil_ce_fcmp);
+	SetShilHanlder(shilop_ftrv,shil_ce_ftrv);
+	SetShilHanlder(shilop_fsqrt,shil_ce_fsqrt);
+	SetShilHanlder(shilop_fipr,shil_ce_fipr);
+	SetShilHanlder(shilop_floatfpul,shil_ce_floatfpul);
+	SetShilHanlder(shilop_ftrc,shil_ce_ftrc);
+	SetShilHanlder(shilop_fsca,shil_ce_fsca);
+	SetShilHanlder(shilop_fsrra,shil_ce_fsrra);
+	SetShilHanlder(shilop_div32,shil_ce_div32);
+	SetShilHanlder(shilop_fcmp,shil_ce_fcmp);
 }
 
 void ce_die(char* reason)
@@ -1039,7 +1039,7 @@ bool backscan_const(BasicBlock* bb,u8 reg,u32* rv)
 		lop--;
 		shil_opcode* op=&ilst->opcodes[lop];
 		//if move (we can take const value olny from here for now)
-		if (op->opcode==shil_opcodes::mov && op->reg1==reg)
+		if (op->opcode==shilop_mov && op->reg1==reg)
 		{
 			//if the reg we want became a const , were finished :D
 			if (op->flags & FLAG_IMM1)

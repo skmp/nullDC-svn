@@ -604,9 +604,9 @@ MENU_HANDLER(Handle_File_OpenBin)
 					return;
 				EnablePatch(patch_resets_Misc);//mwhaha
 				sh4_cpu->Reset(false);//do a hard reset
-				sh4_cpu->SetRegister(Sh4RegType::reg_sr,0x70000000);
-				sh4_cpu->SetRegister(Sh4RegType::reg_gbr,0x8c000000);
-				sh4_cpu->SetRegister(Sh4RegType::reg_pc,0x8c008300);
+				sh4_cpu->SetRegister(reg_sr,0x70000000);
+				sh4_cpu->SetRegister(reg_gbr,0x8c000000);
+				sh4_cpu->SetRegister(reg_pc,0x8c008300);
 				Start_DC();
 			}
 		}
@@ -652,9 +652,9 @@ MENU_HANDLER(Handle_File_BootHLE)
 		}
 		EnablePatch(patch_resets_Misc);//mwhaha
 		sh4_cpu->Reset(false);//do a hard reset
-		sh4_cpu->SetRegister(Sh4RegType::reg_sr,0x70000000);
-		sh4_cpu->SetRegister(Sh4RegType::reg_gbr,0x8c000000);
-		sh4_cpu->SetRegister(Sh4RegType::reg_pc,0x8c008300);
+		sh4_cpu->SetRegister(reg_sr,0x70000000);
+		sh4_cpu->SetRegister(reg_gbr,0x8c000000);
+		sh4_cpu->SetRegister(reg_pc,0x8c008300);
 		Start_DC();
 	}
 }
@@ -679,7 +679,7 @@ MENU_HANDLER( Handle_System_Reset)
 	sh4_cpu->Stop();
 	printf(">>\tDreamcast Reset\n");
 	sh4_cpu->Reset(false);//do a hard reset
-	sh4_cpu->SetRegister(Sh4RegType::reg_pc,0xA0000000);
+	sh4_cpu->SetRegister(reg_pc,0xA0000000);
 	DisablePatch(patch_all);
 	*/
 }
@@ -750,12 +750,13 @@ MENU_HANDLER( Handle_Help_About )
 template<bool* setting>
 MENU_HANDLER( Handle_Option_Bool_Template )
 {
+
 	if (*setting)
 		*setting=0;
 	else
 		*setting=1;
 
-	SetMenuItemStyle(id,*setting?MIS_Checked:0,MIS_Checked);
+	SetMenuItemStyle(id,setting?MIS_Checked:0,MIS_Checked);
 	SaveSettings();
 }
 
@@ -815,13 +816,6 @@ void UpdateMenus()
 	SetMenuItemStyle(rec_cpp_mid,settings.dynarec.CPpass?MIS_Checked:0,MIS_Checked);
 	SetMenuItemStyle(rec_ufpu_mid,settings.dynarec.UnderclockFpu?MIS_Checked:0,MIS_Checked);
 }
-MENU_HANDLER( Handle_Option_EnableRec )
-{
-	Handle_Option_Bool_Template<&settings.dynarec.Enable>(id,hWnd,stuff);
-
-	SwitchCpu();
-	UpdateMenus();
-}
 MENU_HANDLER( Handle_Option_EnableCP )
 {
 	Handle_Option_Bool_Template<&settings.dynarec.CPpass>(id,hWnd,stuff);
@@ -829,6 +823,15 @@ MENU_HANDLER( Handle_Option_EnableCP )
 		sh4_cpu->ResetCache();
 	UpdateMenus();
 }
+
+MENU_HANDLER( Handle_Option_EnableRec )
+{
+	Handle_Option_Bool_Template<&settings.dynarec.Enable>(id,hWnd,stuff);
+
+	SwitchCpu();
+	UpdateMenus();
+}
+
 MENU_HANDLER( Handle_Option_UnderclockFpu )
 {
 	Handle_Option_Bool_Template<&settings.dynarec.UnderclockFpu>(id,hWnd,stuff);

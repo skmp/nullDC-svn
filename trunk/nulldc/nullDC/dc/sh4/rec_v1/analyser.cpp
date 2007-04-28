@@ -24,7 +24,7 @@
 
 #define CPU_RATIO 1
 #define CPU_BASIC_BLOCK_SIZE (BLOCKLIST_MAX_CYCLES/2)
-u32 execution_groop_busy[sh4_eu::sh4_eu_max];
+u32 execution_groop_busy[sh4_eu_max];
 u32 known_pl_cycles=0;
 
 //pipeline hackmulation
@@ -35,7 +35,7 @@ void InitPipeline()
 }
 void plSubCycles(u32 cycles)
 {
-	for (int i=0;i<sh4_eu::sh4_eu_max;i++)
+	for (int i=0;i<sh4_eu_max;i++)
 	{
 		if (execution_groop_busy[i]>0)
 		{
@@ -80,7 +80,7 @@ void StepPipeline(u32 opcode)
 void TermPipeline()
 {
 	u32 mpc=0;
-	for (int i=0;i<sh4_eu::sh4_eu_max;i++)
+	for (int i=0;i<sh4_eu_max;i++)
 	{
 		//if (execution_groop_busy[i]>mpc)
 		{

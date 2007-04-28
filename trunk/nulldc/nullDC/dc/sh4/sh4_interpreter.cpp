@@ -362,54 +362,54 @@ u32 Sh4_int_GetRegister(Sh4RegType reg)
 	{
 		switch(reg)
 		{
-		case Sh4RegType::reg_gbr :
+		case reg_gbr :
 			return gbr;
 			break;
-		case Sh4RegType::reg_vbr :
+		case reg_vbr :
 			return vbr;
 			break;
 
-		case Sh4RegType::reg_ssr :
+		case reg_ssr :
 			return ssr;
 			break;
 
-		case Sh4RegType::reg_spc :
+		case reg_spc :
 			return spc;
 			break;
 
-		case Sh4RegType::reg_sgr :
+		case reg_sgr :
 			return sgr;
 			break;
 
-		case Sh4RegType::reg_dbr :
+		case reg_dbr :
 			return dbr;
 			break;
 
-		case Sh4RegType::reg_mach :
+		case reg_mach :
 			return mach;
 			break;
 
-		case Sh4RegType::reg_macl :
+		case reg_macl :
 			return macl;
 			break;
 
-		case Sh4RegType::reg_pr :
+		case reg_pr :
 			return pr;
 			break;
 
-		case Sh4RegType::reg_fpul :
+		case reg_fpul :
 			return fpul;
 			break;
 
 
-		case Sh4RegType::reg_pc :
+		case reg_pc :
 			return pc;
 			break;
 
-		case Sh4RegType::reg_sr :
+		case reg_sr :
 			return sr.GetFull();
 			break;
-		case Sh4RegType::reg_fpscr :
+		case reg_fpscr :
 			return fpscr.full;
 			break;
 
@@ -425,11 +425,11 @@ u32 Sh4_int_GetRegister(Sh4RegType reg)
 
 void Sh4_int_SetRegister(Sh4RegType reg,u32 regdata)
 {
-	if (reg<=Sh4RegType::r15)
+	if (reg<=r15)
 	{
 		r[reg]=regdata;
 	}
-	else if (reg<=Sh4RegType::r7_Bank)
+	else if (reg<=r7_Bank)
 	{
 		r_bank[reg-16]=regdata;
 	}
@@ -437,51 +437,51 @@ void Sh4_int_SetRegister(Sh4RegType reg,u32 regdata)
 	{
 		switch(reg)
 		{
-		case Sh4RegType::reg_gbr :
+		case reg_gbr :
 			gbr=regdata;
 			break;
 
-		case Sh4RegType::reg_ssr :
+		case reg_ssr :
 			ssr=regdata;
 			break;
 
-		case Sh4RegType::reg_spc :
+		case reg_spc :
 			spc=regdata;
 			break;
 
-		case Sh4RegType::reg_sgr :
+		case reg_sgr :
 			sgr=regdata;
 			break;
 
-		case Sh4RegType::reg_dbr :
+		case reg_dbr :
 			dbr=regdata;
 			break;
 
-		case Sh4RegType::reg_mach :
+		case reg_mach :
 			mach=regdata;
 			break;
 
-		case Sh4RegType::reg_macl :
+		case reg_macl :
 			macl=regdata;
 			break;
 
-		case Sh4RegType::reg_pr :
+		case reg_pr :
 			pr=regdata;
 			break;
 
-		case Sh4RegType::reg_fpul :
+		case reg_fpul :
 			fpul=regdata;
 			break;
 
 
-		case Sh4RegType::reg_pc :
+		case reg_pc :
 			pc=regdata;
 			break;
-		case Sh4RegType::reg_sr :
+		case reg_sr :
 			sr.SetFull(regdata);
 			UpdateSR();
 			break;
-		case Sh4RegType::reg_fpscr :
+		case reg_fpscr :
 			fpscr.full=regdata;
 			UpdateFPSCR();
 			break;

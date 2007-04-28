@@ -305,59 +305,59 @@ u32* Sh4_int_GetRegisterPtr(Sh4RegType reg)
 	{
 		switch(reg)
 		{
-		case Sh4RegType::reg_gbr :
+		case reg_gbr :
 			return &gbr;
 			break;
-		case Sh4RegType::reg_vbr :
+		case reg_vbr :
 			return &vbr;
 			break;
 
-		case Sh4RegType::reg_ssr :
+		case reg_ssr :
 			return &ssr;
 			break;
 
-		case Sh4RegType::reg_spc :
+		case reg_spc :
 			return &spc;
 			break;
 
-		case Sh4RegType::reg_sgr :
+		case reg_sgr :
 			return &sgr;
 			break;
 
-		case Sh4RegType::reg_dbr :
+		case reg_dbr :
 			return &dbr;
 			break;
 
-		case Sh4RegType::reg_mach :
+		case reg_mach :
 			return &mach;
 			break;
 
-		case Sh4RegType::reg_macl :
+		case reg_macl :
 			return &macl;
 			break;
 
-		case Sh4RegType::reg_pr :
+		case reg_pr :
 			return &pr;
 			break;
 
-		case Sh4RegType::reg_fpul :
+		case reg_fpul :
 			return &fpul;
 			break;
 
 
-		case Sh4RegType::reg_pc :
+		case reg_pc :
 			return &pc;
 			break;
 
-		case Sh4RegType::reg_sr :
+		case reg_sr :
 			return &sr.m_full;
 			break;
 
-		case Sh4RegType::reg_sr_T :
+		case reg_sr_T :
 			return &sr.T;
 			break;
 
-		case Sh4RegType::reg_fpscr :
+		case reg_fpscr :
 			return &fpscr.full;
 			break;
 

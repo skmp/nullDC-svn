@@ -156,7 +156,7 @@ sh4op(i0000_0000_0101_1000)
 	//iNimp("sets");
 	//sr.S = 1;
 	shil_interpret(op);
-	//ilst->mov(Sh4RegType::sr_S,1);
+	//ilst->mov(sr_S,1);
 } 
 
 
@@ -165,7 +165,7 @@ sh4op(i0000_0000_0100_1000)
 {
 	//iNimp(op, "clrs");
 	shil_interpret(op);
-	//ilst->mov(Sh4RegType::sr_S,0);
+	//ilst->mov(sr_S,0);
 } 
 
 //sett                          
@@ -174,7 +174,7 @@ sh4op(i0000_0000_0001_1000)
 	//iNimp("sett");
 	//sr.T = 1;
 	//shil_interpret(op);
-	//ilst->mov(Sh4RegType::sr_T,1);
+	//ilst->mov(sr_T,1);
 	ilst->mov(reg_sr_T,1);
 } 
 
@@ -186,7 +186,7 @@ sh4op(i0000_0000_0000_1000)
 	//iNimp("clrt");
 	//sr.T = 0;
 	//shil_interpret(op);
-	//ilst->mov(Sh4RegType::sr_T,0);
+	//ilst->mov(sr_T,0);
 	ilst->mov(reg_sr_T,0);
 } 
 //movt <REG_N>                  
@@ -197,7 +197,7 @@ sh4op(i0000_nnnn_0010_1001)
 	//shil_interpret(op);
 	ilst->mov(r[n],reg_sr_T);
 	//ilst->and(r[n],1);
-	//ilst->mov(r[n],Sh4RegType::sr_T);
+	//ilst->mov(r[n],sr_T);
 } 
 //************************ Reg Compares ************************
 //cmp/pz <REG_N>                
@@ -212,7 +212,7 @@ sh4op(i0100_nnnn_0001_0001)
 	//	sr.T = 0;
 
 	ilst->cmp(r[n],(s8)0);			//singed compare
-	ilst->SaveT(cmd_cond::CC_NL);
+	ilst->SaveT(CC_NL);
 }
 
 //cmp/pl <REG_N>                
@@ -226,7 +226,7 @@ sh4op(i0100_nnnn_0001_0101)
 	//	sr.T = 0;
 
 	ilst->cmp(r[n],(s8)0);			//singed compare
-	ilst->SaveT(cmd_cond::CC_NLE);
+	ilst->SaveT(CC_NLE);
 }
 
 //cmp/eq #<imm>,R0              
@@ -238,7 +238,7 @@ sh4op(i1000_1000_iiii_iiii)
 	//else
 	//	sr.T =0;
 	ilst->cmp(r[0],GetSImm8(op));
-	ilst->SaveT(cmd_cond::CC_E);
+	ilst->SaveT(CC_E);
 }
 
 //cmp/eq <REG_M>,<REG_N>        
@@ -253,7 +253,7 @@ sh4op(i0011_nnnn_mmmm_0000)
 	//else
 		//sr.T = 0;
 	ilst->cmp(r[n],r[m]);
-	ilst->SaveT(cmd_cond::CC_E);
+	ilst->SaveT(CC_E);
 }
 
 //cmp/hs <REG_M>,<REG_N>        
@@ -266,7 +266,7 @@ sh4op(i0011_nnnn_mmmm_0010)
 //	else
 //		sr.T=0;
 	ilst->cmp(r[n],r[m]);
-	ilst->SaveT(cmd_cond::CC_AE);
+	ilst->SaveT(CC_AE);
 }
 
 //cmp/ge <REG_M>,<REG_N>        
@@ -280,7 +280,7 @@ sh4op(i0011_nnnn_mmmm_0011)
 //	else 
 //		sr.T = 0;
 	ilst->cmp(r[n],r[m]);
-	ilst->SaveT(cmd_cond::CC_GE);
+	ilst->SaveT(CC_GE);
 }
 
 //cmp/hi <REG_M>,<REG_N>        
@@ -296,7 +296,7 @@ sh4op(i0011_nnnn_mmmm_0110)
 	//else
 	//	sr.T=0;
 	ilst->cmp(r[n],r[m]);
-	ilst->SaveT(cmd_cond::CC_A);
+	ilst->SaveT(CC_A);
 }
 
 //cmp/gt <REG_M>,<REG_N>        
@@ -311,7 +311,7 @@ sh4op(i0011_nnnn_mmmm_0111)
 	//else 
 	//	sr.T = 0;
 	ilst->cmp(r[n],r[m]);
-	ilst->SaveT(cmd_cond::CC_G);
+	ilst->SaveT(CC_G);
 }
 
 //cmp/str <REG_M>,<REG_N>       
@@ -346,7 +346,7 @@ sh4op(i1100_1000_iiii_iiii)
 	//else 
 	//	sr.T = 0;
 	ilst->test(r[0],GetImm8(op));
-	ilst->SaveT(cmd_cond::CC_Z);
+	ilst->SaveT(CC_Z);
 }
 //tst <REG_M>,<REG_N>           
 sh4op(i0010_nnnn_mmmm_1000)
@@ -360,7 +360,7 @@ sh4op(i0010_nnnn_mmmm_1000)
 		//sr.T=1;
 
 	ilst->test(r[n],r[m]);
-	ilst->SaveT(cmd_cond::CC_Z);
+	ilst->SaveT(CC_Z);
 }
 //************************ mulls! ************************ 
 //mulu.w <REG_M>,<REG_N>          
@@ -537,9 +537,9 @@ u32 MatchDiv32(u32 pc , Sh4RegType &reg1,Sh4RegType &reg2 , Sh4RegType &reg3)
 }
 bool __fastcall MatchDiv32u(u32 op,u32 pc)
 {
-	div_som_reg1=Sh4RegType::NoReg;
-	div_som_reg2=Sh4RegType::NoReg;
-	div_som_reg3=Sh4RegType::NoReg;
+	div_som_reg1=NoReg;
+	div_som_reg2=NoReg;
+	div_som_reg3=NoReg;
 
 	u32 match=MatchDiv32(pc+2,div_som_reg1,div_som_reg2,div_som_reg3);
 
@@ -559,7 +559,7 @@ bool __fastcall MatchDiv32s(u32 op,u32 pc)
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 
-	div_som_reg1=Sh4RegType::NoReg;
+	div_som_reg1=NoReg;
 	div_som_reg2=(Sh4RegType)m;
 	div_som_reg3=(Sh4RegType)n;
 
@@ -692,7 +692,7 @@ sh4op(i0100_nnnn_0001_0000)
 //	else
 //		sr.T=0;
 	ilst->dec(r[n]);
-	ilst->SaveT(cmd_cond::CC_Z);
+	ilst->SaveT(CC_Z);
 }
 
 //negc <REG_M>,<REG_N>          
@@ -1182,7 +1182,7 @@ sh4op(i1111_nnnn_mmmm_0100)
 
 		//sr.T = (fr[m] == fr[n]) ? 1 : 0;
 		ilst->fcmp(fr[n],fr[m]);
-		ilst->SaveT(cmd_cond::CC_FPU_E);
+		ilst->SaveT(CC_FPU_E);
 	}
 	else
 	{
@@ -1209,7 +1209,7 @@ sh4op(i1111_nnnn_mmmm_0101)
 		else
 			sr.T = 0;*/
 		ilst->fcmp(fr[n],fr[m]);
-		ilst->SaveT(cmd_cond::CC_NBE);
+		ilst->SaveT(CC_NBE);
 	}
 	else
 	{

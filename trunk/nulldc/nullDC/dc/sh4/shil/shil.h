@@ -98,82 +98,82 @@ enum shil_opcodes
 {
 	//mov reg,reg	[32|64]
 	//mov reg,const	[32]
-	mov,
+	shilop_mov,
 
 	/*** Mem reads ***/
 	//readmem reg,[base+reg]	[s]			[8|16|32|64]
 	//readmem reg,[base+const]	[s]			[8|16|32|64]
-	readm,
+	shilop_readm,
 
 	/*** Mem writes ***/
 	//writemem reg,[base+reg]	[]			[8|16|32|64]
 	//writemem reg,[base+const]	[]			[8|16|32|64]
-	writem,
+	shilop_writem,
 	
 	//cmp reg,reg
 	//cmp reg,imm [s] [8]
-	cmp,
+	shilop_cmp,
 
 	//cmp reg,reg
 	//cmp reg,imm [] [8]
-	test,
+	shilop_test,
 
 	//SaveT/LoadT cond
-	SaveT,
-	LoadT,
+	shilop_SaveT,
+	shilop_LoadT,
 
 	//bit shits
 	//neg reg
-	neg,
+	shilop_neg,
 	//not reg
-	not,
+	shilop_not,
 
 	//bitwise ops
 
 	//and reg,reg
 	//and reg,const [32]
-	and,
+	shilop_and,
 
 	//and reg,reg
 	//and reg,const [32]
-	or,
+	shilop_or,
 
 	//and reg,reg
 	//and reg,const [32]
-	xor,
+	shilop_xor,
 	
 
 	//logical shifts
 
 	//shl reg,const [8]
-	shl,
+	shilop_shl,
 	//shr reg,const [8]
-	shr,
+	shilop_shr,
 
 	//arithmetic shifts
 
 	//sal reg,const [8]
 	//sal is same as shl
 	//sar reg,const [8]
-	sar,
+	shilop_sar,
 
 	//rotate
 
 	//rcl reg,const [8]
-	rcl,
+	shilop_rcl,
 	
 	//rcr reg,const [8]
-	rcr,
+	shilop_rcr,
 	
 	//rol reg,const [8]
-	rol,
+	shilop_rol,
 	
 	//ror reg,const [8]
-	ror,
+	shilop_ror,
 
 	//swaps
 	//swap [16|32] reg
-	swap,
+	shilop_swap,
 
 	//moves w/ extend
 	//signed - unsigned
@@ -182,68 +182,68 @@ enum shil_opcodes
 	//movsxb reg,reg	 s	 16
 	//movzxb reg,reg	 z	 8
 	//movzxw reg,reg	 z	 16
-	movex,
+	shilop_movex,
 
 	//maths (integer)
 	//adc reg,reg
-	adc,
+	shilop_adc,
 
 	//add reg,reg
 	//add reg,const
-	add,
+	shilop_add,
 
 	//sub reg,reg
 	//sub reg,const
-	sub,
+	shilop_sub,
 
 	//floating
 	//basic ops
 
 	//fadd reg,reg [32|64]
-	fadd,
+	shilop_fadd,
 	//fsub reg,reg [32|64]
-	fsub,
+	shilop_fsub,
 	//fmul reg,reg [32|64]
-	fmul,
+	shilop_fmul,
 	//fdiv reg,reg [32|64]
-	fdiv,
+	shilop_fdiv,
 
 	
 	//fabs reg [32|64]
-	fabs,
+	shilop_fabs,
 	//fneg reg [32|64]
-	fneg,
+	shilop_fneg,
 
 	//pfftt
 	//fmac r0,reg,reg [32|64]
-	fmac,
+	shilop_fmac,
 
 	//shil_ifb const , const
-	shil_ifb,
+	shilop_ifb,
 
 	//JCond T==imm
-	jcond,
+	shilop_jcond,
 	//Jmp
-	jmp,
+	shilop_jmp,
 	//mul [s] [16|32|64] 16*16->32 , 32*32->32 , 32*32->64
 	//mul mac[l|h|lh] [16|32|64] [s] , reg , reg
-	mul,	
+	shilop_mul,	
 
 	//more fpu fun :)
-	fsqrt,
-	ftrv,
-	fipr,
-	floatfpul,
-	ftrc,
+	shilop_fsqrt,
+	shilop_ftrv,
+	shilop_fipr,
+	shilop_floatfpul,
+	shilop_ftrc,
 
-	fsca,
-	fsrra,
-	div32,
-	fcmp,
+	shilop_fsca,
+	shilop_fsrra,
+	shilop_div32,
+	shilop_fcmp,
 
-	pref,
+	shilop_pref,
 
-	shil_count,
+	shilop_count,
 };
 
 enum cmd_cond

@@ -219,7 +219,7 @@ public :
 
 	void clear()
 	{
-		vector::clear();
+		vector<CompiledBlockInfo*>::clear();
 		ItemCount=0;
 	}
 };
@@ -333,6 +333,9 @@ void ResetBlocks()
 	FreeBlocks(&SuspendedBlocks);
 	FreeBlocks(&all_block_list);
 	memset(PageInfo,0,sizeof(PageInfo));
+}
+void GetStats(bm_stats* stats)
+{
 }
 bool reset_cache=false;
 void __fastcall _SuspendAllBlocks();
