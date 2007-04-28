@@ -53,7 +53,9 @@ INT_PTR CALLBACK DlgProcModal_about( HWND, UINT, WPARAM, LPARAM );
 INT_PTR CALLBACK DlgProcModal_config( HWND, UINT, WPARAM, LPARAM );
 LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
 INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
+INT_PTR CALLBACK ProfilerProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
 
+HWND ProfilerWindow;
 #pragma warning(disable: 4311)
 #pragma warning(disable: 4312)
 
@@ -727,7 +729,20 @@ MENU_HANDLER( Handle_Options_SelectPlugins)
 //Profiler
 MENU_HANDLER( Handle_Profiler_Show)
 {
-	msgboxf("Profiler gui not yet implemented",MB_ICONERROR);
+	if (ProfilerWindow!=0)
+		SetFocus(ProfilerWindow);
+	else
+	{
+		ProfilerWindow = CreateDialog(g_hInst,MAKEINTRESOURCE(IDD_PROFILER),g_hWnd,ProfilerProc);
+		//DialogBox(g_hInst,MAKEINTRESOURCE(IDD_PROFILER),g_hWnd,ProfilerProc);
+		if( !IsWindow(ProfilerWindow) )
+		{
+			MessageBox( (HWND)hWnd, "Couldn't create profiler window","",MB_OK );
+			ProfilerWindow=0;
+		}
+		ShowWindow(ProfilerWindow, SW_SHOW);
+		//msgboxf("Profiler gui not yet implemented",MB_ICONERROR);
+	}
 }
 MENU_HANDLER( Handle_Profiler_Enable )
 {
@@ -1510,8 +1525,32 @@ inline static void RefreshArmDbg(void)
 {
 
 }
+#include "dc/sh4/rec_v1/blockmanager.h"
+INT_PTR CALLBACK ProfilerProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
+{
+	switch( uMsg )
+	{
+	case WM_INITDIALOG:
+		SetTimer(hWnd,0,500,0);
+		return TRUE;
+
+	case WM_TIMER:
+		{
+			bm_stats stats;
+			bm_GetStats(&stats);
+
+			char text[2048];
+			sprintf(text,"Block manager : tracking %d blocks , %d kb TCH",stats.block_count,stats.cache_size/1024);
+			SetDlgItemText(hWnd,IDC_PROFTEXT,text);
+		}
+		return TRUE;
 
 
+	default: return FALSE;
+	}
+
+
+}
 INT_PTR CALLBACK ArmDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	switch( uMsg )
@@ -1819,66 +1858,7 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			plgdlg_cancel=true;
 			EndDialog(hWnd,0);
 			return true;
-/*
-		case IDC_EXTDEV_CONF:
-			{
-				nullDC_ExtDevice_plugin t;
-				if (t.Load(SelectedPlugin_ExtDev)==PluginLoadError::NoError)
-				{
-//					t.info.ShowConfig(PluginType::ExtDevice,hWnd);
-				}
-				else
-				{
-					//error
-					printf("Failed to load \"%s\"\n",SelectedPlugin_Aica);
-				}
-			}
-			break;
 
-		case IDC_AICA_CONF:
-			{
-				nullDC_AICA_plugin t;
-				if (t.Load(SelectedPlugin_Aica)==PluginLoadError::NoError)
-				{
-					//t.info.ShowConfig(PluginType::AICA,hWnd);
-				}
-				else
-				{
-					//error
-					printf("Failed to load \"%s\"\n",SelectedPlugin_Aica);
-				}
-			}
-			break;
-
-		case IDC_PVR_CONF:
-			{
-				nullDC_PowerVR_plugin t;
-				if (t.Load(SelectedPlugin_Pvr)==PluginLoadError::NoError)
-				{
-					//t.info.ShowConfig(PluginType::PowerVR,hWnd);
-				}
-				else
-				{
-					//error
-					printf("Failed to load \"%s\"\n",SelectedPlugin_Pvr);
-				}
-			}
-			break;
-
-		case IDC_GDR_CONF:
-			{
-				nullDC_GDRom_plugin t;
-				if (t.Load(SelectedPlugin_Gdr)==PluginLoadError::NoError)
-				{
-					//t.info.ShowConfig(PluginType::GDRom,hWnd);
-				}
-				else
-				{
-					//error
-					printf("Failed to load \"%s\"\n",SelectedPlugin_Gdr);
-				}
-			}
-			break;*/
 		default: break;
 		}
 		return false;

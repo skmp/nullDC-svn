@@ -251,39 +251,33 @@ public:
 	void Init(u8* _ptr,u32 sz,u32 Ma,u32 Mi)
 	{
 		ptr=_ptr;
-		usable_bytes=sz;
-		freed_bytes=0;
 		index=0;
 		size=sz;
-		
-		MaxAllocSize=Ma;
-		MinAllocSize=Mi;
 	}
 	u8* ptr;
-	u32 usable_bytes;
 	u32 index;
-	u32 freed_bytes;
 	u32 size;
-	u32 MaxAllocSize;
-	u32 MinAllocSize;
 
 	bool CanAlloc(u32 size)
 	{
-		return ((size>=MinAllocSize) &&(size<MaxAllocSize));
+		return true;
 	}
-	u8* Allocate(u32 size)
+	u8* Allocate(u32 sz)
 	{
-		if (usable_bytes>size)
+		if (size>=(index+sz))
 		{
 			u8* rv= &ptr[index];
-			index+=size;
-			usable_bytes-=size;
+			index+=sz;
 			return rv;
 		}
 		else
 			return 0;
 	}
-	BlockList blocks;
+	void Reset()
+	{
+		index=0;
+	}
+	//BlockList blocks;
 };
 
 MemoryChunk* MemChunks=0;
@@ -295,6 +289,7 @@ u32 DynarecCacheSize;
 //implemented later
 void FreeBlock(CompiledBlockInfo* block);
 void init_memalloc(u32 scs,u32 scc,u32 bcc,u32 bcs);
+void reset_memalloc();
 
 //misc code & helper functions
 //this should not be called from a running block , or it could crash
@@ -332,10 +327,19 @@ void ResetBlocks()
 
 	FreeBlocks(&SuspendedBlocks);
 	FreeBlocks(&all_block_list);
+	reset_memalloc();
 	memset(PageInfo,0,sizeof(PageInfo));
 }
-void GetStats(bm_stats* stats)
+void bm_GetStats(bm_stats* stats)
 {
+	stats->block_count=all_block_list.ItemCount;
+
+	u32 sz=0;
+	for (int i=0;i<MemChunkCount;i++)
+	{
+		sz+=MemChunks[i].index;
+	}
+	stats->cache_size=sz;
 }
 bool reset_cache=false;
 void __fastcall _SuspendAllBlocks();
@@ -775,7 +779,7 @@ MemoryChunk* FindBestChunk(u32 size)
 			if (rv==0)
 				rv=&MemChunks[i];
 			else
-			{
+			{/*
 				if (rv->usable_bytes<MemChunks[i].usable_bytes)
 				{
 					rv=&MemChunks[i];
@@ -786,7 +790,7 @@ MemoryChunk* FindBestChunk(u32 size)
 					{
 						rv=&MemChunks[i];
 					}
-				}
+				}*/
 			}
 		}
 	}
@@ -819,6 +823,13 @@ void init_memalloc(u32 scc,u32 scs,u32 bcc,u32 bcs)
 		MemChunks[i].Init(DynarecMem,bcs,bcs/2,scs/8);
 		DynarecMem+=bcs;
 		i++;
+	}
+}
+void reset_memalloc()
+{
+	for (u32 i =0;i<MemChunkCount;i++)
+	{
+		MemChunks[i].Reset();
 	}
 }
 u8 dyna_tempbuffer[1024*1024];

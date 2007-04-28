@@ -51,3 +51,11 @@ void* dyna_finalize(void* ptr,u32 oldsize,u32 newsize);
 void dyna_link(CompiledBlockInfo* block);
 void dyna_free(CompiledBlockInfo* block);
 void dyna_profiler_tick(void* addr);
+
+struct bm_stats
+{
+	u32 block_count;
+	u32 cache_size;
+};
+
+void bm_GetStats(bm_stats* stats);
