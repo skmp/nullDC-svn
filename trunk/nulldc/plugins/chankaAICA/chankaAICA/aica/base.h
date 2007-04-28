@@ -33,7 +33,7 @@ typedef enum { RET_OK = 0, RET_FAIL = 1 } TError;
 void __cdecl operator delete( void *pvMem, const char* pszFichero, int iLinea );
 inline void* __cdecl operator new(size_t nSize, const char * lpszFileName, int nLine)
 {
-  return ::operator new(nSize, 1, lpszFileName, nLine);
+return ::operator new(nSize, 1, lpszFileName, nLine);
 }
 #define NEW(obj) new(__FILE__, __LINE__) obj
 #else
@@ -46,16 +46,16 @@ inline void* __cdecl operator new(size_t nSize, const char * lpszFileName, int n
 
 
 #define DISPOSE(obj)	\
-  do {									\
-  delete (obj);				\
-  (obj) = NULL;				\
-  }	while(0)						
+	do {									\
+	delete (obj);				\
+	(obj) = NULL;				\
+	}	while(0)						
 
 #define DISPOSE_ARRAY(obj)	\
-  do {												\
-  delete [](obj);						\
-  (obj) = NULL;							\
-  }	while(0)									
+	do {												\
+	delete [](obj);						\
+	(obj) = NULL;							\
+	}	while(0)									
 
 #define SAFE_RELEASE(p)      { if(p) { (p)->Release(); (p)=NULL; } }
 #define ZEROMEM(obj,size) memset((obj),0,(size))
@@ -71,12 +71,12 @@ extern void LogVentanaDebug( const char *szFichero, int linea, const char *szExp
 extern bool VentanaDebug( const char *szFichero, int linea, const char *szExpr );
 
 #define ASSERT(expr)	                do { \
-  static bool bVerAsserts = true;                                \
-  if (bVerAsserts && !(expr))                                    \
+	static bool bVerAsserts = true;                                \
+	if (bVerAsserts && !(expr))                                    \
 {												                                      \
-  LogVentanaDebug( __FILE__, __LINE__, #expr );	              \
-  __asm { int 3	}                                             \
-  bVerAsserts = VentanaDebug( __FILE__, __LINE__, #expr );	    \
+	LogVentanaDebug( __FILE__, __LINE__, #expr );	              \
+	__asm { int 3	}                                             \
+	bVerAsserts = VentanaDebug( __FILE__, __LINE__, #expr );	    \
 }                                                              \
 } while (0)
 #else

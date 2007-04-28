@@ -63,57 +63,57 @@ void FASTCALL WriteMem_reg(u32 addr,u32 data,u32 size)
 		AICAWriteDword(uAddressAux-SH4AicaMemory_START,data);
 		break;
 	}
-	
+
 }
 
 /*
 u32 ReadMem_ram(u32 addr,u32 size)
 {
-	DWORD uData;
-	DWORD uAddress = addr;
-	uAddress&=SH4Memory_MASK;	
-	 
-	uAddress=uAddress-SH4SoundRAM_START;
-	
-	uAddress&=Arm7SoundRAMMask;
+DWORD uData;
+DWORD uAddress = addr;
+uAddress&=SH4Memory_MASK;	
 
-	switch(size)
-	{
-	case 1:
-		uData = *((BYTE*)(g_pSH4SoundRAM + (uAddress)));	
-		break;
-	case 2:
-		uData = *((WORD*)(g_pSH4SoundRAM + (uAddress)));	
-		break;
-	case 4:
-		uData = *((DWORD*)(g_pSH4SoundRAM + (uAddress)));	
-		break;
-	}
+uAddress=uAddress-SH4SoundRAM_START;
 
-	return uData;
+uAddress&=Arm7SoundRAMMask;
+
+switch(size)
+{
+case 1:
+uData = *((BYTE*)(g_pSH4SoundRAM + (uAddress)));	
+break;
+case 2:
+uData = *((WORD*)(g_pSH4SoundRAM + (uAddress)));	
+break;
+case 4:
+uData = *((DWORD*)(g_pSH4SoundRAM + (uAddress)));	
+break;
+}
+
+return uData;
 
 }
 void WriteMem_ram(u32 addr,u32 data,u32 size)
 {
-	DWORD uAddress = addr;
-	uAddress&=SH4Memory_MASK;	
-	 
-	uAddress=uAddress-SH4SoundRAM_START;
-	
-	uAddress&=Arm7SoundRAMMask;
+DWORD uAddress = addr;
+uAddress&=SH4Memory_MASK;	
 
-	switch(size)
-	{
-	case 1:
-		*((BYTE*)(g_pSH4SoundRAM + (uAddress)))=data;	
-		break;
-	case 2:
-		*((WORD*)(g_pSH4SoundRAM + (uAddress)))=data;	
-		break;
-	case 4:
-		*((DWORD*)(g_pSH4SoundRAM + (uAddress)))=data;	
-		break;
-	}
+uAddress=uAddress-SH4SoundRAM_START;
+
+uAddress&=Arm7SoundRAMMask;
+
+switch(size)
+{
+case 1:
+*((BYTE*)(g_pSH4SoundRAM + (uAddress)))=data;	
+break;
+case 2:
+*((WORD*)(g_pSH4SoundRAM + (uAddress)))=data;	
+break;
+case 4:
+*((DWORD*)(g_pSH4SoundRAM + (uAddress)))=data;	
+break;
+}
 }
 
 */
@@ -142,18 +142,18 @@ void TerminateARM7()
 
 void LogVentanaDebug( const char *szFichero, int linea, const char *szExpr )
 {
-  char buf[3000];
+	char buf[3000];
 
-  sprintf(buf,"ASSERTION\r\nFile %s\r\nLine %d\r\nExpresion %s",szFichero,linea,szExpr);
-  ODS(("%s", buf));
+	sprintf(buf,"ASSERTION\r\nFile %s\r\nLine %d\r\nExpresion %s",szFichero,linea,szExpr);
+	ODS(("%s", buf));
 }
 
 bool VentanaDebug( const char *szFichero, int linea, const char *szExpr )
 {
-  char buf[3000];
+	char buf[3000];
 
-  sprintf(buf,"ASSERTION\r\nFile %s\r\nLine %d\r\nExpresion %s\r\n\r\n¿Desea seguir viendo asserts?",szFichero,linea,szExpr);
-  int rv = ::MessageBox(NULL,buf,"ASSERTION",MB_YESNO);
-  return (rv == IDYES);
+	sprintf(buf,"ASSERTION\r\nFile %s\r\nLine %d\r\nExpresion %s\r\n\r\n¿Desea seguir viendo asserts?",szFichero,linea,szExpr);
+	int rv = ::MessageBox(NULL,buf,"ASSERTION",MB_YESNO);
+	return (rv == IDYES);
 }
 

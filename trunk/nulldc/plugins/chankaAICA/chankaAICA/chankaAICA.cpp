@@ -6,11 +6,11 @@
 aica_init_params params;
 emu_info emu;
 BOOL APIENTRY DllMain( HMODULE hModule,
-                       DWORD  ul_reason_for_call,
-                       LPVOID lpReserved
-					 )
+					  DWORD  ul_reason_for_call,
+					  LPVOID lpReserved
+					  )
 {
-    return TRUE;
+	return TRUE;
 }
 
 void FASTCALL handle_About(u32 id,void* w,void* p)
@@ -59,7 +59,7 @@ void FASTCALL Term()
 EXPORT void EXPORT_CALL dcGetInterface(plugin_interface* info)
 {
 	info->InterfaceVersion=PLUGIN_I_F_VERSION;
-/*
+	/*
 	info->Init=dcInit;
 	info->Term=dcTerm;
 	info->Reset=dcReset;
@@ -77,7 +77,7 @@ EXPORT void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	info->ReadMem_aica_reg=ReadMem_reg;
 	info->WriteMem_aica_reg=WriteMem_reg;
 	info->UpdateAICA=UpdateSystem;
-*/
+	*/
 #define c info->common
 #define a info->aica
 

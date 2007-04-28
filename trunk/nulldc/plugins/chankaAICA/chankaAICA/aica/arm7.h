@@ -97,7 +97,7 @@ public:
 	static reg_pair m_aReg[45];
 
 	void SetPC(DWORD uData) { m_aReg[15].I = uData; m_uArmNextPC = uData;}
-	
+
 
 	DWORD GetPC() const { return m_uArmNextPC;	}
 	bool IsArmState() const { return armState;}
@@ -111,7 +111,7 @@ public:
 
 	__forceinline void SetErrorCode(EErrorCode uError) { m_eErrorCode = uError; }
 	__forceinline EErrorCode GetErrorCode() const { return m_eErrorCode;}
-	
+
 
 
 	void CPUSwitchMode(int mode, bool saveState, bool breakLoop=true);
@@ -162,7 +162,7 @@ public:
 
 	void SetStopBreakPoint(DWORD uPos) { m_uStop = uPos;}
 
-	
+
 private:	
 	bool    m_bInit;
 	bool m_bEnable;

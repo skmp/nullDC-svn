@@ -16,8 +16,8 @@ DWORD Arm7SoundRAMMask;
 
 void InitArm7Memory()
 {
-  Arm7SoundRAMEnd = AICA_MEM_SIZE;
-  Arm7SoundRAMMask = AICA_MEM_MASK;
+	Arm7SoundRAMEnd = AICA_MEM_SIZE;
+	Arm7SoundRAMMask = AICA_MEM_MASK;
 
-  //g_pSH4SoundRAM=(u8*)malloc(AICA_MEM_SIZE);
+	//g_pSH4SoundRAM=(u8*)malloc(AICA_MEM_SIZE);
 }

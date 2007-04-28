@@ -67,11 +67,11 @@ int CArm7::memoryWaitFetch32[16] =
 
 const int CArm7::cpuMemoryWait[16] = {
 	0, 0, 2, 0, 0, 0, 0, 0,
-		2, 2, 2, 2, 2, 2, 0, 0
+	2, 2, 2, 2, 2, 2, 0, 0
 };
 const int CArm7::cpuMemoryWait32[16] = {
 	0, 0, 3, 0, 0, 0, 0, 0,
-		3, 3, 3, 3, 3, 3, 0, 0
+	3, 3, 3, 3, 3, 3, 0, 0
 };
 
 const bool CArm7::memory32[16] =
@@ -80,21 +80,21 @@ const bool CArm7::memory32[16] =
 const int CArm7::thumbCycles[] = {
 	//  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
 	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 0
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 1
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 2
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 3
-		1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3,  // 4
-		2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,  // 5
-		2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,  // 6
-		2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,  // 7
-		2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,  // 8
-		2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,  // 9
-		3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,  // a
-		1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 2, 4, 1, 1,  // b
-		2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,  // c
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3,  // d
-		3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,  // e
-		2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2   // f
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 1
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 2
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 3
+	1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3,  // 4
+	2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,  // 5
+	2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,  // 6
+	2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,  // 7
+	2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,  // 8
+	2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,  // 9
+	3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,  // a
+	1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 2, 4, 1, 1,  // b
+	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,  // c
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3,  // d
+	3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,  // e
+	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2   // f
 };
 
 
@@ -437,11 +437,11 @@ CArm7::EErrorCode	CArm7::_StepArm7()
 
 	/*if (eErrorCode == E_OK)
 	{
-		if (armFiqEnable && m_bFiqPending)
-		{
-			m_bFiqPending = false;
-			CPUFiq();
-		}
+	if (armFiqEnable && m_bFiqPending)
+	{
+	m_bFiqPending = false;
+	CPUFiq();
+	}
 	}*/
 
 	return eErrorCode;
@@ -449,35 +449,35 @@ CArm7::EErrorCode	CArm7::_StepArm7()
 
 CArm7::EErrorCode	CArm7::_BlockStepArm7(DWORD uNumCycles)
 {
-  if (!g_bArm7Enable)
-    return E_OK;
-  //return E_OK;
+	if (!g_bArm7Enable)
+		return E_OK;
+	//return E_OK;
 	/*
 	DWORD i;
 	EErrorCode eErrorCode = E_OK;	
 	for (i=0;eErrorCode == E_OK && i<uNumCycles;i++)
 	{
-		if (m_uArmNextPC != m_uStop)
-			eErrorCode = ExecuteInstruction();
-		else
-			eErrorCode = E_BREAKPOINT;
+	if (m_uArmNextPC != m_uStop)
+	eErrorCode = ExecuteInstruction();
+	else
+	eErrorCode = E_BREAKPOINT;
 	}
 
 	if (m_uArmNextPC == m_uStop)
-		eErrorCode = E_BREAKPOINT;
+	eErrorCode = E_BREAKPOINT;
 
 	if (eErrorCode == E_OK)
 	{
-		if (armFiqEnable && m_bFiqPending)
-		{
-			m_bFiqPending = false;
-			CPUFiq();
-		}
+	if (armFiqEnable && m_bFiqPending)
+	{
+	m_bFiqPending = false;
+	CPUFiq();
+	}
 	}
 	return eErrorCode;
 	*/
 
-	
+
 	DWORD uCurrentClocks = 0;	
 	while (uCurrentClocks<uNumCycles)
 	{
@@ -490,7 +490,7 @@ CArm7::EErrorCode	CArm7::_BlockStepArm7(DWORD uNumCycles)
 		m_bFiqPending = false;
 		CPUFiq();
 	}
-	
+
 
 	return E_OK;
 }
@@ -499,7 +499,7 @@ CArm7::EErrorCode	CArm7::ExecuteInstruction()
 {
 #define clockTicks m_uClockTicks
 #include "arm-new.h"
-return E_OK;
+	return E_OK;
 }
 
 
