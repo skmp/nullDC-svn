@@ -11,9 +11,6 @@
 		<Platform
 			Name="Win32"
 		/>
-		<Platform
-			Name="x64"
-		/>
 	</Platforms>
 	<ToolFiles>
 	</ToolFiles>
@@ -76,91 +73,6 @@
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="Debug|x64"
-			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="1"
-			CharacterSet="2"
-			BuildLogFile="$(SolutionDir)\obj\$(ProjectName)\$(PlatformName)\$(ConfigurationName)\BuildLog.htm"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-				TargetEnvironment="3"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				FavorSizeOrSpeed="1"
-				OmitFramePointers="false"
-				AdditionalIncludeDirectories="$(SolutionDir)\nullDC"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;TRACE;DEBUG;NULLDC;X86"
-				MinimalRebuild="true"
-				BasicRuntimeChecks="0"
-				RuntimeLibrary="3"
-				BufferSecurityCheck="false"
-				EnableEnhancedInstructionSet="1"
-				FloatingPointModel="2"
-				UsePrecompiledHeader="0"
-				WarningLevel="4"
-				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="3"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="winmm.lib wsock32.lib comctl32.lib"
-				OutputFile="$(SolutionDir)\WorkDir\$(ProjectName)_$(PlatformName)_$(ConfigurationName).exe"
-				LinkIncremental="2"
-				GenerateDebugInformation="true"
-				SubSystem="1"
-				TargetMachine="17"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -270,89 +182,6 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="Release|x64"
-			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="1"
-			CharacterSet="2"
-			WholeProgramOptimization="1"
-			BuildLogFile="$(SolutionDir)\obj\$(ProjectName)\$(PlatformName)\$(ConfigurationName)\BuildLog.htm"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-				TargetEnvironment="3"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="$(SolutionDir)\nullDC"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;TRACE;NULLDC;X86"
-				RuntimeLibrary="2"
-				BufferSecurityCheck="false"
-				EnableEnhancedInstructionSet="1"
-				FloatingPointModel="2"
-				UsePrecompiledHeader="0"
-				WarningLevel="4"
-				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="3"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="winmm.lib wsock32.lib comctl32.lib"
-				OutputFile="$(SolutionDir)\WorkDir\$(ProjectName)_$(PlatformName)_$(ConfigurationName).exe"
-				LinkIncremental="1"
-				GenerateDebugInformation="true"
-				SubSystem="1"
-				OptimizeReferences="2"
-				EnableCOMDATFolding="2"
-				TargetMachine="17"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
 			Name="Release-NoTrace|Win32"
 			OutputDirectory="$(SolutionDir)\WorkDir"
 			IntermediateDirectory="$(SolutionDir)\obj\$(ProjectName)\$(PlatformName)\$(ConfigurationName)\"
@@ -390,6 +219,7 @@
 				BufferSecurityCheck="false"
 				EnableEnhancedInstructionSet="1"
 				FloatingPointModel="2"
+				RuntimeTypeInfo="false"
 				UsePrecompiledHeader="0"
 				WarningLevel="4"
 				Detect64BitPortabilityProblems="true"
@@ -414,95 +244,6 @@
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				TargetMachine="1"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="Release-NoTrace|x64"
-			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="1"
-			CharacterSet="2"
-			WholeProgramOptimization="1"
-			BuildLogFile="$(SolutionDir)\obj\$(ProjectName)\$(PlatformName)\$(ConfigurationName)\BuildLog.htm"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-				TargetEnvironment="3"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="2"
-				InlineFunctionExpansion="2"
-				EnableIntrinsicFunctions="true"
-				FavorSizeOrSpeed="1"
-				OmitFramePointers="true"
-				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="&quot;C:\Program Files\Microsoft DirectX SDK (February 2006)\Include&quot;;&quot;$(SolutionDir)\nullDC&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;NULLDC;X86;RELEASE"
-				RuntimeLibrary="2"
-				BufferSecurityCheck="false"
-				EnableEnhancedInstructionSet="1"
-				FloatingPointModel="2"
-				UsePrecompiledHeader="0"
-				WarningLevel="4"
-				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="3"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="winmm.lib wsock32.lib comctl32.lib"
-				OutputFile="$(SolutionDir)\WorkDir\$(ProjectName)_$(PlatformName)_$(ConfigurationName).exe"
-				LinkIncremental="1"
-				GenerateDebugInformation="true"
-				SubSystem="1"
-				OptimizeReferences="2"
-				EnableCOMDATFolding="2"
-				TargetMachine="17"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -587,91 +328,6 @@
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="Debug_R|x64"
-			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="1"
-			CharacterSet="2"
-			BuildLogFile="$(SolutionDir)\obj\$(ProjectName)\$(PlatformName)\$(ConfigurationName)\BuildLog.htm"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-				TargetEnvironment="3"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				FavorSizeOrSpeed="1"
-				OmitFramePointers="false"
-				AdditionalIncludeDirectories="$(SolutionDir)\nullDC"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;DEBUG;NULLDC;X86"
-				MinimalRebuild="true"
-				BasicRuntimeChecks="0"
-				RuntimeLibrary="3"
-				BufferSecurityCheck="false"
-				EnableEnhancedInstructionSet="1"
-				FloatingPointModel="2"
-				UsePrecompiledHeader="0"
-				WarningLevel="4"
-				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="3"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="winmm.lib wsock32.lib comctl32.lib"
-				OutputFile="$(SolutionDir)\WorkDir\$(ProjectName)_$(PlatformName)_$(ConfigurationName).exe"
-				LinkIncremental="2"
-				GenerateDebugInformation="true"
-				SubSystem="1"
-				TargetMachine="17"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -958,14 +614,6 @@
 								Optimization="0"
 							/>
 						</FileConfiguration>
-						<FileConfiguration
-							Name="Release-NoTrace|x64"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-								Optimization="0"
-							/>
-						</FileConfiguration>
 					</File>
 					<File
 						RelativePath=".\dc\sh4\shil\shil_ce.h"
@@ -1077,14 +725,6 @@
 									Optimization="2"
 								/>
 							</FileConfiguration>
-							<FileConfiguration
-								Name="Release-NoTrace|x64"
-								>
-								<Tool
-									Name="VCCLCompilerTool"
-									Optimization="2"
-								/>
-							</FileConfiguration>
 						</File>
 						<File
 							RelativePath=".\dc\sh4\rec_v1\blockmanager.h"
@@ -1109,14 +749,6 @@
 					>
 					<FileConfiguration
 						Name="Release-NoTrace|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="0"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release-NoTrace|x64"
 						>
 						<Tool
 							Name="VCCLCompilerTool"
@@ -1268,21 +900,7 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
-						Name="Debug|x64"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
 						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|x64"
 						>
 						<Tool
 							Name="VCCustomBuildTool"
@@ -1296,21 +914,7 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
-						Name="Release-NoTrace|x64"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
 						Name="Debug_R|Win32"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Debug_R|x64"
 						>
 						<Tool
 							Name="VCCustomBuildTool"
@@ -1338,25 +942,7 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
-						Name="Debug|x64"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\$(InputName)1.obj"
-							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
 						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\$(InputName)1.obj"
-							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|x64"
 						>
 						<Tool
 							Name="VCCLCompilerTool"
@@ -1374,25 +960,7 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
-						Name="Release-NoTrace|x64"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\$(InputName)1.obj"
-							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
 						Name="Debug_R|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\$(InputName)1.obj"
-							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Debug_R|x64"
 						>
 						<Tool
 							Name="VCCLCompilerTool"
@@ -1410,13 +978,6 @@
 					>
 					<FileConfiguration
 						Name="Release-NoTrace|Win32"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release-NoTrace|x64"
 						>
 						<Tool
 							Name="VCCustomBuildTool"
@@ -1642,14 +1203,6 @@
 							Optimization="2"
 						/>
 					</FileConfiguration>
-					<FileConfiguration
-						Name="Release-NoTrace|x64"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="2"
-						/>
-					</FileConfiguration>
 				</File>
 				<File
 					RelativePath=".\emitter\x86\x86_emitter.h"
@@ -1684,14 +1237,6 @@
 					>
 					<FileConfiguration
 						Name="Release-NoTrace|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="0"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release-NoTrace|x64"
 						>
 						<Tool
 							Name="VCCLCompilerTool"

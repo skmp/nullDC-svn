@@ -99,7 +99,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="\"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(SolutionDir)\obj\$(ProjectName)\$(PlatformName)\$(ConfigurationName)\"
 			ConfigurationType="2"
 			CharacterSet="0"
@@ -122,12 +122,14 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)\nullDC\plugins&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;ZNULLMAPLE_EXPORTS;_CRT_SECURE_NO_DEPRECATE"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
 				EnableEnhancedInstructionSet="1"
 				FloatingPointModel="2"
+				RuntimeTypeInfo="false"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
