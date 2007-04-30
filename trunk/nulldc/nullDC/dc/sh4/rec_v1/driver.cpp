@@ -135,7 +135,7 @@ void rec_sh4_ResetCache()
 extern CompiledBlockInfo*			BlockLookupGuess[LOOKUP_HASH_SIZE];
 BasicBlockEP* __fastcall FindCode_full(u32 address,CompiledBlockInfo* fastblock);
 
-
+extern u32 fast_lookups;
 void naked DynaMainLoop()
 {
 	__asm
@@ -195,6 +195,9 @@ no_update:
 		cmp [edx+12],eax;
 		jne full_lookup;
 		inc dword ptr[edx+16];
+#ifdef _BM_CACHE_STATS
+		inc fast_lookups;
+#endif
 		jmp dword ptr[edx+8];
 		/*
 		else

@@ -58,6 +58,11 @@ struct bm_stats
 	u32 cache_size;
 	u32 locked_blocks;
 	u32 manual_blocks;
+
+	u32 full_lookups;
+	u32 fast_lookups;
 };
 
 void bm_GetStats(bm_stats* stats);
+
+//#define _BM_CACHE_STATS

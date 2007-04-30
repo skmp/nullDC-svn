@@ -1540,10 +1540,12 @@ INT_PTR CALLBACK ProfilerProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 			bm_GetStats(&stats);
 
 			char text[2048];
-			sprintf(text,"Block manager : \ntracking %d blocks , %d kb TCH\n"
-						 "%d Manual blocks , %d locked blocks , ratio %f",
+			sprintf(text,"Block manager : \r\ntracking %d blocks , %d kb TCH\r\n"
+						 "%d Manual blocks , %d locked blocks , ratio %f\r\n"
+						 "%d full lookups , %d fast lookups , ratio %f\r\n",
 						 stats.block_count,stats.cache_size/1024,
 						 stats.manual_blocks,stats.locked_blocks,stats.manual_blocks/(float)stats.locked_blocks,
+						 stats.full_lookups,stats.fast_lookups,stats.full_lookups/(float)stats.fast_lookups,
 						 0);
 			SetDlgItemText(hWnd,IDC_PROFTEXT,text);
 		}

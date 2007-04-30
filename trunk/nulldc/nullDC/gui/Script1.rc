@@ -33,7 +33,7 @@ CAPTION "nullDC profiler"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     CTEXT           "Profiler info : TBP : enabled ; nullProf : missing",IDC_STATIC,7,7,256,12
-    LTEXT           "Static",IDC_PROFTEXT,7,37,256,106
+    EDITTEXT        IDC_PROFTEXT,7,24,256,119,ES_MULTILINE | ES_READONLY | NOT WS_BORDER
 END
 
 IDD_PLUGIN_SELECT DIALOGEX 0, 0, 392, 271

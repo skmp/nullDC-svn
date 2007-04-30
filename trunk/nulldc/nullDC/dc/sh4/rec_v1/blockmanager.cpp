@@ -52,6 +52,9 @@ CompiledBlockInfo BLOCK_NONE_B;
 
 u32* block_stack_pointer;
 
+u32 full_lookups;
+u32 fast_lookups;
+
 //helper list class
 int compare_BlockLookups(const void * a, const void * b)
 {
@@ -346,6 +349,8 @@ void bm_GetStats(bm_stats* stats)
 	stats->cache_size=sz;
 	stats->manual_blocks=bm_manual_block_count;
 	stats->locked_blocks=bm_locked_block_count;
+	stats->fast_lookups=fast_lookups;fast_lookups=0;
+	stats->full_lookups=full_lookups;full_lookups=0;
 }
 bool reset_cache=false;
 void __fastcall _SuspendAllBlocks();
@@ -477,18 +482,9 @@ BasicBlockEP* __fastcall FindCode_full(u32 address,CompiledBlockInfo* fastblock)
 	CompiledBlockInfo* thisblock;
 
 	BlockList* blklist = GetLookupBlockList(address);
-
-	//u32 listsz=(u32)blklist->size();
-	//for (u32 i=0;i<listsz;i++)
-	//{ 
-	//	thisblock=(*blklist)[i];
-	//	if (thisblock->start==address && thisblock->cpu_mode_tag==fpscr.PR_SZ)
-	//	{
-	//		thisblock->lookups++;
-	//		return thisblock;
-	//	}
-	//}
-
+#ifdef _BM_CACHE_STATS
+	full_lookups++;
+#endif
 #ifdef OPTIMISE_LUT_SORT
 	luk++;
 	if (luk==r_value)
