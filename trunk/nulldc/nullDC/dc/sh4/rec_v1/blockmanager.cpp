@@ -237,8 +237,6 @@ BlockList BlockPageLists[RAM_SIZE/PAGE_SIZE];
 BlockList SuspendedBlocks;
 
 //block lookup vars
-#define LOOKUP_HASH_SIZE	0x4000
-#define LOOKUP_HASH_MASK	(LOOKUP_HASH_SIZE-1)
 #define GetLookupHash(addr) ((addr>>2)&LOOKUP_HASH_MASK)
 BlockList					BlockLookupLists[LOOKUP_HASH_SIZE];
 

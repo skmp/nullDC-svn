@@ -42,6 +42,7 @@ u32 nb_count=0;
 u32 rec_cycles=0;
 
 void* Dynarec_Mainloop_no_update;
+void* Dynarec_Mainloop_no_update_fast;
 void* Dynarec_Mainloop_do_update;
 
 void DynaPrintLinkStart();
@@ -124,15 +125,14 @@ void naked CompileAndRunCode()
 void __fastcall rec_sh4_int_RaiseExeption(u32 ExeptionCode,u32 VectorAddress)
 {
 }
-
+extern u32 extra_cache;
 void rec_sh4_ResetCache()
 {
+	extra_cache^=1;
+	printf("%d ",extra_cache);
 	SuspendAllBlocks();
 }
 //asm version
-#define LOOKUP_HASH_SIZE	0x4000
-#define LOOKUP_HASH_MASK	(LOOKUP_HASH_SIZE-1)
-extern CompiledBlockInfo*			BlockLookupGuess[LOOKUP_HASH_SIZE];
 BasicBlockEP* __fastcall FindCode_full(u32 address,CompiledBlockInfo* fastblock);
 
 extern u32 fast_lookups;
@@ -149,10 +149,33 @@ void naked DynaMainLoop()
 		//misc pointers needed
 		mov block_stack_pointer,esp;
 		mov Dynarec_Mainloop_no_update,offset no_update;
+		mov Dynarec_Mainloop_no_update_fast,offset fast_lookup;
 		mov Dynarec_Mainloop_do_update,offset do_update;
 		//Max cycle count :)
 		mov rec_cycles,(CPU_TIMESLICE*9/10);
 
+		jmp no_update;
+
+		//some utility code :)
+
+		//partial , faster lookup. When we know the mode hasnt changed :)
+fast_lookup:
+		mov ecx,pc;
+		mov edx,ecx;
+		and edx,(LOOKUP_HASH_MASK<<2);
+
+		mov edx,[BlockLookupGuess + edx]
+	
+		cmp [edx],ecx;
+		jne full_lookup;
+
+		inc dword ptr[edx+16];
+#ifdef _BM_CACHE_STATS
+		inc fast_lookups;
+#endif
+		jmp dword ptr[edx+8];
+
+		
 no_update:
 		/*
 		//called if no update is needed

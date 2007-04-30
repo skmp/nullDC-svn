@@ -57,6 +57,10 @@ void __fastcall basic_block_ClearBlock(CompiledBlockInfo* p_this,CompiledBlockIn
 	{
 		pthis->TT_block=0;
 		pthis->pTT_next_addr=bb_link_compile_inject_TT_stub;
+		if (p_this->block_type.exit_type==BLOCK_EXITTYPE_DYNAMIC ||
+			p_this->block_type.exit_type==BLOCK_EXITTYPE_DYNAMIC_CALL)
+			pthis->TF_next_addr=0xFFFFFFFF;
+
 		if (pthis->RewriteType)
 			RewriteBasicBlockCond((CompiledBasicBlock*)p_this);
 	}
@@ -162,6 +166,8 @@ void RewriteBasicBlockFixed(CompiledBasicBlock* cBB)
 		x86e->Emit(op_jmp,x86_ptr_imm(bb_link_compile_inject_TF_stub));
 	}
 	x86e->Generate();
+
+	delete x86e;
 }
 void RewriteBasicBlockCond(CompiledBasicBlock* cBB)
 {
@@ -214,6 +220,8 @@ void RewriteBasicBlockCond(CompiledBasicBlock* cBB)
 		x86e->Emit(op_jmp,x86_ptr_imm(bb_link_compile_inject_TT_stub));
 	}
 	x86e->Generate();
+
+	delete x86e;
 }
 
 //Compile block and return pointer to it's code
@@ -299,6 +307,7 @@ void CBBs_BlockSuspended(CompiledBlockInfo* block,u32* sp)
 }
 void __fastcall CheckBlock(CompiledBlockInfo* block)
 {
+	//verify(block->cbi.cpu_mode_tag==fpscr.PR_SZ);
 	if (block->Discarded)
 	{
 		printf("Called a discarded block\n");
@@ -317,6 +326,87 @@ void printfBBSS()
 #else
 void printfBBSS() {}
 #endif
+extern u32 fast_lookups;
+void* FASTCALL RewriteBasicBlockGuess_FLUT(CompiledBasicBlock* cBB)
+{
+	//indirect call , rewrite & link , second time(does fast look up)
+	x86_block* x86e = new x86_block();
+
+	x86e->Init();
+	x86e->do_realloc=false;
+	x86e->x86_buff=(u8*)cBB->cbi.Code + cBB->ebi.RewriteOffset;
+	x86e->x86_size=32;
+
+	x86e->Emit(op_jmp,x86_ptr_imm(Dynarec_Mainloop_no_update_fast));
+	/*
+	//mov ecx,pc;
+	x86e->Emit(op_mov32,ECX,&pc);
+	//mov edx,ecx;
+	x86e->Emit(op_mov32,EDX,ECX);
+	//and edx,(LOOKUP_HASH_MASK<<2);
+	x86e->Emit(op_and32,EDX,(LOOKUP_HASH_MASK<<2));
+
+	//mov edx,[BlockLookupGuess + edx]
+	x86e->Emit(op_mov32,EDX,x86_mrm::create(EDX,BlockLookupGuess));
+
+	//cmp [edx],ecx;
+	x86e->Emit(op_cmp32,x86_mrm::create(EDX),ECX);
+	//jne full_lookup;
+	x86e->Emit(op_jne,x86_ptr_imm(Dynarec_Mainloop_no_update_fast));
+
+	//inc dword ptr[edx+16];
+	x86e->Emit(op_inc32,x86_mrm::create(EDX,x86_ptr::create(16)));
+	#ifdef _BM_CACHE_STATS
+		//inc fast_lookups;
+		x86e->Emit(op_inc32,x86_ptr(&fast_lookups));
+	#endif
+	//jmp dword ptr[edx+8];
+	x86e->Emit(op_jmp32,x86_mrm::create(EDX,x86_ptr::create(8)));
+*/
+	x86e->Generate();
+	delete x86e;
+
+	return Dynarec_Mainloop_no_update;
+}
+void naked RewriteBasicBlockGuess_FLUT_stub(CompiledBlockInfo* ptr)
+{
+	__asm
+	{
+		call RewriteBasicBlockGuess_FLUT;
+		jmp eax;
+	}
+}
+void* FASTCALL RewriteBasicBlockGuess_TTG(CompiledBasicBlock* cBB)
+{
+	x86_block* x86e = new x86_block();
+
+	x86e->Init();
+	x86e->do_realloc=false;
+	x86e->x86_buff=(u8*)cBB->cbi.Code + cBB->ebi.RewriteOffset;
+	x86e->x86_size=64;
+
+	//indirect call , rewrite & link , first time (hardlinks to target)
+	CompiledBlockInfo*	new_block=FindOrRecompileBlock(pc);
+	x86e->Emit(op_cmp32,&pc,pc);
+	x86e->Emit(op_mov32,ECX,(u32)cBB);
+	x86e->Emit(op_jne,x86_ptr_imm(RewriteBasicBlockGuess_FLUT_stub));
+	x86e->Emit(op_jmp,x86_ptr_imm(new_block->Code));
+
+	x86e->Generate();
+	delete x86e;
+
+	return new_block->Code;
+}
+void naked RewriteBasicBlockGuess_TTG_stub(CompiledBlockInfo* ptr)
+{
+	__asm
+	{
+		call RewriteBasicBlockGuess_TTG;
+		jmp eax;
+	}
+}
+
+u32 extra_cache=0;
 void BasicBlock::Compile()
 {
 	FloatRegAllocator*		fra;
@@ -353,6 +443,8 @@ void BasicBlock::Compile()
 	x86_Label* block_exit = x86e->CreateLabel(false,0);
 
 	
+	//x86e->Emit(op_mov32,ECX,(u32)cBB);
+	//x86e->Emit(op_call,x86_ptr_imm(verify_block_mode));
 	x86e->Emit(op_sub32 ,&rec_cycles,cycles);
 	x86e->Emit(op_js,block_exit);
 
@@ -489,6 +581,7 @@ void BasicBlock::Compile()
 	//end block acording to block type :)
 	cBB->ebi.RewriteType=0;
 	cBB->ebi.LastRewrite=0xFF;
+	cBB->cbi.block_type.exit_type=flags.ExitType;
 
 	switch(flags.ExitType)
 	{
@@ -501,7 +594,24 @@ void BasicBlock::Compile()
 		}
 	case BLOCK_EXITTYPE_DYNAMIC:		//not guess 
 		{
-			x86e->Emit(op_jmp,x86_ptr_imm(Dynarec_Mainloop_no_update));
+			/*
+			if (extra_cache){
+			cBB->ebi.TF_next_addr=0xFFFFFFFF;
+			x86e->Emit(op_mov32,EDX,&pc);
+			x86e->Emit(op_mov32,ECX,(u32)cBB);
+			x86e->Emit(op_cmp32,EDX,&cBB->ebi.TF_next_addr);
+			x86e->Emit(op_jne,x86_ptr_imm(check_and_fill_stub));
+			x86e->Emit(op_jmp32,x86_ptr(&cBB->ebi.pTF_next_addr));
+			}
+			else
+				x86e->Emit(op_jmp,x86_ptr_imm(Dynarec_Mainloop_no_update));
+			*/
+			cBB->ebi.RewriteOffset=x86e->x86_indx;
+			x86e->Emit(op_mov32,ECX,(u32)cBB);
+			x86e->Emit(op_jmp,x86_ptr_imm(RewriteBasicBlockGuess_TTG_stub));
+			u32 extrasz=26-(x86e->x86_indx-cBB->ebi.RewriteOffset);
+			for (int i=0;i<extrasz;i++)
+				x86e->write8(0);
 		}
 		break;
 	case BLOCK_EXITTYPE_RET:			//guess

@@ -66,3 +66,6 @@ struct bm_stats
 void bm_GetStats(bm_stats* stats);
 
 //#define _BM_CACHE_STATS
+#define LOOKUP_HASH_SIZE	0x4000
+#define LOOKUP_HASH_MASK	(LOOKUP_HASH_SIZE-1)
+extern CompiledBlockInfo*			BlockLookupGuess[LOOKUP_HASH_SIZE];

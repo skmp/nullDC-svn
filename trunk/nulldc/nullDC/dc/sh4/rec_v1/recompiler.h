@@ -12,6 +12,7 @@ void printprofile();
 typedef void BasicBlockEP();
 
 extern void* Dynarec_Mainloop_no_update;
+extern void* Dynarec_Mainloop_no_update_fast;
 extern void* Dynarec_Mainloop_do_update;
 extern u32 rec_cycles;
 

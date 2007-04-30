@@ -37,6 +37,7 @@ public :
 			u32 nullProf:1;
 			u32 HotSpot:1;
 			u32 ProtectionType:1;
+			u32 exit_type:8;
 		};
 		u32 full;
 	} block_type;
@@ -78,7 +79,7 @@ public :
 struct CompiledBasicBlockInfo
 {	
 	//Addresses to blocks
-	u32 TF_next_addr;//tfalse or jmp
+	u32 TF_next_addr;//tfalse or jmp or jmp guess
 	u32 TT_next_addr;//ttrue  or rts guess
 
 	//pointers to blocks
@@ -86,7 +87,7 @@ struct CompiledBasicBlockInfo
 	CompiledBlockInfo* TT_block;
 
 	//pointers to block entry points [isnt that the same as above ?-> not anymore]
-	void* pTF_next_addr;//tfalse or jmp
+	void* pTF_next_addr;//tfalse or jmp or jmp guess
 	void* pTT_next_addr;//ttrue  or rts guess
 
 	u32 RewriteOffset;
