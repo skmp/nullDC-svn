@@ -43,6 +43,7 @@ extern RaiseInterruptFP* RaiseInterrupt;
 float GetSeconds();
 
 extern pvr_init_params param;
+#define params param
 extern emu_info em_inf;
 extern char emu_name[256];
 

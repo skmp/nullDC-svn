@@ -17,11 +17,16 @@ u32 FASTCALL ReadPvrRegister(u32 addr,u32 size)
 		return 0;
 	}
 
-	return PvrReg(addr);
+	return PvrReg(addr,u32);
 }
+void CalculateSync();
 void SH4HWRegistersWriteDword(const DWORD uAddress, const DWORD uData)
 {
 	DWORD uAddressAux = uAddress & (~0xE0000000);
+	
+	DWORD addr=uAddressAux & RegMask;
+	if (addr>=SPG_HBLANK_INT_addr && addr<=SPG_WIDTH_addr)
+		CalculateSync();
 
 	switch (uAddressAux)
 	{
@@ -127,7 +132,7 @@ void FASTCALL WritePvrRegister(u32 addr,u32 data,u32 size)
 
 	
 
-	PvrReg(addr)=data;
+	PvrReg(addr,u32)=data;
 }
 
 
@@ -145,18 +150,18 @@ void Regs_Reset(bool Manual)
 	ID					= 0x17FD11DB;
 	REVISION			= 0x00000011;
 	SOFTRESET			= 0x00000007;
-	SPG_HBLANK_INT		= 0x031D0000;
-	SPG_VBLANK_INT		= 0x01500104;
+	SPG_HBLANK_INT.full	= 0x031D0000;
+	SPG_VBLANK_INT.full	= 0x01500104;
 	FPU_PARAM_CFG		= 0x0007DF77;
 	HALF_OFFSET			= 0x00000007;
 	ISP_FEED_CFG		= 0x00402000;
 	SDRAM_REFRESH		= 0x00000020;
 	SDRAM_ARB_CFG		= 0x0000001F;
 	SDRAM_CFG			= 0x15F28997;
-	SPG_HBLANK			= 0x007E0345;
-	SPG_LOAD			= 0x01060359;
-	SPG_VBLANK			= 0x01500104;
-	SPG_WIDTH			= 0x07F1933F;
+	SPG_HBLANK.full		= 0x007E0345;
+	SPG_LOAD.full		= 0x01060359;
+	SPG_VBLANK.full		= 0x01500104;
+	SPG_WIDTH.full		= 0x07F1933F;
 	VO_CONTROL			= 0x00000108;
 	VO_STARTX			= 0x0000009D;
 	VO_STARTY			= 0x00000015;

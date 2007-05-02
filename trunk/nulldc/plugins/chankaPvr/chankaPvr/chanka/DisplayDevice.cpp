@@ -300,7 +300,7 @@ DWORD g_dwFrames  = 0;
 // Descripcion  : 
 // Retorno      : void
 // --------------------------------------------------------------------------------
-extern int frame_count;
+//extern int frame_count;
 void CDisplayDevice::EndScene()
 {
   //FillTexturaBlt();
@@ -324,7 +324,7 @@ void CDisplayDevice::EndScene()
 //    DrawText(0,410,0xff00ff00,"CPU: %3d",g_uCPUUsage);
   }
 
-	frame_count++;
+	//frame_count++;
   g_framesLatency = 0;
 
   {

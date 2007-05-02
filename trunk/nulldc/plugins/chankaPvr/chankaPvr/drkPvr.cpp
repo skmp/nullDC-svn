@@ -177,11 +177,15 @@ void* lock_vmem(void* pMem,unsigned __int32 bytes,void* puser)
 	vram_block* pblock =  param.vram_lock_64((u32)offset,(u32)offset + bytes -1,puser);
 	return pblock;
 }
-void FASTCALL TaFIFO(u32 address,u32* data,u32 size)
+void FASTCALL TaDMA(u32* data,u32 size)
 {
 	size*=8;
 	for (u32 i=0;i<size;i+=8)		
 		TASendPackedData((DWORD*)&data[i],32);
+}
+void FASTCALL TaSQ(u32* data)
+{	
+	TASendPackedData((DWORD*)data,32);
 }
 void FASTCALL handle_About(u32 id,void* w,void* p)
 {
@@ -203,7 +207,7 @@ void FASTCALL handle_TCH(u32 id,void* w,void* p)
 s32 FASTCALL Load(emu_info* inf,u32 rmenu)
 {
 	em_inf=*inf;
-
+	em_inf.ConfigLoadStr("emu","shortname",emu_name,0);
 	Hwnd=em_inf.WindowHandle;
 	g_hWnd=(HWND)Hwnd;
 	LoadSettings();
@@ -240,6 +244,8 @@ s32 FASTCALL InitPvr(pvr_init_params* aparam)
 	//g_bChangeDisplayEnable = true;
 	//g_bDraw = true;
 	LoadSettings();
+	Regs_Init();
+	spg_Init();
 	TAInit();
 	return rv_ok;
 }
@@ -249,12 +255,15 @@ s32 FASTCALL InitPvr(pvr_init_params* aparam)
 void FASTCALL ResetPvr(bool Manual)
 {
 	Regs_Reset(Manual);
+	spg_Reset(Manual);
 	TAReset();
 }
 
 //called when plugin is unloaded by emu , olny if dcInitPvr is called (eg , not called to enumerate plugins)
 void FASTCALL TermPvr()
 {
+	Regs_Term();
+	spg_Term();
 	TAEnd();
 }
 
@@ -313,7 +322,8 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	p.Reset=ResetPvr;
 
 	p.UpdatePvr=spgUpdatePvr;
-	p.TaFIFO=TaFIFO;
+	p.TaDMA=TaDMA;
+	p.TaSQ=TaSQ;
 	p.ReadReg=ReadPvrRegister;
 	p.WriteReg=WritePvrRegister;
 	p.LockedBlockWrite = vramLockCB;

@@ -21,10 +21,19 @@ extern DWORD    g_dwCreationWidth;
 extern DWORD    g_dwCreationHeight;
 extern BOOL     g_bCreationFullScreen;
 extern  HWND    g_hWnd;
-
-
+u32 FrameCount=0;
+u32 VertexCount=0;
 ////////////////////////////////////////////////////////////////////////////////////////
-
+void DrawFpsText(char*str);
+extern bool g_bShowStats;
+void rend_set_fps_text(char* text)
+{
+	//sprintf(fpsStr,"FPS: %4.2f(%4.2f) Vert : %4.2fM -  Sh4: %4.2f mhz (%4.2f%%) - %s", spd_fps,fullfps,mv, spd_cpu,spd_cpu*100/200,emu_name);
+	if (!g_bCreationFullScreen)
+		SetWindowText((HWND)Hwnd, text);
+	if (g_bShowStats )
+		DrawFpsText(text);
+}
 
 namespace Unai
 {
@@ -1203,6 +1212,7 @@ static void FillBltTexture()
 
 void TAStartVBlank()
 {
+	CurrentFrame++;
 	if (GetAsyncKeyState(VK_DELETE))
 	{
 
@@ -1221,9 +1231,10 @@ void TAStartVBlank()
 
   DWORD* pVideoMem = (DWORD*) SH4GetVideoRAMPtr(SH4VideoRAM_START+uDisplayAddress);
 
-  if (pVideoMem && *pVideoMem == STAMP_RENDER)
-    return;    
+ // if (pVideoMem && *pVideoMem == STAMP_RENDER)
+   // return;    
 
+    *pVideoMem = STAMP_RENDER;
   //return;
   bool bDisplayEnable = GETVALUEHWREGISTER(TPVR::PVR_FB_CFG_1,TPVR::PVR_FB_CFG_1_DE) != 0;
   //bool bDisplayEnable = true;
@@ -1662,6 +1673,7 @@ struct  TDrawPrimitive
 static bool s_bLost = false;
 void TADoRender()
 {
+	VertexCount+=Unai::m_uNumVerticesRegistered ;
   DWORD uFPU_CFG = SH4HWRegistersGetValue(TPVR::FPU_PARAM_CFG);
   DWORD uISP_CFG = SH4HWRegistersGetValue(TPVR::ISP_FEED_CFG);
   DWORD uSort    = (uFPU_CFG & TPVR::FPU_PARAM_CFG_REGTYPE_MASK)>>TPVR::FPU_PARAM_CFG_REGTYPE_SHIFT;
@@ -1861,6 +1873,7 @@ void TADoRender()
     m_uTAState = TA_STATE_NONE;
     m_uTAFlags = 0;
   }
+  FrameCount ++;
 
   LoadSSERegs();
 //  g_psh4_dynarec->RestoreExtraRegs();
@@ -1874,13 +1887,15 @@ void TADoRender()
 
   DWORD* pVideoMem = (DWORD*) SH4GetVideoRAMPtr(SH4VideoRAM_START+m_uRenderAddress);
 
-  if (pVideoMem)
-    *pVideoMem = STAMP_RENDER;
+  //if (pVideoMem)
+    //*pVideoMem = STAMP_RENDER;
 
 
 //  TSH4_ASIC::EventCompleted(TSH4_ASIC::ASIC_EVT_PVR_RENDERDONE);
   render_end_pending=true;
-  render_end_pending_cycles=m_uNumVerticesRegistered*170+100000;
+  render_end_pending_cycles= m_uNumVerticesRegistered*25;
+  if (render_end_pending_cycles<500000)
+	  render_end_pending_cycles=500000;
 	  /*
   RaiseInterrupt(holly_RENDER_DONE);
   RaiseInterrupt(holly_RENDER_DONE_vd);
