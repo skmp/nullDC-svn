@@ -410,6 +410,46 @@ INLINE CompiledBlockInfo* __fastcall FindBlock_fast(u32 address)
 #endif
 
 }
+CompiledBlockInfo*  __fastcall CompileCode(u32 pc);
+CompiledBlockInfo* __fastcall FindBlock_full_compile(u32 address,CompiledBlockInfo* fastblock)
+{
+	CompiledBlockInfo* thisblock;
+
+	BlockList* blklist = GetLookupBlockList(address);
+
+	//u32 listsz=(u32)blklist->size();
+	//for (u32 i=0;i<listsz;i++)
+	//{ 
+	//	thisblock=(*blklist)[i];
+	//	if (thisblock->start==address && thisblock->cpu_mode_tag==fpscr.PR_SZ)
+	//	{
+	//		thisblock->lookups++;
+	//		return thisblock;
+	//	}
+	//}
+
+#ifdef OPTIMISE_LUT_SORT
+	luk++;
+	if (luk==r_value)
+	{
+		luk=0;
+		r_value=(frand() & 0x1FF) + 0x800;
+		blklist->Optimise();
+	}
+#endif
+	thisblock=blklist->Find(address,fpscr.PR_SZ);
+	if (thisblock==0)
+		return CompileCode(pc);
+
+	thisblock->lookups++;
+#ifdef BLOCK_LUT_GUESS
+	if (fastblock->lookups<=thisblock->lookups)
+	{
+		BlockLookupGuess[GetLookupHash(address)]=thisblock;
+	}
+#endif
+	return thisblock;
+}
 CompiledBlockInfo* __fastcall FindBlock_full(u32 address,CompiledBlockInfo* fastblock)
 {
 	CompiledBlockInfo* thisblock;

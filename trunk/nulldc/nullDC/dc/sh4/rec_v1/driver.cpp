@@ -125,11 +125,8 @@ void naked CompileAndRunCode()
 void __fastcall rec_sh4_int_RaiseExeption(u32 ExeptionCode,u32 VectorAddress)
 {
 }
-extern u32 extra_cache;
 void rec_sh4_ResetCache()
 {
-	extra_cache^=1;
-	printf("%d ",extra_cache);
 	SuspendAllBlocks();
 }
 //asm version

@@ -42,6 +42,7 @@ void __fastcall basic_block_BlockWasSuspended(CompiledBlockInfo* p_this,Compiled
 		}
 	}
 }
+void FASTCALL RewriteBasicBlockGuess_NULL(CompiledBasicBlock* cBB);
 void __fastcall basic_block_ClearBlock(CompiledBlockInfo* p_this,CompiledBlockInfo* block)
 {
 	bbthis;
@@ -49,6 +50,12 @@ void __fastcall basic_block_ClearBlock(CompiledBlockInfo* p_this,CompiledBlockIn
 	{
 		pthis->TF_block=0;
 		pthis->pTF_next_addr=bb_link_compile_inject_TF_stub;
+		if (p_this->block_type.exit_type==BLOCK_EXITTYPE_DYNAMIC ||
+			p_this->block_type.exit_type==BLOCK_EXITTYPE_DYNAMIC_CALL)
+		{
+			pthis->TF_next_addr=0xFFFFFFFF;
+			RewriteBasicBlockGuess_NULL((CompiledBasicBlock*)p_this);
+		}
 		if (pthis->RewriteType)
 			RewriteBasicBlockCond((CompiledBasicBlock*)p_this);
 	}
@@ -57,10 +64,6 @@ void __fastcall basic_block_ClearBlock(CompiledBlockInfo* p_this,CompiledBlockIn
 	{
 		pthis->TT_block=0;
 		pthis->pTT_next_addr=bb_link_compile_inject_TT_stub;
-		if (p_this->block_type.exit_type==BLOCK_EXITTYPE_DYNAMIC ||
-			p_this->block_type.exit_type==BLOCK_EXITTYPE_DYNAMIC_CALL)
-			pthis->TF_next_addr=0xFFFFFFFF;
-
 		if (pthis->RewriteType)
 			RewriteBasicBlockCond((CompiledBasicBlock*)p_this);
 	}
@@ -305,14 +308,11 @@ void CBBs_BlockSuspended(CompiledBlockInfo* block,u32* sp)
 		pcall_ret_address=0;
 	}
 }
-void __fastcall CheckBlock(CompiledBlockInfo* block)
+void __fastcall CheckBlock(CompiledBasicBlock* block)
 {
-	//verify(block->cbi.cpu_mode_tag==fpscr.PR_SZ);
-	if (block->Discarded)
-	{
-		printf("Called a discarded block\n");
-		__asm int 3;
-	}
+	verify(block->cbi.cpu_mode_tag==fpscr.PR_SZ);
+	//verify(block->cbi.size==pc);
+	verify(block->cbi.Discarded==false);
 }
 #ifdef COUNT_BLOCK_LOCKTYPE_USAGE
 u32 manbs=0;
@@ -327,7 +327,45 @@ void printfBBSS()
 void printfBBSS() {}
 #endif
 extern u32 fast_lookups;
-void* FASTCALL RewriteBasicBlockGuess_FLUT(CompiledBasicBlock* cBB)
+
+
+//eax == pc
+//esi == cBB
+void naked FASTCALL Resolve_FLUT(u32 pc,CompiledBasicBlock* cBB)
+{
+	//wrong optimisation; code left in for ideas
+	//problem : Adding/removing links is too slow , slower than looking up the main block cache table
+	__asm
+	{
+		mov ecx,eax;					//store a copy of pc on ecx
+		and eax,(LOOKUP_HASH_MASK<<2);	//resolve eax to fast block
+
+		mov eax,[BlockLookupGuess + eax]
+	
+		cmp [eax],ecx;		//if no fast block , call full lookup
+		jne full_lookup;
+
+		inc dword ptr[eax+16];	//block lookup count
+#ifdef _BM_CACHE_STATS
+		inc fast_lookups;
+#endif
+finaly:
+		mov edx,[eax+8];	//read jump destination
+		mov [esi+8 +0x24],eax;	//store block (TF_block)
+		mov [esi+0 +0x24],ecx;	//store pc    (TF_address)
+		mov [esi+16 +0x24],edx;	//store jump destination (pTF_address)
+		jmp edx;			//jump to it :)
+
+full_lookup:
+		mov edx,eax;			//fastblock ptr is on edx
+		mov edi,ecx;//store pc
+		call FindBlock_full_compile;//ecx=pc , edx=fast block ptr
+									//on return , eax=correct block ptr :).If not found its compiled
+		mov ecx,edi;//restore pc
+		jmp finaly;
+	}
+}
+void FASTCALL RewriteBasicBlockGuess_FLUT(CompiledBasicBlock* cBB)
 {
 	//indirect call , rewrite & link , second time(does fast look up)
 	x86_block* x86e = new x86_block();
@@ -335,9 +373,19 @@ void* FASTCALL RewriteBasicBlockGuess_FLUT(CompiledBasicBlock* cBB)
 	x86e->Init();
 	x86e->do_realloc=false;
 	x86e->x86_buff=(u8*)cBB->cbi.Code + cBB->ebi.RewriteOffset;
-	x86e->x86_size=32;
+	x86e->x86_size=64;
 
-	x86e->Emit(op_jmp,x86_ptr_imm(Dynarec_Mainloop_no_update_fast));
+	
+	x86e->Emit(op_jmp,x86_ptr_imm(Dynarec_Mainloop_no_update));
+	
+	/*
+	//x86e->Emit(op_int3);
+	x86e->Emit(op_cmp32,EAX,&cBB->ebi.TF_next_addr);
+	x86e->Emit(op_mov32,ESI,(u32)cBB);
+	x86e->Emit(op_jne,x86_ptr_imm(Resolve_FLUT));
+	//x86e->Emit(op_int3);
+	x86e->Emit(op_jmp32,x86_ptr(&cBB->ebi.pTF_next_addr));
+	*/
 	/*
 	//mov ecx,pc;
 	x86e->Emit(op_mov32,ECX,&pc);
@@ -365,19 +413,36 @@ void* FASTCALL RewriteBasicBlockGuess_FLUT(CompiledBasicBlock* cBB)
 */
 	x86e->Generate();
 	delete x86e;
-
-	return Dynarec_Mainloop_no_update;
 }
-void naked RewriteBasicBlockGuess_FLUT_stub(CompiledBlockInfo* ptr)
+//can corrupt anything apart esp
+void naked RewriteBasicBlockGuess_FLUT_stub(CompiledBasicBlock* ptr)
 {
 	__asm
 	{
+		/*mov esi,ecx;//store block ptr
+		mov edi,eax;//store pc
 		call RewriteBasicBlockGuess_FLUT;
-		jmp eax;
+		mov eax,edi;//store pc
+
+		jmp Resolve_FLUT;
+		*/
+		call RewriteBasicBlockGuess_FLUT;
+		jmp [Dynarec_Mainloop_no_update];
 	}
 }
 void* FASTCALL RewriteBasicBlockGuess_TTG(CompiledBasicBlock* cBB)
 {
+	//indirect call , rewrite & link , first time (hardlinks to target)
+	CompiledBlockInfo*	new_block=FindOrRecompileBlock(pc);
+
+	if (cBB->cbi.Discarded)
+	{
+		return new_block->Code;
+	}
+	//Add reference so we can undo the chain later
+	new_block->AddRef(&cBB->cbi);
+	cBB->ebi.TF_block=new_block;
+
 	x86_block* x86e = new x86_block();
 
 	x86e->Init();
@@ -385,9 +450,9 @@ void* FASTCALL RewriteBasicBlockGuess_TTG(CompiledBasicBlock* cBB)
 	x86e->x86_buff=(u8*)cBB->cbi.Code + cBB->ebi.RewriteOffset;
 	x86e->x86_size=64;
 
-	//indirect call , rewrite & link , first time (hardlinks to target)
-	CompiledBlockInfo*	new_block=FindOrRecompileBlock(pc);
-	x86e->Emit(op_cmp32,&pc,pc);
+	
+	cBB->ebi.TF_block=new_block;
+	x86e->Emit(op_cmp32,EAX,pc);
 	x86e->Emit(op_mov32,ECX,(u32)cBB);
 	x86e->Emit(op_jne,x86_ptr_imm(RewriteBasicBlockGuess_FLUT_stub));
 	x86e->Emit(op_jmp,x86_ptr_imm(new_block->Code));
@@ -397,7 +462,7 @@ void* FASTCALL RewriteBasicBlockGuess_TTG(CompiledBasicBlock* cBB)
 
 	return new_block->Code;
 }
-void naked RewriteBasicBlockGuess_TTG_stub(CompiledBlockInfo* ptr)
+void naked RewriteBasicBlockGuess_TTG_stub(CompiledBasicBlock* ptr)
 {
 	__asm
 	{
@@ -405,8 +470,21 @@ void naked RewriteBasicBlockGuess_TTG_stub(CompiledBlockInfo* ptr)
 		jmp eax;
 	}
 }
+//default behavior , calls _TTG rewrite
+void FASTCALL RewriteBasicBlockGuess_NULL(CompiledBasicBlock* cBB)
+{
+	x86_block* x86e = new x86_block();
 
-u32 extra_cache=0;
+	x86e->Init();
+	x86e->do_realloc=false;
+	x86e->x86_buff=(u8*)cBB->cbi.Code + cBB->ebi.RewriteOffset;
+	x86e->x86_size=32;
+	x86e->Emit(op_mov32,ECX,(u32)cBB);
+	x86e->Emit(op_jmp,x86_ptr_imm(RewriteBasicBlockGuess_TTG_stub));
+	x86e->Generate();
+	delete x86e;
+}
+
 void BasicBlock::Compile()
 {
 	FloatRegAllocator*		fra;
@@ -442,9 +520,11 @@ void BasicBlock::Compile()
 
 	x86_Label* block_exit = x86e->CreateLabel(false,0);
 
-	
-	//x86e->Emit(op_mov32,ECX,(u32)cBB);
-	//x86e->Emit(op_call,x86_ptr_imm(verify_block_mode));
+	/*
+	x86e->Emit(op_mov32,ECX,(u32)cBB);
+	x86e->Emit(op_call,x86_ptr_imm(CheckBlock));
+	*/
+
 	x86e->Emit(op_sub32 ,&rec_cycles,cycles);
 	x86e->Emit(op_js,block_exit);
 
@@ -594,24 +674,12 @@ void BasicBlock::Compile()
 		}
 	case BLOCK_EXITTYPE_DYNAMIC:		//not guess 
 		{
-			/*
-			if (extra_cache){
-			cBB->ebi.TF_next_addr=0xFFFFFFFF;
-			x86e->Emit(op_mov32,EDX,&pc);
-			x86e->Emit(op_mov32,ECX,(u32)cBB);
-			x86e->Emit(op_cmp32,EDX,&cBB->ebi.TF_next_addr);
-			x86e->Emit(op_jne,x86_ptr_imm(check_and_fill_stub));
-			x86e->Emit(op_jmp32,x86_ptr(&cBB->ebi.pTF_next_addr));
-			}
-			else
-				x86e->Emit(op_jmp,x86_ptr_imm(Dynarec_Mainloop_no_update));
-			*/
 			cBB->ebi.RewriteOffset=x86e->x86_indx;
 			x86e->Emit(op_mov32,ECX,(u32)cBB);
 			x86e->Emit(op_jmp,x86_ptr_imm(RewriteBasicBlockGuess_TTG_stub));
 			u32 extrasz=26-(x86e->x86_indx-cBB->ebi.RewriteOffset);
 			for (int i=0;i<extrasz;i++)
-				x86e->write8(0);
+				x86e->write8(0xCC);
 		}
 		break;
 	case BLOCK_EXITTYPE_RET:			//guess
