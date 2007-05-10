@@ -426,6 +426,7 @@ void gd_process_ata_cmd()
 
 	case ATA_EXEC_DIAG:
 		printf_ata("ATA_EXEC_DIAG\n");
+		printf("ATA_EXEC_DIAG -- not implemented\n"
 		break;
 
 	case ATA_SPI_PACKET:
@@ -435,6 +436,7 @@ void gd_process_ata_cmd()
 
 	case ATA_IDENTIFY_DEV:
 		printf_ata("ATA_IDENTIFY_DEV\n");
+		printf("ATA_IDENTIFY_DEV -- not implemented\n"
 		break;
 
 	case ATA_SET_FEATURES:
@@ -445,7 +447,7 @@ void gd_process_ata_cmd()
 		Error.ABRT=0;	//command was not aborted ;) [hopefully ...]
 
 		//status : DRDY , DSC , DF , CHECK
-		//DRDY is set on state chainge
+		//DRDY is set on state change
 		GDStatus.DSC=0;
 		GDStatus.DF=0;
 		GDStatus.CHECK=0;
@@ -473,7 +475,6 @@ void gd_process_spi_cmd()
 
 		GDStatus.CHECK=0;	//drive is ready ;)
 
-		//gd_spi_nodata_end();
 		gd_set_state(gds_procpacketdone);
 		break;
 
@@ -510,99 +511,23 @@ void gd_process_spi_cmd()
 			{
 				gd_set_state(gds_readsector_pio);
 			}
-			//read_buff.cache
-			//GDReadBlock_t
-			/*
-			GDReadBlock_t* pGDr;
-			u32 adr=0,len=0;
-
-			if (Features.DMA==1)//if dma
-			{
-				if (DataLength!=0 || DataIndex !=0)
-					printf(">>\tgdrom: TEH BROKE DataLength!=0 || DataIndex !=0 on dma zomg this is fuqed dl:%d di:%d\n",DataLength,DataIndex);
-
-				DataLength=DataIndex=0;
-				//SSet=GDSTATUS_BSY;
-				GDStatus.BSY=1;
-				//SClr=GDSTATUS_DRDY | GDSTATUS_DRQ;	// DRDY should prob be cleared ? *FIXME*
-				GDStatus.DRDY=GDStatus.DRQ=0;
-
-				GDStatus.DRDY=1;//is that ok ?
-			}
-
-			pGDr = (GDReadBlock_t*)cmd->CommandData;
-
-			if( pGDr->head || pGDr->subh || pGDr->other || (!pGDr->data) )	// assert
-				printf("\n!GDROM: *FIXME* ADD MORE CD READ SETTINGS \n\n");
-
-			printf("GDROM:\tSPI_CD_READ: <%d-%d-%d-%d:%X::%s> - Start Addr <%s>(%X %X %X) XFer Len (%X %X %X) \n",
-				pGDr->head, pGDr->subh, pGDr->data, pGDr->other, (pGDr->b[1] >> 1 & 7), szExDT[pGDr->b[1] >> 1 & 7],
-				(pGDr->b[1]&1)?"MSF":"FAD", pGDr->b[2], pGDr->b[3], pGDr->b[4],	pGDr->b[8], pGDr->b[9], pGDr->b[10]  );
-
-			/////////////////////// 
-			if( pGDr->prmtype )	// ( SpiCmdBuf_u8[0]&1 )
-				printf("\n!GDROM:\tMSF FORMAT READ!\n");
-			else
-				adr = (pGDr->b[2]<<16) | (pGDr->b[3]<<8) | (pGDr->b[4]);
-
-			len = (pGDr->b[8]<<16) | (pGDr->b[9]<<8) | (pGDr->b[10]);
-
-			drive->ReadSector(DataBuffer, adr, len,2048);
-
-			if (Features.DMA==1)
-			{
-				// *FIXME*  if dma ...
-				DataLength=len*2048;//FIXME sector size
-				//Reason |= IRES_IO;
-				IntReason.IO=1;
-				//Reason &= ~IRES_COD;
-				IntReason.CoD=0;
-				GDStatus.DRDY=1;
-				RaiseInterrupt(holly_GDROM_CMD);
-				dma_data=true;//we do have data to dma ;)
-				UpdateGDRom();
-			}
-			else
-			{//pio
-				//SSet=GDSTATUS_DRQ;
-				GDStatus.DRQ=1;
-				//SClr=GDSTATUS_DRDY| GDSTATUS_BSY;	// DRDY should prob be cleared ? *FIXME*
-				GDStatus.DRDY=GDStatus.BSY=0;
-
-				//Reason |= IRES_IO;
-				IntReason.IO=1;
-				//Reason &= ~IRES_COD;
-				IntReason.CoD=0;
-
-				RaiseInterrupt(holly_GDROM_CMD);
-				SendBytesToHost(len*2048,(u8*)&DataBuffer[0]);
-				printf_db("PIO \n");
-			}
-			// *FIXME*  else (pio)
-			*/
 		}
 		break;
 
 	case SPI_GET_TOC:
 		{
 			printf_spicmd("SPI_GET_TOC\n");
-			printf("SPI_GET_TOC - %d\n",(packet_cmd.data_8[4]) | (packet_cmd.data_8[3]<<8) );
+			//printf("SPI_GET_TOC - %d\n",(packet_cmd.data_8[4]) | (packet_cmd.data_8[3]<<8) );
 			u32 toc_gd[102];
 			
-			if (packet_cmd.data_8[1]&0x1)
-			{	//toc - dd
-				libGDR.GetToc(&toc_gd[0],DoubleDensity);
-			}
-			else
-			{	//toc - sd
-				libGDR.GetToc(&toc_gd[0],SingleDensity);
-			}
-			
+			//toc - dd/sd
+			libGDR.GetToc(&toc_gd[0],packet_cmd.data_8[1]&0x1);
+			 
 			gd_spi_pio_end((u8*)&toc_gd[0], (packet_cmd.data_8[4]) | (packet_cmd.data_8[3]<<8) );
 		}
 		break;
 
-		//mout/map drive ? some kind of reset/unlock ??
+		//mount/map drive ? some kind of reset/unlock ??
 		//seems like a non data command :)
 	case 0x70:
 		printf_spicmd("SPI : unkown ? [0x70]\n");
@@ -1147,32 +1072,6 @@ void GDROM_DmaStart(u32 data)
 		if (buff_size==0)
 			gd_set_state(gds_procpacketdone);
 	}
-
-/*
-	if(0 >= (dmaCount-len))	// DMAs Are Finished
-	{
-		dmaCount = 0;
-		dmaOffset = 0;
-		rSTATUS.BSY = 0;
-		rSTATUS.DRDY = 1;
-		gdSetSR(GD_STATUS_OK);
-		RaiseInterrupt(InterruptID::holly_GDROM_CMD);
-		lprintf("GD DMA Complete, Finished!\n");
-	}
-	else
-	{
-complete_dma_chain:
-		static u32 last = 0x10000000;
-
-		if(dmaCount < (int)(last-0x1000)) {
-			last = dmaCount;
-			lprintf("GD DMA Complete, %d Remaining!\n", dmaCount);
-		}
-
-		dmaCount -= len;
-		dmaOffset += len;
-	}
-	*/
 }
 
 
