@@ -205,8 +205,10 @@ enum DiscType
 	CdRom_XA=0x20,
 	CdRom_Extra=0x30,
 	CdRom_CDI=0x40,
-	GdRom=0x80,		// This is correct .. dont know about the rest ..
-	NoDisk=0x9
+	GdRom=0x80,		
+	NoDisk=0x1,
+	Open=0x2,			//tray is open :)
+	Busy=0x3			//busy -> needs to be autmaticaly done by gdhost
 };
 
 enum DiskArea

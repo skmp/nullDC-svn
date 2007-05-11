@@ -66,7 +66,8 @@ void FASTCALL DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secs
 
 void FASTCALL DriveGetTocInfo(u32* toc,u32 area)
 {
-	GetDriveToc(toc,(DiskArea)area);
+	if (CurrDrive)
+		GetDriveToc(toc,(DiskArea)area);
 }
 //TODO : fix up
 u32 FASTCALL DriveGetDiscType()
@@ -74,7 +75,7 @@ u32 FASTCALL DriveGetDiscType()
 	if (CurrDrive)
 		return CurrDrive->GetDiscType();
 	else
-		return NoDisk;
+		return NullDriveDiscType;
 }
 
 void FASTCALL GetSessionInfo(u8* out,u8 ses)
@@ -119,13 +120,21 @@ void FASTCALL handle_About(u32 id,void* w,void* p)
 }
 void FASTCALL handle_SwitchDisc(u32 id,void* w,void* p)
 {
-	msgboxf("This feature is not yet implemented",MB_ICONWARNING);
-	return;
+	//msgboxf("This feature is not yet implemented",MB_ICONWARNING);
+	//return;
 	TermDrive();
-	DriveNotifyEvent(DiskChange,0);
 	
+	NullDriveDiscType=Busy;
+	DriveNotifyEvent(DiskChange,0);
+	Sleep(150);	//busy for a bit
+
+	NullDriveDiscType=Open;
+	DriveNotifyEvent(DiskChange,0);
+	Sleep(150); //tray is open
+
 	InitDrive();
 	DriveNotifyEvent(DiskChange,0);
+	//new disc is in
 }
 //called when plugin is used by emu (you should do first time init here)
 s32 FASTCALL Load(emu_info* emu_inf,u32 rmenu)

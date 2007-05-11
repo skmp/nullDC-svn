@@ -1,6 +1,6 @@
 #pragma once
 #include "gd_driver.h"
-
+extern u32 NullDriveDiscType;
 struct TocTrackInfo
 {
 	u32 FAD;	//fad , intel format

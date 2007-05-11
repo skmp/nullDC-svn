@@ -4,7 +4,7 @@
 #include "iso9660.h"
 #include <memory.h>
 #include <windows.h>
-
+u32 NullDriveDiscType;
 DriveIF* CurrDrive;
 DriveIF drives[]=
 {
@@ -152,6 +152,10 @@ bool InitDrive_(char* fn)
 	{
 		if (drives[i].Init(fn))
 		{
+			NullDriveDiscType=Busy;
+			DriveNotifyEvent(DiskChange,0);
+			Sleep(400); //busy for a bit
+
 			CurrDrive=&drives[i];
 			CurrDrive->Inited=true;
 			printf("Using %s \n",CurrDrive->name);
@@ -159,6 +163,7 @@ bool InitDrive_(char* fn)
 		}
 	}
 	//CurrDrive=&drives[Iso];
+	NullDriveDiscType=NoDisk; //no disc :)
 	return false;
 }
 
@@ -180,6 +185,7 @@ bool InitDrive()
 	if (GetFile(fn,"CD/GD Images (*.cdi;*.mds;*.nrg;*.gdi) \0*.cdi;*.mds;*.nrg;*.gdi\0\0")==false)
 	{
 		CurrDrive=0;
+		NullDriveDiscType=NoDisk;
 		return msgboxf("Would you like to boot w/o GDrom ?",MB_ICONQUESTION | MB_YESNO)==IDYES;
 		//return false;
 	}
@@ -240,10 +246,10 @@ void GetDriveToc(u32* to,DiskArea area)
 void GetDriveSessionInfo(u8* to,u8 session)
 {
 	SessionInfo driveSeS;
-	if (CurrDrive->GetSessionInfo)
+	if (CurrDrive && CurrDrive->GetSessionInfo)
 		CurrDrive->GetSessionInfo(&driveSeS);
 	
-	to[0]=2;//standby
+	to[0]=2;//status , will get overwrited anyway
 	to[1]=0;//0's
 	
 	if (session==0)
@@ -255,7 +261,7 @@ void GetDriveSessionInfo(u8* to,u8 session)
 	}
 	else
 	{
-		to[2]=1;//track count on this session
+		to[2]=session+1;//start track of this session
 		to[3]=(driveSeS.SessionFAD[session-1]>>16)&0xFF;//fad is session start
 		to[4]=(driveSeS.SessionFAD[session-1]>>8)&0xFF;
 		to[5]=(driveSeS.SessionFAD[session-1]>>0)&0xFF;
