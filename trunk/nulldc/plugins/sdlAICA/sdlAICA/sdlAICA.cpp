@@ -171,19 +171,19 @@ void UpdateMenuSelections()
 {
 	eminf.SetMenuItemStyle(stami,settings.LimitFPS?MIS_Checked:0,MIS_Checked);
 }
-s32 FASTCALL OnLoad(emu_info* em,u32 rmenu)
+s32 FASTCALL OnLoad(emu_info* em)
 {
 	memcpy(&eminf,em,sizeof(eminf));
 
 	LoadSettings();
 
-	scmi=eminf.AddMenuItem(rmenu,-1,"Config",handle_Config,0);
-	stami=eminf.AddMenuItem(rmenu,-1,"Sync Audio",handle_SA,settings.LimitFPS);
-	eminf.AddMenuItem(rmenu,-1,"Mute CDDA",handle_MCDDA,settings.CDDAMute);
-	eminf.AddMenuItem(rmenu,-1,"Mute Sound",handle_GS,settings.GlobalMute);
+	scmi=eminf.AddMenuItem(em->RootMenu,-1,"Config",handle_Config,0);
+	stami=eminf.AddMenuItem(em->RootMenu,-1,"Sync Audio",handle_SA,settings.LimitFPS);
+	eminf.AddMenuItem(em->RootMenu,-1,"Mute CDDA",handle_MCDDA,settings.CDDAMute);
+	eminf.AddMenuItem(em->RootMenu,-1,"Mute Sound",handle_GS,settings.GlobalMute);
 
-	eminf.SetMenuItemStyle(eminf.AddMenuItem(rmenu,-1,"-",0,0),MIS_Seperator,MIS_Seperator);
-	eminf.AddMenuItem(rmenu,-1,"About",handle_About,0);
+	eminf.SetMenuItemStyle(eminf.AddMenuItem(em->RootMenu,-1,"-",0,0),MIS_Seperator,MIS_Seperator);
+	eminf.AddMenuItem(em->RootMenu,-1,"About",handle_About,0);
 
 	return rv_ok;
 }
