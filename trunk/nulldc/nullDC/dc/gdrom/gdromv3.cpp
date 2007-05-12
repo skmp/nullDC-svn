@@ -349,7 +349,10 @@ void gd_setdisc()
 		//GDStatus.DRDY=0;
 		break;
 	default :
-		SecNumber.Status = GD_STANDBY;
+		if (SecNumber.Status==GD_BUSY)
+			SecNumber.Status = GD_PAUSE;
+		else
+			SecNumber.Status = GD_STANDBY;
 		//GDStatus.BSY=0;
 		//GDStatus.DRDY=1;
 		break;
@@ -367,7 +370,7 @@ u32 GetFAD(u8* data,bool msf)
 {
 	if( msf )	
 	{
-		printf("~GDROM:\tMSF FORMAT !\n");
+		printf("GDROM: MSF FORMAT\n");
 		return ((data[0]*60*75) + (data[1]*75) | (data[2]));
 	}
 	else

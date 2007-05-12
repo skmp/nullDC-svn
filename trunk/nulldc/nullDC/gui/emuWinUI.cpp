@@ -36,6 +36,7 @@ u32 Aica_menu;
 u32 Maple_menu;
 u32 Maple_menu_ports[4][6];
 u32 ExtDev_menu;
+u32 Debug_menu;
 
 /// i dont like it but ....
 CtrlMemView *cMemView;
@@ -916,6 +917,7 @@ void CreateBasicMenus()
 	Maple_menu_ports[3][5]=AddMenuItem(Maple_menu,-1,"Port D",0,0);
 
 	//Debug
+	Debug_menu=menu_debug;
 	AddMenuItem(menu_debug,-1,"Debugger",Handle_Debug_Sh4Debugger,0);
 
 	//Profiler

@@ -631,11 +631,12 @@ s32 load_plugin(char* dll,T* plug,u32 rootmenu)
 	if (!plug->Loaded)
 	{
 		SetMenuItemHandler(rootmenu,0);
+		eminf.RootMenu=rootmenu;
 		if ((lcp_error=plug->Open(dll))!=rv_ok)
 		{
 			return rv_error;
 		}
-		if (s32 rv = plug->Load(&eminf,rootmenu))
+		if (s32 rv = plug->Load(&eminf))
 		{
 			return rv;
 		}
@@ -694,6 +695,7 @@ s32 plugins_Load_()
 	eminf.DeleteMenuItem=DeleteMenuItem;
 
 	eminf.WindowHandle=GetRenderTargetHandle();
+	eminf.DebugMenu=Debug_menu;
 
 	load_plugin_("Current_PVR",&libPvr,PowerVR_menu,"nullPvr_Win32.dll");
 	load_plugin_("Current_GDR",&libGDR,GDRom_menu,"nullGDR_Win32.dll");

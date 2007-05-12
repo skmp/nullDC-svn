@@ -77,5 +77,5 @@ extern u32 Aica_menu;
 extern u32 Maple_menu;
 extern u32 Maple_menu_ports[4][6];
 extern u32 ExtDev_menu;
-
+extern u32 Debug_menu;
 #endif // __EMU_WIN_UI_H__

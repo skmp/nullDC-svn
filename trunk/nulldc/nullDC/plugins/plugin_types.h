@@ -118,11 +118,14 @@ struct emu_info
 	SetMenuItemFP*		SetMenuItem;
 	GetMenuItemFP*		GetMenuItem;
 	DeleteMenuItemFP*	DeleteMenuItem;
+
+	u32 RootMenu;
+	u32 DebugMenu;
 };
 
 //common plugin functions
 //called when plugin is used by emu (you should do first time init here)
-typedef s32 FASTCALL PluginInitFP(emu_info* param,u32 root_menu);
+typedef s32 FASTCALL PluginInitFP(emu_info* param);
 
 //called when plugin is unloaded by emu , olny if dcInit is called (eg , not called to enumerate plugins)
 typedef void FASTCALL PluginTermFP();

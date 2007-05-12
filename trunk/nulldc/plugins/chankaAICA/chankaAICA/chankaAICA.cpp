@@ -18,11 +18,11 @@ void FASTCALL handle_About(u32 id,void* w,void* p)
 	MessageBox((HWND)w,"Made by the Chankast Team\nPort by drk||Raziel","About Chankast Aica...",MB_ICONINFORMATION);
 }
 //called when plugin is used by emu (you should do first time init here)
-s32 FASTCALL Load(emu_info * p,u32 rmenu)
+s32 FASTCALL Load(emu_info * p)
 {
 	memcpy(&emu,p,sizeof(*p));
 
-	emu.AddMenuItem(rmenu,-1,"About",handle_About,0);
+	emu.AddMenuItem(emu.RootMenu,-1,"About",handle_About,0);
 
 	return rv_ok;
 }

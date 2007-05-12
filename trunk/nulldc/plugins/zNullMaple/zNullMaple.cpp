@@ -42,7 +42,7 @@ emu_info ei;
 maple_init_params mip;
 
 void FASTCALL Unload();
-s32  FASTCALL Load(emu_info* emu,u32 rmenu);
+s32  FASTCALL Load(emu_info* emu);
 
 s32  FASTCALL Init(maple_device_instance* inst, u32 id, maple_init_params* params);
 s32  FASTCALL InitSub(maple_subdevice_instance* inst,u32 id,maple_init_params* params);
@@ -173,7 +173,7 @@ void LoadCfg()
 
 
 
-s32  FASTCALL Load(emu_info* emu, u32 rmenu)
+s32  FASTCALL Load(emu_info* emu)
 {
 	/////////////////////
 	ei = *(emu_info*)emu;

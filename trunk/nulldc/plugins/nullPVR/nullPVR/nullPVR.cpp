@@ -97,7 +97,7 @@ void FASTCALL pvrReset(bool m)
 	ResetRenderer(m);
 }
 
-s32  FASTCALL pvrLoad(emu_info* e,u32)
+s32  FASTCALL pvrLoad(emu_info* e)
 {
 	printf("pvrLoad() \n");
 	memcpy(&emu,e,sizeof(emu_info));

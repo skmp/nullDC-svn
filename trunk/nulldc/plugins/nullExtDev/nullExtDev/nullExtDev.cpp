@@ -53,11 +53,11 @@ void FASTCALL handle_about(u32 id,void* window,void* p)
 
 
 //called when plugin is used by emu (you should do first time init here)
-s32 FASTCALL Load(emu_info* param,u32 rmenu)
+s32 FASTCALL Load(emu_info* param)
 {
 	MenuItem mi;
 	mi.Handler=handle_about;
-	param->SetMenuItem(rmenu,&mi,MIM_Handler);
+	param->SetMenuItem(param->RootMenu,&mi,MIM_Handler);
 	return rv_ok;
 }
 

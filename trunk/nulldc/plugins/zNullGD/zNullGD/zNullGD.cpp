@@ -50,12 +50,12 @@ void FASTCALL handle_config(u32 id,void* hwnd,void* puser)
 {
 	gdConfig(hwnd);
 }
-s32 FASTCALL PluginLoad(emu_info* param,u32 rmenu)
+s32 FASTCALL PluginLoad(emu_info* param)
 {
 	memcpy(&eminf,param,sizeof(eminf));
 	MenuItem t;
 	t.Handler=handle_config;
-	eminf.SetMenuItem(rmenu,&t,MIM_Handler);
+	eminf.SetMenuItem(param->RootMenu,&t,MIM_Handler);
 	return rv_ok;
 }
 

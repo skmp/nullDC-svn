@@ -22,7 +22,7 @@ void cfgdlg(PluginType type,void* window)
 	//ARM_Katana_Driver_Info();
 }
 
-s32 FASTCALL PluginLoad(emu_info* param,u32 rmenu)
+s32 FASTCALL PluginLoad(emu_info* param)
 {
 	return rv_ok;
 }

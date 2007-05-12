@@ -140,16 +140,16 @@ void FASTCALL handle_About(u32 id,void* w,void* p)
 	MessageBox((HWND)w,"Made by the nullDC Team","About nullPVR...",MB_ICONINFORMATION);
 }
 //called when plugin is used by emu (you should do first time init here)
-s32 FASTCALL Load(emu_info* emu_inf,u32 rmenu)
+s32 FASTCALL Load(emu_info* emu_inf)
 {
 	memcpy(&emu,emu_inf,sizeof(emu));
 	emu.ConfigLoadStr("emu","shortname",emu_name,0);
 	
 	LoadSettings();
 
-	u32 Resolutions_menu=emu.AddMenuItem(rmenu,-1,"Fullscreen",0,0);
+	u32 Resolutions_menu=emu.AddMenuItem(emu.RootMenu,-1,"Fullscreen",0,0);
 	
-	emu.SetMenuItemStyle(emu.AddMenuItem(rmenu,-1,"-",0,0),MIS_Seperator,MIS_Seperator);
+	emu.SetMenuItemStyle(emu.AddMenuItem(emu.RootMenu,-1,"-",0,0),MIS_Seperator,MIS_Seperator);
 
 	
 	enable_FS_mid=emu.AddMenuItem(Resolutions_menu,-1,"Enable",handler_SetFullscreen,settings.Fullscreen.Enabled);
@@ -175,12 +175,12 @@ s32 FASTCALL Load(emu_info* emu_inf,u32 rmenu)
 	}
 
 
-	emu.AddMenuItem(rmenu,-1,"Versioned Textures",handler_VerPTex,settings.VersionedPalleteTextures);
-	emu.AddMenuItem(rmenu,-1,"Show Fps",handler_ShowFps,settings.ShowFPS);
+	emu.AddMenuItem(emu.RootMenu,-1,"Versioned Textures",handler_VerPTex,settings.VersionedPalleteTextures);
+	emu.AddMenuItem(emu.RootMenu,-1,"Show Fps",handler_ShowFps,settings.ShowFPS);
 
-	emu.SetMenuItemStyle(emu.AddMenuItem(rmenu,-1,"-",0,0),MIS_Seperator,MIS_Seperator);
+	emu.SetMenuItemStyle(emu.AddMenuItem(emu.RootMenu,-1,"-",0,0),MIS_Seperator,MIS_Seperator);
 
-	emu.AddMenuItem(rmenu,-1,"About",handle_About,0);
+	emu.AddMenuItem(emu.RootMenu,-1,"About",handle_About,0);
 //	SetRenderer(RendererType::Hw_D3d,params.WindowHandle);
 	return rv_ok;
 }

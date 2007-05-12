@@ -544,7 +544,7 @@ void cfgdlg(PluginType type,void* window)
 }//called when plugin is used by emu (you should do first time init here)
 
 void Init_kb_map();
-s32 FASTCALL Load(emu_info* emu,u32 rmenu)
+s32 FASTCALL Load(emu_info* emu)
 {
 	memcpy(&host,emu,sizeof(host));
 	for (int set=0;set<4;set++)

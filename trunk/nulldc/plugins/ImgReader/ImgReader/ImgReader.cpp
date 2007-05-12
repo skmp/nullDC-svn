@@ -137,7 +137,7 @@ void FASTCALL handle_SwitchDisc(u32 id,void* w,void* p)
 	//new disc is in
 }
 //called when plugin is used by emu (you should do first time init here)
-s32 FASTCALL Load(emu_info* emu_inf,u32 rmenu)
+s32 FASTCALL Load(emu_info* emu_inf)
 {
 	if (emu_inf==0)
 		return rv_ok;
@@ -147,13 +147,13 @@ s32 FASTCALL Load(emu_info* emu_inf,u32 rmenu)
 	
 	LoadSettings();
 
-	emu.AddMenuItem(rmenu,-1,"Swap Disc",handle_SwitchDisc,settings.LoadDefaultImage);
-	emu.SetMenuItemStyle(emu.AddMenuItem(rmenu,-1,"-",handle_About,0),MIS_Seperator,MIS_Seperator);
-	emu.AddMenuItem(rmenu,-1,"Use Default Image",handle_UseDefImg,settings.LoadDefaultImage);
-	emu.AddMenuItem(rmenu,-1,"Select Default Image",handle_SelDefImg,0);
-	emu.AddMenuItem(rmenu,-1,"Patch GDROM region",handle_PatchRegion,settings.PatchRegion);
-	emu.SetMenuItemStyle(emu.AddMenuItem(rmenu,-1,"-",handle_About,0),MIS_Seperator,MIS_Seperator);
-	emu.AddMenuItem(rmenu,-1,"About",handle_About,0);
+	emu.AddMenuItem(emu.RootMenu,-1,"Swap Disc",handle_SwitchDisc,settings.LoadDefaultImage);
+	emu.SetMenuItemStyle(emu.AddMenuItem(emu.RootMenu,-1,"-",handle_About,0),MIS_Seperator,MIS_Seperator);
+	emu.AddMenuItem(emu.RootMenu,-1,"Use Default Image",handle_UseDefImg,settings.LoadDefaultImage);
+	emu.AddMenuItem(emu.RootMenu,-1,"Select Default Image",handle_SelDefImg,0);
+	emu.AddMenuItem(emu.RootMenu,-1,"Patch GDROM region",handle_PatchRegion,settings.PatchRegion);
+	emu.SetMenuItemStyle(emu.AddMenuItem(emu.RootMenu,-1,"-",handle_About,0),MIS_Seperator,MIS_Seperator);
+	emu.AddMenuItem(emu.RootMenu,-1,"About",handle_About,0);
 	
 	
 	return rv_ok;
@@ -262,7 +262,7 @@ int _cdecl chanka_Init(const char* pszFileName)
 	gdr_init_params params;
 	params.DriveNotifyEvent=chanka_DriveNotifyEvent;
 
-	Load(0,0);
+	Load(0);
 	InitGDR(&params);
 	return 0;
 }

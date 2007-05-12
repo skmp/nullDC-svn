@@ -1507,7 +1507,7 @@ namespace Direct3DRenderer
 		bgpp->count=4;
 		bgpp->first=0;
 
-		//bgpp->isp.DepthMode=7;// -> this makes things AWFULLY slow .. sometime
+		//bgpp->isp.DepthMode=7;// -> this makes things AWFULLY slow .. sometimes
 
 		//Set some pcw bits .. i should realy get rid of pcw ..
 		bgpp->pcw.UV_16bit=bgpp->isp.UV_16b;

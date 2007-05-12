@@ -49,7 +49,7 @@
 s32  FASTCALL pvrInit(pvr_init_params*);
 void FASTCALL pvrTerm();
 void FASTCALL pvrReset(bool);
-s32  FASTCALL pvrLoad(emu_info*,u32);
+s32  FASTCALL pvrLoad(emu_info*);
 void FASTCALL pvrUnload();
 void FASTCALL pvrConfig(void*);
 
