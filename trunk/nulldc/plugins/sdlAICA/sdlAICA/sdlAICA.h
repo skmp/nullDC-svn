@@ -117,3 +117,5 @@ public :
 	void Wait(u32 msec);//Wait for signal , then reset[if auto]
 	void Wait();	//Wait for signal , then reset[if auto]
 };
+
+extern HINSTANCE hinst;

@@ -7,8 +7,7 @@
 #include "arm7.h"
 #include "mem.h"
 #include "audiostream.h"
-#include "resource.h"
-#include <windowsx.h>
+#include "gui.h"
 
 setts settings;
 aica_init_params aica_params;
@@ -22,120 +21,17 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 	hinst=(HINSTANCE)hModule;
     return TRUE;
 }
-void UpdateMenuSelections();
-u32 scmi=0,stami=0;
-INT_PTR CALLBACK ConfigDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
-{
-	switch( uMsg )
-	{
-	case WM_INITDIALOG:
-		{
-			CheckDlgButton(hWnd,IDC_HWMIX,settings.HW_mixing!=0?BST_CHECKED:BST_UNCHECKED);
-			CheckDlgButton(hWnd,IDC_GFOCUS,settings.GlobalFocus!=0?BST_CHECKED:BST_UNCHECKED);
-			CheckDlgButton(hWnd,IDC_FSYNC,settings.LimitFPS!=0?BST_CHECKED:BST_UNCHECKED);
-
-			bool hideo=true;
-			if (settings.BufferSize==884)
-			{
-				CheckDlgButton(hWnd,IDC_RADIO1,BST_CHECKED);
-			}
-			else if (settings.BufferSize==1024)
-			{
-				CheckDlgButton(hWnd,IDC_RADIO2,BST_CHECKED);
-			}
-			else if (settings.BufferSize==1536)
-			{
-				CheckDlgButton(hWnd,IDC_RADIO3,BST_CHECKED);
-			}
-			else if (settings.BufferSize==1768)
-			{
-				CheckDlgButton(hWnd,IDC_RADIO4,BST_CHECKED);
-			}
-			else if (settings.BufferSize==2048)
-			{
-				CheckDlgButton(hWnd,IDC_RADIO5,BST_CHECKED);
-			}
-			else if (settings.BufferSize==4096)
-			{
-				CheckDlgButton(hWnd,IDC_RADIO6,BST_CHECKED);
-			}
-			else
-			{
-				CheckDlgButton(hWnd,IDC_RADIO7,BST_CHECKED);
-				char temp[512];
-				sprintf(temp,"%d",settings.BufferSize);
-				SetDlgItemTextA(hWnd,IDC_RADIO7,temp);
-				hideo=false;
-			}
-			if (hideo)
-				ShowWindow(GetDlgItem(hWnd,IDC_RADIO7), SW_HIDE);
-		}
-		return true;
-
-	case WM_COMMAND:
-
-		switch( LOWORD(wParam) )
-		{
-		case IDOK:
-			{
-				if (IsDlgButtonChecked(hWnd,IDC_RADIO1))
-				{
-					settings.BufferSize==884;
-				}
-				else if (IsDlgButtonChecked(hWnd,IDC_RADIO2))
-				{
-					settings.BufferSize=1024;
-				}
-				else if (IsDlgButtonChecked(hWnd,IDC_RADIO3))
-				{
-					settings.BufferSize=1536;
-				}
-				else if (IsDlgButtonChecked(hWnd,IDC_RADIO4))
-				{
-					settings.BufferSize=1768;
-				}
-				else if (IsDlgButtonChecked(hWnd,IDC_RADIO5))
-				{
-					settings.BufferSize=2048;
-				}
-				else if (IsDlgButtonChecked(hWnd,IDC_RADIO6))
-				{
-					settings.BufferSize=4096;
-				}
-
-				settings.HW_mixing=IsDlgButtonChecked(hWnd,IDC_HWMIX);
-				settings.GlobalFocus=IsDlgButtonChecked(hWnd,IDC_GFOCUS);
-				settings.LimitFPS=IsDlgButtonChecked(hWnd,IDC_FSYNC);
-				
-				SaveSettings();
-			}
-		case IDCANCEL:
-			EndDialog(hWnd,0);
-			return true;
-
-		default: break;
-		}
-		return false;
-
-	case WM_CLOSE:
-	case WM_DESTROY:
-		EndDialog(hWnd,0);
-		return true;
-
-	default: break;
-	}
-
-	return false;
-}
-
-
 void FASTCALL handle_About(u32 id,void* w,void* p)
 {
 	MessageBoxA((HWND)w,"Made by the nullDC Team","About nullAica...",MB_ICONINFORMATION);
 }
+void FASTCALL handle_ShowASD(u32 id,void* w,void* p)
+{
+	ShowDebugger((HWND)w);
+}
 void FASTCALL handle_Config(u32 id,void* w,void* p)
 {
-	DialogBox(hinst,MAKEINTRESOURCE(IDD_SETTINGS),(HWND)w,ConfigDlgProc);
+	ShowConfig((HWND)w);
 }
 void FASTCALL handle_SA(u32 id,void* w,void* p)
 {
@@ -167,24 +63,22 @@ void FASTCALL handle_GS(u32 id,void* w,void* p)
 	eminf.SetMenuItemStyle(id,settings.GlobalMute?MIS_Checked:0,MIS_Checked);
 	SaveSettings();
 }
-void UpdateMenuSelections()
-{
-	eminf.SetMenuItemStyle(stami,settings.LimitFPS?MIS_Checked:0,MIS_Checked);
-}
+
 s32 FASTCALL OnLoad(emu_info* em)
 {
 	memcpy(&eminf,em,sizeof(eminf));
 
 	LoadSettings();
 
-	scmi=eminf.AddMenuItem(em->RootMenu,-1,"Config",handle_Config,0);
-	stami=eminf.AddMenuItem(em->RootMenu,-1,"Sync Audio",handle_SA,settings.LimitFPS);
+	config_scmi=eminf.AddMenuItem(em->RootMenu,-1,"Config",handle_Config,0);
+	config_stami=eminf.AddMenuItem(em->RootMenu,-1,"Sync Audio",handle_SA,settings.LimitFPS);
 	eminf.AddMenuItem(em->RootMenu,-1,"Mute CDDA",handle_MCDDA,settings.CDDAMute);
 	eminf.AddMenuItem(em->RootMenu,-1,"Mute Sound",handle_GS,settings.GlobalMute);
 
 	eminf.SetMenuItemStyle(eminf.AddMenuItem(em->RootMenu,-1,"-",0,0),MIS_Seperator,MIS_Seperator);
 	eminf.AddMenuItem(em->RootMenu,-1,"About",handle_About,0);
 
+	eminf.AddMenuItem(em->DebugMenu,-1,"AICA SGC Debugger",handle_ShowASD,0);
 	return rv_ok;
 }
 
@@ -202,7 +96,7 @@ s32 FASTCALL Init(aica_init_params* initp)
 	AICA_Init();
 	InitAudio();
 
-	eminf.SetMenuItemStyle(scmi,MIS_Grayed,MIS_Grayed);
+	eminf.SetMenuItemStyle(config_scmi,MIS_Grayed,MIS_Grayed);
 	return rv_ok;
 }
 
@@ -213,7 +107,7 @@ void FASTCALL Term()
 	AICA_Term();
 	term_mem();
 
-	eminf.SetMenuItemStyle(scmi,0,MIS_Grayed);
+	eminf.SetMenuItemStyle(config_scmi,0,MIS_Grayed);
 }
 
 //It's suposed to reset anything 
@@ -294,7 +188,7 @@ void LoadSettings()
 
 void SaveSettings()
 {
-	UpdateMenuSelections();
+	Cofnig_UpdateMenuSelections();
 	//load default settings before init
 	cfgSetInt("BufferSize",settings.BufferSize);
 	cfgSetInt("LimitFPS",settings.LimitFPS);

@@ -71,10 +71,20 @@ BEGIN
     CONTROL         "Use Hardware Mixing",IDC_HWMIX,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,128,83,10
     CONTROL         "Global Focus",IDC_GFOCUS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,94,56,10
     CONTROL         "Sync to audio",IDC_FSYNC,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,54,59,10
-	LTEXT           "If set , the sound will play even if the emu is on the background.It doesnt affect the emulation in any way.",IDC_STATIC,13,104,248,20
+    LTEXT           "If set , the sound will play even if the emu is on the background.It doesnt affect the emulation in any way.",IDC_STATIC,13,104,248,20
     LTEXT           "If set the hardware mixer will be used.This usualy results in bad sound , but may speed things up a bit.On x64 versions of windows it has no effect.It is recomended to have this setting disabled",IDC_STATIC,13,138,246,26
     LTEXT           "This sets the size of the sound buffer.If the sound is coppy/clicky increase it , if the sound is laggy/too late decrease it.It is recomended to adjust this setting and see what works best for your PC.The default setting is 1024.For Windows Vista use 2048.",IDC_STATIC,13,18,247,35
-	LTEXT           "Note : If the emulation is started , some of these settings won't take effect  without restarting the emulator.",IDC_STATIC,7,170,254,19
+    LTEXT           "Note : If the emulation is started , some of these settings won't take effect  without restarting the emulator.",IDC_STATIC,7,170,254,19
+END
+
+IDD_DEBUGGER DIALOGEX 0, 0, 187, 95
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_STATICEDGE
+CAPTION "Dialog"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,130,7,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,130,24,50,14
 END
 
 
@@ -92,6 +102,14 @@ BEGIN
         RIGHTMARGIN, 261
         TOPMARGIN, 7
         BOTTOMMARGIN, 203
+    END
+
+    IDD_DEBUGGER, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 180
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 88
     END
 END
 #endif    // APSTUDIO_INVOKED

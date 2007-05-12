@@ -293,6 +293,38 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="gui"
+			>
+			<File
+				RelativePath=".\gui.h"
+				>
+			</File>
+			<Filter
+				Name="config"
+				>
+				<File
+					RelativePath=".\config_ui.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\config_ui.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="debugger"
+				>
+				<File
+					RelativePath=".\debugger_ui.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\debugger_ui.h"
+					>
+				</File>
+			</Filter>
+		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"
 			>
