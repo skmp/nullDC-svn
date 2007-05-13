@@ -854,12 +854,12 @@ u32 ReadMem_gdrom(u32 Addr, u32 sz)
 		//cancel interrupt
 	case GD_STATUS_Read :
 		SB_ISTEXT &= ~1;	//Clear INTRQ signal
-		printf_rm("GDROM: STATUS [cancel int](v=%d)\n",GDStatus.full);
-		return GDStatus.full;
+		printf_rm("GDROM: STATUS [cancel int](v=%X)\n",GDStatus.full);
+		return GDStatus.full | (1<<4);
 
 	case GD_ALTSTAT_Read:
-		printf_rm("GDROM: Read From AltStatus (v=%d)\n",GDStatus.full);
-		return GDStatus.full;
+		printf_rm("GDROM: Read From AltStatus (v=%X)\n",GDStatus.full);
+		return GDStatus.full | (1<<4);
 
 	case GD_BYCTLLO	:
 		printf_rm("GDROM: Read From GD_BYCTLLO\n");
