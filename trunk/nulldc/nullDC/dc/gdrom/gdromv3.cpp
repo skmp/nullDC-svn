@@ -509,8 +509,6 @@ void gd_process_spi_cmd()
 		// *FIXME* CHECK FOR DMA, Diff Settings !?!@$#!@%
 	case SPI_CD_READ:
 		{
-			printf_spicmd("SPI_CD_READ\n");
-
 #define readcmd packet_cmd.GDReadBlock
 
 			if( readcmd.head ||readcmd.subh || readcmd.other || (!readcmd.data) )	// assert
@@ -525,6 +523,7 @@ void gd_process_spi_cmd()
 			read_params.remaining_sectors=sector_count;
 			read_params.sector_type = sector_type;//yeah i know , not realy many types supported ...
 
+			printf_spicmd("SPI_CD_READ sec=%d sz=%d/%d dma=%d\n",read_params.start_sector,read_params.remaining_sectors,read_params.sector_type,Features.CDRead.DMA);
 			if (Features.CDRead.DMA==1)
 			{
 				gd_set_state(gds_readsector_dma);
@@ -1066,10 +1065,12 @@ void GDROM_DmaStart(u32 data)
 	else
 		msgboxf("GDROM: SB_GDDIR %X (TO AICA WAVE MEM?)",MBX_ICONERROR, SB_GDDIR);
 
-	SB_GDLEN = 0x00000000;
-	SB_GDLEND=len_backup;
-	SB_GDSTAR = (src + len_backup);
+	//SB_GDLEN = 0x00000000; //13/5/2k7 -> acording to docs these regs are not updated by hardware
+	//SB_GDSTAR = (src + len_backup);
 	SB_GDST=0;//done
+
+	SB_GDLEND = len_backup;
+	SB_GDSTARD = (src + len_backup)&0x1FFFFFFF;
 
 	// The DMA end interrupt flag
 	RaiseInterrupt(holly_GDROM_DMA);
