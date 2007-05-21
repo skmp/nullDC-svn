@@ -75,7 +75,7 @@ void FASTCALL WritePvrRegister(u32 paddr,u32 data,u32 size)
 
 	if (addr>=SPG_HBLANK_INT_addr && addr<=SPG_WIDTH_addr)
 		CalculateSync();
-
+	
 	if (addr>=PALETTE_RAM_START_addr)
 	{
 		if (PvrReg(addr,u32)!=data)
@@ -119,7 +119,7 @@ void Regs_Reset(bool Manual)
 	VO_CONTROL			= 0x00000108;
 	VO_STARTX			= 0x0000009D;
 	VO_STARTY			= 0x00000015;
-	SCALER_CTL			= 0x00000400;
+	SCALER_CTL.full		= 0x00000400;
 	FB_BURSTCTRL		= 0x00090639;
 	PT_ALPHA_REF		= 0x000000FF;
 }

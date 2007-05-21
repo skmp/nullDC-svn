@@ -86,9 +86,11 @@ struct _settings_type
 	{
 		u32 MultiSampleCount;
 		u32 MultiSampleQuality;
+		u32 WidescreenHack;
 	} Enhancements;
 	u32 ShowFPS;
 	u32 VersionedPalleteTextures;
 };
 
 extern _settings_type settings;
+void UpdateRRect();

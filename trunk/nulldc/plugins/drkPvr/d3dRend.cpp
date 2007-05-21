@@ -58,10 +58,11 @@ namespace Direct3DRenderer
 	//CRITICAL_SECTION tex_cache_cs;
 	ID3DXFont* font;
 	ID3DXConstantTable* shader_consts;
-	
+	u32 FrameNumber=0;
 	bool IsFullscreen=false;
 	char fps_text[512];
-
+	float res_scale[4]={0,0,320,-240};
+	float fb_scale[2]={1,1};
 	void SetFpsText(char* text)
 	{
 		strcpy(fps_text,text);
@@ -70,7 +71,19 @@ namespace Direct3DRenderer
 			SetWindowText((HWND)emu.WindowHandle, fps_text);
 		}
 	}
+	void SetRenderRect(float* rect)
+	{
+		res_scale[0]=rect[0];
+		res_scale[1]=rect[1];
 
+		res_scale[2]=rect[2]/2;
+		res_scale[3]=-rect[3]/2;
+	}
+	void SetFBScale(float x,float y)
+	{
+		fb_scale[0]=x;
+		fb_scale[1]=y;
+	}
 	const static u32 CullMode[]= 
 	{
 		D3DCULL_NONE,	//0	No culling	no culling
@@ -232,6 +245,7 @@ namespace Direct3DRenderer
 		IDirect3DTexture9* Texture;
 		u32 Lookups;
 		u32 Updates;
+		u32 LastUsed;
 
 		TSP tsp;TCW tcw;
 
@@ -239,8 +253,15 @@ namespace Direct3DRenderer
 		u32 size;
 		bool dirty;
 		u32 pal_rev;
-		volatile vram_block* lock_block;
+		vram_block* lock_block;
 
+		//Releases any resources , EXEPT the texture :)
+		void Destroy()
+		{
+			if (lock_block)
+				params.vram_unlock(lock_block);
+			lock_block=0;
+		}
 		//Called when texture entry is reused , resets any texture type info (dynamic/static)
 		void Reset()
 		{
@@ -274,6 +295,7 @@ namespace Direct3DRenderer
 //			verify(dirty);
 //			verify(lock_block==0);
 
+			LastUsed=FrameNumber;
 			Updates++;
 			dirty=false;
 
@@ -458,7 +480,7 @@ namespace Direct3DRenderer
 		TextureCacheData* tf = TexCache.Find(tcw.full);
 		if (tf)
 		{
-			
+			tf->LastUsed=FrameNumber;
 			if (tf->dirty)
 			{
 				if (tf->tsp.full==tsp.full)
@@ -505,11 +527,12 @@ namespace Direct3DRenderer
 		TextureCacheData* tcd = (TextureCacheData*)bl->userdata;
 		tcd->dirty=true;
 		tcd->lock_block=0;
+		/*
 		if (tcd->Updates==0)
 		{
 			tcd->Texture->Release();
 			tcd->Texture=0;
-		}
+		}*/
 		params.vram_unlock(bl);
 		//LeaveCriticalSection(&tex_cache_cs);
 	}
@@ -518,6 +541,7 @@ namespace Direct3DRenderer
 	//use that someday
 	void VBlank()
 	{
+		FrameNumber++;
 		//we need to actualy draw the image here :)
 		//dev->
 	}
@@ -1233,6 +1257,23 @@ namespace Direct3DRenderer
 			//Opaque
 			dev->SetRenderState(D3DRS_ALPHABLENDENABLE,FALSE);
 			dev->SetRenderState(D3DRS_ALPHATESTENABLE,FALSE);
+
+			//Scale values have the sync values
+			//adjust em here for FB/AA/Stuff :)
+			float scale_x=fb_scale[0];
+			float scale_y=fb_scale[1];
+			if ((VO_CONTROL>>8)&1)
+				scale_x*=0.5;
+			else
+				scale_x*=1;
+
+			if (SCALER_CTL.hscale)
+			{
+				scale_x*=2;//2x resolution on X (AA)
+			}
+
+			float scalef[4]={res_scale[0]*scale_x,res_scale[1]*scale_y,res_scale[2]*scale_x,res_scale[3]*scale_y};
+			dev->SetVertexShaderConstantF(2,scalef,1);
 			if (!GetAsyncKeyState(VK_F1))
 			{
 				if (UseFixedFunction)
@@ -1515,6 +1556,7 @@ namespace Direct3DRenderer
 		bgpp->pcw.Offset=bgpp->isp.Offset;
 		bgpp->pcw.Texture=bgpp->isp.Texture;
 
+		float scale_x= (SCALER_CTL.hscale) ? 2:1;	//if AA hack the hacked pos value hacks
 		for (int i=0;i<3;i++)
 		{
 			decode_pvr_vertex(strip_base,vertex_ptr,&cv[i]);
@@ -1528,12 +1570,12 @@ namespace Direct3DRenderer
 		cv[1].y=0;
 		cv[1].z=bg_d.f;
 
-		cv[2].x=640;
+		cv[2].x=640*scale_x;
 		cv[2].y=480;
 		cv[2].z=bg_d.f;
 
 		cv[3]=cv[2];
-		cv[3].x=640;
+		cv[3].x=640*scale_x;
 		cv[3].y=0;
 		cv[3].z=bg_d.f;
 		
@@ -1545,6 +1587,7 @@ namespace Direct3DRenderer
 	void EndRender()
 	{
 		re.Wait();
+		
 		for (size_t i=0;i<lock_list.size();i++)
 		{
 			TextureCacheData* tcd=lock_list[i];
@@ -1553,6 +1596,17 @@ namespace Direct3DRenderer
 			
 		}
 		lock_list.clear();
+		
+		TexCacheList<TextureCacheData>::TexCacheEntry* ptext= TexCache.plast;
+		while(ptext && ((FrameNumber-ptext->data.LastUsed)>60))
+		{
+			ptext->data.Destroy();
+			ptext->data.Texture->Release();
+			TexCacheList<TextureCacheData>::TexCacheEntry* pprev;
+			pprev=ptext->prev;
+			TexCache.Remove(ptext);
+			ptext=pprev;
+		}
 	}
 
 	__declspec(align(16)) static f32 FaceBaseColor[4];

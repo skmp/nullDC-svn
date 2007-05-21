@@ -22,7 +22,7 @@ namespace SWRenderer
 	
 	struct Vertex
 	{
-		u32 x,y;
+		f32 x,y;
 		f32 z;
 	};
 	List<Vertex> vertlist;
@@ -104,12 +104,12 @@ namespace SWRenderer
 		SDL_Event ev;
 		while(SDL_PollEvent(&ev))
 			__noop;
-
+return;
 		//SetWindowPos(SdlWnd,0,0,640,480,0,SWP_NOZORDER);	 
 		//FB_R_CTRL & 0x1000000
 		u32* fba=(u32*)&params.vram[vramlock_ConvOffset32toOffset64(FB_R_SOF1 & 0x7FFFFF)];
 
-		u32 mode=(FB_R_CTRL>>2)&3;
+		u32 mode=FB_R_CTRL.fb_depth;
 		u32 sz=(640+640*(mode>>1))*2;
 		verify(SDL_LockSurface(screen)==0)
 		//memset(screen->pixels,rand(),640*480*4);
@@ -123,12 +123,12 @@ namespace SWRenderer
 	{
 		struct
 		{
-			u32 x;
+			f32 x;
 			f32 z;
 		} start;
 		struct
 		{
-			u32 x;
+			f32 x;
 			f32 z;
 		} end;
 	};
@@ -141,95 +141,92 @@ namespace SWRenderer
 		t1=t2;
 		t2=t3;
 	}
-	/*
-	void DrawTrig(Vertex* verts)
+
+	void ScanTrigA(Vertex* a,Vertex* b,Vertex* c)
 	{
-		for (int i=0;i<3;i++)
-		{
-			verts[i].x=max(min((s32)verts[i].x,639),0);
-			verts[i].y=max(min((s32)verts[i].y,479),0);
-		}
-		Vertex& top=verts[0];
-		Vertex& down=verts[1];
-		Vertex& other=verts[2];
+		int end=min(b->y,479);
+		int start=max(a->y,0);
+		
+		if (b->x<c->x)
+			swap(b,c);
+		//draw ab-ac
+		float s_x_diff=(a->x-b->x)/(b->y-a->y);
+		float e_x_diff=(a->x-c->x)/(c->y-a->y);;
+		float s_x,e_y;
+		s_x=e_y=a->x;
 
-		if (top.y>down.y)
+		for (int y=start;y<end;y++)
 		{
-			if (top.y>other.y)
-			{
-				
-				if (down.y>other.y)
-				{
-					//top>down>other
-					swap(down,other);
-				}
-				else
-				{
-					//top>other>down
-				}
+			Span* spn=spans[y].Append();
+			spn->start.x=max(s_x,0);
+			spn->start.z=0;
 
-			}
-			else
-			{
-				//other>top>down
-				swap(top,other);
-			}
-		}
-		else
-		{
-			if (down.y>other.y)
-			{
-				//down>top && down>other
-				if (top.y>other.y)
-				{
-					//down>top>other
-					swap(down,top);
-					//top>down>other
-					swap(down,other);
-					//top>other>down
-				}
-				else
-				{
-					//down>other>top
-					swap(down,top);
-					//top>other>down
-				}
+			spn->end.x=min(e_y,639);
+			spn->end.z=0;
 
-				top=verts[1];
-			}
-			else
-			{
-				//other>down>top
-				swap(other,top);
-				//top>down>other
-				swap(other,down);
-				//top>other>down
-			}
+			s_x+=s_x_diff;
+			e_y+=e_x_diff;
 		}
-
-		Vertex& left;
-		Vertex& right;
-		if (down.x>other.x)
-		{
-			left=other;
-			right=down;
-			//other .. top
-		}
-		else
-		{
-			left=down;
-			right=other;
-			//top .. other
-		}
-		u32 h=top.y-other.y;
-		u32 s1=left
-		for (u32 y=top.y;y<other.y;y++)
-		{
-			
-		}
-
 	}
-	*/
+	void ScanTrigB(Vertex* a,Vertex* b,Vertex* c)
+	{
+	}
+	void ScanTrig(Vertex* verts)
+	{
+		Vertex* a,*b,*c;
+		if (verts[0].y>verts[1].y)		//1,0
+		{
+			if (verts[1].y>verts[2].y)  //2,1,0
+			{
+				a=&verts[2];
+				b=&verts[1];
+				c=&verts[0];
+			}
+			else		//1,2,0 or 1,0,2
+			{
+				if (verts[0].y>verts[2].y)	//1,2,0
+				{
+					a=&verts[1];
+					b=&verts[2];
+					c=&verts[0];
+				}
+				else					//1,0,2
+				{
+					a=&verts[1];
+					b=&verts[0];
+					c=&verts[2];
+				}
+			}
+		}
+		else
+		{
+			//0,1
+			if (verts[0].y>verts[2].y)	//2,0,1
+			{
+				a=&verts[2];
+				b=&verts[0];
+				c=&verts[1];
+			}
+			else	//0,2,1 or 0,1,2
+			{
+				if (verts[1].y>verts[2].y)	//0,2,1
+				{
+					a=&verts[0];
+					b=&verts[2];
+					c=&verts[1];
+				}
+				else					//0,1,2
+				{
+					a=&verts[0];
+					b=&verts[1];
+					c=&verts[2];
+				}
+			}
+		}
+
+		ScanTrigA(a,b,c);
+		ScanTrigB(a,b,c);
+	}
 	void StartRender()
 	{
 		
@@ -245,25 +242,27 @@ namespace SWRenderer
 			return;
 		for (u32 i=0;i<vertlist.used-2;i++)
 		{
-			//DrawTrig(&vertlist.data[i]);
+			ScanTrig(&vertlist.data[i]);
 		}
 
 		for (u32 y=0;y<480;y++)
-		{
-			u16* pline=&fba[640*2];
+		{/*
+			u16* pline=&fba[640*y];
 			for (u32 i=0;i<spans[y].used;i++)
 			{
 				Span* s=&spans[y].data[i];
-				u32 sx=s->start.x*2;
-				u32 ex=s->end.x*2;
-
+				u32 sx=s->start.x;
+				u32 ex=s->end.x;
+				sx=max(min(sx,640),0);
+				ex=max(min(ex,640),0);
 				u16* pstart=&pline[sx];
 
-				for (int cp=sx;cp<=ex;cp+=4)
+				for (int cp=sx;cp<=ex;cp++)
 				{
 					pstart[cp]=0xFFFF;
 				}
-			}
+			}*/
+			spans[y].Clear();
 		}
 	}
 	void EndRender()

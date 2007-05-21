@@ -14,23 +14,13 @@ struct vertex
 
 float W_min: register(c0);
 float W_max: register(c1);
-
+float4 res_scale: register(c2);
 vertex VertexShader_main(in vertex vtx) 
 {
-	float x=vtx.pos.x;
-	float y=vtx.pos.y;
-	//vtx.pos.x=((vtx.pos.x-0.5)/319.5)-1;
-	//vtx.pos.y=-((vtx.pos.y-0.5)/239.5)+1;
+	vtx.pos.xy+=res_scale.xy;
+	vtx.pos.xy/=res_scale.zw;
 	
-	//x-=0.5;
-	x/=640;
-	//y-=0.5;
-	y/=480;
-	
-	
-	vtx.pos.x=x*2 + (-1.0/res_x)-1.0;
-	vtx.pos.y=-y*2+ (1.0/res_y)+1.0;
-	//vtx.pos.xy+=resfix;
+	vtx.pos.xy+=float2((-1.0/res_x)-1.0,(1.0/res_y)+1.0);
 	
 	//Saturate the colors here , no need to do it on pixel shaders
 	vtx.col=saturate(vtx.col);

@@ -22,6 +22,7 @@ void CalculateSync()
 	//clc_pvr_scanline=0;
 
 	u32 pixel_clock;
+	float scale_x=1,scale_y=1;
 
 	if (FB_R_CTRL.vclk_div)
 	{
@@ -45,8 +46,19 @@ void CalculateSync()
 	{
 		//this is a temp hack
 		Line_Cycles/=2;
+		u32 interl_mode=(VO_CONTROL>>4)&0xF;
+		
+		if (interl_mode==2)//3 will be funny =P
+			scale_y=0.5f;//single interlace
+		else
+			scale_y=1;
 	}
-	
+	else
+	{
+		scale_y=0.5f;//non interlaced modes have half resolution
+	}
+
+	rend_set_fb_scale(scale_x,scale_y);
 	
 	//Frame_Cycles=(u64)DCclock*(u64)sync_cycles/(u64)pixel_clock;
 	
@@ -128,7 +140,7 @@ void FASTCALL spgUpdatePvr(u32 cycles)
 			params.RaiseInterrupt(holly_HBLank);// -> This turned out to be HBlank btw , needs to be emulater ;(
 			//TODO : rend_if_VBlank();
 			rend_vblank();//notify for vblank :)
-
+			UpdateRRect();
 			if ((timeGetTime()-last_fps)>800)
 			{
 				double spd_fps=(double)(FrameCount)/(double)((double)(timeGetTime()-(double)last_fps)/1000);

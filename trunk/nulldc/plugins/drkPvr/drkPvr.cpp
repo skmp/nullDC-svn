@@ -39,6 +39,24 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     return TRUE;
 }
 
+void UpdateRRect()
+{
+	float rect[4]={0,0,640,480};
+	if (settings.Enhancements.WidescreenHack)
+	{
+		WINDOWINFO winf;
+		GetWindowInfo((HWND)emu.WindowHandle,&winf);
+		
+		int sx=winf.rcClient.right-winf.rcClient.left;
+		int sy=winf.rcClient.bottom-winf.rcClient.top;
+		//printf("New rect %d %d\n",sx,sy);
+
+		float nw=((float)sx/(float)sy)*480.0f;
+		rect[0]=(nw-640)/2;
+		rect[2]=nw;
+	}
+	rend_set_render_rect(rect);
+}
 void FASTCALL dcShowConfig(void* window)
 {
 	printf("No config for now\n");
@@ -66,6 +84,18 @@ void FASTCALL handler_ShowFps(u32 id,void* win,void* puser)
 	emu.SetMenuItemStyle(id,settings.ShowFPS?MIS_Checked:0,MIS_Checked);
 	
 	SaveSettings();
+}
+void FASTCALL handler_WSH(u32 id,void* win,void* puser)
+{
+	if (settings.Enhancements.WidescreenHack)
+		settings.Enhancements.WidescreenHack=0;
+	else
+		settings.Enhancements.WidescreenHack=1;
+
+	emu.SetMenuItemStyle(id,settings.Enhancements.WidescreenHack?MIS_Checked:0,MIS_Checked);
+	
+	SaveSettings();
+	UpdateRRect();
 }
 void FASTCALL handler_VerPTex(u32 id,void* win,void* puser)
 {
@@ -111,6 +141,7 @@ struct
 	makeres(1600,900)
 	makeres(1600,1200)
 	makeres(1920,1080)
+	makeres(1920,1200)
 	makeres(2048,1536)
 	{0,0,0}
 };
@@ -174,7 +205,7 @@ s32 FASTCALL Load(emu_info* emu_inf)
 		emu.SetMenuItemStyle(special_res,MIS_Grayed|MIS_Checked,MIS_Grayed|MIS_Checked);
 	}
 
-
+	emu.AddMenuItem(emu.RootMenu,-1,"Widescreen Hack",handler_WSH,settings.Enhancements.WidescreenHack);
 	emu.AddMenuItem(emu.RootMenu,-1,"Versioned Textures",handler_VerPTex,settings.VersionedPalleteTextures);
 	emu.AddMenuItem(emu.RootMenu,-1,"Show Fps",handler_ShowFps,settings.ShowFPS);
 
@@ -220,7 +251,7 @@ s32 FASTCALL InitPvr(pvr_init_params* param)
 		//failed
 		return rv_error;
 	}
-
+	UpdateRRect();
 	//olny the renderer cares about thread speciacific shit ..
 	if (!rend_thread_start())
 	{
@@ -412,6 +443,7 @@ void LoadSettings()
 
 	settings.Enhancements.MultiSampleCount		=	cfgGetInt("Enhancements.MultiSampleCount",0);
 	settings.Enhancements.MultiSampleQuality	=	cfgGetInt("Enhancements.MultiSampleQuality",0);
+	settings.Enhancements.WidescreenHack		=	cfgGetInt("Enhancements.WidescreenHack",0);
 }
 
 
@@ -427,6 +459,7 @@ void SaveSettings()
 
 	cfgSetInt("Enhancements.MultiSampleCount",settings.Enhancements.MultiSampleCount);
 	cfgSetInt("Enhancements.MultiSampleQuality",settings.Enhancements.MultiSampleQuality);
+	cfgSetInt("Enhancements.WidescreenHack",settings.Enhancements.WidescreenHack);
 }
 
 int msgboxf(char* text,unsigned int type,...)

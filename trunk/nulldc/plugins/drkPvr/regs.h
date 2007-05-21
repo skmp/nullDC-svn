@@ -207,6 +207,19 @@ union SPG_WIDTH_type
 	u32 full;
 };
 
+union SCALER_CTL_type
+{
+	struct
+	{
+		u32 vscalefactor : 16;//15-0
+		u32 hscale : 1 ;	//16-16
+		u32 interlace : 1;	//17-17
+		u32 fieldselect : 1;//18-18
+	};
+	u32 full;
+};
+
+
 
 //	TA REGS
 #define TA_OL_BASE_addr		0x00000124	//	RW	Object list write start address	
@@ -297,7 +310,7 @@ union SPG_WIDTH_type
 #define VO_CONTROL			PvrReg(VO_CONTROL_addr,u32)	//	RW	Video output control	
 #define VO_STARTX			PvrReg(VO_STARTX_addr,u32)	//	RW	Video output start X position	
 #define VO_STARTY			PvrReg(VO_STARTY_addr,u32)	//	RW	Video output start Y position	
-#define SCALER_CTL			PvrReg(SCALER_CTL_addr,u32)	//	RW	X & Y scaler control	
+#define SCALER_CTL			PvrReg(SCALER_CTL_addr,SCALER_CTL_type)	//	RW	X & Y scaler control	
 #define PAL_RAM_CTRL		PvrReg(PAL_RAM_CTRL_addr,u32)	//	RW	Palette RAM control	
 #define SPG_STATUS			PvrReg(SPG_STATUS_addr,SPG_STATUS_type)	//	R	Sync pulse generator status	
 #define FB_BURSTCTRL		PvrReg(FB_BURSTCTRL_addr,u32)	//	RW	Frame buffer burst control	

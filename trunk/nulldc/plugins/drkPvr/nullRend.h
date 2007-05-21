@@ -40,4 +40,5 @@ namespace SWRenderer
 
 #define rend_text_invl SWRenderer::VramLockedWrite
 #define rend_set_fps_text SWRenderer::SetFpsText
+#define rend_set_render_rect(rect) 
 #endif
