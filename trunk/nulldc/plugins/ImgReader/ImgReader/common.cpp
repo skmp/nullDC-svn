@@ -60,17 +60,10 @@ void PatchRegion_0(u8* sector,int size)
 		return;
 
 	u8* usersect=sector;
-	if ((size == 2352) || (size == 2448))
+
+	if (size!=2048)
 	{
-		usersect+=0x18;
-	}
-	else if (size ==2336)
-	{
-		usersect+=0x8;
-	}
-	else if (size!=2048)
-	{
-		printf("PatchRegion_0 -> Unkown sector size %d\n",size);
+		printf("PatchRegion_0 -> sector size %d , skiping patch\n",size);
 	}
 
 	//patch meta info
@@ -83,17 +76,10 @@ void PatchRegion_6(u8* sector,int size)
 		return;
 
 	u8* usersect=sector;
-	if ((size == 2352) || (size == 2448))
+
+	if (size!=2048)
 	{
-		usersect+=0x18;
-	}
-	else if (size ==2336)
-	{
-		usersect+=0x8;
-	}
-	else if (size!=2048)
-	{
-		printf("PatchRegion_4 -> Unkown sector size %d\n",size);
+		printf("PatchRegion_6 -> sector size %d , skiping patch\n",size);
 	}
 
 	//patch area symbols
@@ -118,9 +104,16 @@ bool ConvertSector(u8* in_buff , u8* out_buff , int from , int to,int sector)
 			verify(from>=2048);
 			verify((from==2448) || (from==2352) || (from==2336));
 			if ((from == 2352) || (from == 2448))
-				memcpy(out_buff,&in_buff[0x18],2048); //0x18 or 0x10 ? cdrwin for some reason needs 0x10 o.O
+			{
+				if (in_buff[15]==1)
+				{
+					memcpy(out_buff,&in_buff[0x10],2048); //0x10 -> mode1
+				}
+				else
+					memcpy(out_buff,&in_buff[0x18],2048); //0x18 -> mode2 (all forms ?)
+			}
 			else
-				memcpy(out_buff,&in_buff[0x8],2048);
+				memcpy(out_buff,&in_buff[0x8],2048);	//hmm only possible on mode2.Skip the mode2 header
 		}
 		break;
 	case 2352:
@@ -254,7 +247,7 @@ void GetDriveSessionInfo(u8* to,u8 session)
 	
 	if (session==0)
 	{
-		to[2]=2;//count of sessions
+		to[2]=driveSeS.SessionCount;//count of sessions
 		to[3]=(driveSeS.SessionsEndFAD>>16)&0xFF;//fad is sessions end
 		to[4]=(driveSeS.SessionsEndFAD>>8)&0xFF;
 		to[5]=(driveSeS.SessionsEndFAD>>0)&0xFF;

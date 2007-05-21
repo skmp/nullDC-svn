@@ -121,6 +121,12 @@ void mds_CreateToc()
 		}
 	}
 
+	//normal CDrom : mode 1 tracks .All sectors on the track are mode 1.Mode 2 was defined on the same book , but is it ever used? if yes , how can i detect
+	//cd XA ???
+	//CD Extra : session 1 is audio , session 2 is data
+	//cd XA : mode 2 tracks.Form 1/2 are selected per sector.It allows mixing of mode1/mode2 tracks ?
+	//CDDA  : audio tracks only <- thats simple =P
+	/*
 	if ((CD_M1==true) && (CD_DA==false) && (CD_M2==false))
 		mds_Disctype = CdRom;
 	else if (CD_M2)
@@ -129,7 +135,33 @@ void mds_CreateToc()
 		mds_Disctype = CdRom_Extra;
 	else
 		mds_Disctype=CdRom;//hmm?
+	*/
+	if (nsessions==1 && (CD_M1 | CD_M2))
+		mds_Disctype = CdRom;		//hack so that non selfboot stuff works on utopia
+	else
+	{
+		if ((CD_M1==true) && (CD_DA==false) && (CD_M2==false))
+			mds_Disctype = CdRom;		//is that even correct ? what if its multysessions ? ehh ? what then ???
+		else if (CD_M2)
+			mds_Disctype = CdRom_XA;	// XA XA ! its mode 2 wtf ?
+		else if (CD_DA && CD_M1) 
+			mds_Disctype = CdRom_XA;	//data + audio , duno wtf as@!#$ lets make it _XA since it seems to boot
+		else if (CD_DA && !CD_M1 && !CD_M2) 
+			mds_Disctype = CdDA;	//audio
+		else
+			mds_Disctype=CdRom_XA;//and hope for the best
+	}
+/*
+	bool data = CD_M1 | CD_M2;
+	bool audio=CD_DA;
 
+	if (data && audio)
+		mds_Disctype = CdRom_XA;	//Extra/CdRom won't boot , so meh
+	else if (data)
+		mds_Disctype = CdRom;	//only data
+	else
+		mds_Disctype = CdDA;	//only audio
+*/
 	mds_toc.LastTrack=track;
 	mds_TrackCount=track;
 	printf("--GD toc info end--\n\n");
@@ -141,9 +173,28 @@ bool mds_init(char* file)
 	bool rv=false;
 	if (rv==false && parse_mds(file,false))
 	{
+		bool found=false;
+		if (strlen(file)>4)
+		{
+			strcpy(&fn[0],file);
+			int len=strlen(fn);
+			strcpy(&fn[len-4],".mdf");
+			
+			fp_mdf=fopen(fn,"rb");
+			found=fp_mdf!=0;
+		}
+		if (!found)
+		{
+			if (GetFile(fn,"mds images (*.mds) \0*.mdf\0\0"))
+			{
+				fp_mdf=fopen(fn,"rb");
+				found=true;
+			}
+		}
+			
+		if (!found)
+			return false;
 		rv=true;
-		GetFile(fn,"mds images (*.mds) \0*.mdf\0\0");
-		fp_mdf=fopen(fn,"rb");
 	}
 	
 	if (rv==false && parse_nrg(file,false))
