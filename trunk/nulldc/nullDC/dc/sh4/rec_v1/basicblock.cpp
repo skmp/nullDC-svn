@@ -9,7 +9,7 @@
 #include "dc/sh4/sh4_interpreter.h"
 
 #include "dc/sh4/rec_v1/blockmanager.h"
-
+//#define RET_CACHE_PROF
 int compiled_basicblock_count=0;
 
 //needed declarations
@@ -280,9 +280,24 @@ void naked bb_link_compile_inject_TT_stub(CompiledBlockInfo* ptr)
 		jmp eax;
 	}
 }
+u32 ret_cache_hits=0;
+u32 ret_cache_total=0;
+#define RET_CACHE_SIZE 32
+#define RET_CACHE_MASK (RET_CACHE_SIZE-1)
+#define RET_CACHE_PTR_MASK_AND (0xFFFFFFFF - (RET_CACHE_SIZE*4*1)  )
+#define RET_CACHE_PTR_MASK_OR ( RET_CACHE_SIZE*4*2 )
+__declspec(align(512)) //must be 16* size
+struct 
+{
+	u32 waste[RET_CACHE_SIZE];//force top bit to 1
+	CompiledBlockInfo* ptr[RET_CACHE_SIZE];//force top bit to 1,store ptrs here
+	u32 data[RET_CACHE_SIZE*2];//entrys for addr (the *2 is to make sure align is right =P)
+}ret_cache;
 
-u32 call_ret_address=0xFFFFFFFF;//holds teh return address of the previus call ;)
-CompiledBlockInfo* pcall_ret_address=0;//holds teh return address of the previus call ;)
+u32* call_ret_cache_ptr=ret_cache.data;
+
+//u32 call_ret_address=0xFFFFFFFF;//holds teh return address of the previus call ;)
+//CompiledBlockInfo* pcall_ret_address=0;//holds teh return address of the previus call ;)
 CompiledBasicBlock* Curr_block;
 
 //sp is 0 if manual discard
@@ -302,10 +317,13 @@ void CBBs_BlockSuspended(CompiledBlockInfo* block,u32* sp)
 			//printf("Block EP : 0x%X , sz : 0x%X\n",block->Code,block->size);
 		}
 	}
-	if (pcall_ret_address == block)
+	for (int i=0;i<RET_CACHE_SIZE;i++)
 	{
-		call_ret_address=0xFFFFFFFF;
-		pcall_ret_address=0;
+		if (ret_cache.ptr[i] == block)
+		{
+			ret_cache.data[i]=0xFFFFFFFF;
+			ret_cache.ptr[i]=0;
+		}
 	}
 }
 void __fastcall CheckBlock(CompiledBasicBlock* block)
@@ -484,7 +502,12 @@ void FASTCALL RewriteBasicBlockGuess_NULL(CompiledBasicBlock* cBB)
 	x86e->Generate();
 	delete x86e;
 }
-
+#ifdef RET_CACHE_PROF
+void naked ret_cache_misscall()
+{
+	__asm jmp [Dynarec_Mainloop_no_update];
+}
+#endif
 void BasicBlock::Compile()
 {
 	FloatRegAllocator*		fra;
@@ -667,10 +690,18 @@ void BasicBlock::Compile()
 	{
 	case BLOCK_EXITTYPE_DYNAMIC_CALL:	//same as below , sets call guess
 		{
+			//x86e->Emit(op_int3);
 			//mov guess,pr
-			x86e->Emit(op_mov32,&call_ret_address,cBB->ebi.TT_next_addr);
+			x86e->Emit(op_mov32 ,EBX,&call_ret_cache_ptr);
+			
+			x86e->Emit(op_add32,EBX,4);//add the ptr ;)
+			x86e->Emit(op_and32,EBX,RET_CACHE_PTR_MASK_AND);
+
+			x86e->Emit(op_mov32,x86_mrm::create(EBX),cBB->ebi.TT_next_addr);
 			//mov pguess,this
-			x86e->Emit(op_mov32,(u32*)&pcall_ret_address,(u32)(cBB));
+			x86e->Emit(op_mov32,x86_mrm::create(EBX,x86_ptr::create(-RET_CACHE_SIZE*4)),(u32)(cBB));
+			//store the ptr
+			x86e->Emit(op_mov32,&call_ret_cache_ptr,EBX);
 		}
 	case BLOCK_EXITTYPE_DYNAMIC:		//not guess 
 		{
@@ -684,14 +715,32 @@ void BasicBlock::Compile()
 		break;
 	case BLOCK_EXITTYPE_RET:			//guess
 		{
+#ifdef RET_CACHE_PROF
+			x86e->Emit(op_inc32,x86_ptr(&ret_cache_total));
+#endif
 			//cmp pr,guess
-			x86e->Emit(op_mov32 ,EAX,GetRegPtr(reg_pc));
-			x86e->Emit(op_cmp32 ,EAX,&call_ret_address);
+			//call_ret_cache_ptr
+			//x86e->Emit(op_int3);
+			x86e->Emit(op_mov32 ,EBX,&call_ret_cache_ptr);
+			//x86e->Emit(op_mov32 ,EAX,GetRegPtr(reg_pc));
+			x86e->Emit(op_cmp32 ,EAX,x86_mrm::create(EBX));
 			//je ok
+#ifndef RET_CACHE_PROF
 			x86e->Emit(op_jne ,x86_ptr_imm(Dynarec_Mainloop_no_update));
+#else
+			x86e->Emit(op_jne ,x86_ptr_imm(ret_cache_misscall));
+#endif
 			//ok:
 			//mov ecx , pcall_ret_address
-			x86e->Emit(op_mov32 ,ECX,(u32*)&pcall_ret_address);
+			//x86e->Emit(op_int3);
+			x86e->Emit(op_mov32 ,ECX,x86_mrm::create(EBX,x86_ptr::create(-RET_CACHE_SIZE*4)));
+			x86e->Emit(op_sub32 ,EBX,4);//decrease the ptr ;)
+			x86e->Emit(op_and32,EBX,RET_CACHE_PTR_MASK_AND);
+			x86e->Emit(op_or32,EBX,RET_CACHE_PTR_MASK_OR);
+#ifdef RET_CACHE_PROF
+			x86e->Emit(op_mov32,&call_ret_cache_ptr,EBX);
+#endif
+			x86e->Emit(op_inc32,x86_ptr(&ret_cache_hits));
 			//mov eax,[pcall_ret_address+codeoffset]
 			x86e->Emit(op_jmp32,x86_mrm::create(ECX,x86_ptr::create(offsetof(CompiledBasicBlock,ebi.pTT_next_addr))));
 		}
@@ -740,10 +789,18 @@ void BasicBlock::Compile()
 		break;
 	case BLOCK_EXITTYPE_FIXED_CALL:		//same as below
 		{
+			//x86e->Emit(op_int3);
 			//mov guess,pr
-			x86e->Emit(op_mov32,&call_ret_address,cBB->ebi.TT_next_addr);
+			x86e->Emit(op_mov32 ,EBX,&call_ret_cache_ptr);
+			x86e->Emit(op_add32,EBX,4);//add the ptr ;)
+			x86e->Emit(op_and32,EBX,RET_CACHE_PTR_MASK_AND);
+
+			x86e->Emit(op_mov32,x86_mrm::create(EBX),cBB->ebi.TT_next_addr);
 			//mov pguess,this
-			x86e->Emit(op_mov32,(u32*)&pcall_ret_address,(u32)(cBB));
+			x86e->Emit(op_mov32,x86_mrm::create(EBX,x86_ptr::create(-RET_CACHE_SIZE*4)),(u32)(cBB));
+			
+			//store the new value
+			x86e->Emit(op_mov32,&call_ret_cache_ptr,EBX);
 		}
 	case BLOCK_EXITTYPE_FIXED:			//linkable
 		{
@@ -767,13 +824,15 @@ void BasicBlock::Compile()
 		break;
 	case BLOCK_EXITTYPE_FIXED_CSC:		//forced lookup , possible state chainge
 		{
+			//x86e->Emit(op_int3);
 			//We have to exit , as we gota do mode lookup :)
 			//We also have to reset return cache to ensure its ok
 
 			//call_ret_address=0xFFFFFFFF;
-			x86e->Emit(op_mov32,&call_ret_address,0xFFFFFFFF);
+			x86e->Emit(op_mov32 ,EBX,&call_ret_cache_ptr);
+			//x86e->Emit(op_mov32,x86_mrm::create(EBX),0xFFFFFFFF);
+
 			//pcall_ret_address=0;
-			x86e->Emit(op_mov32,(u32*)&pcall_ret_address,0);
 			//Good , now return to caller :)
 			x86e->Emit(op_jmp,x86_ptr_imm(Dynarec_Mainloop_no_update));
 		}

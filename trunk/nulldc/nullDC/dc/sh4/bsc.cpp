@@ -126,7 +126,7 @@ u32 read_BSC_PDTRA()
 	else if ((tpctra&0xf) == 0xC && (tpdtra&0xf) == 2)
 		tfinal = 3;      
 
-	tfinal |= 2<<8;  
+	tfinal |= settings.dreamcast.cable <<8;  
 /*
 	if (tpctra == 0x0)
 		tfinal| = 3<<8;  

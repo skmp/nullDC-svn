@@ -779,6 +779,7 @@ MENU_HANDLER( Handle_Option_Bool_Template )
 u32 rec_cpp_mid;
 u32 rec_enb_mid;
 u32 rec_ufpu_mid;
+u32 ct_menu[3];
 void SwitchCpu()
 {
 	if((settings.dynarec.Enable==0 && sh4_cpu->ResetCache==0) ||
@@ -831,6 +832,10 @@ void UpdateMenus()
 
 	SetMenuItemStyle(rec_cpp_mid,settings.dynarec.CPpass?MIS_Checked:0,MIS_Checked);
 	SetMenuItemStyle(rec_ufpu_mid,settings.dynarec.UnderclockFpu?MIS_Checked:0,MIS_Checked);
+	for (int i=0;i<4;i++)
+	{
+		SetMenuItemStyle(ct_menu[i],settings.dreamcast.cable==i?MIS_Checked:0,MIS_Checked);
+	}
 }
 MENU_HANDLER( Handle_Option_EnableCP )
 {
@@ -855,6 +860,18 @@ MENU_HANDLER( Handle_Option_UnderclockFpu )
 		sh4_cpu->ResetCache();
 	UpdateMenus();
 }
+
+MENU_HANDLER( Handle_Option_Cable_Type )
+{
+	for (int i=0;i<4;i++)
+		if (ct_menu[i]==id)
+			settings.dreamcast.cable=i;
+	
+
+	SaveSettings();
+	UpdateMenus();
+}
+
 //Create the menus and set the handlers :)
 void CreateBasicMenus()
 {
@@ -889,9 +906,10 @@ void CreateBasicMenus()
 		rec_ufpu_mid=AddMenuItem(menu_setts,-1,"Underclock FPU",Handle_Option_UnderclockFpu,0);
 		AddSeperator(menu_setts);
 		u32 cable_type=AddMenuItem(menu_setts,-1,"Cable Type",0,0);
-			AddMenuItem(cable_type,-1,"VGA (RGB)",0,0);
-			AddMenuItem(cable_type,-1,"TV  (RGB)",0,0);
-			AddMenuItem(cable_type,-1,"TV  (VBS/Y+S/C)",0,0);
+			ct_menu[0]=AddMenuItem(cable_type,-1,"VGA(0) (RGB)",Handle_Option_Cable_Type,0);
+			ct_menu[1]=AddMenuItem(cable_type,-1,"VGA(1) (RGB)",Handle_Option_Cable_Type,0);
+			ct_menu[2]=AddMenuItem(cable_type,-1,"TV     (RGB)",Handle_Option_Cable_Type,0);
+			ct_menu[3]=AddMenuItem(cable_type,-1,"TV     (VBS/Y+S/C)",Handle_Option_Cable_Type,0);
 		u32 system_region=AddMenuItem(menu_setts,-1,"System Region",0,0);
 			AddMenuItem(system_region,-1,"JAP",0,0);
 			AddMenuItem(system_region,-1,"USA",0,0);
@@ -1528,6 +1546,8 @@ inline static void RefreshArmDbg(void)
 
 }
 #include "dc/sh4/rec_v1/blockmanager.h"
+extern u32 ret_cache_hits;
+extern u32 ret_cache_total;
 INT_PTR CALLBACK ProfilerProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	switch( uMsg )
@@ -1544,11 +1564,14 @@ INT_PTR CALLBACK ProfilerProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 			char text[2048];
 			sprintf(text,"Block manager : \r\ntracking %d blocks , %d kb TCH\r\n"
 						 "%d Manual blocks , %d locked blocks , ratio %f\r\n"
-						 "%d full lookups , %d fast lookups , ratio %f\r\n",
+						 "%d full lookups , %d fast lookups , ratio %f\r\n"
+						 "%d ret cache miss , %d ret cache hits , ratio %f\r\n",
 						 stats.block_count,stats.cache_size/1024,
-						 stats.manual_blocks,stats.locked_blocks,stats.manual_blocks/(float)stats.locked_blocks,
-						 stats.full_lookups,stats.fast_lookups,stats.full_lookups/(float)stats.fast_lookups,
+						 stats.manual_blocks,stats.locked_blocks,stats.manual_blocks/(float)(stats.locked_blocks+stats.manual_blocks),
+						 stats.full_lookups,stats.fast_lookups,stats.full_lookups/(float)(stats.fast_lookups+stats.full_lookups),
+						 ret_cache_total-ret_cache_hits,ret_cache_hits,(ret_cache_total-ret_cache_hits)/(float)(ret_cache_total),
 						 0);
+			ret_cache_total=ret_cache_hits=0;
 			SetDlgItemText(hWnd,IDC_PROFTEXT,text);
 		}
 		return TRUE;

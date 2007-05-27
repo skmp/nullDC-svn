@@ -203,10 +203,13 @@ void LoadSettings()
 	settings.dynarec.Enable=cfgLoadInt("nullDC","Dynarec.Enabled",1);
 	settings.dynarec.CPpass=cfgLoadInt("nullDC","Dynarec.DoConstantPropagation",1);
 	settings.dynarec.UnderclockFpu=cfgLoadInt("nullDC","Dynarec.UnderclockFpu",0);
+	settings.dreamcast.cable=cfgLoadInt("nullDC","Dreamcast.Cable",3);
+	settings.dreamcast.cable=min(max(settings.dreamcast.cable,0),3);
 }
 void SaveSettings()
 {
 	cfgSaveInt("nullDC","Dynarec.Enabled",settings.dynarec.Enable);
 	cfgSaveInt("nullDC","Dynarec.DoConstantPropagation",settings.dynarec.CPpass);
 	cfgSaveInt("nullDC","Dynarec.UnderclockFpu",settings.dynarec.UnderclockFpu);
+	cfgSaveInt("nullDC","Dreamcast.Cable",settings.dreamcast.cable);
 }

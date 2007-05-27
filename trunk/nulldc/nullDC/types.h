@@ -204,6 +204,11 @@ struct __settings
 		bool CPpass;
 		bool UnderclockFpu;
 	} dynarec;
+	
+	struct
+	{
+		u32 cable;
+	} dreamcast;
 };
 extern __settings settings;
 
