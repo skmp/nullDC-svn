@@ -737,10 +737,12 @@ void BasicBlock::Compile()
 			x86e->Emit(op_sub32 ,EBX,4);//decrease the ptr ;)
 			x86e->Emit(op_and32,EBX,RET_CACHE_PTR_MASK_AND);
 			x86e->Emit(op_or32,EBX,RET_CACHE_PTR_MASK_OR);
-#ifdef RET_CACHE_PROF
+
 			x86e->Emit(op_mov32,&call_ret_cache_ptr,EBX);
-#endif
+
+#ifdef RET_CACHE_PROF
 			x86e->Emit(op_inc32,x86_ptr(&ret_cache_hits));
+#endif
 			//mov eax,[pcall_ret_address+codeoffset]
 			x86e->Emit(op_jmp32,x86_mrm::create(ECX,x86_ptr::create(offsetof(CompiledBasicBlock,ebi.pTT_next_addr))));
 		}
