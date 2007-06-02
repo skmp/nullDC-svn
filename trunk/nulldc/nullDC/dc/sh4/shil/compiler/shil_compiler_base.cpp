@@ -1339,13 +1339,15 @@ void __fastcall shil_compile_readm(shil_opcode* op)
 	}
 	x86e->Emit(rm_table[size],destreg,x86_mrm::create(ECX,sh4_reserved_mem));
 	roml_patch t;
-	t.exit_point=x86e->CreateLabel(true,0);
+	
 	if (size==FLAG_64)
 	{
 		x86e->Emit(op_movlps,GetRegPtr(GetSingleFromDouble(op->reg1)),XMM0);
+		t.exit_point=x86e->CreateLabel(true,0);
 	}
 	else
 	{
+		t.exit_point=x86e->CreateLabel(true,0);
 		if (is_float)
 		{
 			fra->SaveRegisterGPR(op->reg1,destreg);

@@ -10,7 +10,7 @@ u32* sh4_exept_next;
 //sh4 exeption raised bool , set to true when an exeption was raised , and its not handled
 bool sh4_exept_raised=false;
 
-extern u8 GetSingleFromDouble(u8 dbl)
+u8 GetSingleFromDouble(u8 dbl)
 {
 	if (dbl>=dr_0 && dbl<=dr_7)
 	{

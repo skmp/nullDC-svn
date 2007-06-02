@@ -755,38 +755,46 @@ shilh(readm)
 		if (bb->IsMemLocked(addr) && (size!=FLAG_64))
 		{
 			u32 data=0;
-			
-			if (size==0)
+			if (size==FLAG_64)
 			{
-				verify(op->flags & FLAG_SX);
-				data=(u32)(s32)(s8)ReadMem8(addr);
-			}
-			else if (size==1)
-			{
-				verify(op->flags & FLAG_SX);
-				data=(u32)(s32)(s16)ReadMem16(addr);
+				Sh4RegType base=(Sh4RegType)GetSingleFromDouble(op->reg1);
+				il->mov(base,ReadMem32(addr));
+				il->mov((Sh4RegType)(base+1),ReadMem32(addr+4));
 			}
 			else
 			{
-				verify((op->flags & FLAG_SX)==0);
-				data=ReadMem32(addr);
-			}
-
-			bb->locked.push_back(addr);
-			bb->locked.push_back(data);
-
-			if (ce_CanBeConst(op->reg1))
-			{
-				if (ce_IsConst(op->reg1))
+				if (size==0)
 				{
-					ce_SetConst(op->reg1,data);
+					verify(op->flags & FLAG_SX);
+					data=(u32)(s32)(s8)ReadMem8(addr);
+				}
+				else if (size==1)
+				{
+					verify(op->flags & FLAG_SX);
+					data=(u32)(s32)(s16)ReadMem16(addr);
 				}
 				else
-					ce_MakeConst(op->reg1,data);
-			}
-			else
-			{	
-				il->mov((Sh4RegType)op->reg1,data);
+				{
+					verify((op->flags & FLAG_SX)==0);
+					data=ReadMem32(addr);
+				}
+
+				bb->locked.push_back(addr);
+				bb->locked.push_back(data);
+
+				if (ce_CanBeConst(op->reg1))
+				{
+					if (ce_IsConst(op->reg1))
+					{
+						ce_SetConst(op->reg1,data);
+					}
+					else
+						ce_MakeConst(op->reg1,data);
+				}
+				else
+				{	
+					il->mov((Sh4RegType)op->reg1,data);
+				}
 			}
 				//ce_die("shilh(readm) : ce_CanBeConst(op->reg1)==false");//il->mov((Sh4RegType)op->reg1,data);
 

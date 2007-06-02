@@ -649,11 +649,18 @@ sh4op(i0011_nnnn_mmmm_1111)
 //subc <REG_M>,<REG_N>          
 sh4op(i0011_nnnn_mmmm_1010)
 {
+	u32 n = GetN(op);
+	u32 m = GetM(op);
+/*
+	ilst->neg(r[n]);			//dest=-dest
+	ilst->LoadT(CF);			//load T to carry flag
+	ilst->adc(r[n],r[m]);		//add w/ carry
+	ilst->SaveT(SaveCF);//save CF to T
+*/
 	shil_interpret(op);
 	/*
 	//iNimp("subc <REG_M>,<REG_N>");
-	u32 n = GetN(op);
-	u32 m = GetM(op);
+
 
 	u32 tmp1 = (u32)(((s32)r[n]) - ((s32)r[m]));
 	u32 tmp0 = r[n];
@@ -1241,9 +1248,9 @@ sh4op(i1111_nnnn_mmmm_0110)
 	}
 	else
 	{
-		shil_interpret(op);
-		return;
-		/*u32 n = (op >> 8) & 0x0E;
+		//shil_interpret(op);
+		//return;
+		u32 n = (op >> 8) & 0x0E;
 		u32 m = GetM(op);
 		if (((op >> 8) & 0x1) == 0)
 		{
@@ -1256,7 +1263,7 @@ sh4op(i1111_nnnn_mmmm_0110)
 			//xf_hex[n] = ReadMem32(r[m] + r[0]);
 			//xf_hex[n + 1] = ReadMem32(r[m] + r[0] + 4);
 			ilst->readm64(xd[n>>1],r[0],r[m]);
-		}*/
+		}
 	}
 }
 
@@ -1274,9 +1281,9 @@ sh4op(i1111_nnnn_mmmm_0111)
 	}
 	else
 	{
-		shil_interpret(op);
-		return;
-		/*u32 n = GetN(op);
+		//shil_interpret(op);
+		//return;
+		u32 n = GetN(op);
 		u32 m = (op >> 4) & 0x0E;
 		if (((op >> 4) & 0x1) == 0)
 		{
@@ -1289,7 +1296,7 @@ sh4op(i1111_nnnn_mmmm_0111)
 			//WriteMem32(r[n] + r[0], xf_hex[m]);
 			//WriteMem32(r[n] + r[0] + 4, xf_hex[m + 1]);
 			ilst->writem64(xd[m>>1],r[0],r[n]);
-		}*/
+		}
 	}
 }
 
@@ -1306,22 +1313,26 @@ sh4op(i1111_nnnn_mmmm_1000)
 	}
 	else
 	{
-		shil_interpret(op);
-		return;
-		/*u32 n = (op >> 8) & 0x0E;
+		//shil_interpret(op);
+		//return;
+		u32 n = GetN(op);
 		u32 m = GetM(op);
-		if (((op >> 8) & 0x1) == 0)
+		if ((n & 0x1) == 0)
 		{
 			//fr_hex[n] = ReadMem32(r[m]);
 			//fr_hex[n + 1] = ReadMem32(r[m] + 4);
 			ilst->readm64(dr[n>>1],r[m]);
+			//ilst->readm32(fr[n&~1],r[m]);
+			//ilst->readm32(fr[n|1],r[m],4);
 		}
 		else
 		{
 			//xf_hex[n] = ReadMem32(r[m]);
 			//xf_hex[n + 1] = ReadMem32(r[m] + 4);
 			ilst->readm64(xd[n>>1],r[m]);
-		}*/
+			//ilst->readm32(xf[n&~1],r[m]);
+			//ilst->readm32(xf[n|1],r[m],4);
+		}
 	}
 }
 
@@ -1343,27 +1354,26 @@ sh4op(i1111_nnnn_mmmm_1001)
 	{
 		//shil_interpret(op);
 		//return;
-		u32 n = (op >> 8) & 0x0E;
+		u32 n = GetN(op);
 		u32 m = GetM(op);
-		if (((op >> 8) & 0x1) == 0)
+		if ((n & 0x1) == 0)
 		{
 			//fr_hex[n] = ReadMem32(r[m]);
 			//fr_hex[n + 1] = ReadMem32(r[m]+ 4);
-			ilst->readm32(fr[n],r[m]);
-			ilst->add(r[m],4);
-			ilst->readm32(fr[n+1],r[m]);
-			ilst->add(r[m],4);
+
+			ilst->readm64(dr[n>>1],r[m]);
+			//ilst->readm32(fr[n&~1],r[m]);
+			//ilst->readm32(fr[n|1],r[m],4);
 		}
 		else
 		{
 			//xf_hex[n] = ReadMem32(r[m] );
 			//xf_hex[n + 1] = ReadMem32(r[m]+ 4);
-			ilst->readm32(xf[n],r[m]);
-			ilst->add(r[m],4);
-			ilst->readm32(xf[n+1],r[m]);
-			ilst->add(r[m],4);
+			ilst->readm64(xd[n>>1],r[m]);
+			//ilst->readm32(xf[n&~1],r[m]);
+			//ilst->readm32(xf[n|1],r[m],4);
 		}
-		//ilst->add(r[m],8);
+		ilst->add(r[m],8);
 		//r[m] += 8;
 	}
 }
@@ -1381,9 +1391,9 @@ sh4op(i1111_nnnn_mmmm_1010)
 	}
 	else
 	{
-		shil_interpret(op);
-		return;
-		/*
+		//shil_interpret(op);
+		//return;
+		
 		u32 n = GetN(op);
 		u32 m = (op >> 4) & 0x0E;
 
@@ -1398,7 +1408,7 @@ sh4op(i1111_nnnn_mmmm_1010)
 			//WriteMem32(r[n], xf_hex[m]);
 			//WriteMem32(r[n] + 4, xf_hex[m + 1]);
 			ilst->writem64(xd[m>>1],r[n]);
-		}*/
+		}
 	}
 }
 
@@ -1429,19 +1439,16 @@ sh4op(i1111_nnnn_mmmm_1011)
 		{ 
 			//WriteMem32(r[n] , fr_hex[m]);
 			//WriteMem32(r[n]+ 4, fr_hex[m + 1]);
-			ilst->sub(r[n],4);
-			ilst->writem32(fr[m+1],r[n]);
-			ilst->sub(r[n],4);
-			ilst->writem32(fr[m],r[n]);
+			ilst->sub(r[n],8);
+			ilst->writem64(dr[m>>1],r[n]);
+			
 		}
 		else
 		{
 			//WriteMem32(r[n] , xf_hex[m]);
 			//WriteMem32(r[n]+ 4, xf_hex[m + 1]);
-			ilst->sub(r[n],4);
-			ilst->writem32(xf[m+1],r[n]);
-			ilst->sub(r[n],4);
-			ilst->writem32(xf[m],r[n]);
+			ilst->sub(r[n],8);
+			ilst->writem64(xd[m>>1],r[n]);
 		}
 	}
 }

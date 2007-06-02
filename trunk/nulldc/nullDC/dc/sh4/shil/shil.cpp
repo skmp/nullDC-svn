@@ -247,7 +247,7 @@ void shil_stream::readm32(Sh4RegType to,u32 from)
 }
 void shil_stream::readm64(Sh4RegType to,u32 from)
 {
-	//emit(shilop_readm,to,from,FLAG_64);
+	dbgbreak;
 }
 
 //readmem [reg]
@@ -265,7 +265,7 @@ void shil_stream::readm32(Sh4RegType to,Sh4RegType from)
 }
 void shil_stream::readm64(Sh4RegType to,Sh4RegType from)
 {
-	//emit(shilop_readm,to,from,FLAG_64);
+	emitRegReg(shilop_readm,to,from,FLAG_64);
 }
 
 //readmem base[offset]
@@ -283,7 +283,7 @@ void shil_stream::readm32(Sh4RegType to,Sh4RegType base,Sh4RegType offset)
 }
 void shil_stream::readm64(Sh4RegType to,Sh4RegType base,Sh4RegType offset)
 {
-//	emit(shilop_add,0,0,0);
+	emitRegReg(shilop_readm,to,offset,FLAG_64|GetBaseFlags(base));
 }
 
 
@@ -307,11 +307,11 @@ void shil_stream::readm32(Sh4RegType to,Sh4RegType base,u32 offset)
 //writemem [const]
 void shil_stream::writem8(Sh4RegType from,u32 to)
 {
-	emitRegImm(shilop_writem,from,to,FLAG_8|FLAG_SX);
+	emitRegImm(shilop_writem,from,to,FLAG_8);
 }
 void shil_stream::writem16(Sh4RegType from,u32 to)
 {
-	emitRegImm(shilop_writem,from,to,FLAG_16|FLAG_SX);
+	emitRegImm(shilop_writem,from,to,FLAG_16);
 }
 void shil_stream::writem32(Sh4RegType from,u32 to)
 {
@@ -320,6 +320,7 @@ void shil_stream::writem32(Sh4RegType from,u32 to)
 void shil_stream::writem64(Sh4RegType from,u32 to)
 {
 	//writem8(from,to,0,sx);
+	dbgbreak;
 }
 
 //writemem [reg]
@@ -338,7 +339,7 @@ void shil_stream::writem32(Sh4RegType from,Sh4RegType to)
 }
 void shil_stream::writem64(Sh4RegType from,Sh4RegType to)
 {
-	//writem8(from,to,0,sx);
+	emitRegReg(shilop_writem,from,to,FLAG_64);
 }
 
 //writemem reg[reg]
@@ -355,8 +356,8 @@ void shil_stream::writem32(Sh4RegType from,Sh4RegType base,Sh4RegType offset)
 	emitRegReg(shilop_writem,from,offset,FLAG_32|GetBaseFlags(base));
 }
 void shil_stream::writem64(Sh4RegType from,Sh4RegType base,Sh4RegType offset)
-{
-//	emit(shilop_add,0,0,0);
+{//r0+reg
+	emitRegReg(shilop_writem,from,offset,FLAG_64|GetBaseFlags(base));
 }
 
 //writemem reg[const]
