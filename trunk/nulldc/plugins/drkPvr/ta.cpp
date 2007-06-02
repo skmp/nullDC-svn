@@ -1,9 +1,15 @@
 #include "ta.h"
 //Tile Accelerator state machine
 #include <emmintrin.h>
+
+#if TA_SQ_CACHE==OP_ON
 #define _CACHE_SQ_
+#endif
+
  //128*32=4 kb cache max
+#ifdef _CACHE_SQ_
 #define CACHE_SQ_SIZE 16
+#endif
 namespace TASplitter
 {
 	void FASTCALL Dma_(u32* data,u32 size);

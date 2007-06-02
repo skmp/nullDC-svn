@@ -72,10 +72,16 @@ void FASTCALL WritePvrRegister(u32 paddr,u32 data,u32 size)
 		//a write of anything works ?
 		rend_list_cont();
 	}
-
-	if (addr>=SPG_HBLANK_INT_addr && addr<=SPG_WIDTH_addr)
-		CalculateSync();
 	
+	if (addr == FB_R_CTRL_addr || 
+		addr == SPG_CONTROL_addr || 
+		addr == SPG_LOAD_addr)
+	{
+		PvrReg(addr,u32)=data;
+		CalculateSync();
+		return;
+	}
+
 	if (addr>=PALETTE_RAM_START_addr)
 	{
 		if (PvrReg(addr,u32)!=data)

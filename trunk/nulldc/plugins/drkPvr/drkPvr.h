@@ -1,11 +1,7 @@
 #pragma once
-#define REND_D3D  1
-#define REND_OGL  2
-#define REND_SW   3
+#include "config.h"
 
-#define REND_API REND_D3D
 
-//#define _DO_VERIFY_
 
 //bleh stupid windoze header
 #include "..\..\nullDC\plugins\plugin_header.h"
@@ -30,7 +26,7 @@ float GetSeconds();
 
 #define fastcall __fastcall
 
-#ifdef _DO_VERIFY_
+#if DO_VERIFY==OP_ON
 #define verify(x) if((x)==false){ static bool d_msg=true; if (d_msg) { d_msg = msgboxf("Verify Failed  : " #x "\n in %s -> %s : %d \nWant to report this error again ?",MB_ICONERROR|MB_YESNO,__FUNCTION__,__FILE__,__LINE__)==IDYES?true:false;} if (d_msg){ dbgbreak;}}
 #define verifyf(x) if((x)==false){ msgboxf("Verify Failed  : " #x "\n in %s -> %s : %d \n",MB_ICONERROR,__FUNCTION__,__FILE__,__LINE__); dbgbreak;}
 #define verifyc(x) if(FAILED(x)){ msgboxf("Verify Failed  : " #x "\n in %s -> %s : %d \n",MB_ICONERROR,__FUNCTION__,__FILE__,__LINE__); dbgbreak;}
@@ -69,8 +65,11 @@ void SaveSettings();
 #elif  REND_API == REND_SW
 	#define REND_NAME "Software SBR"
 	#define GetRenderer GetSWRenderer
+#elif REND_API == REND_D3D_V2
+	#define REND_NAME "Direct3D HAL/V2"
+	#define GetRenderer GetDirect3DRenderer2
 #else
-	#error invalid config.REND_API must be set with one of REND_D3D/REND_OGL/REND_SW
+	#error invalid config.REND_API must be set with one of REND_D3D/REND_OGL/REND_SW/REND_D3D_V2
 #endif
 
 struct _settings_type

@@ -5,31 +5,17 @@
 
 #include "d3dRend.h"
 #include "windows.h"
-//#include "gl\gl.h"
 #include "regs.h"
 #include <vector>
 //#include <xmmintrin.h>
 
-#if REND_API == REND_D3D
+//This renderer is meant for accuracy-over-speed :)
+#if REND_API == REND_D3D_V2
 
 #define _float_colors_
-//#define _HW_INT_
-//#include <D3dx9shader.h>
 
 using namespace TASplitter;
 
-bool UseSVP=false;
-bool UseFixedFunction=false;
-/*
-#define DEV_CREATE_FLAGS D3DCREATE_HARDWARE_VERTEXPROCESSING
-//#define DEV_CREATE_FLAGS D3DCREATE_SOFTWARE_VERTEXPROCESSING
-
-#if DEV_CREATE_FLAGS==D3DCREATE_HARDWARE_VERTEXPROCESSING
-	#define VB_CREATE_FLAGS 0
-#else
-	#define VB_CREATE_FLAGS D3DUSAGE_SOFTWAREPROCESSING
-#endif
-*/
 #define VRAM_MASK 0x7FFFFF
 //Convert offset32 to offset64
 u32 vramlock_ConvOffset32toOffset64(u32 offset32)
@@ -47,13 +33,15 @@ u32 vramlock_ConvOffset32toOffset64(u32 offset32)
 		return rv;
 }
 
-namespace Direct3DRenderer
+namespace Direct3DRenderer2
 {
 	IDirect3D9* d3d9;
 	IDirect3DDevice9* dev;
 	IDirect3DVertexBuffer9* vb;
 	IDirect3DVertexShader9* compiled_vs;
 	IDirect3DPixelShader9* compiled_ps[128]={0};
+	IDirect3DVertexDeclaration9* vdecl;
+
 	u32 last_ps_mode=0xFFFFFFFF;
 	//CRITICAL_SECTION tex_cache_cs;
 	ID3DXFont* font;
@@ -63,28 +51,11 @@ namespace Direct3DRenderer
 	char fps_text[512];
 	float res_scale[4]={0,0,320,-240};
 	float fb_scale[2]={1,1};
+	
+	bool UseSVP=false;
 
-	void SetFpsText(char* text)
-	{
-		strcpy(fps_text,text);
-		if (!IsFullscreen)
-		{
-			SetWindowText((HWND)emu.WindowHandle, fps_text);
-		}
-	}
-	void SetRenderRect(float* rect)
-	{
-		res_scale[0]=rect[0];
-		res_scale[1]=rect[1];
+	float unkpack_bgp_to_float[256];
 
-		res_scale[2]=rect[2]/2;
-		res_scale[3]=-rect[3]/2;
-	}
-	void SetFBScale(float x,float y)
-	{
-		fb_scale[0]=x;
-		fb_scale[1]=y;
-	}
 	const static u32 CullMode[]= 
 	{
 		D3DCULL_NONE,	//0	No culling	no culling
@@ -167,14 +138,6 @@ namespace Direct3DRenderer
 		"8 BPP Palette",
 		"Reserved	, 1555"
 	};
-
-	float unkpack_bgp_to_float[256];
-
-	f32 f16(u16 v)
-	{
-		u32 z=v<<16;
-		return *(f32*)&z;
-	}
 	const u32 MipPoint[8] =
 	{
 		0x00006,//8
@@ -186,6 +149,35 @@ namespace Direct3DRenderer
 		0x05556,//512
 		0x15556//1024
 	};
+
+	void SetFpsText(char* text)
+	{
+		strcpy(fps_text,text);
+		if (!IsFullscreen)
+		{
+			SetWindowText((HWND)emu.WindowHandle, fps_text);
+		}
+	}
+	void SetRenderRect(float* rect)
+	{
+		res_scale[0]=rect[0];
+		res_scale[1]=rect[1];
+
+		res_scale[2]=rect[2]/2;
+		res_scale[3]=-rect[3]/2;
+	}
+	void SetFBScale(float x,float y)
+	{
+		fb_scale[0]=x;
+		fb_scale[1]=y;
+	}
+
+	f32 f16(u16 v)
+	{
+		u32 z=v<<16;
+		return *(f32*)&z;
+	}
+
 
 
 #define twidle_tex(format)\
@@ -212,31 +204,7 @@ namespace Direct3DRenderer
 
 	typedef void fastcall texture_handler_FP(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height);
 
-	/*
-	texture_handler_FP* texture_handlers[8] = 
-	{
-		,//0	1555 value: 1 bit; RGB values: 5 bits each
-		,//1	565	 R value: 5 bits; G value: 6 bits; B value: 5 bits
-		,//3	YUV422 32 bits per 2 pixels; YUYV values: 8 bits each
-		,//2	4444 value: 4 bits; RGB values: 4 bits each
-		,//4	Bump Map	16 bits/pixel; S value: 8 bits; R value: 8 bits
-		,//5	4 BPP Palette	Palette texture with 4 bits/pixel
-		,//6	8 BPP Palette	Palette texture with 8 bits/pixel
-		,//7 -> undefined , handled as 0
-	};
 
-	u32 texture_format[8]
-	{
-		D3DFMT_A1R5G5B5,//0	1555 value: 1 bit; RGB values: 5 bits each
-		D3DFMT_R5G6B5,//1	565	 R value: 5 bits; G value: 6 bits; B value: 5 bits
-		D3DFMT_UYVY,//3	YUV422 32 bits per 2 pixels; YUYV values: 8 bits each
-		D3DFMT_A4R4G4B4,//2	4444 value: 4 bits; RGB values: 4 bits each
-		D3DFMT_UNKNOWN,//4	Bump Map	16 bits/pixel; S value: 8 bits; R value: 8 bits
-		D3DFMT_A8R8G8B8,//5	4 BPP Palette	Palette texture with 4 bits/pixel
-		D3DFMT_A8R8G8B8,//6	8 BPP Palette	Palette texture with 8 bits/pixel
-		D3DFMT_A1R5G5B5,//7 -> undefined , handled as 0
-	};
-	*/
 	struct TextureCacheData;
 	std::vector<TextureCacheData*> lock_list;
 	//Texture Cache :)
@@ -473,11 +441,6 @@ namespace Direct3DRenderer
 
 	IDirect3DTexture9* __fastcall GetTexture(TSP tsp,TCW tcw)
 	{	
-		//u32 addr=(tcw.NO_PAL.TexAddr<<3) & 0x7FFFFF;
-		/*if (addr==RenderToTextureAddr)
-			return RenderToTextureTex;*/
-
-		//EnterCriticalSection(&tex_cache_cs);
 		TextureCacheData* tf = TexCache.Find(tcw.full);
 		if (tf)
 		{
@@ -510,13 +473,11 @@ namespace Direct3DRenderer
 				}
 			}
 			tf->Lookups++;
-			//LeaveCriticalSection(&tex_cache_cs);
 			return tf->Texture;
 		}
 		else
 		{
 			tf = GenText(tsp,tcw);
-			//LeaveCriticalSection(&tex_cache_cs);
 			return tf->Texture;
 		}
 		return 0;
@@ -524,7 +485,6 @@ namespace Direct3DRenderer
 	
 	void VramLockedWrite(vram_block* bl)
 	{
-		//EnterCriticalSection(&tex_cache_cs);
 		TextureCacheData* tcd = (TextureCacheData*)bl->userdata;
 		tcd->dirty=true;
 		tcd->lock_block=0;
@@ -535,7 +495,6 @@ namespace Direct3DRenderer
 			tcd->Texture=0;
 		}*/
 		params.vram_unlock(bl);
-		//LeaveCriticalSection(&tex_cache_cs);
 	}
 	extern cThread rth;
 
@@ -562,12 +521,11 @@ namespace Direct3DRenderer
 		u32 spc;
 #endif
 		float u,v;
-		/*float p1,p2,p3;	*/ //pad to 64 bytes (for debugging purposes)
+
 		#ifdef _HW_INT_
 			float base_int,offset_int;
 		#endif
 	};
-	Vertex* BGPoly;
 	const D3DVERTEXELEMENT9 vertelem[] =
 	{
 		{0, 0,  D3DDECLTYPE_FLOAT3		, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION,0},
@@ -588,8 +546,6 @@ namespace Direct3DRenderer
 		D3DDECL_END()
 	};
 
-	IDirect3DVertexDeclaration9* vdecl;
-
 	struct PolyParam
 	{
 		u32 first;		//entry index , holds vertex/pos data
@@ -604,7 +560,7 @@ namespace Direct3DRenderer
 	};
 
 
-	static Vertex* vert_reappend;
+	static u32 vert_reappend;
 
 	//vertex lists
 	struct TA_context
@@ -613,7 +569,7 @@ namespace Direct3DRenderer
 		u32 LastUsed;
 		f32 invW_min;
 		f32 invW_max;
-		List2<Vertex> verts;
+		List<Vertex> verts;
 		List<PolyParam> global_param_op;
 		List<PolyParam> global_param_pt;
 		List<PolyParam> global_param_tr;
@@ -733,185 +689,6 @@ namespace Direct3DRenderer
 		
 	}
 
-	TSP cache_tsp;
-	TCW cache_tcw;
-	PCW cache_pcw;
-	ISP_TSP cache_isp;
-
-	//for fixed pipeline
-	__forceinline
-	void SetGPState_fp(PolyParam* gp)
-	{
-		if (gp->pcw.Texture)
-		{
-			dev->SetRenderState(D3DRS_SPECULARENABLE,gp->pcw.Offset );
-
-			IDirect3DTexture9* tex=GetTexture(gp->tsp,gp->tcw);
-			dev->SetTexture(0,tex);
-
-			if (gp->tsp.FilterMode == 0)
-			{
-				dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
-				dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
-				dev->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
-
-			}
-			else
-			{
-				dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-				dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-				dev->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
-
-			}
-			//if (gp->tsp.ClampV!=cache_tsp.ClampV || gp->tsp.FlipV!=cache_tsp.FlipV)
-				SetTexMode<D3DSAMP_ADDRESSV>(gp->tsp.ClampV,gp->tsp.FlipV);
-
-			//if (gp->tsp.ClampU!=cache_tsp.ClampU || gp->tsp.FlipU!=cache_tsp.FlipU)
-				SetTexMode<D3DSAMP_ADDRESSU>(gp->tsp.ClampU,gp->tsp.FlipU);
-
-			//if (gp->tsp.ShadInstr!=cache_tsp.ShadInstr ||  ( gp->tsp.UseAlpha != cache_tsp.UseAlpha) )
-			{
-				switch(gp->tsp.ShadInstr)	// these should be correct, except offset
-				{
-					//PIXRGB = TEXRGB + OFFSETRGB
-					//PIXA    = TEXA
-				case 0:	// Decal
-					dev->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1);
-					dev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
-
-					dev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
-
-					if (gp->tsp.IgnoreTexA)
-					{
-						//a=1
-						dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TFACTOR);
-					}
-					else
-					{
-						//a=tex.a
-						dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
-					}
-					break;
-
-					//The texture color value is multiplied by the Shading Color value.  
-					//The texture  value is substituted for the Shading a value.
-					//PIXRGB = COLRGB x TEXRGB + OFFSETRGB
-					//PIXA   = TEXA
-				case 1:	// Modulate
-					dev->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_MODULATE);
-					dev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
-					dev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
-
-					dev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
-
-					if (gp->tsp.IgnoreTexA)
-					{
-						//a=1
-						dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TFACTOR);
-					}
-					else
-					{
-						//a=tex.a
-						dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
-					}
-					break;
-					//The texture color value is blended with the Shading Color 
-					//value according to the texture a value.
-					//PIXRGB = (TEXRGB x TEXA) +
-					//(COLRGB x (1- TEXA) ) +
-					//OFFSETRGB
-					//PIXA   = COLA
-				case 2:	// Decal Alpha
-					if (gp->tsp.IgnoreTexA)
-					{
-						//Tex.a=1 , so Color = Tex
-						dev->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1);
-					}
-					else
-					{
-						dev->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_BLENDTEXTUREALPHA);
-					}
-					dev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
-					dev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
-
-					dev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
-					if(gp->tsp.UseAlpha)
-					{
-						dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
-					}
-					else
-					{
-						dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TFACTOR);
-					}
-					break;
-
-					//The texture color value is multiplied by the Shading Color value. 
-					//The texture a value is multiplied by the Shading a value.
-					//PIXRGB= COLRGB x  TEXRGB + OFFSETRGB
-					//PIXA   = COLA  x TEXA
-				case 3:	// Modulate Alpha
-					dev->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_MODULATE);
-					dev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
-					dev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
-
-					if(gp->tsp.UseAlpha)
-					{
-						if (gp->tsp.IgnoreTexA)
-						{
-							//a=Col.a
-							dev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG2);
-						}
-						else
-						{
-							//a=Text.a*Col.a
-							dev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_MODULATE);
-						}
-					}
-					else
-					{
-						if (gp->tsp.IgnoreTexA)
-						{
-							//a= 1
-							dev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTA_TFACTOR);
-						}
-						else
-						{
-							//a= Text.a*1
-							dev->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
-						}
-					}
-					dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
-					dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
-
-					break;
-				}
-			}
-
-			/*
-			//i use D3DRS_SPECULARENABLE now ..
-			if (gp->pcw.Offset==0)
-			{
-				dev->SetTextureStageState(1, D3DTSS_COLOROP,   D3DTOP_DISABLE);
-				dev->SetTextureStageState(1, D3DTSS_ALPHAOP,   D3DTOP_DISABLE);
-			}
-			else
-			{
-				dev->SetTextureStageState(1, D3DTSS_COLOROP,   D3DTOP_ADD);
-				dev->SetTextureStageState(1, D3DTSS_COLORARG1, D3DTA_CURRENT);
-				dev->SetTextureStageState(1, D3DTSS_COLORARG2, D3DTA_SPECULAR);
-
-				dev->SetTextureStageState(1, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
-				dev->SetTextureStageState(1, D3DTSS_ALPHAARG1, D3DTA_CURRENT);
-			}
-			*/
-		}
-		else
-		{
-			//Offset color is enabled olny if Texture is enabled ;)
-			dev->SetRenderState(D3DRS_SPECULARENABLE,FALSE);
-			dev->SetTexture(0,NULL);
-		}
-	}
 	//fox pixel shaders
 
 	//Texture -> 1 if texture is enabled , 0 if its not
@@ -1074,27 +851,20 @@ namespace Direct3DRenderer
 			//if (gp->tsp.ClampU!=cache_tsp.ClampU || gp->tsp.FlipU!=cache_tsp.FlipU)
 				SetTexMode<D3DSAMP_ADDRESSU>(gp->tsp.ClampU,gp->tsp.FlipU);
 
-			ps_macros[1].Definition=ps_macro_numers[gp->pcw.Offset];
 			mode|=gp->pcw.Offset;
 			
-
-			ps_macros[2].Definition=ps_macro_numers[gp->tsp.ShadInstr];
 			mode<<=2;
 			mode|=gp->tsp.ShadInstr;
 			
 
-			ps_macros[3].Definition=ps_macro_numers[gp->tsp.IgnoreTexA];
 			mode<<=1;
 			mode|=gp->tsp.IgnoreTexA;
 			
 		}
 
-		ps_macros[0].Definition=ps_macro_numers[gp->pcw.Texture];
 		mode<<=1;
 		mode|=gp->pcw.Texture;
 		
-
-		ps_macros[4].Definition=ps_macro_numers[gp->tsp.UseAlpha];
 		mode<<=1;
 		mode|=gp->tsp.UseAlpha;
 
@@ -1103,18 +873,12 @@ namespace Direct3DRenderer
 
 
 	//
-	template <u32 Type,bool FFunction>
+	template <u32 Type>
 	__forceinline
 	void SetGPState(PolyParam* gp)
 	{
-		if (FFunction)
-		{
-			SetGPState_fp(gp);
-		}
-		else
-		{
-			SetGPState_ps(gp);
-		}
+		SetGPState_ps(gp);
+		
 		
 		//up to here , has to be replaced by a shader
 		if (Type==ListType_Translucent)
@@ -1159,25 +923,25 @@ namespace Direct3DRenderer
 		//cache_pcw=gp->pcw;
 		//cache_tcw=gp->tcw;
 	}
-	template <u32 Type,bool FFunction>
+	template <u32 Type>
 	__forceinline
 	void RendStrips(PolyParam* gp)
 	{
 		//0 vert polys ? why does games even bother sending em  ? =P
 		if (gp->count>2)
 		{		
-			SetGPState<Type,FFunction>(gp);
+			SetGPState<Type>(gp);
 			dev->DrawPrimitive(D3DPT_TRIANGLESTRIP,gp->first ,
 				gp->count-2);
 		}
 	}
 
-	template <u32 Type,bool FFunction>
+	template <u32 Type>
 	void RendPolyParamList(List<PolyParam>& gpl)
 	{
 		for (u32 i=0;i<gpl.used;i++)
 		{		
-			RendStrips<Type,FFunction>(&gpl.data[i]);
+			RendStrips<Type>(&gpl.data[i]);
 		}
 	}
 	//
@@ -1206,15 +970,13 @@ namespace Direct3DRenderer
 
 		void* ptr;
 
-		pvrrc.verts.Finalise();
 		u32 sz=pvrrc.verts.used*sizeof(Vertex);
 
 		verifyc(vb->Lock(0,sz,&ptr,D3DLOCK_DISCARD));
 
-		pvrrc.verts.Copy(ptr,sz);
+		memcpy(ptr,pvrrc.verts.data,sz);
 
 		verifyc(vb->Unlock());
-
 		//memset(pvrrc.verts.data,0xFEA345FD,pvrrc.verts.size*sizeof(Vertex));
 
 
@@ -1282,14 +1044,7 @@ namespace Direct3DRenderer
 			dev->SetVertexShaderConstantF(2,scalef,1);
 			if (!GetAsyncKeyState(VK_F1))
 			{
-				if (UseFixedFunction)
-				{
-					RendPolyParamList<ListType_Opaque,true>(pvrrc.global_param_op);
-				}
-				else
-				{
-					RendPolyParamList<ListType_Opaque,false>(pvrrc.global_param_op);
-				}
+				RendPolyParamList<ListType_Opaque>(pvrrc.global_param_op);
 			}
 
 			//Punch Through
@@ -1300,14 +1055,7 @@ namespace Direct3DRenderer
 			dev->SetRenderState(D3DRS_ALPHAREF,PT_ALPHA_REF &0xFF);
 			if (!GetAsyncKeyState(VK_F2))
 			{
-				if (UseFixedFunction)
-				{
-					RendPolyParamList<ListType_Punch_Through,true>(pvrrc.global_param_pt);
-				}
-				else
-				{
-					RendPolyParamList<ListType_Punch_Through,false>(pvrrc.global_param_pt);
-				}
+				RendPolyParamList<ListType_Punch_Through>(pvrrc.global_param_pt);
 			}
 
 			//translucent
@@ -1317,15 +1065,7 @@ namespace Direct3DRenderer
 			dev->SetRenderState(D3DRS_ALPHAREF,0);
 			if (!GetAsyncKeyState(VK_F3))
 			{
-				if (UseFixedFunction)
-				{
-					//if (!UsingAutoSort())
-					RendPolyParamList<ListType_Translucent,true>(pvrrc.global_param_tr);
-				}
-				else
-				{
-					RendPolyParamList<ListType_Translucent,false>(pvrrc.global_param_tr);
-				}
+				RendPolyParamList<ListType_Translucent>(pvrrc.global_param_tr);
 			}
 			if (settings.ShowFPS)
 			{
@@ -1356,14 +1096,7 @@ namespace Direct3DRenderer
 		char temp[2][30];
 		D3DPRESENT_PARAMETERS ppar;
 		memset(&ppar,0,sizeof(ppar));
-/*		
-		ppar.MultiSampleType = D3DMULTISAMPLE_NONE;
-		ppar.BackBufferCount=3;
-		ppar.PresentationInterval=D3DPRESENT_INTERVAL_IMMEDIATE;
-		ppar.BackBufferFormat = D3DFMT_R8G8B8;
-		
-		ppar.hDeviceWindow=(HWND)Hwnd;
-*/
+
 		LoadSettings();
 		ppar.SwapEffect = D3DSWAPEFFECT_DISCARD;
 
@@ -1406,13 +1139,9 @@ namespace Direct3DRenderer
 		{
 			UseSVP=true;
 		}
-		if (caps.PixelShaderVersion>=D3DPS_VERSION(1, 0))
+		if (caps.PixelShaderVersion<D3DPS_VERSION(1, 0))
 		{
-			UseFixedFunction=false;
-		}
-		else
-		{
-			UseFixedFunction=true;
+			msgboxf("Pixel Shader version 1.0+ is required",MB_ICONERROR);
 		}
 
 		printf(UseSVP?"Will use SVP\n":"Will use Vertex Shaders\n");
@@ -1435,7 +1164,7 @@ namespace Direct3DRenderer
 		}
 
 		printf(UseSVP?"Using SVP/%s\n":"Using Vertex Shaders/%s\n",vsp);
-		printf(UseFixedFunction?"Using Fixed Function\n":"Using Pixel Shaders/%s\n",D3DXGetPixelShaderProfile(dev));
+		printf("Using Pixel Shaders/%s\n",D3DXGetPixelShaderProfile(dev));
 
 		sprintf(temp[0],"%d",ppar.BackBufferWidth);
 		sprintf(temp[1],"%d",ppar.BackBufferHeight);
@@ -1463,8 +1192,8 @@ namespace Direct3DRenderer
 		
 		verifyc(dev->CreateVertexShader((DWORD*)shader->GetBufferPointer(),&compiled_vs));
 		
-		if (!UseFixedFunction)
-			PrecompilePS();
+		
+		PrecompilePS();
 
 		D3DXCreateFont( dev, 20, 0, FW_BOLD, 0, FALSE, DEFAULT_CHARSET, 
 			OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"), &font );
@@ -1529,7 +1258,7 @@ namespace Direct3DRenderer
 		bg_t.full=ISP_BACKGND_T;
 		
 		PolyParam* bgpp=&pvrrc.global_param_op.data[0];
-		Vertex* cv=BGPoly;
+		Vertex* cv=&pvrrc.verts.data[0];
 
 		bool PSVM=FPU_SHAD_SCALE&0x100; //double parameters for volumes
 
@@ -1721,22 +1450,21 @@ namespace Direct3DRenderer
 		{
 			if (vert_reappend)
 			{
-				Vertex* old=((Vertex*)tarc.verts.ptr);
 				if (CurrentPP->count&1)
 				{
-					Vertex* cv=tarc.verts.Guarantee(4,3);
-					cv[1].x=cv[0].x=old[-1].x;
-					cv[1].y=cv[0].y=old[-1].y;
-					cv[1].z=cv[0].z=old[-1].z;
+					Vertex* cv=tarc.verts.Append(3);
+					cv[1].x=cv[0].x=cv[-1].x;
+					cv[1].y=cv[0].y=cv[-1].y;
+					cv[1].z=cv[0].z=cv[-1].z;
 				}
 				else
 				{
-					Vertex* cv=tarc.verts.Guarantee(3,2);
-					cv[0].x=old[-1].x;//dup prev
-					cv[0].y=old[-1].y;//dup prev
-					cv[0].z=old[-1].z;//dup prev
+					Vertex* cv=tarc.verts.Append(2);
+					cv[0].x=cv[-1].x;//dup prev
+					cv[0].y=cv[-1].y;//dup prev
+					cv[0].z=cv[-1].z;//dup prev
 				}
-				vert_reappend=(Vertex*)tarc.verts.ptr;
+				vert_reappend=tarc.verts.used-1;
 			}
 		}
 		__forceinline
@@ -1744,12 +1472,12 @@ namespace Direct3DRenderer
 		{
 			if (vert_reappend)
 			{
-				Vertex* vert=vert_reappend;
-				vert[-1].x=vert[0].x;
-				vert[-1].y=vert[0].y;
-				vert[-1].z=vert[0].z;
+				Vertex* vert=&tarc.verts.data[vert_reappend];
+				vert[0].x=vert[1].x;
+				vert[0].y=vert[1].y;
+				vert[0].z=vert[1].z;
 			}
-			vert_reappend=(Vertex*)1;
+			vert_reappend=1;
 			CurrentPP->count=tarc.verts.used - CurrentPP->first;
 		}
 
@@ -1776,7 +1504,7 @@ namespace Direct3DRenderer
 
 	//Resume vertex base (for B part)
 #define vert_res_base \
-	Vertex* cv=((Vertex*)tarc.verts.ptr)-1;
+	Vertex* cv=&tarc.verts.data[tarc.verts.used - 1];
 
 	//uv 16/32
 #define vert_uv_32(u_name,v_name) \
@@ -2037,7 +1765,6 @@ namespace Direct3DRenderer
 		static void AppendPolyVertex12B(TA_Vertex12B* vtx)
 		{
 			vert_res_base;
-
 		}
 
 		//(Textured, Intensity,	with Two Volumes)
@@ -2055,7 +1782,6 @@ namespace Direct3DRenderer
 		static void AppendPolyVertex13B(TA_Vertex13B* vtx)
 		{
 			vert_res_base;
-
 		}
 
 		//(Textured, Intensity, 16bit UV, with Two Volumes)
@@ -2073,7 +1799,6 @@ namespace Direct3DRenderer
 		static void AppendPolyVertex14B(TA_Vertex14B* vtx)
 		{
 			vert_res_base;
-
 		}
 
 		//Sprites
@@ -2113,14 +1838,9 @@ namespace Direct3DRenderer
 		__forceinline
 		static void AppendSpriteVertexA(TA_Sprite1A* sv)
 		{
-			if (vert_reappend)
+			if (CurrentPP->count)
 			{
-				Vertex* old=((Vertex*)tarc.verts.ptr);
-				Vertex* cv=tarc.verts.Guarantee(3,2);
-				cv[0].x=old[-1].x;//dup prev
-				cv[0].y=old[-1].y;//dup prev
-				cv[0].z=old[-1].z;//dup prev
-				vert_reappend=(Vertex*)tarc.verts.ptr;
+				tarc.verts.Append(2);
 			}
 			Vertex* cv = tarc.verts.Append(4);
 			
@@ -2162,15 +1882,24 @@ namespace Direct3DRenderer
 			sprite_uv(1, u2,v2);
 			sprite_uv(0, u0,v2);//or sprite_uv(u2,v0); ?
 
-			if (vert_reappend)
+			if (CurrentPP->count)
 			{
-				Vertex* vert=vert_reappend;
-				vert[-1].x=vert[0].x;
-				vert[-1].y=vert[0].y;
-				vert[-1].z=vert[0].z;
+				//p1-p2-p3	-> visible , prev strip
+				cv[-2].x=cv[-3].x;	//p2-p3-ip3	-> not visible
+				cv[-2].y=cv[-3].y;
+				cv[-2].z=cv[-3].z;
+				
+				cv[-1].x=cv[0].x;	//p3-ip3-i0 -> not visible
+				cv[-1].y=cv[0].y;
+				cv[-1].z=cv[0].z;
+
+				//ip3-i0-0 -> not visible
+				//i0-0-1    -> not visible
+				//0-1-2
+				//1-2-3
 				CurrentPP->count+=2;
 			}
-			vert_reappend=(Vertex*)1;
+
 			CurrentPP->count+=4;
 		}
 
@@ -2221,7 +1950,7 @@ namespace Direct3DRenderer
 
 			//allocate storage for BG poly
 			tarc.global_param_op.Append();
-			BGPoly=tarc.verts.Append(4);
+			tarc.verts.Append(4);
 		}
 		__forceinline
 		static void SoftReset()

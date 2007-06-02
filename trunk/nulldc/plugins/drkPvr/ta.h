@@ -680,4 +680,3 @@ public:
 	template <class TA_decoder> u32 FifoSplitter<TA_decoder> ::ta_type_lut[256];
 	template <class TA_decoder> bool FifoSplitter<TA_decoder> ::StripStarted;
 }
-

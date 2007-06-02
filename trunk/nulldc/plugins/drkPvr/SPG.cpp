@@ -48,14 +48,20 @@ void CalculateSync()
 		Line_Cycles/=2;
 		u32 interl_mode=(VO_CONTROL>>4)&0xF;
 		
-		if (interl_mode==2)//3 will be funny =P
-			scale_y=0.5f;//single interlace
-		else
+		//if (interl_mode==2)//3 will be funny =P
+		//	scale_y=0.5f;//single interlace
+		//else
 			scale_y=1;
 	}
 	else
 	{
-		scale_y=0.5f;//non interlaced modes have half resolution
+		if ((SPG_CONTROL.NTSC == 0 && SPG_CONTROL.PAL ==0) ||
+			(SPG_CONTROL.NTSC == 1 && SPG_CONTROL.PAL ==1))
+		{
+			scale_y=1.0f;//non interlaced vga mode has full resolution :)
+		}
+		else
+			scale_y=0.5f;//non interlaced modes have half resolution
 	}
 
 	rend_set_fb_scale(scale_x,scale_y);
@@ -63,36 +69,6 @@ void CalculateSync()
 	//Frame_Cycles=(u64)DCclock*(u64)sync_cycles/(u64)pixel_clock;
 	
 	Frame_Cycles=pvr_numscanlines*Line_Cycles;
-
-	/*
-	printf("*******************************\n");
-	printf("FB_R_CTRL : fb_enable %x ,fb_line_double %x,fb_depth %x,fb_concat %x,fb_chroma_threshold %x,fb_stripsize %x,fb_strip_buf_en %x,vclk_div %x\n",
-		FB_R_CTRL.fb_enable,FB_R_CTRL.fb_line_double,FB_R_CTRL.fb_depth,FB_R_CTRL.fb_concat
-		,FB_R_CTRL.fb_chroma_threshold,FB_R_CTRL.fb_stripsize,FB_R_CTRL.fb_strip_buf_en,
-		FB_R_CTRL.vclk_div);
-
-	printf("SPG_CONTROL : interlace %x ,force_field2 %x,NTSC %x,PAL %x,sync_direction %x\n",
-		SPG_CONTROL.interlace,SPG_CONTROL.force_field2,SPG_CONTROL.NTSC,SPG_CONTROL.PAL
-		,SPG_CONTROL.sync_direction);
-
-	printf("SPG_LOAD : hcount %d ,vcount %d\n",
-		SPG_LOAD.hcount,SPG_LOAD.vcount);
-
-
-	printf("SPG_VBLANK_INT : vbi %x ,vbo %x\n",
-		SPG_VBLANK_INT.vblank_in_interrupt_line_number,SPG_VBLANK_INT.vblank_out_interrupt_line_number);
-	
-	printf("Pixel Clock %d\n",pixel_clock);
-
-	printf("frame_cycles %d\n",frame_cycles);
-	printf("FRAME rate : %d\n",pixel_clock/frame_cycles);
-	printf("VSYNC rate : %d\n",pixel_clock/sync_cycles);
-
-	printf("SPG_WIDRH : bpwidth %d,eqwidth %d,vswidth %d,hswidth %d\n",	SPG_WIDTH.bpwidth,
-									SPG_WIDTH.eqwidth,
-									SPG_WIDTH.vswidth,
-									SPG_WIDTH.hswidth);
-	*/
 }
 
 bool render_end_pending=false;
@@ -156,17 +132,23 @@ void FASTCALL spgUpdatePvr(u32 cycles)
 
 				char fpsStr[256];
 				char* mode=0;
+				char* res=0;
+
+				res=SPG_CONTROL.interlace?"480i":"240p";
 
 				if (SPG_CONTROL.NTSC==0 && SPG_CONTROL.PAL==1)
 					mode="PAL";
 				else if (SPG_CONTROL.NTSC==1 && SPG_CONTROL.PAL==0)
 					mode="NTSC";
 				else
+				{
+					res=SPG_CONTROL.interlace?"480i":"480p";
 					mode="VGA";
+				}
 
 				sprintf(fpsStr,"%s/%c - %4.2f%% - VPS: %4.2f(%s%s%4.2f) RPS: %4.2f Vert: %4.2fM Sh4: %4.2f mhz", 
 					emu_name,'n',spd_cpu*100/200,spd_vbs,
-					mode,SPG_CONTROL.interlace?"480i":"240p",fullvbs,
+					mode,res,fullvbs,
 					spd_fps,mv, spd_cpu);
 
 				rend_set_fps_text(fpsStr);

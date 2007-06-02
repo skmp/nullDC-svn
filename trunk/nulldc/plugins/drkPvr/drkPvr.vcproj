@@ -349,6 +349,18 @@
 					</FileConfiguration>
 				</File>
 			</Filter>
+			<Filter
+				Name="Direct3Dv2"
+				>
+				<File
+					RelativePath=".\d3dRend2.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\d3dRend2.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="regs"
@@ -362,6 +374,14 @@
 				>
 			</File>
 		</Filter>
+		<File
+			RelativePath=".\config.h"
+			>
+		</File>
+		<File
+			RelativePath=".\helper_classes.cpp"
+			>
+		</File>
 		<File
 			RelativePath=".\helper_classes.h"
 			>

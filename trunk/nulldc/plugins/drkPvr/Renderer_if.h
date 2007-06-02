@@ -9,3 +9,4 @@ extern u32 FrameCount;
 #include "d3dRend.h"
 #include "oglRend.h"
 #include "nullRend.h"
+#include "d3dRend2.h"

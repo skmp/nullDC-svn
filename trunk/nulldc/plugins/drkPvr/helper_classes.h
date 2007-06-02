@@ -1,7 +1,17 @@
 #pragma once
 
+#include <vector>
+using namespace std;
+
 #define LIST_MAX_ALLOC_CHUNK ((1024*1024*4)/sizeof(T))	//max 4 mb alloc
 #define LIST_FREE_STEP_CHUNK ((1024*128*8)/sizeof(T))		//128 kb steps for free :)
+
+#define ChunkSize 512*1024
+u8* GetBuffer();
+void FreeBuffer(u8* buffer);
+
+
+
 
 template <class T,u32 MaxAllocChunk=LIST_MAX_ALLOC_CHUNK,u32 FreeStepChunk=LIST_FREE_STEP_CHUNK>
 class List
@@ -87,6 +97,132 @@ public :
 		Clear();
 		free(data);
 		data=0;
+	}
+};
+template <class T>
+class List2
+{
+public :
+
+	vector<u8*>* allocate_list_ptr;
+	vector<u32>* allocate_list_sz;
+	u8* ptr;
+	static const u32 ItemsPerChunk=ChunkSize/sizeof(T);
+private:
+	u32 freesz;
+	
+	__declspec(noinline) void GetChunk(u32 ac)
+	{
+		if (ptr!=0)
+		{
+			allocate_list_sz->push_back((ItemsPerChunk-freesz)*sizeof(T));
+			//u32 usedsz=ChunkSize-sizeof(T)*freesz;
+			//alloc_info t={ptr-usedsz,usedsz};
+			//allocate_list.push_back(t);
+		}
+		
+		u8* nptr=GetBuffer();
+		
+		ptr=nptr;
+		allocate_list_ptr->push_back(nptr);
+
+		freesz=ItemsPerChunk;
+	}
+public :
+	u32 used;
+	T* Guarantee(u32 gcnt,u32 acnt)
+	{
+		verify(gcnt>=acnt);
+		if(freesz<gcnt)
+		{
+			GetChunk(acnt);
+		}
+
+		return Append(acnt);
+	}
+	T* Append(u32 count)
+	{
+		used+=count;
+		if(freesz<count)
+		{
+			GetChunk(count);
+		}
+
+		freesz-=count;
+		T* rv=(T*)ptr;
+		ptr+=count*sizeof(T);
+		return rv;
+	}
+	T* Append()
+	{
+		used+=1;
+		if(freesz==0)
+		{
+			GetChunk(1);	
+		}
+		freesz-=1;
+		T* rv=(T*)ptr;
+		ptr+=sizeof(T);
+		return rv;
+	}
+	
+	void Copy(void* Dst,u32 sz)
+	{
+		u8* dst=(u8*)Dst;
+		for (int i=0;i<allocate_list_ptr->size();i++)
+		{
+			memcpy(dst,allocate_list_ptr[0][i],allocate_list_sz[0][i]);
+			dst+=allocate_list_sz[0][i];
+			verify(sz>=allocate_list_sz[0][i]);
+			sz-=allocate_list_sz[0][i];
+		}
+		verify(sz==0);
+	}
+	void ClearCounters()
+	{
+		used=0;
+		ptr=0;
+		freesz=0;
+	}
+	void Init()
+	{
+		allocate_list_ptr = new vector<u8*>();
+		allocate_list_sz = new vector<u32>();
+		ClearCounters();
+	}
+	void Finalise()
+	{
+		if (ptr!=0)
+		{
+			allocate_list_sz->push_back( (ItemsPerChunk-freesz)*sizeof(T));
+		}
+		ptr=0;
+		freesz=0;
+	}
+
+	void Clear()
+	{
+		for (int i=0;i<allocate_list_ptr->size();i++)
+		{
+			FreeBuffer(allocate_list_ptr[0][i]);
+		}
+		allocate_list_ptr->clear();
+		allocate_list_sz->clear();
+
+		ClearCounters();
+		used=0;
+	}
+	void Free()
+	{
+		for (int i=0;i<allocate_list_ptr->size();i++)
+		{
+			FreeBuffer(allocate_list_ptr[0][i]);
+		}
+		allocate_list_ptr->clear();
+		allocate_list_sz->clear();
+
+		ClearCounters();
+		used=0;
 	}
 };
 //Windoze code
