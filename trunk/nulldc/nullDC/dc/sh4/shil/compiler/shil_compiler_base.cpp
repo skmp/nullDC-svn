@@ -323,7 +323,7 @@ extern void* _vmem_MemInfo[0x10000];
 //sz is 1,2,4,8
 //8 reads are assumed to be on same map (8 byte allign should ensure this , i dunoo -> it does)
 void emit_vmem_op_compat_const(x86_block* x86e,u32 ra,
-							   x86_gpr_reg ro,x86_sse_reg ro_sse,bool sse,
+							   x86_reg ro,bool sse,
 								u32 sz,u32 rw)
 {
 	void* p_RWF_table=0;
@@ -335,6 +335,8 @@ void emit_vmem_op_compat_const(x86_block* x86e,u32 ra,
 			p_RWF_table=&_vmem_RF16[0];
 		else if (sz==4)
 			p_RWF_table=&_vmem_RF32[0];
+		else if (sz==8)
+			p_RWF_table=&_vmem_RF32[0];
 	}
 	else
 	{
@@ -343,6 +345,8 @@ void emit_vmem_op_compat_const(x86_block* x86e,u32 ra,
 		else if (sz==2)
 			p_RWF_table=&_vmem_WF16[0];
 		else if (sz==4)
+			p_RWF_table=&_vmem_WF32[0];
+		else if (sz==8)
 			p_RWF_table=&_vmem_WF32[0];
 	}
 
@@ -355,7 +359,7 @@ void emit_vmem_op_compat_const(x86_block* x86e,u32 ra,
 
 	if ((((u32)t) & 0xFFFF0000)==0)
 	{
-
+		verify(sz!=8);	//64 bit writes to registers are not possible so far :P.Hopefully will never happen
 		if (rw==1)
 		{
 			if (sse)
@@ -413,10 +417,14 @@ void emit_vmem_op_compat_const(x86_block* x86e,u32 ra,
 			{	//,edx
 				if (sse)
 				{
-					x86e->Emit(op_movss,(u32*)paddr,ro_sse);
+					x86e->Emit(op_movss,(u32*)paddr,ro);
 				}
 				else
 					x86e->Emit(op_mov32,(u32*)paddr,ro);
+			}
+			else if (sz==8)
+			{
+				x86e->Emit(op_movlps,(u32*)paddr,ro);
 			}
 		}
 		else
@@ -434,10 +442,14 @@ void emit_vmem_op_compat_const(x86_block* x86e,u32 ra,
 			{
 				if (sse)
 				{
-					x86e->Emit(op_movss,ro_sse,(u32*)paddr);
+					x86e->Emit(op_movss,ro,(u32*)paddr);
 				}
 				else
 					x86e->Emit(op_mov32,ro,(u32*)paddr);
+			}
+			else if (sz==8)
+			{
+				x86e->Emit(op_movlps,ro,(u32*)paddr);
 			}
 		}
 	}
@@ -1234,7 +1246,7 @@ x86_reg  readwrteparams(shil_opcode* op,x86_reg* fast_reg,u32* fast_offset)
 }
 
 
-const u32 m_unpack_sz[3]={1,2,4};
+const u32 m_unpack_sz[4]={1,2,4,8};
 //Ram Only Mem Lookup
 void roml(x86_reg reg,x86_Label* lbl,u32* offset_Edit,x86_reg fast_reg,u32 fast_offset)
 {
@@ -1263,7 +1275,7 @@ void roml(x86_reg reg,x86_Label* lbl,u32* offset_Edit,x86_reg fast_reg,u32 fast_
 	//and ecx,mask2
 	x86e->Emit(op_and32,ECX,~0xE0000000);
 }
-const x86_opcode_class rm_table[4]={op_movsx8to32,op_movsx16to32,op_mov32,op_int3};
+const x86_opcode_class rm_table[4]={op_movsx8to32,op_movsx16to32,op_mov32,op_movlps};
 void __fastcall shil_compile_readm(shil_opcode* op)
 {
 	u32 size=op->flags&3;
@@ -1276,14 +1288,22 @@ void __fastcall shil_compile_readm(shil_opcode* op)
 		assert(op->flags & FLAG_IMM1);
 		if (!IsInFReg(op->reg1))
 		{
-			x86_gpr_reg rall=LoadReg_nodata(EDX,op->reg1);
-			emit_vmem_op_compat_const(x86e,op->imm1,rall,XMM0,false,m_unpack_sz[size],0);
-			SaveReg(op->reg1,rall);
+			if (size==FLAG_64)
+			{
+				emit_vmem_op_compat_const(x86e,op->imm1,XMM0,false,m_unpack_sz[size],0);
+				x86e->Emit(op_movlps,GetRegPtr(GetSingleFromDouble(op->reg1)),XMM0);
+			}
+			else
+			{
+				x86_gpr_reg rall=LoadReg_nodata(EDX,op->reg1);
+				emit_vmem_op_compat_const(x86e,op->imm1,rall,false,m_unpack_sz[size],0);
+				SaveReg(op->reg1,rall);
+			}
 		}
 		else
 		{
 			x86_sse_reg rall=fra->GetRegister(XMM0,op->reg1,RA_NODATA);
-			emit_vmem_op_compat_const(x86e,op->imm1,EAX,rall,true,m_unpack_sz[size],0);
+			emit_vmem_op_compat_const(x86e,op->imm1,rall,true,m_unpack_sz[size],0);
 			fra->SaveRegister(op->reg1,rall);
 		}
 		return;
@@ -1302,24 +1322,38 @@ void __fastcall shil_compile_readm(shil_opcode* op)
 	//mov to dest or temp
 	u32 is_float=IsInFReg(op->reg1);
 	x86_reg destreg;
-	if (is_float)
+	if (size==FLAG_64)
 	{
-		destreg=EAX;
+		destreg=XMM0;
 	}
 	else
 	{
-		destreg=LoadReg_nodata(EAX,op->reg1);
+		if (is_float)
+		{
+			destreg=EAX;
+		}
+		else
+		{
+			destreg=LoadReg_nodata(EAX,op->reg1);
+		}
 	}
 	x86e->Emit(rm_table[size],destreg,x86_mrm::create(ECX,sh4_reserved_mem));
 	roml_patch t;
 	t.exit_point=x86e->CreateLabel(true,0);
-	if (is_float)
+	if (size==FLAG_64)
 	{
-		fra->SaveRegisterGPR(op->reg1,destreg);
+		x86e->Emit(op_movlps,GetRegPtr(GetSingleFromDouble(op->reg1)),XMM0);
 	}
 	else
 	{
-		SaveReg(op->reg1,destreg);
+		if (is_float)
+		{
+			fra->SaveRegisterGPR(op->reg1,destreg);
+		}
+		else
+		{
+			SaveReg(op->reg1,destreg);
+		}
 	}
 
 	t.p4_access=p4_handler;
@@ -1328,11 +1362,17 @@ void __fastcall shil_compile_readm(shil_opcode* op)
 	t.type=0;
 	t.is_float=false;
 	t.reg_addr=reg_addr;
-	t.reg_data=destreg;
+	if (size!=FLAG_64)
+	{
+		t.reg_data=destreg;
+	}
+	else
+		t.reg_data=(x86_reg)GetSingleFromDouble(op->reg1);
+
 	//emit_vmem_read(reg_addr,op->reg1,m_unpack_sz[size]);
 	roml_patch_list.push_back(t);
 }
-const x86_opcode_class wm_table[4]={op_mov8,op_mov16,op_mov32,op_int3};
+const x86_opcode_class wm_table[4]={op_mov8,op_mov16,op_mov32,op_movlps};
 void __fastcall shil_compile_writem(shil_opcode* op)
 {
 	//sse_WBF(op->reg1);//Write back possibly readed reg
@@ -1341,29 +1381,38 @@ void __fastcall shil_compile_writem(shil_opcode* op)
 	u32 was_float=is_float;
 
 	x86_reg rsrc;
-	if (!is_float)
+	if (size==FLAG_64)
 	{
-		rsrc=LoadReg(EDX,op->reg1);
-		if (size==0)
-		{
-			if (rsrc>BL)
-			{
-				x86e->Emit(op_mov32,EDX,rsrc);
-				rsrc=EDX;
-			}
-		}
+		u8 f32reg=GetSingleFromDouble(op->reg1);
+		x86e->Emit(op_movlps,XMM0,GetRegPtr(f32reg));
+		rsrc=XMM0;
 	}
 	else
 	{
-		if (fra->IsRegAllocated(op->reg1))
+		if (!is_float)
 		{
-			rsrc=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
+			rsrc=LoadReg(EDX,op->reg1);
+			if (size==0)
+			{
+				if (rsrc>BL)
+				{
+					x86e->Emit(op_mov32,EDX,rsrc);
+					rsrc=EDX;
+				}
+			}
 		}
 		else
 		{
-			rsrc=EDX;
-			x86e->Emit(op_mov32,EDX,GetRegPtr(op->reg1));
-			was_float=0;
+			if (fra->IsRegAllocated(op->reg1))
+			{
+				rsrc=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
+			}
+			else
+			{
+				rsrc=EDX;
+				x86e->Emit(op_mov32,EDX,GetRegPtr(op->reg1));
+				was_float=0;
+			}
 		}
 	}
 
@@ -1375,11 +1424,11 @@ void __fastcall shil_compile_writem(shil_opcode* op)
 		//[imm1] form
 		if (!is_float)
 		{
-			emit_vmem_op_compat_const(x86e,op->imm1,rsrc,XMM0,false,m_unpack_sz[size],1);
+			emit_vmem_op_compat_const(x86e,op->imm1,rsrc,false,m_unpack_sz[size],1);
 		}
 		else
 		{
-			emit_vmem_op_compat_const(x86e,op->imm1,EAX,rsrc,true,m_unpack_sz[size],1);
+			emit_vmem_op_compat_const(x86e,op->imm1,rsrc,true,m_unpack_sz[size],1);
 		}
 		return;
 	}
@@ -1399,7 +1448,7 @@ void __fastcall shil_compile_writem(shil_opcode* op)
 		x86e->Emit(op_movss,x86_mrm::create(ECX,sh4_reserved_mem),rsrc);
 	else
 	{
-			x86e->Emit(wm_table[size],x86_mrm::create(ECX,sh4_reserved_mem),rsrc);
+		x86e->Emit(wm_table[size],x86_mrm::create(ECX,sh4_reserved_mem),rsrc);
 	}
 	//if  (is_float)
 	//x86e->Emit(op_jmp,p4_handler);
@@ -1412,14 +1461,19 @@ void __fastcall shil_compile_writem(shil_opcode* op)
 	t.type=1;
 	t.is_float=was_float;
 	t.reg_addr=reg_addr;
-	t.reg_data=rsrc;
+	if (size!=FLAG_64)
+	{
+		t.reg_data=rsrc;
+	}
+	else
+		t.reg_data=(x86_reg)GetSingleFromDouble(op->reg1);
 
 	roml_patch_list.push_back(t);
 	
 	//emit_vmem_write(reg_addr,op->reg1,m_unpack_sz[size]);
 }
-void* nvw_lut[3]={WriteMem8,WriteMem16,WriteMem32};
-void* nvr_lut[3]={ReadMem8,ReadMem16,ReadMem32};
+void* nvw_lut[4]={WriteMem8,WriteMem16,WriteMem32,WriteMem32};
+void* nvr_lut[4]={ReadMem8,ReadMem16,ReadMem32,ReadMem32};
 #include "dc/mem/sh4_internal_reg.h"
 void apply_roml_patches()
 {
@@ -1432,48 +1486,97 @@ void apply_roml_patches()
 		x86e->write8(roml_patch_list[i].resume_offset);
 		//printf("Resume offset: %d\n",roml_patch_list[i].resume_offset);
 		x86e->MarkLabel(roml_patch_list[i].p4_access);
-		if (roml_patch_list[i].type==1)
+		if (roml_patch_list[i].type==1 && (roml_patch_list[i].asz>=FLAG_32))
 		{
 			//check for SQ write
-			x86e->Emit(op_cmp32,ECX,0xE3FFFFFF);
+			x86e->Emit(op_cmp32,roml_patch_list[i].reg_addr,0xE3FFFFFF);
+			
+			if (roml_patch_list[i].reg_addr!=ECX)
+				x86e->Emit(op_mov32,ECX,roml_patch_list[i].reg_addr);
+
 			x86_Label* normal_write=x86e->CreateLabel(false,8);
 			x86e->Emit(op_ja,normal_write);
 			//x86e->Emit(op_int3);
 			x86e->Emit(op_and32,ECX,0x3C);
-			x86e->Emit(op_mov32,x86_mrm::create(ECX,sq_both),roml_patch_list[i].reg_data);
+			if (FLAG_32==roml_patch_list[i].asz)
+			{
+				x86e->Emit(op_mov32,x86_mrm::create(ECX,sq_both),roml_patch_list[i].reg_data);
+			}
+			else
+			{
+				//x86e->Emit(op_int3);
+				x86e->Emit(op_movlps,x86_mrm::create(ECX,sq_both),XMM0);//allready readed on xmm0
+			}
 			x86e->Emit(op_jmp,roml_patch_list[i].exit_point);
 			x86e->MarkLabel(normal_write);
 			*(u8*)&x86e->x86_buff[offset]=x86e->x86_indx-offset-2;
 			//printf("patch offset: %d\n",x86e->x86_indx-offset-2);
 		}
-		if (roml_patch_list[i].reg_addr!=ECX)
-			x86e->Emit(op_mov32,ECX,roml_patch_list[i].reg_addr);
-		if (roml_patch_list[i].is_float)
+		else
 		{
-			//meh ?
-			dbgbreak;
+			if (roml_patch_list[i].reg_addr!=ECX)
+				x86e->Emit(op_mov32,ECX,roml_patch_list[i].reg_addr);
+		}
+
+		if (roml_patch_list[i].asz!=FLAG_64)
+		{
+			if (roml_patch_list[i].is_float)
+			{
+				//meh ?
+				dbgbreak;
+			}
+			else
+			{
+				if (roml_patch_list[i].type==1)
+				{
+					//if write make sure data is on edx
+					if (roml_patch_list[i].reg_data!=EDX)
+						x86e->Emit(op_mov32,EDX,roml_patch_list[i].reg_data);
+				}
+			}
+
+			x86e->Emit(op_call,x86_ptr_imm(function));
+			if (roml_patch_list[i].type==0)
+			{
+				if (roml_patch_list[i].asz==0)
+					x86e->Emit(op_movsx8to32,roml_patch_list[i].reg_data,EAX);
+				else if (roml_patch_list[i].asz==1)
+					x86e->Emit(op_movsx16to32,roml_patch_list[i].reg_data,EAX);
+				else if (roml_patch_list[i].asz==2)
+				{
+					if (roml_patch_list[i].reg_data!=EAX)
+						x86e->Emit(op_mov32,roml_patch_list[i].reg_data,EAX);
+				}
+			}
 		}
 		else
 		{
-			if (roml_patch_list[i].type==1)
+			//if (roml_patch_list[i].type==0)
+			//	x86e->Emit(op_int3);
+			//save address once
+			x86e->Emit(op_push32,ECX);
+			
+			x86e->Emit(op_add32,ECX,4);
+			u32* target=GetRegPtr(roml_patch_list[i].reg_data);
+
+			for (int j=1;j>=0;j--)
 			{
-				//if write make sure data is on edx
-				if (roml_patch_list[i].reg_data!=EDX)
-					x86e->Emit(op_mov32,EDX,roml_patch_list[i].reg_data);
+				if (roml_patch_list[i].type==1)
+				{
+					//write , need data on EDX
+					x86e->Emit(op_mov32,EDX,&target[j]);
+				}
+				x86e->Emit(op_call,x86_ptr_imm(function));
+				if (roml_patch_list[i].type==0)
+				{
+					//read, save data from eax
+					x86e->Emit(op_mov32,&target[j],EAX);
+				}
+
+				if (j==1)
+					x86e->Emit(op_pop32,ECX);//get the 'low' address
 			}
-		}
-		x86e->Emit(op_call,x86_ptr_imm(function));
-		if (roml_patch_list[i].type==0)
-		{
-			if (roml_patch_list[i].asz==0)
-				x86e->Emit(op_movsx8to32,roml_patch_list[i].reg_data,EAX);
-			else if (roml_patch_list[i].asz==1)
-				x86e->Emit(op_movsx16to32,roml_patch_list[i].reg_data,EAX);
-			else if (roml_patch_list[i].asz==2)
-			{
-				if (roml_patch_list[i].reg_data!=EAX)
-					x86e->Emit(op_mov32,roml_patch_list[i].reg_data,EAX);
-			}
+
 		}
 		x86e->Emit(op_jmp,roml_patch_list[i].exit_point);
 		//x86e->MarkLabel(roml_patch_list[i].p4_access);
