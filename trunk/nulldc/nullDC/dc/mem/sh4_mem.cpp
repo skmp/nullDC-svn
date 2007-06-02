@@ -278,15 +278,22 @@ void mem_Term()
 	_vmem_term();
 }
 
-void MEMCALL WriteMemBlock_nommu(u32 addr,u32* data,u32 size)
+void MEMCALL WriteMemBlock_nommu_dma(u32 dst,u32 src,u32 size)
 {
 	for (u32 i=0;i<size;i+=4)
 	{
-		WriteMem32_nommu(addr+i,data[i>>2]);
+		WriteMem32_nommu(dst+i,ReadMem32_nommu(src+i));
+	}
+}
+void MEMCALL WriteMemBlock_nommu_ptr(u32 dst,u32* src,u32 size)
+{
+	for (u32 i=0;i<size;i+=4)
+	{
+		WriteMem32_nommu(dst+i,src[i>>2]);
 	}
 }
 
-void MEMCALL WriteMemBlock(u32 addr,u32* data,u32 size)
+void MEMCALL WriteMemBlock_ptr(u32 addr,u32* data,u32 size)
 {
 	//not worth the trouble to decode :p
 	//vmem is faster

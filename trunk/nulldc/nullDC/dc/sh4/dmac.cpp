@@ -63,11 +63,13 @@ void DMAC_Ch2St()
 				TAWrite(dst,sys_buf,(new_len/32));
 				len-=new_len;
 				src+=new_len;
+				//dst+=new_len;
 			}
 			else
 			{
 				u32 *sys_buf=(u32 *)GetMemPtr(src,len);//(&mem_b[src&RAM_MASK]);
 				TAWrite(dst,sys_buf,(len/32));
+				src+=len;
 				break;
 			}
 		}
@@ -78,9 +80,29 @@ void DMAC_Ch2St()
 	{
 		//printf(">>\tDMAC: TEX LNMODE0 Ch2 DMA SRC=%X DST=%X LEN=%X | LN(%X::%X)\n", src, dst, len, *pSB_LMMODE0, *pSB_LMMODE1 );
 
-		u32 dst_ptr=(dst&0xFFFFFF) |0xa4000000;
-		WriteMemBlock_nommu(dst_ptr,(u32*)GetMemPtr(src,len),len);
-
+		u32 dst=(dst&0xFFFFFF) |0xa4000000;
+		/*WriteMemBlock_nommu_ptr(dst,(u32*)GetMemPtr(src,len),len);
+		src+=len;*/
+		u32 p_addr=src & RAM_MASK;
+		while(len)
+		{
+			if ((p_addr+len)>RAM_SIZE)
+			{
+				u32 *sys_buf=(u32 *)GetMemPtr(src,len);//(&mem_b[src&RAM_MASK]);
+				u32 new_len=RAM_SIZE-p_addr;
+				WriteMemBlock_nommu_ptr(dst,sys_buf,new_len);
+				len-=new_len;
+				src+=new_len;
+				dst+=new_len;
+			}
+			else
+			{
+				u32 *sys_buf=(u32 *)GetMemPtr(src,len);//(&mem_b[src&RAM_MASK]);
+				WriteMemBlock_nommu_ptr(dst,sys_buf,len);
+				src+=len;
+				break;
+			}
+		}
 	//	*pSB_LMMODE0 = 1;			// this prob was done by system already
 	//	WriteMem(SB_LMMODE1, 0, 4);	// should this be done ?
 	}
@@ -88,21 +110,26 @@ void DMAC_Ch2St()
 	if( (dst >= 0x13000000) && (dst <= 0x13FFFFE0) )
 	{
 		printf(".\tPVR DList DMA LNMODE1\n\n");
+		src+=len;
 	//	*pSB_LMMODE1 = 1;			// this prob was done by system already
 	//	WriteMem(SB_LMMODE0, 0, 4);	// should this be done ?
 	}
-	else { printf("\n!\tDMAC: SB_C2DSTAT has invalid address (%X) !\n", dst); return; }
+	else 
+	{ 
+		printf("\n!\tDMAC: SB_C2DSTAT has invalid address (%X) !\n", dst); 
+		src+=len;
+	}
 
 
 	// Setup some of the regs so it thinks we've finished DMA
 
-	DMAC_SAR2 = (src + len);
+	DMAC_SAR2 = (src);
 	DMAC_CHCR2 &= 0xFFFFFFFE;
 	DMAC_DMATCR2 = 0x00000000;
 
 	SB_C2DST = 0x00000000;
 	SB_C2DLEN = 0x00000000;
-	SB_C2DSTAT = (src + len);
+	SB_C2DSTAT = (src );
 
 	// The DMA end interrupt flag (SB_ISTNRM - bit 19: DTDE2INT) is set to "1."
 	//-> fixed , holly_PVR_DMA is for diferent use now (fixed the interrupts enum too)

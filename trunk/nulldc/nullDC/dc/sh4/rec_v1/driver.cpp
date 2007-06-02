@@ -133,6 +133,7 @@ void rec_sh4_ResetCache()
 BasicBlockEP* __fastcall FindCode_full(u32 address,CompiledBlockInfo* fastblock);
 
 extern u32 fast_lookups;
+u32 old_esp;
 void naked DynaMainLoop()
 {
 	__asm
@@ -142,6 +143,25 @@ void naked DynaMainLoop()
 		push edi;
 		push ebx;
 		push ebp;
+
+		mov old_esp,esp;
+
+		//Allocate the ret cache table on stack
+		//format :
+		
+		//[table] <- 'on'=1 , 'off' = 1 , 'index'=0
+		//[waste] <- 'on'=1 , 'off' = 0 , 'index'=0
+
+		sub esp,RET_CACHE_SZ*4-1;	//allign to RET_CACHE_SZ*4 
+		and esp,~(RET_CACHE_SZ*4-1);	//(1kb for 32 entry cache) <- now , we are '00'
+		sub esp,RET_CACHE_SZ*2;		//<- now we are '10'
+
+		//now store it !
+		mov ret_cache_base,esp;
+		add ret_cache_base,RET_CACHE_SZ;	//pointer to the table base ;)
+
+		//Reset it !
+		call ret_cache_reset;
 
 		//misc pointers needed
 		mov block_stack_pointer,esp;
@@ -240,6 +260,7 @@ do_update:
 		jne no_update;
 
 		//exit from function
+		mov esp,old_esp;
 		pop ebp;
 		pop ebx;
 		pop edi;

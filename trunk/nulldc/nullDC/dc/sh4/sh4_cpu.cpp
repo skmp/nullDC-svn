@@ -165,7 +165,7 @@ void __fastcall do_pref(u32 Dest)
 	}
 	else
 	{
-		WriteMemBlock_nommu(Address,sq,8*4);
+		WriteMemBlock_nommu_ptr(Address,sq,8*4);
 	}
 }
 sh4op(i0000_nnnn_1000_0011)

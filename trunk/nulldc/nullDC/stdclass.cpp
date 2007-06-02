@@ -328,7 +328,8 @@ void VArray2::UnLockRegion(u32 offset,u32 size)
 
 bool VramLockedWrite(u8* address);
 bool RamLockedWrite(u8* address,u32* sp);
-
+extern u8* DynarecCache;
+extern u32 DynarecCacheSize;
 int ExeptionHandler(u32 dwCode, void* pExceptionPointers)
 {
 	EXCEPTION_POINTERS* ep=(EXCEPTION_POINTERS*)pExceptionPointers;
@@ -353,19 +354,27 @@ int ExeptionHandler(u32 dwCode, void* pExceptionPointers)
 		//and ecx,mask2
 		//the write 
 		u32 pos=ep->ContextRecord->Eip; //<- the write
-		u32* ptr_jae_offset=(u32*)(pos-4-6);
-		u8* offset_2=(u8*)(*ptr_jae_offset + pos -6-2);
-		u8* ptr_cmp=(u8*)(pos-6-6-6);
-		*ptr_cmp=0xE9;
-		*(u32*) (ptr_cmp+1)=*ptr_jae_offset+7 + offset_2[0];
-		ep->ContextRecord->Eip=(pos-6-6-6- offset_2[1]);
-		//printf("Patched %08X,%08X<-%08X %d %d\n",ep->ContextRecord->Eip,ep->ContextRecord->Ecx,offset_2[0],offset_2[1]);
-//		ep->ContextRecord->Ecx=ep->ContextRecord->Eax;
-		return EXCEPTION_CONTINUE_EXECUTION;
+		if (((u32)(pos-(u32)DynarecCache))<DynarecCacheSize)
+		{
+			u32* ptr_jae_offset=(u32*)(pos-4-6);
+			u8* offset_2=(u8*)(*ptr_jae_offset + pos -6-2);
+			u8* ptr_cmp=(u8*)(pos-6-6-6);
+			*ptr_cmp=0xE9;
+			*(u32*) (ptr_cmp+1)=*ptr_jae_offset+7 + offset_2[0];
+			ep->ContextRecord->Eip=(pos-6-6-6- offset_2[1]);
+			//printf("Patched %08X,%08X<-%08X %d %d\n",ep->ContextRecord->Eip,ep->ContextRecord->Ecx,offset_2[0],offset_2[1]);
+			//		ep->ContextRecord->Ecx=ep->ContextRecord->Eax;
+			return EXCEPTION_CONTINUE_EXECUTION;
+		}
+		else
+		{
+			printf("[GPF]Unhandled access to : 0x%X\n",address);
+			return EXCEPTION_CONTINUE_SEARCH;
+		}
 	}
 	else
 	{
-		printf("Unhandled write to : 0x%X\n",address);
+		printf("[GPF]Unhandled access to : 0x%X\n",address);
 	}
 
 	return EXCEPTION_CONTINUE_SEARCH;

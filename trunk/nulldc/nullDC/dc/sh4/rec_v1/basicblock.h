@@ -108,3 +108,17 @@ void __fastcall basic_block_BlockWasSuspended(CompiledBlockInfo* p_this,Compiled
 void __fastcall basic_block_ClearBlock(CompiledBlockInfo* p_this,CompiledBlockInfo* block);
 void __fastcall basic_block_Suspend(CompiledBlockInfo* p_this);
 void __fastcall basic_block_Free(CompiledBlockInfo* p_this);
+
+struct ret_cache_entry
+{
+	u32 addr;
+	CompiledBlockInfo* cBB;
+};
+extern ret_cache_entry* ret_cache_base;
+void ret_cache_reset();
+
+
+#define RET_CACHE_COUNT 32
+#define RET_CACHE_ITEM_SIZE 8
+
+#define RET_CACHE_SZ (RET_CACHE_COUNT*RET_CACHE_ITEM_SIZE)

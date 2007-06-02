@@ -55,6 +55,8 @@ u32* block_stack_pointer;
 u32 full_lookups;
 u32 fast_lookups;
 
+void ret_cache_reset();
+
 //helper list class
 int compare_BlockLookups(const void * a, const void * b)
 {
@@ -317,6 +319,11 @@ void ResetBlocks()
 {
 	for (u32 i=0;i<LOOKUP_HASH_SIZE;i++)
 	{
+		for (u32 j=0;j<BlockLookupLists[i].size();j++)
+		{
+			if (BlockLookupLists[i][j]!=BLOCK_NONE)
+				SuspendBlock(BlockLookupLists[i][j]);
+		}
 		BlockLookupLists[i].clear();
 		#ifdef BLOCK_LUT_GUESS
 		BlockLookupGuess[i]=BLOCK_NONE;
@@ -332,6 +339,7 @@ void ResetBlocks()
 	FreeBlocks(&all_block_list);
 	reset_memalloc();
 	memset(PageInfo,0,sizeof(PageInfo));
+	
 	bm_locked_block_count=0;
 	bm_manual_block_count=0;
 }
@@ -683,20 +691,7 @@ void __fastcall _SuspendAllBlocks()
 {
 	printf("Reseting Dynarec Cache...\n");
 	ResetBlocks();
-	/*
-	for (u32 i=0;i<LOOKUP_HASH_SIZE;i++)
-	{
-		for (u32 j=0;j<BlockLookupLists[i].size();j++)
-		{
-			if (BlockLookupLists[i][j]!=BLOCK_NONE)
-				SuspendBlock(BlockLookupLists[i][j]);
-		}
-		#ifdef BLOCK_LUT_GUESS
-		BlockLookupGuess[i]=BLOCK_NONE;
-		#endif
-	}
-	memset(PageInfo,0,sizeof(PageInfo));
-	*/
+
 	reset_cache=false;
 }
 //called from a manualy invalidated block

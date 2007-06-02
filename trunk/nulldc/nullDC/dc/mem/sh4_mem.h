@@ -66,9 +66,9 @@ extern Array<u8> flash_b;
 #define WriteMem16_nommu _vmem_WriteMem16
 #define WriteMem32_nommu _vmem_WriteMem32
 
-void MEMCALL WriteMemBlock(u32 addr,u32* data,u32 size);
-void MEMCALL WriteMemBlock_nommu(u32 addr,u32* data,u32 size);
-
+void MEMCALL WriteMemBlock_ptr(u32 dst,u32* src,u32 size);
+void MEMCALL WriteMemBlock_nommu_ptr(u32 dst,u32* src,u32 size);
+void MEMCALL WriteMemBlock_nommu_dma(u32 dst,u32 src,u32 size);
 //Init/Res/Term
 void mem_Init();
 void mem_Term();

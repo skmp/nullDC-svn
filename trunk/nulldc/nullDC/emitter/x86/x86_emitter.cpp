@@ -379,22 +379,33 @@ x86_mrm x86_mrm::create(x86_reg base,x86_reg index,x86_sib_scale scale,x86_ptr d
 		if (base==ESP)
 		{
 			//special encoding
-			verify(false);
+			//encoded as [none*x + ESP]
+			//index ,scale [sib]
+			rv.modrm = make_modrm(0,ESP);//ESP means sib
+			rv.flags|=1;
+
+
+			rv.sib=make_sib(0,ESP,base); //none*1+ESP
+
+			if ( disp.ptr_int!=0 )
+			{
+				rv.modrm |= EncodeDisp(disp.ptr_int,&rv,3);
+			}
 		}
 		else if (base == EBP)
 		{
 			//special encoding
 			//verify(false);
 			rv.modrm = make_modrm(0,base);
-
-			rv.modrm |= EncodeDisp(disp.ptr_int,&rv,3);	//32 or 16 bit disp
+			//uses [EBP+S8] , or [EBP+S32] forms
+			rv.modrm |= EncodeDisp(disp.ptr_int,&rv,3);	//32 or 8 bit disp
 		}
 		else if (base == NO_REG)
 		{
 			//[disp32]
-			//special encoding
-			rv.modrm=make_modrm(0,EBP);			//EBP means disp
-			EncodeDisp(disp.ptr_int,&rv,2);		//olny 32b disp alowed
+			//special encoding , will use mode [EBP] (it means disp :p)
+			rv.modrm=make_modrm(0,EBP);			
+			EncodeDisp(disp.ptr_int,&rv,2|4);		//olny 32b disp alowed , uses form 0
 		}
 		else
 		{

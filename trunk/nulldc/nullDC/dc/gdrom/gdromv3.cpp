@@ -1056,7 +1056,7 @@ void GDROM_DmaStart(u32 data)
 			{
 				buff_size=len;
 			}
-			WriteMemBlock_nommu(src,(u32*)&read_buff.cache[read_buff.cache_index], buff_size);
+			WriteMemBlock_nommu_ptr(src,(u32*)&read_buff.cache[read_buff.cache_index], buff_size);
 			read_buff.cache_index+=buff_size;
 			src+=buff_size;
 			len-=buff_size;

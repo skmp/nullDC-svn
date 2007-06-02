@@ -49,7 +49,8 @@ void do_pvr_dma()
 	else
 	{
 		//System -> PVR
-		WriteMemBlock_nommu(dst,(u32*)GetMemPtr(src,len),len);
+		//TODO : FIX THAT , to warp around on dmas :)
+		WriteMemBlock_nommu_ptr(dst,(u32*)GetMemPtr(src,len),len);
 	}
 
 	DMAC_SAR0 = (src + len);
