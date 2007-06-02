@@ -32,8 +32,6 @@ s32 GetChInput(InputDevice &iDev)
 		if(DI_OK != iDev.diDev->GetDeviceState(256, iDev.diKeys)) 
 			return -1;
 
-		int test = DIK_J;
-
 		for(int k=0; k<256; k++) {
 			if(iDev.diKeys[k] & 0x80)
 				return (DINPUT_KB_FIRST + k);
@@ -46,19 +44,24 @@ s32 GetChInput(InputDevice &iDev)
 		if(DI_OK != iDev.diDev->GetDeviceState(sizeof(DIJOYSTATE), &iDev.diJoyState)) 
 			return -1;
 
-	/*	if(iDev.diJoyState.lX)
-		if(iDev.diJoyState.lY)
-		if(iDev.diJoyState.lZ)
-		if(iDev.diJoyState.lRx)
-		if(iDev.diJoyState.lRy)
-		if(iDev.diJoyState.lRz)
-
-		if(iDev.diJoyState.rglSlider)	[2]
-		if(iDev.diJoyState.rgdwPOV)		[4]	*/
-
 		for(int b=0; b<32; b++)
 			if(iDev.diJoyState.rgbButtons[b])
 				return DINPUT_GP_BUT1 + b;
+
+		printf("l: %d %d %d lR: %d %d %d\n",
+			iDev.diJoyState.lX,		iDev.diJoyState.lY,		iDev.diJoyState.lZ,
+			iDev.diJoyState.lRx,	iDev.diJoyState.lRy,	iDev.diJoyState.lRz	);
+
+	/*	if(iDev.diJoyState.lX)	return DINPUT_GP_AX1;
+		if(iDev.diJoyState.lY)	return DINPUT_GP_AY1;
+		if(iDev.diJoyState.lZ)	return DINPUT_GP_AZ1;
+		if(iDev.diJoyState.lRx)	return DINPUT_GP_AX2;
+		if(iDev.diJoyState.lRy)	return DINPUT_GP_AY2;
+		if(iDev.diJoyState.lRz)	return DINPUT_GP_AZ2;*/
+
+	/*	if(iDev.diJoyState.rglSlider)	[2]
+		if(iDev.diJoyState.rgdwPOV)		[4]	*/
+		return 0;
 	}
 
 
@@ -93,19 +96,19 @@ bool GetDInput(u32 port, Controller_ReadFormat *crf)
 		if(DI_OK != InputDev[port].diDev->GetDeviceState(256, diKeys)) 
 			return false;
 
-		crf->C		= (diKeys[DIK_A]		& 0x80)	? 1 : 0 ;
-		crf->B		= (diKeys[DIK_S]		& 0x80)	? 1 : 0 ;
-		crf->A		= (diKeys[DIK_D]		& 0x80)	? 1 : 0 ;
-		crf->Start	= (diKeys[DIK_RETURN]	& 0x80)	? 1 : 0 ;
-		crf->Ua		= (diKeys[DIK_UP]		& 0x80)	? 1 : 0 ;
-		crf->Da		= (diKeys[DIK_DOWN]		& 0x80)	? 1 : 0 ;
-		crf->La		= (diKeys[DIK_LEFT]		& 0x80)	? 1 : 0 ;
-		crf->Ra		= (diKeys[DIK_RIGHT]	& 0x80)	? 1 : 0 ;
+		crf->C		= (diKeys[InputDev[port].KeyMap[0x0]] & 0x80)	? 1 : 0 ;
+		crf->B		= (diKeys[InputDev[port].KeyMap[0x1]] & 0x80)	? 1 : 0 ;
+		crf->A		= (diKeys[InputDev[port].KeyMap[0x0]] & 0x80)	? 1 : 0 ;
+		crf->Start	= (diKeys[InputDev[port].KeyMap[0xB]] & 0x80)	? 1 : 0 ;
+		crf->Ua		= (diKeys[InputDev[port].KeyMap[0x5]] & 0x80)	? 1 : 0 ;
+		crf->Da		= (diKeys[InputDev[port].KeyMap[0x6]] & 0x80)	? 1 : 0 ;
+		crf->La		= (diKeys[InputDev[port].KeyMap[0x7]] & 0x80)	? 1 : 0 ;
+		crf->Ra		= (diKeys[InputDev[port].KeyMap[0x8]] & 0x80)	? 1 : 0 ;
 
-		crf->Z		= (diKeys[DIK_Z]		& 0x80)	? 1 : 0 ;
-		crf->Y		= (diKeys[DIK_X]		& 0x80)	? 1 : 0 ;
-		crf->X		= (diKeys[DIK_C]		& 0x80)	? 1 : 0 ;
-		crf->D		= (diKeys[DIK_V]		& 0x80)	? 1 : 0 ;
+		crf->Z		= (diKeys[InputDev[port].KeyMap[0x0]] & 0x80)	? 1 : 0 ;
+		crf->Y		= (diKeys[InputDev[port].KeyMap[0x4]] & 0x80)	? 1 : 0 ;
+		crf->X		= (diKeys[InputDev[port].KeyMap[0x3]] & 0x80)	? 1 : 0 ;
+		crf->D		= (diKeys[InputDev[port].KeyMap[0x0]] & 0x80)	? 1 : 0 ;
 		crf->Ub		= 0;
 		crf->Db		= 0;
 		crf->Lb		= 0;
@@ -120,24 +123,34 @@ bool GetDInput(u32 port, Controller_ReadFormat *crf)
 		if(DI_OK != InputDev[port].diDev->GetDeviceState(sizeof(DIJOYSTATE), &diJoyState)) 
 			return false;
 
-		crf->C		= diJoyState.rgbButtons[0];
-		crf->B		= diJoyState.rgbButtons[1];
-		crf->A		= diJoyState.rgbButtons[2];
-		crf->Start	= diJoyState.rgbButtons[3];
-		crf->Ua		= diJoyState.rgbButtons[4];
-		crf->Da		= diJoyState.rgbButtons[5];
-		crf->La		= diJoyState.rgbButtons[6];
-		crf->Ra		= diJoyState.rgbButtons[7];
+		// A,B,X,Y,  U,D,L,R,  Ax1,Ax2, Start, LT,RT
 
-		crf->Z		= diJoyState.rgbButtons[8];
-		crf->Y		= diJoyState.rgbButtons[9];
-		crf->X		= diJoyState.rgbButtons[10];
-		crf->D		= diJoyState.rgbButtons[11];
+		crf->C		= 0;
+		crf->B		= (diJoyState.rgbButtons[InputDev[port].KeyMap[0x1]] & 0x80)	? 1 : 0 ;
+		crf->A		= (diJoyState.rgbButtons[InputDev[port].KeyMap[0x0]] & 0x80)	? 1 : 0 ;
+		crf->Start	= (diJoyState.rgbButtons[InputDev[port].KeyMap[0xB]] & 0x80)	? 1 : 0 ;
+		crf->Ua		= (diJoyState.rgbButtons[InputDev[port].KeyMap[0x5]] & 0x80)	? 1 : 0 ;
+		crf->Da		= (diJoyState.rgbButtons[InputDev[port].KeyMap[0x6]] & 0x80)	? 1 : 0 ;
+		crf->La		= (diJoyState.rgbButtons[InputDev[port].KeyMap[0x7]] & 0x80)	? 1 : 0 ;
+		crf->Ra		= (diJoyState.rgbButtons[InputDev[port].KeyMap[0x8]] & 0x80)	? 1 : 0 ;
+
+		crf->Z		= 0;
+		crf->Y		= (diJoyState.rgbButtons[InputDev[port].KeyMap[0x4]] & 0x80)	? 1 : 0 ;
+		crf->X		= (diJoyState.rgbButtons[InputDev[port].KeyMap[0x3]] & 0x80)	? 1 : 0 ;
+		crf->D		= (diJoyState.rgbButtons[InputDev[port].KeyMap[0x0]] & 0x80)	? 1 : 0 ;
 		crf->Ub		= 0;
 		crf->Db		= 0;
 		crf->Lb		= 0;
 		crf->Rb		= 0;
 
+		printf("crf: %X \n", crf->Buttons);
+
+		crf->Av[0]	= diJoyState.lX / 256;
+	//	crf->Av[1]	= diJoyState.lX / 256;
+		crf->Av[2]	= diJoyState.lX / 256;
+	//	crf->Av[3]	= diJoyState.lX / 256;
+		crf->Av[4]	= diJoyState.lX / 256;
+	//	crf->Av[5]	= diJoyState.lX / 256;
 		return true;
 	}
 
@@ -153,9 +166,20 @@ bool GetDInput(u32 port, Controller_ReadFormat *crf)
 
 BOOL EnumObjsCB(LPCDIDEVICEOBJECTINSTANCE lpddoi, LPVOID pvRef)
 {
-	printf("\tFound: %s\n", lpddoi->tszName);
+	//printf("\tFound: %s\n", lpddoi->tszName);
 	return DIENUM_CONTINUE;
 }
+
+/*
+	DirectInputDevice objects instantiate the IDirectInputDevice8 Interface. 
+	The application ascertains the number and type of device objects available
+	by using the IDirectInputDevice8::EnumObjects method. 
+	Individual device objects are not encapsulated as code objects, 
+	but are described in DIDEVICEOBJECTINSTANCE structures.
+	
+	All DirectInput interfaces are available in ANSI and Unicode versions. 
+	If "UNICODE" is defined during compilation, the Unicode versions are used.
+*/
 
 BOOL EnumDevsCB(LPCDIDEVICEINSTANCE lpddi, LPVOID Ref)
 {
@@ -163,6 +187,17 @@ BOOL EnumDevsCB(LPCDIDEVICEINSTANCE lpddi, LPVOID Ref)
 	didi.devType = lpddi->dwDevType;
 	didi.guid = lpddi->guidInstance;
 	strcpy(didi.name, lpddi->tszInstanceName);
+
+/*	LPDIRECTINPUTDEVICE8 diDev;
+	if(FAILED(dInputObj->CreateDevice(lpddi->guidInstance, &diDev, NULL)))
+	{
+		printf("Couldn't Create Obj for %s, DisConnecting!\n", lpddi->tszInstanceName);
+		return DIENUM_STOP;
+	}
+	if(DI_OK != diDev->EnumObjects((LPDIENUMDEVICEOBJECTSCALLBACK)EnumObjsCB,(void*)0, DIDFT_ALL)) { return DIENUM_STOP; }
+
+	diDev->Unacquire();
+	diDev->Release();*/
 	
 	diDevInfoList.push_back(didi);
 	return DIENUM_CONTINUE;
@@ -220,43 +255,13 @@ bool InitDInput(HINSTANCE hInst)
 			if(diDevInfoList[x].guid == InputDev[d].guidDev)
 				guidIdx = (int)x;
 
-		InputDev[d].Connected = (-1==guidIdx) ;
+		InputDev[d].Connected = (-1==guidIdx) ? false : true ;
 
 		if(InputDev[d].Connected)
 		{
 			if(!InputDev[d].ReAqcuire(guidIdx))
 				InputDev[d].Connected = false;
-
-		/*	if(FAILED(dInputObj->CreateDevice(InputDev[d].guidDev, &InputDev[d].diDev, NULL)))
-			{
-				printf("Couldn't Create Obj for %s, DisConnecting!\n", diDevInfoList[guidIdx].name);
-				InputDev[d].Connected = false;
-			}*/
 		}
-	/*	if(InputDev[d].Connected)
-		{
-		//	if(FAILED(dInputDev[d]->SetCooperativeLevel(hwnd, DISCL_NONEXCLUSIVE | DISCL_FOREGROUND))) { return false; }
-
-			switch(InputDev[d].DevType)
-			{
-			case DI8DEVCLASS_GAMECTRL:
-				if(FAILED(InputDev[d].diDev->SetDataFormat(&c_dfDIJoystick)))
-					return false;
-				break;
-
-			case DI8DEVCLASS_KEYBOARD:
-				if(FAILED(InputDev[d].diDev->SetDataFormat(&c_dfDIKeyboard)))
-					return false;
-				break;
-
-			case DI8DEVCLASS_POINTER:
-			//	if(FAILED(InputDev[d].diDev->SetDataFormat(&c_dfDIPointer)))
-			//		return false;
-				return false;
-			}
-			if(FAILED(InputDev[d].diDev->Acquire()))
-				return false;
-		}*/
 	}
 
 	return true;

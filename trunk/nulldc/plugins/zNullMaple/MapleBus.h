@@ -17,13 +17,13 @@ Transmission data (including the data format, etc.) is stored in 4 byte units.
 
 (2) Configuration of AP bits
 These are configured in one byte.
-Bit	7	6	5	4	3	2	1	0
+Bit		7	6	5	4	3	2	1	0
 Data	PO1	PO0	D/E	LM4	LM3	LM2	LM1	LM0
 
 When the device responds, the origin AP at the time becomes the value of the sum (all OR)
 of the device's own AP and the connected expansion devices' APs.
 
-bit		7		6		5		4		3		2		1		0
+bit			7		6		5		4		3		2		1		0
 1st Data	FT31	FT30	FT29	FT28	FT27	FT26	FT25	FT24
 2nd Data	FT23	FT22	FT21	FT20	FT19	FT18	FT17	FT16
 3rd Data	FT15	FT14	FT13	FT12	FT11	FT10	FT9		FT8

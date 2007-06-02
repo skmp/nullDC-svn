@@ -134,7 +134,7 @@ void SaveCfg()
 		ei.ConfigSaveInt(cfg_key, "Connected", InputDev[p].Connected);
 		ei.ConfigSaveInt(cfg_key, "DevType", InputDev[p].DevType);
 
-		for(size_t k=0; k<InputDev[p].KeyMap.size(); k++) {
+		for(size_t k=0; k<32; k++) {
 			sprintf(cfg_sub, "KeyMap[%02X]", k);
 			ei.ConfigSaveInt(cfg_key, cfg_sub, InputDev[p].KeyMap[k]);
 		}
@@ -161,12 +161,9 @@ void LoadCfg()
 		InputDev[p].Connected	= ei.ConfigLoadInt(cfg_key, "Connected", 0);
 		InputDev[p].DevType		= ei.ConfigLoadInt(cfg_key, "DevType", 0);
 
-		if(InputDev[p].KeyMap.size() > 0)
-			InputDev[p].KeyMap.clear();
-
-		for(size_t k=0; k<InputDev[p].KeyMap.size(); k++) {
+		for(size_t k=0; k<32; k++) {
 			sprintf(cfg_sub, "KeyMap[%02X]", k);
-			InputDev[p].KeyMap.push_back(ei.ConfigLoadInt(cfg_key, cfg_sub, 0));
+			InputDev[p].KeyMap[k] = ei.ConfigLoadInt(cfg_key, cfg_sub, 0);
 		}
 	}
 }
@@ -215,15 +212,31 @@ DWORD WINAPI ThreadStart(LPVOID lpParameter)
 {
 	while(5 != curr_port)
 	{
+		volatile u32 csel = curr_sel;
 		s32 rv = GetChInput(InputDev[curr_port]);
-		if(rv > 0 && 420 != curr_sel)
-		{
-			u32 tval = 0;
-			while(InputDev[curr_port].KeyMap.size() < curr_sel)
-				InputDev[curr_port].KeyMap.push_back(tval);
 
-			InputDev[curr_port].KeyMap[curr_sel] = rv;
-			SetDlgItemText((HWND)lpParameter, IDC_EDIT1+curr_sel, MapNames[rv]);
+		if((rv > 0) && (420 != csel))
+		{
+			switch(InputDev[curr_port].DevType)
+			{
+			case DI8DEVCLASS_KEYBOARD:
+				InputDev[curr_port].KeyMap[csel] = (rv - DINPUT_KB_FIRST);
+				SetDlgItemText((HWND)lpParameter, IDC_EDIT1+csel, MapNames[rv]);
+			break;
+
+			case DI8DEVCLASS_GAMECTRL:
+				InputDev[curr_port].KeyMap[csel] = (rv - DINPUT_GP_BUT1);
+				SetDlgItemText((HWND)lpParameter, IDC_EDIT1+csel, MapNames[rv]);
+			break;
+
+			case DI8DEVCLASS_POINTER:
+				printf("Mouse Input Type, Unsupported!\n");
+			break;
+
+			default:
+				printf("Default Input Type, WTF?\n");
+			return -3;
+			}
 		}
 		Sleep(100);
 	}
@@ -233,15 +246,21 @@ DWORD WINAPI ThreadStart(LPVOID lpParameter)
 void UpdateDlg(HWND hDlg, u32 port)
 {	
 	CheckDlgButton(hDlg, IDC_CONNECTED, InputDev[port].Connected);
-	//SendMessage(GetDlgItem(hDlg,IDC_SELECT),CB_SETCURSEL,(InputDev[port].DevType-DI8DEVCLASS_POINTER),0);
 
+	// Update ComboBox to prop. device
+	for(size_t x=0; x<diDevInfoList.size(); x++)
+		if(diDevInfoList[x].guid == InputDev[port].guidDev)
+			SendMessage(GetDlgItem(hDlg,IDC_SELECT),CB_SETCURSEL, x,0);
+
+	// Get proper mapstart offs. for dev type
+	u32 mapstart = DINPUT_KB_FIRST;
+	if(DI8DEVCLASS_GAMECTRL==InputDev[port].DevType) mapstart = DINPUT_GP_BUT1;
+	if(DI8DEVCLASS_POINTER ==InputDev[port].DevType) mapstart = DINPUT_GP_BUT1;
+
+	// Update each
 	for(int i=0; i<11; i++) {
 		EnableWindow(GetDlgItem(hDlg,IDC_EDIT1+i), InputDev[port].Connected);
-
-		if(i<InputDev[port].KeyMap.size())
-			SetDlgItemText(hDlg, IDC_EDIT1+i, MapNames[InputDev[port].KeyMap[i]]);
-		else
-			SetDlgItemText(hDlg, IDC_EDIT1+i, MapNames[0]);
+		SetDlgItemText(hDlg, IDC_EDIT1+i, MapNames[mapstart+InputDev[port].KeyMap[i]]);
 	}
 }
 
@@ -283,16 +302,15 @@ INT_PTR CALLBACK dlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		case IDC_EDIT9:		case IDC_EDIT10:	case IDC_EDIT11:
 		{
 			// *FIXME* Note, specific to dc cont. UI only //
-			curr_sel = 10 - (IDC_EDIT11 - LOWORD(wParam));
-
 			switch(HIWORD(wParam))
 			{
 			case EN_SETFOCUS:
 				curr_sel = 10 - (IDC_EDIT11 - LOWORD(wParam));
+			return true;
 
 			case EN_KILLFOCUS:
-				curr_sel = 420;
-				return true;
+				curr_sel = 0x420;
+			return true;
 
 				// *FIXME* Use IF kboard not in-use, else you can type shit ....
 			case EN_CHANGE:
@@ -317,16 +335,18 @@ INT_PTR CALLBACK dlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				int guidIdx = SendMessage((HWND)lParam,CB_GETCURSEL,0,0);
 				if(!InputDev[curr_port].ReAqcuire(guidIdx))
 					printf("IDC_SELECT::InputDev[%02X].ReAqcuire(%X) Failed!\n", curr_port, guidIdx);
-//				UpdateDlg(hDlg,curr_port);
+				UpdateDlg(hDlg,curr_port);
 			}
 			return true;
 
 		case IDOK:
 			SaveCfg();
+			curr_port = 5;		// terminate input thread
 			EndDialog(hDlg,0);
 			return true;
 
 		case IDCANCEL:
+			curr_port = 5;		// terminate input thread
 			EndDialog(hDlg,0);
 			return true;
 
@@ -381,6 +401,8 @@ void FASTCALL SubDeviceDMA(maple_subdevice_instance* dev_inst, u32 Command, u32*
 void FASTCALL DeviceDMA(maple_device_instance* dev_inst, u32 Command, u32* buffer_in,
 						u32 in_len, u32* buffer_out, u32& out_len, u32& response)
 {
+	curr_port = (dev_inst->port>>6);
+
 	switch(Command)
 	{
 	case MAPLE_DEV_REQ:
@@ -432,7 +454,7 @@ void FASTCALL DeviceDMA(maple_device_instance* dev_inst, u32 Command, u32* buffe
 		Controller_ReadFormat * crf = 
 			(Controller_ReadFormat *)&buffer_out[1];
 
-		if(!GetDInput(0,crf)) {
+		if(!GetDInput(curr_port,crf)) {
 			printf("Failed To Get DInput State!\n");
 
 			crf->Buttons = 0;
