@@ -48,19 +48,32 @@ s32 GetChInput(InputDevice &iDev)
 			if(iDev.diJoyState.rgbButtons[b])
 				return DINPUT_GP_BUT1 + b;
 
+//		printf("POV %X %X %X %X\n",
+//			iDev.diJoyState.rgdwPOV[0], iDev.diJoyState.rgdwPOV[1],
+//			iDev.diJoyState.rgdwPOV[2], iDev.diJoyState.rgdwPOV[3]);
+
+		if(-1 != iDev.diJoyState.rgdwPOV[0]) {
+			if(0x0000==iDev.diJoyState.rgdwPOV[0])	return DINPUT_GP_POV1_U;
+			if(0x2328==iDev.diJoyState.rgdwPOV[0])	return DINPUT_GP_POV1_R;
+			if(0x4650==iDev.diJoyState.rgdwPOV[0])	return DINPUT_GP_POV1_D;
+			if(0x6978==iDev.diJoyState.rgdwPOV[0])	return DINPUT_GP_POV1_L;
+		}
+		if(-1 != iDev.diJoyState.rgdwPOV[1]) return DINPUT_GP_POV2;
+		if(-1 != iDev.diJoyState.rgdwPOV[2]) return DINPUT_GP_POV3;
+		if(-1 != iDev.diJoyState.rgdwPOV[3]) return DINPUT_GP_POV4;
+
 		printf("l: %d %d %d lR: %d %d %d\n",
 			iDev.diJoyState.lX,		iDev.diJoyState.lY,		iDev.diJoyState.lZ,
 			iDev.diJoyState.lRx,	iDev.diJoyState.lRy,	iDev.diJoyState.lRz	);
 
-	/*	if(iDev.diJoyState.lX)	return DINPUT_GP_AX1;
+		if(iDev.diJoyState.lX)	return DINPUT_GP_AX1;
 		if(iDev.diJoyState.lY)	return DINPUT_GP_AY1;
 		if(iDev.diJoyState.lZ)	return DINPUT_GP_AZ1;
 		if(iDev.diJoyState.lRx)	return DINPUT_GP_AX2;
 		if(iDev.diJoyState.lRy)	return DINPUT_GP_AY2;
-		if(iDev.diJoyState.lRz)	return DINPUT_GP_AZ2;*/
+		if(iDev.diJoyState.lRz)	return DINPUT_GP_AZ2;
 
-	/*	if(iDev.diJoyState.rglSlider)	[2]
-		if(iDev.diJoyState.rgdwPOV)		[4]	*/
+	/*	if(iDev.diJoyState.rglSlider)	[2]	*/
 		return 0;
 	}
 
@@ -76,6 +89,48 @@ s32 GetChInput(InputDevice &iDev)
 
 	return -6;
 }
+
+__inline static u32 GetCompatJoyInput(DIJOYSTATE * pJS, u32 map)
+{
+//	printf("GetCompatJoyInput()::map: %d\n", map);
+
+	if((DINPUT_GP_BUT1+map) <= DINPUT_GP_BUT32)			// Checking buttons, easy
+	{
+		if(map > 31) printf("-ERROR BUTTON MAP > 31 !\n");
+		return (pJS->rgbButtons[map] & 0x80)	? 1 : 0 ;
+	}
+	else if((DINPUT_GP_BUT1+map) <= DINPUT_GP_AZ2)		// Checking axes
+	{
+		u32 axis = 5 - (DINPUT_GP_AZ2 - (DINPUT_GP_BUT1+map));
+
+		printf("axis: %d\n", axis);
+
+		switch(axis)
+		{
+		case 0:	return (pJS->lX /256)&0xFC;	// *FIXME* use real deadzone and maxes
+		case 1:	return (pJS->lY /256)&0xFC;
+		case 2:	return (pJS->lZ /256)&0xFC;
+		case 3:	return (pJS->lRx/256)&0xFC;
+		case 4:	return (pJS->lRy/256)&0xFC;
+		case 5:	return (pJS->lRz/256)&0xFC;
+		}
+
+		return 0;
+	}
+	else if((DINPUT_GP_BUT1+map) <= DINPUT_GP_POV1_L)	// Checking POV
+	{
+		u32 pov = (DINPUT_GP_POV1_L - (DINPUT_GP_BUT1+map));
+
+		if(-1 == pJS->rgdwPOV[0]) return 0;
+		if((pJS->rgdwPOV[0] >= 0x0000) && (pJS->rgdwPOV[0] < 0x2328) && (pov==0))	return 1;
+		if((pJS->rgdwPOV[0] >= 0x2328) && (pJS->rgdwPOV[0] < 0x4650) && (pov==1))	return 1;
+		if((pJS->rgdwPOV[0] >= 0x4650) && (pJS->rgdwPOV[0] < 0x6978) && (pov==2))	return 1;
+		if((pJS->rgdwPOV[0] >= 0x6978) && (pov==3))	return 1;
+		return 0;
+	}
+	return 0;
+}
+
 
 bool GetDInput(u32 port, Controller_ReadFormat *crf)
 {
@@ -96,6 +151,7 @@ bool GetDInput(u32 port, Controller_ReadFormat *crf)
 		if(DI_OK != InputDev[port].diDev->GetDeviceState(256, diKeys)) 
 			return false;
 
+		// *FIXME* kb is fucked here w/ map #
 		crf->C		= (diKeys[InputDev[port].KeyMap[0x0]] & 0x80)	? 1 : 0 ;
 		crf->B		= (diKeys[InputDev[port].KeyMap[0x1]] & 0x80)	? 1 : 0 ;
 		crf->A		= (diKeys[InputDev[port].KeyMap[0x0]] & 0x80)	? 1 : 0 ;
@@ -126,31 +182,30 @@ bool GetDInput(u32 port, Controller_ReadFormat *crf)
 		// A,B,X,Y,  U,D,L,R,  Ax1,Ax2, Start, LT,RT
 
 		crf->C		= 0;
-		crf->B		= (diJoyState.rgbButtons[InputDev[port].KeyMap[0x1]] & 0x80)	? 1 : 0 ;
-		crf->A		= (diJoyState.rgbButtons[InputDev[port].KeyMap[0x0]] & 0x80)	? 1 : 0 ;
-		crf->Start	= (diJoyState.rgbButtons[InputDev[port].KeyMap[0xB]] & 0x80)	? 1 : 0 ;
-		crf->Ua		= (diJoyState.rgbButtons[InputDev[port].KeyMap[0x5]] & 0x80)	? 1 : 0 ;
-		crf->Da		= (diJoyState.rgbButtons[InputDev[port].KeyMap[0x6]] & 0x80)	? 1 : 0 ;
-		crf->La		= (diJoyState.rgbButtons[InputDev[port].KeyMap[0x7]] & 0x80)	? 1 : 0 ;
-		crf->Ra		= (diJoyState.rgbButtons[InputDev[port].KeyMap[0x8]] & 0x80)	? 1 : 0 ;
+		crf->B		= GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0x1]);
+		crf->A		= GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0x0]);
+		crf->Start	= GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0xA]);
+		crf->Ua		= GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0x4]);
+		crf->Da		= GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0x5]);
+		crf->La		= GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0x6]);
+		crf->Ra		= GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0x7]);
 
 		crf->Z		= 0;
-		crf->Y		= (diJoyState.rgbButtons[InputDev[port].KeyMap[0x4]] & 0x80)	? 1 : 0 ;
-		crf->X		= (diJoyState.rgbButtons[InputDev[port].KeyMap[0x3]] & 0x80)	? 1 : 0 ;
-		crf->D		= (diJoyState.rgbButtons[InputDev[port].KeyMap[0x0]] & 0x80)	? 1 : 0 ;
+		crf->Y		= GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0x3]);
+		crf->X		= GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0x2]);
+		crf->D		= 0;
 		crf->Ub		= 0;
 		crf->Db		= 0;
 		crf->Lb		= 0;
 		crf->Rb		= 0;
 
-		printf("crf: %X \n", crf->Buttons);
+		crf->Av[0] = 0;	//GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0xC]);
+		crf->Av[1] = 0;	//GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0xD]);
+		crf->Av[2] = GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0x8]);
+		crf->Av[3] = GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0x9]);
+		crf->Av[4] = 127;	//GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0x8]);
+		crf->Av[5] = 127;	//GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0x8]);
 
-		crf->Av[0]	= diJoyState.lX / 256;
-	//	crf->Av[1]	= diJoyState.lX / 256;
-		crf->Av[2]	= diJoyState.lX / 256;
-	//	crf->Av[3]	= diJoyState.lX / 256;
-		crf->Av[4]	= diJoyState.lX / 256;
-	//	crf->Av[5]	= diJoyState.lX / 256;
 		return true;
 	}
 
