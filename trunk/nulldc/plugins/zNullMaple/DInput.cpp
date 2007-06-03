@@ -15,6 +15,18 @@ InputDevice			InputDev[4];
 vector<DI_DevInfo>	diDevInfoList;
 
 
+__inline static u32 _offcenter(u32 in)
+{
+	printf("_offcenter: %d\n",in);
+
+	if((in < 29000) || (in > 35000))
+		return 1;
+	return 0;
+}
+__inline static u32 _deadzone(u32 in)	// *FIXME*
+{
+	return (in & 0xFFFFFFFE00) >> 8 ;
+}
 
 s32 GetChInput(InputDevice &iDev)
 {
@@ -58,12 +70,13 @@ s32 GetChInput(InputDevice &iDev)
 		if(-1 != iDev.diJoyState.rgdwPOV[2]) return DINPUT_GP_POV3;
 		if(-1 != iDev.diJoyState.rgdwPOV[3]) return DINPUT_GP_POV4;
 
-		if((iDev.diJoyState.lX/256)&0xF8)	return DINPUT_GP_AX1;
-		if((iDev.diJoyState.lY/256)&0xF8)	return DINPUT_GP_AY1;
-		if((iDev.diJoyState.lZ/256)&0xF8)	return DINPUT_GP_AZ1;
-		if((iDev.diJoyState.lRx/256)&0xF8)	return DINPUT_GP_AX2;
-		if((iDev.diJoyState.lRy/256)&0xF8)	return DINPUT_GP_AY2;
-		if((iDev.diJoyState.lRz/256)&0xF8)	return DINPUT_GP_AZ2;
+
+		if(_offcenter(iDev.diJoyState.lX))	return DINPUT_GP_AX1;
+		if(_offcenter(iDev.diJoyState.lY))	return DINPUT_GP_AY1;
+		if(_offcenter(iDev.diJoyState.lZ))	return DINPUT_GP_AZ1;
+		if(_offcenter(iDev.diJoyState.lRx))	return DINPUT_GP_AX2;
+		if(_offcenter(iDev.diJoyState.lRy))	return DINPUT_GP_AY2;
+		if(iDev.diJoyState.lRz)	return DINPUT_GP_AZ2;
 
 	/*	if(iDev.diJoyState.rglSlider)	[2]	*/
 		return 0;
@@ -82,6 +95,7 @@ s32 GetChInput(InputDevice &iDev)
 	return -6;
 }
 
+
 __inline static u32 GetCompatJoyInput(DIJOYSTATE * pJS, u32 map)
 {
 //	printf("GetCompatJoyInput()::map: %d\n", map);
@@ -95,16 +109,14 @@ __inline static u32 GetCompatJoyInput(DIJOYSTATE * pJS, u32 map)
 	{
 		u32 axis = 5 - (DINPUT_GP_AZ2 - (DINPUT_GP_BUT1+map));
 
-		switch(axis)
-		{
-		case 0:	return (pJS->lX /256)&0xFC;	// *FIXME* use real deadzone and maxes
-		case 1:	return (pJS->lY /256)&0xFC;
-		case 2:	return (pJS->lZ /256)&0xFC;
-		case 3:	return (pJS->lRx/256)&0xFC;
-		case 4:	return (pJS->lRy/256)&0xFC;
-		case 5:	return (pJS->lRz/256)&0xFC;
+		switch(axis) {
+		case 0:	return _deadzone(pJS->lX);	// *FIXME* use real deadzone and maxes
+		case 1:	return _deadzone(pJS->lY);
+		case 2:	return _deadzone(pJS->lZ);
+		case 3:	return _deadzone(pJS->lRx);
+		case 4:	return _deadzone(pJS->lRy);
+		case 5:	return _deadzone(pJS->lRz);
 		}
-
 		return 0;
 	}
 	else if((DINPUT_GP_BUT1+map) <= DINPUT_GP_POV1_L)	// Checking POV
@@ -160,7 +172,6 @@ bool GetDInput(u32 port, Controller_ReadFormat *crf)
 		crf->Db		= 1;
 		crf->Lb		= 1;
 		crf->Rb		= 1;
-
 		return true;
 	}
 
@@ -170,9 +181,13 @@ bool GetDInput(u32 port, Controller_ReadFormat *crf)
 		if(DI_OK != InputDev[port].diDev->GetDeviceState(sizeof(DIJOYSTATE), &diJoyState)) 
 			return false;
 
+		printf("JS: %d %d %d : %d %d %d :: %X\n",
+			diJoyState.lX, diJoyState.lY, diJoyState.lZ, 
+			diJoyState.lRx, diJoyState.lRy, diJoyState.lRz,
+			((diJoyState.lX>>8)&0x70));
+
 		// A,B,X,Y,  U,D,L,R,  Ax1,Ax2, Start, LT,RT
 
-		crf->C		= 1;
 		crf->B		= GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0x1]);
 		crf->A		= GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0x0]);
 		crf->Start	= GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0xA]);
@@ -180,18 +195,15 @@ bool GetDInput(u32 port, Controller_ReadFormat *crf)
 		crf->Da		= GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0x5]);
 		crf->La		= GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0x6]);
 		crf->Ra		= GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0x7]);
-
-		crf->Z		= 1;
 		crf->Y		= GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0x3]);
 		crf->X		= GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0x2]);
-		crf->D		= 1;
-		crf->Ub		= 1;
-		crf->Db		= 1;
-		crf->Lb		= 1;
-		crf->Rb		= 1;
 
-		crf->Av[0] = 0;	//GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0xC]);
-		crf->Av[1] = 0;	//GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0xD]);
+		crf->C		= 1;		crf->D		= 1;		crf->Z		= 1;
+		crf->Ub		= 1;		crf->Db		= 1;
+		crf->Lb		= 1;		crf->Rb		= 1;
+
+		crf->Av[0] = GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0xB]);
+		crf->Av[1] = GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0xC]);
 		crf->Av[2] = GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0x8]);
 		crf->Av[3] = GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0x9]);
 		crf->Av[4] = 128;	//GetCompatJoyInput(&diJoyState, InputDev[port].KeyMap[0x8]);

@@ -258,7 +258,7 @@ void UpdateDlg(HWND hDlg, u32 port)
 	if(DI8DEVCLASS_POINTER ==InputDev[port].DevType) mapstart = DINPUT_GP_BUT1;
 
 	// Update each
-	for(int i=0; i<11; i++) {
+	for(int i=0; i<13; i++) {
 		EnableWindow(GetDlgItem(hDlg,IDC_EDIT1+i), InputDev[port].Connected);
 		SetDlgItemText(hDlg, IDC_EDIT1+i, MapNames[mapstart+InputDev[port].KeyMap[i]]);
 	}
@@ -299,7 +299,8 @@ INT_PTR CALLBACK dlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		{
 		case IDC_EDIT1:		case IDC_EDIT2:		case IDC_EDIT3:		case IDC_EDIT4:
 		case IDC_EDIT5:		case IDC_EDIT6:		case IDC_EDIT7:		case IDC_EDIT8:
-		case IDC_EDIT9:		case IDC_EDIT10:	case IDC_EDIT11:
+		case IDC_EDIT9:		case IDC_EDIT10:	case IDC_EDIT11:	case IDC_EDIT12:
+		case IDC_EDIT13:
 		{
 			// *FIXME* Note, specific to dc cont. UI only //
 			switch(HIWORD(wParam))
