@@ -143,9 +143,9 @@ struct Controller_ReadFormat
 
 	union {
 		struct {
-			signed char Ax1, Ax2, Ax3, Ax4, Ax5, Ax6;
+			unsigned char LT, RT, Ax1, Ax2, Ax3, Ax4;
 		};
-		signed char Av[6];
+		unsigned char Av[6];
 	};
 };
 
@@ -175,7 +175,7 @@ struct DeviceID	// *FIXME*
 #define FT_KEYBOARD		0x40000000
 #define FT_RESERVED		0x00000000
 
-#define FD_CONTROLLER	0x000F06FE
+#define FD_CONTROLLER	0xFE060F00
 
 // Fixed Device Status 112bytes
 

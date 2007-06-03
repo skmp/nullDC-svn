@@ -454,20 +454,15 @@ void FASTCALL DeviceDMA(maple_device_instance* dev_inst, u32 Command, u32* buffe
 		Controller_ReadFormat * crf = 
 			(Controller_ReadFormat *)&buffer_out[1];
 
-		if(!GetDInput(curr_port,crf)) {
+		crf->Buttons = ~0;
+		crf->LT = crf->RT = 0;
+		crf->Ax1 = crf->Ax2 = 128;
+		crf->Ax3 = crf->Ax4 = 0;
+		if(!GetDInput(curr_port,crf))
 			printf("Failed To Get DInput State!\n");
-
-			crf->Buttons = 0;
-			for(int a=0; a<6; a++)
-				crf->Av[a] = 0;
-		}
 
 		return;
 	}
-
-
-
-
 
 
 	case MAPLE_GET_MEDIAINFO:
