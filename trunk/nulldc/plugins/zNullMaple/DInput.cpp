@@ -109,13 +109,14 @@ __inline static u32 GetCompatJoyInput(DIJOYSTATE * pJS, u32 map)
 	}
 	else if((DINPUT_GP_BUT1+map) <= DINPUT_GP_POV1_L)	// Checking POV
 	{
+		s32 V = pJS->rgdwPOV[0];
 		u32 pov = 3 - (DINPUT_GP_POV1_L - (DINPUT_GP_BUT1+map));
 
-		if(-1 == pJS->rgdwPOV[0]) return 1;
-		if((pJS->rgdwPOV[0] >= 0x0000) && (pJS->rgdwPOV[0] < 0x2328) && (pov==0))	return 0;
-		if((pJS->rgdwPOV[0] >= 0x2328) && (pJS->rgdwPOV[0] < 0x4650) && (pov==1))	return 0;
-		if((pJS->rgdwPOV[0] >= 0x4650) && (pJS->rgdwPOV[0] < 0x6978) && (pov==2))	return 0;
-		if((pJS->rgdwPOV[0] >= 0x6978) && (pov==3))	return 0;
+		if(-1==V) return 1;
+		if((0==pov) && ((31500==V) || (0==V)     || (4500 ==V)))	return 0;
+		if((1==pov) && ((4500 ==V) || (9000==V)  || (13500==V)))	return 0;
+		if((2==pov) && ((13500==V) || (18000==V) || (22500==V)))	return 0;
+		if((3==pov) && ((22500==V) || (27000==V) || (31500==V)))	return 0;
 		return 1;
 	}
 	return 1;
