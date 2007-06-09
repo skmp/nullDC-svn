@@ -981,6 +981,19 @@ int compare_calls (const Ta * ba, const Tb * bb)
 	return ( avb>ava?1:-1);
 }
 
+
+int compare_time_g (const void * a, const void * b)
+{
+	CompiledBlockInfo* cba=*(CompiledBlockInfo**)a;CompiledBlockInfo* cbc=*(CompiledBlockInfo**)b;
+	
+	return cba->GetNP()->time < cbc->GetNP()->time ? 1:-1;
+}
+int compare_calls_g (const void * a, const void * b)
+{
+	CompiledBlockInfo* cba=*(CompiledBlockInfo**)a;CompiledBlockInfo* cbc=*(CompiledBlockInfo**)b;
+	
+	return cba->GetNP()->calls < cbc->GetNP()->calls ? 1:-1;
+}
 int compare_usage_g (const void * a, const void * b)
 {
 	//CompiledBlockInfo* cba=*(CompiledBlockInfo*)a,CompiledBlockInfo* cbc=*(CompiledBlockInfo*)b;
@@ -994,23 +1007,8 @@ int compare_usage_g (const void * a, const void * b)
 	//case COMPILED_SUPER_BLOCK:
 	//	break;
 	//}
-	return 0;
+	return compare_calls_g(a,b);
 }
-int compare_time_g (const void * a, const void * b)
-{
-	//CompiledBlockInfo* cba=*(CompiledBlockInfo**)a,CompiledBlockInfo* cbc=*(CompiledBlockInfo**)b;
-	//verify(cba->block_type & COMPILED_BLOCK_NULLPROF);
-	//verify(cbb->block_type & COMPILED_BLOCK_NULLPROF);
-	return 0;
-}
-int compare_calls_g (const void * a, const void * b)
-{
-	//CompiledBlockInfo* cba=*(CompiledBlockInfo**)a,CompiledBlockInfo* cbc=*(CompiledBlockInfo**)b;
-	//verify(cba->block_type & COMPILED_BLOCK_NULLPROF);
-	//verify(cbb->block_type & COMPILED_BLOCK_NULLPROF);
-	return 0;
-}
-
 
 void nullprof_GetBlocks(nullprof_blocklist* to, u32 type,u32 count)
 {
@@ -1018,7 +1016,7 @@ void nullprof_GetBlocks(nullprof_blocklist* to, u32 type,u32 count)
 	
 	for (u32 i=0;i<all_block_list.ItemCount;i++)
 	{
-		if (all_block_list[i])
+		if (all_block_list[i]!=BLOCK_NONE)
 			used_blocks.Add(all_block_list[i]);
 	}
 
@@ -1070,7 +1068,7 @@ void nullprof_ClearBlockPdata()
 
 	for (u32 i=0;i<all_block_list.ItemCount;i++)
 	{
-		if (all_block_list[i])
+		if (all_block_list[i]!=BLOCK_NONE)
 			used_blocks.Add(all_block_list[i]);
 	}
 

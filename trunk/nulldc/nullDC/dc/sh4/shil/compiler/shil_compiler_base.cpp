@@ -135,7 +135,19 @@ x86_gpr_reg GetSpareReg()
 
 //#define PROFILE_SLOW_BLOCK
 //#ifdef PROFILE_SLOW_BLOCK
-
+void InitnullProf()
+{
+if(profiler_dll.Load("nullprof_server.dll"))
+	{
+		void* temp=profiler_dll.GetProcAddress("InitProfiller");
+		if (temp)
+		{
+			nullprof_enabled=true;
+			printf("nullprof_server.dll found , enabling profiling\n"); 
+			((InitProfillerFP*)temp)(&null_prof_pointers);
+		}
+	}
+}
 void __fastcall dyna_profile_block_enter()
 {
 	__asm
@@ -2580,17 +2592,6 @@ void sclt_Init()
 
 	//printf("lazy shil compiler stats : %d%% opcodes done\n",shil_nimp*100/shilop_count);
 	*/
-	if(profiler_dll.Load("nullprof_server.dll"))
-	{
-		void* temp=profiler_dll.GetProcAddress("InitProfiller");
-		if (temp)
-		{
-			nullprof_enabled=true;
-			printf("nullprof_server.dll found , enabling profiling\n"); 
-			((InitProfillerFP*)temp)(&null_prof_pointers);
-		}
-	}
-
 }
 
 

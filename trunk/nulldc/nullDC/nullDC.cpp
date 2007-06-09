@@ -8,12 +8,31 @@
 #include "dc/dc.h"
 #include "gui/base.h"
 #include "config/config.h"
-
+#define _WIN32_WINNT 0x0500 
 #include <windows.h>
 #include "plugins/plugin_manager.h"
 #include "serial_ipc/serial_ipc_client.h"
 
 __settings settings;
+extern HWND g_hWnd;
+BOOL CtrlHandler( DWORD fdwCtrlType ) 
+{ 
+  switch( fdwCtrlType ) 
+  { 
+	  case CTRL_SHUTDOWN_EVENT: 
+	  case CTRL_LOGOFF_EVENT: 
+	  // Pass other signals to the next handler. 
+    case CTRL_BREAK_EVENT: 
+	  // CTRL-CLOSE: confirm that the user wants to exit. 
+    case CTRL_CLOSE_EVENT: 
+    // Handle the CTRL-C signal. 
+    case CTRL_C_EVENT: 
+		SendMessageA(g_hWnd,WM_CLOSE,0,0);
+      return( TRUE );
+    default: 
+      return FALSE; 
+  } 
+} 
 
 int RunGui(int argc, char* argv[])
 {
@@ -174,6 +193,7 @@ int main___(int argc,char* argv[])
 cleanup:
 	DestroyGUI();
 	
+	SaveSettings();
 	return rv;
 }
 
@@ -185,6 +205,10 @@ int main(int argc, char* argv[])
 		return -5;
 	}
 	int rv=0;
+	
+	SetConsoleCtrlHandler( (PHANDLER_ROUTINE) CtrlHandler, TRUE ) ;
+	//EnableMenuItem(GetSystemMenu(GetConsoleWindow(), false), SC_CLOSE, MF_GRAYED);
+
 	__try
 	{
 		rv=main___(argc,argv);
@@ -193,6 +217,9 @@ int main(int argc, char* argv[])
 	{
 
 	}
+
+	//EnableMenuItem(GetSystemMenu(GetConsoleWindow(), false), SC_CLOSE, MF_ENABLED);
+
 	_vmem_release();
 	return rv;
 }
@@ -203,7 +230,11 @@ void LoadSettings()
 	settings.dynarec.Enable=cfgLoadInt("nullDC","Dynarec.Enabled",1);
 	settings.dynarec.CPpass=cfgLoadInt("nullDC","Dynarec.DoConstantPropagation",1);
 	settings.dynarec.UnderclockFpu=cfgLoadInt("nullDC","Dynarec.UnderclockFpu",0);
+	
 	settings.dreamcast.cable=cfgLoadInt("nullDC","Dreamcast.Cable",3);
+	settings.dreamcast.RTC=cfgLoadInt("nullDC","Dreamcast.RTC",GetRTC_now());
+
+	//make sure values are valid
 	settings.dreamcast.cable=min(max(settings.dreamcast.cable,0),3);
 }
 void SaveSettings()
@@ -212,4 +243,5 @@ void SaveSettings()
 	cfgSaveInt("nullDC","Dynarec.DoConstantPropagation",settings.dynarec.CPpass);
 	cfgSaveInt("nullDC","Dynarec.UnderclockFpu",settings.dynarec.UnderclockFpu);
 	cfgSaveInt("nullDC","Dreamcast.Cable",settings.dreamcast.cable);
+	cfgSaveInt("nullDC","Dreamcast.RTC",settings.dreamcast.RTC);
 }

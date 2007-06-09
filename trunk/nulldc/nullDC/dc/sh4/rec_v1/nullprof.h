@@ -57,3 +57,7 @@ typedef void InitProfillerFP(nullprof_prof_pointers* pif);
 extern bool nullprof_enabled;
 
 extern nullprof_prof_pointers null_prof_pointers;
+
+void InitnullProf();
+void __fastcall dyna_profile_block_enter();
+void __fastcall dyna_profile_block_exit_BasicBlock(NullProfInfo* np);

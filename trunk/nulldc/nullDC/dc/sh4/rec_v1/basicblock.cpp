@@ -7,7 +7,7 @@
 #include <memory.h>
 #include "recompiler.h"
 #include "dc/sh4/sh4_interpreter.h"
-
+#include "nullprof.h"
 #include "dc/sh4/rec_v1/blockmanager.h"
 //#define RET_CACHE_PROF
 int compiled_basicblock_count=0;
@@ -677,13 +677,11 @@ void BasicBlock::Compile()
 		cBB->cbi.GetHS()->bpm_ticks=3022*2;
 	}
 	
-	/*
+	
 	if (nullprof_enabled)
 	{
-		//start_ptr=x86e->x86Ptr;
 		x86e->Emit(op_call,x86_ptr_imm(dyna_profile_block_enter));
 	}
-	*/
 
 	fra=GetFloatAllocator();
 	ira=GetGPRtAllocator();
@@ -707,13 +705,19 @@ void BasicBlock::Compile()
 
 	ira->BeforeTrail();
 	fra->BeforeTrail();
-/*
+
 	if (nullprof_enabled)
 	{
+		x86e->Emit(op_push32,EAX);
+		x86e->Emit(op_push32,ECX);
+		x86e->Emit(op_push32,EDX);
 		x86e->Emit(op_mov32,ECX,(u32)(cBB->cbi.GetNP()));
 		x86e->Emit(op_call,x86_ptr_imm(dyna_profile_block_exit_BasicBlock));
+		x86e->Emit(op_pop32,EAX);
+		x86e->Emit(op_pop32,ECX);
+		x86e->Emit(op_pop32,EDX);
 	}
-*/
+
 	//end block acording to block type :)
 	cBB->ebi.RewriteType=0;
 	cBB->ebi.LastRewrite=0xFF;

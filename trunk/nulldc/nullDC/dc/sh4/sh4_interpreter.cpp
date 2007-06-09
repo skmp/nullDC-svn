@@ -157,7 +157,15 @@ u32 THREADCALL sh4_int_ThreadEntry(void* ptar)
 
 	return 0;
 }*/
-
+/*//u32 oldfr4;
+void chec_rgs()
+{
+	for (int i=0;i<16;i++)
+		if (fr_hex[i]==0x340a6b1d)
+	//if (fr_hex[4]==0x38524182)
+			dbgbreak;
+	//oldfr4=fr_hex[4];
+}*/
 //interface
 void Sh4_int_Run()
 {
@@ -184,7 +192,7 @@ void Sh4_int_Run()
 		push esi;
 
 		//for exeption rollback
-		mov sh4_exept_ssp,esp;		//esp wont chainge after that :)
+		mov sh4_exept_ssp,esp;		//esp wont change after that :)
 		sub sh4_exept_ssp,4;		//point to next stack item :)
 		mov sh4_exept_next,offset i_exept_rp;
 
@@ -203,7 +211,6 @@ i_run_opcode:
 
 			mov ecx,eax;			//ecx=opcode (param 1 to opcode handler)
 			call OpPtr[eax*4];		//call opcode handler
-
 			add pc,2;				//pc+=2 -> goto next opcode
 
 
@@ -541,6 +548,7 @@ bool ExecuteDelayslot_RTE()
 //General update
 //u32 gdCnt=0;
 u32 aica_cycl=0;
+u32 rtc_cycl=0;
 void FreeSuspendedBlocks();;
 void DynaPrintCycles();
 u32 shitaaa=0;
@@ -560,6 +568,7 @@ int __fastcall UpdateSystem(u32 Cycles)
 	aica_cycl+=Cycles;
 	if (aica_cycl>(200*1000*1000/(44100*3)))
 	{
+		rtc_cycl+=aica_cycl;
 		//1.5-2k cycles .These devices dont need more precition , so we save a bit here :)
 		UpdateAica(aica_cycl);
 		libExtDevice.UpdateExtDevice(aica_cycl);
@@ -576,6 +585,11 @@ int __fastcall UpdateSystem(u32 Cycles)
 			gcp_timer++;
 			FreeSuspendedBlocks();
 			UpdateGDRom();
+			if (rtc_cycl>=(200*1000*1000))
+			{
+				rtc_cycl-=(200*1000*1000);
+				settings.dreamcast.RTC++;
+			}
 		}
 		aica_cycl=0;
 	}

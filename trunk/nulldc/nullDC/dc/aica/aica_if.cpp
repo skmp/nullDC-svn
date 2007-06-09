@@ -11,20 +11,12 @@
 //u8 aica_ram[2*1024*1024];
 VArray2 aica_ram;
 u32 VREG;//video reg =P
-u32 ReadMem_aica_rtc(u32 addr,u32 sz)
+u32 rtc_EN=0;
+u32 GetRTC_now()
 {
 	
-	//this somehow works :P
-
 	time_t rawtime=0;
 	tm  timeinfo;
-	
-	//int tm_sec;     /* seconds after the minute - [0,59] */
-    //int tm_min;     /* minutes after the hour - [0,59] */
-    //int tm_hour;    /* hours since midnight - [0,23] */
-    //int tm_mday;    /* day of the month - [1,31] */
-    //int tm_mon;     /* months since January - [0,11] */
-/*
 	timeinfo.tm_year=1998-1900;
 	timeinfo.tm_mon=11-1;
 	timeinfo.tm_mday=27;
@@ -41,26 +33,54 @@ u32 ReadMem_aica_rtc(u32 addr,u32 sz)
 	if (timeinfo.tm_isdst)
 		rawtime+=24*3600;//add an hour if dst (maby rtc has a reg for that ? *watch* and add it if yes :)
 
-*/
 	u32 RTC=0x5bfc8900 + (u32)rawtime;// add delta to known dc time
-
+	return RTC;
+}
+extern u32 rtc_cycl;
+u32 ReadMem_aica_rtc(u32 addr,u32 sz)
+{
+	//settings.dreamcast.RTC=GetRTC_now();
 	switch( addr & 0xFF )
 	{
 	case 0:	
-		return RTC>>16;
+		return settings.dreamcast.RTC>>16;
 	case 4:	
-		return RTC &0xFFFF;
+		return settings.dreamcast.RTC &0xFFFF;
 	case 8:	
 		return 0;
 	}
 
-	//TODO : Add Warn
+	printf("ReadMem_aica_rtc : invalid address\n");
 	return 0;
 }
 
 void WriteMem_aica_rtc(u32 addr,u32 data,u32 sz)
 {
-	
+	switch( addr & 0xFF )
+	{
+	case 0:	
+		if (rtc_EN)
+		{
+			settings.dreamcast.RTC&=0xFFFF;
+			settings.dreamcast.RTC|=(data&0xFFFF)<<16;
+			rtc_EN=0;
+			SaveSettings();
+		}
+		return;
+	case 4:	
+		if (rtc_EN)
+		{
+			settings.dreamcast.RTC&=0xFFFF0000;
+			settings.dreamcast.RTC|= data&0xFFFF;
+			rtc_cycl=0;	//clear the internal cycle counter ;)
+		}
+		return;
+	case 8:	
+		rtc_EN=data&1;
+		return;
+	}
+
+	return;
 }
 u32 FASTCALL ReadMem_aica_reg(u32 addr,u32 sz)
 {

@@ -728,12 +728,23 @@ sh4op(i1111_nnnn_0011_1101)
 	{
 		u32 n = GetN(op);
 		fpul = (u32)(s32)fr[n];
+
+		if (fpul==0x80000000)
+		{
+			if (fr[n]>0)
+				fpul--;
+		}
 	}
 	else
 	{
 		START64();
 		u32 n = (op >> 9) & 0x07;
 		fpul = (u32)(s32)GetDR(n);
+		if (fpul==0x80000000)
+		{
+			if (GetDR(n)>0)
+				fpul--;
+		}
 		END64();
 	}
 }

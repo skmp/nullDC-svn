@@ -208,9 +208,11 @@ struct __settings
 	struct
 	{
 		u32 cable;
+		u32 RTC;
 	} dreamcast;
 };
 extern __settings settings;
 
 void LoadSettings();
 void SaveSettings();
+u32 GetRTC_now();

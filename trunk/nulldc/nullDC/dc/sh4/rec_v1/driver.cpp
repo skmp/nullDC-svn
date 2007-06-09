@@ -20,6 +20,7 @@
 #include "blockmanager.h"
 #include "analyser.h"
 #include "superblock.h"
+#include "nullprof.h"
 
 #include <time.h>
 #include <float.h>
@@ -377,6 +378,7 @@ void rec_Sh4_int_Init()
 	ResetAnalyser();
 	ResetBlockManager();
 
+	InitnullProf();
 	printf("recSh4 Init\n");
 }
 
