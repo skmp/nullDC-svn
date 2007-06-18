@@ -241,6 +241,7 @@ void ce_KillConst(u32 reg)
 }
 bool ce_FindExistingConst(u32 value,u8* reg_num)
 {
+	//return false;
 	for (u8 i=0;i<sh4_reg_count;i++)
 	{
 		if (ce_IsConst(i))
@@ -263,11 +264,12 @@ void ce_WriteBack(u32 reg,shil_stream* il)
 		{
 			u8 aliased_reg;
 			u32 rv=ce_GetConst(reg);
+			/* // not realy usable til temporal reg alloc is implemented or smth :)
 			if (ce_FindExistingConst(rv,&aliased_reg))
 			{
 				il->mov((Sh4RegType)reg,(Sh4RegType)aliased_reg);
 			}
-			else
+			else*/
 			{
 				il->mov((Sh4RegType)reg,ce_GetConst(reg));
 			}
@@ -287,6 +289,11 @@ void ce_WriteBack_aks(u32 reg,shil_stream* il)
 {
 	ce_WriteBack(reg,il);
 	ce_KillConst(reg);
+}
+void ce_WriteBack_aks_all(shil_stream* il)
+{
+	for (u8 i=0;i<sh4_reg_count;i++)
+		ce_WriteBack_aks(i,il);
 }
 bool ce_re_run;
 //Optimisation pass mainloop
@@ -844,8 +851,7 @@ shilh(SaveT)
 }
 shilh(shil_ifb)
 {
-	for (u8 i=0;i<16;i++)
-		ce_WriteBack_aks(i,il);
+	ce_WriteBack_aks_all(il);
 	return false;
 }
 //sets T if imm ==1

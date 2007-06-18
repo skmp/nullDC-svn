@@ -430,12 +430,17 @@ sh4op(i0100_nnnn_mmmm_1111)
 		r[m]+=2;
 
 		s32 mul=rm * rn;
-		s64 mac = (s64)(((u64)mach << 32) + macl);
+		s64 mac;// = (s64)(((u64)mach << 32) + macl);
 		
+		mac = macl;
+		mac|= ((u64)mach << 32);
+
 		mac+=mul;
 
-		macl = (u32)(mac & 0xFFFFFFFF);
-		mach = (u32)((mac >> 32) & 0xFFFFFFFF);
+		//macl = (u32)(mac & 0xFFFFFFFF);
+		//mach = (u32)((mac >> 32) & 0xFFFFFFFF);
+		macl = (u32)(mac);
+		mach = (u32)(mac >> 32);
 	}
 }		
 //mac.l @<REG_M>+,@<REG_N>+     
@@ -447,6 +452,9 @@ sh4op(i0000_nnnn_mmmm_1111)
 	s32 rm, rn;
 	s64 mul, mac, result;
 
+	mac = macl;
+	mac|= ((u64)mach << 32);
+
 	verify(sr.S==0);
 
 	ReadMemS32(rm,r[m]);
@@ -454,13 +462,14 @@ sh4op(i0000_nnnn_mmmm_1111)
 	ReadMemS32(rn,r[n]);
 	r[n] += 4;
 
-	mul = rm * rn;
-	mac = (s64)(((u64)mach << 32) + macl);
+	mul = (s64)rm * (s64)rn;
+	
 
 	result = mac + mul;
 
-	macl = (u32)(result & 0xFFFFFFFF);
-	mach = (u32)((result >> 32) & 0xFFFFFFFF);
+	macl = (u32)(result);
+	mach = (u32)(result >> 32);
+	//printf("%I64u %I64u | %d %d | %d %d\n",mac,mul,macl,mach,rm,rn);
 }
 
 //mul.l <REG_M>,<REG_N>         
