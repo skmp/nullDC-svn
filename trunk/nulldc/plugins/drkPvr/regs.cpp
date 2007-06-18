@@ -89,8 +89,8 @@ void FASTCALL WritePvrRegister(u32 paddr,u32 data,u32 size)
 			u32 pal=addr&1023;
 
 			pal_needs_update=true;
-			pal_rev_256[pal>>8]++;
-			pal_rev_16[pal>>4]++;
+			_pal_rev_256[pal>>8]++;
+			_pal_rev_16[pal>>4]++;
 		}
 	}
 	PvrReg(addr,u32)=data;

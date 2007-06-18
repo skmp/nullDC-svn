@@ -76,12 +76,12 @@ vector<u32> res;
 
 void FASTCALL handler_ShowFps(u32 id,void* win,void* puser)
 {
-	if (settings.ShowFPS)
-		settings.ShowFPS=0;
+	if (settings.OSD.ShowFPS)
+		settings.OSD.ShowFPS=0;
 	else
-		settings.ShowFPS=1;
+		settings.OSD.ShowFPS=1;
 
-	emu.SetMenuItemStyle(id,settings.ShowFPS?MIS_Checked:0,MIS_Checked);
+	emu.SetMenuItemStyle(id,settings.OSD.ShowFPS?MIS_Checked:0,MIS_Checked);
 	
 	SaveSettings();
 }
@@ -99,12 +99,12 @@ void FASTCALL handler_WSH(u32 id,void* win,void* puser)
 }
 void FASTCALL handler_VerPTex(u32 id,void* win,void* puser)
 {
-	if (settings.VersionedPalleteTextures)
-		settings.VersionedPalleteTextures=0;
+	if (settings.Emulation.VersionedPalleteTextures)
+		settings.Emulation.VersionedPalleteTextures=0;
 	else
-		settings.VersionedPalleteTextures=1;
+		settings.Emulation.VersionedPalleteTextures=1;
 
-	emu.SetMenuItemStyle(id,settings.VersionedPalleteTextures?MIS_Checked:0,MIS_Checked);
+	emu.SetMenuItemStyle(id,settings.Emulation.VersionedPalleteTextures?MIS_Checked:0,MIS_Checked);
 	
 	SaveSettings();
 }
@@ -170,6 +170,49 @@ void FASTCALL handle_About(u32 id,void* w,void* p)
 {
 	MessageBox((HWND)w,"Made by the nullDC Team","About nullPVR...",MB_ICONINFORMATION);
 }
+u32 sort_menu;
+u32 sort_sm[3];
+
+
+u32 ssm(u32 nm)
+{
+	nm=min(nm,2);
+
+	return nm;
+}
+char* sort_smn[]=
+{
+	"No sort","Per Strip","Per Triangle"
+};
+void FASTCALL handler_SSM(u32 id,void* win,void* puser)
+{
+	for (int i=0;i<3;i++)
+	{
+		if (sort_sm[i]==id)
+		{
+			emu.SetMenuItemStyle(sort_sm[i],MIS_Checked|MIS_Radiocheck,MIS_Checked|MIS_Radiocheck);
+			char temp[512];
+			MenuItem t;
+			t.Text=temp;
+			sprintf(temp,"Sort : %s",sort_smn[i]);
+			emu.SetMenuItem(sort_menu,&t,MIM_Text);
+			settings.Emulation.AlphaSortMode=i;
+		}
+		else
+			emu.SetMenuItemStyle(sort_sm[i],0,MIS_Checked);
+	}
+
+	SaveSettings();
+}
+void CreateSortMenu()
+{
+	sort_menu=emu.AddMenuItem(emu.RootMenu,-1,"Sort Option(-)",handler_VerPTex,0);
+
+	sort_sm[0]=emu.AddMenuItem(sort_menu,-1,"No Sort(Fastest)",handler_SSM,0);
+	sort_sm[1]=emu.AddMenuItem(sort_menu,-1,"Sort Per Strip",handler_SSM,0);
+	sort_sm[2]=emu.AddMenuItem(sort_menu,-1,"Sort Per Triangle(Slowest)",handler_SSM,0);
+	handler_SSM(sort_sm[settings.Emulation.AlphaSortMode],0,0);
+}
 //called when plugin is used by emu (you should do first time init here)
 s32 FASTCALL Load(emu_info* emu_inf)
 {
@@ -206,8 +249,10 @@ s32 FASTCALL Load(emu_info* emu_inf)
 	}
 
 	emu.AddMenuItem(emu.RootMenu,-1,"Widescreen Hack",handler_WSH,settings.Enhancements.WidescreenHack);
-	emu.AddMenuItem(emu.RootMenu,-1,"Versioned Textures",handler_VerPTex,settings.VersionedPalleteTextures);
-	emu.AddMenuItem(emu.RootMenu,-1,"Show Fps",handler_ShowFps,settings.ShowFPS);
+
+	emu.AddMenuItem(emu.RootMenu,-1,"Enable Versioned Textures",handler_VerPTex,settings.Emulation.VersionedPalleteTextures);
+	CreateSortMenu();
+	emu.AddMenuItem(emu.RootMenu,-1,"Show Fps",handler_ShowFps,settings.OSD.ShowFPS);
 
 	emu.SetMenuItemStyle(emu.AddMenuItem(emu.RootMenu,-1,"-",0,0),MIS_Seperator,MIS_Seperator);
 
@@ -433,13 +478,16 @@ void cfgSetInt(char* key,int val)
 
 void LoadSettings()
 {
+	settings.Emulation.AlphaSortMode			=	cfgGetInt("Emulation.AlphaSortMode",1);
+	settings.Emulation.VersionedPalleteTextures	=	cfgGetInt("Emulation.VersionedPalleteTextures",1);
+
+	settings.OSD.ShowFPS						=	cfgGetInt("OSD.ShowFPS",0);
+	settings.OSD.ShowStats						=	cfgGetInt("OSD.ShowStats",0);
+
 	settings.Fullscreen.Enabled					=	cfgGetInt("Fullscreen.Enabled",0);
 	settings.Fullscreen.Res_X					=	cfgGetInt("Fullscreen.Res_X",640);
 	settings.Fullscreen.Res_Y					=	cfgGetInt("Fullscreen.Res_Y",480);
 	settings.Fullscreen.Refresh_Rate			=	cfgGetInt("Fullscreen.Refresh_Rate",60);
-
-	settings.ShowFPS							=	cfgGetInt("ShowFPS",0);
-	settings.VersionedPalleteTextures			=	cfgGetInt("VersionedPalleteTextures",1);
 
 	settings.Enhancements.MultiSampleCount		=	cfgGetInt("Enhancements.MultiSampleCount",0);
 	settings.Enhancements.MultiSampleQuality	=	cfgGetInt("Enhancements.MultiSampleQuality",0);
@@ -449,13 +497,16 @@ void LoadSettings()
 
 void SaveSettings()
 {
+	cfgSetInt("Emulation.AlphaSortMode",settings.Emulation.AlphaSortMode);
+	cfgSetInt("Emulation.VersionedPalleteTextures",settings.Emulation.VersionedPalleteTextures);
+
+	cfgSetInt("OSD.ShowFPS",settings.OSD.ShowFPS);
+	cfgSetInt("OSD.ShowStats",settings.OSD.ShowStats);
+
 	cfgSetInt("Fullscreen.Enabled",settings.Fullscreen.Enabled);
 	cfgSetInt("Fullscreen.Res_X",settings.Fullscreen.Res_X);
 	cfgSetInt("Fullscreen.Res_Y",settings.Fullscreen.Res_Y);
 	cfgSetInt("Fullscreen.Refresh_Rate",settings.Fullscreen.Refresh_Rate);
-
-	cfgSetInt("ShowFPS",settings.ShowFPS);
-	cfgSetInt("VersionedPalleteTextures",settings.VersionedPalleteTextures);
 
 	cfgSetInt("Enhancements.MultiSampleCount",settings.Enhancements.MultiSampleCount);
 	cfgSetInt("Enhancements.MultiSampleQuality",settings.Enhancements.MultiSampleQuality);

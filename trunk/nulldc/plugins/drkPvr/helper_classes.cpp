@@ -1,7 +1,7 @@
 #include "drkpvr.h"
 #include "helper_classes.h"
 
-u8* buffer_pool[24*1024*1024/ChunkSize];
+u8* buffer_pool[(64*1024*1024)/ChunkSize];
 u32 buffer_pool_count;
 
 u8* GetBuffer()

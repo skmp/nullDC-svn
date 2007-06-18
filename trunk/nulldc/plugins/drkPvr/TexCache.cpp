@@ -47,12 +47,17 @@ u8* vq_codebook;
 u32 palette_index;
 u32 palette_lut[1024];
 bool pal_needs_update=true;
+u32 _pal_rev_256[4]={0};
+u32 _pal_rev_16[64]={0};
 u32 pal_rev_256[4]={0};
 u32 pal_rev_16[64]={0};
 void palette_update()
 {
 	if (pal_needs_update==false)
 		return;
+	memcpy(pal_rev_256,_pal_rev_256,sizeof(pal_rev_256));
+	memcpy(pal_rev_16,_pal_rev_16,sizeof(pal_rev_16));
+
 #define PixelPacker pp_dx
 	pal_needs_update=false;
 	switch(PAL_RAM_CTRL&3)

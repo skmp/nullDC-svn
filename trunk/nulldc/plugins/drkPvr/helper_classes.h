@@ -6,7 +6,7 @@ using namespace std;
 #define LIST_MAX_ALLOC_CHUNK ((1024*1024*4)/sizeof(T))	//max 4 mb alloc
 #define LIST_FREE_STEP_CHUNK ((1024*128*8)/sizeof(T))		//128 kb steps for free :)
 
-#define ChunkSize 512*1024
+#define ChunkSize (512*1024)
 u8* GetBuffer();
 void FreeBuffer(u8* buffer);
 

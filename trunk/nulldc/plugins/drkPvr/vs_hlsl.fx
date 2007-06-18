@@ -38,7 +38,7 @@ vertex VertexShader_main(in vertex vtx)
 	#ifdef scale_type_1
 		vtx.pos.z=((1/clamp(vtx.pos.z,0.0000001,10000000))-W_min)/W_max;
 		vtx.pos.z=clamp(vtx.pos.z,0, 1);
-	#else
+	//#else
 		if (vtx.pos.z>1)
 		{
 			if (vtx.pos.z>1000)
@@ -55,6 +55,7 @@ vertex VertexShader_main(in vertex vtx)
 	
 		vtx.pos.z=clamp(1- vtx.pos.z,0.000001, 0.999999);
 	#endif
+	vtx.pos.z=1/(1+vtx.pos.z);
 	
 	vtx.pos.w=1;
 	return vtx; 

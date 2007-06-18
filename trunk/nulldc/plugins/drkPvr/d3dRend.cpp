@@ -2,7 +2,7 @@
 #include <d3dx9.h>
 
 #include "nullRend.h"
-
+#include <algorithm>
 #include "d3dRend.h"
 #include "windows.h"
 //#include "gl\gl.h"
@@ -53,7 +53,8 @@ namespace Direct3DRenderer
 	IDirect3DDevice9* dev;
 	IDirect3DVertexBuffer9* vb;
 	IDirect3DVertexShader9* compiled_vs;
-	IDirect3DPixelShader9* compiled_ps[128]={0};
+	IDirect3DPixelShader9* compiled_ps[256]={0};
+	IDirect3DTexture9*	pal_texture=0;
 	u32 last_ps_mode=0xFFFFFFFF;
 	//CRITICAL_SECTION tex_cache_cs;
 	ID3DXFont* font;
@@ -87,6 +88,7 @@ namespace Direct3DRenderer
 	}
 	const static u32 CullMode[]= 
 	{
+		
 		D3DCULL_NONE,	//0	No culling	no culling
 		D3DCULL_NONE,	//1	Cull if Small	Cull if	( |det| < fpu_cull_val )
 
@@ -95,6 +97,17 @@ namespace Direct3DRenderer
 						//( |det| < fpu_cull_val )
 		D3DCULL_CW /*D3DCULL_CW*/,		//3	Cull if Positive	Cull if 	( |det| > 0 ) or
 						//( |det| < fpu_cull_val )
+		
+		
+		D3DCULL_NONE,	//0	No culling	no culling
+		D3DCULL_NONE,	//1	Cull if Small	Cull if	( |det| < fpu_cull_val )
+
+		//wtf ?
+		D3DCULL_CW /*D3DCULL_CCW*/,		//2	Cull if Negative	Cull if 	( |det| < 0 ) or
+						//( |det| < fpu_cull_val )
+		D3DCULL_CCW /*D3DCULL_CW*/,		//3	Cull if Positive	Cull if 	( |det| > 0 ) or
+						//( |det| < fpu_cull_val )
+		
 	};
 	const static u32 Zfunction[]=
 	{
@@ -111,12 +124,12 @@ namespace Direct3DRenderer
 
 
 		D3DCMP_NEVER,				//0	Never
-		D3DCMP_GREATEREQUAL,		//1	Less
+		D3DCMP_GREATER/*EQUAL*/,	//1	Less
 		D3DCMP_EQUAL,				//2	Equal
-		D3DCMP_GREATER,				//3	Less Or Equal
-		D3DCMP_LESSEQUAL,			//4	Greater
+		D3DCMP_GREATEREQUAL,		//3	Less Or Equal
+		D3DCMP_LESS/*EQUAL*/,		//4	Greater
 		D3DCMP_NOTEQUAL,			//5	Not Equal
-		D3DCMP_LESS,				//6	Greater Or Equal
+		D3DCMP_LESSEQUAL,			//6	Greater Or Equal
 		D3DCMP_ALWAYS,				//7	Always
 
 	};
@@ -242,14 +255,11 @@ namespace Direct3DRenderer
 	//Texture Cache :)
 	struct TextureCacheData
 	{
-		u32 Start;
+		TCW tcw;TSP tsp;
 		IDirect3DTexture9* Texture;
 		u32 Lookups;
 		u32 Updates;
 		u32 LastUsed;
-
-		TSP tsp;TCW tcw;
-
 		u32 w,h;
 		u32 size;
 		bool dirty;
@@ -401,7 +411,15 @@ namespace Direct3DRenderer
 							sa+=MipPoint[tsp.TexU]<<1;
 				palette_index = tcw.PAL.PalSelect<<4;
 				pal_rev=pal_rev_16[tcw.PAL.PalSelect];
-				PAL4to8888_TW(&pbt,(u8*)&params.vram[sa],w,h);
+				if (pal_texture==0)
+				{
+					PAL4to8888_TW(&pbt,(u8*)&params.vram[sa],w,h);
+				}
+				else
+				{
+					PAL4toX444_TW(&pbt,(u8*)&params.vram[sa],w,h);
+				}
+
 				break;
 			case 6:
 				//6	8 BPP Palette	Palette texture with 8 bits/pixel
@@ -410,7 +428,14 @@ namespace Direct3DRenderer
 							sa+=MipPoint[tsp.TexU]<<2;
 				palette_index = (tcw.PAL.PalSelect<<4)&(~0xFF);
 				pal_rev=pal_rev_256[tcw.PAL.PalSelect>>4];
-				PAL8to8888_TW(&pbt,(u8*)&params.vram[sa],w,h);
+				if (pal_texture==0)
+				{
+					PAL8to8888_TW(&pbt,(u8*)&params.vram[sa],w,h);
+				}
+				else
+				{
+					PAL8toX444_TW(&pbt,(u8*)&params.vram[sa],w,h);
+				}
 				break;
 			default:
 				printf("Unhandled texture\n");
@@ -446,9 +471,7 @@ namespace Direct3DRenderer
 
 	TextureCacheData* __fastcall GenText(TSP tsp,TCW tcw,TextureCacheData* tf)
 	{
-		//generate texture
-		tf->Start=tcw.full;//(tcw.NO_PAL.TexAddr<<3) & 0x7FFFFF;
-		
+		//generate texture	
 		tf->w=8<<tsp.TexU;
 		tf->h=8<<tsp.TexV;
 		tf->tsp=tsp;
@@ -478,25 +501,15 @@ namespace Direct3DRenderer
 			return RenderToTextureTex;*/
 
 		//EnterCriticalSection(&tex_cache_cs);
-		TextureCacheData* tf = TexCache.Find(tcw.full);
+		TextureCacheData* tf = TexCache.Find(tcw.full,tsp.full);
 		if (tf)
 		{
 			tf->LastUsed=FrameNumber;
 			if (tf->dirty)
 			{
-				if (tf->tsp.full==tsp.full)
-					tf->Update();
-				else
-				{
-					if (tf->Texture)
-					{
-						tf->Texture->Release();
-						tf->Texture=0;
-					}
-					GenText(tsp,tcw,tf);
-				}
+				tf->Update();
 			}
-			if (settings.VersionedPalleteTextures)
+			if (pal_texture==0 && settings.Emulation.VersionedPalleteTextures)
 			{
 				if (tcw.PAL.PixelFmt==5)
 				{				
@@ -601,6 +614,8 @@ namespace Direct3DRenderer
 		TCW tcw;
 		PCW pcw;
 		ISP_TSP isp;
+		float zvZ;
+		//float zMin,zMax;
 	};
 
 
@@ -643,16 +658,63 @@ namespace Direct3DRenderer
 		}
 	};
 	
+	u32 vri(u32 addr);
 	bool UsingAutoSort()
 	{
 		if (((FPU_PARAM_CFG>>21)&1) == 0)
 			return ((ISP_FEED_CFG&1)==0);
 		else
-			return ( ((*(u32*)&params.vram[ REGION_BASE & 0x7FFFFF])>>29) & 1) == 0;
+			return ( (vri(REGION_BASE)>>29) & 1) == 0;
 	}
 
 	TA_context tarc;
 	TA_context pvrrc;
+bool operator<(const PolyParam &left, const PolyParam &right)
+{
+/* put any condition you want to sort on here */
+	return left.zvZ<right.zvZ;
+	//return left.zMin<right.zMax;
+}
+	void SortPParams()
+	{
+		if (pvrrc.verts.allocate_list_sz->size()==0)
+			return;
+
+		u32 base=0;
+		u32 csegc=0;
+		u32 cseg=-1;
+		Vertex* bptr=0;
+		for (int i=0;i<pvrrc.global_param_tr.used;i++)
+		{
+			u32 s=pvrrc.global_param_tr.data[i].first;
+			u32 c=pvrrc.global_param_tr.data[i].count;
+
+			
+			//float zmax=-66666666666,zmin=66666666666;
+			float zv=0;
+			for (int i=s;i<(s+c);i++)
+			{
+				while (i>=csegc)
+				{
+					cseg++;
+					bptr=(Vertex*)((*pvrrc.verts.allocate_list_ptr)[cseg]);
+					bptr-=csegc;
+					csegc+=(*pvrrc.verts.allocate_list_sz)[cseg]/sizeof(Vertex);
+				}
+				zv+=bptr[i].z;
+				/*if (zmax<bptr[i].z)
+					zmax=bptr[i].z;
+				if (zmin>bptr[i].z)
+					zmin=bptr[i].z;*/
+					
+			}
+			pvrrc.global_param_tr.data[i].zvZ=zv/c;
+			/*pvrrc.global_param_tr.data[i].zMax=zmax;
+			pvrrc.global_param_tr.data[i].zMin=zmin;*/
+		}
+
+		std::stable_sort(pvrrc.global_param_tr.data,pvrrc.global_param_tr.data+pvrrc.global_param_tr.used);
+	}
 
 	std::vector<TA_context> rcnt;
 	u32 fastcall FindRC(u32 addr)
@@ -735,9 +797,16 @@ namespace Direct3DRenderer
 
 	TSP cache_tsp;
 	TCW cache_tcw;
-	PCW cache_pcw;
+	//PCW cache_pcw;
 	ISP_TSP cache_isp;
 
+	void GPstate_cache_reset(PolyParam* gp)
+	{
+		cache_tsp.full = ~gp->tsp.full;
+		cache_tcw.full = ~gp->tcw.full;
+		//cache_pcw.full = ~gp->pcw.full;
+		cache_isp.full = ~gp->isp.full;
+	}
 	//for fixed pipeline
 	__forceinline
 	void SetGPState_fp(PolyParam* gp)
@@ -745,29 +814,6 @@ namespace Direct3DRenderer
 		if (gp->pcw.Texture)
 		{
 			dev->SetRenderState(D3DRS_SPECULARENABLE,gp->pcw.Offset );
-
-			IDirect3DTexture9* tex=GetTexture(gp->tsp,gp->tcw);
-			dev->SetTexture(0,tex);
-
-			if (gp->tsp.FilterMode == 0)
-			{
-				dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
-				dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
-				dev->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
-
-			}
-			else
-			{
-				dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-				dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-				dev->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
-
-			}
-			//if (gp->tsp.ClampV!=cache_tsp.ClampV || gp->tsp.FlipV!=cache_tsp.FlipV)
-				SetTexMode<D3DSAMP_ADDRESSV>(gp->tsp.ClampV,gp->tsp.FlipV);
-
-			//if (gp->tsp.ClampU!=cache_tsp.ClampU || gp->tsp.FlipU!=cache_tsp.FlipU)
-				SetTexMode<D3DSAMP_ADDRESSU>(gp->tsp.ClampU,gp->tsp.FlipU);
 
 			//if (gp->tsp.ShadInstr!=cache_tsp.ShadInstr ||  ( gp->tsp.UseAlpha != cache_tsp.UseAlpha) )
 			{
@@ -887,23 +933,6 @@ namespace Direct3DRenderer
 				}
 			}
 
-			/*
-			//i use D3DRS_SPECULARENABLE now ..
-			if (gp->pcw.Offset==0)
-			{
-				dev->SetTextureStageState(1, D3DTSS_COLOROP,   D3DTOP_DISABLE);
-				dev->SetTextureStageState(1, D3DTSS_ALPHAOP,   D3DTOP_DISABLE);
-			}
-			else
-			{
-				dev->SetTextureStageState(1, D3DTSS_COLOROP,   D3DTOP_ADD);
-				dev->SetTextureStageState(1, D3DTSS_COLORARG1, D3DTA_CURRENT);
-				dev->SetTextureStageState(1, D3DTSS_COLORARG2, D3DTA_SPECULAR);
-
-				dev->SetTextureStageState(1, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
-				dev->SetTextureStageState(1, D3DTSS_ALPHAARG1, D3DTA_CURRENT);
-			}
-			*/
 		}
 		else
 		{
@@ -926,6 +955,7 @@ namespace Direct3DRenderer
 	#define idx_pp_IgnoreTexA 3
 	#define idx_pp_UseAlpha 4
 	#define idx_pp_profile 5
+	#define idx_pp_pal_tex 6
 
 	D3DXMACRO ps_macros[]=
 	{
@@ -935,6 +965,7 @@ namespace Direct3DRenderer
 		{"pp_IgnoreTexA",0},
 		{"pp_UseAlpha",0},
 		{"ps_no_tex2D",0},	//Shader profile version , just defined , no value :)
+		{"pp_pal_tex",0},	//use shader to emulate pals
 		{0,0}	//end of list
 	};
 	char* ps_macro_numers[] =
@@ -947,7 +978,7 @@ namespace Direct3DRenderer
 
 	void CompilePS(u32 mode,const char* profile)
 	{
-		verify(mode<128);
+		verify(mode<256);
 		if (compiled_ps[mode]!=0)
 			return;
 		ID3DXBuffer* perr;
@@ -989,49 +1020,55 @@ namespace Direct3DRenderer
 		forl(Texture,0,1)
 		{
 			ps_macros[idx_pp_Texture].Definition=ps_macro_numers[Texture];
-			forl(UseAlpha,0,1)
+			forl(pal_tex,0,1)
 			{
-				ps_macros[idx_pp_UseAlpha].Definition=ps_macro_numers[UseAlpha];
-				if (Texture)
+				ps_macros[idx_pp_pal_tex].Definition=ps_macro_numers[pal_tex];
+				forl(UseAlpha,0,1)
 				{
-					forl(Offset,0,1)
+					ps_macros[idx_pp_UseAlpha].Definition=ps_macro_numers[UseAlpha];
+					if (Texture)
 					{
-						ps_macros[idx_pp_Offset].Definition=ps_macro_numers[Offset];
-						forl(ShadInstr,0,3)
+						forl(Offset,0,1)
 						{
-							ps_macros[idx_pp_ShadInstr].Definition=ps_macro_numers[ShadInstr];
-							forl(IgnoreTexA,0,1)
+							ps_macros[idx_pp_Offset].Definition=ps_macro_numers[Offset];
+							forl(ShadInstr,0,3)
 							{
-								ps_macros[idx_pp_IgnoreTexA].Definition=ps_macro_numers[IgnoreTexA];
+								ps_macros[idx_pp_ShadInstr].Definition=ps_macro_numers[ShadInstr];
+								forl(IgnoreTexA,0,1)
+								{
+									ps_macros[idx_pp_IgnoreTexA].Definition=ps_macro_numers[IgnoreTexA];
 
-								u32 mode=0;			
-								mode|=Offset;
-								mode<<=2;
-								mode|=ShadInstr;
-								mode<<=1;
-								mode|=IgnoreTexA;
-								mode<<=1;
-								mode|=Texture;
-								mode<<=1;
-								mode|=UseAlpha;
+									u32 mode=0;			
+									mode|=pal_tex;
+									mode<<=1;
+									mode|=Offset;
+									mode<<=2;
+									mode|=ShadInstr;
+									mode<<=1;
+									mode|=IgnoreTexA;
+									mode<<=1;
+									mode|=Texture;
+									mode<<=1;
+									mode|=UseAlpha;
 
-								CompilePS(mode,profile);
+									CompilePS(mode,profile);
+								}
 							}
 						}
 					}
-				}
-				else
-				{
-					ps_macros[idx_pp_Offset].Definition=ps_macro_numers[0];
-					ps_macros[idx_pp_ShadInstr].Definition=ps_macro_numers[0];
-					ps_macros[idx_pp_IgnoreTexA].Definition=ps_macro_numers[0];
+					else
+					{
+						ps_macros[idx_pp_Offset].Definition=ps_macro_numers[0];
+						ps_macros[idx_pp_ShadInstr].Definition=ps_macro_numers[0];
+						ps_macros[idx_pp_IgnoreTexA].Definition=ps_macro_numers[0];
 
-					u32 mode=0;			
-					mode|=Texture;
-					mode<<=1;
-					mode|=UseAlpha;
+						u32 mode=0;			
+						mode|=Texture;
+						mode<<=1;
+						mode|=UseAlpha;
 
-					CompilePS(mode,profile);
+						CompilePS(mode,profile);
+					}
 				}
 			}
 		}
@@ -1045,56 +1082,42 @@ namespace Direct3DRenderer
 			dev->SetPixelShader(compiled_ps[mode]);
 		}
 	}
+	float cur_pal_index[4]={0,0,0,1};
 	__forceinline
 	void SetGPState_ps(PolyParam* gp)
 	{
 		u32 mode=0;
 		if (gp->pcw.Texture)
 		{
-			IDirect3DTexture9* tex=GetTexture(gp->tsp,gp->tcw);
-			dev->SetTexture(0,tex);
-
-			if (gp->tsp.FilterMode == 0)
+			if (pal_texture!=0)
 			{
-				dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
-				dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
-				dev->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
-
+				u32 pf=gp->tcw.PAL.PixelFmt;
+				if (pf==5)
+				{
+					cur_pal_index[1]=gp->tcw.PAL.PalSelect/64.0f;
+					mode|=1<<1;
+					dev->SetPixelShaderConstantF(0,cur_pal_index,1);
+				}
+				else if (pf==6)
+				{
+					cur_pal_index[1]=(gp->tcw.PAL.PalSelect&~0xF)/64.0f;
+					mode|=1<<1;
+					dev->SetPixelShaderConstantF(0,cur_pal_index,1);
+				}
 			}
-			else
-			{
-				dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-				dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-				dev->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
-			}
-			
-			//if (gp->tsp.ClampV!=cache_tsp.ClampV || gp->tsp.FlipV!=cache_tsp.FlipV)
-				SetTexMode<D3DSAMP_ADDRESSV>(gp->tsp.ClampV,gp->tsp.FlipV);
-
-			//if (gp->tsp.ClampU!=cache_tsp.ClampU || gp->tsp.FlipU!=cache_tsp.FlipU)
-				SetTexMode<D3DSAMP_ADDRESSU>(gp->tsp.ClampU,gp->tsp.FlipU);
-
-			ps_macros[1].Definition=ps_macro_numers[gp->pcw.Offset];
 			mode|=gp->pcw.Offset;
-			
 
-			ps_macros[2].Definition=ps_macro_numers[gp->tsp.ShadInstr];
 			mode<<=2;
 			mode|=gp->tsp.ShadInstr;
-			
 
-			ps_macros[3].Definition=ps_macro_numers[gp->tsp.IgnoreTexA];
 			mode<<=1;
-			mode|=gp->tsp.IgnoreTexA;
-			
+			mode|=gp->tsp.IgnoreTexA;			
 		}
 
-		ps_macros[0].Definition=ps_macro_numers[gp->pcw.Texture];
 		mode<<=1;
 		mode|=gp->pcw.Texture;
 		
 
-		ps_macros[4].Definition=ps_macro_numers[gp->tsp.UseAlpha];
 		mode<<=1;
 		mode|=gp->tsp.UseAlpha;
 
@@ -1103,10 +1126,12 @@ namespace Direct3DRenderer
 
 
 	//
-	template <u32 Type,bool FFunction>
+	template <u32 Type,bool FFunction,bool df>
 	__forceinline
-	void SetGPState(PolyParam* gp)
-	{
+	void SetGPState(PolyParam* gp,u32 cflip=0)
+	{	
+		//has to preserve cache_tsp/cache_isp
+		//can freely use cache_tcw
 		if (FFunction)
 		{
 			SetGPState_fp(gp);
@@ -1115,58 +1140,85 @@ namespace Direct3DRenderer
 		{
 			SetGPState_ps(gp);
 		}
-		
-		//up to here , has to be replaced by a shader
-		if (Type==ListType_Translucent)
-		{
-			//if (gp->tsp.SrcInstr!= cache_tsp.SrcInstr)
-				dev->SetRenderState(D3DRS_SRCBLEND, SrcBlendGL[gp->tsp.SrcInstr]);
 
-			//if (gp->tsp.DstInstr!= cache_tsp.DstInstr)
-				dev->SetRenderState(D3DRS_DESTBLEND, DstBlendGL[gp->tsp.DstInstr]);
+		if ((gp->tcw.full != cache_tcw.full) || (gp->tsp.full!=cache_tsp.full))
+		{
+			cache_tcw=gp->tcw;
+
+			if (gp->tsp.full!=cache_tsp.full)
+			{
+				cache_tsp=gp->tsp;
+
+				if (Type==ListType_Translucent)
+				{
+					dev->SetRenderState(D3DRS_SRCBLEND, SrcBlendGL[gp->tsp.SrcInstr]);
+					dev->SetRenderState(D3DRS_DESTBLEND, DstBlendGL[gp->tsp.DstInstr]);
+				}
+
+				if (gp->tsp.FilterMode == 0)
+				{
+					dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+					dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+					dev->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
+				}
+				else
+				{
+					dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+					dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+					dev->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
+				}
+
+				SetTexMode<D3DSAMP_ADDRESSV>(gp->tsp.ClampV,gp->tsp.FlipV);
+				SetTexMode<D3DSAMP_ADDRESSU>(gp->tsp.ClampU,gp->tsp.FlipU);
+			}
+
+			if (gp->pcw.Texture)
+			{
+				IDirect3DTexture9* tex=GetTexture(gp->tsp,gp->tcw);
+				dev->SetTexture(0,tex);
+			}
 		}
 
-
-		//set cull mode !
-		//if (gp->isp.CullMode!=cache_isp.CullMode)
-			dev->SetRenderState(D3DRS_CULLMODE,CullMode[gp->isp.CullMode]);
-		//set Z mode !
-		if (Type==ListType_Opaque)
+		if (df)
 		{
-			//if (gp->isp.DepthMode != cache_isp.DepthMode)
+			dev->SetRenderState(D3DRS_CULLMODE,CullMode[gp->isp.CullMode+cflip]);
+		}
+		if (gp->isp.full!= cache_isp.full)
+		{
+			cache_isp.full=gp->isp.full;
+			//set cull mode !
+			if (!df)
+				dev->SetRenderState(D3DRS_CULLMODE,CullMode[gp->isp.CullMode]);
+			//set Z mode !
+			if (Type==ListType_Opaque)
+			{
 				dev->SetRenderState(D3DRS_ZFUNC,Zfunction[gp->isp.DepthMode]);
-		}
-		else if (Type==ListType_Translucent)
-		{
-			//if (autosort) -> where ? :p
-			//dev->SetRenderState(D3DRS_ZFUNC,Zfunction[6]); // : GEQ
-			//else -> fix it ! someday
-			//if (gp->isp.DepthMode != cache_isp.DepthMode)
+			}
+			else if (Type==ListType_Translucent)
+			{
+				//if (autosort) -> where ? :p
+				//dev->SetRenderState(D3DRS_ZFUNC,Zfunction[6]); // : GEQ
+				//else -> fix it ! someday
 				dev->SetRenderState(D3DRS_ZFUNC,Zfunction[gp->isp.DepthMode]);
-		}
-		else
-		{
-			//gp->isp.DepthMode=6;
-			//if (cache_isp.DepthMode != 6)
+			}
+			else
+			{
+				//gp->isp.DepthMode=6;
 				dev->SetRenderState(D3DRS_ZFUNC,Zfunction[6]); //PT : LEQ //GEQ ?!?! wtf ? seems like the docs ARE wrong on this one =P
-		}
+			}
 
-		//if (gp->isp.ZWriteDis!=cache_isp.ZWriteDis)
 			dev->SetRenderState(D3DRS_ZWRITEENABLE,gp->isp.ZWriteDis==0);
-
-		//cache_tsp=gp->tsp;
-		//cache_isp=gp->isp;
-		//cache_pcw=gp->pcw;
-		//cache_tcw=gp->tcw;
+		}
 	}
 	template <u32 Type,bool FFunction>
 	__forceinline
 	void RendStrips(PolyParam* gp)
 	{
 		//0 vert polys ? why does games even bother sending em  ? =P
+		SetGPState<Type,FFunction,false>(gp);
 		if (gp->count>2)
 		{		
-			SetGPState<Type,FFunction>(gp);
+			
 			dev->DrawPrimitive(D3DPT_TRIANGLESTRIP,gp->first ,
 				gp->count-2);
 		}
@@ -1175,15 +1227,106 @@ namespace Direct3DRenderer
 	template <u32 Type,bool FFunction>
 	void RendPolyParamList(List<PolyParam>& gpl)
 	{
+		if (gpl.used==0)
+			return;
+		//we want at least 1 PParam
+
+		//reset the cache state
+		GPstate_cache_reset(&gpl.data[0]);
+
 		for (u32 i=0;i<gpl.used;i++)
 		{		
 			RendStrips<Type,FFunction>(&gpl.data[i]);
 		}
 	}
+	
+	struct SortTrig
+	{
+		f32 z;
+		u32 id;
+		PolyParam* pparam;
+	};
+
+	bool operator<(const SortTrig &left, const SortTrig &right)
+	{
+		/* put any condition you want to sort on here */
+		return left.z<right.z;
+		//return left.zMin<right.zMax;
+	}
+
+	vector<SortTrig> sorttemp;
+
+
+	//sort and render , only for alpha blended stuff
+	template <bool FFunction>
+	void SortRendPolyParamList(List<PolyParam>& gpl)
+	{
+		if (gpl.used==0)
+			return;
+		//we want at least 1 PParam
+
+		sorttemp.reserve(pvrrc.verts.used*0.25);
+
+		if (pvrrc.verts.allocate_list_sz->size()==0)
+			return;
+
+		u32 base=0;
+		u32 csegc=0;
+		u32 cseg=-1;
+		Vertex* bptr=0;
+	//	f32 t1=0;
+		for (int i=0;i<pvrrc.global_param_tr.used;i++)
+		{
+			PolyParam* gp=&gpl.data[i];
+			if (gp->count<3)
+				continue;
+			u32 s=gp->first;
+			u32 c=gp->count-2;
+
+		
+			//float *p1=&t1,*p2=&t1;
+			for (int i=s;i<(s+c);i++)
+			{
+				while (i>=csegc)
+				{
+					cseg++;
+					bptr=(Vertex*)((*pvrrc.verts.allocate_list_ptr)[cseg]);
+					bptr-=csegc;
+					csegc+=(*pvrrc.verts.allocate_list_sz)[cseg]/sizeof(Vertex);
+				}
+				SortTrig t;
+				t.z=bptr[i].z;//+bptr[i+1].z+bptr[i+2].z;
+				//*p1+=t.z;
+				//*p2+=t.z;
+
+				t.id=i;
+				t.pparam=gp;
+				
+				sorttemp.push_back(t);
+				//p1=p2;
+				//p2=&sorttemp[sorttemp.size()-1].z;
+			}
+		}
+		if (sorttemp.size()==0)
+			return;
+		stable_sort(&sorttemp[0],&sorttemp[0]+sorttemp.size());
+
+		//reset the cache state
+		GPstate_cache_reset(sorttemp[0].pparam);
+
+		for (int i=0;i<sorttemp.size();i++)
+		{
+			u32 fl=((sorttemp[i].id - sorttemp[i].pparam->first)&1)<<2;
+			SetGPState<ListType_Translucent,FFunction,true>(sorttemp[i].pparam,fl);
+			dev->DrawPrimitive(D3DPT_TRIANGLESTRIP,sorttemp[i].id ,
+					1);
+		}
+		//printf("%d Render calls\n",sorttemp.size());
+		sorttemp.clear();
+	}
 	//
 	void DrawFPS()
 	{
-
 		// Create a colour for the text - in this case blue
 		D3DCOLOR fontColor = D3DCOLOR_ARGB(255,0x18,0xFF,0);  
 
@@ -1194,10 +1337,65 @@ namespace Direct3DRenderer
 		rct.top=10;
 		rct.bottom=rct.top+30;
 
-		// Draw some text 
+		//font->
+		// Draw some text
+		//i need to set a new PS/FP state here .. meh ...
 		font->DrawText(NULL, fps_text, -1, &rct, 0, fontColor );
+		//DrawText(
 	}
 
+	void DrawOSD()
+	{
+		//dev->SetRenderState(D3DRS_ZFUNC,D3DCMP_ALWAYS);
+		dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+		dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
+		dev->SetRenderState(D3DRS_ALPHABLENDENABLE,TRUE);
+		/*
+		dev->SetRenderState( D3DRS_ALPHATESTENABLE,  TRUE );
+		dev->SetRenderState( D3DRS_ALPHAREF,         0x08 );
+		dev->SetRenderState( D3DRS_ALPHAFUNC,  D3DCMP_GREATEREQUAL );
+		dev->SetRenderState( D3DRS_FILLMODE,   D3DFILL_SOLID );
+		dev->SetRenderState( D3DRS_CULLMODE,   D3DCULL_CCW );
+		dev->SetRenderState( D3DRS_STENCILENABLE,    FALSE );
+		dev->SetRenderState( D3DRS_CLIPPING,         TRUE );
+		dev->SetRenderState( D3DRS_CLIPPLANEENABLE,  FALSE );
+		dev->SetRenderState( D3DRS_VERTEXBLEND,      D3DVBF_DISABLE );
+		dev->SetRenderState( D3DRS_INDEXEDVERTEXBLENDENABLE, FALSE );
+		dev->SetRenderState( D3DRS_FOGENABLE,        FALSE );
+		dev->SetRenderState( D3DRS_COLORWRITEENABLE,
+		D3DCOLORWRITEENABLE_RED  | D3DCOLORWRITEENABLE_GREEN |
+		D3DCOLORWRITEENABLE_BLUE | D3DCOLORWRITEENABLE_ALPHA );
+		*/
+		if (settings.OSD.ShowFPS)
+		{
+			DrawFPS();
+		}
+		if (settings.OSD.ShowStats)
+		{
+		}
+	}
+	//
+	void UpdatePalleteTexure()
+	{
+		palette_update();
+		if (pal_texture==0)
+			return;
+
+		D3DLOCKED_RECT rect;
+		//pal is organised as 16x64 texture
+		pal_texture->LockRect(0,&rect,NULL,D3DLOCK_DISCARD);
+
+		u8* tex=(u8*)rect.pBits;
+		u8* src=(u8*)palette_lut;
+
+		for (int i=0;i<64;i++)
+		{
+			memcpy(tex,src,16*4);
+			tex+=rect.Pitch;
+			src+=16*4;
+		}
+		pal_texture->UnlockRect(0);
+	}
 	//
 	void DoRender()
 	{
@@ -1218,15 +1416,22 @@ namespace Direct3DRenderer
 		//memset(pvrrc.verts.data,0xFEA345FD,pvrrc.verts.size*sizeof(Vertex));
 
 
-
 		// Clear the backbuffer to a blue color
 		//All of the screen is allways filled w/ smth , no need to clear the color buffer
 		//gives a nice speedup on large resolutions
 		verifyc(dev->Clear( 0, NULL, /*D3DCLEAR_TARGET |*/ D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0,122,199), 1.0f, 0 ));
 
+		UpdatePalleteTexure();
+
 		// Begin the scene
 		if( SUCCEEDED( dev->BeginScene() ) )
 		{			
+			if (pal_texture!=0)
+			{
+				verifyc(dev->SetTexture(1,pal_texture));
+				verifyc(dev->SetSamplerState(1, D3DSAMP_MINFILTER, D3DTEXF_POINT));
+				verifyc(dev->SetSamplerState(1, D3DSAMP_MAGFILTER, D3DTEXF_POINT));
+			}
 			//Init stuff
 			dev->SetVertexShader(compiled_vs);
 
@@ -1317,20 +1522,36 @@ namespace Direct3DRenderer
 			dev->SetRenderState(D3DRS_ALPHAREF,0);
 			if (!GetAsyncKeyState(VK_F3))
 			{
-				if (UseFixedFunction)
+				bool dosort=UsingAutoSort();
+
+				if (dosort && settings.Emulation.AlphaSortMode==1)
+					SortPParams();
+
+				if (dosort && settings.Emulation.AlphaSortMode == 2)
 				{
-					//if (!UsingAutoSort())
-					RendPolyParamList<ListType_Translucent,true>(pvrrc.global_param_tr);
+					if (UseFixedFunction)
+					{
+						SortRendPolyParamList<true>(pvrrc.global_param_tr);
+					}
+					else
+					{
+						SortRendPolyParamList<false>(pvrrc.global_param_tr);
+					}	
 				}
 				else
 				{
-					RendPolyParamList<ListType_Translucent,false>(pvrrc.global_param_tr);
+					if (UseFixedFunction)
+					{
+						RendPolyParamList<ListType_Translucent,true>(pvrrc.global_param_tr);
+					}
+					else
+					{
+						RendPolyParamList<ListType_Translucent,false>(pvrrc.global_param_tr);
+					}
 				}
 			}
-			if (settings.ShowFPS)
-			{
-				DrawFPS();
-			}
+			DrawOSD();
+			
 			// End the scene
 			dev->EndScene();
 		}
@@ -1464,7 +1685,11 @@ namespace Direct3DRenderer
 		verifyc(dev->CreateVertexShader((DWORD*)shader->GetBufferPointer(),&compiled_vs));
 		
 		if (!UseFixedFunction)
+		{
+			verifyc(dev->CreateTexture(16,64,1,D3DUSAGE_DYNAMIC,D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,&pal_texture,0));
 			PrecompilePS();
+			
+		}
 
 		D3DXCreateFont( dev, 20, 0, FW_BOLD, 0, FALSE, DEFAULT_CHARSET, 
 			OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"), &font );
@@ -1724,14 +1949,14 @@ namespace Direct3DRenderer
 				Vertex* old=((Vertex*)tarc.verts.ptr);
 				if (CurrentPP->count&1)
 				{
-					Vertex* cv=tarc.verts.Guarantee(4,3);
+					Vertex* cv=tarc.verts.Guarantee(4,3);//4
 					cv[1].x=cv[0].x=old[-1].x;
 					cv[1].y=cv[0].y=old[-1].y;
 					cv[1].z=cv[0].z=old[-1].z;
 				}
 				else
 				{
-					Vertex* cv=tarc.verts.Guarantee(3,2);
+					Vertex* cv=tarc.verts.Guarantee(3,2);//3
 					cv[0].x=old[-1].x;//dup prev
 					cv[0].y=old[-1].y;//dup prev
 					cv[0].z=old[-1].z;//dup prev
@@ -2113,15 +2338,16 @@ namespace Direct3DRenderer
 		__forceinline
 		static void AppendSpriteVertexA(TA_Sprite1A* sv)
 		{
-			if (vert_reappend)
+			if (CurrentPP->count)
 			{
 				Vertex* old=((Vertex*)tarc.verts.ptr);
-				Vertex* cv=tarc.verts.Guarantee(3,2);
+				Vertex* cv=tarc.verts.Guarantee(6,2);
 				cv[0].x=old[-1].x;//dup prev
 				cv[0].y=old[-1].y;//dup prev
 				cv[0].z=old[-1].z;//dup prev
 				vert_reappend=(Vertex*)tarc.verts.ptr;
 			}
+
 			Vertex* cv = tarc.verts.Append(4);
 			
 			//Fill static stuff
@@ -2162,7 +2388,8 @@ namespace Direct3DRenderer
 			sprite_uv(1, u2,v2);
 			sprite_uv(0, u0,v2);//or sprite_uv(u2,v0); ?
 
-			if (vert_reappend)
+			
+			if (CurrentPP->count)
 			{
 				Vertex* vert=vert_reappend;
 				vert[-1].x=vert[0].x;
@@ -2170,7 +2397,7 @@ namespace Direct3DRenderer
 				vert[-1].z=vert[0].z;
 				CurrentPP->count+=2;
 			}
-			vert_reappend=(Vertex*)1;
+			
 			CurrentPP->count+=4;
 		}
 

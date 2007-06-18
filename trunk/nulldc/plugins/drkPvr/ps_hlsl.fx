@@ -20,7 +20,16 @@ struct pixel
 };
 
 sampler2D samplr : register(s0);
+sampler2D tex_pal : register(s1);
 
+float4 current_pal: register(c0);
+
+float4 PalleteLookup(float4 pos)
+{
+	//xyzw -> x=index , y=bank
+	float4 texcol=tex2D(tex_pal,float2(pos.b+current_pal.x,pos.g+current_pal.y));
+	return texcol;
+}
 //Pvr only supports ARGB8888 colors , so we have to clamp em (in case they are float colors inputed directly)
 float4 PixelShader_main(in pixel s ) : COLOR0
 { 
@@ -41,6 +50,10 @@ float4 PixelShader_main(in pixel s ) : COLOR0
 		#else
 			float4 texcol=tex2Dproj( samplr, s.uv);	//ps 1.4 and above ingore the Texture lookup flags , but they
 													//have projected lookups ;)
+		#endif
+		
+		#if pp_pal_tex==1
+			texcol=PalleteLookup(texcol);
 		#endif
 		
 		//apply modifiers

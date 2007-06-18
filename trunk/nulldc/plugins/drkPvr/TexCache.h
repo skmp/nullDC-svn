@@ -7,6 +7,9 @@ extern u32 palette_lut[1024];
 extern bool pal_needs_update;
 extern u32 pal_rev_256[4];
 extern u32 pal_rev_16[64];
+extern u32 _pal_rev_256[4];
+extern u32 _pal_rev_16[64];
+
 //Generic texture cache list class =P
 template <class TexEntryType>
 class TexCacheList
@@ -38,12 +41,12 @@ public:
 	}
 
 
-	TexEntryType* Find(u32 address)
+	TexEntryType* __fastcall Find(u32 tcw,u32 tsp)
 	{
 		TexCacheEntry* pl= this->pfirst;
 		while (pl)
 		{
-			if (pl->data.Start==address)
+			if (pl->data.tcw.full==tcw && pl->data.tsp.full==tsp)
 			{
 				if (pl->prev!=0)//its not the first one
 				{
@@ -412,8 +415,6 @@ pixelcvt_end;
 
 pixelcvt_start(convPAL4_TW,4,4)
 {
-	palette_update();
-
 	u8* p_in=(u8*)data;
 	u32* pal=&palette_lut[palette_index];
 
@@ -439,8 +440,6 @@ pixelcvt_start(convPAL4_TW,4,4)
 }
 pixelcvt_next(convPAL8_TW,2,4)
 {
-	palette_update();
-
 	u8* p_in=(u8*)data;
 	u32* pal=&palette_lut[palette_index];
 
@@ -453,6 +452,44 @@ pixelcvt_next(convPAL8_TW,2,4)
 	pb->prel(0,3,pal[p_in[0]]);p_in++;
 	pb->prel(1,2,pal[p_in[0]]);p_in++;
 	pb->prel(1,3,pal[p_in[0]]);p_in++;
+}
+pixelcvt_next(convPAL4_X_TW,4,4)
+{
+	u8* p_in=(u8*)data;
+
+	pb->prel(0,0,(p_in[0]&0xF)<<4);
+	pb->prel(0,1,p_in[0]&0xF0);p_in++;
+	pb->prel(1,0,(p_in[0]&0xF)<<4);
+	pb->prel(1,1,p_in[0]&0xF0);p_in++;
+
+	pb->prel(0,2,(p_in[0]&0xF)<<4);
+	pb->prel(0,3,p_in[0]&0xF0);p_in++;
+	pb->prel(1,2,(p_in[0]&0xF)<<4);
+	pb->prel(1,3,p_in[0]&0xF0);p_in++;
+
+	pb->prel(2,0,(p_in[0]&0xF)<<4);
+	pb->prel(2,1,p_in[0]&0xF0);p_in++;
+	pb->prel(3,0,(p_in[0]&0xF)<<4);
+	pb->prel(3,1,p_in[0]&0xF0);p_in++;
+
+	pb->prel(2,2,(p_in[0]&0xF)<<4);
+	pb->prel(2,3,p_in[0]&0xF0);p_in++;
+	pb->prel(3,2,(p_in[0]&0xF)<<4);
+	pb->prel(3,3,p_in[0]&0xF0);p_in++;
+}
+pixelcvt_next(convPAL8_X_TW,2,4)
+{
+	u8* p_in=(u8*)data;
+#define COL ((p_in[0]&0xF)<<4) | ((p_in[0]&0xF0)<<6)
+	pb->prel(0,0,COL);p_in++;
+	pb->prel(0,1,COL);p_in++;
+	pb->prel(1,0,COL);p_in++;
+	pb->prel(1,1,COL);p_in++;
+
+	pb->prel(0,2,COL);p_in++;
+	pb->prel(0,3,COL);p_in++;
+	pb->prel(1,2,COL);p_in++;
+	pb->prel(1,3,COL);p_in++;
 }
 pixelcvt_end;
 //hanlder functions
@@ -578,6 +615,8 @@ template void fastcall texture_VQ<convPAL8_TW<pp_dx> >(PixelBuffer* pb,u8* p_in,
 #define YUV422to8888_TW texture_TW<convYUV_TW<pp_dx> >
 #define PAL4to8888_TW texture_TW<convPAL4_TW<pp_dx> >
 #define PAL8to8888_TW  texture_TW<convPAL8_TW<pp_dx> >
+#define PAL4toX444_TW texture_TW<convPAL4_X_TW<pp_dx> >
+#define PAL8toX444_TW  texture_TW<convPAL8_X_TW<pp_dx> >
 
 //VQ
 #define argb1555to8888_VQ texture_VQ<conv1555_TW<pp_dx> >

@@ -87,8 +87,17 @@ struct _settings_type
 		u32 MultiSampleQuality;
 		u32 WidescreenHack;
 	} Enhancements;
-	u32 ShowFPS;
-	u32 VersionedPalleteTextures;
+	
+	struct
+	{
+		u32 VersionedPalleteTextures;
+		u32 AlphaSortMode;
+	} Emulation;
+	struct
+	{
+		u32 ShowFPS;
+		u32 ShowStats;
+	} OSD;
 };
 
 extern _settings_type settings;
