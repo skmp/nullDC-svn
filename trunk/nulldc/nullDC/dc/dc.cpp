@@ -221,6 +221,8 @@ u32 THREADCALL emulation_thead(void* ptar)
 //Plugins/Cpu core must not change after this call is made.
 bool Init_DC()
 {
+	if (dc_inited)
+		return true;
 	/*
 	char temp_dll[512];
 	//nullDC_PowerVR_plugin* pvrplg=new nullDC_PowerVR_plugin();
@@ -254,6 +256,9 @@ bool Init_DC()
 
 bool Reset_DC(bool Manual)
 {
+	if (!dc_inited || sh4_cpu->IsCpuRunning())
+		return false;
+
 	if (Manual)
 		emu_rtc(EMU_RESET_MANUAL);
 	else
