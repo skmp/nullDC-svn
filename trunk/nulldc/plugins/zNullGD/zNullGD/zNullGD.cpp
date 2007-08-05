@@ -46,7 +46,7 @@ DriveNotifyEventFP* Notify;
 DWORD dwGDMode = CdRom_XA;	// 1=cdrom,2=cdxa,8=GDROM
 
 void FASTCALL gdConfig(void * handle);
-void FASTCALL handle_config(u32 id,void* hwnd,void* puser)
+void EXPORT_CALL handle_config(u32 id,void* hwnd,void* puser)
 {
 	gdConfig(hwnd);
 }
