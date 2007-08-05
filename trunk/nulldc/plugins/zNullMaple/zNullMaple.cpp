@@ -187,7 +187,7 @@ s32  FASTCALL Load(emu_info* emu)
 
 void FASTCALL Unload()
 {
-	ei.WindowHandle = NULL;
+//	ei.WindowHandle = NULL; // -> wtf do you mean by that z ? :P
 	TermDInput();
 }
 
@@ -361,7 +361,7 @@ INT_PTR CALLBACK dlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	return false;
 }
 
-void FASTCALL menu_cb(u32 id, void* handle, void* p)
+void EXPORT_CALL menu_cb(u32 id, void* handle, void* p)
 {
 	curr_port = ((maple_device_instance*)p)->port>>6;
 	DialogBox(hInst, MAKEINTRESOURCE(IDD_DICFG), (HWND)handle, dlgProc);
