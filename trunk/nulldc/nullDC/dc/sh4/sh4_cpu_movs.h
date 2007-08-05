@@ -236,6 +236,7 @@
 		WriteMemBOU16(r[n],(u32)-2,r[m]);
 		r[n] -= 2;
 	}
+	else
 	{
 		r[n] -= 2;
 		WriteMemU16(r[n], r[m]);

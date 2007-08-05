@@ -190,11 +190,11 @@ sh4op(i1100_0011_iiii_iiii)
 } 
 
 //TODO : Fix this
-#include "gui/emuWinUI.h"
+#include "gui/base.h"
 sh4op(sh4_bpt_op)
 {
 	sh4_cpu->Stop();
 	pc-=2;//hehe
-	RefreshDebugger(NULL);//need fixup
+	EmuEventBroadcast();//(NULL);//need fixup
 }
 #endif

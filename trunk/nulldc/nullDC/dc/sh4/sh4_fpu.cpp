@@ -23,6 +23,7 @@ void iNimp(char*str);
 
 #define IS_DENORMAL(f) (((*(f))&0x7f800000) == 0)
 
+#define ReadMemU64(to,addr) ReadMem64(addr,to)
 #define ReadMemU32(to,addr) to=ReadMem32(addr)
 #define ReadMemS32(to,addr) to=(s32)ReadMem32(addr)
 #define ReadMemS16(to,addr) to=(u32)(s32)(s16)ReadMem16(addr)
@@ -34,6 +35,7 @@ void iNimp(char*str);
 #define ReadMemBOS8(to,addr,offset)		ReadMemS8(to,addr+offset)
 
 //Write Mem Macros
+#define WriteMemU64(addr,data)				WriteMem64(addr,data)
 #define WriteMemU32(addr,data)				WriteMem32(addr,(u32)data)
 #define WriteMemU16(addr,data)				WriteMem16(addr,(u16)data)
 #define WriteMemU8(addr,data)				WriteMem8(addr,(u8)data)
@@ -42,7 +44,7 @@ void iNimp(char*str);
 #define WriteMemBOU32(addr,offset,data)		WriteMemU32(addr+offset,data)
 #define WriteMemBOU16(addr,offset,data)		WriteMemU16(addr+offset,data)
 #define WriteMemBOU8(addr,offset,data)		WriteMemU8(addr+offset,data)
-
+#define exept_tet_now {if (sh4_exept_raised) return;}
 #ifdef NO_MMU
 #define EXEPT_EXIT()
 #else
@@ -230,6 +232,7 @@ sh4op(i1111_nnnn_mmmm_0101)
 		END64();
 	}
 }
+//All memory opcodes are here
 //fmov.s @(R0,<REG_M>),<FREG_N>
 sh4op(i1111_nnnn_mmmm_0110)
 {
@@ -246,13 +249,15 @@ sh4op(i1111_nnnn_mmmm_0110)
 		u32 m = GetM(op);
 		if (((op >> 8) & 0x1) == 0)
 		{
-			ReadMemU32(fr_hex[n],r[m] + r[0]);
-			ReadMemU32(fr_hex[n + 1],r[m] + r[0] + 4);
+			//ReadMemU32(fr_hex[n],r[m] + r[0]);  exept_tet_now;
+			//ReadMemU32(fr_hex[n + 1],r[m] + r[0] + 4);
+			ReadMemU64(fr_hex[n],r[m] + r[0]);
 		}
 		else
 		{
-			ReadMemU32(xf_hex[n],r[m] + r[0]);
-			ReadMemU32(xf_hex[n + 1],r[m] + r[0] + 4);
+			//ReadMemU32(xf_hex[n],r[m] + r[0]);  exept_tet_now;
+			//ReadMemU32(xf_hex[n + 1],r[m] + r[0] + 4);
+			ReadMemU64(xf_hex[n],r[m] + r[0]);
 		}
 	}
 }
@@ -274,13 +279,15 @@ sh4op(i1111_nnnn_mmmm_0111)
 		u32 m = (op >> 4) & 0x0E;
 		if (((op >> 4) & 0x1) == 0)
 		{
-			WriteMem32(r[n] + r[0], fr_hex[m]);
-			WriteMem32(r[n] + r[0] + 4, fr_hex[m + 1]);
+			//WriteMem32(r[n] + r[0], fr_hex[m]);  exept_tet_now;
+			//WriteMem32(r[n] + r[0] + 4, fr_hex[m + 1]);
+			WriteMemU64(r[n] + r[0],fr_hex[m]);
 		}
 		else
 		{
-			WriteMem32(r[n] + r[0], xf_hex[m]);
-			WriteMem32(r[n] + r[0] + 4, xf_hex[m + 1]);
+			//WriteMem32(r[n] + r[0], xf_hex[m]);  exept_tet_now;
+			//WriteMem32(r[n] + r[0] + 4, xf_hex[m + 1]);
+			WriteMemU64(r[n] + r[0],xf_hex[m]);
 		}
 	}
 }
@@ -301,13 +308,15 @@ sh4op(i1111_nnnn_mmmm_1000)
 		u32 m = GetM(op);
 		if (((op >> 8) & 0x1) == 0)
 		{
-			ReadMemU32(fr_hex[n],r[m]);
-			ReadMemU32(fr_hex[n + 1],r[m] + 4);
+			//ReadMemU32(fr_hex[n],r[m]);  exept_tet_now;
+			//ReadMemU32(fr_hex[n + 1],r[m] + 4);
+			ReadMemU64(fr_hex[n],r[m]);
 		}
 		else
 		{
-			ReadMemU32(xf_hex[n],r[m]);
-			ReadMemU32(xf_hex[n + 1],r[m] + 4);
+			//ReadMemU32(xf_hex[n],r[m]);  exept_tet_now;
+			//ReadMemU32(xf_hex[n + 1],r[m] + 4);
+			ReadMemU64(xf_hex[n],r[m]);
 		}
 	}
 }
@@ -330,13 +339,15 @@ sh4op(i1111_nnnn_mmmm_1001)
 		u32 m = GetM(op);
 		if (((op >> 8) & 0x1) == 0)
 		{
-			ReadMemU32(fr_hex[n],r[m]);
-			ReadMemU32(fr_hex[n + 1],r[m]+ 4);
+			//ReadMemU32(fr_hex[n],r[m]); exept_tet_now;
+			//ReadMemU32(fr_hex[n + 1],r[m]+ 4);
+			ReadMemU64(fr_hex[n],r[m]);
 		}
 		else
 		{
-			ReadMemU32(xf_hex[n],r[m] );
-			ReadMemU32(xf_hex[n + 1],r[m]+ 4);
+			//ReadMemU32(xf_hex[n],r[m] ); exept_tet_now;
+			//ReadMemU32(xf_hex[n + 1],r[m]+ 4);
+			ReadMemU64(xf_hex[n],r[m] );
 		}
 		r[m] += 8;
 	}
@@ -359,13 +370,15 @@ sh4op(i1111_nnnn_mmmm_1010)
 
 		if (((op >> 4) & 0x1) == 0)
 		{
-			WriteMemU32(r[n], fr_hex[m]);
-			WriteMemU32(r[n] + 4, fr_hex[m + 1]);
+			//WriteMemU32(r[n], fr_hex[m]); exept_tet_now;
+			//WriteMemU32(r[n] + 4, fr_hex[m + 1]);
+			WriteMemU64(r[n], fr_hex[m]);
 		}
 		else
 		{
-			WriteMemU32(r[n], xf_hex[m]);
-			WriteMemU32(r[n] + 4, xf_hex[m + 1]);
+			//WriteMemU32(r[n], xf_hex[m]); exept_tet_now;
+			//WriteMemU32(r[n] + 4, xf_hex[m + 1]);
+			WriteMemU64(r[n], xf_hex[m]);
 		}
 		
 	}
@@ -393,17 +406,20 @@ sh4op(i1111_nnnn_mmmm_1011)
 		r[n] -= 8;
 		if (((op >> 4) & 0x1) == 0)
 		{
-			WriteMemU32(r[n] , fr_hex[m]);
-			WriteMemU32(r[n]+ 4, fr_hex[m + 1]);
+			//WriteMemU32(r[n] , fr_hex[m]); exept_tet_now;
+			//WriteMemU32(r[n]+ 4, fr_hex[m + 1]);
+			WriteMemU64(r[n] , fr_hex[m]);
 		}
 		else
 		{
-			WriteMemU32(r[n] , xf_hex[m]);
-			WriteMemU32(r[n]+ 4, xf_hex[m + 1]);
+			//WriteMemU32(r[n] , xf_hex[m]); exept_tet_now;
+			//WriteMemU32(r[n]+ 4, xf_hex[m + 1]);
+			WriteMemU64(r[n] , xf_hex[m]);
 		}
 	}
 }
 
+//end of memory opcodes
 
 //fmov <FREG_M>,<FREG_N>   
 sh4op(i1111_nnnn_mmmm_1100)
@@ -687,13 +703,12 @@ sh4op(i1111_1011_1111_1101)
 	UpdateFPSCR();
 }
 
-
 //fschg                    
 sh4op(i1111_0011_1111_1101)
 {
 	//iNimp("fschg");
 	fpscr.SZ = 1 - fpscr.SZ;
-	//UpdateFPSCR();//*FixME* prob not needed
+	//printf("SZ %d %08X\n",fpscr.SZ,id);
 }
 
 //fsqrt <FREG_N>                
