@@ -3,15 +3,256 @@
 #include "config.h"
 
 
-static char appPath[MAX_PATH];
-static char pluginPath[MAX_PATH];
-static char dataPath[MAX_PATH];
-static char cfgPath[MAX_PATH];
+char appPath[512];
+char pluginPath[512];
+char dataPath[512];
+char cfgPath[512];
 
-
-void FASTCALL cfgSaveStr(const char * Section, const char * Key, const char * String)
+#define CEM_VIRTUAL 1
+#define CEM_VALIDCV 2
+#define CEM_READONLY 4
+#define CEM_VALIDSV 8
+struct ConfigEntry
 {
-	WritePrivateProfileString(Section,Key,String,cfgPath);
+	ConfigEntry(ConfigEntry* pp)
+	{
+		next=pp;
+		flags=0;
+		name=0;
+		value=0;
+		value2=0;
+	}
+
+
+	u32 flags;
+	char* name;
+	char* value;
+	char* value2;
+	ConfigEntry* next;
+	void SaveFile(FILE* file)
+	{
+		if (!(flags&(CEM_VALIDCV|CEM_VALIDSV)))
+			return;
+		if (flags & CEM_READONLY)
+			return;
+
+		fprintf(file,"%s=%s\n",name,value);
+	} 
+	~ConfigEntry()
+	{
+		if (name)
+			free(name);
+		if(value)
+			free(value);
+		if(value2)
+			free(value2);
+	}
+	void GetValue(char* v)
+	{
+		if (flags & CEM_VALIDCV)
+			strcpy(v,value);
+		else if (flags & CEM_VIRTUAL)
+			strcpy(v,value2);
+		else if (flags & CEM_VALIDSV)
+			strcpy(v,value);
+		else
+			strcpy(v,"");
+	}
+};
+struct ConfigSection
+{
+	u32 flags;
+	char* name;
+	ConfigEntry* entrys;
+	ConfigSection* next;
+	
+	ConfigSection(ConfigSection* pp)
+	{
+		next=pp;
+		flags=0;
+		entrys=0;
+		name=0;
+	}
+	ConfigEntry* FindEntry(const char* name)
+	{
+		ConfigEntry* c=	entrys;
+		while(c)
+		{
+			if (stricmp(name,c->name)==0)
+				return c;
+			c=c->next;
+		}
+		return 0;
+	}
+	void SetEntry(const char* name,const char* value,u32 eflags)
+	{
+		ConfigEntry* c=FindEntry(name);
+		if (!c)
+		{
+			entrys=c= new ConfigEntry(entrys);
+			c->name=strdup(name);
+		}
+
+		//readonly is read only =)
+		if (c->flags & CEM_READONLY)
+			return;
+		
+		//virtual : save only if different value
+		if (c->flags & CEM_VIRTUAL)
+		{
+			if(strcmpi(c->value2,value)==0)
+				return;
+		}
+
+		if (eflags & CEM_VIRTUAL)
+		{
+			c->flags|=CEM_VIRTUAL;
+			if (c->value2)
+				free(c->value2);
+			c->value2=strdup(value);
+		}
+		else if (eflags & CEM_VALIDSV)
+		{
+			flags|=CEM_VALIDCV;
+			c->flags|=CEM_VALIDSV;
+			if (c->value)
+				free(c->value);
+			c->value=strdup(value);
+		}
+		else
+		{
+			flags|=CEM_VALIDCV;
+			c->flags|=CEM_VALIDCV;
+			if (c->value)
+				free(c->value);
+			c->value=strdup(value);
+		}
+		
+	}
+	~ConfigSection()
+	{
+		ConfigEntry* n=entrys;
+		
+		while(n)
+		{
+			ConfigEntry* p=n;	
+			n=n->next;
+			delete p;
+		}
+	}
+	void SaveFile(FILE* file)
+	{
+		if (!(flags&(CEM_VALIDCV|CEM_VALIDSV)))
+			return;
+		
+		fprintf(file,"[%s]\n",name);
+	
+		vector<ConfigEntry*> stuff;
+
+		ConfigEntry* n=entrys;
+		
+		while(n)
+		{
+			stuff.push_back(n);
+			n=n->next;
+		}
+
+		for (int i=stuff.size()-1;i>=0;i--)
+		{
+			stuff[i]->SaveFile(file);
+		}
+
+		fprintf(file,"\n",name);
+	}
+
+};
+struct ConfigFile
+{
+	ConfigSection* entrys;
+	ConfigSection* FindSection(const char* name)
+	{
+		ConfigSection* c=	entrys;
+		while(c)
+		{
+			if (stricmp(name,c->name)==0)
+				return c;
+			c=c->next;
+		}
+		return 0;
+	}
+	ConfigSection* GetEntry(const char* name,u32 flags)
+	{
+		ConfigSection* c=FindSection(name);
+		if (!c)
+		{
+			entrys=c= new ConfigSection(entrys);
+			c->name=strdup(name);
+		}
+
+		if (flags & CEM_VIRTUAL)
+		{
+			c->flags|=CEM_VIRTUAL;
+		}
+		/*else
+		{
+			c->flags|=CEM_VALIDCV;
+		}*/
+		return c;
+	}
+	~ConfigFile()
+	{
+		ConfigSection* n=entrys;
+		
+		while(n)
+		{
+			ConfigSection* p=n;	
+			n=n->next;
+			delete p;
+		}
+	}
+
+	void PaseFile(FILE* file)
+	{
+		
+	}
+	void SaveFile(FILE* file)
+	{
+		fprintf(file,";; nullDC config file;;\n");
+		vector<ConfigSection*> stuff;
+
+		ConfigSection* n=entrys;
+		
+		while(n)
+		{
+			stuff.push_back(n);
+			n=n->next;
+		}
+
+		for (int i=stuff.size()-1;i>=0;i--)
+		{
+			stuff[i]->SaveFile(file);
+		}
+	}
+};
+
+ConfigFile cfgdb;
+
+void savecfgf()
+{
+	FILE* cfgfile = fopen(cfgPath,"wt");
+	if (!cfgfile)
+		printf("Error : Unable to open file for saving \n");
+	else
+	{
+		cfgdb.SaveFile(cfgfile);
+		fclose(cfgfile);
+	}
+}
+void EXPORT_CALL cfgSaveStr(const char * Section, const char * Key, const char * String)
+{
+	cfgdb.GetEntry(Section,CEM_VALIDCV)->SetEntry(Key,String,CEM_VALIDCV);
+	savecfgf();
+	//WritePrivateProfileString(Section,Key,String,cfgPath);
 }
 //New config code
 
@@ -52,263 +293,145 @@ void FASTCALL cfgSaveStr(const char * Section, const char * Key, const char * St
 **	This will verify there is a working file @ ./szIniFn
 **	- if not present, it will write defaults
 */
+char* trim_ws(char* str);
 bool cfgOpen()
 {
-
 	char * tmpPath = GetEmuPath("");
 	strcpy(appPath, tmpPath);
 	free(tmpPath);
 
-	sprintf(cfgPath,"%snullDC.cfg", appPath);
+	if (cfgPath[0]==0)
+		sprintf(cfgPath,"%snullDC.cfg", appPath);
+
 	sprintf(dataPath,"%sdata\\", appPath);
 	sprintf(pluginPath,"%splugins\\", appPath);
 
-	FILE * fcfg = fopen(cfgPath,"r");
-	if(!fcfg) {
-		fcfg = fopen(cfgPath,"wt");
-		fprintf(fcfg,";; nullDC cfg file ;;\n\n");
-	}
-	fclose(fcfg);
+	ConfigSection* cs= cfgdb.GetEntry("emu",CEM_VIRTUAL);
 
-	//temp
-	cfgSaveStr("emu","AppPath",appPath);
-	cfgSaveStr("emu","PluginPath",pluginPath);
-	cfgSaveStr("emu","DataPath",dataPath);
+	cs->SetEntry("AppPath",appPath,CEM_VIRTUAL | CEM_READONLY);
+	cs->SetEntry("PluginPath",pluginPath,CEM_VIRTUAL | CEM_READONLY);
+	cs->SetEntry("DataPath",dataPath,CEM_VIRTUAL | CEM_READONLY);
+	cs->SetEntry("FullName",VER_FULLNAME,CEM_VIRTUAL | CEM_READONLY);
+	cs->SetEntry("ShortName",VER_SHORTNAME,CEM_VIRTUAL | CEM_READONLY);
+	cs->SetEntry("Name",VER_EMUNAME,CEM_VIRTUAL | CEM_READONLY);
 
-	cfgSaveStr("emu","FullName",VER_FULLNAME);
-	cfgSaveStr("emu","ShortName",VER_SHORTNAME);
-	cfgSaveStr("emu","Name",VER_EMUNAME);
-
-	return true;
-}
-char* trim_str(char* str,char ch)
-{
-	if (str==0 || strlen(str)==0)
-		return 0;
-
-	while(*str)
-	{
-		if (*str!=ch)
-			break;
-		str++;
-	}
-
-	size_t l=strlen(str);
-	
-	if (l==0)
-		return 0;
-
-	while(l>0)
-	{
-		if (str[l-1]!=ch)
-			break;
-		str[l-1]=0;
-		l--;
-	}
-
-	if (l==0)
-		return 0;
-
-	return str;
-}
-
-char* chop_back_str(char* str,char ch)
-{
-	size_t len=strlen(str);
-	if (str==0 || len==0)
-		return 0;
-
-	while(len>0)
-	{
-		if (str[len-1]==ch)
+	FILE* cfgfile = fopen(cfgPath,"r");
+	if(!cfgfile) {
+		cfgfile = fopen(cfgPath,"wt");
+		if(!cfgfile) 
+			printf("Unable to open the config file for reading or writing\nfile : %s\n",cfgPath);
+		else
 		{
-			str[len-1]=0;
-			len--;
-			break;
-		}
-		str[len-1]=0;
-		len--;
-	}
-
-	if (len==0)
-		return 0;
-
-	return str;
-}
-bool front_str(char* str,char ch)
-{
-	if (str==0 || strlen(str)==0)
-		return false;
-	while(*str)
-	{
-		if (*str==ch)
-		{
-			*str=0;
-			break;
-		}
-		str++;
-	}
-	return true;
-}
-u32 strcmp_ic(const char* p1,const char* p2)
-{
-	char temp1[4096];
-	char temp2[4096];
-	strcpy(temp1,p1);
-	strcpy(temp2,p2);
-
-	_strlwr(temp1);
-	_strlwr(temp2);
-	return strcmp(temp1,temp2);
-}
-bool FindSection(const char* name,FILE* file)
-{
-	if (!file)
-		return false;
-	char temp[512];
-
-	while (char* ptr=fgets(temp,512,file))
-	{
-		size_t len=strlen(ptr);
-		if (len<2)
-			continue;
-		//remove \n
-		ptr[len-1]=0;
-		
-		if (!front_str(ptr,';'))
-			continue;	//no text
-
-		if(!(ptr=trim_str(ptr,' ')))
-			continue;
-		if (ptr[0]!='[')
-			continue;	//we do not care 
-		ptr++;
-
-		//must have ] , with non zero size
-		if (!front_str(ptr,']'))
-			continue;	//no text
-		//must have non zero trimmed size
-		if(!(ptr=trim_str(ptr,' ')))
-			continue;
-		
-		if (strcmp_ic(name,ptr)==0)
-		{
-			return true;	//found it !
+			fprintf(cfgfile,";; nullDC cfg file ;;\n\n");
+			fseek(cfgfile,0,SEEK_SET);
+			fclose(cfgfile);
+			cfgfile = fopen(cfgPath,"r");
+			if(!cfgfile) 
+				printf("Unable to open the config file for reading\nfile : %s\n",cfgPath);
 		}
 	}
-	return false;
-}
 
-bool FindKey(const char* name,FILE* file,char* out)
-{
-	if (!file)
-		return false;
-
-	char temp[512];
-
-	while (char* ptr=fgets(temp,512,file))
+	char line[512];
+	char cur_sect[512]={0};
+	int cline=0;
+	while(cfgfile && !feof(cfgfile))
 	{
-		size_t len=strlen(ptr);
-		if (len<2)
+		cline++;
+		fgets(line,512,cfgfile);
+		if (strlen(line)<3)
 			continue;
-		//remove \n
-		ptr[len-1]=0;
-		
-		if (!front_str(ptr,';'))
-			continue;	//no text
+		if (line[strlen(line)-1]=='\r' || line[strlen(line)-1]=='\n')
+			line[strlen(line)-1]=0;
 
-		//trim
-		if(!(ptr=trim_str(ptr,' ')))
-			continue;
-		if (*ptr=='[')
-			return false;//got to next section allready ...
-
-		char* middle=strstr(ptr,"=");
-		if (!middle)
-			continue;
-		if (!front_str(ptr,'='))
-			continue;	//no text
-
-		if(!(ptr=trim_str(ptr,' ')))
-			continue;
-
-		if(strcmp_ic(ptr,name)==0)
+		char* tl=trim_ws(line);
+		if (tl[0]=='[' && tl[strlen(tl)-1]==']')
 		{
-			if (out==0)
-				return true;
-			middle++;
-			if(!(middle=trim_str(middle,' ')))
-			{
-				strcpy(out,"");//exists , but it is not set
-			}
-			else
-			{
-				strcpy(out,middle);
-			}
-			return true;	 
-		}
-		
-		
-
-	}
-	return false;
-}
-s32 cfgRead(const char * Section, const char * Key,char* value)
-{
-	FILE* f=fopen(cfgPath,"r");
-	if (!f)
-		return 0;
-	if (FindSection(Section,f))
-	{
-		if (!Key)
-		{
-			fclose(f);
-			return 1;
+			tl[strlen(tl)-1]=0;
+			strcpy(cur_sect,tl+1);
+			trim_ws(cur_sect);
 		}
 		else
 		{
-			if (FindKey(Key,f,value))
+			if (cur_sect[0]==0)
+				continue;//no open section
+			char* str1=strstr(tl,"=");
+			if (!str1)
 			{
-				fclose(f);
-				return 2;
+				printf("Malformed entry on cfg,  ingoring @ %d(%s)\n",cline,tl);
+				continue;
+			}
+			*str1=0;
+			str1++;
+			char* v=trim_ws(str1);
+			char* k=trim_ws(tl);
+			if (v && k)
+			{
+				ConfigSection*cs=cfgdb.GetEntry(cur_sect,CEM_VIRTUAL);
+				
+				//if (!cs->FindEntry(k))
+				cs->SetEntry(k,v,CEM_VALIDSV);
 			}
 			else
 			{
-				fclose(f);
-				return 0;
+				printf("Malformed entry on cfg,  ingoring @ %d(%s)\n",cline,tl);
 			}
 		}
 	}
-	fclose(f);
-	return 0;
+
+	if (cfgfile)
+	{
+		cfgdb.SaveFile(cfgfile);
+		fclose(cfgfile);
+	}
+	return true;
 }
+
 //Implementations of the interface :)
 //Section must be set
 //If key is 0 , it looks for the section
 //0 : not found
 //1 : found section , key was 0
 //2 : found section & key
-s32 FASTCALL cfgExists(const char * Section, const char * Key)
+s32 EXPORT_CALL cfgExists(const char * Section, const char * Key)
 {
-	return cfgRead(Section,Key,0);
+	if (Section==0)
+		return -1;
+	//return cfgRead(Section,Key,0);
+	ConfigSection*cs= cfgdb.FindSection(Section);
+	if (cs ==  0)
+		return 0;
+
+	if (Key==0)
+		return 1;
+
+	ConfigEntry* ce=cs->FindEntry(Key);
+	if (ce!=0)
+		return 2;
+	else
+		return 0;
 }
-void FASTCALL cfgLoadStr(const char * Section, const char * Key, char * Return,const char* Default)
+void EXPORT_CALL cfgLoadStr(const char * Section, const char * Key, char * Return,const char* Default)
 {
 	verify(Section!=0 && strlen(Section)!=0);
 	verify(Key!=0 && strlen(Key)!=0);
 	verify(Return!=0);
 	if (Default==0)
 		Default="";
-	if (!cfgRead(Section,Key,Return))
+	ConfigSection* cs= cfgdb.GetEntry(Section,CEM_VALIDCV);
+	ConfigEntry* ce=cs->FindEntry(Key);
+	if (!ce)
 	{
-		cfgSaveStr(Section,Key,Default);
-		verify(cfgRead(Section,Key,Return)==2);
+		cs->SetEntry(Key,Default,CEM_VALIDCV);
+		strcpy(Return,Default);
 	}
-	//GetPrivateProfileString(lpSection,lpKey,lpDefault,lpReturn,MAX_PATH,cfgPath);
+	else
+	{
+		ce->GetValue(Return);
+	}
 }
 
 //These are helpers , mainly :)
-s32 FASTCALL cfgLoadInt(const char * Section, const char * Key,s32 Default)
+s32 EXPORT_CALL cfgLoadInt(const char * Section, const char * Key,s32 Default)
 {
 	char temp_d[30];
 	char temp_o[30];
@@ -317,10 +440,13 @@ s32 FASTCALL cfgLoadInt(const char * Section, const char * Key,s32 Default)
 	return atoi(temp_o);
 }
 
-void FASTCALL cfgSaveInt(const char * Section, const char * Key, s32 Int)
+void EXPORT_CALL cfgSaveInt(const char * Section, const char * Key, s32 Int)
 {
 	char tmp[32];
 	sprintf(tmp,"%d", Int);
 	cfgSaveStr(Section,Key,tmp);
 }
-
+void cfgSetVitual(const char * Section, const char * Key, const char * String)
+{
+	cfgdb.GetEntry(Section,CEM_VIRTUAL)->SetEntry(Key,String,CEM_VIRTUAL);
+}
