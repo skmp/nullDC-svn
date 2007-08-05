@@ -202,6 +202,42 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="modem"
+			>
+			<File
+				RelativePath=".\modem.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\modem.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="lan"
+			>
+			<File
+				RelativePath=".\lan.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\lan.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="bba"
+			>
+			<File
+				RelativePath=".\bba.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bba.h"
+				>
+			</File>
+		</Filter>
 	</Files>
 	<Globals>
 	</Globals>
