@@ -507,6 +507,8 @@ void fastcall texture_PL(PixelBuffer* pb,u8* p_in,u32 Width,u32 Height)
 		for (u32 x=0;x<Width;x++)
 		{
 			u8* p = p_in;
+			if ((u32)p>=0x07200000)
+				p=(u8*)0x07100000;
 			PixelConvertor::Convert(pb,p);
 			p_in+=8;
 

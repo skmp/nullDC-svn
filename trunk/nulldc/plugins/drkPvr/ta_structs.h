@@ -552,6 +552,7 @@ struct TA_Sprite1B
 //28B
 struct TA_ModVolA
 {
+	PCW pcw;
 	f32 x0,y0,z0;
 	f32 x1,y1,z1;
 	f32 x2;	//3+3+1=7*4=28
@@ -566,81 +567,86 @@ struct TA_ModVolB
 //all together , and pcw ;)
 struct TA_VertexParam
 {
-	PCW pcw;
-
 	union
 	{
-		u8 Raw[64-4];
-
-		TA_Vertex0		vtx0;
-		TA_Vertex1		vtx1;
-		TA_Vertex2		vtx2;
-		TA_Vertex3		vtx3;
-		TA_Vertex4		vtx4;
-
 		struct
 		{
-			TA_Vertex5A			vtx5A;
-			TA_Vertex5B			vtx5B;
+			PCW pcw;
+
+			union
+			{
+				u8 Raw[64-4];
+
+				TA_Vertex0		vtx0;
+				TA_Vertex1		vtx1;
+				TA_Vertex2		vtx2;
+				TA_Vertex3		vtx3;
+				TA_Vertex4		vtx4;
+
+				struct
+				{
+					TA_Vertex5A			vtx5A;
+					TA_Vertex5B			vtx5B;
+				};
+
+				struct
+				{
+					TA_Vertex6A			vtx6A;
+					TA_Vertex6B			vtx6B;
+				};
+
+				TA_Vertex7		vtx7;
+				TA_Vertex8		vtx8;
+				TA_Vertex9		vtx9;
+				TA_Vertex10		vtx10;
+
+
+
+				struct
+				{
+					TA_Vertex11A	vtx11A;
+					TA_Vertex11B	vtx11B;
+				};
+
+
+				struct
+				{
+					TA_Vertex12A	vtx12A;
+					TA_Vertex12B	vtx12B;
+				};
+
+				struct
+				{
+					TA_Vertex13A	vtx13A;
+					TA_Vertex13B	vtx13B;
+				};
+
+				struct
+				{
+					TA_Vertex14A	vtx14A;
+					TA_Vertex14B	vtx14B;
+				};
+
+				struct
+				{
+					TA_Sprite0A		spr0A;
+					TA_Sprite0B		spr0B;
+				};
+
+				struct
+				{
+					TA_Sprite1A		spr1A;
+					TA_Sprite1B		spr1B;
+				};
+			};
+
 		};
-
-		struct
-		{
-			TA_Vertex6A			vtx6A;
-			TA_Vertex6B			vtx6B;
-		};
-
-		TA_Vertex7		vtx7;
-		TA_Vertex8		vtx8;
-		TA_Vertex9		vtx9;
-		TA_Vertex10		vtx10;
-
-
-
-		struct
-		{
-			TA_Vertex11A	vtx11A;
-			TA_Vertex11B	vtx11B;
-		};
-
-
-		struct
-		{
-			TA_Vertex12A	vtx12A;
-			TA_Vertex12B	vtx12B;
-		};
-
-		struct
-		{
-			TA_Vertex13A	vtx13A;
-			TA_Vertex13B	vtx13B;
-		};
-
-		struct
-		{
-			TA_Vertex14A	vtx14A;
-			TA_Vertex14B	vtx14B;
-		};
-
-		struct
-		{
-			TA_Sprite0A		spr0A;
-			TA_Sprite0B		spr0B;
-		};
-
-		struct
-		{
-			TA_Sprite1A		spr1A;
-			TA_Sprite1B		spr1B;
-		};
-
 		struct
 		{
 			TA_ModVolA		mvolA;
 			TA_ModVolB		mvolB;
 		};
 	};
-
 };
 
 #pragma pack(pop)

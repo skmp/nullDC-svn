@@ -39,23 +39,111 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     return TRUE;
 }
 
+class OptionGroop
+{
+public:
+	OptionGroop()
+	{
+		root_menu=0;
+		format=0;
+	}
+	u32 root_menu;
+	char* format;
+	struct itempair { u32 id;int value;char* ex_name;};
+	vector<itempair> items;
+
+	void (*callback) (int val) ;
+	void Add(u32 id,int val,char* ex_name) { itempair t={id,val,ex_name}; items.push_back(t); }
+	void Add(u32 root,char* name,int val,char* ex_name=0,int style=0) 
+	{ 
+		if (root_menu==0)
+			root_menu=root;
+		u32 ids=emu.AddMenuItem(root,-1,name,handler,0);
+		emu.SetMenuItemStyle(ids,style,style);
+		
+		MenuItem t;
+		t.PUser=this;
+		emu.SetMenuItem(ids,&t,MIM_PUser);
+
+		Add(ids,val,ex_name);
+	}
+
+	static void EXPORT_CALL handler(u32 id,void* win,void* puser)
+	{
+		OptionGroop* pthis=(OptionGroop*)puser;
+		pthis->handle(id);
+	}
+	void SetValue(int val)
+	{
+		for (u32 i=0;i<items.size();i++)
+		{
+			if (val==items[i].value)
+			{
+				emu.SetMenuItemStyle(items[i].id,MIS_Checked,MIS_Checked);
+				if (root_menu && format)
+				{
+					MenuItem t;
+					emu.GetMenuItem(items[i].id,&t,MIM_Text);
+					char temp[512];
+					sprintf(temp,format,items[i].ex_name==0?t.Text:items[i].ex_name);
+					t.Text=temp;
+					emu.SetMenuItem(root_menu,&t,MIM_Text);
+				}
+			}
+			else
+				emu.SetMenuItemStyle(items[i].id,0,MIS_Checked);
+		}
+		callback(val);
+	}
+	void handle(u32 id)
+	{
+		int val=0;
+		for (u32 i=0;i<items.size();i++)
+		{
+			if (id==items[i].id)
+			{
+				val=items[i].value;
+			}
+		}
+
+		SetValue(val);
+	}
+
+};
+void AddSeperator(u32 menuid)
+{
+	emu.SetMenuItemStyle(emu.AddMenuItem(menuid,-1,"-",0,0),MIS_Seperator,MIS_Seperator);
+}
+OptionGroop menu_res;
+OptionGroop menu_sortmode;
+OptionGroop menu_palmode;
+OptionGroop menu_widemode;
+int oldmode=-1;
+int osx=-1,osy=-1;
 void UpdateRRect()
 {
 	float rect[4]={0,0,640,480};
-	if (settings.Enhancements.WidescreenHack)
+	if (settings.Enhancements.AspectRatioMode!=0)
 	{
 		WINDOWINFO winf;
-		GetWindowInfo((HWND)emu.WindowHandle,&winf);
+		GetWindowInfo((HWND)emu.GetRenderTarget(),&winf);
 		
 		int sx=winf.rcClient.right-winf.rcClient.left;
 		int sy=winf.rcClient.bottom-winf.rcClient.top;
+		if (osx!=sx || osy!=sy)
+		{
+			osx=sx;
+			osy=sy;
+			oldmode=-1;
+		}
 		//printf("New rect %d %d\n",sx,sy);
 
 		float nw=((float)sx/(float)sy)*480.0f;
 		rect[0]=(nw-640)/2;
 		rect[2]=nw;
 	}
-	rend_set_render_rect(rect);
+	rend_set_render_rect(rect,oldmode!=settings.Enhancements.AspectRatioMode);
+	oldmode=settings.Enhancements.AspectRatioMode;
 }
 void FASTCALL dcShowConfig(void* window)
 {
@@ -74,7 +162,7 @@ using std::vector;
 
 vector<u32> res;
 
-void FASTCALL handler_ShowFps(u32 id,void* win,void* puser)
+void EXPORT_CALL handler_ShowFps(u32 id,void* win,void* puser)
 {
 	if (settings.OSD.ShowFPS)
 		settings.OSD.ShowFPS=0;
@@ -85,33 +173,22 @@ void FASTCALL handler_ShowFps(u32 id,void* win,void* puser)
 	
 	SaveSettings();
 }
-void FASTCALL handler_WSH(u32 id,void* win,void* puser)
+void handler_widemode(int mode)
 {
-	if (settings.Enhancements.WidescreenHack)
-		settings.Enhancements.WidescreenHack=0;
-	else
-		settings.Enhancements.WidescreenHack=1;
-
-	emu.SetMenuItemStyle(id,settings.Enhancements.WidescreenHack?MIS_Checked:0,MIS_Checked);
-	
+	settings.Enhancements.AspectRatioMode=mode;
+		
 	SaveSettings();
 	UpdateRRect();
 }
-void FASTCALL handler_VerPTex(u32 id,void* win,void* puser)
+void handler_PalMode(int  mode)
 {
-	if (settings.Emulation.VersionedPalleteTextures)
-		settings.Emulation.VersionedPalleteTextures=0;
-	else
-		settings.Emulation.VersionedPalleteTextures=1;
-
-	emu.SetMenuItemStyle(id,settings.Emulation.VersionedPalleteTextures?MIS_Checked:0,MIS_Checked);
-	
+	settings.Emulation.PaletteMode=mode;
 	SaveSettings();
 }
 u32 enable_FS_mid;
 u32 AA_mid_menu;
 u32 AA_mid_0;
-void FASTCALL handler_SetFullscreen(u32 id,void* win,void* puser)
+void EXPORT_CALL handler_SetFullscreen(u32 id,void* win,void* puser)
 {
 	if (settings.Fullscreen.Enabled)
 		settings.Fullscreen.Enabled=0;
@@ -124,6 +201,7 @@ void FASTCALL handler_SetFullscreen(u32 id,void* win,void* puser)
 }
 
 #define makeres(a,b) {#a "x" #b,a,b},
+
 struct 
 {
 	char* name;
@@ -146,18 +224,11 @@ struct
 	{0,0,0}
 };
 u32 special_res=0;
-void FASTCALL handler_SetRes(u32 id,void* win,void* puser)
+void handler_SetRes(int val)
 {
-	for (size_t i=0;i<res.size();i++)
-	{
-		emu.SetMenuItemStyle(res[i],res[i]==id?MIS_Checked:0,MIS_Checked);
-		if (res[i]==id)
-		{
-			settings.Fullscreen.Res_X=resolutions[i].x;
-			settings.Fullscreen.Res_Y=resolutions[i].y;
-		}
-	}
-
+	settings.Fullscreen.Res_X=resolutions[val].x;
+	settings.Fullscreen.Res_Y=resolutions[val].y;
+	
 	if (special_res)
 	{
 		emu.DeleteMenuItem(special_res);
@@ -166,7 +237,7 @@ void FASTCALL handler_SetRes(u32 id,void* win,void* puser)
 	SaveSettings();
 }
 
-void FASTCALL handle_About(u32 id,void* w,void* p)
+void EXPORT_CALL handle_About(u32 id,void* w,void* p)
 {
 	MessageBox((HWND)w,"Made by the nullDC Team","About nullPVR...",MB_ICONINFORMATION);
 }
@@ -180,38 +251,24 @@ u32 ssm(u32 nm)
 
 	return nm;
 }
-char* sort_smn[]=
+
+void handler_SSM(int val)
 {
-	"No sort","Per Strip","Per Triangle"
-};
-void FASTCALL handler_SSM(u32 id,void* win,void* puser)
-{
-	for (int i=0;i<3;i++)
-	{
-		if (sort_sm[i]==id)
-		{
-			emu.SetMenuItemStyle(sort_sm[i],MIS_Checked|MIS_Radiocheck,MIS_Checked|MIS_Radiocheck);
-			char temp[512];
-			MenuItem t;
-			t.Text=temp;
-			sprintf(temp,"Sort : %s",sort_smn[i]);
-			emu.SetMenuItem(sort_menu,&t,MIM_Text);
-			settings.Emulation.AlphaSortMode=i;
-		}
-		else
-			emu.SetMenuItemStyle(sort_sm[i],0,MIS_Checked);
-	}
+	settings.Emulation.AlphaSortMode=val;
 
 	SaveSettings();
 }
 void CreateSortMenu()
 {
-	sort_menu=emu.AddMenuItem(emu.RootMenu,-1,"Sort Option(-)",handler_VerPTex,0);
+	sort_menu=emu.AddMenuItem(emu.RootMenu,-1,"Sort : %s",0,0);
+	
+	menu_sortmode.format="Sort : %s";
 
-	sort_sm[0]=emu.AddMenuItem(sort_menu,-1,"No Sort(Fastest)",handler_SSM,0);
-	sort_sm[1]=emu.AddMenuItem(sort_menu,-1,"Sort Per Strip",handler_SSM,0);
-	sort_sm[2]=emu.AddMenuItem(sort_menu,-1,"Sort Per Triangle(Slowest)",handler_SSM,0);
-	handler_SSM(sort_sm[settings.Emulation.AlphaSortMode],0,0);
+	menu_sortmode.callback=handler_SSM;
+	menu_sortmode.Add(sort_menu,"Off (Fastest)",0,"Off");
+	menu_sortmode.Add(sort_menu,"Per Strip",1,"Strip");
+	menu_sortmode.Add(sort_menu,"Per Triangle (Slowest)",2,"Triangle");
+	menu_sortmode.SetValue(settings.Emulation.AlphaSortMode);
 }
 //called when plugin is used by emu (you should do first time init here)
 s32 FASTCALL Load(emu_info* emu_inf)
@@ -223,41 +280,64 @@ s32 FASTCALL Load(emu_info* emu_inf)
 
 	u32 Resolutions_menu=emu.AddMenuItem(emu.RootMenu,-1,"Fullscreen",0,0);
 	
-	emu.SetMenuItemStyle(emu.AddMenuItem(emu.RootMenu,-1,"-",0,0),MIS_Seperator,MIS_Seperator);
+	AddSeperator(emu.RootMenu);
 
 	
 	enable_FS_mid=emu.AddMenuItem(Resolutions_menu,-1,"Enable",handler_SetFullscreen,settings.Fullscreen.Enabled);
-	emu.SetMenuItemStyle(emu.AddMenuItem(Resolutions_menu,-1,"-",0,0),MIS_Seperator,MIS_Seperator);
 
+	AddSeperator(Resolutions_menu);
+	
+	//Resolutions !
+	menu_res.callback=handler_SetRes;
 	bool sel_any=false;
 	for (u32 rc=0;resolutions[rc].name;rc++)
 	{
 		bool sel=(resolutions[rc].x==settings.Fullscreen.Res_X) && (resolutions[rc].y==settings.Fullscreen.Res_Y);
 		if (sel)
 			sel_any=true;
-		u32 nmi=emu.AddMenuItem(Resolutions_menu,-1,resolutions[rc].name,handler_SetRes,sel);
-		res.push_back(nmi);
-		emu.SetMenuItemStyle(nmi,MIS_Radiocheck,MIS_Radiocheck);
+		menu_res.Add(Resolutions_menu,resolutions[rc].name,rc);
+		if (sel)
+			menu_res.SetValue(rc);
 	}
 	special_res=0;
 	if (!sel_any)
 	{
 		char temp[512];
 		sprintf(temp,"%dx%d",settings.Fullscreen.Res_X,settings.Fullscreen.Res_Y);
-		special_res=emu.AddMenuItem(Resolutions_menu,-1,temp,handler_SetRes,1);
-		emu.SetMenuItemStyle(special_res,MIS_Grayed|MIS_Checked,MIS_Grayed|MIS_Checked);
+		special_res=emu.AddMenuItem(Resolutions_menu,-1,temp,0,1);
+		emu.SetMenuItemStyle(special_res,MIS_Grayed|MIS_Checked|MIS_Radiocheck,MIS_Grayed|MIS_Checked|MIS_Radiocheck);
 	}
 
-	emu.AddMenuItem(emu.RootMenu,-1,"Widescreen Hack",handler_WSH,settings.Enhancements.WidescreenHack);
+	u32 WSM=emu.AddMenuItem(emu.RootMenu,-1,"Aspect Ratio: %s",0,0);
+	
+	menu_widemode.format="Aspect Ratio: %s";
+	menu_widemode.callback=handler_widemode;
 
-	emu.AddMenuItem(emu.RootMenu,-1,"Enable Versioned Textures",handler_VerPTex,settings.Emulation.VersionedPalleteTextures);
+	menu_widemode.Add(WSM,"Stretch",0);
+	menu_widemode.Add(WSM,"Borders",1);
+	menu_widemode.Add(WSM,"Extra Geom",2);
+	menu_widemode.SetValue(settings.Enhancements.AspectRatioMode);
+
+	u32 PMT=emu.AddMenuItem(emu.RootMenu,-1,"Palette Handling",0,0);
+	
+	menu_palmode.callback=handler_PalMode;
+
+	menu_palmode.format="Paletted Textures: %s";
+	menu_palmode.Add(PMT,"Static",0);
+	menu_palmode.Add(PMT,"Versioned",1);
+	AddSeperator(PMT);
+	menu_palmode.Add(PMT,"Dynamic,Point",2);
+	menu_palmode.Add(PMT,"Dynamic,Full",3);
+
+	menu_palmode.SetValue(settings.Emulation.PaletteMode);
 	CreateSortMenu();
+
 	emu.AddMenuItem(emu.RootMenu,-1,"Show Fps",handler_ShowFps,settings.OSD.ShowFPS);
 
-	emu.SetMenuItemStyle(emu.AddMenuItem(emu.RootMenu,-1,"-",0,0),MIS_Seperator,MIS_Seperator);
-
+	AddSeperator(emu.RootMenu);
+	
 	emu.AddMenuItem(emu.RootMenu,-1,"About",handle_About,0);
-//	SetRenderer(RendererType::Hw_D3d,params.WindowHandle);
+
 	return rv_ok;
 }
 
@@ -479,7 +559,7 @@ void cfgSetInt(char* key,int val)
 void LoadSettings()
 {
 	settings.Emulation.AlphaSortMode			=	cfgGetInt("Emulation.AlphaSortMode",1);
-	settings.Emulation.VersionedPalleteTextures	=	cfgGetInt("Emulation.VersionedPalleteTextures",1);
+	settings.Emulation.PaletteMode				=	cfgGetInt("Emulation.VersionedPalleteTextures",1);
 
 	settings.OSD.ShowFPS						=	cfgGetInt("OSD.ShowFPS",0);
 	settings.OSD.ShowStats						=	cfgGetInt("OSD.ShowStats",0);
@@ -491,14 +571,14 @@ void LoadSettings()
 
 	settings.Enhancements.MultiSampleCount		=	cfgGetInt("Enhancements.MultiSampleCount",0);
 	settings.Enhancements.MultiSampleQuality	=	cfgGetInt("Enhancements.MultiSampleQuality",0);
-	settings.Enhancements.WidescreenHack		=	cfgGetInt("Enhancements.WidescreenHack",0);
+	settings.Enhancements.AspectRatioMode		=	cfgGetInt("Enhancements.AspectRatioMode",1);
 }
 
 
 void SaveSettings()
 {
 	cfgSetInt("Emulation.AlphaSortMode",settings.Emulation.AlphaSortMode);
-	cfgSetInt("Emulation.VersionedPalleteTextures",settings.Emulation.VersionedPalleteTextures);
+	cfgSetInt("Emulation.VersionedPalleteTextures",settings.Emulation.PaletteMode);
 
 	cfgSetInt("OSD.ShowFPS",settings.OSD.ShowFPS);
 	cfgSetInt("OSD.ShowStats",settings.OSD.ShowStats);
@@ -510,7 +590,7 @@ void SaveSettings()
 
 	cfgSetInt("Enhancements.MultiSampleCount",settings.Enhancements.MultiSampleCount);
 	cfgSetInt("Enhancements.MultiSampleQuality",settings.Enhancements.MultiSampleQuality);
-	cfgSetInt("Enhancements.WidescreenHack",settings.Enhancements.WidescreenHack);
+	cfgSetInt("Enhancements.AspectRatioMode",settings.Enhancements.AspectRatioMode);
 }
 
 int msgboxf(char* text,unsigned int type,...)

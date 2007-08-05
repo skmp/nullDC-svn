@@ -219,6 +219,29 @@ union SCALER_CTL_type
 	u32 full;
 };
 
+union FB_X_CLIP_type
+{
+	struct
+	{
+		u32 min : 11;
+		u32 pad1 : 5 ;
+		u32 max : 11;
+		u32 pad : 5;
+	};
+	u32 full;
+};
+
+union FB_Y_CLIP_type
+{
+	struct
+	{
+		u32 min : 10;//15-0
+		u32 pad1 : 6 ;	//16-16
+		u32 max : 10;	//17-17
+		u32 pad : 6;//18-18
+	};
+	u32 full;
+};
 
 
 //	TA REGS
@@ -275,8 +298,8 @@ union SCALER_CTL_type
 #define FB_R_SIZE			PvrReg(FB_R_SIZE_addr,u32)	//	RW	Frame buffer XY size	
 #define FB_W_SOF1			PvrReg(FB_W_SOF1_addr,u32)	//	RW	Write start address for field - 1/strip - 1	
 #define FB_W_SOF2			PvrReg(FB_W_SOF2_addr,u32)	//	RW	Write start address for field - 2/strip - 2	
-#define FB_X_CLIP			PvrReg(FB_X_CLIP_addr,u32)	//	RW	Pixel clip X coordinate	
-#define FB_Y_CLIP			PvrReg(FB_Y_CLIP_addr,u32)	//	RW	Pixel clip Y coordinate	
+#define FB_X_CLIP			PvrReg(FB_X_CLIP_addr,FB_X_CLIP_type)	//	RW	Pixel clip X coordinate	
+#define FB_Y_CLIP			PvrReg(FB_Y_CLIP_addr,FB_Y_CLIP_type)	//	RW	Pixel clip Y coordinate	
 
 
 #define FPU_SHAD_SCALE		PvrReg(FPU_SHAD_SCALE_addr,u32)	//	RW	Intensity Volume mode	

@@ -81,6 +81,12 @@ namespace TASplitter
 			TaCmd=ta_main;
 			return SZ32;
 		}
+		static u32 fastcall ta_modvolB_32(Ta_Dma* data,u32 size)
+		{
+			TA_decoder::AppendModVolVertexB((TA_ModVolB*)data);
+			TaCmd=ta_main;
+			return SZ32;
+		}
 		//Second part of poly data
 		template <int t>
 		static u32 fastcall ta_poly_B_32(Ta_Dma* data,u32 size)
@@ -170,15 +176,19 @@ namespace TASplitter
 		//Code Splitter/rooters
 		static u32 fastcall ta_mod_vol_data(Ta_Dma* data,u32 size)
 		{
+			TA_VertexParam* vp=(TA_VertexParam*)data;
 			if (size==1)
 			{
+				TA_decoder::AppendModVolVertexA(&vp->mvolA);
 				//32B more needed , 32B done :)
-				TaCmd=ta_dummy_32;
+				TaCmd=ta_modvolB_32;
 				return SZ32;
 			}
 			else
 			{
 				//all 64B done
+				TA_decoder::AppendModVolVertexA(&vp->mvolA);
+				TA_decoder::AppendModVolVertexB(&vp->mvolB);
 				return SZ64;
 			}
 		}
@@ -461,11 +471,13 @@ strip_end:
 		}
 
 public:
+#define GROOP_EN() if (data->pcw.Group_En){ TA_decoder::TileClipMode(data->pcw.User_Clip);}
 		static u32 fastcall ta_main(Ta_Dma* data,u32 size)
 		{
 			u32 ci=size;
 			do
 			{
+				
 				switch (data->pcw.ParaType)
 				{
 					//Control parameter
@@ -495,7 +507,7 @@ public:
 					//32B
 				case ParamType_User_Tile_Clip:
 					{
-						//printf("TILECLIP\n");
+						TA_decoder::SetTileClip(data->data_32[3]&63,data->data_32[4]&31,data->data_32[5]&63,data->data_32[6]&31);
 						//*couh* ignore it :p
 						data+=SZ32;
 						size-=SZ32;
@@ -516,6 +528,7 @@ public:
 					//PolyType :32B/64B
 				case ParamType_Polygon_or_Modifier_Volume:
 					{
+						GROOP_EN();
 						//Yep , C++ IS lame & limited
 						#include "ta_const_df.h"
 						if (CurrentList==ListType_None)
@@ -562,6 +575,7 @@ public:
 					//Sets Sprite info , and switches to ta_sprite_data function
 				case ParamType_Sprite:
 					{
+						GROOP_EN();
 						if (CurrentList==ListType_None)
 							ta_list_start(data->pcw.ListType);	//start a list ;)
 

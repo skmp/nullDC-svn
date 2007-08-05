@@ -53,12 +53,20 @@ namespace Direct3DRenderer
 	IDirect3DDevice9* dev;
 	IDirect3DVertexBuffer9* vb;
 	IDirect3DVertexShader9* compiled_vs;
-	IDirect3DPixelShader9* compiled_ps[256]={0};
-	IDirect3DTexture9*	pal_texture=0;
-	u32 last_ps_mode=0xFFFFFFFF;
-	//CRITICAL_SECTION tex_cache_cs;
+	IDirect3DPixelShader9* compiled_ps[384]={0};
+	IDirect3DPixelShader9* nullPixelShader=0;
+	IDirect3DTexture9* pal_texture=0;
+	IDirect3DTexture9* rtt_texture=0;
+	u32 rtt_address=0;
+	IDirect3DSurface9* bb_surf=0,* rtt_surf=0;
+	D3DSURFACE_DESC bb_surf_desc;
 	ID3DXFont* font;
 	ID3DXConstantTable* shader_consts;
+	bool clear_rt=false;
+	u32 last_ps_mode=0xFFFFFFFF;
+	float current_scalef[4];
+	//CRITICAL_SECTION tex_cache_cs;
+	
 	u32 FrameNumber=0;
 	bool IsFullscreen=false;
 	char fps_text[512];
@@ -70,16 +78,19 @@ namespace Direct3DRenderer
 		strcpy(fps_text,text);
 		if (!IsFullscreen)
 		{
-			SetWindowText((HWND)emu.WindowHandle, fps_text);
+			SetWindowText((HWND)emu.GetRenderTarget(), fps_text);
 		}
 	}
-	void SetRenderRect(float* rect)
+	void SetRenderRect(float* rect,bool do_clear)
 	{
 		res_scale[0]=rect[0];
 		res_scale[1]=rect[1];
 
 		res_scale[2]=rect[2]/2;
 		res_scale[3]=-rect[3]/2;
+
+		if(do_clear)
+			clear_rt=true;
 	}
 	void SetFBScale(float x,float y)
 	{
@@ -411,7 +422,7 @@ namespace Direct3DRenderer
 							sa+=MipPoint[tsp.TexU]<<1;
 				palette_index = tcw.PAL.PalSelect<<4;
 				pal_rev=pal_rev_16[tcw.PAL.PalSelect];
-				if (pal_texture==0)
+				if (settings.Emulation.PaletteMode<2)
 				{
 					PAL4to8888_TW(&pbt,(u8*)&params.vram[sa],w,h);
 				}
@@ -428,7 +439,7 @@ namespace Direct3DRenderer
 							sa+=MipPoint[tsp.TexU]<<2;
 				palette_index = (tcw.PAL.PalSelect<<4)&(~0xFF);
 				pal_rev=pal_rev_256[tcw.PAL.PalSelect>>4];
-				if (pal_texture==0)
+				if (settings.Emulation.PaletteMode<2)
 				{
 					PAL8to8888_TW(&pbt,(u8*)&params.vram[sa],w,h);
 				}
@@ -496,9 +507,9 @@ namespace Direct3DRenderer
 
 	IDirect3DTexture9* __fastcall GetTexture(TSP tsp,TCW tcw)
 	{	
-		//u32 addr=(tcw.NO_PAL.TexAddr<<3) & 0x7FFFFF;
-		/*if (addr==RenderToTextureAddr)
-			return RenderToTextureTex;*/
+		u32 addr=(tcw.NO_PAL.TexAddr<<3) & 0x7FFFFF;
+		if (addr==rtt_address)
+			return rtt_texture;
 
 		//EnterCriticalSection(&tex_cache_cs);
 		TextureCacheData* tf = TexCache.Find(tcw.full,tsp.full);
@@ -509,7 +520,7 @@ namespace Direct3DRenderer
 			{
 				tf->Update();
 			}
-			if (pal_texture==0 && settings.Emulation.VersionedPalleteTextures)
+			if (settings.Emulation.PaletteMode==1)
 			{
 				if (tcw.PAL.PixelFmt==5)
 				{				
@@ -581,6 +592,11 @@ namespace Direct3DRenderer
 		#endif
 	};
 	Vertex* BGPoly;
+	const D3DVERTEXELEMENT9 vertelem_mv[] =
+	{
+		{0, 0,  D3DDECLTYPE_FLOAT3		, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION,0},
+		D3DDECL_END()
+	};
 	const D3DVERTEXELEMENT9 vertelem[] =
 	{
 		{0, 0,  D3DDECLTYPE_FLOAT3		, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION,0},
@@ -602,6 +618,7 @@ namespace Direct3DRenderer
 	};
 
 	IDirect3DVertexDeclaration9* vdecl;
+	IDirect3DVertexDeclaration9* vdecl_mod;
 
 	struct PolyParam
 	{
@@ -615,7 +632,17 @@ namespace Direct3DRenderer
 		PCW pcw;
 		ISP_TSP isp;
 		float zvZ;
+		u32 tileclip;
 		//float zMin,zMax;
+	};
+	struct ModParam
+	{
+		u32 first;		//entry index , holds vertex/pos data
+		u32 count;
+	};
+	struct ModTriangle
+	{
+		f32 x0,y0,z0,x1,y1,z1,x2,y2,z2;
 	};
 
 
@@ -629,6 +656,8 @@ namespace Direct3DRenderer
 		f32 invW_min;
 		f32 invW_max;
 		List2<Vertex> verts;
+		List<ModTriangle>	modtrig;
+
 		List<PolyParam> global_param_op;
 		List<PolyParam> global_param_pt;
 		List<PolyParam> global_param_tr;
@@ -639,6 +668,7 @@ namespace Direct3DRenderer
 			global_param_op.Init();
 			global_param_pt.Init();
 			global_param_tr.Init();
+			modtrig.Init();
 		}
 		void Clear()
 		{
@@ -646,6 +676,7 @@ namespace Direct3DRenderer
 			global_param_op.Clear();
 			global_param_pt.Clear();
 			global_param_tr.Clear();
+			modtrig.Clear();
 			invW_min= 1000000.0f;
 			invW_max=-1000000.0f;
 		}
@@ -655,6 +686,7 @@ namespace Direct3DRenderer
 			global_param_op.Free();
 			global_param_pt.Free();
 			global_param_tr.Free();
+			modtrig.Free();
 		}
 	};
 	
@@ -692,20 +724,20 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			
 			//float zmax=-66666666666,zmin=66666666666;
 			float zv=0;
-			for (int i=s;i<(s+c);i++)
+			for (int j=s;j<(s+c);j++)
 			{
-				while (i>=csegc)
+				while (j>=csegc)
 				{
 					cseg++;
 					bptr=(Vertex*)((*pvrrc.verts.allocate_list_ptr)[cseg]);
 					bptr-=csegc;
 					csegc+=(*pvrrc.verts.allocate_list_sz)[cseg]/sizeof(Vertex);
 				}
-				zv+=bptr[i].z;
-				/*if (zmax<bptr[i].z)
-					zmax=bptr[i].z;
-				if (zmin>bptr[i].z)
-					zmin=bptr[i].z;*/
+				zv+=bptr[j].z;
+				/*if (zmax<bptr[j].z)
+					zmax=bptr[j].z;
+				if (zmin>bptr[j].z)
+					zmin=bptr[j].z;*/
 					
 			}
 			pvrrc.global_param_tr.data[i].zvZ=zv/c;
@@ -799,13 +831,14 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 	TCW cache_tcw;
 	//PCW cache_pcw;
 	ISP_TSP cache_isp;
-
+	u32 cache_clipmode=0xFFFFFFFF;
 	void GPstate_cache_reset(PolyParam* gp)
 	{
 		cache_tsp.full = ~gp->tsp.full;
 		cache_tcw.full = ~gp->tcw.full;
 		//cache_pcw.full = ~gp->pcw.full;
 		cache_isp.full = ~gp->isp.full;
+		cache_clipmode=0xFFFFFFFF;
 	}
 	//for fixed pipeline
 	__forceinline
@@ -978,7 +1011,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 
 	void CompilePS(u32 mode,const char* profile)
 	{
-		verify(mode<256);
+		verify(mode<384);
 		if (compiled_ps[mode]!=0)
 			return;
 		ID3DXBuffer* perr;
@@ -1020,7 +1053,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		forl(Texture,0,1)
 		{
 			ps_macros[idx_pp_Texture].Definition=ps_macro_numers[Texture];
-			forl(pal_tex,0,1)
+			forl(pal_tex,0,2)
 			{
 				ps_macros[idx_pp_pal_tex].Definition=ps_macro_numers[pal_tex];
 				forl(UseAlpha,0,1)
@@ -1074,6 +1107,10 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		}
 #undef forl
 	}
+	void FASTCALL ResrotePS()
+	{
+		dev->SetPixelShader(compiled_ps[last_ps_mode]);
+	}
 	void FASTCALL SetPS(u32 mode)
 	{
 		if (last_ps_mode!=mode)
@@ -1089,19 +1126,20 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		u32 mode=0;
 		if (gp->pcw.Texture)
 		{
-			if (pal_texture!=0)
+			if (settings.Emulation.PaletteMode>1)
 			{
+				u32 pal_mode=settings.Emulation.PaletteMode-1;
 				u32 pf=gp->tcw.PAL.PixelFmt;
 				if (pf==5)
 				{
 					cur_pal_index[1]=gp->tcw.PAL.PalSelect/64.0f;
-					mode|=1<<1;
+					mode|=pal_mode<<1;
 					dev->SetPixelShaderConstantF(0,cur_pal_index,1);
 				}
 				else if (pf==6)
 				{
 					cur_pal_index[1]=(gp->tcw.PAL.PalSelect&~0xF)/64.0f;
-					mode|=1<<1;
+					mode|=pal_mode<<1;
 					dev->SetPixelShaderConstantF(0,cur_pal_index,1);
 				}
 			}
@@ -1124,12 +1162,83 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		SetPS(mode);
 	}
 
+	//realy only uses bit0, destroys all of em atm :]
 
+	void SetTileClip(u32 val)
+	{
+		if (cache_clipmode==val)
+			return;
+		cache_clipmode=val;
+
+		u32 clipmode=val>>28;
+
+		if (clipmode<2 ||clipmode&1 )
+		{
+			dev->SetRenderState(D3DRS_CLIPPLANEENABLE,0);
+		}
+		else
+		{
+			clipmode&=1; 
+			/*if (clipmode&1)
+				dev->SetRenderState(D3DRS_CLIPPLANEENABLE,3);
+			else*/
+				dev->SetRenderState(D3DRS_CLIPPLANEENABLE,15);
+
+			float x_min=val&63;
+			float x_max=(val>>6)&63;
+			float y_min=(val>>12)&31;
+			float y_max=(val>>17)&31;
+			x_min=x_min*32;
+			x_max=x_max*32 +31;
+			y_min=y_min*32;
+			y_max=y_max*32 +31;
+			
+			x_min+=current_scalef[0];
+			x_max+=current_scalef[0];
+			y_min+=current_scalef[1];
+			y_max+=current_scalef[1];
+
+			x_min/=current_scalef[2];
+			x_max/=current_scalef[2];
+			y_min/=current_scalef[3];
+			y_max/=current_scalef[3];
+
+
+			//Ax + By + Cz + Dw
+			float v[4];
+			float clips=1.0f-clipmode*2;
+			v[0]=clips;
+			v[1]=0;
+			v[2]=0;
+			v[3]=-(x_min-1)*clips ;
+			verifyc(dev->SetClipPlane(0,v));
+
+			v[0]=-clips;
+			v[1]=0;
+			v[2]=0;
+			v[3]=(x_max-1)*clips ;
+			verifyc(dev->SetClipPlane(1,v));
+
+			v[0]=0;
+			v[1]=-clips;
+			v[2]=0;
+			v[3]=(1+y_min)*clips;
+			verifyc(dev->SetClipPlane(2,v));
+
+			v[0]=0;
+			v[1]=clips;
+			v[2]=0;
+			v[3]=-(1+y_max)*clips ;
+			verifyc(dev->SetClipPlane(3,v));
+		}
+		
+	}
 	//
 	template <u32 Type,bool FFunction,bool df>
 	__forceinline
 	void SetGPState(PolyParam* gp,u32 cflip=0)
 	{	
+		SetTileClip(gp->tileclip);
 		//has to preserve cache_tsp/cache_isp
 		//can freely use cache_tcw
 		if (FFunction)
@@ -1145,6 +1254,19 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		{
 			cache_tcw=gp->tcw;
 
+			if (gp->tsp.FilterMode == 0 || gp->tcw.PAL.PixelFmt==5|| gp->tcw.PAL.PixelFmt==6)
+			{
+				dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+				dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+				dev->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
+			}
+			else
+			{
+				dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+				dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+				dev->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
+			}
+
 			if (gp->tsp.full!=cache_tsp.full)
 			{
 				cache_tsp=gp->tsp;
@@ -1153,19 +1275,6 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 				{
 					dev->SetRenderState(D3DRS_SRCBLEND, SrcBlendGL[gp->tsp.SrcInstr]);
 					dev->SetRenderState(D3DRS_DESTBLEND, DstBlendGL[gp->tsp.DstInstr]);
-				}
-
-				if (gp->tsp.FilterMode == 0)
-				{
-					dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
-					dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
-					dev->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
-				}
-				else
-				{
-					dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-					dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-					dev->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
 				}
 
 				SetTexMode<D3DSAMP_ADDRESSV>(gp->tsp.ClampV,gp->tsp.FlipV);
@@ -1214,14 +1323,12 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 	__forceinline
 	void RendStrips(PolyParam* gp)
 	{
-		//0 vert polys ? why does games even bother sending em  ? =P
-		SetGPState<Type,FFunction,false>(gp);
-		if (gp->count>2)
-		{		
-			
-			dev->DrawPrimitive(D3DPT_TRIANGLESTRIP,gp->first ,
-				gp->count-2);
-		}
+			SetGPState<Type,FFunction,false>(gp);
+			if (gp->count>2)//0 vert polys ? why does games even bother sending em  ? =P
+			{		
+				dev->DrawPrimitive(D3DPT_TRIANGLESTRIP,gp->first ,
+					gp->count-2);
+			}
 	}
 
 	template <u32 Type,bool FFunction>
@@ -1265,7 +1372,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			return;
 		//we want at least 1 PParam
 
-		sorttemp.reserve(pvrrc.verts.used*0.25);
+		sorttemp.reserve(pvrrc.verts.used>>2);
 
 		if (pvrrc.verts.allocate_list_sz->size()==0)
 			return;
@@ -1285,9 +1392,9 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 
 		
 			//float *p1=&t1,*p2=&t1;
-			for (int i=s;i<(s+c);i++)
+			for (int j=s;j<(s+c);j++)
 			{
-				while (i>=csegc)
+				while (j>=csegc)
 				{
 					cseg++;
 					bptr=(Vertex*)((*pvrrc.verts.allocate_list_ptr)[cseg]);
@@ -1295,11 +1402,11 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 					csegc+=(*pvrrc.verts.allocate_list_sz)[cseg]/sizeof(Vertex);
 				}
 				SortTrig t;
-				t.z=bptr[i].z;//+bptr[i+1].z+bptr[i+2].z;
+				t.z=bptr[j].z;//+bptr[j+1].z+bptr[j+2].z;
 				//*p1+=t.z;
 				//*p2+=t.z;
 
-				t.id=i;
+				t.id=j;
 				t.pparam=gp;
 				
 				sorttemp.push_back(t);
@@ -1314,7 +1421,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		//reset the cache state
 		GPstate_cache_reset(sorttemp[0].pparam);
 
-		for (int i=0;i<sorttemp.size();i++)
+		for (u32 i=0;i<sorttemp.size();i++)
 		{
 			u32 fl=((sorttemp[i].id - sorttemp[i].pparam->first)&1)<<2;
 			SetGPState<ListType_Translucent,FFunction,true>(sorttemp[i].pparam,fl);
@@ -1399,10 +1506,32 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 	//
 	void DoRender()
 	{
-		if (FB_W_SOF1 & 0x1000000)
-			return;
+		bool rtt=(FB_W_SOF1 & 0x1000000)!=0;
 
 		void* ptr;
+
+		if (rtt)
+		{
+			rtt_address=FB_W_SOF1&0x7FFFFF;
+			verifyc(dev->SetRenderTarget(0,rtt_surf));
+		}
+
+		// Clear the backbuffer to a blue color
+		//All of the screen is allways filled w/ smth , no need to clear the color buffer
+		//gives a nice speedup on large resolutions
+		dev->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE); 
+		if (rtt || clear_rt==false)
+		{
+			verifyc(dev->Clear( 0, NULL, D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL , D3DCOLOR_XRGB(0,0,0), 1.0f, 0 ));
+		}
+		else
+		{
+			verifyc(dev->Clear( 0, NULL, D3DCLEAR_TARGET |D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL , D3DCOLOR_XRGB(0,0,0), 1.0f, 0 ));
+			clear_rt=false;
+		}
+
+		
+
 
 		pvrrc.verts.Finalise();
 		u32 sz=pvrrc.verts.used*sizeof(Vertex);
@@ -1414,12 +1543,6 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		verifyc(vb->Unlock());
 
 		//memset(pvrrc.verts.data,0xFEA345FD,pvrrc.verts.size*sizeof(Vertex));
-
-
-		// Clear the backbuffer to a blue color
-		//All of the screen is allways filled w/ smth , no need to clear the color buffer
-		//gives a nice speedup on large resolutions
-		verifyc(dev->Clear( 0, NULL, /*D3DCLEAR_TARGET |*/ D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0,122,199), 1.0f, 0 ));
 
 		UpdatePalleteTexure();
 
@@ -1447,10 +1570,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			dev->SetVertexShaderConstantF(0,&c0,1);
 			dev->SetVertexShaderConstantF(1,&c1,1);
 #endif
-			//dev->SetPixelShader(CompiledPShader);
-
 			dev->SetRenderState(D3DRS_ZENABLE,D3DZB_TRUE);
-			//			verifyc(dev->SetRenderState(D3DRS_ZFUNC,D3DCMP_LESSEQUAL));
 
 			dev->SetVertexDeclaration(vdecl);
 			dev->SetStreamSource(0,vb,0,sizeof(Vertex));
@@ -1480,11 +1600,48 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			{
 				scale_x*=2;//2x resolution on X (AA)
 			}
-/*			float yscalef=SCALER_CTL.vscalefactor/1024.0f;
+			/*			float yscalef=SCALER_CTL.vscalefactor/1024.0f;
 			scale_y*=1/yscalef;
-*/
-			float scalef[4]={res_scale[0]*scale_x,res_scale[1]*scale_y,res_scale[2]*scale_x,res_scale[3]*scale_y};
-			dev->SetVertexShaderConstantF(2,scalef,1);
+			*/
+			if (rtt)
+			{
+				current_scalef[0]=-(FB_X_CLIP.min*scale_x);
+				current_scalef[1]=-(FB_Y_CLIP.min*scale_y);
+				current_scalef[2]=(FB_X_CLIP.max+1)*0.5f*scale_x;
+				current_scalef[3]=-((FB_Y_CLIP.max+1)*0.5f)*scale_y;
+				dev->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE); 
+			}
+			else
+			{
+				current_scalef[0]=res_scale[0]*scale_x;
+				current_scalef[1]=res_scale[1]*scale_y;
+				current_scalef[2]=res_scale[2]*scale_x;
+				current_scalef[3]=res_scale[3]*scale_y;
+
+				//if widescreen mode == keep AR,Render extra
+				if (settings.Enhancements.AspectRatioMode==2 && FB_Y_CLIP.min==0 && FB_Y_CLIP.max==479 && FB_X_CLIP.min==0 && FB_X_CLIP.max==639)
+				{
+					//rendering to frame buffer and not scissoring anything [yes this is a hack to allow widescreen hack]
+					dev->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE); 
+				}
+				else
+				{
+					RECT srect;
+					srect.top=0.5f+(current_scalef[1]/(-current_scalef[3]*2)*bb_surf_desc.Height+FB_Y_CLIP.min*bb_surf_desc.Height/(-current_scalef[3]*2));
+					srect.bottom=0.5f+(current_scalef[1]/(-current_scalef[3]*2)*bb_surf_desc.Height+((FB_Y_CLIP.max+1)*bb_surf_desc.Height/(-current_scalef[3]*2)));
+
+					srect.left=0.5f+(current_scalef[0]/(current_scalef[2]*2)*bb_surf_desc.Width+FB_X_CLIP.min*bb_surf_desc.Width/(current_scalef[2]*2));
+					srect.right=0.5f+(current_scalef[0]/(current_scalef[2]*2)*bb_surf_desc.Width+((FB_X_CLIP.max+1)*bb_surf_desc.Width/(current_scalef[2]*2)));
+
+					dev->SetScissorRect(&srect);
+					dev->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE); 
+				}
+			}
+
+			dev->SetVertexShaderConstantF(2,current_scalef,1);
+
+
+			//OPAQUE
 			if (!GetAsyncKeyState(VK_F1))
 			{
 				if (UseFixedFunction)
@@ -1515,11 +1672,62 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 				}
 			}
 
+			/*
 			//translucent
-			
+			if (pvrrc.modtrig.used>0)
+			{
+				dev->SetRenderState(D3DRS_ALPHABLENDENABLE,FALSE);
+				dev->SetRenderState(D3DRS_ALPHATESTENABLE,FALSE);
+				dev->SetRenderState(D3DRS_COLORWRITEENABLE,0);
+
+				dev->SetRenderState(D3DRS_ZWRITEENABLE,FALSE);
+				verifyc(dev->SetRenderState(D3DRS_ZFUNC,D3DCMP_GREATEREQUAL));
+				dev->SetRenderState(D3DRS_CULLMODE,D3DCULL_NONE);
+
+				verifyc(dev->SetRenderState(D3DRS_STENCILENABLE,TRUE));
+				verifyc(dev->SetRenderState(D3DRS_STENCILWRITEMASK,0xFFFFFFFF));	//all bits
+				verifyc(dev->SetRenderState(D3DRS_STENCILMASK,0xFFFFFFFF));		//all bits
+
+				verifyc(dev->SetRenderState(D3DRS_STENCILFUNC,D3DCMP_ALWAYS));	//allways
+
+				verifyc(dev->SetRenderState(D3DRS_STENCILZFAIL,D3DSTENCILOP_KEEP));
+				verifyc(dev->SetRenderState(D3DRS_STENCILPASS,D3DSTENCILOP_INCR));
+
+				//render all shit
+				verifyc(dev->SetPixelShader(nullPixelShader));
+				verifyc(dev->SetVertexDeclaration(vdecl_mod));
+				verifyc(dev->DrawPrimitiveUP(D3DPT_TRIANGLELIST,pvrrc.modtrig.used*3,pvrrc.modtrig.data,3*4));
+
+				//black out any stencil with '1'
+				dev->SetRenderState(D3DRS_COLORWRITEENABLE,0xFFFFFFFF);
+				verifyc(dev->SetRenderState(D3DRS_STENCILFUNC,D3DCMP_EQUAL));	//only the odd ones are 'in'
+				verifyc(dev->SetRenderState(D3DRS_STENCILREF,1));	//allways
+				verifyc(dev->SetRenderState(D3DRS_STENCILMASK,1));	//allways
+
+				verifyc(dev->SetRenderState(D3DRS_STENCILWRITEMASK,0));	//dont write to stencil
+
+				verifyc(dev->SetRenderState(D3DRS_ZENABLE,FALSE));
+				//render a fullscreen quad
+				
+				f32 fsq[] = {0,0,0, 0,480,0, 640,480,0, 640,0,0};
+				verifyc(dev->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP,2,fsq,3*4));
+
+				verifyc(dev->SetRenderState(D3DRS_STENCILENABLE,FALSE));	//turn stencil off ;)
+
+				verifyc(dev->SetRenderState(D3DRS_ZENABLE,TRUE)); 
+				dev->SetRenderState(D3DRS_ZWRITEENABLE,TRUE);
+				dev->SetRenderState(D3DRS_ALPHATESTENABLE,TRUE); 
+
+				dev->SetVertexDeclaration(vdecl);
+				//bypass the ps cache and force it to set one :)
+				SetPS(0);
+				SetPS(1);
+			}*/
+
 			dev->SetRenderState(D3DRS_ALPHABLENDENABLE,TRUE);
 			dev->SetRenderState(D3DRS_ALPHAFUNC,D3DCMP_GREATER);
 			dev->SetRenderState(D3DRS_ALPHAREF,0);
+			
 			if (!GetAsyncKeyState(VK_F3))
 			{
 				bool dosort=UsingAutoSort();
@@ -1550,14 +1758,24 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 					}
 				}
 			}
-			DrawOSD();
 			
+			
+			if (!rtt)
+				DrawOSD();
+
 			// End the scene
 			dev->EndScene();
 		}
 
-		// Present the backbuffer contents to the display
-		dev->Present( NULL, NULL, NULL, NULL );
+		if (rtt)
+		{
+			dev->SetRenderTarget(0,bb_surf);	
+		}
+		else
+		{
+			// Present the backbuffer contents to the display
+			dev->Present( NULL, NULL, NULL, NULL );			
+		}
 	}
 	//
 	bool running=false;
@@ -1591,7 +1809,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		ppar.PresentationInterval=D3DPRESENT_INTERVAL_IMMEDIATE;
 
 		ppar.EnableAutoDepthStencil=TRUE;
-		ppar.AutoDepthStencilFormat = D3DFMT_D24X8;
+		ppar.AutoDepthStencilFormat = D3DFMT_D24S8;
 
 		ppar.MultiSampleType = (D3DMULTISAMPLE_TYPE)settings.Enhancements.MultiSampleCount;
 		ppar.MultiSampleQuality = settings.Enhancements.MultiSampleQuality;
@@ -1615,6 +1833,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			printf("drkpvr: Initialising windowed");
 			IsFullscreen=false;
 		}
+		//ppar.Flags |= D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
 
 		printf(" AA:%dx%x\n",ppar.MultiSampleType,ppar.MultiSampleQuality);
 
@@ -1638,16 +1857,21 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 
 		printf(UseSVP?"Will use SVP\n":"Will use Vertex Shaders\n");
 
+		if (UseFixedFunction && settings.Emulation.PaletteMode>1)
+		{
+			printf("Palette Mode that needs pixel shaders is selected, but no shaders are avaialbe\nReverting to VPT mode\n");
+			settings.Emulation.PaletteMode=1;
+		}
 
-		if (UseSVP || FAILED(d3d9->CreateDevice(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,(HWND)emu.WindowHandle,D3DCREATE_HARDWARE_VERTEXPROCESSING,&ppar,&dev)))
+		if (UseSVP || FAILED(d3d9->CreateDevice(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,(HWND)emu.GetRenderTarget(),D3DCREATE_HARDWARE_VERTEXPROCESSING,&ppar,&dev)))
 		{
 			if (!UseSVP)
 				printf("We had to use SVP after all ...");
 
 			UseSVP=true;
-			verifyc(d3d9->CreateDevice(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,(HWND)emu.WindowHandle,D3DCREATE_SOFTWARE_VERTEXPROCESSING,&ppar,&dev));
+			verifyc(d3d9->CreateDevice(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,(HWND)emu.GetRenderTarget(),D3DCREATE_SOFTWARE_VERTEXPROCESSING,&ppar,&dev));
 		}
-
+	
 		LPCSTR vsp= D3DXGetVertexShaderProfile(dev);
 		if (vsp==0)
 		{
@@ -1670,6 +1894,8 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		verifyc(dev->CreateVertexBuffer(20*1024*1024,D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY | (UseSVP?D3DUSAGE_SOFTWAREPROCESSING:0),0,D3DPOOL_DEFAULT,&vb,0));
 		
 		verifyc(dev->CreateVertexDeclaration(vertelem,&vdecl));
+		verifyc(dev->CreateVertexDeclaration(vertelem_mv,&vdecl_mod));
+		
 
 		ID3DXBuffer* perr;
 		ID3DXBuffer* shader;
@@ -1688,8 +1914,35 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		{
 			verifyc(dev->CreateTexture(16,64,1,D3DUSAGE_DYNAMIC,D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,&pal_texture,0));
 			PrecompilePS();
-			
+
+#if MODVOL
+			ID3DXBuffer* perr;
+			ID3DXBuffer* shader;
+			ID3DXConstantTable* consts;
+
+			D3DXCompileShaderFromFileA("ps_hlsl.fx"
+				,ps_macros,NULL,"PixelShader_null",D3DXGetPixelShaderProfile(dev),NULL,&shader,&perr,&consts);
+			if (perr)
+			{
+				char* text=(char*)perr->GetBufferPointer();
+				printf("%s\n",text);
+			}
+			verifyc(dev->CreatePixelShader((DWORD*)shader->GetBufferPointer(),&nullPixelShader));
+			if (perr)
+				perr->Release();
+			shader->Release();
+			consts->Release();
+#endif
 		}
+
+		//CreateTexture(256,256,1,D3DUSAGE_RENDERTARGET,D3DFMT_R5G6+B5,D3DPOOL_DEFAULT,&pRenderTexture,NULL);
+		verifyc(dev->CreateTexture(512,256,1,D3DUSAGE_RENDERTARGET,D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,&rtt_texture,NULL));
+		rtt_texture->GetSurfaceLevel(0,&rtt_surf);
+		//dev->CreateOffscreenPlainSurface(2048,1024,D3DFMT_A8R8G8B8,D3DPOOL_SYSTEMMEM,&sysmems,NULL);
+		
+		//HRESULT rv=dev->CreateRenderTarget(1024,1024,D3DFMT_A8B8G8R8,D3DMULTISAMPLE_NONE,0,TRUE,&rtt_surf,NULL);
+		dev->GetRenderTarget(0,&bb_surf);
+		bb_surf->GetDesc(&bb_surf_desc);
 
 		D3DXCreateFont( dev, 20, 0, FW_BOLD, 0, FALSE, DEFAULT_CHARSET, 
 			OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"), &font );
@@ -1737,8 +1990,24 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		return *(u32*)&params.vram[vramlock_ConvOffset32toOffset64(addr)];
 	}
 	void decode_pvr_vertex(u32 base,u32 ptr,Vertex* to);
+	int old_pal_mode;
 	void StartRender()
 	{
+		if (old_pal_mode!=settings.Emulation.PaletteMode)
+		{
+			//mark pal texures dirty
+			TexCacheList<TextureCacheData>::TexCacheEntry* ptext= TexCache.plast;
+			while(ptext)
+			{
+				if ((ptext->data.tcw.PAL.PixelFmt == 5) || (ptext->data.tcw.PAL.PixelFmt == 6))
+				{
+					ptext->data.dirty=true;
+				}
+				ptext=ptext->prev;
+			}
+			old_pal_mode=settings.Emulation.PaletteMode;
+		}
+
 		SetCurrentPVRRC(PARAM_BASE);
 		VertexCount+= pvrrc.verts.used;
 		render_end_pending_cycles= pvrrc.verts.used*25;
@@ -1778,6 +2047,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		bgpp->tcw.full=vri(strip_base+8);
 		bgpp->count=4;
 		bgpp->first=0;
+		bgpp->tileclip=0;//disabled ! HA ~
 
 		//bgpp->isp.DepthMode=7;// -> this makes things AWFULLY slow .. sometimes
 
@@ -1818,7 +2088,35 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 	void EndRender()
 	{
 		re.Wait();
+		/*
+		if (FB_W_SOF1 & 0x1000000)
+		{
+			D3DLOCKED_RECT lr;
+			HRESULT rv = sysmems->LockRect(&lr,NULL,D3DLOCK_READONLY);
+			u32* pixel=(u32*)lr.pBits;
+			u32 stride=lr.Pitch/4;
+
+			pixel+=stride*FB_Y_CLIP.min;
+			u32 dest=FB_W_SOF1&0x7FFFFF;
+			u32 pvr_stride=(FB_W_LINESTRIDE&0xFF)*8;
+			for (u32 y=FB_Y_CLIP.min;y<FB_Y_CLIP.max;y++)
+			{
+				u32 cp=dest;
+				for (u32 x=FB_X_CLIP.min;x<FB_X_CLIP.max;x++)
+				{
+					params.vram[cp]  =pixel[x];
+					params.vram[cp+1]=pixel[x]>>16;
+					cp+=2;
+				}
+				pixel+=stride;
+				dest+=pvr_stride;
+			}
+
+			sysmems->UnlockRect();
+		}
+*/
 		
+
 		for (size_t i=0;i<lock_list.size();i++)
 		{
 			TextureCacheData* tcd=lock_list[i];
@@ -1836,6 +2134,8 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			TexCacheList<TextureCacheData>::TexCacheEntry* pprev;
 			pprev=ptext->prev;
 			TexCache.Remove(ptext);
+			//free it !
+			delete ptext;
 			ptext=pprev;
 		}
 	}
@@ -1845,9 +2145,26 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 	__declspec(align(16)) static f32 SFaceBaseColor[4];
 	__declspec(align(16)) static f32 SFaceOffsColor[4];
 
+	ModTriangle* lmr=0;
+	u32 tileclip_val=0;
 	struct VertexDecoder
 	{
 
+		__forceinline
+		static void SetTileClip(u32 xmin,u32 ymin,u32 xmax,u32 ymax)
+		{
+			u32 rv=tileclip_val & 0xF0000000;
+			rv|=xmin; //6 bits
+			rv|=xmax<<6; //6 bits
+			rv|=ymin<<12; //5 bits
+			rv|=ymax<<17; //5 bits
+			tileclip_val=rv;
+		}
+		__forceinline
+		static void TileClipMode(u32 mode)
+		{
+			tileclip_val=(tileclip_val&(~0xF0000000)) | (mode<<28);
+		}
 		//list handling
 		__forceinline
 		static void StartList(u32 ListType)
@@ -1888,6 +2205,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			d_pp->tsp=pp->tsp; \
 			d_pp->tcw=pp->tcw; \
 			d_pp->pcw=pp->pcw; \
+			d_pp->tileclip=tileclip_val;\
 		}
 
 #define poly_float_color_(to,a,r,g,b) \
@@ -2315,6 +2633,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			d_pp->tsp=spr->tsp; 
 			d_pp->tcw=spr->tcw; 
 			d_pp->pcw=spr->pcw; 
+			d_pp->tileclip=tileclip_val;
 
 			vert_packed_color_(SFaceBaseColor,spr->BaseCol);
 			vert_packed_color_(SFaceOffsColor,spr->OffsCol);
@@ -2402,34 +2721,32 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		}
 
 		//ModVolumes
-		__forceinline
-		static void AppendModVolParam(TA_ModVolParam* modv)
-		{
-
-		}
-
-		//ModVol Strip handling
-		__forceinline
-		static void ModVolStripStart()
-		{
-
-		}
-		__forceinline
-		static void ModVolStripEnd()
-		{
-
-		}
 
 		//Mod Volume Vertex handlers
+		
 		__forceinline
 		static void AppendModVolVertexA(TA_ModVolA* mvv)
 		{
+		#ifdef MODVOL
+			lmr=tarc.modtrig.Append();
 
+			lmr->x0=mvv->x0;
+			lmr->y0=mvv->y0;
+			lmr->z0=mvv->z0;
+			lmr->x1=mvv->x1;
+			lmr->y1=mvv->y1;
+			lmr->z1=mvv->z1;
+			lmr->x2=mvv->x2;
+		#endif
+			
 		}
 		__forceinline
 		static void AppendModVolVertexB(TA_ModVolB* mvv)
 		{
-
+		#ifdef MODVOL
+			lmr->y2=mvv->y2;
+			lmr->z2=mvv->z2;
+		#endif
 		}
 
 		//Misc
@@ -2542,6 +2859,37 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		rcnt.clear();
 
 		TileAccel.Term();
+		//free all textures
+		while(TexCache.pfirst)
+		{
+			TexCache.pfirst->data.Destroy();
+			TexCache.pfirst->data.Texture->Release();
+			TexCacheList<TextureCacheData>::TexCacheEntry* pprev=TexCache.pfirst;
+			TexCache.Remove(TexCache.pfirst);
+			delete pprev;
+		}
+#define safe_release(d) {if (d) {d->Release();d=0;}}
+	
+		safe_release(vb);
+		safe_release(compiled_vs);
+
+		for(int i=0;i<384;i++)
+			safe_release(compiled_ps[i]);
+
+		safe_release(nullPixelShader);
+		safe_release(pal_texture);
+		safe_release(rtt_texture);
+
+		safe_release(bb_surf);
+		safe_release(rtt_surf);
+		safe_release(font);
+		safe_release(shader_consts);
+
+		safe_release(dev);
+		safe_release(d3d9);
+
+#undef safe_release
+
 	}
 
 	void ResetRenderer(bool Manual)

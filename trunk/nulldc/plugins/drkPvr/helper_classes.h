@@ -169,7 +169,7 @@ public :
 	void Copy(void* Dst,u32 sz)
 	{
 		u8* dst=(u8*)Dst;
-		for (int i=0;i<allocate_list_ptr->size();i++)
+		for (u32 i=0;i<allocate_list_ptr->size();i++)
 		{
 			memcpy(dst,allocate_list_ptr[0][i],allocate_list_sz[0][i]);
 			dst+=allocate_list_sz[0][i];
@@ -202,7 +202,7 @@ public :
 
 	void Clear()
 	{
-		for (int i=0;i<allocate_list_ptr->size();i++)
+		for (u32 i=0;i<allocate_list_ptr->size();i++)
 		{
 			FreeBuffer(allocate_list_ptr[0][i]);
 		}
@@ -214,7 +214,7 @@ public :
 	}
 	void Free()
 	{
-		for (int i=0;i<allocate_list_ptr->size();i++)
+		for (u32 i=0;i<allocate_list_ptr->size();i++)
 		{
 			FreeBuffer(allocate_list_ptr[0][i]);
 		}

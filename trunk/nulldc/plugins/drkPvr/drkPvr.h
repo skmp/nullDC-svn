@@ -85,12 +85,12 @@ struct _settings_type
 	{
 		u32 MultiSampleCount;
 		u32 MultiSampleQuality;
-		u32 WidescreenHack;
+		u32 AspectRatioMode;
 	} Enhancements;
 	
 	struct
 	{
-		u32 VersionedPalleteTextures;
+		u32 PaletteMode;
 		u32 AlphaSortMode;
 	} Emulation;
 	struct

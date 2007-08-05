@@ -30,6 +30,12 @@ float4 PalleteLookup(float4 pos)
 	float4 texcol=tex2D(tex_pal,float2(pos.b+current_pal.x,pos.g+current_pal.y));
 	return texcol;
 }
+
+float4 PixelShader_null() : COLOR0
+{
+	return float4(0,0,0,1); 
+}
+
 //Pvr only supports ARGB8888 colors , so we have to clamp em (in case they are float colors inputed directly)
 float4 PixelShader_main(in pixel s ) : COLOR0
 { 
@@ -54,6 +60,8 @@ float4 PixelShader_main(in pixel s ) : COLOR0
 		
 		#if pp_pal_tex==1
 			texcol=PalleteLookup(texcol);
+		#elif pp_pal_tex==2
+			texcol=PalleteLookup(texcol); //need to write the full lookup code :P
 		#endif
 		
 		//apply modifiers

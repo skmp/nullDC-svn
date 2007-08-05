@@ -22,7 +22,7 @@ namespace Direct3DRenderer
 	void SoftReset();
 
 	void SetFpsText(char* text);
-	void SetRenderRect(float* rect);
+	void SetRenderRect(float* rect,bool  drc);
 	void SetFBScale(float x,float y);
 
 	void VramLockedWrite(vram_block* bl);
