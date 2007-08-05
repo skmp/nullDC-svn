@@ -22,8 +22,77 @@ u32 last_serial_Tx_tick=0;
 
 void StartGDBSession();
 
+int serial_cmdl(char** arg,int cl)
+{
+	if (cl<1)
+		printf("-serial : too few params.-serial <FILE> must be used\n");
+
+	if (writep)
+		printf("-serial : -serial/-slave allready used ...\n");
+
+	printf("Serial port to \"%s\" redirection version %s\n",arg[1],sipcver);
+	writep = CreateFile(arg[1],GENERIC_READ | GENERIC_WRITE,0,NULL,OPEN_EXISTING , FILE_ATTRIBUTE_NORMAL ,NULL );
+	if (writep==INVALID_HANDLE_VALUE)
+	{
+		printf("Unable to open \"%\".The file must exist \n",arg[1]);
+		writep=NULL;
+		return 0;
+	}
+	DCB dcbConfig;
+
+	if(GetCommState(writep, &dcbConfig))
+	{
+		dcbConfig.BaudRate = 115200;
+		dcbConfig.ByteSize = 8;
+		dcbConfig.Parity = NOPARITY;
+		dcbConfig.StopBits = ONESTOPBIT;
+		dcbConfig.fBinary = TRUE;
+		dcbConfig.fParity = TRUE;
+	}
+
+	SetCommState(writep, &dcbConfig);
+
+	COMMTIMEOUTS to;
+	GetCommTimeouts(writep,&to);
+	to.ReadIntervalTimeout=MAXDWORD;
+	to.ReadTotalTimeoutConstant=0;
+	to.ReadTotalTimeoutMultiplier=0;
+
+	to.WriteTotalTimeoutConstant=1000000;
+	to.WriteTotalTimeoutMultiplier=5;
+
+	SetCommTimeouts(writep,&to);
+
+	readp=writep;
+	
+	return 1;
+}
+int slave_cmdl(char** arg,int cl)
+{
+	if (cl<2)
+		printf("-slave : too few params.-slave <piperead> <pipewrite> must be used\n");
+
+
+	//TODO : how to do on 64b compatable code ?
+	HANDLE laddWrSlave = (HANDLE)(u64)atoi(arg[1]);
+	HANDLE laddRdSlave = (HANDLE)(u64)atoi(arg[2]);
+	if (laddWrSlave ==0 || laddRdSlave==0)
+	{
+		printf("Invalid param @ slave, pipe cant be 0/non number\n");
+		return 0;
+	}
+	printf("Value of write handle to pipe1: %p\n",laddWrSlave);
+	printf("Value of read handle to pipe2 : %p\n",laddRdSlave);
+
+	//this warning can't be fixed can it ?
+	writep = laddWrSlave;
+	readp = laddRdSlave;
+
+	return 2;
+}
 void PrintSerialIPUsage(int argc, char *argv[])
 {
+	/*
 	if (argc==1)
 	{
 		printf("If you want to use serial port ipc redirection use -slave piperead pipewrite/-serial FILE_NAME \n");
@@ -39,62 +108,7 @@ void PrintSerialIPUsage(int argc, char *argv[])
 		//StartGDBSession();
 		return;
 	}
-	
-	if (strcmp(argv[1],"-slave")==0)
-	{
-		//TODO : how to do on 64b compatable code ?
-		HANDLE laddWrSlave = (HANDLE)(u64)atoi(argv[2]);
-		HANDLE laddRdSlave = (HANDLE)(u64)atoi(argv[3]);
-		printf("Value of write handle to pipe1: %p\n",laddWrSlave);
-		printf("Value of read handle to pipe2 : %p\n",laddRdSlave);
-
-		//this warning can't be fixed can it ?
-		writep = laddWrSlave;
-		readp = laddRdSlave;
-	}
-	else if (strcmp(argv[1],"-serial")==0)
-	{
-		printf("Serial port to \"%s\" redirection version %s\n",argv[2],sipcver);
-		writep = CreateFile(argv[2],GENERIC_READ | GENERIC_WRITE,0,NULL,OPEN_EXISTING , FILE_ATTRIBUTE_NORMAL ,NULL );
-		if (writep==INVALID_HANDLE_VALUE)
-		{
-			printf("Unable to open \"%\" \n",argv[2]);
-			writep=NULL;
-			return;
-		}
-		DCB dcbConfig;
-
-		if(GetCommState(writep, &dcbConfig))
-		{
-			dcbConfig.BaudRate = 115200;
-			dcbConfig.ByteSize = 8;
-			dcbConfig.Parity = NOPARITY;
-			dcbConfig.StopBits = ONESTOPBIT;
-			dcbConfig.fBinary = TRUE;
-			dcbConfig.fParity = TRUE;
-		}
-
-		SetCommState(writep, &dcbConfig);
-
-		COMMTIMEOUTS to;
-		GetCommTimeouts(writep,&to);
-		to.ReadIntervalTimeout=MAXDWORD;
-		to.ReadTotalTimeoutConstant=0;
-		to.ReadTotalTimeoutMultiplier=0;
-
-		to.WriteTotalTimeoutConstant=1000000;
-		to.WriteTotalTimeoutMultiplier=5;
-		
-		SetCommTimeouts(writep,&to);
-
-		readp=writep;
-	}
-	else
-	{
-		printf("Serial port pipe redirection version %s\n",sipcver);
-		printf("Wrong type of parameters , expecting  nulldc -slave piperead pipewrite/-serial FILE_NAME \n");
-		printf("redirection disabled");
-	}
+*/
 }
 void WriteBlockSerial(u8* blk,u32 size,u8* sum)
 {

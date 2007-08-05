@@ -1,6 +1,8 @@
 #include "types.h"
 
-void PrintSerialIPUsage(int argc, char *argv[]);
+int serial_cmdl(char** arg,int cl);
+int slave_cmdl(char** arg,int cl);
+//void PrintSerialIPUsage(int argc, char *argv[]);
 void WriteSerial(u8 data);
 bool PendingSerialData();
 s32 ReadSerial();
