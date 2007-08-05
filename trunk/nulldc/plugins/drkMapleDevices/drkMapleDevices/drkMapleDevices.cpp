@@ -81,7 +81,8 @@ char testJoy_strBrand_2[64] = "Produced By or Under License From SEGA ENTERPRISE
 struct joy_init_resp
 {
 	u32 ratio;
-	u32 status;
+	u32 mode;
+	u32 players;
 };
 
 struct joy_init
@@ -91,14 +92,18 @@ struct joy_init
 	u32 port;
 };
 
-struct joy_state
+struct joy_substate
 {
-	u32 id;
 	u16 state;
 	s8 jy;
 	s8 jx;
 	u8 r;
 	u8 l;
+};
+struct joy_state
+{
+	u32 id;
+	joy_substate  substates[8];
 };
 
 struct _joypad_settings_entry
@@ -553,7 +558,7 @@ s32 FASTCALL Load(emu_info* emu)
 	//maple_init_params* mpi=(maple_init_params*)aparam;
 	//handle=mpi->WindowHandle;
 	if (oldptr==0)
-		oldptr = (dlgp*)SetWindowLongPtr((HWND)host.WindowHandle,GWL_WNDPROC,(LONG)sch);
+		oldptr = (dlgp*)SetWindowLongPtr((HWND)host.GetRenderTarget(),GWL_WNDPROC,(LONG)sch);
 	Init_kb_map();
 
 	LoadSettings();
@@ -565,7 +570,7 @@ void FASTCALL  Unload()
 {
 	if (oldptr!=0)
 	{
-		SetWindowLongPtr((HWND)host.WindowHandle,GWL_WNDPROC,(LONG)oldptr);
+		SetWindowLongPtr((HWND)host.GetRenderTarget(),GWL_WNDPROC,(LONG)oldptr);
 		oldptr=0;
 	}
 }
@@ -1492,7 +1497,7 @@ int Init_netplay()
     }
 
     ZeroMemory( &hints, sizeof(hints) );
-    hints.ai_family = AF_UNSPEC;
+    hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
 
@@ -1540,7 +1545,7 @@ int Init_netplay()
 	joy_init t;
 	strcpy(t.Name,"nullDC hookjoy plugin");
 	t.port=local_port;
-	t.Version=DC_MakeVersion(1,0,0,0);
+	t.Version=DC_MakeVersion(1,1,0,0);
     // Send an initial buffer
     iResult = send( ConnectSocket, (char*)&t, (int)sizeof(t), 0 );
     if (iResult == SOCKET_ERROR) {
@@ -1556,7 +1561,7 @@ int Init_netplay()
 
 	int dv=recv(ConnectSocket,(char*)&r,sizeof(r),MSG_WAITALL);
 	//__asm int 3;
-	printf("Server : %d,%d\n",r.ratio,r.status);
+	printf("Server : %d,%d,%d\n",r.ratio,r.mode,r.ratio);
 	send_ratio=r.ratio;
     
 
@@ -1581,11 +1586,11 @@ void net_send()
 	
 	joy_state t;
 	//t.id=*at1+*at2;
-	t.jx=joyx[local_port];
-	t.jy=joyy[local_port];
-	t.l=lt[local_port];
-	t.r=rt[local_port];
-	t.state=kcode[local_port];
+	t.substates[0].jx=joyx[local_port];
+	t.substates[0].jy=joyy[local_port];
+	t.substates[0].l=lt[local_port];
+	t.substates[0].r=rt[local_port];
+	t.substates[0].state=kcode[local_port];
 	int rv = send(ConnectSocket,(char*)&t,sizeof(t),0);
 }
 
@@ -1605,7 +1610,7 @@ u32 GetMaplePort(u32 addr)
 	return addr>>6;
 }
 
-void sync_net(u32 port)
+u32 sync_net(u32 port)
 {
 	if (port==0)
 	{
@@ -1619,11 +1624,11 @@ void sync_net(u32 port)
 			net_read();
 			next_sync_counter=sync_counter+send_ratio;
 			net_send();
-			//printf("UPDATE %d-%d\n",sync_counter,port);
 		}
 		//printf("%d - %d - %d\n",sync_counter,next_sync_counter,send_ratio);
 		verify(sync_counter<next_sync_counter);
 	}
+	return sync_counter % send_ratio;
 }
 void FASTCALL ControllerDMA_net(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
 {
@@ -1704,7 +1709,7 @@ void FASTCALL ControllerDMA_net(maple_device_instance* device_instance,u32 Comma
 		case 9:
 			{
 				u32 aport=GetMaplePort(device_instance->port);
-				sync_net(aport);
+				u32 ssf=sync_net(aport);
 			/*
 				char file[43];
 			sprintf(file,"log_%d.raw",aport);
@@ -1724,19 +1729,19 @@ void FASTCALL ControllerDMA_net(maple_device_instance* device_instance,u32 Comma
 			w32((1 << 24));
 			//struct data
 			//2
-			w16(states[aport].state); 
+			w16(states[aport].substates[ssf].state); 
 			
 			//triger
 			//1 R
-			w8(states[aport].r);
+			w8(states[aport].substates[ssf].r);
 			//1 L
-			w8(states[aport].l); 
+			w8(states[aport].substates[ssf].l); 
 			//joyx
 			//1
-			w8(GetBtFromSgn(states[aport].jx));
+			w8(GetBtFromSgn(states[aport].substates[ssf].jx));
 			//joyy
 			//1
-			w8(GetBtFromSgn(states[aport].jy));
+			w8(GetBtFromSgn(states[aport].substates[ssf].jy));
 
 			//1
 			w8(GetBtFromSgn(0)); 
@@ -2053,7 +2058,7 @@ void FASTCALL VmuDMA(maple_subdevice_instance* device_instance,u32 Command,u32* 
 
 }
 
-void FASTCALL config_keys(u32 id,void* w,void* p)
+void EXPORT_CALL config_keys(u32 id,void* w,void* p)
 {
 	maple_device_instance* mdd=(maple_device_instance*)p;
 	current_port=mdd->port>>6;
