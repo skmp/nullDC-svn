@@ -20,11 +20,12 @@ u32 LoadFileToSh4Mem(u32 offset,char*file)
 		fclose(fd);
 		if(!LoadELF(file)) {
 			printf("!\tERROR: LoadELF(%s) has terminated unsuccessfully!\n\n",file);
-			return false;
+			return 0;
 		}
 		LoadSyscallHooks();
 		return 2;
-	} else
+	} 
+	else
 	{
 		int toff=offset;
 
@@ -34,12 +35,10 @@ u32 LoadFileToSh4Mem(u32 offset,char*file)
 		fseek(fd,0,SEEK_SET);
 
 		fread(&mem_b[toff],1,size,fd);
-		//SysWriteMem16(0x8C0644A8,0x9);
 		fclose(fd);
 		toff+=size;
 
 		printf("LoadFileToSh4Mem: loaded file \"%s\" to {SysMem[%x]-SysMem[%x]}\nLoadFileToSh4Mem: file size : %d bytes\n",file,offset,toff-1,toff-offset);
-		//bElfLoaded=false;
 		LoadSyscallHooks();
 		return 1;
 	}
@@ -145,10 +144,10 @@ void AddHook(u32 Addr, u16 Opcode)
 	
 
 	if( Opcode != 0x000B )	// RTS
-		WriteMem16(Addr,Opcode);
+		WriteMem16_nommu(Addr,Opcode);
  
-	WriteMem16(Addr+Offs,RtsNOP[0]);
-	WriteMem16(Addr+Offs+2,RtsNOP[1]);
+	WriteMem16_nommu(Addr+Offs,RtsNOP[0]);
+	WriteMem16_nommu(Addr+Offs+2,RtsNOP[1]);
 }
 
 
@@ -163,15 +162,10 @@ void AddHook(u32 Addr, u16 Opcode)
 
 u32 EnabledPatches=0;
 
-void EnablePatch(int patch)
+void SetPatches(u32 Value,u32 Mask)
 {
-	EnabledPatches|=patch;
+	EnabledPatches=(EnabledPatches&(~Mask))|Value;
 	LoadSyscallHooks();
-}
-
-void DisablePatch(int patch)
-{
-	EnabledPatches&=~patch;
 }
 
 void LoadSyscallHooks()
@@ -182,13 +176,13 @@ void LoadSyscallHooks()
 		AddHook(ReadMem32(dc_bios_syscall_system),0x000B);
 
 	if (EnabledPatches & patch_syscall_font)
-		AddHook(ReadMem32(dc_bios_syscall_font),  0x000B);
+		AddHook(ReadMem32_nommu(dc_bios_syscall_font),  0x000B);
 
 	if (EnabledPatches & patch_syscall_flashrom)
-		AddHook(ReadMem32(dc_bios_syscall_flashrom),0x000B);
+		AddHook(ReadMem32_nommu(dc_bios_syscall_flashrom),0x000B);
 
 	if (EnabledPatches & patch_syscall_GDrom_misc)
-		AddHook(ReadMem32(dc_bios_syscall_GDrom_misc),0x000B);
+		AddHook(ReadMem32_nommu(dc_bios_syscall_GDrom_misc),0x000B);
 
 
 
@@ -196,9 +190,9 @@ void LoadSyscallHooks()
 		AddHook(0x1000, GDROM_OPCODE);		// gdrom call, reads / checks status
 
 	if (EnabledPatches & patch_syscall_GDrom_HLE)
-		AddHook(ReadMem32(dc_bios_syscall_resets_Misc),0x000B);
+		AddHook(ReadMem32_nommu(dc_bios_syscall_resets_Misc),0x000B);
 
 	if (EnabledPatches & patch_resets_Misc)
-		AddHook(ReadMem32(dc_bios_syscall_resets_Misc),0x000B);
+		AddHook(ReadMem32_nommu(dc_bios_syscall_resets_Misc),0x000B);
 
 }

@@ -11,8 +11,7 @@
 #define patch_resets_Misc			1
 #define patch_all					0xFFFFFFFF
 
-void EnablePatch(int patch);
-void DisablePatch(int patch);
+void SetPatches(u32 Value,u32 Mask);
 
 u32 LoadFileToSh4Mem(u32 offset,char*file);
 bool LoadFileToSh4Bootrom(char *szFile);
