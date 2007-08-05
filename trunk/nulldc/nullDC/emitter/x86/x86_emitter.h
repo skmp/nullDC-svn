@@ -7,21 +7,58 @@ using namespace std;
 
 const char* DissasmClass(x86_opcode_class opcode);
 
+#define REG_CLASS(regv) (regv>>16)
+#define REG_ID(regv) (regv&0xFFFF)
+
+enum reg_class
+{
+	reg_GPR8=0<<16,
+	reg_GPR16=0,//1<<16,
+	reg_GPR32=0,//2<<16,
+	reg_SSE=0,//3<<16,
+#ifdef X64
+	reg_GPR64=0,//4<<16,
+#endif
+};
 //Enum of all registers
 enum x86_reg
 {
-	//8 bit
-	AL=0,
+//8 bit
+
+	AL=reg_GPR8,
 	CL,
 	DL,
 	BL,
-	AH,
+
+#ifndef X64
+	AH,	//these are ONLY avaialbe on x86 mode.They will possibly added later  for x64...
 	CH,
 	DH,
 	BH,
+#endif
 
-	//16 bit
-	AX=0,
+#ifdef X64
+	R0b=reg_GPR8,
+	R1b,
+	R2b,
+	R3b,
+	R4b,
+	R5b,
+	R6b,
+	R7b,
+	R8b,
+	R9b,
+	R10b,
+	R11b,
+	R12b,
+	R13b,
+	R14b,
+	R15b,
+#endif
+
+//16 bit
+
+	AX=reg_GPR16,
 	CX,
 	DX,
 	BX,
@@ -29,9 +66,28 @@ enum x86_reg
 	BP,
 	SI,
 	DI,
+#ifdef X64
+	R0w=reg_GPR16,	//these are the same as AX .. DI
+	R1w,
+	R2w,
+	R3w,
+	R4w,
+	R5w,
+	R6w,
+	R7w,
+	R8w,
+	R9w,
+	R10w,
+	R11w,
+	R12w,
+	R13w,
+	R14w,
+	R15w,
+#endif
 
-	//32 bit
-	EAX=0,
+//32 bit
+
+	EAX=reg_GPR32,
 	ECX,
 	EDX,
 	EBX,
@@ -39,11 +95,49 @@ enum x86_reg
 	EBP,
 	ESI,
 	EDI,
-	
-	
+#ifdef X64
+	R0d=reg_GPR32,	//these are the same as EAX .. EDI
+	R1d,
+	R2d,
+	R3d,
+	R4d,
+	R5d,
+	R6d,
+	R7d,
+	R8d,
+	R9d,
+	R10d,
+	R11d,
+	R12d,
+	R13d,
+	R14d,
+	R15d,
+#endif
 
-	//XMM (SSE)
-	XMM0=0,
+//64 bit
+
+#ifdef X64
+	R0q=reg_GPR64,
+	R1q,
+	R2q,
+	R3q,
+	R4q,
+	R5q,
+	R6q,
+	R7q,
+	R8q,
+	R9q,
+	R10q,
+	R11q,
+	R12q,
+	R13q,
+	R14q,
+	R15q,
+#endif
+	
+//XMM (SSE)
+
+	XMM0=reg_SSE,
 	XMM1,
 	XMM2,
 	XMM3,
@@ -51,7 +145,18 @@ enum x86_reg
 	XMM5,
 	XMM6,
 	XMM7,
+#ifdef X64
+	XMM8,
+	XMM9,
+	XMM10,
+	XMM11,
+	XMM12,
+	XMM13,
+	XMM14,
+	XMM15,
+#endif
 
+#ifdef USE_MM
 	//mmx (? will it be suported by the emitter?) -> propably no , SSE2 mailny replaces em w/ integer XMM math
 	MM0=0,
 	MM1,
@@ -61,10 +166,11 @@ enum x86_reg
 	MM5,
 	MM6,
 	MM7,
+#endif
 
 	//misc :p
-	NO_REG,
-	ERROR_REG,
+	NO_REG=-1,
+	ERROR_REG=-2,
 };
 #define x86_sse_reg x86_reg
 #define x86_gpr_reg x86_reg

@@ -190,12 +190,12 @@ void __fastcall encode_modrm(x86_block* block,encoded_type* mrm, u32 extra)
 	if (mrm->type != pg_ModRM)
 	{
 		verify(mrm->type==pg_REG || mrm->type==pg_CL || mrm->type==pg_R0);
-		block->write8((3<<6) | (mrm->reg ) | (extra<<3));
+		block->write8((3<<6) | (mrm->reg&7 ) | (extra<<3));
 	}
 	else
 	{
 		x86_mrm* modr=&mrm->modrm;
-		block->write8(modr->modrm | (extra<<3));
+		block->write8(modr->modrm | ((extra&7)<<3));
 
 		if (mrm->modrm.flags&1)
 			block->write8(modr->sib);
@@ -206,6 +206,28 @@ void __fastcall encode_modrm(x86_block* block,encoded_type* mrm, u32 extra)
 			block->write32(modr->disp);
 	}
 }
+#ifdef X64
+//x64 stuff
+void __fastcall encode_rex(x86_block* block,encoded_type* mrm,u32 mrm_reg,u32 ofe=0)
+{
+	u32 flags = (ofe>>3) & 1; //opcode field extention
+
+	
+	flags |= (mrm_reg>>1) & 4;//mod R/M byte reg field extension
+
+	if (mrm)
+	{
+		if (mrm->type==pg_REG)
+			flags|=(mrm->reg>>3) & 1;
+		else if (mrm->type==pg_ModRM)
+			flags|=mrm->modrm.flags>>2;//mod R/M byte r/m field extension
+	}
+	if (flags!=0)
+	{
+		block->write8(0x40|flags);
+	}
+}
+#endif
 //Encoding function (partialy) specialised by templates to gain speed :)
 template < enc_param enc_1,enc_imm enc_2,u32 sz,x86_operand_size enc_op_size>
 void __fastcall x86_encode_opcode_tmpl(x86_block* block, const x86_opcode* op, encoded_type* p1,encoded_type* p2,u32 p3)
@@ -220,18 +242,30 @@ void __fastcall x86_encode_opcode_tmpl(x86_block* block, const x86_opcode* op, e
 		//enc1 groop
 		// +r
 	case enc_param_plus_r:
+	#ifdef X64
+		encode_rex(block,0,0,p1->reg);
+	#endif
 		for (int i=0;i<(sz-1);i++)
 			block->write8(op->b_data[i]);
-		block->write8(op->b_data[sz-1] + (p1->reg-EAX));
+		{
+		u32 rv=(p1->reg-EAX)&7;
+		block->write8(op->b_data[sz-1] + rv);
+		}
 		break;
 		// /r
 	case enc_param_slash_r:
+		#ifdef X64
+		encode_rex(block,p2,p1->reg);
+		#endif
 		for (int i=0;i<(sz);i++)
 			block->write8(op->b_data[i]);
 		encode_modrm(block,p2,p1->reg);
 		break;
 
 	case enc_param_slash_r_rev:
+		#ifdef X64
+		encode_rex(block,p1,p2->reg);
+		#endif
 		for (int i=0;i<(sz);i++)
 			block->write8(op->b_data[i]);
 		encode_modrm(block,p1,p2->reg);
@@ -246,6 +280,9 @@ void __fastcall x86_encode_opcode_tmpl(x86_block* block, const x86_opcode* op, e
 	case enc_param_slash_5:
 	case enc_param_slash_6:
 	case enc_param_slash_7:
+#ifdef X64
+		encode_rex(block,p1,0);
+#endif
 		for (int i=0;i<(sz);i++)
 			block->write8(op->b_data[i]);
 		encode_modrm(block,p1,enc_1-enc_param_slash_0);

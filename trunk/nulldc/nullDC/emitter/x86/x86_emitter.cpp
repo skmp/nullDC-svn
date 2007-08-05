@@ -347,6 +347,7 @@ u8 EncodeDisp(u32 disp,x86_mrm* to,u8 flags)
 			return make_modrm(2,0);
 	}
 	verify(false);
+	return 0;
 }
 x86_mrm x86_mrm::create(x86_reg base)
 {
@@ -370,6 +371,19 @@ x86_mrm x86_mrm::create(x86_reg base,x86_reg index,x86_sib_scale scale,x86_ptr d
 {
 	x86_mrm rv;
 	rv.flags=0;
+
+#ifdef X64
+	if (base!=NO_REG && base>EDI)
+	{
+		rv.flags|=((base>>3)&1)<<2;
+		base=(x86_reg)(base&7);
+	}
+	if (index!=NO_REG && index>EDI)
+	{
+		rv.flags|=((index>>3)&1)<<3;
+		index=(x86_reg)(index&7);
+	}
+#endif
 
 	verify(index!=ESP);//cant be used
 
@@ -443,92 +457,5 @@ x86_mrm x86_mrm::create(x86_reg base,x86_reg index,x86_sib_scale scale,x86_ptr d
 			rv.modrm |= EncodeDisp(disp.ptr_int,&rv,disp_sz);
 		}
 	}
-	/*
-	switch(mod)
-	{
-	case mod_RI:
-		{
-			//[reg]:reg{EAX,ECX,EDX,EBX,EBP,ESP,EDI,ESI}
-			//EBP and ESP have special handling
-
-			//reg gpr
-			rv.flags=0;
-		}
-		break;
-	case mod_RI_disp:
-		{
-			//[reg+disp]:reg{EAX,ECX,EDX,EBX,EBP,ESP,EDI,ESI}
-			//ESP has special handling
-
-			//disp!=0
-			//reg gpr
-			rv.flags=4;
-		}
-		break;
-	case mod_DISP:
-		{
-			//[disp]
-			//mod : 0
-			//r/m : 5
-			rv.flags=4;
-			rv.modrm=(0<<6) | (5) | (0<<3);
-			rv.disp=disp.ptr_int;
-		}
-		break;
-	case mod_REG:
-		{
-			//reg:reg{EAX,ECX,EDX,EBX,EBP,ESP,EDI,ESI}
-			rv.flags=0;
-			rv.modrm=(3<<6) | (reg1) | (0<<3);
-		}
-		break;
-	case mod_SIB:
-		{
-			//[reg1*scale+reg2]:
-			//reg1{EAX,ECX,EDX,EBX,EBP,EDI,ESI}
-			//scale{scale_1,scale_2,scale_4,scale_8} , if reg2==NO_REG then scale_1 is invalid
-			//reg2{EAX,ECX,EDX,EBX,ESP,EDI,ESI,NO_REG}
-
-			//reg1 gpr,!ESP
-			verify(reg1!=ESP);
-			//reg2 gpr,!EBP
-			verify(reg2!=EBP);
-
-			if (scale==sib_scale_1)
-				verify(reg2!=NO_REG);
-
-
-			//We want simple SIB
-			rv.modrm=(0<<6) | (4) | (0<<3);
-			rv.sib = ( scale <<6) | (reg1<<3) | (reg2<<0);
-			rv.flags=1;
-		}
-		break;
-	case mod_SIB_disp:
-		{
-			//[reg1*scale+reg2+disp]:
-			//reg1{EAX,ECX,EDX,EBX,EBP,EDI,ESI}
-			//scale{scale_1,scale_2,scale_4,scale_8} , if reg2==NO_REG then scale_1 is invalid
-			//reg2{EAX,ECX,EDX,EBX,ESP,EDI,ESI,NO_REG}
-
-			//disp !=0
-			//reg1 gpr,!ESP
-			//reg2 gpr,!EBP
-			if (scale==sib_scale_1)
-				verify(reg2!=NO_REG);
-			//We want Complex SIB
-			rv.modrm=(2<<6) | (4) | (0<<3);
-			rv.sib = ( scale <<6) | (reg1<<3) | (reg2<<0);
-			rv.disp=disp.ptr_int;
-			rv.flags=1|4;
-		}
-		break;
-	};
-	*/
-	/*
-	rv.modrm=modrm;
-	rv.sib=sib;
-	rv.disp=disp;
-	*/
 	return rv;
 }
