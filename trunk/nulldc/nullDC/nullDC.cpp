@@ -12,9 +12,10 @@
 #include <windows.h>
 #include "plugins/plugin_manager.h"
 #include "serial_ipc/serial_ipc_client.h"
+#include "cl/cl.h"
 
 __settings settings;
-extern HWND g_hWnd;
+
 BOOL CtrlHandler( DWORD fdwCtrlType ) 
 { 
   switch( fdwCtrlType ) 
@@ -27,7 +28,7 @@ BOOL CtrlHandler( DWORD fdwCtrlType )
     case CTRL_CLOSE_EVENT: 
     // Handle the CTRL-C signal. 
     case CTRL_C_EVENT: 
-		SendMessageA(g_hWnd,WM_CLOSE,0,0);
+		SendMessageA((HWND)GetRenderTargetHandle(),WM_CLOSE,0,0); //FIXME
       return( TRUE );
     default: 
       return FALSE; 
@@ -53,6 +54,9 @@ int RunDC(int argc, char* argv[])
 		printf("Using Interpreter\n");
 	}
 	
+	if (settings.emulator.AutoStart)
+		Start_DC();
+
 	GuiLoop();
 
 	Term_DC();
@@ -125,6 +129,12 @@ void EnumPlugins()
 
 int main___(int argc,char* argv[])
 {
+	if(ParseCommandLine(argc,argv))
+	{
+		printf("\n\n(Exiting due to command line, without starting nullDC)\n");
+		return 69;
+	}
+
 	if(!cfgOpen())
 	{
 		msgboxf("Unable to open config file",MBX_ICONERROR);
@@ -163,7 +173,6 @@ int main___(int argc,char* argv[])
 	free(temp_path);
 
 	fclose(fr);
-	PrintSerialIPUsage(argc,argv);
 	char * currpath=GetEmuPath("");
 	SetCurrentDirectoryA(currpath);
 	free(currpath);
@@ -234,6 +243,8 @@ void LoadSettings()
 	settings.dreamcast.cable=cfgLoadInt("nullDC","Dreamcast.Cable",3);
 	settings.dreamcast.RTC=cfgLoadInt("nullDC","Dreamcast.RTC",GetRTC_now());
 
+	settings.emulator.AutoStart=cfgLoadInt("nullDC","Emulator.AutoStart",0);
+
 	//make sure values are valid
 	settings.dreamcast.cable=min(max(settings.dreamcast.cable,0),3);
 }
@@ -244,4 +255,5 @@ void SaveSettings()
 	cfgSaveInt("nullDC","Dynarec.UnderclockFpu",settings.dynarec.UnderclockFpu);
 	cfgSaveInt("nullDC","Dreamcast.Cable",settings.dreamcast.cable);
 	cfgSaveInt("nullDC","Dreamcast.RTC",settings.dreamcast.RTC);
+	cfgSaveInt("nullDC","Emulator.AutoStart",settings.emulator.AutoStart);
 }
