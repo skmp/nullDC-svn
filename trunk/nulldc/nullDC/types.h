@@ -5,6 +5,7 @@
 //#define BUILD_DEV_UNIT	(1)
 //#define BUILD_NAOMI	(1)
 
+#define NO_MMU
 
 //SHUT UP M$ COMPILER !@#!@$#
 #ifdef _CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES
@@ -147,9 +148,15 @@ using namespace std;
 #define MAJOR_VER 1
 #define MINOR_VER 0
 
+#ifndef NO_MMU
+#define _X_x_X_MMU_VER_STR "/mmu"
+#else
+#define _X_x_X_MMU_VER_STR ""
+#endif
+
 #define VER_EMUNAME		"nullDC"
-#define VER_FULLNAME	VER_EMUNAME " v1.0.0 beta 2 (built " __DATE__ "@" __TIME__ ")"
-#define VER_SHORTNAME	VER_EMUNAME " 1.0.0b2"
+#define VER_FULLNAME	VER_EMUNAME " v1.0.0 beta 2"_X_x_X_MMU_VER_STR" (built " __DATE__ "@" __TIME__ ")"
+#define VER_SHORTNAME	VER_EMUNAME " 1.0.0b2"_X_x_X_MMU_VER_STR
 
 #define dbgbreak __asm {int 3}
 
@@ -193,8 +200,6 @@ struct RegisterStruct
 	u32 flags;					//flags for read/write
 };
 
-#define NO_MMU
-
 
 struct __settings
 {
@@ -210,9 +215,17 @@ struct __settings
 		u32 cable;
 		u32 RTC;
 	} dreamcast;
+	struct 
+	{
+		bool AutoStart;
+	} emulator;
 };
 extern __settings settings;
 
 void LoadSettings();
 void SaveSettings();
 u32 GetRTC_now();
+
+#define EXPORT_CALL __stdcall
+#define FASTCALL __fastcall
+#define C_CALL __cdecl
