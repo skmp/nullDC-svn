@@ -40,19 +40,23 @@ extern Array<u8> flash_b;
 #define ReadMem16 _vmem_ReadMem16
 #define IReadMem16 ReadMem16
 #define ReadMem32 _vmem_ReadMem32
+#define ReadMem64(addr,reg) {  (reg)=_vmem_ReadMem32(addr);(&(reg))[1]=_vmem_ReadMem32((addr)+4); }
 
 #define WriteMem8 _vmem_WriteMem8
 #define WriteMem16 _vmem_WriteMem16
 #define WriteMem32 _vmem_WriteMem32
+#define WriteMem64(addr,reg) {  _vmem_WriteMem32(addr,(reg));_vmem_WriteMem32((addr)+4,(&(reg))[1]); }
 #else
 #define ReadMem8 mmu_ReadMem8
 #define ReadMem16 mmu_ReadMem16
 #define IReadMem16 mmu_IReadMem16
 #define ReadMem32 mmu_ReadMem32
+#define ReadMem64 mmu_ReadMem64
 
 #define WriteMem8 mmu_WriteMem8
 #define WriteMem16 mmu_WriteMem16
 #define WriteMem32 mmu_WriteMem32
+#define WriteMem64 mmu_WriteMem64
 #endif
 
 
