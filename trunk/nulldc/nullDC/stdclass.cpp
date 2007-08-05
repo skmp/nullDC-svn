@@ -2,6 +2,8 @@
 #include <string.h>
 #include <windows.h>
 #include "dc/mem/_vmem.h"
+#include "plugins/plugin_manager.h"
+
 //comonly used classes across the project
 
 //bah :P since it's template needs to be on .h pfftt
@@ -389,6 +391,10 @@ int msgboxf(char* text,unsigned int type,...)
 	vsprintf(temp, text, args);
 	va_end(args);
 
-
-	return MessageBox(NULL,temp,VER_SHORTNAME,type | MB_TASKMODAL);
+	if (libgui.MsgBox!=0)
+	{
+		return libgui.MsgBox(temp,type);
+	}
+	else
+		return MessageBox(NULL,temp,VER_SHORTNAME,type | MB_TASKMODAL);
 }
