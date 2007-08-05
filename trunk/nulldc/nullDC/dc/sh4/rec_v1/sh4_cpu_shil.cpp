@@ -592,8 +592,10 @@ sh4op(i0010_nnnn_mmmm_0111)
 	if (MatchDiv32s(op,pc))
 	{
 		//DIV32S was perfectly matched :)
-		bb->flags.SynthOpcode=BLOCK_SOM_SIZE_128;
-		ilst->div(div_som_reg1,div_som_reg2,div_som_reg3,FLAG_SX|FLAG_32);
+		//bb->flags.SynthOpcode=BLOCK_SOM_SIZE_128;
+		//ilst->div(div_som_reg1,div_som_reg2,div_som_reg3,FLAG_SX|FLAG_32);
+		printf("div32s %d/%d/%d\n",div_som_reg1,div_som_reg2,div_som_reg3);
+		shil_interpret(op);
 	}
 	else //fallback to interpreter (16b div propably)
 		shil_interpret(op);

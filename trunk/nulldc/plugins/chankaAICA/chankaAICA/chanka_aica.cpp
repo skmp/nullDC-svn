@@ -19,7 +19,7 @@ u8*g_pSH4SoundRAM;
 
 bool g_bArm7Enable=true;
 
-u32 sh4_cycles;
+//u32 sh4_cycles;
 
 CArm7* g_pArm7 = NULL;
 
@@ -119,15 +119,15 @@ break;
 */
 void FASTCALL UpdateSystem(u32 Cycles)
 {
-	sh4_cycles+=Cycles;
+	//sh4_cycles+=Cycles;
 	g_pArm7->BlockStepArm7(Cycles/(8*ARM7BIAS));
-	AICARefresh();
+	AICARefresh(Cycles);
 }
 
 void InitArm7Memory();
 void InitARM7()
 {
-	g_hWnd=(HWND)emu.WindowHandle;
+	g_hWnd=(HWND)emu.GetRenderTarget();
 	g_pArm7 = NEW(CArm7);
 	InitArm7Memory();
 	g_pArm7->Init();

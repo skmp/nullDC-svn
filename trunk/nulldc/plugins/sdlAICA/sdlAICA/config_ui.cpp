@@ -61,7 +61,7 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			{
 				if (IsDlgButtonChecked(hWnd,IDC_RADIO1))
 				{
-					settings.BufferSize==884;
+					settings.BufferSize=884;
 				}
 				else if (IsDlgButtonChecked(hWnd,IDC_RADIO2))
 				{

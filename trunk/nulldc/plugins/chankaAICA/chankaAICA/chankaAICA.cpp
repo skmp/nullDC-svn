@@ -13,7 +13,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 	return TRUE;
 }
 
-void FASTCALL handle_About(u32 id,void* w,void* p)
+void EXPORT_CALL handle_About(u32 id,void* w,void* p)
 {
 	MessageBox((HWND)w,"Made by the Chankast Team\nPort by drk||Raziel","About Chankast Aica...",MB_ICONINFORMATION);
 }

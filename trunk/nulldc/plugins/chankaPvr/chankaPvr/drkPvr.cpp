@@ -187,13 +187,13 @@ void FASTCALL TaSQ(u32* data)
 {	
 	TASendPackedData((DWORD*)data,32);
 }
-void FASTCALL handle_About(u32 id,void* w,void* p)
+void EXPORT_CALL handle_About(u32 id,void* w,void* p)
 {
 	MessageBox((HWND)w,"Chankast PowerVR core , made by the chankast team\nPort by drk||Raziel","About ChankaPvr...",MB_ICONINFORMATION);
 }
 
 template<bool* stuff>
-void FASTCALL handle_TCH(u32 id,void* w,void* p)
+void EXPORT_CALL handle_TCH(u32 id,void* w,void* p)
 {
 	if (*stuff)
 		*stuff=0;
@@ -204,11 +204,12 @@ void FASTCALL handle_TCH(u32 id,void* w,void* p)
 	SaveSettings();
 }
 
-s32 FASTCALL Load(emu_info* inf,u32 rmenu)
+s32 FASTCALL Load(emu_info* inf)
 {
+	u32 rmenu=inf->RootMenu;
 	em_inf=*inf;
 	em_inf.ConfigLoadStr("emu","shortname",emu_name,0);
-	Hwnd=em_inf.WindowHandle;
+	Hwnd=em_inf.GetRenderTarget();
 	g_hWnd=(HWND)Hwnd;
 	LoadSettings();
 

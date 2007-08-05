@@ -1,4 +1,4 @@
-#include "..\stdafx.h"
+#include "../stdafx.h"
 
 #include "CSound.h"
 
@@ -7,7 +7,7 @@ void CSound::SetVol(int vol)
 	//vol range 0-39, convert to DSBVOLUME_MIN-DSBVOLUME-MAX
 	//convert to attenuation
 	int att=78-(2*vol);
-//	int err;
+	int err;
 	if(!Channels[0])
 		return;
 	for(int i=0;i<2;++i)
@@ -48,7 +48,7 @@ int CSound::Init(CGUI *_GUI,int Samplerate,float Fps,int bufcount)
 	}
 	ZeroMemory(&dsbd,sizeof(dsbd));
 	dsbd.dwSize=sizeof(dsbd);
-	dsbd.dwFlags=DSBCAPS_CTRLVOLUME;
+	dsbd.dwFlags=DSBCAPS_PRIMARYBUFFER|DSBCAPS_CTRLVOLUME;
 	err=lpDS->CreateSoundBuffer(&dsbd,&lpDSBPrimary,0);
 	if(FAILED(err))
 	{
@@ -86,11 +86,7 @@ int CSound::CreateChannel(int nch,int freq,int vol,int pos)
 	ZeroMemory(&dsbd,sizeof(dsbd));
 	int err;
 	dsbd.dwSize=sizeof(dsbd);
-#ifdef XBOX
-	dsbd.dwFlags=DSBCAPS_CTRLVOLUME;
-#else
-	dsbd.dwFlags=DSBCAPS_CTRLVOLUME|DSBCAPS_GETCURRENTPOSITION2/*|DSBCAPS_GLOBALFOCUS*/|DSBCAPS_STICKYFOCUS;
-#endif
+	dsbd.dwFlags=DSBCAPS_CTRLVOLUME|DSBCAPS_CTRLPAN|DSBCAPS_GETCURRENTPOSITION2/*|DSBCAPS_GLOBALFOCUS*/|DSBCAPS_STICKYFOCUS;
 	WAVEFORMATEX wfx;
 	ZeroMemory(&wfx,sizeof(wfx));
 	wfx.wFormatTag=WAVE_FORMAT_PCM;
@@ -100,7 +96,7 @@ int CSound::CreateChannel(int nch,int freq,int vol,int pos)
 	wfx.nBlockAlign = 2;
     wfx.nAvgBytesPerSec = wfx.nSamplesPerSec * wfx.nBlockAlign;
 
-	sizebuf=(wfx.nAvgBytesPerSec/int(SysFPS))+16;
+	sizebuf=(wfx.nAvgBytesPerSec/(SysFPS))+16;
 	if(sizebuf&1)
 		--sizebuf;
 	sizebuf = (sizebuf + 15) & ~15;
@@ -124,12 +120,10 @@ int CSound::CreateChannel(int nch,int freq,int vol,int pos)
 		return 0;
 	}
 	err=Channels[nch]->SetVolume(DSBVOLUME_MAX);
-#ifndef XBOX
 	if(pos==0)
 		Channels[nch]->SetPan(DSBPAN_LEFT);
 	if(pos==255)
 		Channels[nch]->SetPan(DSBPAN_RIGHT);
-#endif
 	poss[nch]=0;
 	Running[nch]=0;
 	SetVol(vol,nch);
@@ -144,11 +138,7 @@ int CSound::CreateChannelStereo(int nch,int freq,int vol,int pos)
 	ZeroMemory(&dsbd,sizeof(dsbd));
 	int err;
 	dsbd.dwSize=sizeof(dsbd);
-#ifdef XBOX
-	dsbd.dwFlags=DSBCAPS_CTRLVOLUME|DSBCAPS_CTRLFREQUENCY;
-#else
 	dsbd.dwFlags=DSBCAPS_CTRLVOLUME|DSBCAPS_CTRLFREQUENCY|DSBCAPS_GETCURRENTPOSITION2|DSBCAPS_GLOBALFOCUS;
-#endif
 	
 
 	WAVEFORMATEX wfx;
@@ -161,7 +151,7 @@ int CSound::CreateChannelStereo(int nch,int freq,int vol,int pos)
     wfx.nAvgBytesPerSec = wfx.nSamplesPerSec * wfx.nBlockAlign;
 
 //	sizebuf=(wfx.nAvgBytesPerSec/60.0)+16;
-	sizebuf=(wfx.nAvgBytesPerSec/int(SysFPS))+16;
+	sizebuf=(wfx.nAvgBytesPerSec/SysFPS)+16;
 	if(sizebuf&1)
 		--sizebuf;
 	sizebuf = (sizebuf + 15) & ~15;
@@ -246,7 +236,7 @@ bool CSound::EnoughSpace(int r,int w,int pos,int len)
 	return true;
 }
 
-void CSound::AddChannelData(int nch,signed short *data,unsigned int len)
+void CSound::AddChannelData(int nch,UINT16 *data,UINT32 len)
 {
 	DWORD r,w;
 	DWORD curpos,writepos;

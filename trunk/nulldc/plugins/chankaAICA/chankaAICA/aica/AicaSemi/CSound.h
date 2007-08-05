@@ -2,9 +2,7 @@
 #define SOUND_H
 
 #define DIRECTSOUND_VERSION 0x700
-#ifndef XBOX
 #include "mmsystem.h"
-#endif
 #include "dsound.h"
 
 //#define DEBUGMESSAGE(msg) MessageBox(NULL,msg,"Error",MB_OK);
@@ -17,11 +15,7 @@ class CGUI
 public:
 	bool FrameLimit;
 	bool AutoDeLimit;
-#ifdef XBOX
-	HWND GetWindow() { return NULL; };
-#else
 	HWND GetWindow() { return g_hWnd; };
-#endif
 };
 
 class CSound
@@ -65,7 +59,7 @@ public:
 	int CreateChannel(int nch,int freq,int vol,int pos);
 	int CreateChannelStereo(int nch,int freq,int vol,int pos);
 	void DeleteChannel(int nch);
-	void AddChannelData(int nch,signed short *data,unsigned int len);
+	void AddChannelData(int nch,UINT16 *data,UINT32 len);
 	void Mute(bool mute);
 };
 

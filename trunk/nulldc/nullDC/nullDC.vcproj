@@ -971,34 +971,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\gui\emuBuild.h"
-				>
-			</File>
-			<File
-				RelativePath=".\gui\emuMode.h"
-				>
-			</File>
-			<File
-				RelativePath=".\gui\emuWinUI.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\gui\emuWinUI.h"
-				>
-			</File>
-			<File
-				RelativePath=".\gui\icon1.ico"
-				>
-			</File>
-			<File
-				RelativePath=".\gui\icon2.ico"
-				>
-			</File>
-			<File
-				RelativePath=".\gui\icon3.ico"
-				>
-			</File>
-			<File
 				RelativePath=".\gui\ndc_icon.ico"
 				>
 			</File>
@@ -1007,57 +979,17 @@
 				>
 			</File>
 			<File
-				RelativePath=".\gui\screenshot.cpp"
+				RelativePath=".\gui\resource.rc"
 				>
 			</File>
-			<File
-				RelativePath=".\gui\screenshot.h"
-				>
-			</File>
-			<File
-				RelativePath=".\gui\Script1.rc"
-				>
-			</File>
-			<Filter
-				Name="DBG"
-				>
-				<File
-					RelativePath=".\gui\DBG\CtrlDisAsmView.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\gui\DBG\CtrlDisAsmView.h"
-					>
-				</File>
-				<File
-					RelativePath=".\gui\DBG\CtrlMemView.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\gui\DBG\CtrlMemView.h"
-					>
-				</File>
-				<File
-					RelativePath=".\gui\DBG\DebugInterface.h"
-					>
-				</File>
-				<File
-					RelativePath=".\gui\DBG\SH4DbgInterface.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\gui\DBG\SH4DbgInterface.h"
-					>
-				</File>
-				<File
-					RelativePath=".\gui\DBG\Symbols.h"
-					>
-				</File>
-			</Filter>
 		</Filter>
 		<Filter
 			Name="plugins"
 			>
+			<File
+				RelativePath=".\plugins\gui_plugin_header.h"
+				>
+			</File>
 			<File
 				RelativePath=".\plugins\plugin_header.h"
 				>
@@ -1266,6 +1198,14 @@
 		<Filter
 			Name="cl"
 			>
+			<File
+				RelativePath=".\cl\cl.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\cl\cl.h"
+				>
+			</File>
 		</Filter>
 		<File
 			RelativePath=".\basic_types.h"

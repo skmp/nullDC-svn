@@ -73,7 +73,7 @@ void ds_InitAudio()
 {
 	verifyc(DirectSoundCreate8(NULL,&dsound,NULL));
 
-	verifyc(dsound->SetCooperativeLevel((HWND)eminf.WindowHandle,DSSCL_PRIORITY));
+	verifyc(dsound->SetCooperativeLevel((HWND)eminf.GetRenderTarget(),DSSCL_PRIORITY));
 	IDirectSoundBuffer* buffer_;
 
 	WAVEFORMATEX wfx; 

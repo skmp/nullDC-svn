@@ -889,6 +889,7 @@ void AICA_Sample()
 
 	//OK , generated all Chanels  , now DSP/ect + final mix ;p
 	//CDDA EXTS input
+	cdda_index+=2;
 	if (cdda_index>=CDDA_SIZE)
 	{
 		cdda_index=0;
@@ -900,8 +901,6 @@ void AICA_Sample()
 	//Add CDDA / DSP effect(s)
 
 	//CDDA
-	cdda_index+=2;
-
 	if (settings.CDDAMute==0)
 	{
 		s32 EXTS0L=cdda_sector[cdda_index];
@@ -934,3 +933,30 @@ void AICA_Sample()
 		mixr=FPRound(mixr,2);
 	}
 }
+/*
+struct AicaChannelEx
+{
+	fp_22_10 samples_to_decode;
+	_EG AEG;
+	fp_22_10 CA;
+	
+	void Decode()
+	{
+		if (samples_to_decode.ip==0)
+			return;
+		//decode samples
+		samples_to_decode.ip=0;
+	}
+
+	//range : s16 
+	//When AEG state is release & vol =0 then no mem reads are done.WTF happens if adpcm ? counters still count? what about looping?
+	SampleType GetSample()
+	{
+		if (AEG.state == EG_Release && AEG.value.ip=0x3FF)
+		{
+		}
+		
+	}
+
+};
+*/

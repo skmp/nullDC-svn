@@ -19,7 +19,7 @@ BYTE AICAReadByte(const DWORD uAddress);
 void AICAWriteDword(const DWORD uAddress, const DWORD uData);
 void AICAWriteWord(const DWORD uAddress, const WORD uData);
 void AICAWriteByte(const DWORD uAddress, const BYTE uData);
-void AICARefresh();
+void AICARefresh(u32 cycles);
 
 TError AicaInit();
 void AicaEnd();

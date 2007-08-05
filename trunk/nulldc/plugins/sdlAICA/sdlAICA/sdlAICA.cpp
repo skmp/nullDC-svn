@@ -21,19 +21,19 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 	hinst=(HINSTANCE)hModule;
     return TRUE;
 }
-void FASTCALL handle_About(u32 id,void* w,void* p)
+void EXPORT_CALL handle_About(u32 id,void* w,void* p)
 {
 	MessageBoxA((HWND)w,"Made by the nullDC Team","About nullAica...",MB_ICONINFORMATION);
 }
-void FASTCALL handle_ShowASD(u32 id,void* w,void* p)
+void EXPORT_CALL handle_ShowASD(u32 id,void* w,void* p)
 {
 	ShowDebugger((HWND)w);
 }
-void FASTCALL handle_Config(u32 id,void* w,void* p)
+void EXPORT_CALL handle_Config(u32 id,void* w,void* p)
 {
 	ShowConfig((HWND)w);
 }
-void FASTCALL handle_SA(u32 id,void* w,void* p)
+void EXPORT_CALL handle_SA(u32 id,void* w,void* p)
 {
 	if (settings.LimitFPS)
 		settings.LimitFPS=0;
@@ -43,7 +43,7 @@ void FASTCALL handle_SA(u32 id,void* w,void* p)
 	eminf.SetMenuItemStyle(id,settings.LimitFPS?MIS_Checked:0,MIS_Checked);
 	SaveSettings();
 }
-void FASTCALL handle_MCDDA(u32 id,void* w,void* p)
+void EXPORT_CALL handle_MCDDA(u32 id,void* w,void* p)
 {
 	if (settings.CDDAMute)
 		settings.CDDAMute=0;
@@ -53,7 +53,7 @@ void FASTCALL handle_MCDDA(u32 id,void* w,void* p)
 	eminf.SetMenuItemStyle(id,settings.CDDAMute?MIS_Checked:0,MIS_Checked);
 	SaveSettings();
 }
-void FASTCALL handle_GS(u32 id,void* w,void* p)
+void EXPORT_CALL handle_GS(u32 id,void* w,void* p)
 {
 	if (settings.GlobalMute)
 		settings.GlobalMute=0;

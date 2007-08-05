@@ -353,6 +353,22 @@
 					>
 				</File>
 				<File
+					RelativePath=".\aica\AicaSemi\aicadsp.cpp"
+					>
+					<FileConfiguration
+						Name="Release|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath=".\aica\AicaSemi\aicadsp.h"
+					>
+				</File>
+				<File
 					RelativePath=".\aica\AicaSemi\aicalfo.cpp"
 					>
 					<FileConfiguration
