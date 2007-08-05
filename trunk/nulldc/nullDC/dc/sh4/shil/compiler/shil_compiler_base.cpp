@@ -332,12 +332,205 @@ extern _vmem_WriteMem32FP*		_vmem_WF32[0x1000];
 
 extern void* _vmem_MemInfo[0x10000];
 
-//sz is 1,2,4,8
-//8 reads are assumed to be on same map (8 byte allign should ensure this , i dunoo -> it does)
-void emit_vmem_op_compat_const(x86_block* x86e,u32 ra,
-							   x86_reg ro,bool sse,
-								u32 sz,u32 rw)
+bool nvmem_GetPointer(void* &ptr,u32 addr,u32 rw,u32 sz)
 {
+	void* p_RWF_table;
+	if (rw==0)
+	{
+		if (sz==FLAG_8)
+			p_RWF_table=&_vmem_RF8[0];
+		else if (sz==FLAG_16)
+			p_RWF_table=&_vmem_RF16[0];
+		else if (sz==FLAG_32)
+			p_RWF_table=&_vmem_RF32[0];
+		else if (sz==FLAG_64)
+			p_RWF_table=&_vmem_RF32[0];
+		else
+			die("invalid read size");
+	}
+	else
+	{
+		if (sz==FLAG_8)
+			p_RWF_table=&_vmem_WF8[0];
+		else if (sz==FLAG_16)
+			p_RWF_table=&_vmem_WF16[0];
+		else if (sz==FLAG_32)
+			p_RWF_table=&_vmem_WF32[0];
+		else if (sz==FLAG_64)
+			p_RWF_table=&_vmem_WF32[0];
+		else
+			die("invalid write size");
+	}
+
+	u32 upper=addr>>16;
+
+	void * t =_vmem_MemInfo[upper];
+
+
+	u32 lower=addr& 0xFFFF;
+
+	if ((((u32)t) & 0xFFFF0000)==0)
+	{
+		ptr=((void**)p_RWF_table)[((u32)t)>>2];	//direct value, no need to derefernce
+		return false;
+	}
+	else
+	{
+		ptr=&((u8*)t)[lower];				//pointer, needs to be readed
+		return true;
+	}
+}
+
+//sz is 1,2,4,8
+void emit_vmem_op_compat_const(x86_block* x86e,u32 rw,u32 sz,u32 addr,u32 reg)
+{
+	if (sz==FLAG_64)
+		reg=GetSingleFromDouble(reg);
+
+	void* ptr;
+	if (nvmem_GetPointer(ptr,addr,rw,sz))
+	{
+		//direct access
+		switch(sz)
+		{
+		case FLAG_8:
+			if (rw==0)
+			{
+				ira->SaveRegister(reg,(s8*)ptr);
+			}
+			else
+			{
+				x86_reg rs= ira->GetRegister(EDX,reg,RA_DEFAULT);	//must be on 8 bit accessible reg
+				if (rs>BL)
+				{
+					x86e->Emit(op_mov32,EDX,rs);
+					rs=EDX;
+				}
+				x86e->Emit(op_mov8,ptr,rs);
+			}
+			break;
+
+		case FLAG_16:
+			if (rw==0)
+			{
+				ira->SaveRegister(reg,(s16*)ptr);
+			}
+			else
+			{
+				x86_reg rs= ira->GetRegister(EDX,reg,RA_DEFAULT);//any reg will do
+				x86e->Emit(op_mov16,ptr,rs);
+			}
+			break;
+
+		case FLAG_32:
+			if (rw==0)
+			{
+				if (IsSSEAllocReg(reg))
+				{
+					fra->SaveRegister(reg,(float*)ptr);
+				}
+				else
+				{
+					ira->SaveRegister(reg,(u32*)ptr);
+				}
+			}
+			else
+			{
+				if (IsSSEAllocReg(reg))
+				{
+					x86e->Emit(op_mov32,EAX,GetRegPtr(reg));
+					x86e->Emit(op_mov32,(u32*)ptr,EAX);
+				}
+				else
+				{
+					x86_reg rs= ira->GetRegister(EAX,reg,RA_DEFAULT);//any reg will do
+					x86e->Emit(op_mov32,ptr,rs);
+				}
+			}
+			break;
+		case FLAG_64:
+			verify(IsSSEAllocReg(reg));
+			if (rw==0)
+			{
+				x86e->Emit(op_movlps,XMM0,(u32*)ptr);
+				x86e->Emit(op_movlps,GetRegPtr(reg),XMM0);
+			}
+			else
+			{
+				x86e->Emit(op_movlps,XMM0,GetRegPtr(reg));
+				x86e->Emit(op_movlps,(u32*)ptr,XMM0);
+			}
+			break;
+		}
+	}
+	else
+	{
+		bool doloop=false;//sz==FLAG_64;
+
+		do
+		{
+			doloop=doloop ^(sz==FLAG_64); 
+			//gota call functions
+			x86e->Emit(op_mov32,ECX,addr);
+
+
+
+			if (rw==1)
+			{
+				if (IsSSEAllocReg(reg))
+				{
+					x86e->Emit(op_mov32,EDX,GetRegPtr(reg));
+				}
+				else
+				{
+					ira->GetRegister(EDX,reg,RA_FORCE);//any reg will do
+				}
+			}
+
+			//call the function
+			x86e->Emit(op_call,x86_ptr_imm(ptr));
+
+			if(rw==0)
+			{
+				switch(sz)
+				{
+				case FLAG_8:
+					{
+					x86_reg r=ira->GetRegister(EAX,reg,RA_NODATA);
+					x86e->Emit(op_movsx8to32,r,EAX);
+					ira->SaveRegister(reg,r);
+					}
+					break;
+				case FLAG_16:
+					{
+					x86_reg r=ira->GetRegister(EAX,reg,RA_NODATA);
+					x86e->Emit(op_movsx16to32,r,EAX);
+					ira->SaveRegister(reg,r);
+					}
+					break;
+				case FLAG_32:
+					if (IsSSEAllocReg(reg))
+					{
+						x86e->Emit(op_mov32,GetRegPtr(reg),EAX);
+					}
+					else
+					{
+						ira->SaveRegister(reg,EAX);
+					}
+					break;
+				case FLAG_64:
+					x86e->Emit(op_mov32,GetRegPtr(reg),EAX);
+					break;
+				}
+			}
+
+			//in case we loop -- its 64 bit read
+			reg++;
+			addr+=4;
+		}
+		while(doloop);
+	}
+	/*
 	void* p_RWF_table=0;
 	if (rw==0)
 	{
@@ -349,6 +542,8 @@ void emit_vmem_op_compat_const(x86_block* x86e,u32 ra,
 			p_RWF_table=&_vmem_RF32[0];
 		else if (sz==8)
 			p_RWF_table=&_vmem_RF32[0];
+		else
+			die("invalid read size");
 	}
 	else
 	{
@@ -360,6 +555,8 @@ void emit_vmem_op_compat_const(x86_block* x86e,u32 ra,
 			p_RWF_table=&_vmem_WF32[0];
 		else if (sz==8)
 			p_RWF_table=&_vmem_WF32[0];
+		else
+			die("invalid write size");
 	}
 
 	u32 upper=ra>>16;
@@ -410,7 +607,7 @@ void emit_vmem_op_compat_const(x86_block* x86e,u32 ra,
 		}
 	}
 	else
-	{
+	{	//Direct Ram Read
 		if (rw==1)
 		{
 			void* paddr=&((u8*)t)[lower];
@@ -465,6 +662,7 @@ void emit_vmem_op_compat_const(x86_block* x86e,u32 ra,
 			}
 		}
 	}
+	*/
 }
 
 //sz : 1,2 -> sign extended , 4 fully loaded.SSE valid olny for sz=4
@@ -1298,26 +1496,29 @@ void __fastcall shil_compile_readm(shil_opcode* op)
 	{
 		//[imm1] form
 		assert(op->flags & FLAG_IMM1);
+		emit_vmem_op_compat_const(x86e,0,size,op->imm1,op->reg1);
+		/*
 		if (!IsInFReg(op->reg1))
 		{
+			emit_vmem_op_compat_const(x86e,0,size,op->imm1,op->reg1);
+			/*
 			if (size==FLAG_64)
 			{
-				emit_vmem_op_compat_const(x86e,op->imm1,XMM0,false,m_unpack_sz[size],0);
-				x86e->Emit(op_movlps,GetRegPtr(GetSingleFromDouble(op->reg1)),XMM0);
+				emit_vmem_op_compat_const(x86e,0,size,op->imm1,op->reg1);
 			}
 			else
 			{
 				x86_gpr_reg rall=LoadReg_nodata(EDX,op->reg1);
 				emit_vmem_op_compat_const(x86e,op->imm1,rall,false,m_unpack_sz[size],0);
 				SaveReg(op->reg1,rall);
-			}
+			}*//*
 		}
 		else
 		{
 			x86_sse_reg rall=fra->GetRegister(XMM0,op->reg1,RA_NODATA);
 			emit_vmem_op_compat_const(x86e,op->imm1,rall,true,m_unpack_sz[size],0);
 			fra->SaveRegister(op->reg1,rall);
-		}
+		}*/
 		return;
 	}
 
@@ -1436,14 +1637,15 @@ void __fastcall shil_compile_writem(shil_opcode* op)
 	{//[reg2+imm] form
 		assert(op->flags & FLAG_IMM1);
 		//[imm1] form
-		if (!is_float)
+		/*if (!is_float)
 		{
 			emit_vmem_op_compat_const(x86e,op->imm1,rsrc,false,m_unpack_sz[size],1);
 		}
 		else
 		{
 			emit_vmem_op_compat_const(x86e,op->imm1,rsrc,true,m_unpack_sz[size],1);
-		}
+		}*/
+		emit_vmem_op_compat_const(x86e,1,size,op->imm1,op->reg1);
 		return;
 	}
 
