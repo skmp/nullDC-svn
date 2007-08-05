@@ -1,6 +1,7 @@
 #pragma once
 #include "types.h"
 #include "plugin_types.h"
+#include "gui_plugin_header.h"
 #include "dc/sh4/sh4_if.h"
 
 //Plugin handling functions :)
@@ -75,6 +76,7 @@ extern nullDC_GDRom_plugin		libGDR;
 extern nullDC_AICA_plugin		libAICA;
 extern List<nullDC_Maple_plugin*>libMaple;
 extern nullDC_ExtDevice_plugin	libExtDevice;
+extern gui_plugin_info			libgui;
 //more to come
 
 bool plugins_Load();

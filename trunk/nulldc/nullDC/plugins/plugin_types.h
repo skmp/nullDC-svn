@@ -54,12 +54,12 @@ enum ndc_error_codes
 #define PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0,DC_VER_BETA)
 
 //These are provided by the emu
-typedef void FASTCALL ConfigLoadStrFP(const char * lpSection, const char * lpKey, char * lpReturn,const char* lpDefault);
-typedef void FASTCALL ConfigSaveStrFP(const char * lpSection, const char * lpKey, const char * lpString);
+typedef void EXPORT_CALL ConfigLoadStrFP(const char * lpSection, const char * lpKey, char * lpReturn,const char* lpDefault);
+typedef void EXPORT_CALL ConfigSaveStrFP(const char * lpSection, const char * lpKey, const char * lpString);
 
-typedef s32 FASTCALL ConfigLoadIntFP(const char * lpSection, const char * lpKey,const s32 Default);
-typedef void FASTCALL ConfigSaveIntFP(const char * lpSection, const char * lpKey, const s32 Value);
-typedef s32 FASTCALL ConfigExistsFP(const char * lpSection, const char * lpKey);
+typedef s32 EXPORT_CALL ConfigLoadIntFP(const char * lpSection, const char * lpKey,const s32 Default);
+typedef void EXPORT_CALL ConfigSaveIntFP(const char * lpSection, const char * lpKey, const s32 Value);
+typedef s32 EXPORT_CALL ConfigExistsFP(const char * lpSection, const char * lpKey);
 
 enum MenuItemStyles
 {
@@ -74,7 +74,7 @@ enum MenuItemStyles
 
 #ifndef _MenuItemSelectedFP_
 #define _MenuItemSelectedFP_
-typedef void FASTCALL MenuItemSelectedFP(u32 id,void* WindowHandle,void* user);
+typedef void EXPORT_CALL MenuItemSelectedFP(u32 id,void* WindowHandle,void* user);
 
 
 enum MenuItemMask
@@ -96,16 +96,16 @@ struct MenuItem
 };
 #endif
 
-typedef u32 FASTCALL AddMenuItemFP(u32 parent,s32 pos,char* text,MenuItemSelectedFP* handler , u32 checked);
-typedef void FASTCALL SetMenuItemStyleFP(u32 id,u32 style,u32 mask);
-typedef void FASTCALL GetMenuItemFP(u32 id,MenuItem* info,u32 mask);
-typedef void FASTCALL SetMenuItemFP(u32 id,MenuItem* info,u32 mask);
-typedef void FASTCALL DeleteMenuItemFP(u32 id);
-
+typedef u32 EXPORT_CALL AddMenuItemFP(u32 parent,s32 pos,char* text,MenuItemSelectedFP* handler , u32 checked);
+typedef void EXPORT_CALL SetMenuItemStyleFP(u32 id,u32 style,u32 mask);
+typedef void EXPORT_CALL GetMenuItemFP(u32 id,MenuItem* info,u32 mask);
+typedef void EXPORT_CALL SetMenuItemFP(u32 id,MenuItem* info,u32 mask);
+typedef void EXPORT_CALL DeleteMenuItemFP(u32 id);
+typedef void* EXPORT_CALL GetRenderTargetFP();
 
 struct emu_info
 {
-	void*			WindowHandle;		//Handle of the window that rendering is done
+	GetRenderTargetFP*	GetRenderTarget;		//Handle of the window that rendering is done
 
 	ConfigLoadStrFP*	ConfigLoadStr;	//Can be used to Read/Write settings :)
 	ConfigSaveStrFP*	ConfigSaveStr;

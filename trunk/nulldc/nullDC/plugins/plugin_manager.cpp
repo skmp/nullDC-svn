@@ -11,10 +11,15 @@
 #include "gui/base.h"
 #include "dc/maple/maple_if.h"
 #include "config/config.h"
-#include "gui/emuWinUI.h"
+#include "gui/base.h"
 
 #include <string.h>
 #include "dc\mem\sb.h"
+
+//to avoid including windows.h
+#define EXCEPTION_EXECUTE_HANDLER       1
+#define EXCEPTION_CONTINUE_SEARCH       0
+#define EXCEPTION_CONTINUE_EXECUTION    -1
 
 char* lcp_name;
 s32 lcp_error=0;
@@ -25,6 +30,7 @@ nullDC_GDRom_plugin			libGDR;
 nullDC_AICA_plugin			libAICA;
 List<nullDC_Maple_plugin*>	libMaple;
 nullDC_ExtDevice_plugin		libExtDevice;
+gui_plugin_info				libgui;
 
 sh4_if*						sh4_cpu;
 emu_info					eminf;
@@ -413,7 +419,7 @@ MapleDeviceDefinition* FindMapleDevice(char* mfdn)
 s32 CreateMapleDevice(u32 pos,char* device,bool hotplug);
 void cm_MampleSubEmpty(u32 root,u32 port,u32 subport)
 {
-	DeleteAllMenuItemChilds(root);
+	libgui.DeleteAllMenuItemChilds(root);
 	//l8r
 	/*
 	for (size_t i=0;i<MapleDeviceList_cached.size();i++)
@@ -438,7 +444,7 @@ void cm_MampleSubEmpty(u32 root,u32 port,u32 subport)
 }
 void cm_MampleSubUsed(u32 root,u32 port,u32 subport)
 {
-	DeleteAllMenuItemChilds(root);
+	libgui.DeleteAllMenuItemChilds(root);
 	//l8r
 	/*
 	AddMenuItem(root,-1,"Unplug",0,0);
@@ -456,9 +462,9 @@ void FASTCALL menu_handle_attach_main(u32 id,void* win,void* p)
 }
 void cm_MampleMainEmpty(u32 root,u32 port)
 {
-	DeleteAllMenuItemChilds(root);
+	libgui.DeleteAllMenuItemChilds(root);
 	for (int i=0;i<5;i++)
-		Maple_menu_ports[port][i]=0;
+		MenuIDs.Maple_port[port][i]=0;
 	//Add the
 	/*
 	for (size_t i=0;i<MapleDeviceList_cached.size();i++)
@@ -482,7 +488,7 @@ void cm_MampleMainEmpty(u32 root,u32 port)
 }
 void cm_MampleMainUsed(u32 root,u32 port,u32 flags)
 {
-	DeleteAllMenuItemChilds(root);
+	libgui.DeleteAllMenuItemChilds(root);
 	//add the 
 	//Subdevice X ->[default empty]
 	for (u32 i=0;i<5;i++)
@@ -491,13 +497,13 @@ void cm_MampleMainUsed(u32 root,u32 port,u32 flags)
 		{
 			char temp[512];
 			sprintf(temp,"Subdevice %d",i+1);
-			u32 sdr=AddMenuItem(root,-1,temp,0,0);
-			Maple_menu_ports[port][i]=sdr;
+			u32 sdr=libgui.AddMenuItem(root,-1,temp,0,0);
+			MenuIDs.Maple_port[port][i]=sdr;
 			cm_MampleSubEmpty(sdr,port,i);
 		}
 		else
 		{
-			Maple_menu_ports[port][i]=0;
+			MenuIDs.Maple_port[port][i]=0;
 		}
 	}
 	
@@ -530,12 +536,12 @@ s32 CreateMapleDevice(u32 pos,char* device,bool hotplug)
 
 	nullDC_Maple_plugin* plg =FindMaplePlugin(mdd);
 	
-	cm_MampleMainUsed(Maple_menu_ports[pos][5],pos,mdd->Flags);
+	cm_MampleMainUsed(MenuIDs.Maple_port[pos][5],pos,mdd->Flags);
 	MapleDevices[pos].port=GetMaplePort(pos,5);
 	
-	if (s32 rv= plg->CreateMain(&MapleDevices[pos],mdd->id,hotplug?MDCF_Hotplug:MDCF_None,Maple_menu_ports[pos][5]))
+	if (s32 rv= plg->CreateMain(&MapleDevices[pos],mdd->id,hotplug?MDCF_Hotplug:MDCF_None,MenuIDs.Maple_port[pos][5]))
 	{
-		cm_MampleMainEmpty(Maple_menu_ports[pos][5],pos);
+		cm_MampleMainEmpty(MenuIDs.Maple_port[pos][5],pos);
 		if (rv==rv_error)
 			return pmde_failed_create;
 		else
@@ -559,7 +565,7 @@ s32 DestroyMapleDevice(u32 pos)
 	nullDC_Maple_plugin* plg =FindMaplePlugin(mdd);
 
 	plg->DestroyMain(&MapleDevices[pos],mdd->id);
-	cm_MampleMainEmpty(Maple_menu_ports[pos][5],pos);
+	cm_MampleMainEmpty(MenuIDs.Maple_port[pos][5],pos);
 
 	MapleDevices[pos].connected=false;
 
@@ -582,12 +588,12 @@ s32 CreateMapleSubDevice(u32 pos,u32 subport,char* device,bool hotplug)
 
 	nullDC_Maple_plugin* plg =FindMaplePlugin(mdd);
 	
-	cm_MampleSubUsed(Maple_menu_ports[pos][subport],pos,subport);
+	cm_MampleSubUsed(MenuIDs.Maple_port[pos][subport],pos,subport);
 	MapleDevices[pos].subdevices[subport].port=GetMaplePort(pos,subport);
 	
-	if (s32 rv= plg->CreateSub(&MapleDevices[pos].subdevices[subport],mdd->id,hotplug?MDCF_Hotplug:MDCF_None,Maple_menu_ports[pos][subport]))
+	if (s32 rv= plg->CreateSub(&MapleDevices[pos].subdevices[subport],mdd->id,hotplug?MDCF_Hotplug:MDCF_None,MenuIDs.Maple_port[pos][subport]))
 	{
-		cm_MampleSubEmpty(Maple_menu_ports[pos][subport],pos,subport);
+		cm_MampleSubEmpty(MenuIDs.Maple_port[pos][subport],pos,subport);
 		if (rv==rv_error)
 			return pmde_failed_create;
 		else
@@ -614,7 +620,7 @@ s32 DestroyMapleSubDevice(u32 pos,u32 subport)
 	nullDC_Maple_plugin* plg =FindMaplePlugin(mdd);
 
 	plg->DestroySub(&MapleDevices[pos].subdevices[subport],mdd->id);
-	cm_MampleSubEmpty(Maple_menu_ports[pos][subport],pos,subport);
+	cm_MampleSubEmpty(MenuIDs.Maple_port[pos][subport],pos,subport);
 	MapleDevices[pos].subdevices[subport].connected=false;
 	return rv_ok;
 }
@@ -650,7 +656,7 @@ template<typename T>
 void unload_plugin(T* plug,u32 rootmenu)
 {
 	lcp_name=plug->Name;
-	DeleteAllMenuItemChilds(rootmenu);
+	libgui.DeleteAllMenuItemChilds(rootmenu);
 	SetMenuItemHandler(rootmenu,0);
 	if (plug->IsOpened()) 
 	{
@@ -680,7 +686,7 @@ s32 plugins_Load_()
 		//if first time load , init the maple menus
 		plugins_first_load=true;
 		for (u32 i=0;i<4;i++)
-			cm_MampleMainEmpty(Maple_menu_ports[i][5],i);
+			cm_MampleMainEmpty(MenuIDs.Maple_port[i][5],i);
 	}
 	eminf.ConfigLoadStr=cfgLoadStr;
 	eminf.ConfigSaveStr=cfgSaveStr;
@@ -688,19 +694,19 @@ s32 plugins_Load_()
 	eminf.ConfigSaveInt=cfgSaveInt;
 	eminf.ConfigExists=cfgExists;
 
-	eminf.AddMenuItem=AddMenuItem;
-	eminf.SetMenuItemStyle=SetMenuItemStyle;
-	eminf.GetMenuItem=GetMenuItem;
-	eminf.SetMenuItem=SetMenuItem;
-	eminf.DeleteMenuItem=DeleteMenuItem;
+	eminf.AddMenuItem=libgui.AddMenuItem;
+	eminf.SetMenuItemStyle=libgui.SetMenuItemStyle;
+	eminf.GetMenuItem=libgui.GetMenuItem;
+	eminf.SetMenuItem=libgui.SetMenuItem;
+	eminf.DeleteMenuItem=libgui.DeleteMenuItem;
 
-	eminf.WindowHandle=GetRenderTargetHandle();
-	eminf.DebugMenu=Debug_menu;
+	eminf.GetRenderTarget=GetRenderTargetHandle;
+	eminf.DebugMenu=MenuIDs.Debug;
 
-	load_plugin_("Current_PVR",&libPvr,PowerVR_menu,"nullPvr_Win32.dll");
-	load_plugin_("Current_GDR",&libGDR,GDRom_menu,"nullGDR_Win32.dll");
-	load_plugin_("Current_AICA",&libAICA,Aica_menu,"nullAica_Win32.dll");
- 	load_plugin_("Current_ExtDevice",&libExtDevice,ExtDev_menu,"nullExtDev_Win32.dll");
+	load_plugin_("Current_PVR",&libPvr,MenuIDs.PowerVR,"nullPvr_Win32.dll");
+	load_plugin_("Current_GDR",&libGDR,MenuIDs.GDRom,"nullGDR_Win32.dll");
+	load_plugin_("Current_AICA",&libAICA,MenuIDs.Aica,"nullAica_Win32.dll");
+ 	load_plugin_("Current_ExtDevice",&libExtDevice,MenuIDs.ExtDev,"nullExtDev_Win32.dll");
 
 	List<PluginLoadInfo>* mpl= GetPluginList(Plugin_Maple);
 
@@ -713,7 +719,7 @@ s32 plugins_Load_()
 
 			GetFileNameFromPath((*mpl)[i].dll,fname);
 
-			if (s32 rv=load_plugin(fname,cmp,Maple_menu))
+			if (s32 rv=load_plugin(fname,cmp,MenuIDs.Maple))
 			{
 				delete cmp;
 				return rv;
@@ -787,7 +793,7 @@ bool plugins_Load()
 		{
 			if (rv==rv_error)
 			{
-				msgboxf("Unable to load %s plugin , errorlevel=%d",MB_ICONERROR,lcp_name,lcp_error);
+				msgboxf("Unable to load %s plugin , errorlevel=%d",MBX_ICONERROR,lcp_name,lcp_error);
 			}
 
 			plugins_Unload();
@@ -798,7 +804,7 @@ bool plugins_Load()
 	}
 	__except(EXCEPTION_EXECUTE_HANDLER)
 	{
-		msgboxf("Unhandled exeption while loading %s plugin",MB_ICONERROR,lcp_name);
+		msgboxf("Unhandled exeption while loading %s plugin",MBX_ICONERROR,lcp_name);
 		plugins_Unload();
 		return false;
 	}
@@ -847,18 +853,18 @@ void plugins_Unload()
 
 		for (size_t i=libMaple.size();i>0;i--)
 		{
-			unload_plugin(libMaple[i-1],Maple_menu);
+			unload_plugin(libMaple[i-1],MenuIDs.Maple);
 		}
 		libMaple.clear();
 
-		unload_plugin(&libExtDevice,ExtDev_menu);
-		unload_plugin(&libAICA,Aica_menu);
-		unload_plugin(&libGDR,GDRom_menu);
-		unload_plugin(&libPvr,PowerVR_menu);
+		unload_plugin(&libExtDevice,MenuIDs.ExtDev);
+		unload_plugin(&libAICA,MenuIDs.Aica);
+		unload_plugin(&libGDR,MenuIDs.GDRom);
+		unload_plugin(&libPvr,MenuIDs.PowerVR);
 	}
 	__except(EXCEPTION_EXECUTE_HANDLER)
 	{
-		msgboxf("Unhandled exeption while unloading %s\n",MB_ICONERROR,lcp_name);
+		msgboxf("Unhandled exeption while unloading %s\n",MBX_ICONERROR,lcp_name);
 	}
 }
 /************************************/
@@ -891,10 +897,10 @@ bool plugins_Select()
 
 	if (rv && plugins_inited==false)
 	{
-		CheckPlugin("Current_PVR",&libPvr,PowerVR_menu);
-		CheckPlugin("Current_GDR",&libGDR,GDRom_menu);
-		CheckPlugin("Current_AICA",&libAICA,Aica_menu);
- 		CheckPlugin("Current_ExtDevice",&libExtDevice,ExtDev_menu);
+		CheckPlugin("Current_PVR",&libPvr,MenuIDs.PowerVR);
+		CheckPlugin("Current_GDR",&libGDR,MenuIDs.GDRom);
+		CheckPlugin("Current_AICA",&libAICA,MenuIDs.Aica);
+ 		CheckPlugin("Current_ExtDevice",&libExtDevice,MenuIDs.ExtDev);
 
 		//Maple plugins
 		for (int port =0;port<4;port++)
@@ -1035,7 +1041,7 @@ bool plugins_Init()
 		{
 			if (rv==rv_error)
 			{
-				msgboxf("Failed to init %s",MB_ICONERROR,lcp_name);				
+				msgboxf("Failed to init %s",MBX_ICONERROR,lcp_name);				
 			}
 			plugins_Term();
 			return false;
@@ -1044,7 +1050,7 @@ bool plugins_Init()
 	}
 	__except(EXCEPTION_EXECUTE_HANDLER)
 	{
-		msgboxf("Unhandled exeption while Initing %s plugin",MB_ICONERROR,lcp_name);
+		msgboxf("Unhandled exeption while Initing %s plugin",MBX_ICONERROR,lcp_name);
 		plugins_Term();
 		return false;
 	}

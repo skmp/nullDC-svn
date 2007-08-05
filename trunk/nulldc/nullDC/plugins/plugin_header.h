@@ -10,8 +10,8 @@
 
 #ifdef _CRT_SECURE_NO_DEPRECATE
 #undef _CRT_SECURE_NO_DEPRECATE
-#define _CRT_SECURE_NO_DEPRECATE 
 #endif
+#define _CRT_SECURE_NO_DEPRECATE
 
 //Do not complain when i use enum::member
 #pragma warning( disable : 4482)
@@ -43,10 +43,11 @@ typedef double f64;
 
 
 
-#ifdef CDECL
-#undef CDECL
+#ifndef CDECL
 #define CDECL __cdecl
 #endif
+
+
 
 
 //intc function pointer and enums
@@ -173,6 +174,5 @@ struct vram_block
 
 typedef void FASTCALL vramLockCBFP (vram_block* block,u32 addr);
 
-#define EXPORT extern "C" __declspec(dllexport)
 
 #include "plugin_types.h"
