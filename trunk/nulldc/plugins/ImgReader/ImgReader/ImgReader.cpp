@@ -84,7 +84,7 @@ void FASTCALL GetSessionInfo(u8* out,u8 ses)
 }
 emu_info emu;
 char emu_name[512];
-void FASTCALL handle_PatchRegion(u32 id,void* w,void* p)
+void EXPORT_CALL handle_PatchRegion(u32 id,void* w,void* p)
 {
 	if (settings.PatchRegion)
 		settings.PatchRegion=0;
@@ -96,7 +96,7 @@ void FASTCALL handle_PatchRegion(u32 id,void* w,void* p)
 	SaveSettings();
 }
 
-void FASTCALL handle_UseDefImg(u32 id,void* w,void* p)
+void EXPORT_CALL handle_UseDefImg(u32 id,void* w,void* p)
 {
 	if (settings.LoadDefaultImage)
 		settings.LoadDefaultImage=0;
@@ -107,18 +107,18 @@ void FASTCALL handle_UseDefImg(u32 id,void* w,void* p)
 
 	SaveSettings();
 }
-void FASTCALL handle_SelDefImg(u32 id,void* w,void* p)
+void EXPORT_CALL handle_SelDefImg(u32 id,void* w,void* p)
 {
 	if (GetFile(settings.DefaultImage,"CD/GD Images (*.cdi;*.mds;*.nrg;*.gdi) \0*.cdi;*.mds;*.nrg;*.gdi\0\0"))
 	{
 		SaveSettings();
 	}
 }
-void FASTCALL handle_About(u32 id,void* w,void* p)
+void EXPORT_CALL handle_About(u32 id,void* w,void* p)
 {
 	MessageBox((HWND)w,"Made by drk||Raziel & GiGaHeRz","About ImageReader...",MB_ICONINFORMATION);
 }
-void FASTCALL handle_SwitchDisc(u32 id,void* w,void* p)
+void EXPORT_CALL handle_SwitchDisc(u32 id,void* w,void* p)
 {
 	//msgboxf("This feature is not yet implemented",MB_ICONWARNING);
 	//return;

@@ -81,12 +81,7 @@ void cdi_CreateToc()
 	bool CD_M1=false;
 	bool CD_M2=false;
 
-	cdi_ses.SessionCount=pstToc->dwSessionCount;
-	cdi_ses.SessionsEndFAD=pstToc->dwOuterLeadOut;
-	cdi_toc.LeadOut.FAD=pstToc->dwOuterLeadOut;
-	cdi_toc.LeadOut.Addr=0;
-	cdi_toc.LeadOut.Control=0;
-	cdi_toc.LeadOut.Session=0;
+
 
 	printf("Last Sector : %d\n",pstToc->dwOuterLeadOut);
 	printf("Session count : %d\n",pstToc->dwSessionCount);
@@ -95,10 +90,17 @@ void cdi_CreateToc()
 	u32 last_FAD=0;
 	u32 TrackOffset=0;
 
+	u32 ses_count=0;
 	for (u32 s=0;s<pstToc->dwSessionCount;s++)
 	{
 		printf("Session %d:\n",s);
 		SPfcSession* ses=&pstToc->pstSession[s];
+		if (ses->bType==4 && ses->dwTrackCount==0)
+		{
+			printf("Detected open disc\n");
+			continue;
+		}
+		ses_count++;
 
 		printf("  Track Count: %d\n",ses->dwTrackCount);
 		for (u32 t=0;t< ses->dwTrackCount ;t++)
@@ -112,6 +114,7 @@ void cdi_CreateToc()
 			if (t==0)
 			{
 				cdi_ses.SessionFAD[s]=last_FAD;
+				cdi_ses.SessionStart[s]=track+1;
 				printf("  Session start FAD: %d\n",last_FAD);
 			}
 
@@ -163,6 +166,14 @@ void cdi_CreateToc()
 	else
 		cdi_Disctype=CdRom;//hmm?
 
+	cdi_ses.SessionCount=ses_count;
+	cdi_ses.SessionsEndFAD=pstToc->dwOuterLeadOut;
+	cdi_toc.LeadOut.FAD=pstToc->dwOuterLeadOut;
+	cdi_toc.LeadOut.Addr=0;
+	cdi_toc.LeadOut.Control=0;
+	cdi_toc.LeadOut.Session=0;
+
+	printf("Disc Type = %d\n",cdi_Disctype);
 	TrackCount=track;
 	cdi_toc.LastTrack=track;
 	printf("--GD toc info end--\n\n");

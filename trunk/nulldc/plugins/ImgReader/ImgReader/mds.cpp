@@ -86,6 +86,7 @@ void mds_CreateToc()
 			if (t==0)
 			{
 				mds_ses.SessionFAD[s]=c_track->sector+150;
+				mds_ses.SessionStart[s]=track+1;
 				printf("  Session start FAD: %d\n",mds_ses.SessionFAD[s]);
 			}
 

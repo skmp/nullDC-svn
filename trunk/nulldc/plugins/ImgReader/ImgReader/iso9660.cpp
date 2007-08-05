@@ -49,7 +49,8 @@ struct file_TrackInfo
 };
 
 file_TrackInfo iso_tracks[101];
-
+TocInfo gdi_toc;
+SessionInfo gdi_ses;
 u32 iso_tc=0;
 
 void iso_ReadSSect(u8* p_out,u32 sector,u32 secsz)
@@ -186,6 +187,7 @@ void FASTCALL iso_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 
 	}*/
 
 }
+/*
 void iso_GetSessionsInfo(SessionInfo* sessions)
 {
 	printf("iso_GetSessionsInfo\n");
@@ -194,34 +196,41 @@ void iso_DriveGetTocInfo(TocInfo* toc,DiskArea area)
 {
 	printf("GDROM toc\n");
 	memset(toc,0,sizeof(TocInfo));
-/*	//Send a fake a$$ toc
-	//toc->last.full		= toc->first.full	= CTOC_TRACK(1);
-	toc->first.number=1;
-	toc->last.number=1;
-	toc->first.ControlInfo=toc->last.ControlInfo=4;
-	toc->first.Addr=toc->last.Addr=0;
-	toc->lba_leadout.FAD=400000;
-
- 	//toc->entry[0].full	= CTOC_LBA(150) | CTOC_ADR(0) | CTOC_CTRL(4);
-	toc->entry[0].Addr=0;
-	toc->entry[0].ControlInfo=4;
-	//toc->entry[1].Addr=0;
-	//toc->entry[1].ControlInfo=4;
-	if (area==DoubleDensity)
+}
+*/
+void iso_DriveGetTocInfo(TocInfo* toc,DiskArea area)
+{
+	memcpy(toc,&gdi_toc,sizeof(TocInfo));
+	if(area==SingleDensity)
 	{
-		toc->entry[0].FAD=150;
-		//toc->entry[1].FAD=45150;
+		toc->LeadOut.FAD=13085;
+		toc->FistTrack=1;
+		toc->LastTrack=2;
+
+		for (int tr=2;tr<99;tr++)
+		{
+			toc->tracks[tr].FAD=0xFFFFFFF;
+			toc->tracks[tr].Addr=0xFF;
+			toc->tracks[tr].Control=0xFF;
+		}
 	}
 	else
 	{
-		toc->entry[0].FAD=150;
-		//toc->entry[1].FAD=45150;
+		toc->LeadOut.FAD=549300;
+		toc->FistTrack=3;
+		toc->LastTrack=gdi_toc.LastTrack;
+		
+		for (int tr=0;tr<2;tr++)
+		{
+			toc->tracks[tr].FAD=0xFFFFFFF;
+			toc->tracks[tr].Addr=0xFF;
+			toc->tracks[tr].Control=0xFF;
+		}
 	}
-
-	for (int i=1;i<99;i++)
-	{
-		toc->entry[i].full=0xFFFFFFFF;
-	}*/
+}
+void iso_GetSessionsInfo(SessionInfo* sessions)
+{
+	memcpy(sessions,&gdi_ses,sizeof(SessionInfo));
 }
 //TODO : fix up
 u32 FASTCALL iso_DriveGetDiscType()
@@ -234,6 +243,8 @@ u32 FASTCALL iso_DriveGetDiscType()
 
 bool load_gdi(char* file)
 {
+	memset(&gdi_toc,0xFFFFFFFF,sizeof(gdi_toc));
+	memset(&gdi_ses,0xFFFFFFFF,sizeof(gdi_ses));
 	FILE* t=fopen(file,"rb");
 	fscanf(t,"%d\r\n",&iso_tc);
 	printf("\nGDI : %d tracks\n",iso_tc);
@@ -270,7 +281,25 @@ bool load_gdi(char* file)
 		iso_tracks[i].offset=OFFSET;
 		iso_tracks[i].SectorSize=SSIZE;
 		iso_tracks[i].ctrl=CTRL;
+
+		gdi_toc.tracks[i].Addr=0;
+		gdi_toc.tracks[i].Control=CTRL;
+		gdi_toc.tracks[i].FAD=FADS+150;
 	}
+
+	
+	gdi_toc.LastTrack=iso_tc;
+
+	gdi_ses.SessionCount=2;
+	//session 1 : start @ track 1, and its fad
+	gdi_ses.SessionStart[0]=1;
+	gdi_ses.SessionFAD[0]=gdi_toc.tracks[0].FAD;
+	
+
+	//session 2 : start @ track 3, and its fad
+	gdi_ses.SessionStart[0]=3;
+	gdi_ses.SessionFAD[1]=gdi_toc.tracks[2].FAD;
+	gdi_ses.SessionsEndFAD=549300;
 
 	return true;
 }

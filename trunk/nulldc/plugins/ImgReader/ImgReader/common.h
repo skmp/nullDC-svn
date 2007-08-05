@@ -23,7 +23,8 @@ struct SessionInfo
 {
 	u32 SessionsEndFAD;	//end of Disc (?)
 	u8 SessionCount;	//must be at least 1
-	u32 SessionFAD[98];	//for sessions 1-99 ;)
+	u32 SessionStart[99];//start track for session
+	u32 SessionFAD[99];	//for sessions 1-99 ;)
 };
 
 

@@ -207,14 +207,27 @@ void TermDrive()
 //
 //convert our nice toc struct to dc's native one :)
 
+u32 CreateTrackInfo(u32 ctrl,u32 addr,u32 fad)
+{
+	u8 p[4];
+	p[0]=(ctrl<<4)|(addr<<0);
+	p[1]=fad>>16;
+	p[2]=fad>>8;
+	p[3]=fad>>0;
+
+	return *(u32*)p;
+}
+u32 CreateTrackInfo_se(u32 ctrl,u32 addr,u32 tracknum)
+{
+	u8 p[4];
+	p[0]=(ctrl<<4)|(addr<<0);
+	p[1]=tracknum;
+	p[2]=0;
+	p[3]=0;
+	return *(u32*)p;
+}
 void ConvToc(u32* to,TocInfo* from)
 {
-	#define flipendian(valdat) ((((valdat)>>24)&0xFF)|((((valdat)>>16)&0xFF)<<8)|((((valdat)>>8)&0xFF)<<16)|(((((valdat)>>0)&0xFF))<<24))
-	#define CreateTrackInfo(ctrl,adr,fad) flipendian(((((ctrl)<<4)|((adr)))<<24)|\
-										(fad))
-	#define CreateTrackInfo_se(ctrl,adr,trk) flipendian(((((ctrl)<<4)|((adr)))<<24)|\
-										((trk)<<16))
-
 	to[99]=CreateTrackInfo_se(from->tracks[from->FistTrack-1].Control,from->tracks[from->FistTrack-1].Addr,from->FistTrack); 
 	to[100]=CreateTrackInfo_se(from->tracks[from->LastTrack-1].Control,from->tracks[from->LastTrack-1].Addr,from->LastTrack); 
 	to[101]=CreateTrackInfo(from->LeadOut.Control,from->LeadOut.Addr,from->LeadOut.FAD); 
@@ -222,9 +235,6 @@ void ConvToc(u32* to,TocInfo* from)
 	{
 		to[i]=CreateTrackInfo(from->tracks[i].Control,from->tracks[i].Addr,from->tracks[i].FAD); 
 	}
-	#undef flipendian
-	#undef CreateTrackInfo
-	#undef CreateTrackInfo_se
 }
 
 
@@ -248,16 +258,16 @@ void GetDriveSessionInfo(u8* to,u8 session)
 	if (session==0)
 	{
 		to[2]=driveSeS.SessionCount;//count of sessions
-		to[3]=(driveSeS.SessionsEndFAD>>16)&0xFF;//fad is sessions end
-		to[4]=(driveSeS.SessionsEndFAD>>8)&0xFF;
-		to[5]=(driveSeS.SessionsEndFAD>>0)&0xFF;
+		to[3]=driveSeS.SessionsEndFAD>>16;//fad is sessions end
+		to[4]=driveSeS.SessionsEndFAD>>8;
+		to[5]=driveSeS.SessionsEndFAD>>0;
 	}
 	else
 	{
-		to[2]=session+1;//start track of this session
-		to[3]=(driveSeS.SessionFAD[session-1]>>16)&0xFF;//fad is session start
-		to[4]=(driveSeS.SessionFAD[session-1]>>8)&0xFF;
-		to[5]=(driveSeS.SessionFAD[session-1]>>0)&0xFF;
+		to[2]=driveSeS.SessionStart[session-1];//start track of this session
+		to[3]=driveSeS.SessionFAD[session-1]>>16;//fad is session start
+		to[4]=driveSeS.SessionFAD[session-1]>>8;
+		to[5]=driveSeS.SessionFAD[session-1]>>0;
 	}
 }
 
