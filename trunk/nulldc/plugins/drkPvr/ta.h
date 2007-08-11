@@ -61,7 +61,7 @@ namespace TASplitter
 	template<class TA_decoder>
 	class FifoSplitter
 	{
-	private:
+	public:
 		//TA fifo state variables
 		//Current List
 		static u32 CurrentList; 
@@ -536,6 +536,7 @@ public:
 
 						if (IsModVolList(CurrentList))
 						{	//accept mod data
+							TA_decoder::StartModVol((TA_ModVolParam*)data);
 							VerxexDataFP=ta_mod_vol_data;
 							data+=SZ32;
 							size-=SZ32;

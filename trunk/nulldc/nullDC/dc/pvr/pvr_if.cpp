@@ -287,8 +287,8 @@ void FASTCALL TAWrite(u32 address,u32* data,u32 count)
 	}
 	else //Vram Writef
 	{
-		//shoudn't realy get here (?)
-		printf("Vram Write 0x%X , size %d\n",address,count*32);
+		//shoudn't realy get here (?) -> works on dc :D need to handle lmmodes
+		//printf("Vram Write 0x%X , size %d\n",address,count*32);
 		memcpy(&vram.data[address&VRAM_MASK],data,count*32);
 	}
 }
@@ -306,7 +306,7 @@ void FASTCALL TAWriteSQ(u32 address,u32* data)
 	else //Vram Writef
 	{
 		//shoudn't realy get here (?)
-		printf("Vram Write 0x%X , size %d\n",address,32);
+		//printf("Vram Write 0x%X , size %d\n",address,count*32);
 		memcpy(&vram.data[address&VRAM_MASK],data,32);
 	}
 }

@@ -12,6 +12,7 @@
 
 #if REND_API == REND_D3D
 
+#define MODVOL 1
 #define _float_colors_
 //#define _HW_INT_
 //#include <D3dx9shader.h>
@@ -20,6 +21,7 @@ using namespace TASplitter;
 
 bool UseSVP=false;
 bool UseFixedFunction=false;
+bool dosort=false;
 /*
 #define DEV_CREATE_FLAGS D3DCREATE_HARDWARE_VERTEXPROCESSING
 //#define DEV_CREATE_FLAGS D3DCREATE_SOFTWARE_VERTEXPROCESSING
@@ -62,6 +64,10 @@ namespace Direct3DRenderer
 	D3DSURFACE_DESC bb_surf_desc;
 	ID3DXFont* font;
 	ID3DXConstantTable* shader_consts;
+
+	struct VertexDecoder;
+	FifoSplitter<VertexDecoder> TileAccel;
+
 	bool clear_rt=false;
 	u32 last_ps_mode=0xFFFFFFFF;
 	float current_scalef[4];
@@ -657,6 +663,7 @@ namespace Direct3DRenderer
 		f32 invW_max;
 		List2<Vertex> verts;
 		List<ModTriangle>	modtrig;
+		List<u32>			modsz;
 
 		List<PolyParam> global_param_op;
 		List<PolyParam> global_param_pt;
@@ -669,6 +676,7 @@ namespace Direct3DRenderer
 			global_param_pt.Init();
 			global_param_tr.Init();
 			modtrig.Init();
+			modsz.Init();
 		}
 		void Clear()
 		{
@@ -677,6 +685,7 @@ namespace Direct3DRenderer
 			global_param_pt.Clear();
 			global_param_tr.Clear();
 			modtrig.Clear();
+			modsz.Clear();
 			invW_min= 1000000.0f;
 			invW_max=-1000000.0f;
 		}
@@ -687,6 +696,7 @@ namespace Direct3DRenderer
 			global_param_pt.Free();
 			global_param_tr.Free();
 			modtrig.Free();
+			modsz.Free();
 		}
 	};
 	
@@ -1305,10 +1315,10 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			}
 			else if (Type==ListType_Translucent)
 			{
-				//if (autosort) -> where ? :p
-				//dev->SetRenderState(D3DRS_ZFUNC,Zfunction[6]); // : GEQ
-				//else -> fix it ! someday
-				dev->SetRenderState(D3DRS_ZFUNC,Zfunction[gp->isp.DepthMode]);
+				if (dosort)
+					dev->SetRenderState(D3DRS_ZFUNC,Zfunction[6]); // : GEQ
+				else
+					dev->SetRenderState(D3DRS_ZFUNC,Zfunction[gp->isp.DepthMode]);
 			}
 			else
 			{
@@ -1506,6 +1516,8 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 	//
 	void DoRender()
 	{
+		dosort=UsingAutoSort();
+
 		bool rtt=(FB_W_SOF1 & 0x1000000)!=0;
 
 		void* ptr;
@@ -1672,57 +1684,120 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 				}
 			}
 
-			/*
-			//translucent
-			if (pvrrc.modtrig.used>0)
+			
+			//OP mod vols
+			if (pvrrc.modsz.used>0)
 			{
-				dev->SetRenderState(D3DRS_ALPHABLENDENABLE,FALSE);
-				dev->SetRenderState(D3DRS_ALPHATESTENABLE,FALSE);
-				dev->SetRenderState(D3DRS_COLORWRITEENABLE,0);
+				if(!GetAsyncKeyState(VK_F4))
+				{
+					dev->SetRenderState(D3DRS_ALPHABLENDENABLE,FALSE);
+					dev->SetRenderState(D3DRS_ALPHATESTENABLE,FALSE);
+					dev->SetRenderState(D3DRS_COLORWRITEENABLE,0);
 
-				dev->SetRenderState(D3DRS_ZWRITEENABLE,FALSE);
-				verifyc(dev->SetRenderState(D3DRS_ZFUNC,D3DCMP_GREATEREQUAL));
-				dev->SetRenderState(D3DRS_CULLMODE,D3DCULL_NONE);
+					dev->SetRenderState(D3DRS_ZWRITEENABLE,FALSE);
+					verifyc(dev->SetRenderState(D3DRS_ZFUNC,D3DCMP_LESS));
+					dev->SetRenderState(D3DRS_CULLMODE,D3DCULL_NONE);
 
-				verifyc(dev->SetRenderState(D3DRS_STENCILENABLE,TRUE));
-				verifyc(dev->SetRenderState(D3DRS_STENCILWRITEMASK,0xFFFFFFFF));	//all bits
-				verifyc(dev->SetRenderState(D3DRS_STENCILMASK,0xFFFFFFFF));		//all bits
+					verifyc(dev->SetPixelShader(nullPixelShader));
+					verifyc(dev->SetRenderState(D3DRS_STENCILENABLE,TRUE));
 
-				verifyc(dev->SetRenderState(D3DRS_STENCILFUNC,D3DCMP_ALWAYS));	//allways
+					//we WANT stencil to have all 1's here for bit 1
+					//set it as needed here :) -> not realy , we want em 0'd
 
-				verifyc(dev->SetRenderState(D3DRS_STENCILZFAIL,D3DSTENCILOP_KEEP));
-				verifyc(dev->SetRenderState(D3DRS_STENCILPASS,D3DSTENCILOP_INCR));
+					f32 fsq[] = {0,0,0, 0,480*4,0, 640*4,0,0, 640*4,480*4,0};
+					/*
+					verifyc(dev->SetRenderState(D3DRS_ZENABLE,FALSE));						//Z doesnt matter
+					verifyc(dev->SetRenderState(D3DRS_STENCILFUNC,D3DCMP_ALWAYS));			//allways pass
+					verifyc(dev->SetRenderState(D3DRS_STENCILWRITEMASK,3));					//write bit 1
+					verifyc(dev->SetRenderState(D3DRS_STENCILPASS,D3DSTENCILOP_REPLACE));	//Set to reference (2)
+					verifyc(dev->SetRenderState(D3DRS_STENCILREF,2));						//reference value(2)
 
-				//render all shit
-				verifyc(dev->SetPixelShader(nullPixelShader));
-				verifyc(dev->SetVertexDeclaration(vdecl_mod));
-				verifyc(dev->DrawPrimitiveUP(D3DPT_TRIANGLELIST,pvrrc.modtrig.used*3,pvrrc.modtrig.data,3*4));
+					verifyc(dev->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP,2,fsq,3*4));
+					*/
+					//set correct declaration
+					verifyc(dev->SetVertexDeclaration(vdecl_mod));
+					u32 mod_base=0;
 
-				//black out any stencil with '1'
-				dev->SetRenderState(D3DRS_COLORWRITEENABLE,0xFFFFFFFF);
-				verifyc(dev->SetRenderState(D3DRS_STENCILFUNC,D3DCMP_EQUAL));	//only the odd ones are 'in'
-				verifyc(dev->SetRenderState(D3DRS_STENCILREF,1));	//allways
-				verifyc(dev->SetRenderState(D3DRS_STENCILMASK,1));	//allways
+					for (int cmv=0;cmv<pvrrc.modsz.used;cmv++)
+					{
+						u32 sz=pvrrc.modsz.data[cmv];
+						//We read from Z buffer, but dont write :)
+						verifyc(dev->SetRenderState(D3DRS_ZENABLE,TRUE));
+						//enable stenciling, and set bit 1 for mod vols that dont pass the Z test as closed ones (not even count of em)
 
-				verifyc(dev->SetRenderState(D3DRS_STENCILWRITEMASK,0));	//dont write to stencil
 
-				verifyc(dev->SetRenderState(D3DRS_ZENABLE,FALSE));
-				//render a fullscreen quad
-				
-				f32 fsq[] = {0,0,0, 0,480,0, 640,480,0, 640,0,0};
-				verifyc(dev->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP,2,fsq,3*4));
+						verifyc(dev->SetRenderState(D3DRS_STENCILWRITEMASK,2));	//write bit 1
+						verifyc(dev->SetRenderState(D3DRS_STENCILFUNC,D3DCMP_ALWAYS));	//allways pass
+						verifyc(dev->SetRenderState(D3DRS_STENCILPASS,D3DSTENCILOP_INVERT));	//flip bit 1
+						verifyc(dev->SetRenderState(D3DRS_STENCILZFAIL,D3DSTENCILOP_KEEP));		//else keep it
 
-				verifyc(dev->SetRenderState(D3DRS_STENCILENABLE,FALSE));	//turn stencil off ;)
+						//render volume (count intersections)
+						verifyc(dev->DrawPrimitiveUP(D3DPT_TRIANGLELIST,sz,pvrrc.modtrig.data+mod_base,3*4));
 
-				verifyc(dev->SetRenderState(D3DRS_ZENABLE,TRUE)); 
+						//render volume (set bit 0/clear bit 1)
+
+						verifyc(dev->SetRenderState(D3DRS_ZENABLE,FALSE));	//no Z testing, we just want to sum up all of the modvol area ...
+
+						verifyc(dev->SetRenderState(D3DRS_STENCILWRITEMASK,3));	//write 2 lower bits
+						verifyc(dev->SetRenderState(D3DRS_STENCILMASK,3));		//read 2 lower ones
+
+						verifyc(dev->SetRenderState(D3DRS_STENCILFUNC,D3DCMP_LESSEQUAL));	//if any bit is set, set bit 0 and clear 1
+						verifyc(dev->SetRenderState(D3DRS_STENCILREF,1));						//if (st>=1) st=1; else st=0;
+						verifyc(dev->SetRenderState(D3DRS_STENCILPASS,D3DSTENCILOP_REPLACE));
+						verifyc(dev->SetRenderState(D3DRS_STENCILFAIL,D3DSTENCILOP_ZERO));
+
+						verifyc(dev->DrawPrimitiveUP(D3DPT_TRIANGLELIST,sz,pvrrc.modtrig.data+mod_base,3*4));
+
+						mod_base+=sz;
+					}
+
+					//black out any stencil with '1'
+					dev->SetRenderState(D3DRS_ALPHABLENDENABLE,TRUE);
+					dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+					dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA); 
+
+					dev->SetRenderState(D3DRS_COLORWRITEENABLE,0xFFFFFFFF);
+					verifyc(dev->SetRenderState(D3DRS_STENCILFUNC,D3DCMP_EQUAL));	//only the odd ones are 'in'
+					verifyc(dev->SetRenderState(D3DRS_STENCILREF,1));	//allways
+					verifyc(dev->SetRenderState(D3DRS_STENCILMASK,1));	//allways
+
+					verifyc(dev->SetRenderState(D3DRS_STENCILWRITEMASK,0));	//dont write to stencil
+
+					verifyc(dev->SetRenderState(D3DRS_ZENABLE,FALSE));
+
+					//render a fullscreen quad
+
+					verifyc(dev->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP,2,fsq,3*4));
+
+					verifyc(dev->SetRenderState(D3DRS_STENCILENABLE,FALSE));	//turn stencil off ;)
+				}
+				else
+				{
+					verifyc(dev->SetPixelShader(nullPixelShader));
+					dev->SetRenderState(D3DRS_ALPHABLENDENABLE,TRUE);
+					dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+					dev ->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA); 
+					dev->SetRenderState(D3DRS_ALPHATESTENABLE,FALSE);
+
+					dev->SetRenderState(D3DRS_ZENABLE,FALSE);
+					dev->SetRenderState(D3DRS_ZWRITEENABLE,FALSE);
+					dev->SetRenderState(D3DRS_CULLMODE,D3DCULL_NONE);
+
+					verifyc(dev->DrawPrimitiveUP(D3DPT_TRIANGLELIST,pvrrc.modtrig.used,pvrrc.modtrig.data,3*4));
+
+					
+				}
+
 				dev->SetRenderState(D3DRS_ZWRITEENABLE,TRUE);
+				dev->SetRenderState(D3DRS_ZENABLE,TRUE);
 				dev->SetRenderState(D3DRS_ALPHATESTENABLE,TRUE); 
 
 				dev->SetVertexDeclaration(vdecl);
+				dev->SetStreamSource(0,vb,0,sizeof(Vertex));
 				//bypass the ps cache and force it to set one :)
 				SetPS(0);
 				SetPS(1);
-			}*/
+			}
 
 			dev->SetRenderState(D3DRS_ALPHABLENDENABLE,TRUE);
 			dev->SetRenderState(D3DRS_ALPHAFUNC,D3DCMP_GREATER);
@@ -1730,7 +1805,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			
 			if (!GetAsyncKeyState(VK_F3))
 			{
-				bool dosort=UsingAutoSort();
+				
 
 				if (dosort && settings.Emulation.AlphaSortMode==1)
 					SortPParams();
@@ -2145,7 +2220,10 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 	__declspec(align(16)) static f32 SFaceBaseColor[4];
 	__declspec(align(16)) static f32 SFaceOffsColor[4];
 
+#ifdef MODVOL
 	ModTriangle* lmr=0;
+	s32 lmr_count=0;
+#endif
 	u32 tileclip_val=0;
 	struct VertexDecoder
 	{
@@ -2185,6 +2263,14 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			vert_reappend=0;
 			CurrentPP=0;
 			CurrentPPlist=0;
+			if (ListType==ListType_Opaque_Modifier_Volume)
+			{
+				if (lmr_count>0)
+				{
+					*tarc.modsz.Append()=lmr_count;
+					lmr_count=0;
+				}
+			}
 		}
 
 		/*
@@ -2723,11 +2809,25 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		//ModVolumes
 
 		//Mod Volume Vertex handlers
-		
+		static void StartModVol(TA_ModVolParam* param)
+		{
+			if (TileAccel.CurrentList!=ListType_Opaque_Modifier_Volume)
+				return;
+			if (param->pcw.Volume)
+			{
+				//if (lmr_count)
+				//{
+					*tarc.modsz.Append()=lmr_count+1;
+					lmr_count=-1;
+				//}
+			}
+		}
 		__forceinline
 		static void AppendModVolVertexA(TA_ModVolA* mvv)
 		{
 		#ifdef MODVOL
+			if (TileAccel.CurrentList!=ListType_Opaque_Modifier_Volume)
+				return;
 			lmr=tarc.modtrig.Append();
 
 			lmr->x0=mvv->x0;
@@ -2737,8 +2837,9 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			lmr->y1=mvv->y1;
 			lmr->z1=mvv->z1;
 			lmr->x2=mvv->x2;
-		#endif
-			
+
+			lmr_count++;
+		#endif	
 		}
 		__forceinline
 		static void AppendModVolVertexB(TA_ModVolB* mvv)
@@ -2825,9 +2926,6 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		}
 	}
 
-
-
-	FifoSplitter<VertexDecoder> TileAccel;
 
 	bool InitRenderer()
 	{

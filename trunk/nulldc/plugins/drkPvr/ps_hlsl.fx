@@ -33,7 +33,7 @@ float4 PalleteLookup(float4 pos)
 
 float4 PixelShader_null() : COLOR0
 {
-	return float4(0,0,0,1); 
+	return float4(0,0,0,0.5f); 
 }
 
 //Pvr only supports ARGB8888 colors , so we have to clamp em (in case they are float colors inputed directly)
