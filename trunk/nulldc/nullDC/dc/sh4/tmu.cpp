@@ -25,18 +25,20 @@ void UpdateTMU_chan(u32 clc,u32 ch)
 	{
 		//count :D
 		tmu_cnt[ch]+=clc;
-		while (tmu_cnt[ch]>tmu_cnt_max[ch])
+		if (tmu_cnt[ch]>tmu_cnt_max[ch])
 		{
-			tmu_cnt[ch]-=tmu_cnt_max[ch];
-			if (tmu_regs_CNT[ch]==0) // underflow
+			//i wonder how is that compiled .. should be just 1 div :p -> it is on vs2k8
+			s32 loops=tmu_cnt[ch]/tmu_cnt_max[ch];
+			tmu_cnt[ch]=tmu_cnt[ch]%tmu_cnt_max[ch];
+			while (loops>tmu_regs_CNT[ch])
 			{
+				loops-=tmu_regs_CNT[ch];
 				tmu_regs_CNT[ch] = tmu_regs_COR[ch];
 				tmu_regs_CR[ch] |= tmu_underflow;
 				if (tmu_regs_CR[ch] & tmu_UNIE)
 					RaiseInterrupt(tmu_intID[ch]);
 			}
-			else	
-				tmu_regs_CNT[ch]-=1;
+			tmu_regs_CNT[ch]-=loops;
 		}
 	}
 }
