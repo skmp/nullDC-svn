@@ -58,7 +58,7 @@ void EXPORT_CALL dcGetInterface(plugin_interface* plIf)
 	pvrIf.WriteReg			= pvrWriteReg;
 	pvrIf.UpdatePvr			= pvrUpdate;
 	pvrIf.LockedBlockWrite	= pvrLockCB;
-	pvrIf.TaFIFO			= TASplitter::Dma;
+//	pvrIf.TaFIFO			= TASplitter::Dma;
 
 	pvrIf.ExeptionHanlder	= 0;
 
@@ -81,7 +81,7 @@ s32  FASTCALL pvrInit(pvr_init_params* e)
 	InitTA_Regs();
 	InitRenderer();
 
-	if(!nRendIf->nrInit(emu.WindowHandle)) return -1;
+	if(!nRendIf->nrInit(emu.GetRenderTarget())) return -1;
 	return 0;
 }
 
@@ -89,7 +89,7 @@ void FASTCALL pvrTerm()
 {
 	RendInit=0;
 	TermRenderer();
-	nRendIf->nrTerm(emu.WindowHandle);
+	nRendIf->nrTerm(emu.GetRenderTarget());
 }
 
 void FASTCALL pvrReset(bool m)
@@ -107,7 +107,7 @@ s32  FASTCALL pvrLoad(emu_info* e)
 void FASTCALL pvrUnload()
 {
 	if(1==RendInit)
-		nRendIf->nrTerm(emu.WindowHandle);
+		nRendIf->nrTerm(emu.GetRenderTarget());
 	RendInit=0;
 }
 
@@ -152,7 +152,7 @@ void vblank_done()
 
 		char fpsStr[256];
 		sprintf(fpsStr," FPS: %4.2f(%4.2f)  -  Sh4: %4.2f mhz (%4.2f%%) - nullDC v0.0.1", spd_fps,fullfps, spd_cpu,spd_cpu*100/200);
-		SetWindowText((HWND)emu.WindowHandle, fpsStr);
+		SetWindowText((HWND)emu.GetRenderTarget(), fpsStr);
 	}
 
 	//printf(" vbl1 :: ListInit: %d\n", TA_State.ListInit);
