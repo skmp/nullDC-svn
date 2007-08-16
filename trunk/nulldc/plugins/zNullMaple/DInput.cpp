@@ -154,20 +154,24 @@ bool GetDInput(u32 port, Controller_ReadFormat *crf)
 		if(DI_OK != InputDev[port].diDev->GetDeviceState(256, diKeys)) 
 			return false;
 
-		// *FIXME* kb is fucked here w/ map #
-		crf->C		= (diKeys[InputDev[port].KeyMap[0x0]] & 0x80)	? 0 : 1 ;
-		crf->B		= (diKeys[InputDev[port].KeyMap[0x1]] & 0x80)	? 0 : 1 ;
 		crf->A		= (diKeys[InputDev[port].KeyMap[0x0]] & 0x80)	? 0 : 1 ;
-		crf->Start	= (diKeys[InputDev[port].KeyMap[0xB]] & 0x80)	? 0 : 1 ;
-		crf->Ua		= (diKeys[InputDev[port].KeyMap[0x5]] & 0x80)	? 0 : 1 ;
-		crf->Da		= (diKeys[InputDev[port].KeyMap[0x6]] & 0x80)	? 0 : 1 ;
-		crf->La		= (diKeys[InputDev[port].KeyMap[0x7]] & 0x80)	? 0 : 1 ;
-		crf->Ra		= (diKeys[InputDev[port].KeyMap[0x8]] & 0x80)	? 0 : 1 ;
+		crf->B		= (diKeys[InputDev[port].KeyMap[0x1]] & 0x80)	? 0 : 1 ;
+		crf->X		= (diKeys[InputDev[port].KeyMap[0x2]] & 0x80)	? 0 : 1 ;
+		crf->Y		= (diKeys[InputDev[port].KeyMap[0x3]] & 0x80)	? 0 : 1 ;
+		crf->Ua		= (diKeys[InputDev[port].KeyMap[0x4]] & 0x80)	? 0 : 1 ;
+		crf->Da		= (diKeys[InputDev[port].KeyMap[0x5]] & 0x80)	? 0 : 1 ;
+		crf->La		= (diKeys[InputDev[port].KeyMap[0x6]] & 0x80)	? 0 : 1 ;
+		crf->Ra		= (diKeys[InputDev[port].KeyMap[0x7]] & 0x80)	? 0 : 1 ;
+		crf->Start	= (diKeys[InputDev[port].KeyMap[0xA]] & 0x80)	? 0 : 1 ;
 
-		crf->Z		= (diKeys[InputDev[port].KeyMap[0x0]] & 0x80)	? 0 : 1 ;
-		crf->Y		= (diKeys[InputDev[port].KeyMap[0x4]] & 0x80)	? 0 : 1 ;
-		crf->X		= (diKeys[InputDev[port].KeyMap[0x3]] & 0x80)	? 0 : 1 ;
-		crf->D		= (diKeys[InputDev[port].KeyMap[0x0]] & 0x80)	? 0 : 1 ;
+		crf->Av[0] = (diKeys[InputDev[port].KeyMap[0xB]] & 0x80)	? 255 : 0 ;
+		crf->Av[1] = (diKeys[InputDev[port].KeyMap[0xC]] & 0x80)	? 255 : 0 ;
+		crf->Av[2] = (diKeys[InputDev[port].KeyMap[0x8]] & 0x80)	? 255 : 0 ;
+		crf->Av[3] = (diKeys[InputDev[port].KeyMap[0x9]] & 0x80)	? 255 : 0 ;
+
+		crf->C		= 1;//(diKeys[InputDev[port].KeyMap[0x0]] & 0x80)	? 0 : 1 ;
+		crf->Z		= 1;//(diKeys[InputDev[port].KeyMap[0x0]] & 0x80)	? 0 : 1 ;
+		crf->D		= 1;//(diKeys[InputDev[port].KeyMap[0x0]] & 0x80)	? 0 : 1 ;
 		crf->Ub		= 1;
 		crf->Db		= 1;
 		crf->Lb		= 1;
