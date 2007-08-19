@@ -207,6 +207,10 @@ bool IsSSEAllocReg(u32 reg)
 {
 	return (reg >=fr_0 && reg<=fr_15);
 }
+bool IsFpuReg(u32 reg)
+{
+	return (reg >=fr_0 && reg<=xf_15);
+}
 //FPU !!! YESH
 u32 IsInFReg(u32 reg)
 {
@@ -449,7 +453,7 @@ void emit_vmem_op_compat_const(x86_block* x86e,u32 rw,u32 sz,u32 addr,u32 reg)
 			}
 			break;
 		case FLAG_64:
-			verify(IsSSEAllocReg(reg));
+			verify(IsFpuReg(reg));
 			if (rw==0)
 			{
 				x86e->Emit(op_movlps,XMM0,(u32*)ptr);
