@@ -314,7 +314,7 @@ struct TA_ModVolParam
 	PCW pcw;
 	ISP_TSP isp;
 
-	u32  ign[32-8];
+	u32  ign[8-2];
 };
 
 //Srpite

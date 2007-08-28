@@ -55,7 +55,8 @@ vertex VertexShader_main(in vertex vtx)
 	
 		vtx.pos.z=clamp(1- vtx.pos.z,0.000001, 0.999999);
 	#endif
-	vtx.pos.z=1/(1+vtx.pos.z);
+	if (vtx.pos.z>=0)
+	vtx.pos.z=1/(1.0000001+vtx.pos.z);
 	
 	vtx.pos.w=1;
 	return vtx; 

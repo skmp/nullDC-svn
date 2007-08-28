@@ -349,7 +349,7 @@ namespace Direct3DRenderer
 			}
 			D3DLOCKED_RECT rect;
 
-			verifyc(Texture->LockRect(0,&rect,NULL,D3DLOCK_DISCARD));
+			verifyc(Texture->LockRect(0,&rect,NULL,0 /* | D3DLOCK_DISCARD*/));
 			
 
 			PixelBuffer pbt; 
@@ -1247,7 +1247,11 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 	template <u32 Type,bool FFunction,bool df>
 	__forceinline
 	void SetGPState(PolyParam* gp,u32 cflip=0)
-	{	
+	{	/*
+		if (gp->tsp.DstSelect ||
+			gp->tsp.SrcSelect)
+			printf("DstSelect  DstSelect\n"); */
+
 		SetTileClip(gp->tileclip);
 		//has to preserve cache_tsp/cache_isp
 		//can freely use cache_tcw
@@ -1696,7 +1700,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 
 					dev->SetRenderState(D3DRS_ZWRITEENABLE,FALSE);
 					verifyc(dev->SetRenderState(D3DRS_ZFUNC,D3DCMP_LESS));
-					dev->SetRenderState(D3DRS_CULLMODE,D3DCULL_NONE);
+					dev->SetRenderState(D3DRS_CULLMODE,D3DCULL_NONE); //-> needs to be properly set
 
 					verifyc(dev->SetPixelShader(nullPixelShader));
 					verifyc(dev->SetRenderState(D3DRS_STENCILENABLE,TRUE));
@@ -1732,7 +1736,8 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 						verifyc(dev->SetRenderState(D3DRS_STENCILZFAIL,D3DSTENCILOP_KEEP));		//else keep it
 
 						//render volume (count intersections)
-						verifyc(dev->DrawPrimitiveUP(D3DPT_TRIANGLELIST,sz,pvrrc.modtrig.data+mod_base,3*4));
+						if ((mod_base+sz)<pvrrc.modtrig.used)
+							verifyc(dev->DrawPrimitiveUP(D3DPT_TRIANGLELIST,sz,pvrrc.modtrig.data+mod_base,3*4));
 
 						//render volume (set bit 0/clear bit 1)
 
@@ -1745,8 +1750,8 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 						verifyc(dev->SetRenderState(D3DRS_STENCILREF,1));						//if (st>=1) st=1; else st=0;
 						verifyc(dev->SetRenderState(D3DRS_STENCILPASS,D3DSTENCILOP_REPLACE));
 						verifyc(dev->SetRenderState(D3DRS_STENCILFAIL,D3DSTENCILOP_ZERO));
-
-						verifyc(dev->DrawPrimitiveUP(D3DPT_TRIANGLELIST,sz,pvrrc.modtrig.data+mod_base,3*4));
+						if ((mod_base+sz)<pvrrc.modtrig.used)
+							verifyc(dev->DrawPrimitiveUP(D3DPT_TRIANGLELIST,sz,pvrrc.modtrig.data+mod_base,3*4));
 
 						mod_base+=sz;
 					}
@@ -2813,7 +2818,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		{
 			if (TileAccel.CurrentList!=ListType_Opaque_Modifier_Volume)
 				return;
-			if (param->pcw.Volume)
+			if (param->pcw.Volume || param->isp.DepthMode)
 			{
 				//if (lmr_count)
 				//{
@@ -2845,6 +2850,8 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		static void AppendModVolVertexB(TA_ModVolB* mvv)
 		{
 		#ifdef MODVOL
+			if (TileAccel.CurrentList!=ListType_Opaque_Modifier_Volume)
+				return;
 			lmr->y2=mvv->y2;
 			lmr->z2=mvv->z2;
 		#endif

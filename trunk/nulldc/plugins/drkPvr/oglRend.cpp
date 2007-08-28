@@ -1,12 +1,13 @@
 ﻿#include "oglRend.h"
 #include <windows.h>
 #include <gl\gl.h>
-#include <gl\glaux.h>
 #include "regs.h"
 #include "vector"
 using namespace std;
 
 #if REND_API == REND_OGL
+
+#include <gl\glaux.h>
 using namespace TASplitter;
 
 namespace OpenGLRenderer
