@@ -189,8 +189,8 @@ void SwitchCpu()
 		{
 			bStart=true;
 			Stop_DC();
-			sh4_cpu->Term();
 		}
+		sh4_cpu->Term();
 	}
 	if(settings.dynarec.Enable)
 	{
@@ -202,6 +202,8 @@ void SwitchCpu()
 		sh4_cpu=Get_Sh4Interpreter();
 		printf("Switched to Interpreter\n");
 	}
+
+	sh4_cpu->Init();
 	
 
 	if (bStart)

@@ -367,7 +367,7 @@ void printfBBSS() {}
 #endif
 extern u32 fast_lookups;
 
-
+/*
 //eax == pc
 //esi == cBB
 void naked FASTCALL Resolve_FLUT(u32 pc,CompiledBasicBlock* cBB)
@@ -403,7 +403,7 @@ full_lookup:
 		mov ecx,edi;//restore pc
 		jmp finaly;
 	}
-}
+}*/
 void FASTCALL RewriteBasicBlockGuess_FLUT(CompiledBasicBlock* cBB)
 {
 	//indirect call , rewrite & link , second time(does fast look up)
