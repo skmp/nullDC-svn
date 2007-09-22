@@ -187,9 +187,9 @@ fast_lookup:
 		cmp [edx],ecx;
 		jne full_lookup;
 
-		inc dword ptr[edx+16];
+		add dword ptr[edx+16],1;
 #ifdef _BM_CACHE_STATS
-		inc fast_lookups;
+		add fast_lookups,1;
 #endif
 		jmp dword ptr[edx+8];
 
@@ -235,9 +235,9 @@ no_update:
 		and eax,0x3;
 		cmp [edx+12],eax;
 		jne full_lookup;
-		inc dword ptr[edx+16];
+		add dword ptr[edx+16],1;
 #ifdef _BM_CACHE_STATS
-		inc fast_lookups;
+		add fast_lookups,1;
 #endif
 		jmp dword ptr[edx+8];
 		/*

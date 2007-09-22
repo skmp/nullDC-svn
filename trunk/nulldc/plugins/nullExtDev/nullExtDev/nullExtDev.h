@@ -30,7 +30,8 @@
 			else if (sz==4)							\
 			{*(u32*)&arr[addr]=data;return;}}	
 
-#define verify(x) if((x)==false){ printf("Verify Failed  : " #x "\n in %s : %d \n",__FILE__,__LINE__);}
+#define verify(x) if((x)==false){ printf("Verify Failed  : " #x "\n in %s : %d \n",__FILE__,__LINE__);__asm { int 3}}
+#define warn(x) if((x)==true){ printf("Warn Failed  : " #x "\n in %s : %d \n",__FILE__,__LINE__);}
 
 #define naked   __declspec( naked )
 
@@ -40,9 +41,11 @@
 void SetUpdateCallback(void (*callback) (),u32 ms);
 void ExpireUpdate(bool v=true);
 extern emu_info emu;
+extern ext_device_init_params params;
 struct __settings
 {
 	u32 mode;
+	u32 adapter;
 } ;
 
 extern __settings settings;

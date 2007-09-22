@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1253"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="nullDC_GUI"
 	ProjectGUID="{BA607CBC-BBF5-441B-9778-B86FD2D710EB}"
 	RootNamespace="nullDC_GUI"
@@ -286,6 +286,14 @@
 				</FileConfiguration>
 			</File>
 		</Filter>
+		<File
+			RelativePath=".\icon3.ico"
+			>
+		</File>
+		<File
+			RelativePath=".\ndc_icon.ico"
+			>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>

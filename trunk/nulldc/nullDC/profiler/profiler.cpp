@@ -10,15 +10,24 @@
 #include "plugins/plugin_manager.h"
 #include <windows.h>
 
-#define MAX_TICK_COUNT 300
+#define MAX_TICK_COUNT 800
 
 prof_info profile_info;
 
 cThread* prof_thread;
 
 u32 THREADCALL ProfileThead(void* param);
+extern u32 rtc_cycl;
 
+u64 oldcycles;
+u64 CycleDiff()
+{
+	u64 oo=oldcycles;
+	oldcycles=rtc_cycl+(u64)settings.dreamcast.RTC*200*1000*1000;
+	return oldcycles-oo;
+}
 bool RunProfiler;
+bool TBP_Enabled;
 void init_Profiler(void* param)
 {
 	//Clear profile info
@@ -31,11 +40,14 @@ void init_Profiler(void* param)
 }
 void start_Profiler()
 {
+	TBP_Enabled=true;
+	CycleDiff();
 	if (prof_thread)
 		prof_thread->Start();
 }
 void stop_Profiler()
 {
+	TBP_Enabled=false;
 	if (prof_thread)
 		prof_thread->Suspend();
 }
@@ -112,8 +124,6 @@ void AnalyseTick(u32 pc,prof_info* to)
 
 			 profile_info.ToText(temp);
 			 printf("%s \n",temp);
-			 void printfBBSS();
-printfBBSS();
 		 }
 
 		 //Sleep , so we dont realy use the cpu much

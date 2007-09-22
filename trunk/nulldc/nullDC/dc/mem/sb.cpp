@@ -2,6 +2,7 @@
 
 #include "types.h"
 #include "sb.h"
+#include "dc/dc.h"
 #include "dc/asic/asic.h"
 #include "dc/pvr/pvr_sb_regs.h"
 #include "dc/gdrom/gdrom_if.h"
@@ -432,7 +433,15 @@ u32 RegRead_SB_FFST()
 	}
 	return SB_FFST;
 }
-
+void SB_SFRES_write32(u32 data)
+{
+	if ((u16)data==0x7611)
+	{
+		printf("SB/HOLLY : System reset requested\n");
+		if (!SoftReset_DC())
+			printf("SOFT RESET REQUEST FAILED\n");
+	}
+}
 void sb_Init()
 {
 //RegEx
@@ -613,10 +622,10 @@ void sb_Init()
 
 
 	//0x005F6890	SB_SFRES	W	System reset
-	sb_regs[((SB_SFRES_addr-SB_BASE))>>2].flags=REG_32BIT_READWRITE | REG_WRITE_DATA ;
+	sb_regs[((SB_SFRES_addr-SB_BASE))>>2].flags=REG_32BIT_READWRITE ;
 	sb_regs[((SB_SFRES_addr-SB_BASE))>>2].NextCange=0;
 	sb_regs[((SB_SFRES_addr-SB_BASE))>>2].readFunction=0;
-	sb_regs[((SB_SFRES_addr-SB_BASE))>>2].writeFunction=0;
+	sb_regs[((SB_SFRES_addr-SB_BASE))>>2].writeFunction=SB_SFRES_write32;
 	sb_regs[((SB_SFRES_addr-SB_BASE))>>2].data32=&SB_SFRES;
 
 

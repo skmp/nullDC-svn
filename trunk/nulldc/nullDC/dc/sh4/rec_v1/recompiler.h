@@ -6,6 +6,9 @@
 
 //count fallbacks and average block size, average execution time , ect :)
 //#define PROFILE_DYNAREC
+#define RET_CACHE_PROF
+extern u32 ret_cache_hits;
+extern u32 ret_cache_total;
 
 void printprofile();
 

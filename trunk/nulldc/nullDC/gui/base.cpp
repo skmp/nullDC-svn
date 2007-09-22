@@ -10,6 +10,7 @@
 #include "dc/mem/Elf.h"
 #include "dc/gdrom/gdrom_if.h"
 #include "profiler/profiler.h"
+#include "dc/sh4/rec_v1/blockmanager.h"
 
 //LRESULT CALLBACK WinProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
 //int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hprevinstance,LPSTR lpcmdline,int nshowcmd);
@@ -375,6 +376,64 @@ void EXPORT_CALL b_EmuResetCaches()
 	if (sh4_cpu && sh4_cpu->ResetCache)
 		sh4_cpu->ResetCache();
 }
+void EXPORT_CALL b_GetPerformanceInfo(nullDCPerfomanceInfo* dst)
+{
+	bm_stats bms;
+	bm_GetStats(&bms);
+	prof_info tbpi(profile_info);
+
+	if (TBP_Enabled)
+	{
+		dst->TBP.Valid=1;
+		dst->TBP.Ticks=tbpi.total_tick_count;
+
+		dst->TBP.PowerVR=tbpi.gfx_tick_count;
+		dst->TBP.AICA=tbpi.aica_tick_count;
+		dst->TBP.GDRom=tbpi.gdrom_tick_count;
+		dst->TBP.Maple=tbpi.maple_tick_count;
+		dst->TBP.Main=tbpi.main_tick_count;
+		dst->TBP.Dyna=tbpi.dyna_tick_count;
+		dst->TBP.Rest=tbpi.rest_tick_count;
+	}
+	else
+	{
+		dst->TBP.Valid=0;
+	}
+	
+	dst->Dynarec.CodeGen.CodeSize=bms.cache_size;
+	dst->Dynarec.CodeGen.LockedBlocks=bms.locked_blocks;
+	dst->Dynarec.CodeGen.ManualBlocks=bms.manual_blocks;
+	dst->Dynarec.CodeGen.TotalBlocks=bms.block_count;
+
+	#ifdef _BM_CACHE_STATS
+		dst->Dynarec.Runtime.Lookups.Valid=1;
+		dst->Dynarec.Runtime.Lookups.FastLookupDelta=bms.fast_lookups;
+		dst->Dynarec.Runtime.Lookups.FullLookupDelta=bms.full_lookups;
+		dst->Dynarec.Runtime.Lookups.LookupDelta=bms.full_lookups+bms.fast_lookups;
+	#else
+		dst->Dynarec.Runtime.Lookups.Valid=0;
+	#endif
+
+	#ifdef COUNT_BLOCK_LOCKTYPE_USAGE
+		dst->Dynarec.Runtime.Execution.Valid=1;
+		dst->Dynarec.Runtime.Execution.LockedBlocks=bms.locked_block_calls_delta;
+		dst->Dynarec.Runtime.Execution.ManualBlocks=bms.manual_block_calls_delta;
+		dst->Dynarec.Runtime.Execution.TotalBlocks=bms.locked_block_calls_delta+bms.manual_block_calls_delta;
+	#else
+		dst->Dynarec.Runtime.Execution.Valid=0;
+	#endif
+	
+	#ifdef RET_CACHE_PROF
+		dst->Dynarec.Runtime.RetCache.Valid=1;
+		dst->Dynarec.Runtime.RetCache.Hits=ret_cache_hits;
+		dst->Dynarec.Runtime.RetCache.Count=ret_cache_total;
+		dst->Dynarec.Runtime.RetCache.Misses=ret_cache_total-ret_cache_hits;
+		ret_cache_hits=ret_cache_total=0;
+	#else
+		dst->Dynarec.Runtime.RetCache.Valid=0;
+	#endif
+
+}
 bool OpenAndLoadGUI(char* file)
 {
 	if (!gui.Load(file))
@@ -436,6 +495,8 @@ bool OpenAndLoadGUI(char* file)
 	gpi.GetPluginList=b_GetPluginList;
 	gpi.GetMapleDeviceList=b_GetMapleDeviceList;
 	gpi.FreePluginList=b_FreePluginList;
+
+	gpi.GetPerformanceInfo=b_GetPerformanceInfo;
 
 	if (rv_ok != libgui.Load(&gpi))
 		return false;

@@ -57,16 +57,26 @@ struct bm_stats
 {
 	u32 block_count;
 	u32 cache_size;
+	
 	u32 locked_blocks;
+	u32 locked_block_calls_delta;
+
 	u32 manual_blocks;
+	u32 manual_block_calls_delta;
 
 	u32 full_lookups;
 	u32 fast_lookups;
+
+	
 };
 
 void bm_GetStats(bm_stats* stats);
 
-//#define _BM_CACHE_STATS
+#define _BM_CACHE_STATS
 #define LOOKUP_HASH_SIZE	0x4000
 #define LOOKUP_HASH_MASK	(LOOKUP_HASH_SIZE-1)
 extern CompiledBlockInfo*			BlockLookupGuess[LOOKUP_HASH_SIZE];
+
+#define COUNT_BLOCK_LOCKTYPE_USAGE
+extern u32 manbs;
+extern u32 lockbs;

@@ -648,3 +648,388 @@ return;
 }
 
 #endif
+#if REND_API == REND_NONE
+
+#include <windows.h>
+
+#include "regs.h"
+
+using namespace TASplitter;
+
+
+//no rendering .. yay (?)
+namespace NORenderer
+{
+	char fps_text[512];
+
+	struct VertexDecoder;
+	FifoSplitter<VertexDecoder> TileAccel;
+	
+
+	//use that someday
+	void VBlank()
+	{
+		
+	}
+
+	void StartRender()
+	{
+		
+		render_end_pending_cycles=100000;
+		if (FB_W_SOF1 & 0x1000000)
+			return;
+		FrameCount++;
+	}
+	void EndRender()
+	{
+	}
+
+
+	//Vertex Decoding-Converting
+	struct VertexDecoder
+	{
+		//list handling
+		__forceinline
+		static void StartList(u32 ListType)
+		{
+			
+		}
+		__forceinline
+		static void EndList(u32 ListType)
+		{
+			
+		}
+
+		//Polys
+#define glob_param_bdc
+
+		__forceinline
+		static void fastcall AppendPolyParam0(TA_PolyParam0* pp)
+		{
+			glob_param_bdc;
+		}
+		__forceinline
+		static void fastcall AppendPolyParam1(TA_PolyParam1* pp)
+		{
+			glob_param_bdc;
+		}
+		__forceinline
+		static void fastcall AppendPolyParam2A(TA_PolyParam2A* pp)
+		{
+			glob_param_bdc;
+		}
+		__forceinline
+		static void fastcall AppendPolyParam2B(TA_PolyParam2B* pp)
+		{
+			
+		}
+		__forceinline
+		static void fastcall AppendPolyParam3(TA_PolyParam3* pp)
+		{
+			glob_param_bdc;
+		}
+		__forceinline
+		static void fastcall AppendPolyParam4A(TA_PolyParam4A* pp)
+		{
+			glob_param_bdc;
+		}
+		__forceinline
+		static void fastcall AppendPolyParam4B(TA_PolyParam4B* pp)
+		{
+		
+		}
+
+		//Poly Strip handling
+		__forceinline
+		static void StartPolyStrip()
+		{
+			
+		}
+		__forceinline
+		static void EndPolyStrip()
+		{
+			
+		}
+
+		//Poly Vertex handlers
+#define vert_cvt_base VertexCount++;
+
+
+		//(Non-Textured, Packed Color)
+		__forceinline
+		static void AppendPolyVertex0(TA_Vertex0* vtx)
+		{
+			vert_cvt_base;
+		}
+
+		//(Non-Textured, Floating Color)
+		__forceinline
+		static void AppendPolyVertex1(TA_Vertex1* vtx)
+		{
+			vert_cvt_base;
+		}
+
+		//(Non-Textured, Intensity)
+		__forceinline
+		static void AppendPolyVertex2(TA_Vertex2* vtx)
+		{
+			vert_cvt_base;
+		}
+
+		//(Textured, Packed Color)
+		__forceinline
+		static void AppendPolyVertex3(TA_Vertex3* vtx)
+		{
+			vert_cvt_base;
+		}
+
+		//(Textured, Packed Color, 16bit UV)
+		__forceinline
+		static void AppendPolyVertex4(TA_Vertex4* vtx)
+		{
+			vert_cvt_base;
+		}
+
+		//(Textured, Floating Color)
+		__forceinline
+		static void AppendPolyVertex5A(TA_Vertex5A* vtx)
+		{
+			vert_cvt_base;
+		}
+		__forceinline
+		static void AppendPolyVertex5B(TA_Vertex5B* vtx)
+		{
+
+		}
+
+		//(Textured, Floating Color, 16bit UV)
+		__forceinline
+		static void AppendPolyVertex6A(TA_Vertex6A* vtx)
+		{
+			vert_cvt_base;
+		}
+		__forceinline
+		static void AppendPolyVertex6B(TA_Vertex6B* vtx)
+		{
+
+		}
+
+		//(Textured, Intensity)
+		__forceinline
+		static void AppendPolyVertex7(TA_Vertex7* vtx)
+		{
+			vert_cvt_base;
+		}
+
+		//(Textured, Intensity, 16bit UV)
+		__forceinline
+		static void AppendPolyVertex8(TA_Vertex8* vtx)
+		{
+			vert_cvt_base;
+		}
+
+		//(Non-Textured, Packed Color, with Two Volumes)
+		__forceinline
+		static void AppendPolyVertex9(TA_Vertex9* vtx)
+		{
+			vert_cvt_base;
+		}
+
+		//(Non-Textured, Intensity,	with Two Volumes)
+		__forceinline
+		static void AppendPolyVertex10(TA_Vertex10* vtx)
+		{
+			vert_cvt_base;
+		}
+
+		//(Textured, Packed Color,	with Two Volumes)	
+		__forceinline
+		static void AppendPolyVertex11A(TA_Vertex11A* vtx)
+		{
+			vert_cvt_base;
+		}
+		__forceinline
+		static void AppendPolyVertex11B(TA_Vertex11B* vtx)
+		{
+			
+		}
+
+		//(Textured, Packed Color, 16bit UV, with Two Volumes)
+		__forceinline
+		static void AppendPolyVertex12A(TA_Vertex12A* vtx)
+		{
+			vert_cvt_base;
+		}
+		__forceinline
+		static void AppendPolyVertex12B(TA_Vertex12B* vtx)
+		{
+
+		}
+
+		//(Textured, Intensity,	with Two Volumes)
+		__forceinline
+		static void AppendPolyVertex13A(TA_Vertex13A* vtx)
+		{
+			vert_cvt_base;		
+		}
+		__forceinline
+		static void AppendPolyVertex13B(TA_Vertex13B* vtx)
+		{
+
+		}
+
+		//(Textured, Intensity, 16bit UV, with Two Volumes)
+		__forceinline
+		static void AppendPolyVertex14A(TA_Vertex14A* vtx)
+		{
+			vert_cvt_base;
+		}
+		__forceinline
+		static void AppendPolyVertex14B(TA_Vertex14B* vtx)
+		{
+
+		}
+
+		//Sprites
+		__forceinline
+		static void AppendSpriteParam(TA_SpriteParam* spr)
+		{
+
+		}
+
+		//Sprite Vertex Handlers
+		/*
+		__forceinline
+		static void AppendSpriteVertex0A(TA_Sprite0A* sv)
+		{
+
+		}
+		__forceinline
+		static void AppendSpriteVertex0B(TA_Sprite0B* sv)
+		{
+
+		}
+		*/
+		__forceinline
+		static void AppendSpriteVertexA(TA_Sprite1A* sv)
+		{
+
+		}
+		__forceinline
+		static void AppendSpriteVertexB(TA_Sprite1B* sv)
+		{
+
+		}
+
+		//ModVolumes
+		__forceinline
+		static void AppendModVolParam(TA_ModVolParam* modv)
+		{
+
+		}
+
+		//ModVol Strip handling
+		__forceinline
+		static void StartModVol(TA_ModVolParam* param)
+		{
+
+		}
+		__forceinline
+		static void ModVolStripEnd()
+		{
+
+		}
+
+		//Mod Volume Vertex handlers
+		__forceinline
+		static void AppendModVolVertexA(TA_ModVolA* mvv)
+		{
+
+		}
+		__forceinline
+		static void AppendModVolVertexB(TA_ModVolB* mvv)
+		{
+
+		}
+		__forceinline
+		static void SetTileClip(u32 xmin,u32 ymin,u32 xmax,u32 ymax)
+		{
+		}
+		__forceinline
+		static void TileClipMode(u32 mode)
+		{
+			
+		}
+		//Misc
+		__forceinline
+		static void ListCont()
+		{
+		}
+		__forceinline
+		static void ListInit()
+		{
+			
+		}
+		__forceinline
+		static void SoftReset()
+		{
+			
+		}
+	};
+	//Setup related
+
+	//Misc setup
+	void SetFpsText(char* text)
+	{
+		strcpy(fps_text,text);
+		//if (!IsFullscreen)
+		{
+			SetWindowText((HWND)emu.GetRenderTarget(), fps_text);
+		}
+	}
+	bool InitRenderer()
+	{
+		return TileAccel.Init();
+	}
+
+	void TermRenderer()
+	{
+		TileAccel.Term();
+	}
+
+	void ResetRenderer(bool Manual)
+	{
+		TileAccel.Reset(Manual);
+		VertexCount=0;
+		FrameCount=0;
+	}
+
+	bool ThreadStart()
+	{
+		return true;
+	}
+
+	void ThreadEnd()
+	{
+
+	}
+	void ListCont()
+	{
+		TileAccel.ListCont();
+	}
+	void ListInit()
+	{
+		TileAccel.ListInit();
+	}
+	void SoftReset()
+	{
+		TileAccel.SoftReset();
+	}
+	
+	void VramLockedWrite(vram_block* bl)
+	{
+		
+	}
+}
+
+#endif

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1253"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="nullExtDev"
 	ProjectGUID="{70FF77F6-E0CE-44EF-AF61-1BBAF3F60CD2}"
 	RootNamespace="nullExtDev"
@@ -63,7 +63,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="sdl.lib"
+				AdditionalDependencies="wpcap.lib iphlpapi.lib"
 				OutputFile="$(SolutionDir)\WorkDir\Plugins\$(ProjectName)_$(PlatformName).dll"
 				LinkIncremental="2"
 				ModuleDefinitionFile="exports.def"
@@ -145,7 +145,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="sdl.lib"
+				AdditionalDependencies="wpcap.lib iphlpapi.lib"
 				OutputFile="$(SolutionDir)\WorkDir\Plugins\$(ProjectName)_$(PlatformName).dll"
 				LinkIncremental="1"
 				ModuleDefinitionFile="exports.def"
@@ -235,6 +235,25 @@
 			</File>
 			<File
 				RelativePath=".\bba.h"
+				>
+			</File>
+			<File
+				RelativePath=".\pcap_io.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\pcap_io.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\rtl8139c.c"
 				>
 			</File>
 		</Filter>

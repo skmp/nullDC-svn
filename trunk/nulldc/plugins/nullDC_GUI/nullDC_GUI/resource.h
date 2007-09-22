@@ -140,6 +140,8 @@
 #define IDC_REC_CPP                     1116
 #define IDC_REC_UFPU                    1117
 #define IDC_PROFTEXT                    1118
+#define IDC_BUTTON1                     1119
+#define IDC_COPY                        1119
 #define ID_DEBUG_REGVIEWER              40008
 #define ID_DEBUG_DISASMVIEWER           40009
 #define ID_HELP_HOWTO                   40013
@@ -160,7 +162,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        122
 #define _APS_NEXT_COMMAND_VALUE         40044
-#define _APS_NEXT_CONTROL_VALUE         1119
+#define _APS_NEXT_CONTROL_VALUE         1120
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

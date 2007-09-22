@@ -10,7 +10,7 @@ float rem_sh4_cycles=0;
 SampleType mixl;
 SampleType mixr;
 
-//x.12
+//x.15
 s32 volume_lut[16];
 s32 tl_lut[256];	//xx.15 format :)
 const char* stream_names[]=
@@ -37,7 +37,7 @@ const s32 adpcm_scale[16] =
 void AICA_Sample();
 
 //Remove the fractional part , with rounding ;) -- does not need an extra bit
-#define FPRound(a,bits) (((a) + ((1<<bits)-1))>>bits)
+#define FPRound(a,bits) (((a) + ((1<<(bits-1))))>>bits)
 //Remove the franctional part by chopping..
 #define FPChop(a,bits) ((a)>>bits)
 
@@ -88,11 +88,10 @@ u32 AICA_GenerateSamples(u32 sh4_cycles)
 		mixr = 0;
 		AICA_Sample();
 
-		/*
-		//a blend filter -- to remove clips ect .. duno if it does any good actualy =P
-		clip(mixl,pl-4096,pl+4096);
-		clip(mixr,pr-4096,pr+4096);
-		*/
+		if (((s16)mixl) != mixl)
+			printf("Cliped mixl %d\n",mixl);
+		if (((s16)mixr) != mixr)
+			printf("Cliped mixr %d\n",mixr);
 
 		clip16(mixl);
 		clip16(mixr);
@@ -251,22 +250,22 @@ public:
 	u32 Channel;
 
 	_KEY_STATE key_state;
+	fp_22_10 CA;
+	u32 update_rate;	//22.10
 
-	//bool Enabled;
 	_EG AEG; 
 	_EG FEG;	//how can this be emulated anyway ?
 
 	//Sampling
-	fp_22_10 CA;
 	u32 last_sp;
-	u32 update_rate;	//22.10
+	
 
 	//used on adpcm decoding
 	s32 last_quant;//is that realy 32.0 ? maby 24.8 ?
 
 	//used on apdcm decoding & interpolation
-	SampleType last_sample;
-	SampleType next_sample;
+	SampleType prev_sample;
+	SampleType curr_sample;
 
 	bool sound_enabled;
 	u32 looped;
@@ -355,12 +354,14 @@ public:
 		last_sp=0xFFFFFFFF;
 
 		last_quant=127;
-		last_sample=0;
-		next_sample=0;
+		prev_sample=0;
+		curr_sample=0;
 		
 		CalcUpdateRate();
 		sound_enabled=true;//mnn maby it is some internal bit or smth?
 		//printf("%d chanel enabled ! [%d] , %s stream type @ %f hrz %d oct,%d fns\n",Channel,fc,stream_names[ChanData->PCMS],(44100.0*update_rate)/1024,ChanData->OCT,ChanData->FNS);
+		//Decode first sample
+		Decoder_Step();
 	}
 
 	//Disable is olny executed if KEY_OFF , otherwise its not =P
@@ -378,19 +379,18 @@ public:
 	//must be done after GetSample ;)
 	void Sample_step()
 	{
-		CA.full+=update_rate;
+		fp_22_10 na;
+		na.full=CA.full+update_rate;
 
 		u32 cur_addr;
 
 		if (ChanData->PCMS==3)
 		{
-			cur_addr=CA.ip & ~3; //adpcm "stream" mode -- most likely this is 
-								 //the effect of some prefetch buffer imo =P
-								 //so it should happen on all non 16b formats (? needs testing ..)
+			cur_addr=na.ip & ~3; //adpcm "stream" mode -- why realy ?
 		}
 		else
 		{
-			cur_addr=CA.ip;
+			cur_addr=na.ip;
 		}
 
 		if (ChanData->LPSLNK)
@@ -401,26 +401,39 @@ public:
 				AEG.state=EG_Decay1;
 			}
 		}
+
 		
 		if (cur_addr>=ChanData->LEA)
 		{
+			int dec_steps=ChanData->LEA-CA.ip-1;
+			while(dec_steps-->0)
+			{
+				CA.ip++;
+				Decoder_Step();
+			}
+
 			if (ChanData->LPCTL)
 			{
 				looped=1;
 				CA.ip=ChanData->LSA;
-//				CA.fp=0; //mnn that doesnt realy make sense so i have comented it out -)
-				if (ChanData->PCMS==2)
+				//CA.fp=0; //mnn that doesnt realy make sense so i have comented it out -)
+				
+				if (ChanData->PCMS==2) //if in adpcm non-stream mode, reset the decoder
 				{	
-					//if not adpcm long stream we reset the quants ... yay ! [whatever ..]
-					//iirc that fixed streaming adpcm audio , gota doublecheck it sometime
 					last_quant=127;
-					last_sample=0;
+					prev_sample=0;
 				}
-				/* //nothing known -> commented out
-				else if (ChanData->PCMS==3)
+
+				dec_steps=na.ip-ChanData->LEA;
+				//decode the first sample, allways has to be done...
+				Decoder_Step();
+				while(dec_steps-->0)
 				{
-					//(?) nothing (?)
-				}*/
+					CA.ip++;
+					Decoder_Step();
+				}
+				//verify(CA.ip==na.ip); -> invalid, CA.ip is set to LSA
+				CA.fp=na.fp;	//we still need to copy
 			}
 			else
 			{
@@ -442,6 +455,66 @@ public:
 				}
 			}
 		}
+		else
+		{
+			int dec_steps=na.ip-CA.ip;
+			while(dec_steps-->0)
+			{
+				CA.ip++;
+				Decoder_Step();
+			}
+			verify(CA.ip==na.ip);
+			CA.full=na.full;
+		}
+	}
+	void Decoder_Step()
+	{
+		verify(last_sp!=CA.ip);
+		//save the old sample
+		prev_sample=curr_sample;
+		//decode the new one :)
+
+		last_sp=CA.ip;
+		if (ChanData->PCMS==0)
+		{
+			u32 addr=(ChanData->SA_hi<<16) | (ChanData->SA_low);
+			s16* ptr=(s16*)&aica_ram[addr+CA.ip*2];
+			curr_sample=*ptr;
+			if(curr_sample==-32768 && !(prev_sample&0x8000))
+			{
+				//printf("//wtf is this ? why is it here ?"); // -> it actualy fixes SA2 music . why ?
+				curr_sample=0x7fff;
+			}
+		}
+		else if (ChanData->PCMS==1)
+		{
+			u32 addr=(ChanData->SA_hi<<16) | (ChanData->SA_low);
+			s8* ptr=(s8*)&aica_ram[addr+CA.ip];
+			curr_sample=*ptr<<8;
+		}
+		else
+		{
+			u32 addr=(ChanData->SA_hi<<16) | (ChanData->SA_low);
+			u8* ptr=(u8*)&aica_ram[addr+(CA.ip>>1)];
+
+			u32 sample=*ptr;
+
+			if (CA.ip&1)
+				sample>>=4; //2nd sample is HI nible ;)
+			else
+				sample&=0xF;//first sample is LOW nible !
+
+
+
+			/*(1 - 2 * L4) * (L3 + L2/2 +L1/4 + 1/8) * quantized width (ƒΆn) + decode value (Xn - 1) */
+			curr_sample = prev_sample + ((last_quant*adpcm_scale[sample])>>3);
+
+			last_quant = (last_quant * adpcm_qs[sample])>>8;
+
+			clip(last_quant,127,24576);
+			clip16(curr_sample);
+		}
+
 	}
 	SampleType GetSample()
 	{
@@ -452,62 +525,23 @@ public:
 
 		SampleType rv;
 
-		if (last_sp!=CA.ip)
-		{
-			last_sp=CA.ip;
-			if (ChanData->PCMS==0)
-			{
-				u32 addr=(ChanData->SA_hi<<16) | (ChanData->SA_low);
-				s16* ptr=(s16*)&aica_ram[addr+CA.ip*2];
-				rv=*ptr;
-				next_sample=ptr[1];
-				if(rv==-32768 && !(last_sample&0x8000))
-					rv=0x7fff;
-			}
-			else if (ChanData->PCMS==1)
-			{
-				u32 addr=(ChanData->SA_hi<<16) | (ChanData->SA_low);
-				s8* ptr=(s8*)&aica_ram[addr+CA.ip];
-				rv=*ptr<<8;
-				next_sample=ptr[1]<<8;
-			}
-			else
-			{
-				u32 addr=(ChanData->SA_hi<<16) | (ChanData->SA_low);
-				u8* ptr=(u8*)&aica_ram[addr+(CA.ip>>1)];
-
-				s16 sample=*ptr;
-
-				if (CA.ip&1)
-					sample>>=4; //2nd sample is HI nible ;)
-				else
-					sample&=0xF;//first sample is LOW nible !
-
-
-
-				/*(1 - 2 * L4) * (L3 + L2/2 +L1/4 + 1/8) * quantized width (ƒΆn) + decode value (Xn - 1) */
-				last_sample += (last_quant*adpcm_scale[sample])>>3;
-
-				last_quant = (last_quant * adpcm_qs[sample])>>8;
-
-				clip(last_quant,127,24576);
-				clip16(last_sample);
-
-				rv=(SampleType)last_sample;
-				next_sample=rv;
-			}
-			next_sample=last_sample=rv;
-			
-		}
-
+		/*
 		if (last_sample!=next_sample)
-		{
-			rv=FPMul(last_sample,(s32)(1024-CA.fp),10);
-			rv+=FPMul(next_sample,(s32)(CA.fp),10);
-		}
-		else
-			rv=next_sample;
+		{*/
+		rv=FPMul(prev_sample,(s32)(1023-CA.fp),10);
+		rv+=FPMul(curr_sample,(s32)(CA.fp),10);
+		/*
+		if (rv==-32769)
+			rv=32768;
+		else if (rv==32768)
+			rv==32767;
+		*/
+		/*}
+		else*/
+		//rv=curr_sample;
 
+		//make sure its still in range
+		verify(((s16)rv)==rv);
 		return rv;
 	}
 	/*
@@ -730,6 +764,11 @@ public:
 
 		AEG_step(); //here ? or after sample ? duno...
 					//lets say it is here for now .. otherwise the first sample whould allways be muted o.O
+		
+		//If first sample, decode it :)
+		if (last_sp!=CA.ip)
+			Decoder_Step();
+
 		SampleType sample = GetSample();
 
 		//need to include AEG value in the future here ..
@@ -826,11 +865,6 @@ void sgc_Init()
 	dsp_out_vol=(DSP_OUT_VOL_REG*)&aica_reg[0x2000];
 }
 
-void sgc_Sample()
-{
-	for (int i=0;i<64;i++)
-		Chans[i].Generate();
-}
 void sgc_Term()
 {
 	//for (int i=0;i<64;i++)
@@ -885,23 +919,26 @@ u32 cdda_index=CDDA_SIZE<<1;
 void AICA_Sample()
 {
 	for (int i=0;i<64;i++)
+	{
 		Chans[i].Generate();
+	}
 
 	//OK , generated all Chanels  , now DSP/ect + final mix ;p
 	//CDDA EXTS input
-	cdda_index+=2;
+	
 	if (cdda_index>=CDDA_SIZE)
 	{
 		cdda_index=0;
 		aica_params.CDDA_Sector(cdda_sector);
 	}
+	cdda_index+=2;
 	//No dsp tho ;p
 
 	//Final MIX ..
 	//Add CDDA / DSP effect(s)
 
 	//CDDA
-	if (settings.CDDAMute==0)
+	if (settings.CDDAMute==0) 
 	{
 		s32 EXTS0L=cdda_sector[cdda_index];
 		s32 EXTS0R=cdda_sector[cdda_index+1];
@@ -920,19 +957,31 @@ void AICA_Sample()
 	}
 	
 	//MVOL !
+	//we want to make sure mix* is *At least* 23 bits wide here, so 64 bit mul !
 	u32 mvol=CommonData->MVOL;
-	s32 val=FPRound(volume_lut[mvol],10);	//we want to make sure mix* is *At least* 26 bits wide ;p
-	mixl=FPMul(mixl,val,6);					//we cut a bit from it ... otherwise its *too* loud
-	mixr=FPMul(mixr,val,6);					//we cut a bit from it ... otherwise its *too* loud
+	s32 val=volume_lut[mvol];
+	mixl=(s32)FPMul((s64)mixl,val,15);					
+	mixr=(s32)FPMul((s64)mixr,val,15);					
 
 
-	if (CommonData->DAC18B)
+	if (!CommonData->DAC18B)
 	{
 		//If 18 bit output , make it 16b :p
 		mixl=FPRound(mixl,2);
 		mixr=FPRound(mixr,2);
 	}
 }
+//Decoder : decode a sample, FORWARD direction only, may need substeping
+struct Decoder
+{
+	const int substeps;	//1 if steping is needed
+	const int bps;		//bits per sample
+	//Data is 
+	SampleType Decode(u32 data);
+
+	void OnStart();//Called when the buffer has warped, right before the first Decode is done
+};
+//Channel : handles looping, calls the Decoder where appropriate
 /*
 struct AicaChannelEx
 {

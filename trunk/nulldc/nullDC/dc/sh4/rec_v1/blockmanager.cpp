@@ -343,6 +343,8 @@ void ResetBlocks()
 	bm_locked_block_count=0;
 	bm_manual_block_count=0;
 }
+u32 manbs,lockbs;
+
 void bm_GetStats(bm_stats* stats)
 {
 	stats->block_count=all_block_list.ItemCount;
@@ -354,9 +356,13 @@ void bm_GetStats(bm_stats* stats)
 	}
 	stats->cache_size=sz;
 	stats->manual_blocks=bm_manual_block_count;
+	stats->manual_block_calls_delta=manbs;manbs=0;
 	stats->locked_blocks=bm_locked_block_count;
+	stats->locked_block_calls_delta=lockbs;lockbs=0;
+
 	stats->fast_lookups=fast_lookups;fast_lookups=0;
 	stats->full_lookups=full_lookups;full_lookups=0;
+
 }
 bool reset_cache=false;
 void __fastcall _SuspendAllBlocks();

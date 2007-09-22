@@ -18,10 +18,13 @@ bool dc_reseted=false;
 bool dc_ingore_init=false;
 bool dc_running=false;
 
+void _Reset_DC(bool Manual);
+
 enum emu_thread_state_t
 {
 	EMU_IDLE,
 	EMU_CPU_START,
+	EMU_SOFTRESET,
 	EMU_NOP,
 	EMU_QUIT,
 	EMU_INIT,
@@ -59,7 +62,7 @@ emu_thread_rv_t emu_rtc(emu_thread_state_t cmd)
 
 	emu_thread_rv=RV_WAIT;
 	emu_thread_state=cmd;
-	while(emu_thread_rv==RV_WAIT)
+	while(emu_thread_rv==RV_WAIT && cmd!=EMU_SOFTRESET)
 	{
 		Sleep(10);
 		if( PeekMessage(&msg, NULL, 0,0, PM_REMOVE) != 0 )
@@ -110,6 +113,10 @@ u32 THREADCALL emulation_thead(void* ptar)
 					emu_thread_rv=RV_OK;
 					sh4_cpu->Run();
 					break;
+				case EMU_SOFTRESET:
+					emu_thread_state=EMU_CPU_START;
+					_Reset_DC(true);
+					break;
 
 				case EMU_INIT:
 					emu_thread_state=EMU_IDLE;
@@ -149,11 +156,7 @@ u32 THREADCALL emulation_thead(void* ptar)
 				case EMU_RESET:
 					emu_thread_state=EMU_IDLE;
 
-					plugins_Reset(false);
-					sh4_cpu->Reset(false);
-					mem_Reset(false);
-					pvr_Reset(false);
-					aica_Reset(false);
+					_Reset_DC(false);
 
 					//when we boot from ip.bin , it's nice to have it seted up
 					sh4_cpu->SetRegister(reg_gbr,0x8c000000);
@@ -166,12 +169,8 @@ u32 THREADCALL emulation_thead(void* ptar)
 				case EMU_RESET_MANUAL:
 					emu_thread_state=EMU_IDLE;
 
-					sh4_cpu->Reset(true);
-					plugins_Reset(true);
-					mem_Reset(true);
-					pvr_Reset(true);
-					aica_Reset(true);
-
+					_Reset_DC(true);
+					
 					//when we boot from ip.bin , it's nice to have it seted up
 					sh4_cpu->SetRegister(reg_gbr,0x8c000000);
 					sh4_cpu->SetRegister(reg_sr,0x700000F0);
@@ -253,7 +252,25 @@ bool Init_DC()
 	dc_inited=true;
 	return true;
 }
-
+void _Reset_DC(bool Manual)
+{
+	plugins_Reset(Manual);
+	sh4_cpu->Reset(Manual);
+	mem_Reset(Manual);
+	pvr_Reset(Manual);
+	aica_Reset(Manual);
+}
+bool SoftReset_DC()
+{
+	if (sh4_cpu->IsCpuRunning())
+	{
+		sh4_cpu->Stop();
+		emu_rtc(EMU_SOFTRESET);
+		return true;
+	}
+	else
+		return false;
+}
 bool Reset_DC(bool Manual)
 {
 	if (!dc_inited || sh4_cpu->IsCpuRunning())

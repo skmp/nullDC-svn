@@ -38,7 +38,8 @@ typedef double f64;
 struct joy_init_resp
 {
 	u32 ratio;
-	u32 status;
+	u32 mode;
+	u32 players;
 };
 
 struct joy_init
@@ -48,16 +49,21 @@ struct joy_init
 	u32 port;
 };
 
-struct joy_state
+struct joy_substate
 {
-	u32 id;
 	u16 state;
 	s8 jy;
 	s8 jx;
 	u8 r;
 	u8 l;
 };
-u32 ratio,port,players;
+struct joy_state
+{
+	u32 id;
+	joy_substate  substates[8];
+};
+u32 state_size=0;
+u32 ratio,port,players,mode;
 struct connection_info
 {
 	joy_state info;
@@ -67,7 +73,7 @@ struct connection_info
 
 	SOCKET connection;
 };
-volatile connection_info states[4];
+/*volatile*/ connection_info states[4];
 u32 c_status=0;
 u32 p_status=0;
 CRITICAL_SECTION lock_and_sync;
@@ -108,6 +114,8 @@ u32 __stdcall client_thread(SOCKET sock)
 	setups(sock);
 
 	u32 rva=recv(sock,(char*)&in_init,sizeof(in_init),MSG_WAITALL);
+	printf("Client version %X",in_init.Version);
+
 	if (in_init.port<4 && states[in_init.port].connected==0)
 	{
 		
@@ -123,20 +131,21 @@ u32 __stdcall client_thread(SOCKET sock)
 	con->connection=sock;
 
 	out_init.ratio=ratio;
-	out_init.status=0;//ingored atm
-	
+	out_init.mode=mode;//ingored atm
+	out_init.players=players;
 	send(con->connection,(char*)&out_init,sizeof(out_init),0);
 	
+	in_init.Name[511]=0;//make sure its terminated =P
 	printf("Client connected using %s @ %d\n",in_init.Name,in_init.port);
 
 	while(con->connected)
 	{
 		
 		joy_state t;
-		int rv=recv(con->connection,(char*)&t,sizeof(t),MSG_WAITALL);
+		int rv=recv(con->connection,(char*)&t,state_size,MSG_WAITALL);
 		
 		LOCK();
-		memcpy((void*)&con->info,&t,sizeof(t));
+		memcpy((void*)&con->info,&t,state_size);
 		if (rv==-1)
 		{
 			con->has_data=0;
@@ -156,7 +165,8 @@ u32 __stdcall client_thread(SOCKET sock)
 
 u32 __stdcall send_thread(SOCKET sock)
 {
-	joy_state st[4];
+	char temp_buffer[sizeof(joy_state)*4];
+
 	while(	states[0].connected==0 || 
 		states[1].connected==0 || 
 		states[2].connected==0 || 
@@ -178,33 +188,29 @@ u32 __stdcall send_thread(SOCKET sock)
 			LOCK();
 		}
 
-
-		memset(st,0,sizeof(st));
-		for(int i=0;i<4;i++)
+		u32 temp_buffer_sz=0;
+		memset(temp_buffer,0,sizeof(temp_buffer));
+		for(int i=0;i<players;i++)
 		{
 			if (states[i].connected==1)
 			{
-				memcpy(&st[i],(void*)&states[i].info,sizeof(st[i]));
+				memcpy(&temp_buffer[temp_buffer_sz],&states[i].info,state_size);
+				states[i].has_data=0;
+				temp_buffer_sz+=state_size;
+			}
+			else
+			{
+				//whatever
 			}
 		}
-		//printf("SEND\n");
-		for(int i=0;i<4;i++)
+		//broadcast message !
+		for(int i=0;i<players;i++)
 		{
-			if (states[i].connected==1)
-			{
-				//printf("SENT %d\n",i);
-				states[i].has_data=0;
-				u32 rvva=send(states[i].connection,(char*)st,sizeof(st),0);
-				/*{
-				states[i].connected=0;
-				}*/
-			}
+			u32 rvva=send(states[i].connection,temp_buffer,temp_buffer_sz,0);
 		}
 		UNLOCK();
 	}
 }
-#define DEFAULT_BUFLEN 512
-
 void server_main()
 {
 	
@@ -213,9 +219,7 @@ void server_main()
            ClientSocket = INVALID_SOCKET;
     struct addrinfo *result = NULL,
                     hints;
-    char recvbuf[DEFAULT_BUFLEN];
     int iResult, iSendResult;
-    int recvbuflen = DEFAULT_BUFLEN;
     
 
     // Initialize Winsock
@@ -290,11 +294,24 @@ void server_main()
 int _tmain(int argc, _TCHAR* argv[])
 {
 	printf("hookjoy server v1.0.0\n");
-	printf("Give init params in port,ratio,players format :");
+	printf("Give init params in port,ratio,mode,players format :");
 	fflush(stdout);
-	scanf("%d,%d,%d",&port,&ratio,&players);
-	printf("\nIniting w/ port %d , ratio %d and player count=%d\n",port,ratio,players);
+	scanf("%d,%d,%d,%d",&port,&ratio,&mode,&players);
+	mode=mode?1:0;
+	printf("\nIniting w/ port %d , ratio %d , mode %d and player count=%d\n",port,ratio,mode,players);
 
+	if(mode==0)
+		state_size=sizeof(joy_substate)+4;
+	else
+		state_size=ratio*sizeof(joy_substate)+4;
+
+	if (state_size>sizeof(joy_state))
+	{
+		printf("invalid state size , use smaller ratio or mode0 (%d)\n",state_size);
+		return -2;
+	}
+	printf("server -> client : %d b/frame , %d/sec@60 \nclient -> server : %d b/frame , %d/sec@60 \n",state_size*players,state_size*players*60/ratio,state_size,state_size*60/ratio);
+	printf("Masked lag : %d @ 60fps;%d @30fps\n",ratio*16,ratio*32);
 	for (int i=players;i<4;i++)
 	{
 		states[i].connected=2;

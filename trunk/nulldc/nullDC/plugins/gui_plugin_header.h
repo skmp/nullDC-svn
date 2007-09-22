@@ -40,6 +40,58 @@ struct PluginInfoList
 	char dll[512];
 	u32 Flags;
 };
+struct nullDCPerfomanceInfo
+{
+	struct
+	{
+		u32 Valid;
+
+		u32 Ticks;//total tick count
+
+		u32 PowerVR;
+		u32 AICA;
+		u32 GDRom;
+		u32 Maple;
+		u32 Dyna;
+		u32 Main;
+		u32 Rest;
+	} TBP;
+
+	struct
+	{
+		struct
+		{
+			u32 CodeSize;
+			u32 LockedBlocks;
+			u32 ManualBlocks;
+			u32 TotalBlocks;
+		} CodeGen;
+		struct
+		{
+			struct
+			{
+				u32 Valid;
+				u32 FullLookupDelta;
+				u32 FastLookupDelta;
+				u32 LookupDelta;
+			} Lookups;
+			struct 
+			{
+				u32 Valid;
+				u32 LockedBlocks;
+				u32 ManualBlocks;
+				u32 TotalBlocks;
+			} Execution;
+			struct
+			{
+				u32 Valid;
+				u32 Hits;
+				u32 Misses;
+				u32 Count;
+			} RetCache;
+		}Runtime;
+	} Dynarec;
+};
 typedef PluginInfoList* EXPORT_CALL GetPluginListFP(u32 PluginType);
 typedef PluginInfoList* EXPORT_CALL GetMapleDeviceListFP(u32 DeviceType);
 typedef s32 EXPORT_CALL FreePluginListFP(PluginInfoList* list);
@@ -79,6 +131,8 @@ typedef int EXPORT_CALL GetSymbNameFP(u32 address,char *szDesc,bool bUseUnkAddre
 typedef bool EXPORT_CALL SelectPluginsGuiFP();
 typedef s32 EXPORT_CALL EditEmuSettingFP(u32 sid,void* value);
 typedef char* EXPORT_CALL GetAboutTextFP();
+typedef void EXPORT_CALL GetEmuPerformanceInfoFP(nullDCPerfomanceInfo* dst);
+
 struct gui_emu_info
 {
 	ConfigLoadStrFP*	ConfigLoadStr;	//Can be used to Read/Write settings :)
@@ -124,6 +178,8 @@ struct gui_emu_info
 	GetPluginListFP*   GetPluginList;    
 	GetMapleDeviceListFP*  GetMapleDeviceList;
 	FreePluginListFP*     FreePluginList;
+
+	GetEmuPerformanceInfoFP* GetPerformanceInfo;
 };
 struct MenuIDList
 {

@@ -4,7 +4,10 @@
 #include "nullExtDev.h"
 #include "modem.h"
 #include "lan.h"
+#include "bba.h"
+#include "pcap_io.h"
 emu_info emu;
+ext_device_init_params params;
 __settings settings;
 
 //u32 mode=1;//0=null, 1=modem,2=lan,3=bba
@@ -22,7 +25,7 @@ u32 FASTCALL ReadMem_A0_006(u32 addr,u32 size)
 	case 2:
 		return LanReadMem_A0_006(addr,size);
 	default:
-		printf("Read from modem area on mode %d, addr[%d] 0x%08Xn",settings.mode,size,addr);
+		//printf("Read from modem area on mode %d, addr[%d] 0x%08X\n",settings.mode,size,addr);
 		return 0;
 	}
 	
@@ -40,17 +43,22 @@ void FASTCALL WriteMem_A0_006(u32 addr,u32 data,u32 size)
 		LanWriteMem_A0_006(addr,data,size);
 		return;
 	default:
-		printf("Write to modem area on mode %d, addr[%d] 0x%08X=0x%08X\n",settings.mode,size,addr,data);
+		//printf("Write to modem area on mode %d, addr[%d] 0x%08X=0x%08X\n",settings.mode,size,addr,data);
 		return;
 	}
 }
 //010* , on area0
 u32 FASTCALL ReadMem_A0_010(u32 addr,u32 size)
 {
-	return 0;
+	if (settings.mode==3)
+		return bba_ReadMem(addr,size);
+	else
+		return 0;
 }
 void FASTCALL WriteMem_A0_010(u32 addr,u32 data,u32 size)
 {
+	if (settings.mode==3)
+		bba_WriteMem(addr,data,size);
 }
 //Area 5
 u32 FASTCALL ReadMem_A5(u32 addr,u32 size)
@@ -66,9 +74,9 @@ void SetUpdateCallback(void (*callback) (),u32 ms)
 {
 	verify(update_callback==0);
 	update_callback=callback;
-	update_timer=ms*DCclock;
+	update_timer=ms*DCclock/1000;
 }
-void ExpireUpdate(bool v)
+void ExpireUpdate(bool v) 
 {
 	void (*t)()=update_callback;
 	update_callback=0;
@@ -80,7 +88,7 @@ void FASTCALL Update(u32 cycles)
 {
 	if (update_callback)
 	{
-		if (update_timer>cycles)
+		if (update_timer<cycles)
 		{
 			void (*t)()=update_callback;
 			update_callback=0;
@@ -88,6 +96,8 @@ void FASTCALL Update(u32 cycles)
 		}
 		update_timer-=cycles;
 	}
+	if(settings.mode==3)
+		bba_periodical();
 }
 
 
@@ -159,12 +169,29 @@ void FASTCALL edReset(bool Manual)
 //called when entering sh4 thread , from the new thread context (for any thread speciacific init)
 s32 FASTCALL edInit(ext_device_init_params* p)
 {
+	params=*p;
+	int nd=pcap_io_get_dev_num();
+	printf("%d adapters\n",nd);
+	for(int i=0;i<nd;i++)
+	{
+		printf("%d : %s :",i,pcap_io_get_dev_name(i));
+		printf("\t%s\n",pcap_io_get_dev_desc(i));
+	}
+
+	printf("using :%d : %s :",settings.adapter,pcap_io_get_dev_name(settings.adapter));
+	printf("\t%s\n",pcap_io_get_dev_desc(settings.adapter));
+	pcap_io_init(pcap_io_get_dev_name(settings.adapter));
+	
+	if (settings.mode==3)
+		bba_init();
+
 	return rv_ok;
 }
 
 //called when exiting from sh4 thread , from the new thread context (for any thread speciacific de init) :P
 void FASTCALL edTerm()
 {
+	pcap_io_close();
 }
 
 
@@ -207,8 +234,10 @@ bool EXPORT_CALL dcGetInterface(plugin_interface* info)
 void LoadSettings()
 {
 	settings.mode=max(0,min(emu.ConfigLoadInt("nullExtDev","mode",0),3));
+	settings.adapter=emu.ConfigLoadInt("nullExtDev","adapter",0);
 }
 void SaveSettings()
 {
 	emu.ConfigSaveInt("nullExtDev","mode",settings.mode);
+	emu.ConfigSaveInt("nullExtDev","adapter",settings.adapter);
 }

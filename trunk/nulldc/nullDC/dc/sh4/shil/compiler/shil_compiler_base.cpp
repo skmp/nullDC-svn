@@ -400,6 +400,10 @@ void emit_vmem_op_compat_const(x86_block* x86e,u32 rw,u32 sz,u32 addr,u32 reg)
 	if (nvmem_GetPointer(ptr,addr,rw,sz))
 	{
 		//direct access
+		if (sh4_ram_alt!=0 && IsOnRam(addr))
+		{
+			ptr=sh4_ram_alt+(addr&RAM_MASK);
+		}
 		switch(sz)
 		{
 		case FLAG_8:

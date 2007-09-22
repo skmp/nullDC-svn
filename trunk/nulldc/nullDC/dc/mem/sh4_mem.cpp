@@ -150,7 +150,7 @@ void map_area5_init()
 
 void map_area5(u32 base)
 {
-	//map hole region to plugin handler :)
+	//map whole region to plugin handler :)
 	_vmem_map_handler(area5_handler,base|0x1400,base|0x17FF);
 }
 

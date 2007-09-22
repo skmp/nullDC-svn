@@ -15,6 +15,7 @@ namespace TASplitter
 	void FASTCALL Dma_(u32* data,u32 size);
 	//Splitter function (normaly ta_dma_main , modified for split dma's)
 	TaListFP* TaCmd;
+	TaListFP** TaCmd2;
 
 	u32 iterations=0,oldz=0;
 	u32 calls=0;
@@ -61,7 +62,15 @@ namespace TASplitter
 			flush_buffer();
 #else
 		verify(TaCmd!=0);
-		TaCmd((Ta_Dma*)data,1);
+		Ta_Dma* t=(Ta_Dma*)data; 
+		//mov eax,[ecx]
+		//shl eax,27
+		//and eax,~3
+		//mov edx,1
+		//add eax,[TaCmd2]
+		//jmp eax;
+		//TaCmd2[t->pcw.ParaType](t,1);
+		TaCmd(t,1);
 #endif
 	}
 	void FASTCALL Dma(u32* data,u32 size)

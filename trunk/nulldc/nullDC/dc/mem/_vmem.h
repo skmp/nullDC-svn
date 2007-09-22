@@ -51,6 +51,7 @@ void fastcall _vmem_WriteMem32(u32 Address,u32 data);
 
 //global reserved mem space
 extern u8* sh4_reserved_mem;
+extern u8* sh4_ram_alt;	//alternative ram space map
 //should be called at start up to ensure it will succed:)
 bool _vmem_reserve();
 void _vmem_release();

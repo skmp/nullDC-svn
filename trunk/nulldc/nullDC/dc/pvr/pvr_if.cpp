@@ -100,7 +100,7 @@ INLINE void YUV_ConvertMacroBlock()
 	YUV_index=0;
 
 	int block_size=(TA_YUV_TEX_CTRL & (1<<24))==0?384:512;
-	
+#if 0
 	//YUYV
 	if (block_size==384)
 	{
@@ -146,7 +146,7 @@ INLINE void YUV_ConvertMacroBlock()
 		u8* Y1=(u8*)&YUV_tempdata[(64+64+256)/4];*/
 
 	}
-
+#endif
 
 	if (YUV_blockcount==YUV_doneblocks)
 	{
@@ -224,7 +224,7 @@ void YUV_data(u32* data , u32 count)
 
 u32 pvr_readreg_TA(u32 addr,u32 sz)
 {
-	if ((addr&0xFFFFFF)==0x5F8150)
+	if ((addr&0xFFFFFF)==0x5F8150)	//TA_YUV_TEX_CNT
 		return YUV_doneblocks;
 	//EMUERROR3("Not implemented TA register read , addr=%d,sz=%d",addr,sz);
 	return libPvr.ReadReg(addr,sz);//__pvr_read__reg(addr);

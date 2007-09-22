@@ -19,7 +19,7 @@ _vmem_WriteMem32FP*		_vmem_WF32[0x1000];
 //upper 16b of the address
 void* _vmem_MemInfo[0x10000];
 u8* sh4_reserved_mem;
-
+u8* sh4_ram_alt;	//alternative ram space map
 
 //ReadMem/WriteMem functions
 //ReadMem
@@ -334,7 +334,9 @@ void _vmem_term()
 #include <windows.h>
 #include "dc\pvr\pvr_if.h"
 #include "sh4_mem.h"
-/*
+
+#define _VMEM_FILE_MAPPING
+#ifdef _VMEM_FILE_MAPPING
 HANDLE mem_handle;
 bool _vmem_reserve()
 {
@@ -350,28 +352,60 @@ bool _vmem_reserve()
 	
 	
 	//Area 0
-	//[0 ,0x04000000) -> unused
-	ptr=VirtualAlloc(&sh4_reserved_mem[0x00000000],0x04000000,MEM_RESERVE,PAGE_NOACCESS);
+	//[0x00000000 ,0x00800000) -> unused
+	ptr=VirtualAlloc(&sh4_reserved_mem[0x00000000],0x00800000,MEM_RESERVE,PAGE_NOACCESS);
+	if (ptr==0)
+		return false;
+	//[0x00800000,0x00A00000);
+	ptr=VirtualAlloc(&sh4_reserved_mem[0x00800000],0x00200000,MEM_RESERVE|MEM_COMMIT,PAGE_READWRITE);
+	if (ptr==0)
+		return false;
+	aica_ram.size=0x00200000;
+	aica_ram.data=(u8*)ptr;
+	//[0x00A00000 ,0x04000000) -> unused
+	ptr=VirtualAlloc(&sh4_reserved_mem[0x00A00000],0x04000000-0x00A00000,MEM_RESERVE,PAGE_NOACCESS);
 	if (ptr==0)
 		return false;
 	//Area 1
 	//[0x04000000,0x05000000) -> vram | mirror
-	//[0x05000000,0x06000000) -> unused
+	//[0x05000000,0x06000000) -> unused (32b path)
 	//[0x06000000,0x07000000) -> vram   mirror
-	//[0x07000000,0x08000000) -> unused mirror
+	//[0x07000000,0x08000000) -> unused (32b path) mirror
 
 	//vram #0
 	ptr= MapViewOfFileEx(mem_handle,FILE_MAP_READ |FILE_MAP_WRITE,0,RAM_SIZE,VRAM_SIZE,&sh4_reserved_mem[0x04000000]);
-	ptr= MapViewOfFileEx(mem_handle,FILE_MAP_READ |FILE_MAP_WRITE,0,RAM_SIZE,VRAM_SIZE,&sh4_reserved_mem[0x05000000]);
 	if (ptr==0)
 		return false;
 	vram.size=VRAM_SIZE;
 	vram.data=(u8*)ptr;
 
-	//vram #1
-	ptr= MapViewOfFileEx(mem_handle,FILE_MAP_READ |FILE_MAP_WRITE,0,RAM_SIZE,VRAM_SIZE,&sh4_reserved_mem[0x06000000]);
+	//and mirror
+	ptr= MapViewOfFileEx(mem_handle,FILE_MAP_READ ,0,RAM_SIZE,VRAM_SIZE,&sh4_reserved_mem[0x04000000+VRAM_SIZE]);
 	if (ptr==0)
 		return false;
+
+	//32b area
+	ptr=VirtualAlloc(&sh4_reserved_mem[0x05000000],0x01000000,MEM_RESERVE,PAGE_NOACCESS);
+	if (ptr==0)
+		return false;
+
+	//and 2 more mirrors xD
+	//upper 32 mb mirror of the vram (only 16 mb mapped here-- up to 0x0700)
+	for (int rb=0;rb<2;rb++)
+	{
+		//and mirror paradise !
+		//rb=0,1
+		ptr= MapViewOfFileEx(mem_handle,FILE_MAP_READ ,0,RAM_SIZE,VRAM_SIZE,&sh4_reserved_mem[0x06000000+VRAM_SIZE*rb]);
+		if (ptr==0)
+			return false;
+	}
+	//32b area mirror
+	ptr=VirtualAlloc(&sh4_reserved_mem[0x07000000],0x01000000,MEM_RESERVE,PAGE_NOACCESS);
+	if (ptr==0)
+		return false;
+	
+
+
 
 	//Area 2
 	//[0x08000000,0x0C000000) -> unused
@@ -389,11 +423,14 @@ bool _vmem_reserve()
 		return false;
 	mem_b.size=RAM_SIZE;
 	mem_b.data=(u8*)ptr;
-
-	//ram #1
-	ptr= MapViewOfFileEx(mem_handle,FILE_MAP_READ |FILE_MAP_WRITE,0,0,RAM_SIZE,&sh4_reserved_mem[0x0D000000]);
-	if (ptr==0)
-		return false;
+	
+	for (int rb=1;rb<4;rb++)
+	{
+		//ram #n, n=1,2,3 (all mirrors as read only
+		ptr= MapViewOfFileEx(mem_handle,FILE_MAP_READ,0,0,RAM_SIZE,&sh4_reserved_mem[0x0C000000+RAM_SIZE*rb]);
+		if (ptr==0)
+			return false;
+	}
 
 	//Area 4
 	//Area 5
@@ -406,12 +443,17 @@ bool _vmem_reserve()
 	if (ptr==0)
 		return false;
 
+	sh4_ram_alt= (u8*)MapViewOfFile(mem_handle,FILE_MAP_READ |FILE_MAP_WRITE,0,0,RAM_SIZE);	//alternative ram map location, BE CAREFULL THIS BYPASSES DYNAREC PROTECTION LOGIC
+	if (sh4_ram_alt==0)
+		return false;
+
 	return sh4_reserved_mem!=0;
 }
 
-*/
+#else
 bool _vmem_reserve()
 {
+	sh4_reserved_mem=0;
 	void* ptr=0;
 	sh4_reserved_mem=(u8*)VirtualAlloc(0,512*1024*1024,MEM_RESERVE,PAGE_NOACCESS);
 	if (sh4_reserved_mem==0)
@@ -497,9 +539,11 @@ bool _vmem_reserve()
 	return sh4_reserved_mem!=0;
 }
 
+#endif
 void _vmem_release()
 {
 	VirtualFree(sh4_reserved_mem,0,MEM_RELEASE);
+	//more ? the data is freed anyway ;p
 }
 
 /*

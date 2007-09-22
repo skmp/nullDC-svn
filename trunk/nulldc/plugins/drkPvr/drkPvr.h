@@ -68,6 +68,9 @@ void SaveSettings();
 #elif REND_API == REND_D3D_V2
 	#define REND_NAME "Direct3D HAL/V2"
 	#define GetRenderer GetDirect3DRenderer2
+#elif  REND_API == REND_NONE
+	#define REND_NAME "No Rendering"
+	#define GetRenderer GetNORenderer
 #else
 	#error invalid config.REND_API must be set with one of REND_D3D/REND_OGL/REND_SW/REND_D3D_V2
 #endif

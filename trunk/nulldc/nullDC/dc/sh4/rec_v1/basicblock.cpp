@@ -9,7 +9,7 @@
 #include "dc/sh4/sh4_interpreter.h"
 #include "nullprof.h"
 #include "dc/sh4/rec_v1/blockmanager.h"
-//#define RET_CACHE_PROF
+
 int compiled_basicblock_count=0;
 
 //needed declarations
@@ -353,21 +353,10 @@ void __fastcall CheckBlock(CompiledBasicBlock* block)
 	//verify(block->cbi.size==pc);
 	verify(block->cbi.Discarded==false);
 }
-#ifdef COUNT_BLOCK_LOCKTYPE_USAGE
-u32 manbs=0;
-u32 lockbs=0;
-void printfBBSS()
-{
-	printf ("Manual - %d : locked - %d : ratio(l:m) %f\n",manbs,lockbs,(float)lockbs/(float)manbs);
-	manbs=0;
-	lockbs=0;
-}
-#else
-void printfBBSS() {}
-#endif
-extern u32 fast_lookups;
+
 
 /*
+extern u32 fast_lookups;
 //eax == pc
 //esi == cBB
 void naked FASTCALL Resolve_FLUT(u32 pc,CompiledBasicBlock* cBB)
@@ -742,7 +731,7 @@ void BasicBlock::Compile()
 	case BLOCK_EXITTYPE_RET:			//guess
 		{
 #ifdef RET_CACHE_PROF
-			x86e->Emit(op_inc32,x86_ptr(&ret_cache_total));
+			x86e->Emit(op_add32,x86_ptr(&ret_cache_total),1);
 #endif
 			//cmp pr,guess
 			//call_ret_cache_ptr
@@ -765,7 +754,7 @@ void BasicBlock::Compile()
 			x86e->Emit(op_and32,ESP,RET_CACHE_PTR_MASK_AND);
 			x86e->Emit(op_or32,ESP,RET_CACHE_PTR_MASK_OR);
 #ifdef RET_CACHE_PROF
-			x86e->Emit(op_inc32,x86_ptr(&ret_cache_hits));
+			x86e->Emit(op_add32,x86_ptr(&ret_cache_hits),1);
 #endif
 			
 			//mov eax,[pcall_ret_address+codeoffset]

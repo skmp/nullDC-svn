@@ -202,21 +202,20 @@ void uiMain()
 	static HACCEL hAccel = LoadAccelerators(g_hInst, NULL);
 	
 	//proc all waiting messages
-	
-	for(;;)
-	{
-		WaitMessage();
-		if ( PeekMessage(&msg, NULL, 0,0, PM_REMOVE) != 0 )
+	DWORD bRet;
+	while( (bRet = GetMessage( &msg, NULL, 0, 0 )) != 0)
+	{ 
+		if (bRet == -1)
 		{
-			if( !TranslateAccelerator(g_hWnd, hAccel, &msg) )
-			{
-				TranslateMessage(&msg);
-				DispatchMessage(&msg);
-			}
-		}
-
-		if( WM_QUIT == msg.message )
+			printf("nullDC_GUI: FATAL ERROR, GetMessage failed, err=%d\n",GetLastError());
 			return;
+			// handle the error and possibly exit
+		}
+		else
+		{
+			TranslateMessage(&msg); 
+			DispatchMessage(&msg); 
+		}
 	}
 }
 
@@ -1520,9 +1519,7 @@ inline static void RefreshArmDbg(void)
 {
 
 }
-
-extern u32 ret_cache_hits;
-extern u32 ret_cache_total;
+BOOL CopyTextToClipboard(HWND hwnd, TCHAR *text);
 INT_PTR CALLBACK ProfilerProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	switch( uMsg )
@@ -1533,12 +1530,67 @@ INT_PTR CALLBACK ProfilerProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 
 	case WM_TIMER:
 		{
-			/**
-			bm_stats stats;
-			bm_GetStats(&stats);
+			nullDCPerfomanceInfo ndcpi;
+			emu.GetPerformanceInfo(&ndcpi);
+			
+			
+			char text_[2048];
+			char* text=text_;
 
-			char text[2048];
+#define strcatf text+=sprintf
+			if (ndcpi.TBP.Valid)
+			{
+				strcatf(text,"\r\nTBP : Enabled\r\n");
+				//the console has more usefull info ;p
+			}
+			else
+			{
+				strcatf(text,"\r\nTBP : Disabled\r\n");
+			}
+
+			if (ndcpi.Dynarec.Runtime.Lookups.Valid)
+			{
+				strcatf(text,"\r\nRuntime dynarec lookup profiling enabled\r\n");
+				strcatf(text,"%d full lookups , %d fast lookups , ratio %.2f%%\r\n",ndcpi.Dynarec.Runtime.Lookups.FullLookupDelta,ndcpi.Dynarec.Runtime.Lookups.FastLookupDelta
+														,ndcpi.Dynarec.Runtime.Lookups.FullLookupDelta/(float)ndcpi.Dynarec.Runtime.Lookups.LookupDelta*100);
+				strcatf(text,"%d blocks staticaly linked , ratio %.2f%%\r\n",ndcpi.Dynarec.Runtime.Execution.TotalBlocks-ndcpi.Dynarec.Runtime.Lookups.LookupDelta,
+					(ndcpi.Dynarec.Runtime.Execution.TotalBlocks-ndcpi.Dynarec.Runtime.Lookups.LookupDelta)/(float)ndcpi.Dynarec.Runtime.Execution.TotalBlocks*100);
+			}
+			else
+			{
+				strcatf(text,"\r\nRuntime dynarec lookup profiling disabled\r\n");
+			}
+			if (ndcpi.Dynarec.Runtime.Execution.Valid)
+			{
+				strcatf(text,"\r\nRuntime dynarec execution profiling enabled\r\n");
+				strcatf(text,"%d Manual blocks , %d locked blocks , ratio %.2f%%\r\n",ndcpi.Dynarec.Runtime.Execution.ManualBlocks,ndcpi.Dynarec.Runtime.Execution.LockedBlocks,
+				ndcpi.Dynarec.Runtime.Execution.ManualBlocks/(float)ndcpi.Dynarec.Runtime.Execution.TotalBlocks*100);
+			}
+			else
+			{
+				strcatf(text,"\r\nRuntime dynarec execution profiling disabled\r\n");
+			}
+			strcatf(text,"\r\nDynarec Translation Cache stats:\r\n");
+			strcatf(text,"%.2f MB size, %d blocks, %.1f B avg size\r\n",ndcpi.Dynarec.CodeGen.CodeSize/1024.0f/1024.0f,ndcpi.Dynarec.CodeGen.TotalBlocks,
+														ndcpi.Dynarec.CodeGen.CodeSize/(float)ndcpi.Dynarec.CodeGen.TotalBlocks);
+			
+			strcatf(text,"%d Manual blocks , %d locked blocks , ratio %.2f%%\r\n",ndcpi.Dynarec.CodeGen.ManualBlocks,ndcpi.Dynarec.CodeGen.LockedBlocks,
+				ndcpi.Dynarec.CodeGen.ManualBlocks/(float)ndcpi.Dynarec.CodeGen.TotalBlocks*100);
+			
+			
+			if (ndcpi.Dynarec.Runtime.RetCache.Valid)
+			{
+				strcatf(text,"\r\nRuntime dynarec ret cache stats enabled\r\n");
+				strcatf(text,"%d rets missmatched , %d rets matched , ratio %.2f%%\r\n",ndcpi.Dynarec.Runtime.RetCache.Misses,ndcpi.Dynarec.Runtime.RetCache.Hits
+														,ndcpi.Dynarec.Runtime.RetCache.Misses/(float)ndcpi.Dynarec.Runtime.RetCache.Count*100);
+			}
+			else
+			{
+				strcatf(text,"\r\nRuntime dynarec ret cache stats disabled\r\n");
+			}
+			/**
 			sprintf(text,"Block manager : \r\ntracking %d blocks , %d kb TCH\r\n"
+
 						 "%d Manual blocks , %d locked blocks , ratio %f\r\n"
 						 "%d full lookups , %d fast lookups , ratio %f\r\n"
 						 "%d ret cache miss , %d ret cache hits , ratio %f\r\n",
@@ -1547,12 +1599,28 @@ INT_PTR CALLBACK ProfilerProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 						 stats.full_lookups,stats.fast_lookups,stats.full_lookups/(float)(stats.fast_lookups+stats.full_lookups),
 						 ret_cache_total-ret_cache_hits,ret_cache_hits,(ret_cache_total-ret_cache_hits)/(float)(ret_cache_total),
 						 0);
-			ret_cache_total=ret_cache_hits=0;
-			SetDlgItemText(hWnd,IDC_PROFTEXT,text);
+						 ret_cache_total=ret_cache_hits=0;
 			**/
+			SetDlgItemText(hWnd,IDC_PROFTEXT,text_);
 		}
 		return TRUE;
 	
+
+	case WM_COMMAND:
+		switch( LOWORD(wParam) )
+		{
+		case IDC_COPY:
+			{
+				char text_[2048];
+				GetDlgItemText(hWnd,IDC_PROFTEXT,text_,2048);
+				CopyTextToClipboard(hWnd,text_);
+			}
+			return true;
+
+		default: break;
+		}
+		return false;
+
 	case WM_CLOSE:
 	case WM_DESTROY:
 		EndDialog(hWnd,0);
