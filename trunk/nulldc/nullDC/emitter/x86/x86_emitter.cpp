@@ -85,8 +85,16 @@ void x86_block::Init()
 void* x86_block::Generate()
 {
 	if (do_realloc)
-		x86_buff=(u8*)dyna_finalize(x86_buff,x86_size,x86_indx);
+	{
+		u8* final_buffer=0;
 
+		final_buffer=(u8*)dyna_finalize(x86_buff,x86_size,x86_indx);
+
+		if (final_buffer==0)
+			return 0;
+
+		x86_buff=final_buffer;
+	}
 	ApplyPatches(x86_buff);
 
 	return &x86_buff[0];

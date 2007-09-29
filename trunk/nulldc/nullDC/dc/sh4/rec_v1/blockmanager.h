@@ -37,6 +37,7 @@ void FreeSuspendedBlocks();
 CompiledBlockInfo* FindOrRecompileBlock(u32 pc);
 void __fastcall SuspendBlock(CompiledBlockInfo* block);
 void __fastcall SuspendAllBlocks();
+void __fastcall _SuspendAllBlocks();
 CompiledBlockInfo* __fastcall FindBlock_full_compile(u32 address,CompiledBlockInfo* fastblock);
 
 void InitBlockManager();
@@ -72,11 +73,11 @@ struct bm_stats
 
 void bm_GetStats(bm_stats* stats);
 
-#define _BM_CACHE_STATS
+//#define _BM_CACHE_STATS
 #define LOOKUP_HASH_SIZE	0x4000
 #define LOOKUP_HASH_MASK	(LOOKUP_HASH_SIZE-1)
 extern CompiledBlockInfo*			BlockLookupGuess[LOOKUP_HASH_SIZE];
 
-#define COUNT_BLOCK_LOCKTYPE_USAGE
+//#define COUNT_BLOCK_LOCKTYPE_USAGE
 extern u32 manbs;
 extern u32 lockbs;

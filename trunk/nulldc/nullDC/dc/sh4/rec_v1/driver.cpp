@@ -43,36 +43,11 @@ u32 nb_count=0;
 u32 rec_cycles=0;
 
 void* Dynarec_Mainloop_no_update;
-void* Dynarec_Mainloop_no_update_fast;
 void* Dynarec_Mainloop_do_update;
 
 void DynaPrintLinkStart();
 void DynaPrintLinkEnd();
 void DumpBlockMappings();
-
-void*  __fastcall CompileCode_SuperBlock(u32 pc)
-{
-	sb_count++;
-	//printf("Superblock @ pc=0x%X , %d superblocks , %d%% of all blocks\n",pc,sb_count,sb_count*100/nb_count);
-	AnalyseCodeSuperBlock(pc);
-	
-	CompiledBlockInfo* cblock;
-	BasicBlock* block=new BasicBlock();
-	//scan code
-	ScanCode(pc,block);
-	//Fill block lock type info
-	block->CalculateLockFlags();
-	//analyse code [generate il/block type]
-	AnalyseCode(block);
-	block->flags.DisableHS=1;
-	//Compile code
-	block->Compile();
-	RegisterBlock(cblock=&block->cBB->cbi);
-	delete block;
-	//compile code
-	//return pointer
-	return cblock->Code;
-}
 
 CompiledBlockInfo*  __fastcall CompileCode(u32 pc)
 {
@@ -88,11 +63,18 @@ CompiledBlockInfo*  __fastcall CompileCode(u32 pc)
 	//optimise
 	shil_optimise_pass_ce_driver(block);
 	//Compile code
-	block->Compile();
+	bool reset_blocks=!block->Compile();
 	RegisterBlock(cblock=&block->cBB->cbi);
 	delete block;
 	//compile code
 	//return pointer
+	if (reset_blocks)
+	{
+		_SuspendAllBlocks();
+		printf("Compile failed -- retrying\n");
+		return CompileCode(pc);//retry
+	}
+	
 	return cblock;
 }
 BasicBlockEP* __fastcall CompileCodePtr()
@@ -167,37 +149,17 @@ void naked DynaMainLoop()
 		//misc pointers needed
 		mov block_stack_pointer,esp;
 		mov Dynarec_Mainloop_no_update,offset no_update;
-		mov Dynarec_Mainloop_no_update_fast,offset fast_lookup;
 		mov Dynarec_Mainloop_do_update,offset do_update;
 		//Max cycle count :)
 		mov rec_cycles,(CPU_TIMESLICE*9/10);
 
 		jmp no_update;
-
-		//some utility code :)
-
-		//partial , faster lookup. When we know the mode hasnt changed :)
-fast_lookup:
-		mov ecx,pc;
-		mov edx,ecx;
-		and edx,(LOOKUP_HASH_MASK<<2);
-
-		mov edx,[BlockLookupGuess + edx]
-	
-		cmp [edx],ecx;
-		jne full_lookup;
-
-		add dword ptr[edx+16],1;
-#ifdef _BM_CACHE_STATS
-		add fast_lookups,1;
-#endif
-		jmp dword ptr[edx+8];
-
 		
+		//nelper code can go here
+
+		//called if no update is needed
 no_update:
 		/*
-		//called if no update is needed
-		
 		call GetRecompiledCodePointer;
 		*/
 		
@@ -205,7 +167,6 @@ no_update:
 		#define LOOKUP_HASH_SIZE	0x4000
 		#define LOOKUP_HASH_MASK	(LOOKUP_HASH_SIZE-1)
 		#define GetLookupHash(addr) ((addr>>2)&LOOKUP_HASH_MASK)
-
 		*/
 		/*
 		CompiledBlockInfo* fastblock;
@@ -261,6 +222,9 @@ do_update:
 		jne no_update;
 
 		//exit from function
+		mov ret_cache_base,0; //cache no longer exists
+		
+		//restore regs
 		mov esp,old_esp;
 		pop ebp;
 		pop ebx;

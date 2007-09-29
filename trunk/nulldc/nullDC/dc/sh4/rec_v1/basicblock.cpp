@@ -12,6 +12,32 @@
 
 int compiled_basicblock_count=0;
 
+const x86_opcode_class JumpCC[] =
+{
+	op_jo ,//r/m8 = 0F 90 /0
+	op_jno ,//r/m8 = 0F 91 /0
+
+	op_jb ,//r/m8 = 0F 92 /0
+	op_jnb ,//r/m8 = 0F 93 /0
+
+	op_je ,//r/m8 = 0F 94 /0
+	op_jne ,//r/m8 = 0F 95 /0
+
+	op_jbe ,//r/m8 = 0F 96 /0
+	op_jnbe ,//r/m8 = 0F 97 /0
+
+	op_js ,//r/m8 = 0F 98 /0
+	op_jns ,//r/m8 = 0F 99 /0
+
+	op_jp ,//r/m8 = 0F 9A /0
+	op_jnp ,//r/m8 = 0F 9B /0
+
+	op_jl ,//r/m8 = 0F 9C /0
+	op_jnl ,//r/m8 = 0F 9D /0
+
+	op_jle ,//r/m8 = 0F 9E /0
+	op_jnle ,//r/m8 = 0F 9F /0
+};
 //needed declarations
 void bb_link_compile_inject_TF_stub(CompiledBlockInfo* ptr);
 void bb_link_compile_inject_TT_stub(CompiledBlockInfo* ptr);
@@ -56,7 +82,7 @@ void __fastcall basic_block_ClearBlock(CompiledBlockInfo* p_this,CompiledBlockIn
 			pthis->TF_next_addr=0xFFFFFFFF;
 			RewriteBasicBlockGuess_NULL((CompiledBasicBlock*)p_this);
 		}
-		if (pthis->RewriteType)
+		if (pthis->Rewrite.Type)
 			RewriteBasicBlockCond((CompiledBasicBlock*)p_this);
 	}
 
@@ -64,7 +90,7 @@ void __fastcall basic_block_ClearBlock(CompiledBlockInfo* p_this,CompiledBlockIn
 	{
 		pthis->TT_block=0;
 		pthis->pTT_next_addr=bb_link_compile_inject_TT_stub;
-		if (pthis->RewriteType)
+		if (pthis->Rewrite.Type)
 			RewriteBasicBlockCond((CompiledBasicBlock*)p_this);
 	}
 }
@@ -147,17 +173,17 @@ void RewriteBasicBlockFixed(CompiledBasicBlock* cBB)
 	if  (cBB->ebi.TF_block)
 		flags=1;
 
-	if (cBB->ebi.LastRewrite==flags)
+	if (cBB->ebi.Rewrite.Last==flags)
 		return;
 
 	x86_block* x86e = new x86_block();
 
 	x86e->Init();
 	x86e->do_realloc=false;
-	x86e->x86_buff=(u8*)cBB->cbi.Code + cBB->ebi.RewriteOffset;
+	x86e->x86_buff=(u8*)cBB->cbi.Code + cBB->ebi.Rewrite.Offset;
 	x86e->x86_size=32;
 
-	cBB->ebi.LastRewrite=flags;
+	cBB->ebi.Rewrite.Last=flags;
 
 	if  (cBB->ebi.TF_block)
 	{
@@ -174,7 +200,7 @@ void RewriteBasicBlockFixed(CompiledBasicBlock* cBB)
 }
 void RewriteBasicBlockCond(CompiledBasicBlock* cBB)
 {
-	if (cBB->ebi.RewriteType==2)
+	if (cBB->ebi.Rewrite.Type==2)
 	{
 		RewriteBasicBlockFixed(cBB);
 		return;
@@ -186,40 +212,42 @@ void RewriteBasicBlockCond(CompiledBasicBlock* cBB)
 	if (cBB->ebi.TF_block)
 		flags|=2;
 
-	if (cBB->ebi.LastRewrite==flags)
+	if (cBB->ebi.Rewrite.Last==flags)
 		return;
 
 	x86_block* x86e = new x86_block();
 	
 	x86e->Init();
 	x86e->do_realloc=false;
-	x86e->x86_buff=(u8*)cBB->cbi.Code + cBB->ebi.RewriteOffset;
+	x86e->x86_buff=(u8*)cBB->cbi.Code + cBB->ebi.Rewrite.Offset;
 	x86e->x86_size=32;
 
-	cBB->ebi.LastRewrite=flags;
+	cBB->ebi.Rewrite.Last=flags;
+	x86_opcode_class jump_op=JumpCC[cBB->ebi.Rewrite.RCFlags];
+	x86_opcode_class jump_op_n=JumpCC[cBB->ebi.Rewrite.RCFlags^1];
 
 	if (flags==1)
 	{
-		x86e->Emit(op_jne,x86_ptr_imm(cBB->ebi.TT_block->Code));
+		x86e->Emit(jump_op,x86_ptr_imm(cBB->ebi.TT_block->Code));//jne
 		x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , block
 		x86e->Emit(op_jmp,x86_ptr_imm(bb_link_compile_inject_TF_stub));
 	}
 	else if  (flags==2)
 	{
-		x86e->Emit(op_je,x86_ptr_imm(cBB->ebi.TF_block->Code));
+		x86e->Emit(jump_op_n,x86_ptr_imm(cBB->ebi.TF_block->Code));//je
 		x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , block
 		x86e->Emit(op_jmp,x86_ptr_imm(bb_link_compile_inject_TT_stub));
 	}
 	else  if  (flags==3)
 	{
-		x86e->Emit(op_je,x86_ptr_imm(cBB->ebi.TF_block->Code));
+		x86e->Emit(jump_op_n,x86_ptr_imm(cBB->ebi.TF_block->Code));//je
 		x86e->Emit(op_jmp,x86_ptr_imm(cBB->ebi.TT_block->Code));
 	}
 	else
 	{
 		//x86e->Emit(op_int3);
 		x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , block
-		x86e->Emit(op_je,x86_ptr_imm(bb_link_compile_inject_TF_stub));
+		x86e->Emit(jump_op_n,x86_ptr_imm(bb_link_compile_inject_TF_stub));//je
 		x86e->Emit(op_jmp,x86_ptr_imm(bb_link_compile_inject_TT_stub));
 	}
 	x86e->Generate();
@@ -239,7 +267,7 @@ void* __fastcall bb_link_compile_inject_TF(CompiledBlockInfo* ptr)
 		target->AddRef(ptr);
 		ptr->GetBB()->TF_block=target;
 		ptr->GetBB()->pTF_next_addr=target->Code;
-		if (ptr->GetBB()->RewriteType)
+		if (ptr->GetBB()->Rewrite.Type)
 			RewriteBasicBlockCond((CompiledBasicBlock*)ptr);
 	}
 	return target->Code;
@@ -256,7 +284,7 @@ void* __fastcall bb_link_compile_inject_TT(CompiledBlockInfo* ptr)
 		target->AddRef(ptr);
 		ptr->GetBB()->TT_block=target;
 		ptr->GetBB()->pTT_next_addr=target->Code;
-		if (ptr->GetBB()->RewriteType)
+		if (ptr->GetBB()->Rewrite.Type)
 			RewriteBasicBlockCond((CompiledBasicBlock*)ptr);
 	}
 	return target->Code;
@@ -330,6 +358,8 @@ void CBBs_BlockSuspended(CompiledBlockInfo* block,u32* sp)
 		}
 	}
 	*/
+	if (ret_cache_base==0)
+		return;
 	for (int i=0;i<RET_CACHE_COUNT;i++)
 	{
 		if (ret_cache_base[i].cBB == block)
@@ -341,6 +371,8 @@ void CBBs_BlockSuspended(CompiledBlockInfo* block,u32* sp)
 }
 void ret_cache_reset()
 {
+	if (ret_cache_base==0)
+		return;
 	for (int i=0;i<RET_CACHE_COUNT;i++)
 	{
 		ret_cache_base[i].addr=0xFFFFFFFF;
@@ -400,7 +432,7 @@ void FASTCALL RewriteBasicBlockGuess_FLUT(CompiledBasicBlock* cBB)
 
 	x86e->Init();
 	x86e->do_realloc=false;
-	x86e->x86_buff=(u8*)cBB->cbi.Code + cBB->ebi.RewriteOffset;
+	x86e->x86_buff=(u8*)cBB->cbi.Code + cBB->ebi.Rewrite.Offset;
 	x86e->x86_size=64;
 
 	
@@ -475,7 +507,7 @@ void* FASTCALL RewriteBasicBlockGuess_TTG(CompiledBasicBlock* cBB)
 
 	x86e->Init();
 	x86e->do_realloc=false;
-	x86e->x86_buff=(u8*)cBB->cbi.Code + cBB->ebi.RewriteOffset;
+	x86e->x86_buff=(u8*)cBB->cbi.Code + cBB->ebi.Rewrite.Offset;
 	x86e->x86_size=64;
 
 	
@@ -505,7 +537,7 @@ void FASTCALL RewriteBasicBlockGuess_NULL(CompiledBasicBlock* cBB)
 
 	x86e->Init();
 	x86e->do_realloc=false;
-	x86e->x86_buff=(u8*)cBB->cbi.Code + cBB->ebi.RewriteOffset;
+	x86e->x86_buff=(u8*)cBB->cbi.Code + cBB->ebi.Rewrite.Offset;
 	x86e->x86_size=32;
 	x86e->Emit(op_mov32,ECX,(u32)cBB);
 	x86e->Emit(op_jmp,x86_ptr_imm(RewriteBasicBlockGuess_TTG_stub));
@@ -530,7 +562,7 @@ void ret_cache_push(CompiledBasicBlock* cBB,x86_block* x86e)
 	//Block
 	x86e->Emit(op_mov32,x86_mrm::create(ESP,x86_ptr::create(RET_CACHE_STACK_OFFSET_B)),(u32)(cBB));
 }
-void BasicBlock::Compile()
+bool BasicBlock::Compile()
 {
 	FloatRegAllocator*		fra;
 	IntegerRegAllocator*	ira;
@@ -648,9 +680,8 @@ void BasicBlock::Compile()
 				//suspend block
 				x86e->Emit(op_mov32,ECX,(u32)cBB);
 				x86e->Emit(op_call,x86_ptr_imm(SuspendBlock));
-				void*  __fastcall CompileCode_SuperBlock(u32 pc);
 				x86e->Emit(op_mov32,ECX,(u32)cBB->cbi.start);
-				x86e->Emit(op_call,x86_ptr_imm(CompileCode_SuperBlock));
+				x86e->Emit(op_call,x86_ptr_imm(0));
 				x86e->Emit(op_jmp32,EAX);
 			}
 			x86e->MarkLabel(no_promote);
@@ -685,10 +716,37 @@ void BasicBlock::Compile()
 	shil_compiler_init(x86e,ira,fra);
 
 	u32 list_sz=(u32)ilst.opcodes.size();
+	
+	u32 exit_cond_direct=16;//16 -> not possible
 	for (u32 i=0;i<list_sz;i++)
 	{
 		shil_opcode* op=&ilst.opcodes[i];
 
+		if ((BLOCK_EXITTYPE_COND==flags.ExitType) && i>0 && (list_sz>1) && (op[0].opcode == shilop_LoadT) && (op[0].imm1==128) && (!nullprof_enabled))	//if flag will be preserved, and we are on a LoadT jcond
+		{
+			//
+			//folowing opcodes better be mov only 
+			if (
+				 //(i==(list_sz-1)) &&//&& //if current opcode is LoadT/jcond [shoul allways be...] -> checks above since its not the last opcode allways [opt passes move some stuff downhere, const wbs ..]
+				(op[-1].opcode == shilop_SaveT)							  //and previus was a load to T [== the cmp was right before bt/no bts)
+				)
+			{
+				for (int j=i+1;j<list_sz;j++)
+				{
+					//printf("%d: %d\n",j,op[j-i].opcode);
+					if (op[j-i].opcode!=shilop_mov)
+						goto compile_normaly;
+				}
+				//printf("Flag promotion @ %d out of %d\n",i,(list_sz-1));
+				exit_cond_direct=op[-1].imm1;
+				if (exit_cond_direct==CC_FPU_E)
+					exit_cond_direct=CC_NP;
+
+				//skip the LoadT jcond, work on opcodes after
+				continue;
+			}
+		}
+compile_normaly:
 		shil_compile(op);
 	}
 
@@ -708,8 +766,9 @@ void BasicBlock::Compile()
 	}
 
 	//end block acording to block type :)
-	cBB->ebi.RewriteType=0;
-	cBB->ebi.LastRewrite=0xFF;
+	cBB->ebi.Rewrite.Type=0;
+	cBB->ebi.Rewrite.RCFlags=0;
+	cBB->ebi.Rewrite.Last=0xFF;
 	cBB->cbi.block_type.exit_type=flags.ExitType;
 
 	switch(flags.ExitType)
@@ -720,10 +779,10 @@ void BasicBlock::Compile()
 		}
 	case BLOCK_EXITTYPE_DYNAMIC:		//not guess 
 		{
-			cBB->ebi.RewriteOffset=x86e->x86_indx;
+			cBB->ebi.Rewrite.Offset=x86e->x86_indx;
 			x86e->Emit(op_mov32,ECX,(u32)cBB);
 			x86e->Emit(op_jmp,x86_ptr_imm(RewriteBasicBlockGuess_TTG_stub));
-			u32 extrasz=26-(x86e->x86_indx-cBB->ebi.RewriteOffset);
+			u32 extrasz=26-(x86e->x86_indx-cBB->ebi.Rewrite.Offset);
 			for (int i=0;i<extrasz;i++)
 				x86e->write8(0xCC);
 		}
@@ -768,8 +827,11 @@ void BasicBlock::Compile()
 			u32 TT_a=cBB->ebi.TT_next_addr;
 			u32 TF_a=cBB->ebi.TF_next_addr;
 			
-
-			x86e->Emit(op_cmp32,&T_jcond_value,1);
+			if (exit_cond_direct==16)
+			{
+				x86e->Emit(op_cmp32,&T_jcond_value,1);
+				exit_cond_direct=CC_E;
+			}
 
 			if (TT_a==cBB->cbi.start)
 			{
@@ -793,12 +855,17 @@ void BasicBlock::Compile()
 					cBB->ebi.TF_block->AddRef(&cBB->cbi);
 			}
 
-			cBB->ebi.RewriteType=1;
-			cBB->ebi.RewriteOffset=x86e->x86_indx;
-			
+			//we invert the test, jne->je etc
+			//due to historical reasons, thats how the COND exit type works ;p
+			exit_cond_direct^=1;
 
+			cBB->ebi.Rewrite.Type=1;
+			cBB->ebi.Rewrite.RCFlags=exit_cond_direct;
+			cBB->ebi.Rewrite.Offset=x86e->x86_indx;
+			
+			
 			x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , block
-			x86e->Emit(op_jne,x86_ptr_imm(0));
+			x86e->Emit(JumpCC[exit_cond_direct],x86_ptr_imm(0));//jne
 			x86e->Emit(op_jmp,x86_ptr_imm(0));
 			x86e->Emit(op_int3);
 		} 
@@ -820,8 +887,8 @@ void BasicBlock::Compile()
 					cBB->ebi.TF_block->AddRef(&cBB->cbi);
 			}
 
-			cBB->ebi.RewriteType=2;
-			cBB->ebi.RewriteOffset=x86e->x86_indx;
+			cBB->ebi.Rewrite.Type=2;
+			cBB->ebi.Rewrite.Offset=x86e->x86_indx;
 			//link to next block :
 			x86e->Emit(op_mov32,ECX,(u32)cBB);					//mov ecx , cBB
 			x86e->Emit(op_jmp32,x86_ptr((u32*)&(cBB->ebi.pTF_next_addr)));	//mov eax , [pTF_next_addr]
@@ -857,37 +924,30 @@ void BasicBlock::Compile()
 	//apply roml patches and generate needed code
 	apply_roml_patches();
 
-	void* codeptr=x86e->Generate();//heh
-
+	void* codeptr=x86e->Generate();//NOTE, codeptr can be 0 here </NOTE>
+	
 	cBB->cbi.Code=(BasicBlockEP*)codeptr;
 	cBB->cbi.size=x86e->x86_indx;
-	dyna_link(&cBB->cbi);
+	if (codeptr!=0)
+		dyna_link(&cBB->cbi);
 
 	//make it call the stubs , unless otherwise needed
 	cBB->ebi.pTF_next_addr=bb_link_compile_inject_TF_stub;
 	cBB->ebi.pTT_next_addr=bb_link_compile_inject_TT_stub;
-	//cBB->ebi
+	
 	compiled_basicblock_count++;
-	
-	/*
-	if ((block_count%512)==128)
-	{
-		printf("Recompiled %d blocks\n",block_count);
-		u32 rat=native>fallbacks?fallbacks:native;
-		if (rat!=0)
-			printf("Native/Fallback ratio : %d:%d [%d:%d]\n",native,fallbacks,native/rat,fallbacks/rat);
-		else
-			printf("Native/Fallback ratio : %d:%d [%d:%d]\n",native,fallbacks,native,fallbacks);
-		printf("Average block size : %d opcodes ; ",(fallbacks+native)/block_count);
-	}*/
-	
+		
 	delete fra;
 	delete ira;
 	x86e->Free();
 	delete x86e;
 
-	if (cBB->ebi.RewriteType)
+	if (codeptr==0)
+		return false; // didnt manage to generate code
+	//rewrite needs valid codeptr
+	if (cBB->ebi.Rewrite.Type)
 		RewriteBasicBlockCond(cBB);
+	return true;
 }
 
 //

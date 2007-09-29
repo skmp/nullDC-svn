@@ -91,7 +91,7 @@ class BasicBlock: public CodeRegion
 
 	shil_stream ilst;
 
-	void Compile();
+	bool Compile();
 	void CalculateLockFlags();
 
 	CompiledBasicBlock* cBB;

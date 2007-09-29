@@ -178,6 +178,17 @@ sh4op(i0000_nnnn_1000_0011)
 	{
 		do_pref(Dest);
 	}
+	/*
+	else
+	{
+		__asm 
+		{ 
+			mov eax,Dest;
+			mov edx,sh4_reserved_mem;
+			and eax,0x1FFFFFFF;
+			prefetchnta [edx+eax];
+		}
+	}*/
 }
 
 

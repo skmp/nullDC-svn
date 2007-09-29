@@ -281,6 +281,7 @@ public:
 	void Reset()
 	{
 		index=0;
+		memset(ptr,0xCC,size);
 	}
 	//BlockList blocks;
 };
@@ -315,28 +316,38 @@ void FreeBlocks(BlockList* blocks)
 
 //this should not be called from a running block , or it will crash
 //Fully resets block hash/list , clears all entrys and free's any prevusly allocated blocks
-void ResetBlocks()
+void ResetBlocks(bool free_too=true)
 {
+	//this should clear all lists
+	while(all_block_list.ItemCount!=0)
+	{
+		verify(all_block_list[0]!=BLOCK_NONE);
+		SuspendBlock(all_block_list[0]);
+	}
+	all_block_list.CheckEmpty();
+	verify(all_block_list.ItemCount==0);
+
 	for (u32 i=0;i<LOOKUP_HASH_SIZE;i++)
 	{
-		for (u32 j=0;j<BlockLookupLists[i].size();j++)
-		{
-			if (BlockLookupLists[i][j]!=BLOCK_NONE)
-				SuspendBlock(BlockLookupLists[i][j]);
-		}
-		BlockLookupLists[i].clear();
+		verify(BlockLookupLists[i].ItemCount==0);
+		BlockLookupLists[i].CheckEmpty();
 		#ifdef BLOCK_LUT_GUESS
+		verify(BlockLookupGuess[i] ==0 || BlockLookupGuess[i]==BLOCK_NONE);
 		BlockLookupGuess[i]=BLOCK_NONE;
 		#endif
 	}
 
 	for (u32 i=0;i<(RAM_SIZE/PAGE_SIZE);i++)
 	{
-		BlockPageLists[i].clear();
+		verify(BlockPageLists[i].ItemCount==0);
+		BlockPageLists[i].CheckEmpty();
 	}
-
-	FreeBlocks(&SuspendedBlocks);
-	FreeBlocks(&all_block_list);
+	if (free_too)
+		FreeBlocks(&SuspendedBlocks);
+	//FreeBlocks(&all_block_list); << THIS BETTER BE EMPTY WHEN WE GET HERE
+	verify(all_block_list.ItemCount==0);
+	
+	//Reset misc data structures (all blocks are removed , so we just need to initialise em to default !)
 	reset_memalloc();
 	memset(PageInfo,0,sizeof(PageInfo));
 	
@@ -370,10 +381,9 @@ void __fastcall _SuspendAllBlocks();
 //free's suspended blocks
 void FreeSuspendedBlocks()
 {
-	FreeBlocks(&SuspendedBlocks);
-
 	if (reset_cache)
 		_SuspendAllBlocks();
+	FreeBlocks(&SuspendedBlocks);
 }
 
 
@@ -562,7 +572,6 @@ BasicBlockEP* __fastcall FindCode_full(u32 address,CompiledBlockInfo* fastblock)
 
 pginfo GetPageInfo(u32 address)
 {
-	
 	if (IsOnRam(address))
 	{
 		return PageInfo[GetRamPageFromAddress(address)];
@@ -696,8 +705,7 @@ void __fastcall SuspendAllBlocks()
 void __fastcall _SuspendAllBlocks()
 {
 	printf("Reseting Dynarec Cache...\n");
-	ResetBlocks();
-
+	ResetBlocks(false);
 	reset_cache=false;
 }
 //called from a manualy invalidated block
@@ -907,7 +915,8 @@ void* dyna_finalize(void* ptr,u32 oldsize,u32 newsize)
 	if (rv==0)
 	{
 		printf("Must flush a buffer !\n");
-		__asm int 3;
+		return 0;
+	//	__asm int 3;
 	}
 
 	memcpy(rv,dyna_tempbuffer,newsize);

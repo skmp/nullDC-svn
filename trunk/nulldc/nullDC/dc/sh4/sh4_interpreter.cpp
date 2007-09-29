@@ -582,7 +582,6 @@ int __fastcall UpdateSystem(u32 Cycles)
 		gpc_counter++;
 		if (gpc_counter>10)
 		{
-			
 			//This is a patch for the DC LOOPBACK test GDROM (disables serial i/o)
 			/*
 			*(u16*)&mem_b.data[(0xC0196EC)& 0xFFFFFF] =9;
