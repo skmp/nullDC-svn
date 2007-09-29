@@ -281,7 +281,7 @@ public:
 	void Reset()
 	{
 		index=0;
-		memset(ptr,0xCC,size);
+		//memset(ptr,0xCC,size);
 	}
 	//BlockList blocks;
 };

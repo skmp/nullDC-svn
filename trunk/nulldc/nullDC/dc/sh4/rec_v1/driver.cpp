@@ -117,6 +117,8 @@ BasicBlockEP* __fastcall FindCode_full(u32 address,CompiledBlockInfo* fastblock)
 
 extern u32 fast_lookups;
 u32 old_esp;
+u32 Dynarec_Mainloop_no_update_fast;
+
 void naked DynaMainLoop()
 {
 	__asm
@@ -149,17 +151,23 @@ void naked DynaMainLoop()
 		//misc pointers needed
 		mov block_stack_pointer,esp;
 		mov Dynarec_Mainloop_no_update,offset no_update;
+		mov Dynarec_Mainloop_no_update_fast,offset no_update;
 		mov Dynarec_Mainloop_do_update,offset do_update;
 		//Max cycle count :)
 		mov rec_cycles,(CPU_TIMESLICE*9/10);
 
 		jmp no_update;
-		
-		//nelper code can go here
 
-		//called if no update is needed
+		//some utility code :)
+
+		//partial , faster lookup. When we know the mode hasnt changed :)
+fast_lookup:
+
+		align 16
 no_update:
 		/*
+		//called if no update is needed
+		
 		call GetRecompiledCodePointer;
 		*/
 		
@@ -167,6 +175,7 @@ no_update:
 		#define LOOKUP_HASH_SIZE	0x4000
 		#define LOOKUP_HASH_MASK	(LOOKUP_HASH_SIZE-1)
 		#define GetLookupHash(addr) ((addr>>2)&LOOKUP_HASH_MASK)
+
 		*/
 		/*
 		CompiledBlockInfo* fastblock;
@@ -222,9 +231,6 @@ do_update:
 		jne no_update;
 
 		//exit from function
-		mov ret_cache_base,0; //cache no longer exists
-		
-		//restore regs
 		mov esp,old_esp;
 		pop ebp;
 		pop ebx;

@@ -1,9 +1,11 @@
 #include "Types.h"
 #include "sh4_registers.h"
 
-__declspec(align(32)) u32 r[16];
+__declspec(align(64)) u32 r[16];		//64 bytes : 1 cache line
+__declspec(align(64)) f32 fr[16];		//64 bytes : 1 cache line
+__declspec(align(64)) f32 xf[16];		//64 bytes : 1 cache line
 
-__declspec(align(32)) u32 r_bank[8];
+__declspec(align(64)) u32 r_bank[8];
 
 u32 gbr,ssr,spc,sgr,dbr,vbr;
 u32 mach,macl,pr,fpul;
@@ -13,10 +15,9 @@ StatusReg sr;
 
 fpscr_type fpscr;
 
-__declspec(align(32)) f32 xf[16];
-__declspec(align(32)) f32 fr[16];
 
-__declspec(align(32)) f32 sin_table[0x10000];
+
+__declspec(align(64)) f32 sin_table[0x10000];
 
 u32*  xf_hex=(u32*)xf,*fr_hex=(u32*)fr;
 
