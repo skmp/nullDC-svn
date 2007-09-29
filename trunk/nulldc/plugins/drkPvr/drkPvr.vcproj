@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1253"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="drkPvr"
 	ProjectGUID="{0520BA33-1A98-4DDE-8B36-99F25EDC5BD6}"
 	RootNamespace="drkPvr"
@@ -155,7 +155,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="winMM.lib  opengl32.lib  glu32.lib glaux.lib d3d9.lib d3dx9.lib sdl.lib"
+				AdditionalDependencies="winMM.lib"
 				OutputFile="$(SolutionDir)\WorkDir\Plugins\$(ProjectName)_$(PlatformName).dll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="C:\Program Files\Microsoft DirectX SDK (April 2006)\Lib\x86"

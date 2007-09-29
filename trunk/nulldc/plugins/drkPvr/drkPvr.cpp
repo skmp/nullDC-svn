@@ -116,6 +116,7 @@ void AddSeperator(u32 menuid)
 }
 OptionGroop menu_res;
 OptionGroop menu_sortmode;
+OptionGroop menu_modvolmode;
 OptionGroop menu_palmode;
 OptionGroop menu_widemode;
 int oldmode=-1;
@@ -145,11 +146,6 @@ void UpdateRRect()
 	rend_set_render_rect(rect,oldmode!=settings.Enhancements.AspectRatioMode);
 	oldmode=settings.Enhancements.AspectRatioMode;
 }
-void FASTCALL dcShowConfig(void* window)
-{
-	printf("No config for now\n");
-}
-
 
 void FASTCALL vramLockCB (vram_block* block,u32 addr)
 {
@@ -183,6 +179,11 @@ void handler_widemode(int mode)
 void handler_PalMode(int  mode)
 {
 	settings.Emulation.PaletteMode=mode;
+	SaveSettings();
+}
+void handler_ModVolMode(int  mode)
+{
+	settings.Emulation.ModVolMode=mode;
 	SaveSettings();
 }
 u32 enable_FS_mid;
@@ -330,7 +331,19 @@ s32 FASTCALL Load(emu_info* emu_inf)
 	menu_palmode.Add(PMT,"Dynamic,Full",3);
 
 	menu_palmode.SetValue(settings.Emulation.PaletteMode);
+
 	CreateSortMenu();
+
+	u32 MVM=emu.AddMenuItem(emu.RootMenu,-1,"Modifier Volumes: %s",0,0);
+
+	menu_modvolmode.format="Modifier Volumes: %s";
+	menu_modvolmode.callback=handler_ModVolMode;
+
+	menu_modvolmode.Add(MVM,"Off",0);
+	menu_modvolmode.Add(MVM,"Normal",1);
+	menu_modvolmode.Add(MVM,"Volumes",2);
+	menu_modvolmode.SetValue(settings.Emulation.ModVolMode);
+
 
 	emu.AddMenuItem(emu.RootMenu,-1,"Show Fps",handler_ShowFps,settings.OSD.ShowFPS);
 
@@ -559,7 +572,8 @@ void cfgSetInt(char* key,int val)
 void LoadSettings()
 {
 	settings.Emulation.AlphaSortMode			=	cfgGetInt("Emulation.AlphaSortMode",1);
-	settings.Emulation.PaletteMode				=	cfgGetInt("Emulation.VersionedPalleteTextures",1);
+	settings.Emulation.PaletteMode				=	cfgGetInt("Emulation.PaletteMode",1);
+	settings.Emulation.ModVolMode				= 	cfgGetInt("Emulation.ModVolMode",1);
 
 	settings.OSD.ShowFPS						=	cfgGetInt("OSD.ShowFPS",0);
 	settings.OSD.ShowStats						=	cfgGetInt("OSD.ShowStats",0);
@@ -578,7 +592,8 @@ void LoadSettings()
 void SaveSettings()
 {
 	cfgSetInt("Emulation.AlphaSortMode",settings.Emulation.AlphaSortMode);
-	cfgSetInt("Emulation.VersionedPalleteTextures",settings.Emulation.PaletteMode);
+	cfgSetInt("Emulation.PaletteMode",settings.Emulation.PaletteMode);
+	cfgSetInt("Emulation.ModVolMode",settings.Emulation.ModVolMode);
 
 	cfgSetInt("OSD.ShowFPS",settings.OSD.ShowFPS);
 	cfgSetInt("OSD.ShowStats",settings.OSD.ShowStats);

@@ -9,7 +9,7 @@
 #include "regs.h"
 
 using namespace TASplitter;
-
+#pragma comment(lib, "sdl.lib") 
 
 //SW rendering .. yay (?)
 namespace SWRenderer

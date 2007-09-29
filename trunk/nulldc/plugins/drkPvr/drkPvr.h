@@ -95,6 +95,7 @@ struct _settings_type
 	{
 		u32 PaletteMode;
 		u32 AlphaSortMode;
+		u32 ModVolMode;
 	} Emulation;
 	struct
 	{

@@ -7,6 +7,11 @@ using namespace std;
 
 #if REND_API == REND_OGL
 
+#pragma comment(lib, "opengl32.lib") 
+#pragma comment(lib, "glu32.lib") 
+#pragma comment(lib, "glaux.lib") 
+
+
 #include <gl\glaux.h>
 using namespace TASplitter;
 

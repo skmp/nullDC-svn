@@ -11,6 +11,8 @@
 //#include <xmmintrin.h>
 
 #if REND_API == REND_D3D
+#pragma comment(lib, "d3d9.lib") 
+#pragma comment(lib, "d3dx9.lib") 
 
 #define MODVOL 1
 #define _float_colors_
@@ -1690,9 +1692,10 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 
 			
 			//OP mod vols
-			if (pvrrc.modsz.used>0)
+			if (settings.Emulation.ModVolMode!=0 && pvrrc.modsz.used>0)
 			{
-				if(!GetAsyncKeyState(VK_F4))
+				//!GetAsyncKeyState(VK_F4)
+				if(settings.Emulation.ModVolMode==1)
 				{
 					dev->SetRenderState(D3DRS_ALPHABLENDENABLE,FALSE);
 					dev->SetRenderState(D3DRS_ALPHATESTENABLE,FALSE);
@@ -1810,8 +1813,6 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			
 			if (!GetAsyncKeyState(VK_F3))
 			{
-				
-
 				if (dosort && settings.Emulation.AlphaSortMode==1)
 					SortPParams();
 
