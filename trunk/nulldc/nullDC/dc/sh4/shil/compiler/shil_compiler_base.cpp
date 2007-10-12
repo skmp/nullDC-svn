@@ -1862,8 +1862,9 @@ void __fastcall shil_compile_LoadT(shil_opcode* op)
 	}
 	else
 	{
-		LoadReg_force(EAX,reg_sr_T);
-		x86e->Emit(op_shr32,EAX,1);//heh T bit is there now :P CF
+		//LoadReg_force(EAX,reg_sr_T);
+		//x86e->Emit(op_shr32,EAX,1);//heh T bit is there now :P CF
+		x86e->Emit(op_bt32,GetRegPtr(reg_sr_T),0);
 	}
 }
 //cmp-test
@@ -1876,7 +1877,10 @@ void __fastcall shil_compile_cmp(shil_opcode* op)
 		if (ira->IsRegAllocated(op->reg1))
 		{
 			x86_gpr_reg r1 = LoadReg(EAX,op->reg1);
-			x86e->Emit(op_cmp32,r1,op->imm1);
+			//if (op->imm1)
+				x86e->Emit(op_cmp32,r1,op->imm1);
+			/*else
+				x86e->Emit(op_test32,r1,r1);*/
 		}
 		else
 		{
