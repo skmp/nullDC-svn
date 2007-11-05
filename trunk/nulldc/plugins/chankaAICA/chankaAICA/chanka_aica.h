@@ -8,5 +8,5 @@ void FASTCALL UpdateSystem(u32 Cycles);
 void InitARM7();
 void TerminateARM7();
 
-//extern u32 g_videoCableType;
-//extern u32 sh4_cycles;
+extern u32 g_videoCableType;
+extern u32 sh4_cycles;

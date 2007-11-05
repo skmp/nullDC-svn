@@ -19,7 +19,7 @@ u8*g_pSH4SoundRAM;
 
 bool g_bArm7Enable=true;
 
-//u32 sh4_cycles;
+u32 sh4_cycles;
 
 CArm7* g_pArm7 = NULL;
 
@@ -119,9 +119,9 @@ break;
 */
 void FASTCALL UpdateSystem(u32 Cycles)
 {
-	//sh4_cycles+=Cycles;
+	sh4_cycles+=Cycles;
 	g_pArm7->BlockStepArm7(Cycles/(8*ARM7BIAS));
-	AICARefresh(Cycles);
+	AICARefresh();
 }
 
 void InitArm7Memory();

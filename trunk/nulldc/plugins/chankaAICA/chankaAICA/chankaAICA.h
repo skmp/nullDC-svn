@@ -7,9 +7,9 @@
 
 #include <string.h>
 
-#define BUILD 0
-#define MINOR 0
-#define MAJOR 1
+#define BUILD 5
+#define MINOR 2
+#define MAJOR 0
 
 #define DCclock (200*1000*1000)
 extern aica_init_params params;

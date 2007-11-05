@@ -1,23 +1,22 @@
 /*	
-	Dreamcast AICA Emulation
+	Dreamcast AICA_s Emulation
 */
 
-#include "../stdafx.h"
+#include "..\stdafx.h"
 #include "AICADC.h"
 #include "stdio.h"
+
 #include "memory.h"
 #include "math.h"
+#include "assert.h"
 
-//#define FASTAICA
+#define FASTAICA
 #define INTERPOLATE
 
-//#define REVERB
-#define USEDSP
+//Emulacion de envelopes
+//ENVMODE=1 a ojo    ENVMODE=2 segun el manual
+#define ENVMODE	1
 
-//FILE *test1;
-//FILE *test2;
-
-#include "aicadsp.cpp"
 
 /*#define TIMER_LIMITSA  0x101
 #define TIMER_LIMITSB  0x100
@@ -35,12 +34,13 @@ static signed int *buffertmpl,*buffertmpr;
 
 static unsigned int srate=44100;
 
-
+#define REVERB
 
 #define REVERB_LEN	0x10000
 #define REVERB_DIF	6000
 #define REVERB_DIV	4
 
+#define ICLIP16(x) (x<-32768)?-32768:((x>32767)?32767:x)
 
 static signed short bufferrevr[REVERB_LEN];
 static signed short bufferrevl[REVERB_LEN];
@@ -137,8 +137,8 @@ static DWORD OnIRQ=0;
 #define ALFOWS(slot)	((slot->data[0xe]>>0x3)&0x0003)
 #define ALFOS(slot)		((slot->data[0xe]>>0x0)&0x0007)
 
-#define IMXL(slot)		((slot->data[0x10]>>0x4)&0x000F)
-#define ISEL(slot)		((slot->data[0x10]>>0x0)&0x000F)
+#define ISEL(slot)		((slot->data[0x10]>>0x3)&0x000F)
+#define IMXL(slot)		((slot->data[0x10]>>0x0)&0x000F)
 
 #define DISDL(slot)		((slot->data[0x12]>>0x9)&0x0007)	//me como 1 bit, no me cabe mas :(
 #define DIPAN(slot)		((slot->data[0x12]>>0x0)&0x001F)
@@ -158,9 +158,18 @@ double BaseTimes[64]={0,0,0,0,6222.95,4978.37,4148.66,3556.01,3111.47,2489.21,20
 					 3.04,2.49,2.13,1.90,1.72,1.41,1.18,1.04,0.91,0.73,0.59,0.50,0.45,0.45,0.45,0.00};
 double BaseTimes2[32]={7000,6500,6222.95,4978.37,4148.66,3556.01,3111.47,2489.21,2074.33,1778.00,1555.74,1244.63,1037.19,889.02,
 					   777.87,622.31,518.59,444.54,388.93,311.16,259.32,222.27,194.47,155.60,129.66,111.16,97.23,77.82,64.85,55.60,41,20};
+double ARTimes[64]={100000/*infinity*/,100000/*infinity*/,8100.0,6900.0,6000.0,4800.0,4000.0,3400.0,3000.0,2400.0,2000.0,1700.0,1500.0,
+					1200.0,1000.0,860.0,760.0,600.0,500.0,430.0,380.0,300.0,250.0,220.0,190.0,150.0,130.0,110.0,95.0,
+					76.0,63.0,55.0,47.0,38.0,31.0,27.0,24.0,19.0,15.0,13.0,12.0,9.4,7.9,6.8,6.0,4.7,3.8,3.4,3.0,2.4,
+					2.0,1.8,1.6,1.3,1.1,0.93,0.85,0.65,0.53,0.44,0.40,0.35,0.0,0.0};
+double DRTimes[64]={100000/*infinity*/,100000/*infinity*/,118200.0,101300.0,88600.0,70900.0,59100.0,50700.0,44300.0,35500.0,29600.0,25300.0,22200.0,17700.0,
+					14800.0,12700.0,11100.0,8900.0,7400.0,6300.0,5500.0,4400.0,3700.0,3200.0,2800.0,2200.0,1800.0,1600.0,1400.0,1100.0,
+					920.0,790.0,690.0,550.0,460.0,390.0,340.0,270.0,230.0,200.0,170.0,140.0,110.0,98.0,85.0,68.0,57.0,49.0,43.0,34.0,
+					28.0,25.0,22.0,18.0,14.0,12.0,11.0,8.5,7.1,6.1,5.4,4.3,3.6,3.1};
+
 #define AR2DR	14.304187
 
-typedef enum {ATTACK=0,DECAY1,DECAY2,RELEASE} _STATE;
+typedef enum {ATTACK,DECAY1,DECAY2,RELEASE} _STATE;
 struct _EG
 {
 	int volume;	//
@@ -194,25 +203,26 @@ struct _SLOT
 	int slot;
 	signed short PPrev;	//Previous sample (for interpolation)
 	signed short Prev;	
-	float PrevQuant;
+	int PrevQuant;
+	int PrevSignal;
 	unsigned int LastDecAddr;	//Last decoded address for ADPCM
 	unsigned int ADStep;
 };
 
-#define MEM4B(AICA)		((AICA.data[0]>>0x0)&0x0200)
-#define DAC18B(AICA)	((AICA.data[0]>>0x0)&0x0100)
-#define MVOL(AICA)		((AICA.data[0]>>0x0)&0x000F)
-#define RBL(AICA)		((AICA.data[1]>>0x7)&0x0003)
-#define RBP(AICA)		((AICA.data[1]>>0x0)&0x003F)
-#define MOFULL(AICA)	((AICA.data[2]>>0x0)&0x1000)
-#define MOEMPTY(AICA)	((AICA.data[2]>>0x0)&0x0800)
-#define MIOVF(AICA)		((AICA.data[2]>>0x0)&0x0400)
-#define MIFULL(AICA)	((AICA.data[2]>>0x0)&0x0200)
-#define MIEMPTY(AICA)	((AICA.data[2]>>0x0)&0x0100)
+#define MEM4B(AICA_s)		((AICA_s.data[0]>>0x0)&0x0200)
+#define DAC18B(AICA_s)	((AICA_s.data[0]>>0x0)&0x0100)
+#define MVOL(AICA_s)		((AICA_s.data[0]>>0x0)&0x000F)
+#define RBL(AICA_s)		((AICA_s.data[1]>>0x7)&0x0003)
+#define RBP(AICA_s)		((AICA_s.data[1]>>0x0)&0x003F)
+#define MOFULL(AICA_s)	((AICA_s.data[2]>>0x0)&0x1000)
+#define MOEMPTY(AICA_s)	((AICA_s.data[2]>>0x0)&0x0800)
+#define MIOVF(AICA_s)		((AICA_s.data[2]>>0x0)&0x0400)
+#define MIFULL(AICA_s)	((AICA_s.data[2]>>0x0)&0x0200)
+#define MIEMPTY(AICA_s)	((AICA_s.data[2]>>0x0)&0x0100)
 
-#define SCILV0(AICA)    ((AICA.data[0x24/2]>>0x0)&0xff)
-#define SCILV1(AICA)    ((AICA.data[0x26/2]>>0x0)&0xff)
-#define SCILV2(AICA)    ((AICA.data[0x28/2]>>0x0)&0xff)
+#define SCILV0(AICA_s)    ((AICA_s.data[0x24/2]>>0x0)&0xff)
+#define SCILV1(AICA_s)    ((AICA_s.data[0x26/2]>>0x0)&0xff)
+#define SCILV2(AICA_s)    ((AICA_s.data[0x28/2]>>0x0)&0xff)
 
 #define SCIEX0	0
 #define SCIEX1	1
@@ -234,29 +244,26 @@ static struct _AICA
 	unsigned char BUFPTR;
 	unsigned char *AICARAM;	
 	char Master;
-#ifdef USEDSP
-	_AICADSP DSP;
-#endif
-} AICA;
+} AICA_s;
 
 
 unsigned char DecodeSCI(unsigned char irq)
 {
 	unsigned char SCI=0;
 	unsigned char v;
-	v=(SCILV0((AICA))&(1<<irq))?1:0;
+	v=(SCILV0((AICA_s))&(1<<irq))?1:0;
 	SCI|=v;
-	v=(SCILV1((AICA))&(1<<irq))?1:0;
+	v=(SCILV1((AICA_s))&(1<<irq))?1:0;
 	SCI|=v<<1;
-	v=(SCILV2((AICA))&(1<<irq))?1:0;
+	v=(SCILV2((AICA_s))&(1<<irq))?1:0;
 	SCI|=v<<2;
 	return SCI;
 }
 
 void CheckPendingIRQ()
 {
-	DWORD pend=AICA.data[0x20/2];
-	DWORD en=AICA.data[0x1e/2];
+	DWORD pend=AICA_s.data[0x20/2];
+	DWORD en=AICA_s.data[0x1e/2];
 	/*if(pend&0x8)
 		if(en&0x8)
 		{
@@ -331,15 +338,14 @@ void Compute_EG(_SLOT *slot)
 	slot->EG.D2R=Get_DR(rate,D2R(slot));
 	slot->EG.RR=Get_RR(rate,RR(slot));
 	slot->EG.DL=0x1f-DL(slot);
-//	slot->EG.EGHOLD=EGHOLD(slot);
-	if(LPSLNK(slot))
-		int a=1;
+	slot->EG.EGHOLD=EGHOLD(slot);
 }
 
 void AICA_StopSlot(_SLOT *slot,int keyoff);
 
 int EG_Update(_SLOT *slot)
 {
+	assert(slot->EG.volume>=0 && slot->EG.volume<=(0x3ff<<EG_SHIFT));
 	switch(slot->EG.state)
 	{
 		case ATTACK:
@@ -351,8 +357,8 @@ int EG_Update(_SLOT *slot)
 					slot->EG.state=DECAY2;
 				slot->EG.volume=0x3ff<<EG_SHIFT;
 			}
-//			if(slot->EG.EGHOLD)
-//				return 0x3ff<<(SHIFT-10);
+			if(slot->EG.EGHOLD)
+				return 0x3ff<<(SHIFT-10);
 			break;
 		case DECAY1:
 			slot->EG.volume-=slot->EG.D1R;
@@ -390,6 +396,9 @@ DWORD AICA_Step(_SLOT *slot)
 	int octave=OCT(slot);
 	int Fn;
 
+	if(PCMS(slot)>=2 && octave>=2 && octave<=7)
+		octave=1;
+
 	/*
 	int Fo=srate;
 	if(octave&8)
@@ -416,54 +425,82 @@ void Compute_LFO(_SLOT *slot)
 		LFO_ComputeStep(&(slot->ALFO),LFOF(slot),ALFOWS(slot),ALFOS(slot),1);
 }
 
-signed short DecodeADPCM(float m_fLastValue,unsigned char Delta,float &m_fQuant)
+#define ADPCMSHIFT	8
+#define ADFIX(f)	(int) ((float) f*(float) (1<<ADPCMSHIFT))
+
+const int TableQuant[8]={ADFIX(0.8984375),ADFIX(0.8984375),ADFIX(0.8984375),ADFIX(0.8984375),ADFIX(1.19921875),ADFIX(1.59765625),ADFIX(2.0),ADFIX(2.3984375)};
+const int quant_mul[16]= { 1, 3, 5, 7, 9, 11, 13, 15,
+						  -1,-3,-5,-7,-9,-11,-13,-15};
+
+void InitADPCM(int &PrevSignal,int &PrevQuant)
 {
-  BYTE cValue=Delta;
-
-  float fNewValue = m_fQuant/8.f;
-  if ( cValue&1 )
-    fNewValue += m_fQuant/4.f;
-  if ( cValue&2 )
-    fNewValue += m_fQuant/2.f;
-  if ( cValue&4 )
-    fNewValue += m_fQuant;
-  if ( cValue&8 )
-    fNewValue = -fNewValue;
-
-  m_fLastValue += fNewValue;
-  if ( m_fLastValue > 32767.f )
-    m_fLastValue = 32737.f;
-  else if ( m_fLastValue < -32768.f )
-    m_fLastValue = -32768.f;
-
-  const float aTableQuant[8] = { 0.8984375f, 0.8984375f, 0.8984375f, 0.8984375f, 1.19921875f, 1.59765625f, 2.0f, 2.3984375f };
-  m_fQuant = (float)((int)(aTableQuant[cValue&0x7] * m_fQuant));
-  if ( m_fQuant < 127.f )
-    m_fQuant = 127.f;
-  if ( m_fQuant > 24576.f )
-    m_fQuant = 24576.f;
-
-  return m_fLastValue;
+	PrevSignal=0;
+	PrevQuant=0x7f;
 }
 
+signed short inline DecodeADPCM(int &PrevSignal,unsigned char Delta,int &PrevQuant)
+{
+	PrevSignal+=(PrevQuant*quant_mul[Delta&15])>>(3);
+	PrevSignal=ICLIP16(PrevSignal);
+	PrevQuant=(PrevQuant*TableQuant[Delta&7])>>ADPCMSHIFT;
+	PrevQuant=(PrevQuant<0x7f)?0x7f:((PrevQuant>0x6000)?0x6000:PrevQuant);
+	return PrevSignal;
+}
+
+/*
+void InitADPCM(float &PrevSignal,float &PrevQuant)
+{
+	PrevSignal=0;
+	PrevQuant=127.0f;
+}
+
+
+signed short DecodeADPCM(float &m_fLastValue,unsigned char Delta,float &m_fQuant)
+{
+	BYTE cValue=Delta;
+
+	float fNewValue = m_fQuant/8.f;
+	if ( cValue&1 )
+		fNewValue += m_fQuant/4.f;
+	if ( cValue&2 )
+		fNewValue += m_fQuant/2.f;
+	if ( cValue&4 )
+		fNewValue += m_fQuant;
+	if ( cValue&8 )
+		fNewValue = -fNewValue;
+
+	m_fLastValue += fNewValue;
+	if ( m_fLastValue > 32767.f )
+		m_fLastValue = 32737.f;
+	else if ( m_fLastValue < -32768.f )
+		m_fLastValue = -32768.f;
+
+	const float aTableQuant[8] = { 0.8984375f, 0.8984375f, 0.8984375f, 0.8984375f, 1.19921875f, 1.59765625f, 2.0f, 2.3984375f };
+	m_fQuant = (float)((int)(aTableQuant[cValue&0x7] * m_fQuant));
+	if ( m_fQuant < 127.f )
+		m_fQuant = 127.f;
+	if ( m_fQuant > 24576.f )
+		m_fQuant = 24576.f;
+
+	return m_fLastValue;
+}
+*/
 
 void AICA_StartSlot(_SLOT *slot)
 {
 	slot->active=1;
-	slot->base=AICA.AICARAM+SA(slot);
+	slot->base=AICA_s.AICARAM+SA(slot);
 	slot->cur_addr=0;
 	slot->step=AICA_Step(slot);	
 	Compute_EG(slot);
 	slot->EG.state=ATTACK;
-	slot->EG.volume=0;
 	slot->Prev=slot->PPrev=0;
 	Compute_LFO(slot);
 	if(PCMS(slot)>=2)
 	{
 		unsigned char *p=(unsigned char *) (slot->base);
-		slot->PrevQuant=127.f;
+		InitADPCM(slot->PrevSignal,slot->PrevQuant);
 		slot->Prev=0;
-		slot->Prev=DecodeADPCM(slot->Prev,p[0]&0xF,slot->PrevQuant);
 		slot->PPrev=slot->Prev;
 		slot->LastDecAddr=slot->cur_addr>>SHIFT;
 		slot->ADStep=0;
@@ -479,17 +516,15 @@ void AICA_StartSlot(_SLOT *slot)
 
 void AICA_StopSlot(_SLOT *slot,int keyoff)
 {
-	/*if(keyoff)
+	if(keyoff)
 	{
 		if(slot->EG.state!=RELEASE)
 			slot->EG.state=RELEASE;
-		return;
+//		return;
 	}
-	else*/
+	else
 		slot->active=0;
 	slot->data[0]&=~0x4000;
-	slot->EG.state=RELEASE;
-	slot->EG.volume=0;
 	ErrorLogMessage("KEYOFF2 %d",slot->slot);
 }
 
@@ -498,7 +533,7 @@ void AICA_StopSlot(_SLOT *slot,int keyoff)
 void AICA_Init(int SampleRate)
 {
 	srate=SampleRate;
-	memset(&AICA,0,sizeof(AICA));
+	memset(&AICA_s,0,sizeof(AICA_s));
 	RevR=0;
 	RevW=REVERB_DIF;
 	memset(bufferrevl,0,sizeof(bufferrevl));
@@ -508,28 +543,21 @@ void AICA_Init(int SampleRate)
 	MidiOutFill=0;
 	MidiInFill=0;
 
-#ifdef USEDSP
-	AICADSP_Init(&AICA.DSP);
-#endif
 
-
-	//test1=fopen("d:\\test1.raw","wb");
-	//test2=fopen("d:\\test2.raw","wb");
-int i;
-	for(i=0;i<0x400;++i)
+	for(int i=0;i<0x400;++i)
 	{
 		double fcent=(double) 1200.0*log2((double)(((double) 1024.0+(double)i)/(double)1024.0));
 		//float fcent=1.0+(float) i/1024.0;
 		fcent=(double) 44100.0*pow(2.0,fcent/1200.0);
-		FNS_Table[i]=(float) (1<<SHIFT) *fcent;
+		FNS_Table[i]=(unsigned int) ((float) (1<<SHIFT) * (float) fcent);
 		//FNS_Table[i]=(i>>(10-SHIFT))|(1<<SHIFT);
 		
 	}
-	for(i=0;i<0x10000;++i)
+	for(int i=0;i<0x10000;++i)
 	{
-		int iTL =(i>>0x8)&0xff;
-		int iPAN=(i>>0x0)&0x1f;
-		int iSDL=(i>>0x5)&0x07;
+		int iTL =(i>>0x0)&0xff;
+		int iPAN=(i>>0x8)&0x1f;
+		int iSDL=(i>>0xD)&0x07;
 
 		float TL=1.0;
 		float SegaDB=0;
@@ -542,16 +570,16 @@ int i;
 		if(iTL&0x20) TL*=0.25000;
 		if(iTL&0x40) TL*=0.06250;
 		if(iTL&0x80) TL*=0.00391;*/
-		if(iTL&0x01) SegaDB-=0.4;
-		if(iTL&0x02) SegaDB-=0.8;
-		if(iTL&0x04) SegaDB-=1.5;
+		if(iTL&0x01) SegaDB-=0.4f;
+		if(iTL&0x02) SegaDB-=0.8f;
+		if(iTL&0x04) SegaDB-=1.5f;
 		if(iTL&0x08) SegaDB-=3;
 		if(iTL&0x10) SegaDB-=6;
 		if(iTL&0x20) SegaDB-=12;
 		if(iTL&0x40) SegaDB-=24;
 		if(iTL&0x80) SegaDB-=48;
 
-		TL=pow(10.0,SegaDB/20.0);
+		TL=pow(10.0f,SegaDB/20.0f);
 
 		float PAN=1.0;
 		//2^(-2^(PAN-2))
@@ -568,7 +596,7 @@ int i;
 		if(iPAN&0x8) SegaDB-=24;
 
 		if(iPAN==0xf) PAN=0.0;
-		else PAN=pow(10.0,SegaDB/20.0);
+		else PAN=pow(10.0f,SegaDB/20.0f);
 
 		float LPAN,RPAN;
 
@@ -585,25 +613,24 @@ int i;
 
 		float SDL=1.0;
 		if(iSDL)
-			SDL=pow(10.0,(SDLT[iSDL])/20.0);
+			SDL=pow(10.0f,(SDLT[iSDL])/20.0f);
 		else
 			SDL=0.0;
 
-		TL/=10.0;
+		TL/=2.0;
 
-		LPANTABLE[i]=FIX((8.0*LPAN*TL*SDL));
-		RPANTABLE[i]=FIX((8.0*RPAN*TL*SDL));
+		LPANTABLE[i]=FIX((LPAN*TL*SDL));
+		RPANTABLE[i]=FIX((RPAN*TL*SDL));
 
 
 	}
-	/*for(i=0;i<4;++i)	
-		ARTABLE[i]=DRTABLE[i]=0;
-	for(i=4;i<62;++i)*/
-	for(i=0;i<62;++i)
+#if ENVMODE==1
+
+	for(int i=0;i<62;++i)
 	{
 		//double t=BaseTimes[i];	//In ms
 		double t=BaseTimes2[i/2]/AR2DR;	//In ms
-		double step=(1023*1000.0)/((float) srate*t);
+		double step=(1023*1000.0)/((float) srate*t)/2.0;
 		double scale=(double) (1<<EG_SHIFT);
 		ARTABLE[i]=(int) (step*scale);
 		step/=AR2DR;
@@ -611,31 +638,53 @@ int i;
 	}
 	ARTABLE[62]=DRTABLE[62]=1024<<EG_SHIFT;
 	ARTABLE[63]=DRTABLE[63]=1024<<EG_SHIFT;
-	
-	for(i=0;i<64;++i)
-		AICA.Slots[i].slot=i;
+#elif ENVMODE==2
+	ARTABLE[0]=DRTABLE[0]=0;	//Infinite time
+	ARTABLE[1]=DRTABLE[1]=0;
+	for(i=2;i<64;++i)
+	{
+		double t,step,scale;
+		t=ARTimes[i];	//In ms
+		if(t!=0.0)
+		{
+			step=(1023*1000.0)/((float) srate*t);
+			scale=(double) (1<<EG_SHIFT);
+			ARTABLE[i]=(int) (step*scale);
+		}
+		else
+			ARTABLE[i]=1024<<EG_SHIFT;
+
+		t=DRTimes[i];	//In ms
+		step=(1023*1000.0)/((float) srate*t);
+		scale=(double) (1<<EG_SHIFT);
+		DRTABLE[i]=(int) (step*scale);
+	}
+#else
+#error No ENVMODE Set
+#endif
+	for(int i=0;i<64;++i)
+		AICA_s.Slots[i].slot=i;
 
 	LFO_Init();
-	buffertmpl=(signed int*) malloc(44100*sizeof(signed int));
-	buffertmpr=(signed int*) malloc(44100*sizeof(signed int));
-	memset(buffertmpl,0,44100*sizeof(signed int));
-	memset(buffertmpr,0,44100*sizeof(signed int));
+	buffertmpl=(signed int*) malloc(44100*sizeof(signed int)*2);
+	buffertmpr=(signed int*) malloc(44100*sizeof(signed int)*2);
+	memset(buffertmpl,0,44100*sizeof(signed int)*2);
+	memset(buffertmpr,0,44100*sizeof(signed int)*2);
 }
 
 void AICA_SetRAM(unsigned char *r,unsigned char *regs)
 {
-	AICA.AICARAM=r;
-	AICA.datab=regs+0x2800;
+	AICA_s.AICARAM=r;
+	AICA_s.datab=regs+0x2800;
 	for(int i=0;i<64;++i)
 	{
-		AICA.Slots[i].datab=regs+0x0000+128*i;
+		AICA_s.Slots[i].datab=regs+0x0000+128*i;
 	}
-	//AICA.DSP.DSPRAM=AICARAM;
 }
 
 void AICA_UpdateSlotReg(int s,int r)
 {
-	_SLOT *slot=AICA.Slots+s;
+	_SLOT *slot=AICA_s.Slots+s;
 	switch(r&0x3f)
 	{
 		case 0:
@@ -644,10 +693,10 @@ void AICA_UpdateSlotReg(int s,int r)
 			{
 				for(int sl=0;sl<64;++sl)
 				{
-					_SLOT *s2=AICA.Slots+sl;
+					_SLOT *s2=AICA_s.Slots+sl;
 					//if(s2->EG.state!=RELEASE)
 					{
-						if(KEYONB(s2) && !s2->active)
+						if(KEYONB(s2) && (!s2->active || (s2->active && s2->EG.state==RELEASE)))
 						{
 							ErrorLogMessage("KEYON %d",sl);
 							AICA_StartSlot(s2);
@@ -710,33 +759,33 @@ void AICA_UpdateReg(int reg)
 			break;
 		case 0x18:
 		case 0x19:
-			if(AICA.Master)	
+			if(AICA_s.Master)	
 			{
-				TimPris[0]=1<<((AICA.data[0x18/2]>>8)&0x7);
-				TimCnt[0]=((AICA.data[0x18/2]&0xff)<<8)|(TimCnt[0]&0xff);
+				TimPris[0]=1<<((AICA_s.data[0x18/2]>>8)&0x7);
+				TimCnt[0]=((AICA_s.data[0x18/2]&0xff)<<8)|(TimCnt[0]&0xff);
 			}
 			break;
 		case 0x1a:
 		case 0x1b:
-			if(AICA.Master)	
+			if(AICA_s.Master)	
 			{
-				TimPris[1]=1<<((AICA.data[0x1A/2]>>8)&0x7);
-				TimCnt[1]=((AICA.data[0x1A/2]&0xff)<<8)|(TimCnt[1]&0xff);
+				TimPris[1]=1<<((AICA_s.data[0x1A/2]>>8)&0x7);
+				TimCnt[1]=((AICA_s.data[0x1A/2]&0xff)<<8)|(TimCnt[1]&0xff);
 			}
 			break;
 		case 0x1C:
 		case 0x1D:
-			if(AICA.Master)	
+			if(AICA_s.Master)	
 			{
-				TimPris[2]=1<<((AICA.data[0x1C/2]>>8)&0x7);
-				TimCnt[2]=((AICA.data[0x1C/2]&0xff)<<8)|(TimCnt[2]&0xff);
+				TimPris[2]=1<<((AICA_s.data[0x1C/2]>>8)&0x7);
+				TimCnt[2]=((AICA_s.data[0x1C/2]&0xff)<<8)|(TimCnt[2]&0xff);
 			}
 			break;
 		case 0x22:	//SCIRE
 		case 0x23:
-			if(AICA.Master)	
+			if(AICA_s.Master)	
 			{
-				AICA.data[0x20/2]&=~AICA.data[0x22/2];
+				AICA_s.data[0x20/2]&=~AICA_s.data[0x22/2];
 				CheckPendingIRQ();
 			}
 			break;
@@ -746,7 +795,7 @@ void AICA_UpdateReg(int reg)
 		case 0x27:
 		case 0x28:
 		case 0x29:
-			if(AICA.Master)
+			if(AICA_s.Master)
 			{
 				IrqTimA=DecodeSCI(SCITMA);
 				IrqTimBC=DecodeSCI(SCITMB);
@@ -768,7 +817,7 @@ void AICA_UpdateRegR(int reg)
 		case 4:
 		case 5:
 			{
-				unsigned short v=AICA.data[0x5/2];
+				unsigned short v=AICA_s.data[0x5/2];
 				v&=0xff00;
 				v|=MidiStack[MidiR];
 				if(MidiR!=MidiW)
@@ -778,16 +827,16 @@ void AICA_UpdateRegR(int reg)
 					//Int68kCB(IrqMidi);
 				}
 				MidiInFill--;
-				AICA.data[0x5/2]=v;
+				AICA_s.data[0x5/2]=v;
 			}
 			break;
 		case 8:
 		case 9:
 			{
-				unsigned char slot=AICA.data[0x8/2]>>11;	
-				unsigned int CA=AICA.Slots[slot&0x3f].cur_addr>>(SHIFT+12);
-				AICA.data[0x8/2]&=~(0x780);
-				AICA.data[0x8/2]|=CA<<7;
+				unsigned char slot=AICA_s.data[0x8/2]>>11;	
+				unsigned int CA=AICA_s.Slots[slot&0x3f].cur_addr>>(SHIFT+12);
+				AICA_s.data[0x8/2]&=~(0x780);
+				AICA_s.data[0x8/2]|=CA<<7;
 			}
 			break;
 	}
@@ -802,12 +851,12 @@ void AICA_w8(unsigned int addr,unsigned char val)
 		int slot=addr/0x20;
 		addr&=0x1f;
 		ErrorLogMessage("Slot %02X Reg %02X write byte %04X",slot,addr,val);
-		*((unsigned char *) (AICA.Slots[slot].datab+(addr^1))) = val;
+		*((unsigned char *) (AICA_s.Slots[slot].datab+(addr^1))) = val;
 		AICA_UpdateSlotReg(slot,addr&0x1f);
 	}
 	else if(addr<0x600)
 	{
-		*((unsigned char *) (AICA.datab+((addr&0xff)^1))) = val;
+		*((unsigned char *) (AICA_s.datab+((addr&0xff)^1))) = val;
 		AICA_UpdateReg(addr&0xff);
 	}	
 	else
@@ -822,12 +871,12 @@ void AICA_w16(unsigned int addr,unsigned short val)
 		int slot=addr/0x20;
 		addr&=0x1f;
 		ErrorLogMessage("Slot %02X Reg %02X write word %04X",slot,addr,val);
-		*((unsigned short *) (AICA.Slots[slot].datab+(addr))) = val;
+		*((unsigned short *) (AICA_s.Slots[slot].datab+(addr))) = val;
 		AICA_UpdateSlotReg(slot,addr&0x1f);
 	}
 	else if(addr<0x600)
 	{
-		*((unsigned short *) (AICA.datab+((addr&0xff)))) = val;
+		*((unsigned short *) (AICA_s.datab+((addr&0xff)))) = val;
 		AICA_UpdateReg(addr&0xff);
 	}	
 	else
@@ -844,21 +893,19 @@ void AICA_w32(unsigned int addr,unsigned int val)
 		addr&=0x1f;
 		ErrorLogMessage("Slot %02X Reg %02X write dword %08X",slot,addr,val);
 		_asm rol val,16
-		*((unsigned int *) (AICA.Slots[slot].datab+(addr))) = val;
+		*((unsigned int *) (AICA_s.Slots[slot].datab+(addr))) = val;
 		AICA_UpdateSlotReg(slot,addr&0x1f);
 		AICA_UpdateSlotReg(slot,(addr&0x1f)+2);
 	}
 	else if(addr<0x600)
 	{
 		_asm rol val,16
-		*((unsigned int *) (AICA.datab+((addr&0xff)))) = val;
+		*((unsigned int *) (AICA_s.datab+((addr&0xff)))) = val;
 		AICA_UpdateReg(addr&0xff);
 		AICA_UpdateReg((addr&0xff)+2);
 	}	
-	else if(addr<0x800)
-	{
-
-	}
+	else if(addr<0x700)
+		int a=1;
 	else
 		int a=1;
 }
@@ -873,14 +920,14 @@ unsigned char AICA_r8(unsigned int addr)
 		addr&=0x1f;
 		AICA_UpdateSlotRegR(slot,addr&0x1f);
 		
-		v=*((unsigned char *) (AICA.Slots[slot].datab+(addr^1)));
+		v=*((unsigned char *) (AICA_s.Slots[slot].datab+(addr^1)));
 		ErrorLogMessage("Slot %02X Reg %02X Read byte %02X",slot,addr,v);
 	}
 	else if(addr<0x600)
 	{
 		AICA_UpdateRegR(addr&0xff);
-		v= *((unsigned char *) (AICA.datab+((addr&0xff)^1)));
-		//ErrorLogMessage("AICA Reg %02X Read byte %02X",addr&0xff,v);		
+		v= *((unsigned char *) (AICA_s.datab+((addr&0xff)^1)));
+		//ErrorLogMessage("AICA_s Reg %02X Read byte %02X",addr&0xff,v);		
 	}	
 	else if(addr<0x700)
 		v=0;
@@ -896,14 +943,14 @@ unsigned short AICA_r16(unsigned int addr)
 		int slot=addr/0x20;
 		addr&=0x1f;
 		AICA_UpdateSlotRegR(slot,addr&0x1f);
-		v=*((unsigned short *) (AICA.Slots[slot].datab+(addr)));
+		v=*((unsigned short *) (AICA_s.Slots[slot].datab+(addr)));
 		ErrorLogMessage("Slot %02X Reg %02X Read word %04X",slot,addr,v);
 	}
 	else if(addr<0x600)
 	{
 		AICA_UpdateRegR(addr&0xff);
-		v= *((unsigned short *) (AICA.datab+((addr&0xff))));
-		//ErrorLogMessage("AICA Reg %02X Read word %04X",addr&0xff,v);
+		v= *((unsigned short *) (AICA_s.datab+((addr&0xff))));
+		//ErrorLogMessage("AICA_s Reg %02X Read word %04X",addr&0xff,v);
 	}	
 	return v;
 }
@@ -925,7 +972,7 @@ void AICA_TimersAddTicks2(int ticks)
 		
 		if(!TimPris[0])
 		{
-			//cnt=AICA.data[0x18/2]&0xff;
+			//cnt=AICA_s.data[0x18/2]&0xff;
 			cnt=TimCnt[0];
 			if(cnt==0xffff)
 				goto noTA;
@@ -933,18 +980,18 @@ void AICA_TimersAddTicks2(int ticks)
 			++TimCnt[0];
 			if(cnt>=TIMER_LIMITSA)
 			{
-				/*if((AICA.data[0x20/2]&AICA.data[0x1e/2])&0x40)	//timer pending ack
+				/*if((AICA_s.data[0x20/2]&AICA_s.data[0x1e/2])&0x40)	//timer pending ack
 					int a=1;*/
-				AICA.data[0x20/2]|=0x40;
-				/*if(AICA.data[0x1e/2]&0x40)
+				AICA_s.data[0x20/2]|=0x40;
+				/*if(AICA_s.data[0x1e/2]&0x40)
 					Int68kCB(IrqTimA);*/
 				cnt=0xff;
 				TimCnt[0]=0xffff;
 			}
-			step=1<<((AICA.data[0x18/2]>>8)&0x7);
+			step=1<<((AICA_s.data[0x18/2]>>8)&0x7);
 			TimPris[0]=step;
-			AICA.data[0x18/2]&=0xff00;
-			AICA.data[0x18/2]|=cnt;
+			AICA_s.data[0x18/2]&=0xff00;
+			AICA_s.data[0x18/2]|=cnt;
 		}
 //		else
 			TimPris[0]--;
@@ -954,7 +1001,7 @@ noTA:
 		
 		if(!TimPris[1])
 		{
-			//cnt=AICA.data[0x1a/2]&0xff;
+			//cnt=AICA_s.data[0x1a/2]&0xff;
 			cnt=TimCnt[1];
 			if(cnt==0xffff)
 				goto noTB;
@@ -962,18 +1009,18 @@ noTA:
 			++TimCnt[1];
 			if(cnt>=TIMER_LIMITSB)
 			{
-				/*if((AICA.data[0x20/2]&AICA.data[0x1e/2])&0x80)	//timer pending ack
+				/*if((AICA_s.data[0x20/2]&AICA_s.data[0x1e/2])&0x80)	//timer pending ack
 					int a=1;*/
-				AICA.data[0x20/2]|=0x80;
-				/*if(AICA.data[0x1e/2]&0x80)
+				AICA_s.data[0x20/2]|=0x80;
+				/*if(AICA_s.data[0x1e/2]&0x80)
 					Int68kCB(IrqTimBC);*/
 				cnt=0xff;
 				TimCnt[1]=0xffff;
 			}
-			step=1<<((AICA.data[0x1a/2]>>8)&0x7);
+			step=1<<((AICA_s.data[0x1a/2]>>8)&0x7);
 			TimPris[1]=step;
-			AICA.data[0x1a/2]&=0xff00;
-			AICA.data[0x1a/2]|=cnt;
+			AICA_s.data[0x1a/2]&=0xff00;
+			AICA_s.data[0x1a/2]|=cnt;
 		}
 //		else
 			TimPris[1]--;
@@ -983,7 +1030,7 @@ noTB:
 		
 		if(!TimPris[2])
 		{
-			//cnt=AICA.data[0x1c/2]&0xff;
+			//cnt=AICA_s.data[0x1c/2]&0xff;
 			cnt=TimCnt[2];
 			if(cnt==0xffff)
 				goto noTC;
@@ -991,18 +1038,18 @@ noTB:
 			++TimCnt[2];
 			if(cnt>=TIMER_LIMITSC)
 			{
-				/*if((AICA.data[0x20/2]&AICA.data[0x1e/2])&0x100)	//timer pending ack
+				/*if((AICA_s.data[0x20/2]&AICA_s.data[0x1e/2])&0x100)	//timer pending ack
 					int a=1;*/
-				AICA.data[0x20/2]|=0x100;
-				/*if(AICA.data[0x1e/2]&0x100)
+				AICA_s.data[0x20/2]|=0x100;
+				/*if(AICA_s.data[0x1e/2]&0x100)
 					Int68kCB(IrqTimBC);*/
 				cnt=0xff;
 				TimCnt[2]=0xffff;
 			}
-			step=1<<((AICA.data[0x1c/2]>>8)&0x7);
+			step=1<<((AICA_s.data[0x1c/2]>>8)&0x7);
 			TimPris[2]=step;
-			AICA.data[0x1c/2]&=0xff00;
-			AICA.data[0x1c/2]|=cnt;
+			AICA_s.data[0x1c/2]&=0xff00;
+			AICA_s.data[0x1c/2]|=cnt;
 		}
 //		else
 			TimPris[2]--;
@@ -1014,37 +1061,37 @@ void AICA_TimersAddTicks(int ticks)
 {
 	if(TimCnt[0]<=0xff00)
 	{
-		TimCnt[0]+=ticks << (8-((AICA.data[0x18/2]>>8)&0x7));
+		TimCnt[0]+=ticks << (8-((AICA_s.data[0x18/2]>>8)&0x7));
 		if (TimCnt[0] > 0xFE00)
 		{
 			TimCnt[0] = 0xFFFF;
-			AICA.data[0x20/2]|=0x40;
+			AICA_s.data[0x20/2]|=0x40;
 		}
-		AICA.data[0x18/2]&=0xff00;
-		AICA.data[0x18/2]|=TimCnt[0]>>8;
+		AICA_s.data[0x18/2]&=0xff00;
+		AICA_s.data[0x18/2]|=TimCnt[0]>>8;
 	}
 	if(TimCnt[1]<=0xff00)
 	{
-		TimCnt[1]+=ticks << (8-((AICA.data[0x1a/2]>>8)&0x7));
+		TimCnt[1]+=ticks << (8-((AICA_s.data[0x1a/2]>>8)&0x7));
 		if (TimCnt[1] > 0xFE00)
 		{
 			TimCnt[1] = 0xFFFF;
-			AICA.data[0x20/2]|=0x80;
+			AICA_s.data[0x20/2]|=0x80;
 		}
-		AICA.data[0x1a/2]&=0xff00;
-		AICA.data[0x1a/2]|=TimCnt[1]>>8;
+		AICA_s.data[0x1a/2]&=0xff00;
+		AICA_s.data[0x1a/2]|=TimCnt[1]>>8;
 
 	}
 	if(TimCnt[2]<=0xff00)
 	{
-		TimCnt[2]+=ticks << (8-((AICA.data[0x1c/2]>>8)&0x7));
+		TimCnt[2]+=ticks << (8-((AICA_s.data[0x1c/2]>>8)&0x7));
 		if (TimCnt[2] > 0xFE00)
 		{
 			TimCnt[2] = 0xFFFF;
-			AICA.data[0x20/2]|=0x100;
+			AICA_s.data[0x20/2]|=0x100;
 		}
-		AICA.data[0x1c/2]&=0xff00;
-		AICA.data[0x1c/2]|=TimCnt[2]>>8;
+		AICA_s.data[0x1c/2]&=0xff00;
+		AICA_s.data[0x1c/2]|=TimCnt[2]>>8;
 	}
 
 }
@@ -1097,35 +1144,51 @@ AICANAME(loop,lfo,alfo,stype)\
 		else if(stype==0) /*16bits*/ \
 		{\
 			signed short *p=(signed short *) (slot->base+addr);\
+			if(p[0]==-32768 && !(slot->Prev&0x8000))\
+				p[0]=0x7fff;\
 			int s;\
 			signed int fpart=slot->cur_addr&((1<<SHIFT)-1);\
 			s=(int) p[0]*((1<<SHIFT)-fpart)+(int) p[1]*fpart;\
+			slot->Prev=p[0];\
 			/*sample=(s>>SHIFT);*/\
 			sample=CHOOSE((s>>SHIFT),p[0]);\
 		}\
 		else /*ADPCM*/ \
 		{\
-			if((slot->cur_addr>>SHIFT)!=slot->LastDecAddr)\
+			slot->ADStep+=step;\
+			if(slot->ADStep>>SHIFT)\
 			{\
 				int hl=(slot->cur_addr>>SHIFT)&1;\
 				unsigned char *p=(unsigned char *) (slot->base+(addr));\
-				int steps=step>>SHIFT;\
+				int ca=slot->cur_addr>>SHIFT;\
+				int steps=slot->ADStep>>SHIFT;\
+				\
 				slot->PPrev=slot->Prev;\
-				if(!steps)\
-					steps=1;\
+				slot->ADStep&=(1<<SHIFT)-1;\
 				while(steps--)\
 				{\
-					slot->Prev=DecodeADPCM(slot->Prev,(p[0]>>(4*hl))&0xF,slot->PrevQuant);\
+					slot->Prev=DecodeADPCM(slot->PrevSignal,(p[0]>>(4*hl))&0xF,slot->PrevQuant);\
+					if(!steps)\
+						break;\
 					hl^=1;\
 					if(!hl)\
-						++p;\
+					{\
+						++ca;\
+						if(loop==1 && ca>=LEA(slot))\
+						{\
+							ca=LSA(slot);\
+							hl=ca&1;\
+							p=(unsigned char *) (slot->base+(ca>>1));\
+						}\
+						else\
+							++p;\
+					}\
 				}\
 				slot->LastDecAddr=slot->cur_addr>>SHIFT;\
 			}\
 			int s;\
 			signed int fpart=slot->cur_addr&((1<<SHIFT)-1);\
 			s=(int) slot->PPrev*((1<<SHIFT)-fpart)+(int) slot->Prev*fpart;\
-			/*sample=(s>>SHIFT);*/\
 			sample=CHOOSE(s>>SHIFT,slot->Prev);\
 		}\
 		slot->cur_addr+=step;\
@@ -1139,8 +1202,11 @@ AICANAME(loop,lfo,alfo,stype)\
 		}\
 		if(loop==1)\
 		{\
-			if(addr>LEA(slot))\
-				slot->cur_addr=(LSA(slot)+1)<<SHIFT;\
+			if(addr>=LEA(slot))\
+			{\
+				slot->cur_addr=(LSA(slot))<<SHIFT;\
+				slot->ADStep=0;\
+			}\
 		}\
 		if(alfo)\
 		{\
@@ -1203,6 +1269,9 @@ void AICA_CpuRunScanline()
 	}
 }
 */
+#define SAMPLES_PER_SECTOR (1176)
+int buffer_pos=SAMPLES_PER_SECTOR;
+s16 cdda_data[SAMPLES_PER_SECTOR];
 void AICA_DoSamples(int nsamples)
 {
 
@@ -1217,13 +1286,13 @@ void AICA_DoSamples(int nsamples)
 //		if(sl==0x15)
 //			continue;
 
-		if(AICA.Slots[sl].active)
+		if(AICA_s.Slots[sl].active)
 		{
-			_SLOT *slot=AICA.Slots+sl;
+			_SLOT *slot=AICA_s.Slots+sl;
 			unsigned int disdl=DISDL(slot);
 			unsigned int efsdl=EFSDL(slot);
 			unsigned int tl=TL(slot);
-			unsigned short Enc=((TL(slot))<<0x8)|((DIPAN(slot))<<0x0)|((DISDL(slot))<<0x5);
+			unsigned short Enc=((TL(slot))<<0x0)|((DIPAN(slot))<<0x8)|((DISDL(slot))<<0xd);
 			//unsigned short Enc=(0x00)|((DIPAN(slot))<<0x8)|((0x7)<<0xd);
 			//unsigned int mode=LPCTL(slot);
 			unsigned int mode=PCMS(slot);
@@ -1246,7 +1315,6 @@ void AICA_DoSamples(int nsamples)
 	bufl1=buffertmpl;
 	for(int s=0;s<nsamples;++s)
 	{
-#define ICLIP16(x) (x<-32768)?-32768:((x>32767)?32767:x)
 		signed int smpl=*bufl1;
 		signed int smpr=*bufr1;
 
@@ -1262,6 +1330,7 @@ void AICA_DoSamples(int nsamples)
 		if(RevR==REVERB_LEN)
 			RevR=0;
 #endif
+#ifdef SEPARATE_BUFFERS
 		*bufl=ICLIP16(smpl);
 		*bufr=ICLIP16(smpr);
 		*bufl1=0;
@@ -1270,7 +1339,23 @@ void AICA_DoSamples(int nsamples)
 		++bufr;
 		++bufl1;
 		++bufr1;
-
+#else
+		if (SAMPLES_PER_SECTOR == buffer_pos)
+		{
+			buffer_pos=0;
+			params.CDDA_Sector(cdda_data);
+		}
+		*bufl=ICLIP16(smpl + cdda_data[buffer_pos]);
+		buffer_pos++;
+		++bufl;
+		*bufl=ICLIP16(smpr + cdda_data[buffer_pos]);
+		buffer_pos++;
+		++bufl;
+		*bufl1=0;
+		*bufr1=0;
+		++bufl1;
+		++bufr1;
+#endif
 	}
 }
 
@@ -1311,9 +1396,12 @@ signed int inline AICA_UpdateSlot(_SLOT *slot)
 	else if(PCMS(slot)==0)	//16 bit signed (endianness?)
 	{
 		signed short *p=(signed short *) (slot->base+addr);
+		if(p[0]==-32768 && !(slot->Prev&0x8000))	//??, clicks en cvs2
+			p[0]=0x7fff;
 		int s;
-		signed int fpart=slot->cur_addr&((1<<SHIFT)-1);
+		signed int fpart=(slot->cur_addr>>1)&((1<<SHIFT)-1);
 		s=(int) p[0]*((1<<SHIFT)-fpart)+(int) p[1]*fpart;
+		slot->Prev=p[0];
 		/*sample=(s>>SHIFT);*/
 		sample=CHOOSE(s>>SHIFT,p[0]);
 		//sample=0;
@@ -1336,9 +1424,7 @@ signed int inline AICA_UpdateSlot(_SLOT *slot)
 			slot->ADStep&=(1<<SHIFT)-1;
 			while(steps--)
 			{
-				/*if(hl==0)
-					fwrite(p,1,1,test2);*/
-				slot->Prev=DecodeADPCM(slot->Prev,(p[0]>>(4*hl))&0xF,slot->PrevQuant);
+				slot->Prev=DecodeADPCM(slot->PrevSignal,(p[0]>>(4*hl))&0xF,slot->PrevQuant);
 				hl^=1;
 				if(!hl)	//UFF cuidado con el fin de bucle
 				{
@@ -1356,12 +1442,10 @@ signed int inline AICA_UpdateSlot(_SLOT *slot)
 			slot->LastDecAddr=slot->cur_addr>>SHIFT;
 		}
 		int s;
-		signed int fpart=slot->cur_addr&((1<<SHIFT)-1);
+		signed int fpart=slot->ADStep&((1<<SHIFT)-1);
 		s=(int) slot->PPrev*((1<<SHIFT)-fpart)+(int) slot->Prev*fpart;
-		//sample=(s>>SHIFT);
 		sample=CHOOSE(s>>SHIFT,slot->Prev);
-		
-		
+		//sample=0;
 	}
 
 	slot->cur_addr+=step;
@@ -1380,6 +1464,7 @@ signed int inline AICA_UpdateSlot(_SLOT *slot)
 		{
 			slot->cur_addr=(LSA(slot))<<SHIFT;
 			slot->ADStep=0;
+			//slot->ADStep&=(1<<SHIFT)-1;
 		}
 		break;
 	}
@@ -1392,6 +1477,7 @@ signed int inline AICA_UpdateSlot(_SLOT *slot)
 	
 	sample=(sample*EG_Update(slot))>>SHIFT;
 
+
 	return sample;
 }
 
@@ -1402,7 +1488,6 @@ void AICA_CpuRunScanline()
 
 void AICA_DoSamples(int nsamples)
 {
-	
 
 	for(int s=0;s<nsamples;++s)
 	{
@@ -1411,25 +1496,18 @@ void AICA_DoSamples(int nsamples)
 
 		for(int sl=0;sl<64;++sl)
 		{
-			if(AICA.Slots[sl].active)
+			if(AICA_s.Slots[sl].active)
 			{
-				_SLOT *slot=AICA.Slots+sl;
-				unsigned short Enc=((TL(slot))<<0x8)|((DIPAN(slot))<<0x0)|((DISDL(slot))<<0x5);
+				_SLOT *slot=AICA_s.Slots+sl;
 				signed int sample=0;
-				//if(sl==0x28)
+				//if(sl==0x6)
 					sample=AICA_UpdateSlot(slot);
 				/*unsigned char ef=EFSDL(slot);
 				ef+=DISDL(slot);
 				if(ef>0xf) ef=0xf;
 				unsigned short Enc=((TL(slot))<<0x0)|((DIPAN(slot))<<0x8)|((ef)<<0xd);
 				*/
-				if(LPSLNK(slot))
-					int a=1;
-
-#ifdef USEDSP
-				AICADSP_SetSample(&AICA.DSP,/*sample*/(sample*LPANTABLE[(Enc|0xE0)&0xFFE0])>>(SHIFT-1),ISEL(slot),IMXL(slot));
-#endif
-				
+				unsigned short Enc=((TL(slot))<<0x0)|((DIPAN(slot))<<0x8)|((DISDL(slot))<<0xd);
 				{
 					smpl+=(sample*LPANTABLE[Enc])>>SHIFT;
 					smpr+=(sample*RPANTABLE[Enc])>>SHIFT;
@@ -1437,25 +1515,6 @@ void AICA_DoSamples(int nsamples)
 				
 			}
 		}
-#ifdef USEDSP
-		AICADSP_Step(&AICA.DSP);
-//		smpl=0;
-//		smpr=0;
-		for(int i=0;i<16;++i)
-		{
-			unsigned int ef=(AICA.datab[0x2000-0x2800+4*i+1]>>1)&0x7;
-			if(ef)
-			{
-				unsigned int epan=AICA.datab[0x2000-0x2800+4*i];
-				unsigned short Enc=0|((epan)<<0x0)|((ef)<<0x5);
-				smpl+=(AICA.DSP.EFREG[i]*LPANTABLE[Enc])>>SHIFT;
-				smpr+=(AICA.DSP.EFREG[i]*RPANTABLE[Enc])>>SHIFT;
-			}
-			
-		}
-		
-#endif
-#define ICLIP16(x) (x<-32768)?-32768:((x>32767)?32767:x)
 #ifdef REVERB
 		smpl+=bufferrevl[RevR];
 		smpr+=bufferrevr[RevR];
@@ -1468,9 +1527,13 @@ void AICA_DoSamples(int nsamples)
 		if(RevR==REVERB_LEN)
 			RevR=0;
 #endif
+#ifdef SEPARATE_BUFFERS
 		bufferl[s]=ICLIP16(smpl);
 		bufferr[s]=ICLIP16(smpr);
-		//fwrite(&bufferr[s],2,1,test1);
+#else
+		bufferl[2*s]=ICLIP16(smpl);
+		bufferl[2*s+1]=ICLIP16(smpr);
+#endif
 	}
 }
 #endif
@@ -1484,7 +1547,7 @@ void AICA_MidiIn(BYTE val)
 	MidiW&=7;
 	MidiInFill++;
 	//Int68kCB(IrqMidi);
-//	AICA.data[0x20/2]|=0x8;
+//	AICA_s.data[0x20/2]|=0x8;
 }
 
 void AICA_MidiOutW(BYTE val)
@@ -1521,7 +1584,7 @@ unsigned char AICA_MidiInFill()
 
 void AICA_RTECheck()
 {
-/*	unsigned short pend=AICA.data[0x20/2]&0xfff;
+/*	unsigned short pend=AICA_s.data[0x20/2]&0xfff;
 	if(pend)
 	{
 		if(pend&0x40)
@@ -1549,41 +1612,18 @@ int AICA_IRQCB(int)
 
 void AICA_SetBuffers(signed short *l,signed short *r)
 {
+#ifndef SEPARATE_BUFFERS
+	assert(l!=NULL);
+	assert(r==NULL);
+#else
+	assert(l!=NULL);
+	assert(r!=NULL);
+#endif
 	bufferl=l;
 	bufferr=r;
 }
 
 unsigned int AICA_GetPlayPos(int slot)
 {
-	return AICA.Slots[slot&0x3f].cur_addr>>SHIFT;
-}
-
-unsigned int AICA_GetEnvState(int slot)
-{
-	_SLOT *s=&AICA.Slots[slot&0x3f];
-	return (s->EG.state<<13)|(0x3ff-(s->EG.volume>>EG_SHIFT));
-}
-
-
-void AICA_UpdateDSP(unsigned int iAddress)
-{
-#ifdef USEDSP
-		iAddress&=~1;
-		unsigned short val=*((unsigned short *) (AICA.datab+iAddress-0x2800));
-		unsigned int addr=iAddress-0x3000;
-		//DSP
-		if(addr<0x200)	//COEF
-			*(((unsigned short *) AICA.DSP.COEF) + ((addr/4)))=val;
-		else if(addr<0x400)
-			*(((unsigned short *) AICA.DSP.MADRS) + (((addr-0x200)/4)))=val;
-		else if(addr>=0x400 && addr<0xC00)
-			*(((unsigned short *) AICA.DSP.MPRO) + ((addr-0x400)/4))=val;
-		else
-			int a=1;
-		if(addr==0xBFC)
-		{
-			AICADSP_Start(&AICA.DSP);
-		}
-		int a=1;
-#endif
+	return AICA_s.Slots[slot&0x3f].cur_addr>>SHIFT;
 }
