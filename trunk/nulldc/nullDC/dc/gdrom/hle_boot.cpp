@@ -280,12 +280,13 @@ bool find_file_full(u32 PVD_sec,u32 addr,u32* file_sector,u32* file_len,char* fi
 			printf("File not found , scanning using fixed offset(:p)\n");
 			if (file_scan(addr+23,file,file_sector,file_len,400)==false)
 			{
-				printf("File not found , scanning hole disk (:p)\n");
+				printf("File is not there after all ...\n");
+				/*printf("File not found , scanning hole disk (:p)\n");
 				if (file_scan(0,file,file_sector,file_len,addr+ 0x80000)==false)
 				{
-					printf("File is not there after all ...\n");
+					printf("File is not there after all ...\n");*/
 					return false;
-				}
+				/*}*/
 			}
 		}
 	}
@@ -396,6 +397,12 @@ bool gdBootHLE()
 
 	u32 file_sector,file_len;
 	
+	
+	if (find_file_full(PVD_sec,addr,&file_sector,&file_len,"0GDTEX.PVR")==false)
+	{
+		printf("Failed to find 0GDTEX.PVR \n");
+	}
+
 	if (find_file_full(PVD_sec,addr,&file_sector,&file_len,bootfile)==false)
 	{
 		printf("Failed to find bootfile \n");

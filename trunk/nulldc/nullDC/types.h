@@ -155,8 +155,8 @@ using namespace std;
 #endif
 
 #define VER_EMUNAME		"nullDC"
-#define VER_FULLNAME	VER_EMUNAME " v1.0.0 beta 2"_X_x_X_MMU_VER_STR" (built " __DATE__ "@" __TIME__ ")"
-#define VER_SHORTNAME	VER_EMUNAME " 1.0.0b2"_X_x_X_MMU_VER_STR
+#define VER_FULLNAME	VER_EMUNAME " v1.0.0 beta 1.6"_X_x_X_MMU_VER_STR" (built " __DATE__ "@" __TIME__ ")"
+#define VER_SHORTNAME	VER_EMUNAME " 1.0.0b1.6"_X_x_X_MMU_VER_STR
 
 #define dbgbreak __asm {int 3}
 

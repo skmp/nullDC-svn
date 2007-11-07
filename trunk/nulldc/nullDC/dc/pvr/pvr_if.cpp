@@ -100,7 +100,7 @@ INLINE void YUV_ConvertMacroBlock()
 	YUV_index=0;
 
 	int block_size=(TA_YUV_TEX_CTRL & (1<<24))==0?384:512;
-#if 0
+
 	//YUYV
 	if (block_size==384)
 	{
@@ -146,7 +146,6 @@ INLINE void YUV_ConvertMacroBlock()
 		u8* Y1=(u8*)&YUV_tempdata[(64+64+256)/4];*/
 
 	}
-#endif
 
 	if (YUV_blockcount==YUV_doneblocks)
 	{
