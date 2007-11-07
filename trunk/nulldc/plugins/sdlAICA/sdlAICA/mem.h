@@ -32,5 +32,8 @@ extern u8 *aica_reg;
 extern u8 *aica_ram;
 #define aica_reg_16 ((u16*)aica_reg)
 
-#define AICA_MEM_SIZE (2*1024*1024)
-#define AICA_MEM_MASK (AICA_MEM_SIZE-1)
+#define AICA_RAM_SIZE (2*1024*1024)
+#define AICA_RAM_MASK (AICA_RAM_SIZE-1)
+
+#define AICA_MEMMAP_RAM_SIZE (8*1024*1024)				//this is the max for the map, the actual ram size is AICA_RAM_SIZE
+#define AICA_MEMMAP_RAM_MASK (AICA_MEMMAP_RAM_SIZE-1)

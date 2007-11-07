@@ -423,14 +423,16 @@ public:
 					last_quant=127;
 					prev_sample=0;
 				}
-
-				dec_steps=na.ip-ChanData->LEA;
-				//decode the first sample, allways has to be done...
-				Decoder_Step();
-				while(dec_steps-->0)
+				if (ChanData->LEA>ChanData->LSA)
 				{
-					CA.ip++;
+					dec_steps=na.ip-ChanData->LEA;
+					//decode the first sample, allways has to be done...
 					Decoder_Step();
+					while(dec_steps-->0)
+					{
+						CA.ip++;
+						Decoder_Step();
+					}
 				}
 				//verify(CA.ip==na.ip); -> invalid, CA.ip is set to LSA
 				CA.fp=na.fp;	//we still need to copy

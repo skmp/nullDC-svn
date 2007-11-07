@@ -15,6 +15,8 @@ struct vertex
 float W_min: register(c0);
 float W_max: register(c1);
 float4 res_scale: register(c2);
+float4 texture_size:  register(c3);
+
 vertex VertexShader_main(in vertex vtx) 
 {
 	vtx.pos.xy+=res_scale.xy;
@@ -31,6 +33,14 @@ vertex VertexShader_main(in vertex vtx)
 	vtx.spc*=vtx.uv.w;
 	#endif
 
+	/*
+	//this doesnt have the desired effect.. why ? (alligns texture cord to pixel, so bilinear doesnt 'leak' from wrong pixels)
+	float2 sng=sign(vtx.uv.xy);
+	vtx.uv.xy=abs(vtx.uv.xy) + (texture_size.zw/2);
+	vtx.uv.xy-=fmod(vtx.uv.xy,texture_size.zw);
+	vtx.uv.xy*=sng;
+	*/	
+		
 	vtx.uv.xy*=vtx.pos.z;
 	vtx.uv.z=0;
 	vtx.uv.w=vtx.pos.z;
@@ -59,5 +69,6 @@ vertex VertexShader_main(in vertex vtx)
 	vtx.pos.z=1/(1.0000001+vtx.pos.z);
 	
 	vtx.pos.w=1;
+
 	return vtx; 
 }

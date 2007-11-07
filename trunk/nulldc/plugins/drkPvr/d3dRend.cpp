@@ -62,6 +62,7 @@ namespace Direct3DRenderer
 	IDirect3DTexture9* pal_texture=0;
 	IDirect3DTexture9* rtt_texture=0;
 	u32 rtt_address=0;
+	u32 rtt_FrameNumber=0xFFFFFFFF;
 	IDirect3DSurface9* bb_surf=0,* rtt_surf=0;
 	D3DSURFACE_DESC bb_surf_desc;
 	ID3DXFont* font;
@@ -81,6 +82,17 @@ namespace Direct3DRenderer
 	float res_scale[4]={0,0,320,-240};
 	float fb_scale[2]={1,1};
 
+	//x=emulation mode
+	//y=filter mode
+	//result = {d3dmode,shader id}
+	/*
+	const u32 PaletteModeLUT[][][]
+	{
+		{ {D3DTEXF_POINT,0},{D3DTEXF_LINEAR,0} },//static
+		{ {D3DTEXF_POINT,0},{D3DTEXF_LINEAR,0} },//versioned
+		{ {D3DTEXF_POINT,1},{D3DTEXF_POINT,1} },//Dynamic,Point
+		{ {D3DTEXF_POINT,1},{D3DTEXF_POINT,2} },//Dynamic,Full
+	};*/
 	void SetFpsText(char* text)
 	{
 		strcpy(fps_text,text);
@@ -517,7 +529,10 @@ namespace Direct3DRenderer
 	{	
 		u32 addr=(tcw.NO_PAL.TexAddr<<3) & 0x7FFFFF;
 		if (addr==rtt_address)
+		{
+			rtt_FrameNumber=FrameNumber;
 			return rtt_texture;
+		}
 
 		//EnterCriticalSection(&tex_cache_cs);
 		TextureCacheData* tf = TexCache.Find(tcw.full,tsp.full);
@@ -999,8 +1014,8 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 	#define idx_pp_ShadInstr 2
 	#define idx_pp_IgnoreTexA 3
 	#define idx_pp_UseAlpha 4
-	#define idx_pp_profile 5
-	#define idx_pp_pal_tex 6
+	#define idx_pp_proj2Dtex 5
+	#define idx_pp_TextureLookup 6
 
 	D3DXMACRO ps_macros[]=
 	{
@@ -1009,16 +1024,29 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		{"pp_ShadInstr",0},
 		{"pp_IgnoreTexA",0},
 		{"pp_UseAlpha",0},
-		{"ps_no_tex2D",0},	//Shader profile version , just defined , no value :)
-		{"pp_pal_tex",0},	//use shader to emulate pals
+		{"proj2Dtex",0},	//Shader profile version , just defined , no value :)
+		{"TextureLookup",0},	//use shader to emulate pals
 		{0,0}	//end of list
 	};
+	// -> function to do projected lookup
+// -> function to use for texture lookup.One of TextureLookup_Normal,TextureLookup_Palette,TextureLookup_Palette_Bilinear
 	char* ps_macro_numers[] =
 	{
 		"0",
 		"1",
 		"2",
 		"3",
+	};
+	char* ps_macro_TLUM[]=
+	{
+		"TextureLookup_Normal",
+		"TextureLookup_Palette",
+		"TextureLookup_Palette_Bilinear",
+	};
+	char* ps_macro_proj2Dtex[]=
+	{
+		"tex2D",
+		"tex2Dproj",
 	};
 
 	void CompilePS(u32 mode,const char* profile)
@@ -1055,9 +1083,9 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			strcmp(temp,"ps_1_1")==0 ||
 			strcmp(temp,"ps_1_0")==0 
 			)
-			ps_macros[5].Definition="1";
+			ps_macros[idx_pp_proj2Dtex].Definition=ps_macro_proj2Dtex[0];
 		else
-			ps_macros[5].Definition="0";
+			ps_macros[idx_pp_proj2Dtex].Definition=ps_macro_proj2Dtex[1];
 
 		const char * profile=D3DXGetPixelShaderProfile(dev);
 
@@ -1065,14 +1093,15 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		forl(Texture,0,1)
 		{
 			ps_macros[idx_pp_Texture].Definition=ps_macro_numers[Texture];
-			forl(pal_tex,0,2)
+
+			forl(UseAlpha,0,1)
 			{
-				ps_macros[idx_pp_pal_tex].Definition=ps_macro_numers[pal_tex];
-				forl(UseAlpha,0,1)
+				ps_macros[idx_pp_UseAlpha].Definition=ps_macro_numers[UseAlpha];
+				if (Texture)
 				{
-					ps_macros[idx_pp_UseAlpha].Definition=ps_macro_numers[UseAlpha];
-					if (Texture)
+					forl(pal_tex,0,2)
 					{
+						ps_macros[idx_pp_TextureLookup].Definition=ps_macro_TLUM[pal_tex];
 						forl(Offset,0,1)
 						{
 							ps_macros[idx_pp_Offset].Definition=ps_macro_numers[Offset];
@@ -1101,19 +1130,19 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 							}
 						}
 					}
-					else
-					{
-						ps_macros[idx_pp_Offset].Definition=ps_macro_numers[0];
-						ps_macros[idx_pp_ShadInstr].Definition=ps_macro_numers[0];
-						ps_macros[idx_pp_IgnoreTexA].Definition=ps_macro_numers[0];
+				}
+				else
+				{
+					ps_macros[idx_pp_Offset].Definition=ps_macro_numers[0];
+					ps_macros[idx_pp_ShadInstr].Definition=ps_macro_numers[0];
+					ps_macros[idx_pp_IgnoreTexA].Definition=ps_macro_numers[0];
 
-						u32 mode=0;			
-						mode|=Texture;
-						mode<<=1;
-						mode|=UseAlpha;
+					u32 mode=0;			
+					mode|=Texture;
+					mode<<=1;
+					mode|=UseAlpha;
 
-						CompilePS(mode,profile);
-					}
+					CompilePS(mode,profile);
 				}
 			}
 		}
@@ -1141,20 +1170,25 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			if (settings.Emulation.PaletteMode>1)
 			{
 				u32 pal_mode=settings.Emulation.PaletteMode-1;
+				if (pal_mode==2 && gp->tsp.FilterMode==0)
+					pal_mode=1;//no filter .. ugh
+					
 				u32 pf=gp->tcw.PAL.PixelFmt;
 				if (pf==5)
 				{
 					cur_pal_index[1]=gp->tcw.PAL.PalSelect/64.0f;
-					mode|=pal_mode<<1;
+					mode|=pal_mode;
 					dev->SetPixelShaderConstantF(0,cur_pal_index,1);
 				}
 				else if (pf==6)
 				{
 					cur_pal_index[1]=(gp->tcw.PAL.PalSelect&~0xF)/64.0f;
-					mode|=pal_mode<<1;
+					mode|=pal_mode;
 					dev->SetPixelShaderConstantF(0,cur_pal_index,1);
 				}
 			}
+			
+			mode<<=1;
 			mode|=gp->pcw.Offset;
 
 			mode<<=2;
@@ -1270,7 +1304,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		{
 			cache_tcw=gp->tcw;
 
-			if (gp->tsp.FilterMode == 0 || gp->tcw.PAL.PixelFmt==5|| gp->tcw.PAL.PixelFmt==6)
+			if ( gp->tsp.FilterMode == 0 || (settings.Emulation.PaletteMode>1 && ( gp->tcw.PAL.PixelFmt==5|| gp->tcw.PAL.PixelFmt==6) ))
 			{
 				dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
 				dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
@@ -1301,6 +1335,14 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			{
 				IDirect3DTexture9* tex=GetTexture(gp->tsp,gp->tcw);
 				dev->SetTexture(0,tex);
+				float tsz[4];
+				tsz[0]=8<<gp->tsp.TexU;
+				tsz[2]=1/tsz[0];
+				tsz[1]=8<<gp->tsp.TexV;
+				tsz[3]=1/tsz[1];
+
+				dev->SetPixelShaderConstantF(1,tsz,1);
+				dev->SetVertexShaderConstantF(3,tsz,1);
 			}
 		}
 
@@ -1450,7 +1492,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 	//
 	void DrawFPS()
 	{
-		// Create a colour for the text - in this case blue
+		// Create a colour for the text
 		D3DCOLOR fontColor = D3DCOLOR_ARGB(255,0x18,0xFF,0);  
 
 		// Create a rectangle to indicate where on the screen it should be drawn
@@ -1498,7 +1540,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		}
 	}
 	//
-	void UpdatePalleteTexure()
+	void UpdatePaletteTexure()
 	{
 		palette_update();
 		if (pal_texture==0)
@@ -1527,9 +1569,13 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		bool rtt=(FB_W_SOF1 & 0x1000000)!=0;
 
 		void* ptr;
-
+		if (FrameNumber-rtt_FrameNumber >60)
+		{
+			rtt_address=0xFFFFFFFF;
+		}
 		if (rtt)
 		{
+			rtt_FrameNumber=FrameNumber;
 			rtt_address=FB_W_SOF1&0x7FFFFF;
 			verifyc(dev->SetRenderTarget(0,rtt_surf));
 		}
@@ -1562,7 +1608,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 
 		//memset(pvrrc.verts.data,0xFEA345FD,pvrrc.verts.size*sizeof(Vertex));
 
-		UpdatePalleteTexure();
+		UpdatePaletteTexure();
 
 		// Begin the scene
 		if( SUCCEEDED( dev->BeginScene() ) )
@@ -1614,9 +1660,11 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			else
 				scale_x*=1;
 
+			float x_scale_coef_aa=2.0;
 			if (SCALER_CTL.hscale)
 			{
 				scale_x*=2;//2x resolution on X (AA)
+				x_scale_coef_aa=1.0;
 			}
 			/*			float yscalef=SCALER_CTL.vscalefactor/1024.0f;
 			scale_y*=1/yscalef;
@@ -1648,8 +1696,8 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 					srect.top=0.5f+(current_scalef[1]/(-current_scalef[3]*2)*bb_surf_desc.Height+FB_Y_CLIP.min*bb_surf_desc.Height/(-current_scalef[3]*2));
 					srect.bottom=0.5f+(current_scalef[1]/(-current_scalef[3]*2)*bb_surf_desc.Height+((FB_Y_CLIP.max+1)*bb_surf_desc.Height/(-current_scalef[3]*2)));
 
-					srect.left=0.5f+(current_scalef[0]/(current_scalef[2]*2)*bb_surf_desc.Width+FB_X_CLIP.min*bb_surf_desc.Width/(current_scalef[2]*2));
-					srect.right=0.5f+(current_scalef[0]/(current_scalef[2]*2)*bb_surf_desc.Width+((FB_X_CLIP.max+1)*bb_surf_desc.Width/(current_scalef[2]*2)));
+					srect.left=0.5f+(current_scalef[0]/(current_scalef[2]*x_scale_coef_aa)*bb_surf_desc.Width+FB_X_CLIP.min*bb_surf_desc.Width/(current_scalef[2]*x_scale_coef_aa));
+					srect.right=0.5f+(current_scalef[0]/(current_scalef[2]*x_scale_coef_aa)*bb_surf_desc.Width+((FB_X_CLIP.max+1)*bb_surf_desc.Width/(current_scalef[2]*x_scale_coef_aa)));
 
 					dev->SetScissorRect(&srect);
 					dev->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE); 
@@ -1927,7 +1975,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		{
 			UseSVP=true;
 		}
-		if (caps.PixelShaderVersion>=D3DPS_VERSION(1, 0))
+		if (caps.PixelShaderVersion>=D3DPS_VERSION(2, 0))
 		{
 			UseFixedFunction=false;
 		}

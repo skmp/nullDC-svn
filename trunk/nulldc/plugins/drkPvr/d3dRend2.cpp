@@ -20,6 +20,11 @@
 // block readbacks to sysmem
 // rendering by lock & fb upload
 
+/*
+ -- Possibly using CUDA ? that requires gf 8500/8600/8800 + special drivers.rel 163.71 WHQL work for me (8600 GTS)
+    CUDA could work the same way pvr works, parse display lists & draw.The only problem is getting the output/sharing the vram.
+	A block of cuda threads could generate the display lists, another block could process em generating the z-mask & then coloring information.
+*/
 #if REND_API == REND_D3D_V2
 
 using namespace TASplitter;

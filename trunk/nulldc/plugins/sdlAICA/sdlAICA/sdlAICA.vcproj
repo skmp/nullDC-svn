@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1253"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="nullAICA"
 	ProjectGUID="{70FF77F6-E0CE-44EF-AF61-1BBAF3F60CD2}"
 	RootNamespace="nullAICA"
@@ -258,6 +258,30 @@
 				<File
 					RelativePath=".\sgc_if.h"
 					>
+				</File>
+			</Filter>
+			<Filter
+				Name="arm7rec"
+				>
+				<File
+					RelativePath=".\arm7rec.cpp"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
 				</File>
 			</Filter>
 		</Filter>

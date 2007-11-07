@@ -170,18 +170,20 @@ void FASTCALL edReset(bool Manual)
 s32 FASTCALL edInit(ext_device_init_params* p)
 {
 	params=*p;
-	int nd=pcap_io_get_dev_num();
-	printf("%d adapters\n",nd);
-	for(int i=0;i<nd;i++)
+	if (settings.mode!=0)
 	{
-		printf("%d : %s :",i,pcap_io_get_dev_name(i));
-		printf("\t%s\n",pcap_io_get_dev_desc(i));
-	}
+		int nd=pcap_io_get_dev_num();
+		printf("%d adapters\n",nd);
+		for(int i=0;i<nd;i++)
+		{
+			printf("%d : %s :",i,pcap_io_get_dev_name(i));
+			printf("\t%s\n",pcap_io_get_dev_desc(i));
+		}
 
-	printf("using :%d : %s :",settings.adapter,pcap_io_get_dev_name(settings.adapter));
-	printf("\t%s\n",pcap_io_get_dev_desc(settings.adapter));
-	pcap_io_init(pcap_io_get_dev_name(settings.adapter));
-	
+		printf("using :%d : %s :",settings.adapter,pcap_io_get_dev_name(settings.adapter));
+		printf("\t%s\n",pcap_io_get_dev_desc(settings.adapter));
+		pcap_io_init(pcap_io_get_dev_name(settings.adapter));
+	}
 	if (settings.mode==3)
 		bba_init();
 
@@ -191,7 +193,8 @@ s32 FASTCALL edInit(ext_device_init_params* p)
 //called when exiting from sh4 thread , from the new thread context (for any thread speciacific de init) :P
 void FASTCALL edTerm()
 {
-	pcap_io_close();
+	if (settings.mode!=0)
+		pcap_io_close();
 }
 
 

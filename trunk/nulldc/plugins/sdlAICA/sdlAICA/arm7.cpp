@@ -112,7 +112,7 @@ bool C_FLAG;
 bool V_FLAG;
 bool armIrqEnable;
 bool armFiqEnable;
-bool armState;
+//bool armState;
 int armMode;
 
 bool Arm7Enabled=false;
@@ -288,8 +288,8 @@ void CPUUpdateCPSR()
 		CPSR |= 0x20000000;
 	if(V_FLAG)
 		CPSR |= 0x10000000;
-	if(!armState)
-		CPSR |= 0x00000020;
+	/*if(!armState)
+		CPSR |= 0x00000020;*/
 	if (!armFiqEnable)
 		CPSR |= 0x40;
 	if(!armIrqEnable)
@@ -306,7 +306,7 @@ void CPUUpdateFlags(bool breakLoop)
 	Z_FLAG = (CPSR & 0x40000000) ? true: false;
 	C_FLAG = (CPSR & 0x20000000) ? true: false;
 	V_FLAG = (CPSR & 0x10000000) ? true: false;
-	armState = (CPSR & 0x20) ? false : true;
+	//armState = (CPSR & 0x20) ? false : true;
 	armIrqEnable = (CPSR & 0x80) ? false : true;
 	armFiqEnable = (CPSR & 0x40) ? false : true;
 	if(breakLoop) {
@@ -319,11 +319,11 @@ void CPUUpdateFlags(bool breakLoop)
 void CPUSoftwareInterrupt(int comment)
 {
 	u32 PC = reg[15].I;
-	bool savedArmState = armState;
+	//bool savedArmState = armState;
 	CPUSwitchMode(0x13, true, false);
-	reg[14].I = PC - (savedArmState ? 4 : 2);
+	reg[14].I = PC - 4;
 	reg[15].I = 0x08;
-	armState = true;
+	
 	armIrqEnable = false;
 	armNextPC = 0x08;
 	reg[15].I += 4;
@@ -332,11 +332,9 @@ void CPUSoftwareInterrupt(int comment)
 void CPUUndefinedException()
 {
 	u32 PC = reg[15].I;
-	bool savedArmState = armState;
 	CPUSwitchMode(0x1b, true, false);
-	reg[14].I = PC - (savedArmState ? 4 : 2);
+	reg[14].I = PC - 4;
 	reg[15].I = 0x04;
-	armState = true;
 	armIrqEnable = false;
 	armNextPC = 0x04;
 	reg[15].I += 4;  
@@ -362,7 +360,7 @@ void arm_Reset()
 	armIrqEnable = true;      
 	armFiqEnable = false;
 
-	armState = true;
+	//armState = true;
 	C_FLAG = V_FLAG = N_FLAG = Z_FLAG = false;
 
 	// disable FIQ
@@ -379,13 +377,13 @@ void arm_Reset()
 void CPUInterrupt()
 {
 	u32 PC = reg[15].I;
-	bool savedState = armState;
+	//bool savedState = armState;
 	CPUSwitchMode(0x12, true, false);
 	reg[14].I = PC;
-	if(!savedState)
-		reg[14].I += 2;
+	//if(!savedState)
+	//	reg[14].I += 2;
 	reg[15].I = 0x18;
-	armState = true;
+	//armState = true;
 	armIrqEnable = false;
 
 	armNextPC = reg[15].I;
@@ -395,13 +393,13 @@ void CPUInterrupt()
 void CPUFiq()
 {
 	u32 PC = reg[15].I;
-	bool savedState = armState;
+	//bool savedState = armState;
 	CPUSwitchMode(0x11, true, false);
 	reg[14].I = PC;
-	if(!savedState)
-		reg[14].I += 2;
+	//if(!savedState)
+	//	reg[14].I += 2;
 	reg[15].I = 0x1c;
-	armState = true;
+	//armState = true;
 	armIrqEnable = false;
 	armFiqEnable = false;
 

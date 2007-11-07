@@ -1125,14 +1125,10 @@
           clockTicks++;\
           CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
-        if(armState) {\
+        {\
           reg[15].I &= 0xFFFFFFFC;\
           armNextPC = reg[15].I;\
           reg[15].I += 4;\
-        } else {\
-          reg[15].I &= 0xFFFFFFFE;\
-          armNextPC = reg[15].I;\
-          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -1162,14 +1158,10 @@
           clockTicks++;\
           CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
-        if(armState) {\
+        {\
           reg[15].I &= 0xFFFFFFFC;\
           armNextPC = reg[15].I;\
           reg[15].I += 4;\
-        } else {\
-          reg[15].I &= 0xFFFFFFFE;\
-          armNextPC = reg[15].I;\
-          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -1204,14 +1196,10 @@
           clockTicks++;\
           CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
-        if(armState) {\
+        {\
           reg[15].I &= 0xFFFFFFFC;\
           armNextPC = reg[15].I;\
           reg[15].I += 4;\
-        } else {\
-          reg[15].I &= 0xFFFFFFFE;\
-          armNextPC = reg[15].I;\
-          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -1239,14 +1227,10 @@
           clockTicks++;\
           CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
-        if(armState) {\
+        {\
           reg[15].I &= 0xFFFFFFFC;\
           armNextPC = reg[15].I;\
           reg[15].I += 4;\
-        } else {\
-          reg[15].I &= 0xFFFFFFFE;\
-          armNextPC = reg[15].I;\
-          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -1282,14 +1266,10 @@
           clockTicks++;\
           CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
-        if(armState) {\
+        {\
           reg[15].I &= 0xFFFFFFFC;\
           armNextPC = reg[15].I;\
           reg[15].I += 4;\
-        } else {\
-          reg[15].I &= 0xFFFFFFFE;\
-          armNextPC = reg[15].I;\
-          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -1325,15 +1305,11 @@
           clockTicks++;\
           CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
-        if(armState) {\
+       {\
           reg[15].I &= 0xFFFFFFFC;\
           armNextPC = reg[15].I;\
           reg[15].I += 4;\
-        } else {\
-          reg[15].I &= 0xFFFFFFFE;\
-          armNextPC = reg[15].I;\
-          reg[15].I += 2;\
-        }\
+       }\
       } else {\
         OPCODE \
       }\
@@ -1370,15 +1346,11 @@
           clockTicks++;\
           CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
-        if(armState) {\
+        {\
           reg[15].I &= 0xFFFFFFFC;\
           armNextPC = reg[15].I;\
           reg[15].I += 4;\
-        } else {\
-          reg[15].I &= 0xFFFFFFFE;\
-          armNextPC = reg[15].I;\
-          reg[15].I += 2;\
-        }\
+       }\
       } else {\
         OPCODE \
       }\
@@ -1412,14 +1384,10 @@
           clockTicks++;\
           CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
-        if(armState) {\
+        {\
           reg[15].I &= 0xFFFFFFFC;\
           armNextPC = reg[15].I;\
           reg[15].I += 4;\
-        } else {\
-          reg[15].I &= 0xFFFFFFFE;\
-          armNextPC = reg[15].I;\
-          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -1460,14 +1428,10 @@
           clockTicks++;\
           CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
-        if(armState) {\
+        {\
           reg[15].I &= 0xFFFFFFFC;\
           armNextPC = reg[15].I;\
           reg[15].I += 4;\
-        } else {\
-          reg[15].I &= 0xFFFFFFFE;\
-          armNextPC = reg[15].I;\
-          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -1497,15 +1461,9 @@
           clockTicks++;\
           CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
-        if(armState) {\
           reg[15].I &= 0xFFFFFFFC;\
           armNextPC = reg[15].I;\
           reg[15].I += 4;\
-        } else {\
-          reg[15].I &= 0xFFFFFFFE;\
-          armNextPC = reg[15].I;\
-          reg[15].I += 2;\
-        }\
       } else {\
         OPCODE \
       }\
@@ -1533,15 +1491,9 @@
           clockTicks++;\
           CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
-        if(armState) {\
           reg[15].I &= 0xFFFFFFFC;\
           armNextPC = reg[15].I;\
           reg[15].I += 4;\
-        } else {\
-          reg[15].I &= 0xFFFFFFFE;\
-          armNextPC = reg[15].I;\
-          reg[15].I += 2;\
-        }\
       } else {\
         OPCODE \
       }\
@@ -1574,15 +1526,9 @@
           clockTicks++;\
           CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
-        if(armState) {\
           reg[15].I &= 0xFFFFFFFC;\
           armNextPC = reg[15].I;\
           reg[15].I += 4;\
-        } else {\
-          reg[15].I &= 0xFFFFFFFE;\
-          armNextPC = reg[15].I;\
-          reg[15].I += 2;\
-        }\
       } else {\
         OPCODE \
       }\
@@ -1608,15 +1554,9 @@
           clockTicks++;\
           CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
-        if(armState) {\
           reg[15].I &= 0xFFFFFFFC;\
           armNextPC = reg[15].I;\
           reg[15].I += 4;\
-        } else {\
-          reg[15].I &= 0xFFFFFFFE;\
-          armNextPC = reg[15].I;\
-          reg[15].I += 2;\
-        }\
       } else {\
         OPCODE \
       }\
@@ -1650,15 +1590,9 @@
           clockTicks++;\
           CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
-        if(armState) {\
           reg[15].I &= 0xFFFFFFFC;\
           armNextPC = reg[15].I;\
           reg[15].I += 4;\
-        } else {\
-          reg[15].I &= 0xFFFFFFFE;\
-          armNextPC = reg[15].I;\
-          reg[15].I += 2;\
-        }\
       } else {\
         OPCODE \
       }\
@@ -1692,15 +1626,9 @@
           clockTicks++;\
           CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
-        if(armState) {\
           reg[15].I &= 0xFFFFFFFC;\
           armNextPC = reg[15].I;\
           reg[15].I += 4;\
-        } else {\
-          reg[15].I &= 0xFFFFFFFE;\
-          armNextPC = reg[15].I;\
-          reg[15].I += 2;\
-        }\
       } else {\
         OPCODE \
       }\
@@ -1736,15 +1664,9 @@
           clockTicks++;\
           CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
-        if(armState) {\
           reg[15].I &= 0xFFFFFFFC;\
           armNextPC = reg[15].I;\
           reg[15].I += 4;\
-        } else {\
-          reg[15].I &= 0xFFFFFFFE;\
-          armNextPC = reg[15].I;\
-          reg[15].I += 2;\
-        }\
       } else {\
         OPCODE \
       }\
@@ -1777,15 +1699,9 @@
           clockTicks++;\
           CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
-        if(armState) {\
           reg[15].I &= 0xFFFFFFFC;\
           armNextPC = reg[15].I;\
           reg[15].I += 4;\
-        } else {\
-          reg[15].I &= 0xFFFFFFFE;\
-          armNextPC = reg[15].I;\
-          reg[15].I += 2;\
-        }\
       } else {\
         OPCODE \
       }\
@@ -1824,15 +1740,9 @@
           clockTicks++;\
           CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
-        if(armState) {\
           reg[15].I &= 0xFFFFFFFC;\
           armNextPC = reg[15].I;\
           reg[15].I += 4;\
-        } else {\
-          reg[15].I &= 0xFFFFFFFE;\
-          armNextPC = reg[15].I;\
-          reg[15].I += 2;\
-        }\
       } else {\
         OPCODE \
       }\
@@ -1860,16 +1770,10 @@
           clockTicks++;\
           CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
-        if(armState) {\
           reg[15].I &= 0xFFFFFFFC;\
           armNextPC = reg[15].I;\
           reg[15].I += 4;\
         } else {\
-          reg[15].I &= 0xFFFFFFFE;\
-          armNextPC = reg[15].I;\
-          reg[15].I += 2;\
-        }\
-      } else {\
         OPCODE \
       }\
     }\
@@ -1894,15 +1798,9 @@
           clockTicks++;\
           CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
-        if(armState) {\
           reg[15].I &= 0xFFFFFFFC;\
           armNextPC = reg[15].I;\
           reg[15].I += 4;\
-        } else {\
-          reg[15].I &= 0xFFFFFFFE;\
-          armNextPC = reg[15].I;\
-          reg[15].I += 2;\
-        }\
       } else {\
         OPCODE \
       }\
@@ -1930,15 +1828,11 @@
           clockTicks++;\
           CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
-        if(armState) {\
+        {\
           reg[15].I &= 0xFFFFFFFC;\
           armNextPC = reg[15].I;\
           reg[15].I += 4;\
-        } else {\
-          reg[15].I &= 0xFFFFFFFE;\
-          armNextPC = reg[15].I;\
-          reg[15].I += 2;\
-        }\
+        } \
       } else {\
         OPCODE \
       }\
@@ -1964,16 +1858,12 @@
           clockTicks++;\
           CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
-        if(armState) {\
+		{\
           reg[15].I &= 0xFFFFFFFC;\
           armNextPC = reg[15].I;\
           reg[15].I += 4;\
-        } else {\
-          reg[15].I &= 0xFFFFFFFE;\
-          armNextPC = reg[15].I;\
-          reg[15].I += 2;\
         }\
-      } else {\
+	  } else {\
         OPCODE \
       }\
     }\
@@ -2002,14 +1892,10 @@
           clockTicks++;\
           CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
-        if(armState) {\
+        {\
           reg[15].I &= 0xFFFFFFFC;\
           armNextPC = reg[15].I;\
           reg[15].I += 4;\
-        } else {\
-          reg[15].I &= 0xFFFFFFFE;\
-          armNextPC = reg[15].I;\
-          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -2040,14 +1926,10 @@
           clockTicks++;\
           CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
-        if(armState) {\
+		{\
           reg[15].I &= 0xFFFFFFFC;\
           armNextPC = reg[15].I;\
           reg[15].I += 4;\
-        } else {\
-          reg[15].I &= 0xFFFFFFFE;\
-          armNextPC = reg[15].I;\
-          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -2080,14 +1962,10 @@
           clockTicks++;\
           CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
-        if(armState) {\
+       {\
           reg[15].I &= 0xFFFFFFFC;\
           armNextPC = reg[15].I;\
           reg[15].I += 4;\
-        } else {\
-          reg[15].I &= 0xFFFFFFFE;\
-          armNextPC = reg[15].I;\
-          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -2119,14 +1997,10 @@
           clockTicks++;\
           CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
-        if(armState) {\
+        {\
           reg[15].I &= 0xFFFFFFFC;\
           armNextPC = reg[15].I;\
           reg[15].I += 4;\
-        } else {\
-          reg[15].I &= 0xFFFFFFFE;\
-          armNextPC = reg[15].I;\
-          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -2164,14 +2038,10 @@
           clockTicks++;\
           CPUSwitchMode(reg[17].I & 0x1f, false);\
         }\
-        if(armState) {\
+        {\
           reg[15].I &= 0xFFFFFFFC;\
           armNextPC = reg[15].I;\
           reg[15].I += 4;\
-        } else {\
-          reg[15].I &= 0xFFFFFFFE;\
-          armNextPC = reg[15].I;\
-          reg[15].I += 2;\
         }\
       } else {\
         OPCODE \
@@ -3171,6 +3041,7 @@ if(cond_res) {
       CPUUpdateFlags();
     }
     break;
+	/*
   case 0x121:
     {
       // BX Rm
@@ -3189,6 +3060,7 @@ if(cond_res) {
       }
     }
     break;
+	*/
     ARITHMETIC_DATA_OPCODE(OP_CMP, OP_CMP, 0x150);
   case 0x140:
     // MRS Rd, SPSR
@@ -6296,12 +6168,9 @@ if(cond_res) {
           clockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
 
         CPUSwitchMode(reg[17].I & 0x1f, false);
-        if(armState) {
+        {
           armNextPC = reg[15].I & 0xFFFFFFFC;
           reg[15].I = armNextPC + 4;
-        } else {
-          armNextPC = reg[15].I & 0xFFFFFFFE;
-          reg[15].I = armNextPC + 2;
         }
       } else {
         LDM_REG(1, 0);
@@ -6373,12 +6242,9 @@ if(cond_res) {
           reg[base].I = temp;
 
         CPUSwitchMode(reg[17].I & 0x1f, false);
-        if(armState) {
+        {
           armNextPC = reg[15].I & 0xFFFFFFFC;
           reg[15].I = armNextPC + 4;
-        } else {
-          armNextPC = reg[15].I & 0xFFFFFFFE;
-          reg[15].I = armNextPC + 2;
         }
       } else {
         LDM_REG(1, 0);
@@ -6519,12 +6385,9 @@ if(cond_res) {
           clockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
 
         CPUSwitchMode(reg[17].I & 0x1f, false);
-        if(armState) {
+        {
           armNextPC = reg[15].I & 0xFFFFFFFC;
           reg[15].I = armNextPC + 4;
-        } else {
-          armNextPC = reg[15].I & 0xFFFFFFFE;
-          reg[15].I = armNextPC + 2;
         }
       } else {
         LDM_REG(1, 0);
@@ -6596,12 +6459,9 @@ if(cond_res) {
           reg[base].I = temp;
 
         CPUSwitchMode(reg[17].I & 0x1f, false);
-        if(armState) {
+        {
           armNextPC = reg[15].I & 0xFFFFFFFC;
           reg[15].I = armNextPC + 4;
-        } else {
-          armNextPC = reg[15].I & 0xFFFFFFFE;
-          reg[15].I = armNextPC + 2;
         }
       } else {
         LDM_REG(1, 0);
@@ -6746,12 +6606,9 @@ if(cond_res) {
           clockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
 
         CPUSwitchMode(reg[17].I & 0x1f, false);
-        if(armState) {
+        {
           armNextPC = reg[15].I & 0xFFFFFFFC;
           reg[15].I = armNextPC + 4;
-        } else {
-          armNextPC = reg[15].I & 0xFFFFFFFE;
-          reg[15].I = armNextPC + 2;
         }
       } else {
         LDM_REG(1, 0);
@@ -6823,12 +6680,9 @@ if(cond_res) {
           reg[base].I = temp;
 
         CPUSwitchMode(reg[17].I & 0x1f, false);
-        if(armState) {
+        {
           armNextPC = reg[15].I & 0xFFFFFFFC;
           reg[15].I = armNextPC + 4;
-        } else {
-          armNextPC = reg[15].I & 0xFFFFFFFE;
-          reg[15].I = armNextPC + 2;
         }
       } else {
         LDM_REG(1, 0);
@@ -6969,12 +6823,9 @@ if(cond_res) {
           clockTicks += 2 + CPUUpdateTicksAccessSeq32(address);
 
         CPUSwitchMode(reg[17].I & 0x1f, false);
-        if(armState) {
+        {
           armNextPC = reg[15].I & 0xFFFFFFFC;
           reg[15].I = armNextPC + 4;
-        } else {
-          armNextPC = reg[15].I & 0xFFFFFFFE;
-          reg[15].I = armNextPC + 2;
         }
       } else {
         LDM_REG(1, 0);
@@ -7046,12 +6897,9 @@ if(cond_res) {
           reg[base].I = temp;
 
         CPUSwitchMode(reg[17].I & 0x1f, false);
-        if(armState) {
+       {
           armNextPC = reg[15].I & 0xFFFFFFFC;
           reg[15].I = armNextPC + 4;
-        } else {
-          armNextPC = reg[15].I & 0xFFFFFFFE;
-          reg[15].I = armNextPC + 2;
         }
       } else {
         LDM_REG(1, 0);

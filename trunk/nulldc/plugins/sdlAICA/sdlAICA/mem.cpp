@@ -153,11 +153,11 @@ u32 sh4_ReadMem_ram(u32 addr,u32 size)
 	*/
 
 	if (size==1)
-		return aica_ram[addr&AICA_MEM_MASK];
+		return aica_ram[addr&AICA_RAM_MASK];
 	else if (size==2)
-		return *(u16*)&aica_ram[addr&AICA_MEM_MASK];
+		return *(u16*)&aica_ram[addr&AICA_RAM_MASK];
 	else if (size==4)
-		return *(u32*)&aica_ram[addr&AICA_MEM_MASK];
+		return *(u32*)&aica_ram[addr&AICA_RAM_MASK];
 
 	return 0;
 }
@@ -165,11 +165,11 @@ u32 sh4_ReadMem_ram(u32 addr,u32 size)
 void sh4_WriteMem_ram(u32 addr,u32 data,u32 size)
 {
 	if (size==1)
-		aica_ram[addr&AICA_MEM_MASK]=(u8)data;
+		aica_ram[addr&AICA_RAM_MASK]=(u8)data;
 	else if (size==2)
-		*(u16*)&aica_ram[addr&AICA_MEM_MASK]=(u16)data;
+		*(u16*)&aica_ram[addr&AICA_RAM_MASK]=(u16)data;
 	else if (size==4)
-		*(u32*)&aica_ram[addr&AICA_MEM_MASK]=data;
+		*(u32*)&aica_ram[addr&AICA_RAM_MASK]=data;
 }
 //Map using _vmem .. yay
 void init_mem()
@@ -177,7 +177,7 @@ void init_mem()
 	aica_ram=aica_params.aica_ram;
 	//aica_ram=(u8*)malloc(AICA_MEM_SIZE);
 	aica_reg=(u8*)malloc(0x8000);
-	memset(aica_ram,0,AICA_MEM_SIZE);
+	memset(aica_ram,0,AICA_RAM_SIZE);
 	memset(aica_reg,0,0x8000);
 	_vmem_init();
 
@@ -189,9 +189,9 @@ void init_mem()
 	u32 total_map=0x800000;//8 mb
 	while(total_map)
 	{
-		total_map-=AICA_MEM_SIZE;
-		_vmem_map_block(aica_ram,(total_map)>>16,(total_map+AICA_MEM_MASK)>>16);
-		printf("Mapped 0x%08X to 0x%08X to ram \n",total_map,total_map+AICA_MEM_MASK);
+		total_map-=AICA_RAM_SIZE;
+		_vmem_map_block(aica_ram,(total_map)>>16,(total_map+AICA_RAM_MASK)>>16);
+		printf("Mapped 0x%08X to 0x%08X to ram \n",total_map,total_map+AICA_RAM_MASK);
 	}
 	_vmem_handler reg_read= _vmem_register_handler_Template(arm_ReadMem,arm_WriteMem);
 	_vmem_map_handler(reg_read,0x0080,0x0081);
