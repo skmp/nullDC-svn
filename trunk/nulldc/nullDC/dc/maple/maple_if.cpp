@@ -10,6 +10,7 @@
 #include "dc/mem/sh4_mem.h"
 #include "plugins/plugin_manager.h"
 #include "dc/sh4/rec_v1/blockmanager.h"
+#include "dc/asic/asic.h"
 
 eMDevInf MapleDevices_dd[4][6];
 maple_device_instance MapleDevices[4];
@@ -261,7 +262,7 @@ void DoMapleDma()
 		}
 	}
 //dma_end:
-	RaiseInterrupt(holly_MAPLE_DMA);
+	asic_RaiseInterrupt(holly_MAPLE_DMA);
 }
 
 //device : 0 .. 4 -> subdevice , 5 -> main device :)
