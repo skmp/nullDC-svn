@@ -554,8 +554,9 @@ void TestAddress(const DWORD uAddress,const DWORD uData)
 
 			// DWORD uEvent = TSH4_ASIC::ASIC_EVT_SPU_IRQ;
 			//pAddress[(uEvent>>8)&0xff] &= ~(1<<(uEvent&0xff));    
-			u32 Interrupt = (u32)(1 << ((((u32)holly_SPU_IRQ & (u32)InterruptIDMask))));
-			*params.SB_ISTEXT&=~Interrupt;
+			u32 Interrupt = 1<<(u8)holly_SPU_IRQ;
+			if (*params.SB_ISTEXT&Interrupt)
+				params.CancelInterrupt(holly_SPU_IRQ);
 		}
 	}
 	else if (uAddress == TAICA::ARM_SCIRE_W_32)
