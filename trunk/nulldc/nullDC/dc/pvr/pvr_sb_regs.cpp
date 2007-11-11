@@ -1,4 +1,5 @@
 #include "types.h"
+#include "dc/asic/asic.h"
 #include "dc/sh4/intc.h"
 #include "dc/mem/sb.h"
 #include "dc/sh4/dmac.h"
@@ -60,7 +61,7 @@ void do_pvr_dma()
 	SB_PDST = 0x00000000;
 
 	//TODO : *CHECKME* is that ok here ? the docs don't say here it's used [PVR-DMA , bit 11]
-	RaiseInterrupt(holly_PVR_DMA);
+	asic_RaiseInterrupt(holly_PVR_DMA);
 }
 void RegWrite_SB_PDST(u32 data)
 {
@@ -114,7 +115,7 @@ void pvr_do_sort_dma()
 
 	//end of dma :)
 	SB_SDST=0;
-	RaiseInterrupt(holly_PVR_SortDMA);
+	asic_RaiseInterrupt(holly_PVR_SortDMA);
 }
 //auto sort dma :|
 void RegWrite_SB_SDST(u32 data)

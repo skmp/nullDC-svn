@@ -8,7 +8,7 @@
 //TODO : move code later to a plugin
 //TODO : Fix registers arrays , they must be smaller now doe to the way SB registers are handled
 #include "plugins/plugin_manager.h"
-
+#include "dc/asic/asic.h"
 
  
 
@@ -151,7 +151,7 @@ INLINE void YUV_ConvertMacroBlock()
 	{
 		YUV_init();
 		//TODO : Check if it's allrgiht to do it here?
-		RaiseInterrupt(holly_YUV_DMA);
+		asic_RaiseInterrupt(holly_YUV_DMA);
 	}
 }
 void YUV_data(u32* data , u32 count)
