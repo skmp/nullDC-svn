@@ -46,7 +46,7 @@ namespace TASplitter
 	typedef u32 fastcall TaPolyParamFP(void* ptr);
 
 
-	const InterruptID ListEndInterrupt[5]=
+	const HollyInterruptID ListEndInterrupt[5]=
 	{
 		holly_OPAQUE,
 		holly_OPAQUEMOD,
