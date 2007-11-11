@@ -3,6 +3,7 @@
 #include "dc/mem/sh4_mem.h"
 #include "dc/mem/sb.h"
 #include "plugins/plugin_manager.h"
+#include "dc/asic/asic.h"
 
 //arm 7 is emulated within the aica implementation
 //RTC is emulated here tho xD
@@ -189,7 +190,7 @@ void Write_SB_ADST(u32 data)
 			SB_ADLEN = 0x00000000;
 
 			
-			RaiseInterrupt(holly_SPU_DMA);
+			asic_RaiseInterrupt(holly_SPU_DMA);
 		}
 	}
 }
