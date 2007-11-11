@@ -12,7 +12,7 @@ void ResetInterruptPend(InterruptID intr);
 
 void SetInterruptMask(InterruptID intr);
 void ResetInterruptMask(InterruptID intr);
-#define InterruptMask(intr,v) ((v)==0?ResetInterruptPend(intr):SetInterruptPend(intr))
+#define InterruptMask(intr,v) ((v)==0?ResetInterruptMask(intr):SetInterruptMask(intr))
 
 int UpdateINTC();
 void FASTCALL RaiseInterrupt_(InterruptID intr);
