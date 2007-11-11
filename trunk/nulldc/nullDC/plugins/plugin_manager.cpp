@@ -7,6 +7,7 @@
 #include "plugin_manager.h"
 #include "dc/pvr/pvr_if.h"
 #include "dc/aica/aica_if.h"
+#include "dc/asic/asic.h"
 #include "dc/gdrom/gdrom_if.h"
 #include "gui/base.h"
 #include "dc/maple/maple_if.h"
@@ -961,8 +962,9 @@ s32 plugins_Init_()
 	
 
 	aica_init_params aica_info;
-	aica_info.RaiseInterrupt=sh4_cpu->RaiseInterrupt;
+	aica_info.RaiseInterrupt=asic_RaiseInterrupt;
 	aica_info.SB_ISTEXT=&SB_ISTEXT;
+	aica_info.CancelInterrupt=asic_CancelInterrupt;
 	aica_info.CDDA_Sector=gdrom_get_cdda;
 	aica_info.aica_ram=aica_ram.data;
 
@@ -972,8 +974,9 @@ s32 plugins_Init_()
 	libAICA.Inited=true;
 
 	ext_device_init_params ext_device_info;
-	ext_device_info.RaiseInterrupt=sh4_cpu->RaiseInterrupt;
+	ext_device_info.RaiseInterrupt=asic_RaiseInterrupt;
 	ext_device_info.SB_ISTEXT=&SB_ISTEXT;
+	ext_device_info.CancelInterrupt=asic_CancelInterrupt;
 
 	lcp_name=libExtDevice.Name;
 	if (s32 rv = libExtDevice.Init(&ext_device_info))
@@ -981,7 +984,7 @@ s32 plugins_Init_()
 	libExtDevice.Inited=true;
 
 	maple_init_params mip;
-	mip.RaiseInterrupt=sh4_cpu->RaiseInterrupt;
+	mip.RaiseInterrupt=asic_RaiseInterrupt;
 
 	//Init Created maple devices
 	for ( int i=0;i<4;i++)
@@ -1018,7 +1021,7 @@ s32 plugins_Init_()
 
 	//pvr
 	pvr_init_params pvr_info;
-	pvr_info.RaiseInterrupt=sh4_cpu->RaiseInterrupt;
+	pvr_info.RaiseInterrupt=asic_RaiseInterrupt;
 	pvr_info.vram=&vram[0];
 	pvr_info.vram_lock_32=vramlock_Lock_32;
 	pvr_info.vram_lock_64=vramlock_Lock_64;

@@ -165,7 +165,7 @@ typedef vram_block* FASTCALL vramlock_LockFP(u32 start_offset,u32 end_offset,voi
 
 struct pvr_init_params
 {
-	RaiseInterruptFP*	RaiseInterrupt;
+	HollyRaiseInterruptFP*	RaiseInterrupt;
 
 	//Vram is allocated by the emu.A pointer is given to the buffer here :)
 	u8*					vram; 
@@ -243,7 +243,7 @@ typedef void FASTCALL DriveReadSubChannelFP(u8 * buff, u32 format, u32 len);
 //passed on GDRom init call
 struct gdr_init_params
 {
-	RaiseInterruptFP*	RaiseInterrupt;
+	//HollyRaiseInterruptFP*	RaiseInterrupt;
 	DriveNotifyEventFP* DriveNotifyEvent;
 };
 
@@ -275,11 +275,12 @@ typedef void FASTCALL CDDA_SectorFP(s16* sector);
 //passed on AICA init call
 struct aica_init_params
 {
-	RaiseInterruptFP*	RaiseInterrupt;
+	HollyRaiseInterruptFP*	RaiseInterrupt;
 	CDDA_SectorFP*	CDDA_Sector;		//For CDDA , returns a silent sector or cdda :)
 
 	u8*				aica_ram;
 	u32*			SB_ISTEXT;			//SB_ISTEXT register , so that aica can cancel interrupts =)
+	HollyCancelInterruptFP* CancelInterrupt;
 };
 
 typedef s32 FASTCALL AicaInitFP(aica_init_params* param);
@@ -347,7 +348,7 @@ struct maple_device_instance
 
 struct maple_init_params
 {
-	RaiseInterruptFP*	RaiseInterrupt;
+	HollyRaiseInterruptFP*	RaiseInterrupt;
 };
 
 typedef s32 FASTCALL MapleSubCreateInstanceFP(maple_subdevice_instance* inst,u32 id,u32 flags,u32 rootmenu);
@@ -413,8 +414,9 @@ struct maple_plugin_if
 //passed on Ext.Device init call
 struct ext_device_init_params
 {
-	RaiseInterruptFP*	RaiseInterrupt;
+	HollyRaiseInterruptFP*	RaiseInterrupt;
 	u32* SB_ISTEXT;
+	HollyCancelInterruptFP* CancelInterrupt;
 };
 
 typedef s32 FASTCALL ExtInitFP(ext_device_init_params* param);

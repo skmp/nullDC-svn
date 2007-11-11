@@ -51,44 +51,15 @@ typedef double f64;
 
 
 //intc function pointer and enums
-enum InterruptType
+enum HollyInterruptType
 {
-	sh4_int   = 0x00000000,
-	sh4_exp   = 0x01000000,
-	holly_nrm = 0x20000000,
-	holly_ext = 0x21000000,
-	holly_err = 0x22000000,
-	InterruptTypeMask = 0x7F000000,
-	InterruptIDMask=0x00FFFFFF
+	holly_nrm = 0x0000,
+	holly_ext = 0x0100,
+	holly_err = 0x0200,
 };
 
-enum InterruptID
-{
-		//internal interups
-		//TODO : Add more internal interrrupts
-		sh4_TMU0_TUNI0 = sh4_int |	0x0400,  /* TMU0 underflow */
-		sh4_TMU1_TUNI1 = sh4_int |  0x0420,  /* TMU1 underflow */
-		sh4_TMU2_TUNI2 = sh4_int |  0x0440,  /* TMU2 underflow */
-
-		//sh4 exeptions 
-		sh4_ex_USER_BREAK_BEFORE_INSTRUCTION_EXECUTION = sh4_exp | 0x1e0,
-		sh4_ex_INSTRUCTION_ADDRESS_ERROR =sh4_exp | 0x0e0,
-		sh4_ex_INSTRUCTION_TLB_MISS =sh4_exp | 0x040,
-		sh4_ex_INSTRUCTION_TLB_PROTECTION_VIOLATION = sh4_exp |0x0a0,
-		sh4_ex_GENERAL_ILLEGAL_INSTRUCTION = sh4_exp |0x180,
-		sh4_ex_SLOT_ILLEGAL_INSTRUCTION = sh4_exp |0x1a0,
-		sh4_ex_GENERAL_FPU_DISABLE = sh4_exp |0x800,
-		sh4_ex_SLOT_FPU_DISABLE = sh4_exp |0x820,
-		sh4_ex_DATA_ADDRESS_ERROR_READ =sh4_exp |0x0e0,
-		sh4_ex_DATA_ADDRESS_ERROR_WRITE = sh4_exp | 0x100,
-		sh4_ex_DATA_TLB_MISS_READ = sh4_exp | 0x040,
-		sh4_ex_DATA_TLB_MISS_WRITE = sh4_exp | 0x060,
-		sh4_ex_DATA_TLB_PROTECTION_VIOLATION_READ = sh4_exp | 0x0a0,
-		sh4_ex_DATA_TLB_PROTECTION_VIOLATION_WRITE = sh4_exp | 0x0c0,
-		sh4_ex_FPU = sh4_exp | 0x120,
-		sh4_ex_TRAP = sh4_exp | 0x160,
-		sh4_ex_INITAL_PAGE_WRITE = sh4_exp | 0x080,
-		
+enum HollyInterruptID
+{		
 		// asic9a /sh4 external holly normal [internal]
 		holly_RENDER_DONE_vd = holly_nrm | 0,	//bit 0 = End of Render interrupt : Video
 		holly_RENDER_DONE_isp = holly_nrm | 1,	//bit 1 = End of Render interrupt : ISP
@@ -159,7 +130,8 @@ enum InterruptID
 
 
 
-typedef void FASTCALL RaiseInterruptFP(InterruptID intr);
+typedef void FASTCALL HollyRaiseInterruptFP(HollyInterruptID intr);
+typedef void FASTCALL HollyCancelInterruptFP(HollyInterruptID intr);
 
 
 struct vram_block
