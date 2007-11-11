@@ -7,7 +7,7 @@
 #include "dc/sh4/dmac.h"
 #include "dc/sh4/intc.h"
 #include "dc/sh4/sh4_registers.h"
-
+#include "dc/asic/asic.h"
 
 enum gd_states
 {
@@ -251,7 +251,7 @@ void gd_set_state(gd_states state)
 			GDStatus.DRQ=1;
 			GDStatus.BSY=0;
 			//(4)	INTRQ is set, and a host interrupt is issued.
-			RaiseInterrupt(holly_GDROM_CMD);
+			asic_RaiseInterrupt(holly_GDROM_CMD);
 			/*
 			The number of bytes normally is the byte number in the register at the time of receiving 
 			the command, but it may also be the total of several devices handled by the buffer at that point.
@@ -309,7 +309,7 @@ void gd_set_state(gd_states state)
 			GDStatus.DRQ=0;
 			GDStatus.BSY=0;
 			//Make INTRQ valid
-			RaiseInterrupt(holly_GDROM_CMD);
+			asic_RaiseInterrupt(holly_GDROM_CMD);
 
 			//command finished !
 			gd_set_state(gds_waitcmd);
@@ -432,7 +432,7 @@ void gd_process_ata_cmd()
 		GDStatus.BSY=0;
 		GDStatus.CHECK=1;
 
-		RaiseInterrupt(holly_GDROM_CMD);
+		asic_RaiseInterrupt(holly_GDROM_CMD);
 		gd_set_state(gds_waitcmd);
 		break;
 
@@ -471,7 +471,7 @@ void gd_process_ata_cmd()
 		GDStatus.DSC=0;
 		GDStatus.DF=0;
 		GDStatus.CHECK=0;
-		RaiseInterrupt(holly_GDROM_CMD);  //???
+		asic_RaiseInterrupt(holly_GDROM_CMD);  //???
 		gd_set_state(gds_waitcmd);
 		break;
 
@@ -852,7 +852,7 @@ u32 ReadMem_gdrom(u32 Addr, u32 sz)
 	{
 		//cancel interrupt
 	case GD_STATUS_Read :
-		SB_ISTEXT &= ~1;	//Clear INTRQ signal
+		asic_CancelInterrupt(holly_GDROM_CMD);	//Clear INTRQ signal
 		printf_rm("GDROM: STATUS [cancel int](v=%X)\n",GDStatus.full);
 		return GDStatus.full | (1<<4);
 
@@ -1073,7 +1073,7 @@ void GDROM_DmaStart(u32 data)
 	SB_GDSTARD = (src + len_backup)&0x1FFFFFFF;
 
 	// The DMA end interrupt flag
-	RaiseInterrupt(holly_GDROM_DMA);
+	asic_RaiseInterrupt(holly_GDROM_DMA);
 
 	//Readed ALL sectors
 	if (read_params.remaining_sectors==0)
