@@ -25,6 +25,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nullPVR", "plugins\nullPVR\
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nullDC_GUI", "plugins\nullDC_GUI\nullDC_GUI\nullDC_GUI.vcproj", "{BA607CBC-BBF5-441B-9778-B86FD2D710EB}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nullMaple", "plugins\nullMaple\nullMaple\nullMaple.vcproj", "{73666215-6F86-4C88-AA59-5735505A8B05}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ElsemiAICA", "plugins\ElsemiAICA\ElsemiAICA\ElsemiAICA.vcproj", "{7FE731E3-8111-41B6-BD13-F2249DBF9928}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -179,6 +183,30 @@ Global
 		{BA607CBC-BBF5-441B-9778-B86FD2D710EB}.Release-NoTrace|Win32.Build.0 = Release|Win32
 		{BA607CBC-BBF5-441B-9778-B86FD2D710EB}.Release-Trace|Win32.ActiveCfg = Release|Win32
 		{BA607CBC-BBF5-441B-9778-B86FD2D710EB}.Release-Trace|Win32.Build.0 = Release|Win32
+		{73666215-6F86-4C88-AA59-5735505A8B05}.Debug|Win32.ActiveCfg = Debug|Win32
+		{73666215-6F86-4C88-AA59-5735505A8B05}.Debug|Win32.Build.0 = Debug|Win32
+		{73666215-6F86-4C88-AA59-5735505A8B05}.Debug-NoTrace|Win32.ActiveCfg = Debug|Win32
+		{73666215-6F86-4C88-AA59-5735505A8B05}.Debug-NoTrace|Win32.Build.0 = Debug|Win32
+		{73666215-6F86-4C88-AA59-5735505A8B05}.Debug-Trace|Win32.ActiveCfg = Debug|Win32
+		{73666215-6F86-4C88-AA59-5735505A8B05}.Debug-Trace|Win32.Build.0 = Debug|Win32
+		{73666215-6F86-4C88-AA59-5735505A8B05}.Release|Win32.ActiveCfg = Release|Win32
+		{73666215-6F86-4C88-AA59-5735505A8B05}.Release|Win32.Build.0 = Release|Win32
+		{73666215-6F86-4C88-AA59-5735505A8B05}.Release-NoTrace|Win32.ActiveCfg = Release|Win32
+		{73666215-6F86-4C88-AA59-5735505A8B05}.Release-NoTrace|Win32.Build.0 = Release|Win32
+		{73666215-6F86-4C88-AA59-5735505A8B05}.Release-Trace|Win32.ActiveCfg = Release|Win32
+		{73666215-6F86-4C88-AA59-5735505A8B05}.Release-Trace|Win32.Build.0 = Release|Win32
+		{7FE731E3-8111-41B6-BD13-F2249DBF9928}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7FE731E3-8111-41B6-BD13-F2249DBF9928}.Debug|Win32.Build.0 = Debug|Win32
+		{7FE731E3-8111-41B6-BD13-F2249DBF9928}.Debug-NoTrace|Win32.ActiveCfg = Debug|Win32
+		{7FE731E3-8111-41B6-BD13-F2249DBF9928}.Debug-NoTrace|Win32.Build.0 = Debug|Win32
+		{7FE731E3-8111-41B6-BD13-F2249DBF9928}.Debug-Trace|Win32.ActiveCfg = Debug|Win32
+		{7FE731E3-8111-41B6-BD13-F2249DBF9928}.Debug-Trace|Win32.Build.0 = Debug|Win32
+		{7FE731E3-8111-41B6-BD13-F2249DBF9928}.Release|Win32.ActiveCfg = Release|Win32
+		{7FE731E3-8111-41B6-BD13-F2249DBF9928}.Release|Win32.Build.0 = Release|Win32
+		{7FE731E3-8111-41B6-BD13-F2249DBF9928}.Release-NoTrace|Win32.ActiveCfg = Release|Win32
+		{7FE731E3-8111-41B6-BD13-F2249DBF9928}.Release-NoTrace|Win32.Build.0 = Release|Win32
+		{7FE731E3-8111-41B6-BD13-F2249DBF9928}.Release-Trace|Win32.ActiveCfg = Release|Win32
+		{7FE731E3-8111-41B6-BD13-F2249DBF9928}.Release-Trace|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

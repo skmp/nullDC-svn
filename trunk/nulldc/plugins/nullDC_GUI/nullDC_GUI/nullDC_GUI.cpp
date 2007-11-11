@@ -61,6 +61,10 @@ void EXPORT_CALL gDeleteAllMenuItemChilds(u32 id)
 {
 	DeleteAllMenuItemChilds(id);
 }
+void EXPORT_CALL EventHandler(u32 nid,void* p)
+{
+	//lota work no ?
+}
 void EXPORT_CALL ndcGetInterface(gui_plugin_info* info)
 {
 	info->InterfaceVersion=GuiPluginInterfaceVersion;
@@ -80,6 +84,8 @@ void EXPORT_CALL ndcGetInterface(gui_plugin_info* info)
 	info->GetRenderTarget=GetRTWH;
 	info->SelectPluginsGui=SelectPluginsGui;
 	info->DeleteAllMenuItemChilds=gDeleteAllMenuItemChilds;
+
+	info->EventHandler=EventHandler;
 }
 u32 ReadMem32(u32 addr)
 {

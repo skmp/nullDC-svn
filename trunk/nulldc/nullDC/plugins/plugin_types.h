@@ -51,6 +51,22 @@ enum ndc_error_codes
 	rv_serror=-1,	//silent error , it has been reported to the user
 };
 
+//Simple struct to store window rect  ;)
+//Top is 0,0 & numbers are in pixels.
+//Only client size
+struct NDC_WINDOW_RECT
+{
+	u32 width;
+	u32 height;
+};
+enum ndc_events
+{
+	NDC_GUI_RESIZED=0,	//gui was resized, p points to a NDC_WINDOW_RECT with the new size.This event is not guaratneed to have any thread anfinity.The plugin
+						//must handle sync. betwen threads to ensure proper operation.
+	NDC_GUI_REQESTFULLSCREEN=1,	//if (p) -> goto fullscreen.Set *(u32*)p to 1 too. Else goto window.Do not touchy p then.
+
+	NDC_CUSTOM_EVENT=0xFF000000,	//Base for custom events.be carefull with how you use these, as all plugins get em ;)
+};
 #define PLUGIN_I_F_VERSION DC_MakeVersion(1,0,1,DC_VER_BETA)
 
 //These are provided by the emu
@@ -102,6 +118,7 @@ typedef void EXPORT_CALL GetMenuItemFP(u32 id,MenuItem* info,u32 mask);
 typedef void EXPORT_CALL SetMenuItemFP(u32 id,MenuItem* info,u32 mask);
 typedef void EXPORT_CALL DeleteMenuItemFP(u32 id);
 typedef void* EXPORT_CALL GetRenderTargetFP();
+typedef void EXPORT_CALL BroardcastEventFP(u32 nid,void* data);
 
 struct emu_info
 {
@@ -119,6 +136,7 @@ struct emu_info
 	GetMenuItemFP*		GetMenuItem;
 	DeleteMenuItemFP*	DeleteMenuItem;
 
+	BroardcastEventFP* BroardcastEvent;
 	u32 RootMenu;
 	u32 DebugMenu;
 };
@@ -139,6 +157,8 @@ typedef u32 FASTCALL ReadMemFP(u32 addr,u32 size);
 typedef void FASTCALL WriteMemFP(u32 addr,u32 data,u32 size);
 typedef void FASTCALL UpdateFP(u32 cycles);
 typedef void FASTCALL PluginResetFP(bool Manual);
+typedef void EXPORT_CALL EventHandlerFP(u32 nid,void* p);
+
 
 struct common_info
 {
@@ -150,6 +170,7 @@ struct common_info
 	//Functions that are used for all plugins , these are SET by the plugin
 	PluginInitFP*	Load;					//Init
 	PluginTermFP*	Unload;					//Term
+	EventHandlerFP* EventHandler;			//Event Handler
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////

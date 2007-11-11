@@ -441,7 +441,10 @@ char* GetNullDCSoruceFileName(char* full)
 	strcpy(temp,full);
 	return &temp[0];
 }
-
+void EXPORT_CALL EventHandler(u32 id,void*p)
+{
+	rend_handle_event(id,p);
+}
 //Give to the emu pointers for the PowerVR interface
 void EXPORT_CALL dcGetInterface(plugin_interface* info)
 {
@@ -458,7 +461,7 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 
 	c.Load=Load;
 	c.Unload=Unload;
-
+	c.EventHandler=EventHandler;
 	p.ExeptionHanlder=0;
 	p.Init=InitPvr;
 	p.Reset=ResetPvr;
@@ -484,9 +487,10 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 //Thread class
 cThread::cThread(ThreadEntryFP* function,void* prm)
 {
+	ended=true;
 	Entry=function;
 	param=prm;
-	hThread=CreateThread(NULL,NULL,(LPTHREAD_START_ROUTINE)function,prm,CREATE_SUSPENDED,NULL);
+	//hThread=CreateThread(NULL,NULL,(LPTHREAD_START_ROUTINE)function,prm,CREATE_SUSPENDED,NULL);
 }
 cThread::~cThread()
 {
@@ -495,15 +499,22 @@ cThread::~cThread()
 	
 void cThread::Start()
 {
+	if (ended)
+		hThread=CreateThread(NULL,NULL,(LPTHREAD_START_ROUTINE)Entry,param,CREATE_SUSPENDED,NULL);
+	ended=false;
 	ResumeThread(hThread);
 }
 void cThread::Suspend()
 {
+	if (ended)
+		hThread=CreateThread(NULL,NULL,(LPTHREAD_START_ROUTINE)Entry,param,CREATE_SUSPENDED,NULL);
+	ended=false;
 	SuspendThread(hThread);
 }
 void cThread::WaitToEnd(u32 msec)
 {
 	WaitForSingleObject(hThread,msec);
+	ended=true;
 }
 //End thread class
 
@@ -579,8 +590,11 @@ void LoadSettings()
 	settings.OSD.ShowStats						=	cfgGetInt("OSD.ShowStats",0);
 
 	settings.Fullscreen.Enabled					=	cfgGetInt("Fullscreen.Enabled",0);
-	settings.Fullscreen.Res_X					=	cfgGetInt("Fullscreen.Res_X",640);
-	settings.Fullscreen.Res_Y					=	cfgGetInt("Fullscreen.Res_Y",480);
+	RECT rc;
+	GetWindowRect(GetDesktopWindow(),&rc);
+	
+	settings.Fullscreen.Res_X					=	cfgGetInt("Fullscreen.Res_X",rc.right);
+	settings.Fullscreen.Res_Y					=	cfgGetInt("Fullscreen.Res_Y",rc.top);
 	settings.Fullscreen.Refresh_Rate			=	cfgGetInt("Fullscreen.Refresh_Rate",60);
 
 	settings.Enhancements.MultiSampleCount		=	cfgGetInt("Enhancements.MultiSampleCount",0);

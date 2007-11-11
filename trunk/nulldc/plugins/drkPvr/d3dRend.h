@@ -11,6 +11,7 @@ namespace Direct3DRenderer
 	void TermRenderer();
 	void ResetRenderer(bool Manual);
 	
+	void HandleEvent(u32 evid,void* p);
 	bool ThreadStart();
 	void ThreadEnd();
 	void VBlank();
@@ -36,6 +37,7 @@ namespace Direct3DRenderer
 #define rend_vblank       Direct3DRenderer::VBlank
 #define rend_start_render Direct3DRenderer::StartRender
 #define rend_end_render   Direct3DRenderer::EndRender
+#define rend_handle_event Direct3DRenderer::HandleEvent
 
 #define rend_list_cont Direct3DRenderer::ListCont
 #define rend_list_init Direct3DRenderer::ListInit

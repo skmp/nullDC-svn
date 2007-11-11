@@ -71,6 +71,9 @@ namespace Direct3DRenderer
 	struct VertexDecoder;
 	FifoSplitter<VertexDecoder> TileAccel;
 
+	struct { bool needs_resize;NDC_WINDOW_RECT new_size;u32 rev;} resizerq;
+	struct { bool goto_fs;u32 rev;} fullsrq;
+
 	bool clear_rt=false;
 	u32 last_ps_mode=0xFFFFFFFF;
 	float current_scalef[4];
@@ -99,6 +102,30 @@ namespace Direct3DRenderer
 		if (!IsFullscreen)
 		{
 			SetWindowText((HWND)emu.GetRenderTarget(), fps_text);
+		}
+	}
+	void HandleEvent(u32 evid,void* p)
+	{
+		if (evid == NDC_GUI_RESIZED )
+		{
+			if (!settings.Fullscreen.Enabled)
+			{
+				resizerq.needs_resize=true;
+				memcpy((void*)&resizerq.new_size,p,sizeof(NDC_WINDOW_RECT));
+				resizerq.rev++;
+			}
+		}
+		else if ( evid== NDC_GUI_REQESTFULLSCREEN)
+		{
+			//vetify(settings.Fullscreen.Enabled?0==p:p!=0);
+			//if (p) 
+			//{
+			//	*(u32*)p=1;
+			fullsrq.goto_fs=!settings.Fullscreen.Enabled;
+			//}
+			//else
+				//fullsrq.goto_fs=false;
+			fullsrq.rev++;
 		}
 	}
 	void SetRenderRect(float* rect,bool do_clear)
@@ -1907,7 +1934,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		}
 	}
 	//
-	bool running=false;
+	volatile bool running=false;
 	cResetEvent rs(false,true);
 	cResetEvent re(false,true);
 	D3DXMACRO vs_macros[]=
@@ -1919,7 +1946,6 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 
 	u32 THREADCALL RenderThead(void* param)
 	{
-		running=true;
 		d3d9 = Direct3DCreate9(D3D_SDK_VERSION);
 		char temp[2][30];
 		D3DPRESENT_PARAMETERS ppar;
@@ -2065,7 +2091,15 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		}
 
 		//CreateTexture(256,256,1,D3DUSAGE_RENDERTARGET,D3DFMT_R5G6+B5,D3DPOOL_DEFAULT,&pRenderTexture,NULL);
-		verifyc(dev->CreateTexture(512,256,1,D3DUSAGE_RENDERTARGET,D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,&rtt_texture,NULL));
+		u32 h=1;
+		for(;h<ppar.BackBufferHeight;h<<=1)
+			;
+		h>>=1;
+		u32 w=1;
+		for(;w<ppar.BackBufferWidth;w<<=1)
+			;
+		w>>=1;
+		verifyc(dev->CreateTexture(w,h,1,D3DUSAGE_RENDERTARGET,D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,&rtt_texture,NULL));
 		rtt_texture->GetSurfaceLevel(0,&rtt_surf);
 		//dev->CreateOffscreenPlainSurface(2048,1024,D3DFMT_A8R8G8B8,D3DPOOL_SYSTEMMEM,&sysmems,NULL);
 		
@@ -2076,15 +2110,48 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		D3DXCreateFont( dev, 20, 0, FW_BOLD, 0, FALSE, DEFAULT_CHARSET, 
 			OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT("Arial"), &font );
 
+		/*
+			Reset Render stuff here
+		*/
+		clear_rt=true;
+		rtt_address=-1;
+		rtt_FrameNumber=0;
 		while(1)
 		{
 			rs.Wait();
 			if (!running)
 				break;
+			HRESULT hr;
+			hr=dev->TestCooperativeLevel();
+			if FAILED(hr) goto nl;
 			//render
 			DoRender();
+nl:
 			re.Set();
 		}
+
+		#define safe_release(d) {if (d) {d->Release();d=0;}}
+	
+		safe_release(vb);
+		safe_release(compiled_vs);
+
+		for(int i=0;i<384;i++)
+			safe_release(compiled_ps[i]);
+
+		safe_release(nullPixelShader);
+		safe_release(pal_texture);
+		safe_release(rtt_texture);
+
+		safe_release(bb_surf);
+		safe_release(rtt_surf);
+		safe_release(font);
+		safe_release(shader_consts);
+
+		safe_release(dev);
+		safe_release(d3d9);
+
+		#undef safe_release
+
 		return 0;
 	}
 
@@ -2266,6 +2333,63 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			//free it !
 			delete ptext;
 			ptext=pprev;
+		}
+
+		int old_rev;
+		NDC_WINDOW_RECT nwr;
+		bool do_resize;
+		do
+		{
+			old_rev = resizerq.rev;
+			memcpy(&nwr,(void*)&resizerq.new_size,sizeof(NDC_WINDOW_RECT));
+			do_resize=resizerq.needs_resize;
+
+		} while(old_rev!=resizerq.rev);
+
+		resizerq.needs_resize=false;
+
+		if (do_resize)
+		{
+			//kill texture cache
+			TexCacheList<TextureCacheData>::TexCacheEntry* ptext= TexCache.plast;
+			while(ptext)
+			{
+				ptext->data.Destroy();
+				ptext->data.Texture->Release();
+				TexCacheList<TextureCacheData>::TexCacheEntry* pprev;
+				pprev=ptext->prev;
+				TexCache.Remove(ptext);
+				//free it !
+				delete ptext;
+				ptext=pprev;
+			}
+			//Kill renderer
+			ThreadEnd();
+			//Start renderer
+			ThreadStart();
+		}
+
+		if (fullsrq.goto_fs != (settings.Fullscreen.Enabled!=0))
+		{
+//kill texture cache
+			TexCacheList<TextureCacheData>::TexCacheEntry* ptext= TexCache.plast;
+			while(ptext)
+			{
+				ptext->data.Destroy();
+				ptext->data.Texture->Release();
+				TexCacheList<TextureCacheData>::TexCacheEntry* pprev;
+				pprev=ptext->prev;
+				TexCache.Remove(ptext);
+				//free it !
+				delete ptext;
+				ptext=pprev;
+			}
+			//Kill renderer
+			ThreadEnd();
+			settings.Fullscreen.Enabled=fullsrq.goto_fs?1:0;
+			SaveSettings();
+			//Start renderer
+			ThreadStart();
 		}
 	}
 
@@ -2999,7 +3123,6 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		tarc.Init();
 		//pvrrc needs no init , it is ALLWAYS copied from a valid tarc :)
 
-		rth.Start();
 		return TileAccel.Init();
 	}
 
@@ -3022,28 +3145,6 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			TexCache.Remove(TexCache.pfirst);
 			delete pprev;
 		}
-#define safe_release(d) {if (d) {d->Release();d=0;}}
-	
-		safe_release(vb);
-		safe_release(compiled_vs);
-
-		for(int i=0;i<384;i++)
-			safe_release(compiled_ps[i]);
-
-		safe_release(nullPixelShader);
-		safe_release(pal_texture);
-		safe_release(rtt_texture);
-
-		safe_release(bb_surf);
-		safe_release(rtt_surf);
-		safe_release(font);
-		safe_release(shader_consts);
-
-		safe_release(dev);
-		safe_release(d3d9);
-
-#undef safe_release
-
 	}
 
 	void ResetRenderer(bool Manual)
@@ -3055,7 +3156,8 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 
 	bool ThreadStart()
 	{
-		//rth.Start();
+		running=true;
+		rth.Start();
 		return true;
 	}
 
@@ -3065,9 +3167,11 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		if (running)
 		{
 			running=false;
-			rth.Start();
-			rs.Set();
-			rth.WaitToEnd(0xFFFFFFFF);
+			if (!rth.ended)
+			{
+				rs.Set();
+				rth.WaitToEnd(0xFFFFFFFF);
+			}
 		}
 	}
 

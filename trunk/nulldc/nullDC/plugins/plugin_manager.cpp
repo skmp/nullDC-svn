@@ -55,6 +55,30 @@ enum PluginValidationErrors
 	pve_missing_pointers=-203,
 	pve_invalid_plugin_type=-204,
 };
+void EXPORT_CALL plgmng_nileh(u32 nid,void* p)
+{
+}
+void EXPORT_CALL BroadcastEvent(u32 nid,void* data)
+{
+	if (libPvr.Loaded)
+		libPvr.EventHandler(nid,data);
+
+	if (libGDR.Loaded)
+		libGDR.EventHandler(nid,data);
+
+	if (libAICA.Loaded)
+		libAICA.EventHandler(nid,data);
+
+	for (u32 i=0;i<libMaple.size();i++)
+		if (libMaple[i]->Loaded)
+			libMaple[i]->EventHandler(nid,data);
+
+	if (libExtDevice.Loaded)
+		libExtDevice.EventHandler(nid,data);
+
+	
+	libgui.EventHandler(nid,data);
+}
 s32 ValidatePlugin(plugin_interface* plugin)
 {
 	if (plugin==0)
@@ -301,8 +325,12 @@ s32 nullDC_plugin::Open(char* plugin)
 
 	if (s32 rv=ValidatePlugin(&t))
 	{
+		dll.Unload();
 		return rv;
 	}
+
+	if (t.common.EventHandler==0)
+		t.common.EventHandler=plgmng_nileh;
 
 	LoadI(&t);
 	
@@ -703,6 +731,7 @@ s32 plugins_Load_()
 
 	eminf.GetRenderTarget=GetRenderTargetHandle;
 	eminf.DebugMenu=MenuIDs.Debug;
+	eminf.BroardcastEvent=BroadcastEvent;
 
 	load_plugin_("Current_PVR",&libPvr,MenuIDs.PowerVR,"nullPvr_Win32.dll");
 	load_plugin_("Current_GDR",&libGDR,MenuIDs.GDRom,"nullGDR_Win32.dll");

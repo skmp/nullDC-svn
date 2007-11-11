@@ -180,6 +180,7 @@ struct gui_emu_info
 	FreePluginListFP*     FreePluginList;
 
 	GetEmuPerformanceInfoFP* GetPerformanceInfo;
+	BroardcastEventFP*		BroardcastEvent;
 };
 struct MenuIDList
 {
@@ -218,6 +219,8 @@ struct gui_plugin_info
 	GetMenuItemFP*		GetMenuItem;
 	DeleteMenuItemFP*	DeleteMenuItem;
 	DeleteAllMenuItemChildsFP* DeleteAllMenuItemChilds;
+
+	EventHandlerFP*		EventHandler;
 };
 
 typedef void EXPORT_CALL ndcGetInterfaceFP(gui_plugin_info* gpi);

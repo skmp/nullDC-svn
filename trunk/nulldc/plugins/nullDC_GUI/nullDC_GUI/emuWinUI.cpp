@@ -928,16 +928,21 @@ HMENU GetHMenu()
 {
 	return MainMenu.hmenu;
 }
+
 LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	static RECT rc;
-
+	//printf("msg %X\n",uMsg);
 	switch(uMsg)
 	{
+	case WM_SIZE:
+		{
+			NDC_WINDOW_RECT r = { LOWORD(lParam),HIWORD(lParam) };
+			emu.BroardcastEvent(NDC_GUI_RESIZED,&r);
+		}
 	case WM_CREATE:
 		InitCommonControls();
 		break;
-
 	case WM_COMMAND:
 		{
 			for (size_t i=1;i<MenuItems.size();i++)
@@ -966,6 +971,15 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 //		PvrPlugin.UpdatePvr(0);
 		//TODO : Fix that
 	//	PvrUpdate(0);
+	case WM_SYSKEYDOWN:
+		{
+			if (wParam==13)
+			{
+				emu.BroardcastEvent(NDC_GUI_REQESTFULLSCREEN,0);
+				return true;
+			}
+		}
+		break;
 	case WM_KEYDOWN:
 		{
 			int val = (int)wParam;
@@ -1009,6 +1023,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 						printf("failed to save screenshot to \"%s\"\n",fn);
 				}
 				break;
+
 			}
 		}
 		break;

@@ -239,6 +239,7 @@ private:
 	void* param;
 	THREADHANDLE hThread;
 public :
+	bool ended;
 	cThread(ThreadEntryFP* function,void* param);
 	~cThread();
 	//Simple thread functions

@@ -207,7 +207,7 @@ bool EXPORT_CALL dcGetInterface(plugin_interface* info)
 	info->InterfaceVersion=PLUGIN_I_F_VERSION;
 
 	c.Type=Plugin_ExtDevice;
-	c.InterfaceVersion=PLUGIN_I_F_VERSION;
+	c.InterfaceVersion=EXTDEVICE_PLUGIN_I_F_VERSION;
 
 	strcpy(c.Name,"nullExtDev (" __DATE__ ")");
 	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD,DC_VER_NORMAL);

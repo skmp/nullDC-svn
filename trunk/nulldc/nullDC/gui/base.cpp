@@ -434,6 +434,8 @@ void EXPORT_CALL b_GetPerformanceInfo(nullDCPerfomanceInfo* dst)
 	#endif
 
 }
+
+
 bool OpenAndLoadGUI(char* file)
 {
 	if (!gui.Load(file))
@@ -497,6 +499,8 @@ bool OpenAndLoadGUI(char* file)
 	gpi.FreePluginList=b_FreePluginList;
 
 	gpi.GetPerformanceInfo=b_GetPerformanceInfo;
+
+	gpi.BroardcastEvent=BroadcastEvent;
 
 	if (rv_ok != libgui.Load(&gpi))
 		return false;

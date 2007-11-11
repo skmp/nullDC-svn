@@ -88,3 +88,4 @@ void plugins_Reset(bool Manual);
 bool plugins_Init();
 void plugins_Term();
 
+void EXPORT_CALL BroadcastEvent(u32 nid,void* data);
