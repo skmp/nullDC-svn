@@ -523,7 +523,7 @@ void AICAWriteByte(const DWORD uAddress, const BYTE _uData)
 //#include "mem.h"
 #include <math.h>
 
-#define SH4_IRQ_BIT (1<<((u32)holly_SPU_IRQ&(u32)InterruptIDMask))
+#define SH4_IRQ_BIT (1<<((u8)holly_SPU_IRQ))
 
 CommonData_struct* CommonData;
 InterruptInfo* MCIEB;
@@ -671,8 +671,10 @@ void UpdateSh4Ints()
 		}
 	}
 	else
-		*aica_params.SB_ISTEXT&=~SH4_IRQ_BIT;
-
+	{
+		if (*aica_params.SB_ISTEXT & SH4_IRQ_BIT)
+			aica_params.CancelInterrupt(holly_SPU_IRQ);
+	}
 }
 u32 sample_cycles=0;
 u32 sample_cycles_=0;
