@@ -51,7 +51,7 @@ enum ndc_error_codes
 	rv_serror=-1,	//silent error , it has been reported to the user
 };
 
-#define PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0,DC_VER_BETA)
+#define PLUGIN_I_F_VERSION DC_MakeVersion(1,0,1,DC_VER_BETA)
 
 //These are provided by the emu
 typedef void EXPORT_CALL ConfigLoadStrFP(const char * lpSection, const char * lpKey, char * lpReturn,const char* lpDefault);

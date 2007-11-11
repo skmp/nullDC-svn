@@ -6,20 +6,73 @@ enum InterruptType
 {
 	sh4_int   = 0x00000000,
 	sh4_exp   = 0x01000000,
-	holly_nrm = 0x20000000,
-	holly_ext = 0x21000000,
-	holly_err = 0x22000000,
 	InterruptTypeMask = 0x7F000000,
-	InterruptIDMask=0x00FFFFFF
+	InterruptIntEVNTMask=0x00FFFF00,
+	InterruptPIIDMask=0x000000FF,
+	//InterruptIDMask=0x00FFFFFF,
 };
-
+#define KMIID(type,ID,PIID) ( (type) | ((ID)<<8) | (PIID))
 enum InterruptID
 {
 		//internal interups
-		//TODO : Add more internal interrrupts
-		sh4_TMU0_TUNI0 = sh4_int |	0x0400,  /* TMU0 underflow */
-		sh4_TMU1_TUNI1 = sh4_int |  0x0420,  /* TMU1 underflow */
-		sh4_TMU2_TUNI2 = sh4_int |  0x0440,  /* TMU2 underflow */
+		//IRL*
+		//sh4_IRL_0			= KMIID(sh4_int,0x200,0),	-> these are not connected on dc
+		//sh4_IRL_1			= KMIID(sh4_int,0x220,1),
+		//sh4_IRL_2			= KMIID(sh4_int,0x240,2),
+		//sh4_IRL_3			= KMIID(sh4_int,0x260,3),
+		//sh4_IRL_4			= KMIID(sh4_int,0x280,4),
+		//sh4_IRL_5			= KMIID(sh4_int,0x2A0,5),
+		//sh4_IRL_6			= KMIID(sh4_int,0x2C0,6),
+		//sh4_IRL_7			= KMIID(sh4_int,0x2E0,7),
+		//sh4_IRL_8			= KMIID(sh4_int,0x300,8),
+		sh4_IRL_9			= KMIID(sh4_int,0x320,0),
+		//sh4_IRL_10			= KMIID(sh4_int,0x340,10),-> these are not connected on dc
+		sh4_IRL_11			= KMIID(sh4_int,0x360,1),
+		//sh4_IRL_12			= KMIID(sh4_int,0x380,12),-> these are not connected on dc
+		sh4_IRL_13			= KMIID(sh4_int,0x3A0,2),
+		//sh4_IRL_14			= KMIID(sh4_int,0x3C0,14),-> these are not connected on dc
+		//sh4_IRL_15			= KMIID(sh4_int,0x340,0), -> no interrupt (masked)
+
+		sh4_HUDI_HUDI		= KMIID(sh4_int,0x600,3),  /* H-UDI underflow */
+
+		sh4_GPIO_GPIOI		= KMIID(sh4_int,0x620,4),
+
+		//DMAC
+		sh4_DMAC_DMTE0		= KMIID(sh4_int,0x640,5),
+		sh4_DMAC_DMTE1		= KMIID(sh4_int,0x660,6),
+		sh4_DMAC_DMTE2		= KMIID(sh4_int,0x680,7),
+		sh4_DMAC_DMTE3		= KMIID(sh4_int,0x6A0,8),
+		sh4_DMAC_DMAE		= KMIID(sh4_int,0x6C0,9),
+		
+		//TMU
+		sh4_TMU0_TUNI0		=  KMIID(sh4_int,0x400,10), /* TMU0 underflow */
+		sh4_TMU1_TUNI1		=  KMIID(sh4_int,0x420,11), /* TMU1 underflow */
+		sh4_TMU2_TUNI2		=  KMIID(sh4_int,0x440,12), /* TMU2 underflow */
+		sh4_TMU2_TICPI2		=  KMIID(sh4_int,0x460,13),
+
+		//RTC
+		sh4_RTC_ATI			= KMIID(sh4_int,0x480,14),
+		sh4_RTC_PRI			= KMIID(sh4_int,0x4A0,15),
+		sh4_RTC_CUI			= KMIID(sh4_int,0x4C0,16),
+
+		//SCI
+		sh4_SCI1_ERI		= KMIID(sh4_int,0x4E0,17),
+		sh4_SCI1_RXI		= KMIID(sh4_int,0x500,18),
+		sh4_SCI1_TXI		= KMIID(sh4_int,0x520,19),
+		sh4_SCI1_TEI		= KMIID(sh4_int,0x540,29),
+		
+		//SCIF
+		sh4_SCIF_ERI		= KMIID(sh4_int,0x700,21),
+		sh4_SCIF_RXI		= KMIID(sh4_int,0x720,22),
+		sh4_SCIF_BRI		= KMIID(sh4_int,0x740,23),
+		sh4_SCIF_TXI		= KMIID(sh4_int,0x760,24),
+
+		//WDT
+		sh4_WDT_ITI			= KMIID(sh4_int,0x560,25),
+		
+		//REF
+		sh4_REF_RCMI		= KMIID(sh4_int,0x580,26),
+		sh4_REF_ROVI		= KMIID(sh4_int,0x5A0,27),
 
 		//sh4 exeptions 
 		sh4_ex_USER_BREAK_BEFORE_INSTRUCTION_EXECUTION = sh4_exp | 0x1e0,
@@ -39,7 +92,22 @@ enum InterruptID
 		sh4_ex_FPU = sh4_exp | 0x120,
 		sh4_ex_TRAP = sh4_exp | 0x160,
 		sh4_ex_INITAL_PAGE_WRITE = sh4_exp | 0x080,
-		
+};
+
+
+
+//void FASTCALL RaiseInterrupt_(InterruptID intr);
+typedef void FASTCALL Sh4RaiseInterruptFP(InterruptID intr);
+
+enum HollyInterruptType
+{
+	holly_nrm = 0x0000,
+	holly_ext = 0x0100,
+	holly_err = 0x0200,
+};
+
+enum HollyInterruptID
+{		
 		// asic9a /sh4 external holly normal [internal]
 		holly_RENDER_DONE_vd = holly_nrm | 0,	//bit 0 = End of Render interrupt : Video
 		holly_RENDER_DONE_isp = holly_nrm | 1,	//bit 1 = End of Render interrupt : ISP
@@ -110,5 +178,5 @@ enum InterruptID
 
 
 
-void FASTCALL RaiseInterrupt(InterruptID intr);
-typedef void FASTCALL RaiseInterruptFP(InterruptID intr);
+typedef void FASTCALL HollyRaiseInterruptFP(HollyInterruptID intr);
+typedef void FASTCALL HollyCancelInterruptFP(HollyInterruptID intr);

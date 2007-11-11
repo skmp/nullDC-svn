@@ -6,8 +6,16 @@
 
 //Enums
 
+void SetInterruptPend(InterruptID intr);
+void ResetInterruptPend(InterruptID intr);
+#define InterruptPend(intr,v) ((v)==0?ResetInterruptPend(intr):SetInterruptPend(intr))
+
+void SetInterruptMask(InterruptID intr);
+void ResetInterruptMask(InterruptID intr);
+#define InterruptMask(intr,v) ((v)==0?ResetInterruptPend(intr):SetInterruptPend(intr))
+
 int UpdateINTC();
-void FASTCALL RaiseInterrupt(InterruptID intr);
+void FASTCALL RaiseInterrupt_(InterruptID intr);
 void RaiseExeption(u32 code,u32 vector);
 bool Do_Exeption(u32 lvl, u32 expEvn, u32 CallVect);
 
@@ -62,15 +70,12 @@ union INTC_IPRC_type
 	};
 };
 
-typedef bool IsPendingFP();
-typedef u32 GetPrLvlFP();
+typedef u32 GetPrLvlFP(void);
 
 struct InterptSourceList_Entry
 {
-	IsPendingFP* IsPending;
 	GetPrLvlFP* GetPrLvl;
 	u32 IntEvnCode;
-	u32 BranchOffset;
 };
 
 
@@ -84,4 +89,4 @@ void intc_Init();
 void intc_Reset(bool Manual);
 void intc_Term();
 
-extern bool InterruptsArePending;
+bool SRdecode();

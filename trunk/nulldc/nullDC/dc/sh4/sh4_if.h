@@ -217,7 +217,7 @@ struct sh4_if
 	IsCpuRunningFP* IsCpuRunning;
 	GetRegisterFP* GetRegister;
 	SetRegisterFP* SetRegister;
-	RaiseInterruptFP* RaiseInterrupt;
+	//Sh4RaiseInterruptFP* RaiseInterrupt;
 	sh4_int_RaiseExeptionFP* RaiseExeption;
 };
 

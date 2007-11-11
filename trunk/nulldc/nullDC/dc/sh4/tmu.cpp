@@ -35,8 +35,11 @@ void UpdateTMU_chan(u32 clc,u32 ch)
 				loops-=tmu_regs_CNT[ch];
 				tmu_regs_CNT[ch] = tmu_regs_COR[ch];
 				tmu_regs_CR[ch] |= tmu_underflow;
-				if (tmu_regs_CR[ch] & tmu_UNIE)
-					RaiseInterrupt(tmu_intID[ch]);
+				//if ()
+				//{
+					InterruptPend(tmu_intID[ch],1);
+					//RaiseInterrupt(tmu_intID[ch]);
+				//}
 			}
 			tmu_regs_CNT[ch]-=loops;
 		}
@@ -53,6 +56,9 @@ void UpdateTMU(u32 Cycles)
 //Update internal counter registers
 void UpdateTMUCounts(u32 reg)
 {
+	InterruptPend(tmu_intID[reg],tmu_regs_CR[reg] & tmu_underflow);
+	InterruptMask(tmu_intID[reg],tmu_regs_CR[reg] & tmu_UNIE);
+
 	if (old_mode[reg]==(tmu_regs_CR[reg] & 0x7))
 		return;
 	else

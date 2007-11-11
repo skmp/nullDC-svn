@@ -1,5 +1,6 @@
 #include "Types.h"
 #include "sh4_registers.h"
+#include "intc.h"
 
 __declspec(align(64)) u32 r[16];		//64 bytes : 1 cache line
 __declspec(align(64)) f32 fr[16];		//64 bytes : 1 cache line
@@ -133,6 +134,7 @@ bool UpdateSR()
 				ChangeGPR();//switch
 		}
 	}
+/*
 	if ((old_sr.IMASK!=0xF) && (sr.IMASK==0xF))
 	{
 		//printf("Interrupts disabled  , pc=0x%X\n",pc);
@@ -142,14 +144,15 @@ bool UpdateSR()
 	{
 		//printf("Interrupts enabled  , pc=0x%X\n",pc);
 	}
+	
 	bool rv=old_sr.IMASK > sr.IMASK;
 	rv|=old_sr.BL==1 && sr.BL==0; 
 	if (sr.IMASK==0xF)
 		rv=false;
-
+*/
 	old_sr.m_full=sr.m_full;
-
-	return rv;
+	
+	return SRdecode();
 }
 
 //make x86 and sh4 float status registers match ;)

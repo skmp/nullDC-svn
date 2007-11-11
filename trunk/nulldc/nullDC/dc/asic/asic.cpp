@@ -3,6 +3,7 @@
 
 #include "dc\sh4\intc.h"
 #include "dc\mem\sb.h"
+#include "dc\maple\maple_if.h"
 
 /*
 	asic Interrupt controler
@@ -10,69 +11,91 @@
 */
 
 //returns true if any RL6 Interrupts are pending
-bool asic_RL6Pending()
+void asic_RL6Pending()
 {
 	bool t1=(SB_ISTNRM & SB_IML6NRM)!=0;
 	bool t2=(SB_ISTERR & SB_IML6ERR)!=0;
 	bool t3=(SB_ISTEXT & SB_IML6EXT)!=0;
 
-	return t1|t2|t3;
+	InterruptPend(sh4_IRL_9,t1|t2|t3);
 }
 
 //return true if any RL4 iterupts are pending
-bool asic_RL4Pending()
+void asic_RL4Pending()
 {
 	bool t1=(SB_ISTNRM & SB_IML4NRM)!=0;
 	bool t2=(SB_ISTERR & SB_IML4ERR)!=0;
 	bool t3=(SB_ISTEXT & SB_IML4EXT)!=0;
 
-	return t1|t2|t3;
+	InterruptPend(sh4_IRL_11,t1|t2|t3);
 }
 
 //return true if any RL2 iterupts are pending
-bool asic_RL2Pending()
+void asic_RL2Pending()
 {
 	bool t1=(SB_ISTNRM & SB_IML2NRM)!=0;
 	bool t2=(SB_ISTERR & SB_IML2ERR)!=0;
 	bool t3=(SB_ISTEXT & SB_IML2EXT)!=0;
 
-	return t1|t2|t3;
+	InterruptPend(sh4_IRL_13,t1|t2|t3);
 }
 
-//Return interrupt pririty level
-u32 asic_GetRL6Priority()
+void RaiseAsicNormal(HollyInterruptID inter)
 {
-	return 0x6;
-}
-//Return interrupt pririty level
-u32 asic_GetRL4Priority()
-{
-	return 0x4;
-}
-//Return interrupt pririty level
-u32 asic_GetRL2Priority()
-{
-	return 0x2;
-}
+	if (inter==holly_SCANINT2)
+				maple_vblank();
 
-void RaiseAsicNormal(InterruptID inter)
-{
-	u32 Interrupt = (u32)(1 << ((((u32)inter & (u32)InterruptIDMask))));
+	u32 Interrupt = 1<<(u8)inter;
 	SB_ISTNRM |= Interrupt;
+
+	asic_RL2Pending();
+	asic_RL4Pending();
+	asic_RL6Pending();
 }
 
-void RaiseAsicErr(InterruptID inter)
+void RaiseAsicExt(HollyInterruptID inter)
 {
-	u32 Interrupt = (u32)(1 << ((((u32)inter & (u32)InterruptIDMask))));
-	SB_ISTERR |= Interrupt;
-}
-
-void RaiseAsicExt(InterruptID inter)
-{
-	u32 Interrupt = (u32)(1 << ((((u32)inter & (u32)InterruptIDMask))));
+	u32 Interrupt = 1<<(u8)inter;
 	SB_ISTEXT |= Interrupt;
+
+	asic_RL2Pending();
+	asic_RL4Pending();
+	asic_RL6Pending();
 }
 
+void RaiseAsicErr(HollyInterruptID inter)
+{
+	u32 Interrupt = 1<<(u8)inter;
+	SB_ISTERR |= Interrupt;
+
+	asic_RL2Pending();
+	asic_RL4Pending();
+	asic_RL6Pending();
+}
+
+void fastcall asic_RaiseInterrupt(HollyInterruptID inter)
+{
+	u8 m=inter>>8;
+	switch(m)
+	{
+	case 0:
+		RaiseAsicNormal(inter);
+		break;
+	case 1:
+		RaiseAsicExt(inter);
+		break;
+	case 2:
+		RaiseAsicErr(inter);
+		break;
+	}
+}
+void fastcall asic_CancelInterrupt(HollyInterruptID inter)
+{
+	SB_ISTEXT&=~(1<<(u8)inter);
+	asic_RL2Pending();
+	asic_RL4Pending();
+	asic_RL6Pending();
+}
 u32 Read_SB_ISTNRM()
 {
 	u32 tmp = SB_ISTNRM & 0x3FFFFFFF;
@@ -86,6 +109,10 @@ u32 Read_SB_ISTNRM()
 void Write_SB_ISTNRM(u32 data)
 {
 	SB_ISTNRM &= ~data;
+
+	asic_RL2Pending();
+	asic_RL4Pending();
+	asic_RL6Pending();
 }
 
 void Write_SB_ISTEXT(u32 data)
@@ -96,72 +123,67 @@ void Write_SB_ISTEXT(u32 data)
 void Write_SB_ISTERR(u32 data)
 {
 	SB_ISTERR &= ~data;
+
+	asic_RL2Pending();
+	asic_RL4Pending();
+	asic_RL6Pending();
 }
 
 void Write_SB_SB_IML6NRM(u32 data)
 {
 	SB_IML6NRM=data;
 
-	if (asic_RL6Pending())
-		InterruptsArePending=true;
+	asic_RL6Pending();
 }
 void Write_SB_SB_IML4NRM(u32 data)
 {
 	SB_IML4NRM=data;
 
-	if (asic_RL4Pending())
-		InterruptsArePending=true;
+	asic_RL4Pending();
 }
 void Write_SB_SB_IML2NRM(u32 data)
 {
 	SB_IML2NRM=data;
 
-	if (asic_RL2Pending())
-		InterruptsArePending=true;
+	asic_RL2Pending();
 }
 
 void Write_SB_SB_IML6EXT(u32 data)
 {
 	SB_IML6EXT=data;
 
-	if (asic_RL6Pending())
-		InterruptsArePending=true;
+	asic_RL6Pending();
 }
 void Write_SB_SB_IML4EXT(u32 data)
 {
 	SB_IML4EXT=data;
 
-	if (asic_RL4Pending())
-		InterruptsArePending=true;
+	asic_RL4Pending();
 }
 void Write_SB_SB_IML2EXT(u32 data)
 {
 	SB_IML2EXT=data;
 
-	if (asic_RL2Pending())
-		InterruptsArePending=true;
+	asic_RL2Pending();
 }
 
 void Write_SB_SB_IML6ERR(u32 data)
 {
 	SB_IML6ERR=data;
 	
-	if (asic_RL6Pending())
-		InterruptsArePending=true;
+	asic_RL6Pending();
 }
 void Write_SB_SB_IML4ERR(u32 data)
 {
 	SB_IML4ERR=data;
 	
-	if (asic_RL4Pending())
-		InterruptsArePending=true;
+	asic_RL4Pending();
 }
 void Write_SB_SB_IML2ERR(u32 data)
 {
 	SB_IML2ERR=data;
 	
-	if (asic_RL2Pending())
-		InterruptsArePending=true;
+	asic_RL2Pending();
 }
 
 void asic_reg_Init()

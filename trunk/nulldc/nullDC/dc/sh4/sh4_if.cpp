@@ -56,7 +56,7 @@ sh4_if* Get_Sh4Interpreter()
 	rv->IsCpuRunning=Sh4_int_IsCpuRunning;
 	rv->GetRegister=Sh4_int_GetRegister;
 	rv->SetRegister=Sh4_int_SetRegister;
-	rv->RaiseInterrupt=RaiseInterrupt;
+	//rv->RaiseInterrupt=RaiseInterrupt_;
 	rv->RaiseExeption=sh4_int_RaiseExeption;
 	rv->ResetCache=0;
 	return rv;
@@ -77,7 +77,7 @@ sh4_if* Get_Sh4Recompiler()
 	rv->IsCpuRunning=rec_Sh4_int_IsCpuRunning;
 	rv->GetRegister=Sh4_int_GetRegister;
 	rv->SetRegister=Sh4_int_SetRegister;
-	rv->RaiseInterrupt=RaiseInterrupt;
+	//rv->RaiseInterrupt=RaiseInterrupt_;
 	rv->RaiseExeption=rec_sh4_int_RaiseExeption;
 	rv->ResetCache=rec_sh4_ResetCache;
 	return rv;
