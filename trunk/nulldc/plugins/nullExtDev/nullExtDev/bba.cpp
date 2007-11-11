@@ -57,7 +57,7 @@ void bba_interrupt()
 	}
 	else
 	{
-		*params.SB_ISTEXT&= ~(1<<(holly_EXP_PCI&InterruptIDMask));
+		params.CancelInterrupt(holly_EXP_PCI);
 	}
 }
 void bba_stabilise_link()
