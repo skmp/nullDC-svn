@@ -929,19 +929,51 @@ HMENU GetHMenu()
 	return MainMenu.hmenu;
 }
 
+u32 mouse_hidden=2;
 LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	static RECT rc;
 	//printf("msg %X\n",uMsg);
 	switch(uMsg)
 	{
+	case WM_TIMER:
+		{
+			POINT cp;
+			RECT cl;
+			GetClientRect(hWnd,&cl);
+
+			GetCursorPos(&cp);
+			if (GetActiveWindow()==hWnd && WindowFromPoint(cp)==hWnd && ScreenToClient(hWnd,&cp) && cp.x>cl.left && cp.y>cl.top && cp.x<cl.right && cp.y<cl.bottom)
+			{
+				if (mouse_hidden==1)
+					ShowCursor(false);
+				if (mouse_hidden>0)
+					mouse_hidden--;
+			}
+			else if (mouse_hidden==0)
+			{
+				mouse_hidden=4;
+				ShowCursor(true);
+			}
+		} 
+		break;
 	case WM_SIZE:
 		{
 			NDC_WINDOW_RECT r = { LOWORD(lParam),HIWORD(lParam) };
 			emu.BroardcastEvent(NDC_GUI_RESIZED,&r);
 		}
+		break;
 	case WM_CREATE:
 		InitCommonControls();
+		mouse_hidden=4;
+		SetTimer(hWnd,0,500,0);
+		break;
+	case WM_MOUSEMOVE:
+		if (mouse_hidden==0)
+		{
+			mouse_hidden=4;
+			ShowCursor(true);
+		}
 		break;
 	case WM_COMMAND:
 		{
@@ -973,12 +1005,18 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 	//	PvrUpdate(0);
 	case WM_SYSKEYDOWN:
 		{
-			if (wParam==13)
+			if (LOWORD(wParam)==VK_RETURN)
 			{
 				emu.BroardcastEvent(NDC_GUI_REQESTFULLSCREEN,0);
-				return true;
+				return 0;
 			}
 		}
+		break;
+	case WM_MENUCHAR:
+		// A menu is active and the user presses a key that does not correspond to any mnemonic or accelerator key
+		// So just ignore and don't beep
+		if (LOWORD(wParam)==VK_RETURN)
+			return MAKELRESULT(0,MNC_CLOSE);
 		break;
 	case WM_KEYDOWN:
 		{

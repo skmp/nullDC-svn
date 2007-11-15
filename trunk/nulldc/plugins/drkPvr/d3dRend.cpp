@@ -67,14 +67,15 @@ namespace Direct3DRenderer
 	D3DSURFACE_DESC bb_surf_desc;
 	ID3DXFont* font;
 	ID3DXConstantTable* shader_consts;
+	RECT window_rect;
 
 	struct VertexDecoder;
 	FifoSplitter<VertexDecoder> TileAccel;
 
 	struct { bool needs_resize;NDC_WINDOW_RECT new_size;u32 rev;} resizerq;
-	struct { bool goto_fs;u32 rev;} fullsrq;
+	struct {bool goto_fs;u32 rev;} fullsrq;
 
-	bool clear_rt=false;
+	u32 clear_rt=0;
 	u32 last_ps_mode=0xFFFFFFFF;
 	float current_scalef[4];
 	//CRITICAL_SECTION tex_cache_cs;
@@ -137,7 +138,7 @@ namespace Direct3DRenderer
 		res_scale[3]=-rect[3]/2;
 
 		if(do_clear)
-			clear_rt=true;
+			clear_rt|=1;
 	}
 	void SetFBScale(float x,float y)
 	{
@@ -1611,14 +1612,15 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		//All of the screen is allways filled w/ smth , no need to clear the color buffer
 		//gives a nice speedup on large resolutions
 		dev->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE); 
-		if (rtt || clear_rt==false)
+		if (rtt || clear_rt==0)
 		{
 			verifyc(dev->Clear( 0, NULL, D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL , D3DCOLOR_XRGB(0,0,0), 1.0f, 0 ));
 		}
 		else
 		{
 			verifyc(dev->Clear( 0, NULL, D3DCLEAR_TARGET |D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL , D3DCOLOR_XRGB(0,0,0), 1.0f, 0 ));
-			clear_rt=false;
+			if(clear_rt)
+				clear_rt--;
 		}
 
 		
@@ -1971,6 +1973,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		
 		if (settings.Fullscreen.Enabled)
 		{
+			GetWindowRect((HWND)emu.GetRenderTarget(),&window_rect);
 			ppar.Windowed =   FALSE;
 			ppar.BackBufferFormat = D3DFMT_UNKNOWN;
 
@@ -2018,13 +2021,15 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			settings.Emulation.PaletteMode=1;
 		}
 
-		if (UseSVP || FAILED(d3d9->CreateDevice(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,(HWND)emu.GetRenderTarget(),D3DCREATE_HARDWARE_VERTEXPROCESSING,&ppar,&dev)))
+		if (UseSVP || FAILED(d3d9->CreateDevice(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,(HWND)emu.GetRenderTarget(),/*D3DCREATE_MULTITHREADED|*/
+			D3DCREATE_HARDWARE_VERTEXPROCESSING,&ppar,&dev)))
 		{
 			if (!UseSVP)
 				printf("We had to use SVP after all ...");
 
 			UseSVP=true;
-			verifyc(d3d9->CreateDevice(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,(HWND)emu.GetRenderTarget(),D3DCREATE_SOFTWARE_VERTEXPROCESSING,&ppar,&dev));
+			verifyc(d3d9->CreateDevice(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,(HWND)emu.GetRenderTarget(),/*D3DCREATE_MULTITHREADED|*/
+				D3DCREATE_SOFTWARE_VERTEXPROCESSING,&ppar,&dev));
 		}
 	
 		LPCSTR vsp= D3DXGetVertexShaderProfile(dev);
@@ -2065,6 +2070,8 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		
 		verifyc(dev->CreateVertexShader((DWORD*)shader->GetBufferPointer(),&compiled_vs));
 		
+		shader->Release();shader=0;
+
 		if (!UseFixedFunction)
 		{
 			verifyc(dev->CreateTexture(16,64,1,D3DUSAGE_DYNAMIC,D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,&pal_texture,0));
@@ -2113,9 +2120,10 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		/*
 			Reset Render stuff here
 		*/
-		clear_rt=true;
+		clear_rt=5;
 		rtt_address=-1;
 		rtt_FrameNumber=0;
+
 		while(1)
 		{
 			rs.Wait();
@@ -2123,32 +2131,56 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 				break;
 			HRESULT hr;
 			hr=dev->TestCooperativeLevel();
-			if FAILED(hr) goto nl;
+			if (FAILED(hr) )
+			{
+				fullsrq.goto_fs=!settings.Fullscreen.Enabled;
+				goto nl;
+			}
 			//render
 			DoRender();
 nl:
 			re.Set();
 		}
 
-		#define safe_release(d) {if (d) {d->Release();d=0;}}
-	
+		#define safe_release(d) {if (d) {(d->Release()==0);d=0;}}
+		
 		safe_release(vb);
 		safe_release(compiled_vs);
+
+		safe_release(vdecl);
+		safe_release(vdecl_mod);
 
 		for(int i=0;i<384;i++)
 			safe_release(compiled_ps[i]);
 
 		safe_release(nullPixelShader);
+		
+		safe_release(bb_surf);
+		safe_release(rtt_surf);
+
 		safe_release(pal_texture);
 		safe_release(rtt_texture);
 
-		safe_release(bb_surf);
-		safe_release(rtt_surf);
+		
 		safe_release(font);
 		safe_release(shader_consts);
 
 		safe_release(dev);
 		safe_release(d3d9);
+
+		//kill texture cache
+		TexCacheList<TextureCacheData>::TexCacheEntry* ptext= TexCache.plast;
+		while(ptext)
+		{
+			ptext->data.Destroy();
+			ptext->data.Texture->Release();
+			TexCacheList<TextureCacheData>::TexCacheEntry* pprev;
+			pprev=ptext->prev;
+			TexCache.Remove(ptext);
+			//free it !
+			delete ptext;
+			ptext=pprev;
+		}
 
 		#undef safe_release
 
@@ -2350,19 +2382,6 @@ nl:
 
 		if (do_resize)
 		{
-			//kill texture cache
-			TexCacheList<TextureCacheData>::TexCacheEntry* ptext= TexCache.plast;
-			while(ptext)
-			{
-				ptext->data.Destroy();
-				ptext->data.Texture->Release();
-				TexCacheList<TextureCacheData>::TexCacheEntry* pprev;
-				pprev=ptext->prev;
-				TexCache.Remove(ptext);
-				//free it !
-				delete ptext;
-				ptext=pprev;
-			}
 			//Kill renderer
 			ThreadEnd();
 			//Start renderer
@@ -2371,19 +2390,6 @@ nl:
 
 		if (fullsrq.goto_fs != (settings.Fullscreen.Enabled!=0))
 		{
-//kill texture cache
-			TexCacheList<TextureCacheData>::TexCacheEntry* ptext= TexCache.plast;
-			while(ptext)
-			{
-				ptext->data.Destroy();
-				ptext->data.Texture->Release();
-				TexCacheList<TextureCacheData>::TexCacheEntry* pprev;
-				pprev=ptext->prev;
-				TexCache.Remove(ptext);
-				//free it !
-				delete ptext;
-				ptext=pprev;
-			}
 			//Kill renderer
 			ThreadEnd();
 			settings.Fullscreen.Enabled=fullsrq.goto_fs?1:0;
@@ -3123,6 +3129,8 @@ nl:
 		tarc.Init();
 		//pvrrc needs no init , it is ALLWAYS copied from a valid tarc :)
 
+		fullsrq.goto_fs=settings.Fullscreen.Enabled;
+
 		return TileAccel.Init();
 	}
 
@@ -3137,14 +3145,7 @@ nl:
 
 		TileAccel.Term();
 		//free all textures
-		while(TexCache.pfirst)
-		{
-			TexCache.pfirst->data.Destroy();
-			TexCache.pfirst->data.Texture->Release();
-			TexCacheList<TextureCacheData>::TexCacheEntry* pprev=TexCache.pfirst;
-			TexCache.Remove(TexCache.pfirst);
-			delete pprev;
-		}
+		verify(TexCache.pfirst==0);
 	}
 
 	void ResetRenderer(bool Manual)
@@ -3166,11 +3167,20 @@ nl:
 		printf("ThreadEnd\n");
 		if (running)
 		{
+			verify(!rth.ended);
 			running=false;
-			if (!rth.ended)
+			//if (!rth.ended)
 			{
 				rs.Set();
 				rth.WaitToEnd(0xFFFFFFFF);
+
+				if (IsFullscreen)
+				{
+					SetWindowPos((HWND)emu.GetRenderTarget(),HWND_NOTOPMOST,window_rect.left,window_rect.top,window_rect.right-window_rect.left
+						,window_rect.bottom-window_rect.top,0);
+					//printf("Restored window : %d,%d : %dx%d\n",window_rect.left,window_rect.top,window_rect.right-window_rect.left
+					//	,window_rect.bottom-window_rect.top);
+				}
 			}
 		}
 	}

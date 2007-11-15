@@ -111,7 +111,7 @@ return;
 
 		u32 mode=FB_R_CTRL.fb_depth;
 		u32 sz=(640+640*(mode>>1))*2;
-		verify(SDL_LockSurface(screen)==0)
+		verifyf(SDL_LockSurface(screen)==0)
 		//memset(screen->pixels,rand(),640*480*4);
 		___hahaha__[mode]((u32*)screen->pixels,fba,screen->pitch,sz);
 
