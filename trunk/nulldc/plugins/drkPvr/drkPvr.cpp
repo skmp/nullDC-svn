@@ -7,6 +7,7 @@
 #include "spg.h"
 #include "regs.h"
 #include "renderer_if.h"
+#include <algorithm>
 
 //RaiseInterruptFP* RaiseInterrupt;
 
@@ -203,12 +204,34 @@ void EXPORT_CALL handler_SetFullscreen(u32 id,void* win,void* puser)
 
 #define makeres(a,b) {#a "x" #b,a,b},
 
-struct 
+struct resolution
 {
-	char* name;
-	u32 x;
-	u32 y;
-} resolutions[]=
+	u32 w;
+	u32 h;
+	u32 rr;
+};
+bool operator<(const resolution &left, const resolution &right)
+{
+	/* put any condition you want to sort on here */
+	if (left.h*left.w<right.h*right.w)
+		return true;
+	else if (left.h*left.w==right.h*right.w)
+		return left.rr<right.rr;
+	else
+		return false;
+	//return left.zMin<right.zMax;
+}
+vector<resolution> resolutions;
+void res_callback(u32 w,u32 h,u32 rr)
+{
+	if (w>=640 && h>=480 )
+	{
+		resolution r={w,h,rr};
+		resolutions.push_back(r);
+	}
+}
+/*
+resolutions[]=
 {
 	makeres(640,480)
 	makeres(800,600)
@@ -224,11 +247,13 @@ struct
 	makeres(2048,1536)
 	{0,0,0}
 };
+*/
 u32 special_res=0;
 void handler_SetRes(int val)
 {
-	settings.Fullscreen.Res_X=resolutions[val].x;
-	settings.Fullscreen.Res_Y=resolutions[val].y;
+	settings.Fullscreen.Res_X=resolutions[val].w;
+	settings.Fullscreen.Res_Y=resolutions[val].h;
+	settings.Fullscreen.Refresh_Rate=resolutions[val].rr;
 	
 	if (special_res)
 	{
@@ -289,21 +314,31 @@ s32 FASTCALL Load(emu_info* emu_inf)
 	AddSeperator(Resolutions_menu);
 	
 	//Resolutions !
+	//List em !
+	rend_list_modes(res_callback);
+	
+	std::stable_sort(resolutions.begin(),resolutions.end());
+
 	menu_res.callback=handler_SetRes;
 	bool sel_any=false;
-	for (u32 rc=0;resolutions[rc].name;rc++)
+	char temp[512];
+
+	for (u32 rc=0;rc<resolutions.size();rc++)
 	{
-		bool sel=(resolutions[rc].x==settings.Fullscreen.Res_X) && (resolutions[rc].y==settings.Fullscreen.Res_Y);
+		bool sel=(resolutions[rc].rr==settings.Fullscreen.Refresh_Rate) && 
+			(resolutions[rc].w==settings.Fullscreen.Res_X) && 
+			(resolutions[rc].h==settings.Fullscreen.Res_Y);
+
 		if (sel)
 			sel_any=true;
-		menu_res.Add(Resolutions_menu,resolutions[rc].name,rc);
+		sprintf(temp,"%dx%d@%dHz",resolutions[rc].w,resolutions[rc].h,resolutions[rc].rr);
+		menu_res.Add(Resolutions_menu,temp,rc);
 		if (sel)
 			menu_res.SetValue(rc);
 	}
 	special_res=0;
 	if (!sel_any)
 	{
-		char temp[512];
 		sprintf(temp,"%dx%d",settings.Fullscreen.Res_X,settings.Fullscreen.Res_Y);
 		special_res=emu.AddMenuItem(Resolutions_menu,-1,temp,0,1);
 		emu.SetMenuItemStyle(special_res,MIS_Grayed|MIS_Checked|MIS_Radiocheck,MIS_Grayed|MIS_Checked|MIS_Radiocheck);

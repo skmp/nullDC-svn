@@ -25,6 +25,7 @@ namespace Direct3DRenderer
 	void SetFpsText(char* text);
 	void SetRenderRect(float* rect,bool  drc);
 	void SetFBScale(float x,float y);
+	void ListModes(void(* callback)(u32 w,u32 h,u32 rr));
 
 	void VramLockedWrite(vram_block* bl);
 };
@@ -48,4 +49,5 @@ namespace Direct3DRenderer
 #define rend_set_fps_text Direct3DRenderer::SetFpsText
 #define rend_set_render_rect Direct3DRenderer::SetRenderRect
 #define rend_set_fb_scale Direct3DRenderer::SetFBScale
+#define rend_list_modes Direct3DRenderer::ListModes
 #endif

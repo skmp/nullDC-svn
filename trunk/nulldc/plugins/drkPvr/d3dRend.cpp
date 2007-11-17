@@ -1945,7 +1945,17 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		{"res_y",0},
 		{0,0}	//end of list
 	};
-
+	
+	void ListModes(void(* callback)(u32 w,u32 h,u32 rr))
+	{
+		d3d9 = Direct3DCreate9(D3D_SDK_VERSION);
+		D3DDISPLAYMODE mode;
+		for (u32 i=0;i<d3d9->GetAdapterModeCount(D3DADAPTER_DEFAULT,D3DFMT_X8R8G8B8);i++)
+		{
+			d3d9->EnumAdapterModes(D3DADAPTER_DEFAULT,D3DFMT_X8R8G8B8,i,&mode);
+			callback(mode.Width,mode.Height,mode.RefreshRate);
+		}
+	}
 	u32 THREADCALL RenderThead(void* param)
 	{
 		d3d9 = Direct3DCreate9(D3D_SDK_VERSION);
