@@ -213,10 +213,10 @@ struct resolution
 bool operator<(const resolution &left, const resolution &right)
 {
 	/* put any condition you want to sort on here */
-	if (left.h*left.w<right.h*right.w)
+	if (left.h*left.w>right.h*right.w)
 		return true;
 	else if (left.h*left.w==right.h*right.w)
-		return left.rr<right.rr;
+		return left.rr>right.rr;
 	else
 		return false;
 	//return left.zMin<right.zMax;
@@ -299,12 +299,14 @@ void CreateSortMenu()
 //called when plugin is used by emu (you should do first time init here)
 s32 FASTCALL Load(emu_info* emu_inf)
 {
+	char temp[512];
 	memcpy(&emu,emu_inf,sizeof(emu));
 	emu.ConfigLoadStr("emu","shortname",emu_name,0);
 	
 	LoadSettings();
 
-	u32 Resolutions_menu=emu.AddMenuItem(emu.RootMenu,-1,"Fullscreen",0,0);
+	sprintf(temp,"Fullscreen(%dx%d@%dHz)",settings.Fullscreen.Res_X,settings.Fullscreen.Res_Y,settings.Fullscreen.Refresh_Rate);
+	u32 Resolutions_menu=emu.AddMenuItem(emu.RootMenu,-1,temp,0,0);
 	
 	AddSeperator(emu.RootMenu);
 
@@ -320,8 +322,9 @@ s32 FASTCALL Load(emu_info* emu_inf)
 	std::stable_sort(resolutions.begin(),resolutions.end());
 
 	menu_res.callback=handler_SetRes;
+	menu_res.format="Fullscreen (%s)";
 	bool sel_any=false;
-	char temp[512];
+	
 
 	for (u32 rc=0;rc<resolutions.size();rc++)
 	{
