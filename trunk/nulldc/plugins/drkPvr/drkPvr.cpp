@@ -157,8 +157,6 @@ void FASTCALL vramLockCB (vram_block* block,u32 addr)
 #include <vector>
 using std::vector;
 
-vector<u32> res;
-
 void EXPORT_CALL handler_ShowFps(u32 id,void* win,void* puser)
 {
 	if (settings.OSD.ShowFPS)
@@ -202,8 +200,6 @@ void EXPORT_CALL handler_SetFullscreen(u32 id,void* win,void* puser)
 	SaveSettings();
 }
 
-#define makeres(a,b) {#a "x" #b,a,b},
-
 struct resolution
 {
 	u32 w;
@@ -230,24 +226,7 @@ void res_callback(u32 w,u32 h,u32 rr)
 		resolutions.push_back(r);
 	}
 }
-/*
-resolutions[]=
-{
-	makeres(640,480)
-	makeres(800,600)
-	makeres(1024,768)
-	makeres(1280,800)
-	makeres(1280,960)
-	makeres(1280,1024)
-	makeres(1440,1050)
-	makeres(1600,900)
-	makeres(1600,1200)
-	makeres(1920,1080)
-	makeres(1920,1200)
-	makeres(2048,1536)
-	{0,0,0}
-};
-*/
+
 u32 special_res=0;
 void handler_SetRes(int val)
 {

@@ -29,6 +29,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nullMaple", "plugins\nullMa
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ElsemiAICA", "plugins\ElsemiAICA\ElsemiAICA\ElsemiAICA.vcproj", "{7FE731E3-8111-41B6-BD13-F2249DBF9928}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "emitter", "..\emitter\emitter\emitter.vcproj", "{B0B56062-39D6-4BEA-B0C9-A06AC2A65555}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -207,6 +209,18 @@ Global
 		{7FE731E3-8111-41B6-BD13-F2249DBF9928}.Release-NoTrace|Win32.Build.0 = Release|Win32
 		{7FE731E3-8111-41B6-BD13-F2249DBF9928}.Release-Trace|Win32.ActiveCfg = Release|Win32
 		{7FE731E3-8111-41B6-BD13-F2249DBF9928}.Release-Trace|Win32.Build.0 = Release|Win32
+		{B0B56062-39D6-4BEA-B0C9-A06AC2A65555}.Debug|Win32.ActiveCfg = Debug|Win32
+		{B0B56062-39D6-4BEA-B0C9-A06AC2A65555}.Debug|Win32.Build.0 = Debug|Win32
+		{B0B56062-39D6-4BEA-B0C9-A06AC2A65555}.Debug-NoTrace|Win32.ActiveCfg = Debug|Win32
+		{B0B56062-39D6-4BEA-B0C9-A06AC2A65555}.Debug-NoTrace|Win32.Build.0 = Debug|Win32
+		{B0B56062-39D6-4BEA-B0C9-A06AC2A65555}.Debug-Trace|Win32.ActiveCfg = Debug|Win32
+		{B0B56062-39D6-4BEA-B0C9-A06AC2A65555}.Debug-Trace|Win32.Build.0 = Debug|Win32
+		{B0B56062-39D6-4BEA-B0C9-A06AC2A65555}.Release|Win32.ActiveCfg = Release|Win32
+		{B0B56062-39D6-4BEA-B0C9-A06AC2A65555}.Release|Win32.Build.0 = Release|Win32
+		{B0B56062-39D6-4BEA-B0C9-A06AC2A65555}.Release-NoTrace|Win32.ActiveCfg = Release|Win32
+		{B0B56062-39D6-4BEA-B0C9-A06AC2A65555}.Release-NoTrace|Win32.Build.0 = Release|Win32
+		{B0B56062-39D6-4BEA-B0C9-A06AC2A65555}.Release-Trace|Win32.ActiveCfg = Release|Win32
+		{B0B56062-39D6-4BEA-B0C9-A06AC2A65555}.Release-Trace|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

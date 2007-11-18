@@ -178,7 +178,7 @@ void RewriteBasicBlockFixed(CompiledBasicBlock* cBB)
 
 	x86_block* x86e = new x86_block();
 
-	x86e->Init();
+	x86e->Init(dyna_realloc,dyna_finalize);
 	x86e->do_realloc=false;
 	x86e->x86_buff=(u8*)cBB->cbi.Code + cBB->ebi.Rewrite.Offset;
 	x86e->x86_size=32;
@@ -217,7 +217,7 @@ void RewriteBasicBlockCond(CompiledBasicBlock* cBB)
 
 	x86_block* x86e = new x86_block();
 	
-	x86e->Init();
+	x86e->Init(dyna_realloc,dyna_finalize);
 	x86e->do_realloc=false;
 	x86e->x86_buff=(u8*)cBB->cbi.Code + cBB->ebi.Rewrite.Offset;
 	x86e->x86_size=32;
@@ -430,7 +430,7 @@ void FASTCALL RewriteBasicBlockGuess_FLUT(CompiledBasicBlock* cBB)
 	//indirect call , rewrite & link , second time(does fast look up)
 	x86_block* x86e = new x86_block();
 
-	x86e->Init();
+	x86e->Init(dyna_realloc,dyna_finalize);
 	x86e->do_realloc=false;
 	x86e->x86_buff=(u8*)cBB->cbi.Code + cBB->ebi.Rewrite.Offset;
 	x86e->x86_size=64;
@@ -505,7 +505,7 @@ void* FASTCALL RewriteBasicBlockGuess_TTG(CompiledBasicBlock* cBB)
 
 	x86_block* x86e = new x86_block();
 
-	x86e->Init();
+	x86e->Init(dyna_realloc,dyna_finalize);
 	x86e->do_realloc=false;
 	x86e->x86_buff=(u8*)cBB->cbi.Code + cBB->ebi.Rewrite.Offset;
 	x86e->x86_size=64;
@@ -535,7 +535,7 @@ void FASTCALL RewriteBasicBlockGuess_NULL(CompiledBasicBlock* cBB)
 {
 	x86_block* x86e = new x86_block();
 
-	x86e->Init();
+	x86e->Init(dyna_realloc,dyna_finalize);
 	x86e->do_realloc=false;
 	x86e->x86_buff=(u8*)cBB->cbi.Code + cBB->ebi.Rewrite.Offset;
 	x86e->x86_size=32;
@@ -569,7 +569,7 @@ bool BasicBlock::Compile()
 
 	x86_block* x86e=new x86_block();
 	
-	x86e->Init();
+	x86e->Init(dyna_realloc,dyna_finalize);
 
 	flags.DisableHS=1;
 

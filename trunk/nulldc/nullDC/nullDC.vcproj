@@ -192,9 +192,13 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				Description=""
+				CommandLine=""
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+				Description=""
+				CommandLine=""
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -213,7 +217,7 @@
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="&quot;C:\Program Files\Microsoft DirectX SDK (February 2006)\Include&quot;;&quot;$(SolutionDir)\nullDC&quot;"
+				AdditionalIncludeDirectories="&quot;C:\Program Files\Microsoft DirectX SDK (February 2006)\Include&quot;;&quot;$(SolutionDir)\nullDC&quot;;&quot;$(SolutionDir)\..\emitter\&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;NULLDC;X86;RELEASE"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
@@ -233,10 +237,12 @@
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
+				Description="Copying Libs"
+				CommandLine="copy &quot;$(SolutionDir)..\emitter\bins\emitter_$(PlatformName).dll&quot; &quot;$(SolutionDir)deps\&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)..\emitter\bins\emitter_$(PlatformName).lib&quot; &quot;$(SolutionDir)deps\&quot;"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="winmm.lib wsock32.lib comctl32.lib"
+				AdditionalDependencies="winmm.lib wsock32.lib comctl32.lib $(SolutionDir)deps\emitter_$(PlatformName).lib"
 				OutputFile="$(SolutionDir)\WorkDir\$(ProjectName)_$(PlatformName)_$(ConfigurationName).exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
@@ -268,6 +274,8 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				Description="Copying Dlls"
+				CommandLine="copy &quot;$(SolutionDir)deps\*.dll&quot; &quot;$(OutDir)&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -356,6 +364,10 @@
 		</Configuration>
 	</Configurations>
 	<References>
+		<ProjectReference
+			ReferencedProjectIdentifier="{B0B56062-39D6-4BEA-B0C9-A06AC2A65555}"
+			RelativePathToProject="..\emitter\emitter\emitter.vcproj"
+		/>
 	</References>
 	<Files>
 		<Filter
@@ -1054,58 +1066,6 @@
 				RelativePath=".\emitter\emitter.h"
 				>
 			</File>
-			<Filter
-				Name="x86"
-				>
-				<File
-					RelativePath=".\emitter\x86\generated_class_names.h"
-					>
-				</File>
-				<File
-					RelativePath=".\emitter\x86\generated_class_names_string.h"
-					>
-				</File>
-				<File
-					RelativePath=".\emitter\x86\generated_descriptors.h"
-					>
-				</File>
-				<File
-					RelativePath=".\emitter\x86\generated_indexes.h"
-					>
-				</File>
-				<File
-					RelativePath=".\emitter\x86\x86_emitter.cpp"
-					>
-					<FileConfiguration
-						Name="Release-NoTrace|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="2"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath=".\emitter\x86\x86_emitter.h"
-					>
-				</File>
-				<File
-					RelativePath=".\emitter\x86\x86_matcher.h"
-					>
-				</File>
-				<File
-					RelativePath=".\emitter\x86\x86_op_classes.h"
-					>
-				</File>
-				<File
-					RelativePath=".\emitter\x86\x86_op_encoder.h"
-					>
-				</File>
-				<File
-					RelativePath=".\emitter\x86\x86_op_table.h"
-					>
-				</File>
-			</Filter>
 			<Filter
 				Name="x86-64"
 				>
