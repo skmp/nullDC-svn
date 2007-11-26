@@ -1,8 +1,10 @@
 // chankaAICA.cpp : Defines the entry point for the DLL application.
 //
-
+#define UNICODE
+#define _UNICODE
 #include "chankaAICA.h"
 #include "chanka_aica.h"
+#include <tchar.h>
 aica_init_params params;
 emu_info emu;
 BOOL APIENTRY DllMain( HMODULE hModule,
@@ -15,14 +17,14 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 
 void EXPORT_CALL handle_About(u32 id,void* w,void* p)
 {
-	MessageBox((HWND)w,"Made by the Chankast Team\nPort by drk||Raziel","About Chankast Aica...",MB_ICONINFORMATION);
+	MessageBox((HWND)w,L"Made by the Chankast Team\nPort by drk||Raziel",L"About Chankast Aica...",MB_ICONINFORMATION);
 }
 //called when plugin is used by emu (you should do first time init here)
 s32 FASTCALL Load(emu_info * p)
 {
 	memcpy(&emu,p,sizeof(*p));
 
-	emu.AddMenuItem(emu.RootMenu,-1,"About",handle_About,0);
+	emu.AddMenuItem(emu.RootMenu,-1,L"About",handle_About,0);
 
 	return rv_ok;
 }
@@ -81,7 +83,7 @@ EXPORT void EXPORT_CALL dcGetInterface(plugin_interface* info)
 #define c info->common
 #define a info->aica
 
-	strcpy(c.Name,"Chankast's AICA (" __DATE__ ")");
+	wcscpy(c.Name,L"Chankast's AICA (" _T(__DATE__) L")");
 	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD,DC_VER_NORMAL);
 
 	c.InterfaceVersion=AICA_PLUGIN_I_F_VERSION;
