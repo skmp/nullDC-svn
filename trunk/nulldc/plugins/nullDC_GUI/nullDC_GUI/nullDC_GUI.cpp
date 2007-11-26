@@ -1,7 +1,7 @@
 #include "nullDC_GUI.h"
 
 HMODULE hMod;
-char emu_name[128];
+wchar emu_name[128];
 gui_emu_info emu;
 
 BOOL APIENTRY DllMain( HMODULE hModule,
@@ -20,7 +20,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 	}
     return TRUE;
 }
-int EXPORT_CALL guiMsgBox(char* text,int type)
+int EXPORT_CALL guiMsgBox(wchar* text,int type)
 {
 	return MessageBox(NULL,text,emu_name,type|MB_TASKMODAL);
 }
@@ -28,7 +28,7 @@ s32 EXPORT_CALL Load(gui_emu_info* emui)
 {
 	memcpy(&emu,emui,sizeof(emu));
 	
-	emu.ConfigLoadStr("emu","FullName",emu_name,"");
+	emu.ConfigLoadStr(L"emu",L"FullName",emu_name,L"");
 	if (!uiInit())
 		return rv_serror;
 
@@ -68,7 +68,7 @@ void EXPORT_CALL EventHandler(u32 nid,void* p)
 void EXPORT_CALL ndcGetInterface(gui_plugin_info* info)
 {
 	info->InterfaceVersion=GuiPluginInterfaceVersion;
-	strcpy(info->Name,"Default Gui");
+	wcscpy(info->Name,L"Default Gui");
 	
 	info->Load=Load;
 	info->Unload=Unload;
@@ -160,7 +160,7 @@ bool EmuBootHLE()
 {
 	return emu.EmuBootHLE();
 }
-bool EmuLoadBinary(char* file,u32 address)
+bool EmuLoadBinary(wchar* file,u32 address)
 {
 	return emu.EmuLoadBinary(file,address);
 }
@@ -178,7 +178,7 @@ void EmuStopProfiler()
 	emu.EmuStopProfiler();
 }
 
-void DissasembleOpcode(u16 opcode,u32 pc,char* Dissasm)
+void DissasembleOpcode(u16 opcode,u32 pc,wchar* Dissasm)
 {
 	emu.DissasembleOpcode(opcode,pc,Dissasm);
 }
@@ -192,17 +192,17 @@ void Sh4SetRegister(Sh4RegType reg,u32 value)
 	emu.Sh4SetRegister(reg,value);
 }
 
-int GetSymbName(u32 address,char *szDesc,bool bUseUnkAddress)
+int GetSymbName(u32 address,wchar *szDesc,bool bUseUnkAddress)
 {
 	return emu.GetSymbName(address,szDesc,bUseUnkAddress);
 }
-int msgboxf(char* text,unsigned int type,...)
+int msgboxf(wchar* text,unsigned int type,...)
 {
 	va_list args;
 
-	char temp[2048];
+	wchar temp[2048];
 	va_start(args, type);
-	vsprintf(temp, text, args);
+	vswprintf(temp, text, args);
 	va_end(args);
 
 	return guiMsgBox(temp,type | MB_TASKMODAL);

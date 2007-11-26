@@ -95,12 +95,12 @@ void SetWindowPtr( HWND hWnd,int nIndex,void* dwNewLong)
     return p;
  }
 
- int htoi(char s[]) {
+ int htoi(wchar s[]) {
  
 	size_t len;
 	int  value = 1, digit = 0,  total = 0;
     int c, x, y, i = 0;
-    char hexchars[] = "abcdef"; /* Helper string to find hex digit values */
+    wchar hexchars[] = L"abcdef"; /* Helper string to find hex digit values */
  
     /* Test for 0s, '0x', or '0X' at the beginning and move on */
  
@@ -113,7 +113,7 @@ void SetWindowPtr( HWND hWnd,int nIndex,void* dwNewLong)
        }
     }
  
-    len = strlen(s);
+    len = wcslen(s);
  
     for (x = i; x < (int)len; x++)
     {
@@ -154,12 +154,12 @@ bool uiInit()
 	wc.hIcon			= LoadIcon(g_hInst, MAKEINTRESOURCE(IDI_NDC_ICON));
 	wc.hInstance		= g_hInst;
 	wc.lpfnWndProc		= WndProc;
-	wc.lpszClassName	= "ndc_main_window";
+	wc.lpszClassName	= L"ndc_main_window";
 	wc.lpszMenuName		= 0;
 	wc.style			= CS_VREDRAW | CS_HREDRAW ;
 
 	if( !RegisterClass(&wc) ) {
-		MessageBox( NULL, "Couldn't Register ndc_main_window Class !","ERROR",MB_ICONERROR );
+		MessageBox( NULL, L"Couldn't Register ndc_main_window Class !",L"ERROR",MB_ICONERROR );
 		return false;
 	}
 
@@ -167,10 +167,10 @@ bool uiInit()
 
 	InitMenu();
 
-	g_hWnd = CreateWindowA( "ndc_main_window", emu_name, WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+	g_hWnd = CreateWindow( L"ndc_main_window", emu_name, WS_OVERLAPPEDWINDOW | WS_VISIBLE,
 		CW_USEDEFAULT, CW_USEDEFAULT, 640,480, NULL, GetHMenu(), g_hInst, NULL );
 	if( !IsWindow(g_hWnd) ) {
-		MessageBox( NULL, "Couldn't Create nullDC Window!","ERROR",MB_ICONERROR );
+		MessageBox( NULL, L"Couldn't Create nullDC Window!",L"ERROR",MB_ICONERROR );
 		return false;
 	}
 	RECT rect;
@@ -281,13 +281,13 @@ struct _MenuItem
 	MenuStrip submenu;
 	u32 gmid;	//menu item id
 	u32 nid;	//notification id
-	char* txt;
+	wchar* txt;
 	void* puser;
 	MenuItemSelectedFP* handler;
 	u32 Style;
 	void* hbitmap;
 
-	_MenuItem(char* text,u32 id,u32 gid)
+	_MenuItem(wchar* text,u32 id,u32 gid)
 	{
 		owner=0;
 		submenu.owner=this;
@@ -305,7 +305,7 @@ struct _MenuItem
 
 	void Update();
 	~_MenuItem();
-	void Create(char* text);
+	void Create(wchar* text);
 
 	void AddChild(u32 id);
 	void RemoveChild(u32 id);
@@ -436,7 +436,7 @@ _MenuItem::~_MenuItem()
 	owner->RemoveItem(gmid);
 	MenuItems[gmid]=0;
 }
-void _MenuItem::Create(char* text)
+void _MenuItem::Create(wchar* text)
 {
 	//smth
 }
@@ -458,16 +458,16 @@ void _MenuItem::RemoveChild(u32 id)
 
 	//delete MenuItems[id];
 }
-u32 CreateMenuItem(char* text,MenuItemSelectedFP* handler , void* puser)
+u32 CreateMenuItem(wchar* text,MenuItemSelectedFP* handler , void* puser)
 {
 	u32 gmid = MenuItems.size();
-	_MenuItem* t=new _MenuItem(strdup(text),gmid+10,gmid);
+	_MenuItem* t=new _MenuItem(_tcsdup(text),gmid+10,gmid);
 	t->puser=puser;
 	t->handler=handler;
 	MenuItems.push_back(t);
 	return gmid;
 }
-u32 EXPORT_CALL AddMenuItem(u32 parent,s32 pos,char* text,MenuItemSelectedFP* handler ,u32 checked)
+u32 EXPORT_CALL AddMenuItem(u32 parent,s32 pos,wchar* text,MenuItemSelectedFP* handler ,u32 checked)
 {
 	u32 rv= CreateMenuItem(text,handler,0);
 	
@@ -522,7 +522,7 @@ void EXPORT_CALL SetMenuItem(u32 id,MenuItem* info,u32 mask)
 	{
 		if (MenuItems[id]->txt)
 			free(MenuItems[id]->txt);
-		MenuItems[id]->txt=strdup(info->Text);
+		MenuItems[id]->txt=_tcsdup(info->Text);
 	}
 
 	MenuItems[id]->Update();
@@ -565,7 +565,7 @@ void EXPORT_CALL DeleteMenuItem(u32 id)
 //Nice helper :)
 void AddSeperator(u32 menu)
 {
-	SetMenuItemStyle(AddMenuItem(menu,-1,"-",0,0),MIS_Seperator,MIS_Seperator);
+	AddMenuItem(menu,-1,0,0,0);
 }
 #define MENU_HANDLER(name) void EXPORT_CALL name (u32 id,void* hWnd,void* stuff)
 ///////Menu Handlers\\\\\\\
@@ -576,7 +576,7 @@ MENU_HANDLER( HandleMenu1 )
 }
 MENU_HANDLER( HandleMenu0 )
 {
-	msgboxf("Menu %d -- not implemented",MBX_ICONEXCLAMATION,id);
+	msgboxf(L"Menu %d -- not implemented",MBX_ICONEXCLAMATION,id);
 }
 
 //File 
@@ -592,7 +592,7 @@ MENU_HANDLER(Handle_File_OpenBin)
 		ofn.hwndOwner		= (HWND)hWnd;
 		ofn.lpstrFile		= g_szFileName;
 		ofn.nMaxFile		= MAX_PATH;
-		ofn.lpstrFilter		= "All(.BIN\\.ELF)\0*.BIN;*.ELF\0Binary\0*.BIN\0Elf\0*.ELF\0All\0*.*\0";
+		ofn.lpstrFilter		= L"All(.BIN\\.ELF)\0*.BIN;*.ELF\0Binary\0*.BIN\0Elf\0*.ELF\0All\0*.*\0";
 		ofn.nFilterIndex	= 1;
 		ofn.nMaxFileTitle	= 128;
 		ofn.lpstrFileTitle	= szFile;
@@ -634,7 +634,7 @@ MENU_HANDLER(Handle_File_LoadBin)
 	ofn.hwndOwner		= (HWND)hWnd;
 	ofn.lpstrFile		= g_szFileName;
 	ofn.nMaxFile		= MAX_PATH;
-	ofn.lpstrFilter		= "All(.BIN\\.ELF)\0*.BIN;*.ELF\0Binary\0*.BIN\0Elf\0*.ELF\0All\0*.*\0";
+	ofn.lpstrFilter		= L"All(.BIN\\.ELF)\0*.BIN;*.ELF\0Binary\0*.BIN\0Elf\0*.ELF\0All\0*.*\0";
 	ofn.nFilterIndex	= 1;
 	ofn.nMaxFileTitle	= 128;
 	ofn.lpstrFileTitle	= szFile;
@@ -658,7 +658,7 @@ MENU_HANDLER(Handle_File_BootHLE)
 
 		if (EmuBootHLE()==false) //try to load binary using hle boot
 		{
-			MessageBox((HWND)hWnd,"Failed to find ip.bin/bootfile\nTry to boot using the Normal boot method.","HLE Boot Error",MB_ICONEXCLAMATION | MB_OK);
+			MessageBox((HWND)hWnd,L"Failed to find ip.bin/bootfile\nTry to boot using the Normal boot method.",L"HLE Boot Error",MB_ICONEXCLAMATION | MB_OK);
 			return;
 		}
 
@@ -719,10 +719,15 @@ MENU_HANDLER( Handle_Debug_Sh4Debugger)
 	{
 		if(!EmuInit())
 		{
-			msgboxf("Init failed , cannot open debugger",MBX_ICONEXCLAMATION);
+			msgboxf(L"Init failed , cannot open debugger",MBX_ICONEXCLAMATION);
 			return;
 		}
-		EmuReset(false);
+		if (!EmuStarted())
+		{
+			EmuStart();
+			EmuStop();
+		}
+		//EmuReset(false);
 
 		CtrlMemView::init();
 		CtrlDisAsmView::init();
@@ -730,7 +735,7 @@ MENU_HANDLER( Handle_Debug_Sh4Debugger)
 		hDebugger = CreateDialog( g_hInst, MAKEINTRESOURCE(IDD_SH4DEBUG), NULL, DlgProc);
 		if( !IsWindow(hDebugger) )
 		{
-			MessageBox( (HWND)hWnd, "Couldn't open Sh4 debugger","",MB_OK );
+			MessageBox( (HWND)hWnd, L"Couldn't open Sh4 debugger",L"",MB_OK );
 		}
 	}
 }
@@ -755,7 +760,7 @@ MENU_HANDLER( Handle_Profiler_Show)
 
 		if( !IsWindow(ProfilerWindow) )
 		{
-			MessageBox( (HWND)hWnd, "Couldn't create profiler window","",MB_OK );
+			MessageBox( (HWND)hWnd, L"Couldn't create profiler window",L"",MB_OK );
 			ProfilerWindow=0;
 		}
 		ShowWindow(ProfilerWindow, SW_SHOW);
@@ -845,75 +850,75 @@ MENU_HANDLER( Handle_Option_Cable_Type )
 //Create the menus and set the handlers :)
 void CreateBasicMenus()
 {
-	u32 menu_file=AddMenuItem(0,-1,"File",0,0);
-	u32 menu_system=AddMenuItem(0,-1,"System",0,0);
-	u32 menu_options=AddMenuItem(0,-1,"Options",0,0);
-	u32 menu_debug=AddMenuItem(0,-1,"Debug",0,0);
-	u32 menu_profiler=AddMenuItem(0,-1,"Profiler",0,0);
-	u32 menu_help=AddMenuItem(0,-1,"Help",0,0);
+	u32 menu_file=AddMenuItem(0,-1,L"File",0,0);
+	u32 menu_system=AddMenuItem(0,-1,L"System",0,0);
+	u32 menu_options=AddMenuItem(0,-1,L"Options",0,0);
+	u32 menu_debug=AddMenuItem(0,-1,L"Debug",0,0);
+	u32 menu_profiler=AddMenuItem(0,-1,L"Profiler",0,0);
+	u32 menu_help=AddMenuItem(0,-1,L"Help",0,0);
 
 	//File menu
-	AddMenuItem(menu_file,-1,"Normal Boot",Handle_System_Start,0);
-	AddMenuItem(menu_file,-1,"Hle GDROM boot",Handle_File_BootHLE,0);
+	AddMenuItem(menu_file,-1,L"Normal Boot",Handle_System_Start,0);
+	AddMenuItem(menu_file,-1,L"Hle GDROM boot",Handle_File_BootHLE,0);
 	AddSeperator(menu_file);
-	AddMenuItem(menu_file,-1,"Open bin/elf",Handle_File_OpenBin,0);
-	AddMenuItem(menu_file,-1,"Load bin/elf",Handle_File_LoadBin,0);
+	AddMenuItem(menu_file,-1,L"Open bin/elf",Handle_File_OpenBin,0);
+	AddMenuItem(menu_file,-1,L"Load bin/elf",Handle_File_LoadBin,0);
 	AddSeperator(menu_file);
-	AddMenuItem(menu_file,-1,"Exit",Handle_File_Exit,0);
+	AddMenuItem(menu_file,-1,L"Exit",Handle_File_Exit,0);
 
 
 	//System Menu
-	AddMenuItem(menu_system,-1,"Start",Handle_System_Start,0);
-	AddMenuItem(menu_system,-1,"Stop",Handle_System_Stop,0);
-	AddMenuItem(menu_system,-1,"Reset",Handle_System_Reset,0);
+	AddMenuItem(menu_system,-1,L"Start",Handle_System_Start,0);
+	AddMenuItem(menu_system,-1,L"Stop",Handle_System_Stop,0);
+	AddMenuItem(menu_system,-1,L"Reset",Handle_System_Reset,0);
 
 	//Options Menu
-	u32 menu_setts=AddMenuItem(menu_options,-1,"nullDC Settings",Handle_Options_Config,0);
-		AddMenuItem(menu_setts,-1,"Show",Handle_Options_Config,0);
+	u32 menu_setts=AddMenuItem(menu_options,-1,L"nullDC Settings",Handle_Options_Config,0);
+		AddMenuItem(menu_setts,-1,L"Show",Handle_Options_Config,0);
 		AddSeperator(menu_setts);
-		rec_enb_mid=AddMenuItem(menu_setts,-1,"Enable Dynarec",Handle_Option_EnableRec,0);
-		rec_cpp_mid=AddMenuItem(menu_setts,-1,"Enable CP pass",Handle_Option_EnableCP,0);
-		rec_ufpu_mid=AddMenuItem(menu_setts,-1,"Underclock FPU",Handle_Option_UnderclockFpu,0);
+		rec_enb_mid=AddMenuItem(menu_setts,-1,L"Enable Dynarec",Handle_Option_EnableRec,0);
+		rec_cpp_mid=AddMenuItem(menu_setts,-1,L"Enable CP pass",Handle_Option_EnableCP,0);
+		rec_ufpu_mid=AddMenuItem(menu_setts,-1,L"Underclock FPU",Handle_Option_UnderclockFpu,0);
 		AddSeperator(menu_setts);
-		u32 cable_type=AddMenuItem(menu_setts,-1,"Cable Type",0,0);
-			ct_menu[0]=AddMenuItem(cable_type,-1,"VGA(0) (RGB)",Handle_Option_Cable_Type,0);
-			ct_menu[1]=AddMenuItem(cable_type,-1,"VGA(1) (RGB)",Handle_Option_Cable_Type,0);
-			ct_menu[2]=AddMenuItem(cable_type,-1,"TV     (RGB)",Handle_Option_Cable_Type,0);
-			ct_menu[3]=AddMenuItem(cable_type,-1,"TV     (VBS/Y+S/C)",Handle_Option_Cable_Type,0);
-		u32 system_region=AddMenuItem(menu_setts,-1,"System Region",0,0);
-			AddMenuItem(system_region,-1,"JAP",0,0);
-			AddMenuItem(system_region,-1,"USA",0,0);
-			AddMenuItem(system_region,-1,"EUR",0,0);
-		u32 broadcast_format=AddMenuItem(menu_setts,-1,"Broadcast Format",0,0);
-			AddMenuItem(broadcast_format,-1,"NTSC",0,0);
-			AddMenuItem(broadcast_format,-1,"PAL",0,0);
-			AddMenuItem(broadcast_format,-1,"PAL_M",0,0);
-			AddMenuItem(broadcast_format,-1,"PAL_N",0,0);
+		u32 cable_type=AddMenuItem(menu_setts,-1,L"Cable Type",0,0);
+			ct_menu[0]=AddMenuItem(cable_type,-1,L"VGA(0) (RGB)",Handle_Option_Cable_Type,0);
+			ct_menu[1]=AddMenuItem(cable_type,-1,L"VGA(1) (RGB)",Handle_Option_Cable_Type,0);
+			ct_menu[2]=AddMenuItem(cable_type,-1,L"TV     (RGB)",Handle_Option_Cable_Type,0);
+			ct_menu[3]=AddMenuItem(cable_type,-1,L"TV     (VBS/Y+S/C)",Handle_Option_Cable_Type,0);
+		u32 system_region=AddMenuItem(menu_setts,-1,L"System Region",0,0);
+			AddMenuItem(system_region,-1,L"JAP",0,0);
+			AddMenuItem(system_region,-1,L"USA",0,0);
+			AddMenuItem(system_region,-1,L"EUR",0,0);
+		u32 broadcast_format=AddMenuItem(menu_setts,-1,L"Broadcast Format",0,0);
+			AddMenuItem(broadcast_format,-1,L"NTSC",0,0);
+			AddMenuItem(broadcast_format,-1,L"PAL",0,0);
+			AddMenuItem(broadcast_format,-1,L"PAL_M",0,0);
+			AddMenuItem(broadcast_format,-1,L"PAL_N",0,0);
 
-	AddMenuItem(menu_options,-1,"Select Plugins",Handle_Options_SelectPlugins,0);
+	AddMenuItem(menu_options,-1,L"Select Plugins",Handle_Options_SelectPlugins,0);
 	AddSeperator(menu_options);
-	PowerVR_menu = AddMenuItem(menu_options,-1,"PowerVR",0,0);
-	GDRom_menu = AddMenuItem(menu_options,-1,"GDRom",0,0);
-	Aica_menu = AddMenuItem(menu_options,-1,"Aica",0,0);
-	Maple_menu = AddMenuItem(menu_options,-1,"Maple",0,0);
-	ExtDev_menu = AddMenuItem(menu_options,-1,"ExtDevice",0,0);
+	PowerVR_menu = AddMenuItem(menu_options,-1,L"PowerVR",0,0);
+	GDRom_menu = AddMenuItem(menu_options,-1,L"GDRom",0,0);
+	Aica_menu = AddMenuItem(menu_options,-1,L"Aica",0,0);
+	Maple_menu = AddMenuItem(menu_options,-1,L"Maple",0,0);
+	ExtDev_menu = AddMenuItem(menu_options,-1,L"ExtDevice",0,0);
 
 	//Maple Menu
-	Maple_menu_ports[0][5]=AddMenuItem(Maple_menu,-1,"Port A",0,0);
-	Maple_menu_ports[1][5]=AddMenuItem(Maple_menu,-1,"Port B",0,0);
-	Maple_menu_ports[2][5]=AddMenuItem(Maple_menu,-1,"Port C",0,0);
-	Maple_menu_ports[3][5]=AddMenuItem(Maple_menu,-1,"Port D",0,0);
+	Maple_menu_ports[0][5]=AddMenuItem(Maple_menu,-1,L"Port A",0,0);
+	Maple_menu_ports[1][5]=AddMenuItem(Maple_menu,-1,L"Port B",0,0);
+	Maple_menu_ports[2][5]=AddMenuItem(Maple_menu,-1,L"Port C",0,0);
+	Maple_menu_ports[3][5]=AddMenuItem(Maple_menu,-1,L"Port D",0,0);
 
 	//Debug
 	Debug_menu=menu_debug;
-	AddMenuItem(menu_debug,-1,"Debugger",Handle_Debug_Sh4Debugger,0);
+	AddMenuItem(menu_debug,-1,L"Debugger",Handle_Debug_Sh4Debugger,0);
 
 	//Profiler
-	AddMenuItem(menu_profiler,-1,"Enable",Handle_Profiler_Enable,0);
-	AddMenuItem(menu_profiler,-1,"Show",Handle_Profiler_Show,0);
+	AddMenuItem(menu_profiler,-1,L"Enable",Handle_Profiler_Enable,0);
+	AddMenuItem(menu_profiler,-1,L"Show",Handle_Profiler_Show,0);
 
 	//Help
-	AddMenuItem(menu_help,-1,"About",Handle_Help_About,0);
+	AddMenuItem(menu_help,-1,L"About",Handle_Help_About,0);
 
 	//Update menu ticks to match settings :)
 	UpdateMenus();
@@ -960,7 +965,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 	case WM_SIZE:
 		{
 			NDC_WINDOW_RECT r = { LOWORD(lParam),HIWORD(lParam) };
-			emu.BroardcastEvent(NDC_GUI_RESIZED,&r);
+			emu.BroardcastEvent(NDC_GUI_RESIZED,&r,BET_All);
 		}
 		break;
 	case WM_CREATE:
@@ -1007,7 +1012,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 		{
 			if (LOWORD(wParam)==VK_RETURN)
 			{
-				emu.BroardcastEvent(NDC_GUI_REQESTFULLSCREEN,0);
+				emu.BroardcastEvent(NDC_GUI_REQESTFULLSCREEN,0,BET_All);
 				return 0;
 			}
 		}
@@ -1033,19 +1038,19 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 				break;
 			case VK_F8:
 				{
-					char fn[512];
-					char ep[512];
-					emu.ConfigLoadStr("emu","AppPath",ep,0);
+					wchar fn[512];
+					wchar ep[512];
+					emu.ConfigLoadStr(L"emu",L"AppPath",ep,0);
 					int i;
 					i=0;
 
 					while( i >=0)
 					{
 						
-						sprintf(fn,"%sscreenshot_%d.bmp",ep,i);
+						swprintf(fn,L"%sscreenshot_%d.bmp",ep,i);
 
 						
-						FILE* tf=fopen(fn,"rb");
+						FILE* tf=_tfopen(fn,L"rb");
 						if (tf)
 							fclose(tf);
 						else
@@ -1184,7 +1189,7 @@ typedef struct tag_dlghdr {
 // Returns the address of the locked resource. 
 // lpszResName - name of the resource 
  
-DLGTEMPLATE * WINAPI DoLockDlgRes(LPCSTR lpszResName) 
+DLGTEMPLATE * WINAPI DoLockDlgRes(LPCWSTR lpszResName) 
 { 
     HRSRC hrsrc = FindResource(g_hInst, lpszResName, RT_DIALOG); 
     HGLOBAL hglb = LoadResource(g_hInst, hrsrc); 
@@ -1266,11 +1271,11 @@ void WINAPI OnInitTab(HWND hDlg)
 	// Add a tab for each of the three child dialog boxes. 
     tci.mask = TCIF_TEXT | TCIF_IMAGE; 
     tci.iImage = -1; 
-    tci.pszText = "DisAsm"; 
+    tci.pszText = L"DisAsm"; 
     TabCtrl_InsertItem(pHdr->hTab, 0, &tci); 
-    tci.pszText = "Memory"; 
+    tci.pszText = L"Memory"; 
     TabCtrl_InsertItem(pHdr->hTab, 1, &tci); 
-    tci.pszText = "PVR List"; 
+    tci.pszText = L"PVR List"; 
     TabCtrl_InsertItem(pHdr->hTab, 2, &tci); 
  
     // Lock the resources for the three child dialog boxes. 
@@ -1287,7 +1292,7 @@ void WINAPI OnInitTab(HWND hDlg)
 INT_PTR CALLBACK DlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	static int iSel=0;
-	static char szAddr[32];
+	static wchar szAddr[32];
 	static DWORD dwIndex=0, dwAddr=0, i=0;
 
 
@@ -1317,7 +1322,7 @@ INT_PTR CALLBACK DlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 		switch (LOWORD(wParam)) 
 		{
 		case IDC_FIND:
-			MessageBox( hWnd, "FIND","", MB_OK );
+			MessageBox( hWnd, L"FIND",L"", MB_OK );
 			return true;
 
 		/////////////////////////////
@@ -1415,10 +1420,10 @@ refresh:
 
 ///////////////////////////////////////////////////////////////////////
 
-char szBuf[256];	// more than big enough for this
-char *xs( u32 x ) { sprintf(szBuf, "%X", x); return szBuf; }
-char *fls( float f ) { sprintf(szBuf, "%f", f); return szBuf; }
-char *x8s( u32 x ) { sprintf(szBuf, "%08X", x); return szBuf; }
+wchar szBuf[256];	// more than big enough for this
+wchar *xs( u32 x ) { swprintf(szBuf, L"%X", x); return szBuf; }
+wchar *fls( float f ) { swprintf(szBuf, L"%f", f); return szBuf; }
+wchar *x8s( u32 x ) { swprintf(szBuf, L"%08X", x); return szBuf; }
 
 f32 GetXf(u32 r)
 {
@@ -1487,17 +1492,17 @@ void RefreshDebugger(HWND hDlg)
 
 	sr.full=Sh4GetRegister(reg_sr);
 
-	SetDlgItemText( hDlg, IDS_SR_T, (sr.T?"1":"0") );
-	SetDlgItemText( hDlg, IDS_SR_S, (sr.S?"1":"0") );
-	SetDlgItemText( hDlg, IDS_SR_M, (sr.M?"1":"0") );
-	SetDlgItemText( hDlg, IDS_SR_Q, (sr.Q?"1":"0") );
-	SetDlgItemText( hDlg, IDS_SR_BL, (sr.BL?"1":"0") );
-	SetDlgItemText( hDlg, IDS_SR_RB, (sr.RB?"1":"0") );
-	SetDlgItemText( hDlg, IDS_SR_MD, (sr.MD?"1":"0") );
-	SetDlgItemText( hDlg, IDS_SR_FD, (sr.FD?"1":"0") );
+	SetDlgItemText( hDlg, IDS_SR_T, (sr.T?L"1":L"0") );
+	SetDlgItemText( hDlg, IDS_SR_S, (sr.S?L"1":L"0") );
+	SetDlgItemText( hDlg, IDS_SR_M, (sr.M?L"1":L"0") );
+	SetDlgItemText( hDlg, IDS_SR_Q, (sr.Q?L"1":L"0") );
+	SetDlgItemText( hDlg, IDS_SR_BL, (sr.BL?L"1":L"0") );
+	SetDlgItemText( hDlg, IDS_SR_RB, (sr.RB?L"1":L"0") );
+	SetDlgItemText( hDlg, IDS_SR_MD, (sr.MD?L"1":L"0") );
+	SetDlgItemText( hDlg, IDS_SR_FD, (sr.FD?L"1":L"0") );
 	SetDlgItemText( hDlg, IDS_SR_IMASK, xs(sr.IMASK) );
 
-	char tbuff[1024*80];
+	wchar tbuff[1024*80];
 	/**
 	GetCallStackText(&tbuff[0]);
 	SetDlgItemText( hDlg, IDC_CALLSTACK,&tbuff[0] );
@@ -1516,41 +1521,41 @@ void RefreshDebugger(HWND hDlg)
 	fpm |=	IsDlgButtonChecked(hDlg, IDC_FPSEL3) ? (3) :
 			IsDlgButtonChecked(hDlg, IDC_FPSEL2) ? (2) : (1) ;
 
-	char szFPU[1024];
-	sprintf(szFPU, "FPU Regs\n========\nFPSCR: %08X \nFPUL: %08X\n", Sh4GetRegister(reg_fpscr), Sh4GetRegister(reg_fpul));
+	wchar szFPU[1024];
+	swprintf(szFPU, L"FPU Regs\n========\nFPSCR: %08X \nFPUL: %08X\n", Sh4GetRegister(reg_fpscr), Sh4GetRegister(reg_fpul));
 
 	switch( fpm &3 )	// IDC_FPSEL
 	{
 	case 3:	// Vector: XMTX | FV
 		if(fpm&4) {
-			sprintf(szBuf, "XMTX\n"
-				"(%.3f\t%.3f\t%.3f\t%.3f)\n" "(%.3f\t%.3f\t%.3f\t%.3f)\n"
-				"(%.3f\t%.3f\t%.3f\t%.3f)\n" "(%.3f\t%.3f\t%.3f\t%.3f)\n\n",
+			swprintf(szBuf, L"XMTX\n"
+				L"(%.3f\t%.3f\t%.3f\t%.3f)\n" L"(%.3f\t%.3f\t%.3f\t%.3f)\n"
+				L"(%.3f\t%.3f\t%.3f\t%.3f)\n" L"(%.3f\t%.3f\t%.3f\t%.3f)\n\n",
 				GetXf(0), GetXf(4), GetXf(8), GetXf(12), GetXf(1), GetXf(5), GetXf(9), GetXf(13),
 				GetXf(2), GetXf(6), GetXf(10), GetXf(14), GetXf(3), GetXf(7), GetXf(11), GetXf(15) );
-			strcat(szFPU,szBuf);
+			_tcscat(szFPU,szBuf);
 		} else {
-			sprintf(szBuf,
-				"FV0 :\n%.3f\t%.3f\t%.3f\t%.3f\n" "FV4 :\n%.3f\t%.3f\t%.3f\t%.3f\n"
-				"FV8 :\n%.3f\t%.3f\t%.3f\t%.3f\n" "FV12:\n%.3f\t%.3f\t%.3f\t%.3f\n\n",
+			swprintf(szBuf,
+				L"FV0 :\n%.3f\t%.3f\t%.3f\t%.3f\n" L"FV4 :\n%.3f\t%.3f\t%.3f\t%.3f\n"
+				L"FV8 :\n%.3f\t%.3f\t%.3f\t%.3f\n" L"FV12:\n%.3f\t%.3f\t%.3f\t%.3f\n\n",
 				GetFr(0), GetFr(4), GetFr(8), GetFr(12),	GetFr(1), GetFr(5), GetFr(9), GetFr(13),
 				GetFr(2), GetFr(6), GetFr(10), GetFr(14),GetFr(3), GetFr(7), GetFr(11), GetFr(15) );
-			strcat(szFPU,szBuf);
+			_tcscat(szFPU,szBuf);
 		}
 	break;
 
 	case 2:	// Double: XD | DR
 		for( u32 i=0; i<8; i++ ) {
-			sprintf(szBuf, " %s%02d :%+G \n", (fpm&4)?"XD":"DR", (i), ((fpm&4)? dbGetXD(i) : dbGetDR(i)) );
-			strcat(szFPU,szBuf);
+			swprintf(szBuf, L" %s%02d :%+G \n", (fpm&4)?L"XD":L"DR", (i), ((fpm&4)? dbGetXD(i) : dbGetDR(i)) );
+			wcscat(szFPU,szBuf);
 		}
 	break;
 
 	case 1:	// Single: XF | FR
 	default:	// default to single precision mode | wtf is the first entry non working for ?
 		for( u32 i=0; i<16; i+=2 ) {
-			sprintf(szBuf, " %s%02d :%+G \t", ((fpm&4)?"XF":"FR"), (i+0), ((fpm&4)? GetXf(i+0) : GetFr(i+0)) );	strcat(szFPU,szBuf);
-			sprintf(szBuf, " %s%02d :%+G \n", ((fpm&4)?"XF":"FR"), (i+1), ((fpm&4)? GetXf(i+1) : GetFr(i+1)) );	strcat(szFPU,szBuf);
+			swprintf(szBuf, L" %s%02d :%+G \n", ((fpm&4)?L"XF":L"FR"), (i+0), ((fpm&4)? GetXf(i+0) : GetFr(i+0)) );	_tcscat(szFPU,szBuf);
+			swprintf(szBuf, L" %s%02d :%+G \n", ((fpm&4)?L"XF":L"FR"), (i+1), ((fpm&4)? GetXf(i+1) : GetFr(i+1)) );	_tcscat(szFPU,szBuf);
 		}
 	break;
 	}
@@ -1587,59 +1592,59 @@ INT_PTR CALLBACK ProfilerProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 			emu.GetPerformanceInfo(&ndcpi);
 			
 			
-			char text_[2048];
-			char* text=text_;
+			wchar text_[2048];
+			wchar* text=text_;
 
-#define strcatf text+=sprintf
+#define strcatf text+=swprintf
 			if (ndcpi.TBP.Valid)
 			{
-				strcatf(text,"\r\nTBP : Enabled\r\n");
+				strcatf(text,L"\r\nTBP : Enabled\r\n");
 				//the console has more usefull info ;p
 			}
 			else
 			{
-				strcatf(text,"\r\nTBP : Disabled\r\n");
+				strcatf(text,L"\r\nTBP : Disabled\r\n");
 			}
 
 			if (ndcpi.Dynarec.Runtime.Lookups.Valid)
 			{
-				strcatf(text,"\r\nRuntime dynarec lookup profiling enabled\r\n");
-				strcatf(text,"%d full lookups , %d fast lookups , ratio %.2f%%\r\n",ndcpi.Dynarec.Runtime.Lookups.FullLookupDelta,ndcpi.Dynarec.Runtime.Lookups.FastLookupDelta
+				strcatf(text,L"\r\nRuntime dynarec lookup profiling enabled\r\n");
+				strcatf(text,L"%d full lookups , %d fast lookups , ratio %.2f%%\r\n",ndcpi.Dynarec.Runtime.Lookups.FullLookupDelta,ndcpi.Dynarec.Runtime.Lookups.FastLookupDelta
 														,ndcpi.Dynarec.Runtime.Lookups.FullLookupDelta/(float)ndcpi.Dynarec.Runtime.Lookups.LookupDelta*100);
-				strcatf(text,"%d blocks staticaly linked , ratio %.2f%%\r\n",ndcpi.Dynarec.Runtime.Execution.TotalBlocks-ndcpi.Dynarec.Runtime.Lookups.LookupDelta,
+				strcatf(text,L"%d blocks staticaly linked , ratio %.2f%%\r\n",ndcpi.Dynarec.Runtime.Execution.TotalBlocks-ndcpi.Dynarec.Runtime.Lookups.LookupDelta,
 					(ndcpi.Dynarec.Runtime.Execution.TotalBlocks-ndcpi.Dynarec.Runtime.Lookups.LookupDelta)/(float)ndcpi.Dynarec.Runtime.Execution.TotalBlocks*100);
 			}
 			else
 			{
-				strcatf(text,"\r\nRuntime dynarec lookup profiling disabled\r\n");
+				strcatf(text,L"\r\nRuntime dynarec lookup profiling disabled\r\n");
 			}
 			if (ndcpi.Dynarec.Runtime.Execution.Valid)
 			{
-				strcatf(text,"\r\nRuntime dynarec execution profiling enabled\r\n");
-				strcatf(text,"%d Manual blocks , %d locked blocks , ratio %.2f%%\r\n",ndcpi.Dynarec.Runtime.Execution.ManualBlocks,ndcpi.Dynarec.Runtime.Execution.LockedBlocks,
+				strcatf(text,L"\r\nRuntime dynarec execution profiling enabled\r\n");
+				strcatf(text,L"%d Manual blocks , %d locked blocks , ratio %.2f%%\r\n",ndcpi.Dynarec.Runtime.Execution.ManualBlocks,ndcpi.Dynarec.Runtime.Execution.LockedBlocks,
 				ndcpi.Dynarec.Runtime.Execution.ManualBlocks/(float)ndcpi.Dynarec.Runtime.Execution.TotalBlocks*100);
 			}
 			else
 			{
-				strcatf(text,"\r\nRuntime dynarec execution profiling disabled\r\n");
+				strcatf(text,L"\r\nRuntime dynarec execution profiling disabled\r\n");
 			}
-			strcatf(text,"\r\nDynarec Translation Cache stats:\r\n");
-			strcatf(text,"%.2f MB size, %d blocks, %.1f B avg size\r\n",ndcpi.Dynarec.CodeGen.CodeSize/1024.0f/1024.0f,ndcpi.Dynarec.CodeGen.TotalBlocks,
+			strcatf(text,L"\r\nDynarec Translation Cache stats:\r\n");
+			strcatf(text,L"%.2f MB size, %d blocks, %.1f B avg size\r\n",ndcpi.Dynarec.CodeGen.CodeSize/1024.0f/1024.0f,ndcpi.Dynarec.CodeGen.TotalBlocks,
 														ndcpi.Dynarec.CodeGen.CodeSize/(float)ndcpi.Dynarec.CodeGen.TotalBlocks);
 			
-			strcatf(text,"%d Manual blocks , %d locked blocks , ratio %.2f%%\r\n",ndcpi.Dynarec.CodeGen.ManualBlocks,ndcpi.Dynarec.CodeGen.LockedBlocks,
+			strcatf(text,L"%d Manual blocks , %d locked blocks , ratio %.2f%%\r\n",ndcpi.Dynarec.CodeGen.ManualBlocks,ndcpi.Dynarec.CodeGen.LockedBlocks,
 				ndcpi.Dynarec.CodeGen.ManualBlocks/(float)ndcpi.Dynarec.CodeGen.TotalBlocks*100);
 			
 			
 			if (ndcpi.Dynarec.Runtime.RetCache.Valid)
 			{
-				strcatf(text,"\r\nRuntime dynarec ret cache stats enabled\r\n");
-				strcatf(text,"%d rets missmatched , %d rets matched , ratio %.2f%%\r\n",ndcpi.Dynarec.Runtime.RetCache.Misses,ndcpi.Dynarec.Runtime.RetCache.Hits
+				strcatf(text,L"\r\nRuntime dynarec ret cache stats enabled\r\n");
+				strcatf(text,L"%d rets missmatched , %d rets matched , ratio %.2f%%\r\n",ndcpi.Dynarec.Runtime.RetCache.Misses,ndcpi.Dynarec.Runtime.RetCache.Hits
 														,ndcpi.Dynarec.Runtime.RetCache.Misses/(float)ndcpi.Dynarec.Runtime.RetCache.Count*100);
 			}
 			else
 			{
-				strcatf(text,"\r\nRuntime dynarec ret cache stats disabled\r\n");
+				strcatf(text,L"\r\nRuntime dynarec ret cache stats disabled\r\n");
 			}
 			/**
 			sprintf(text,"Block manager : \r\ntracking %d blocks , %d kb TCH\r\n"
@@ -1664,7 +1669,7 @@ INT_PTR CALLBACK ProfilerProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 		{
 		case IDC_COPY:
 			{
-				char text_[2048];
+				wchar text_[2048];
 				GetDlgItemText(hWnd,IDC_PROFTEXT,text_,2048);
 				CopyTextToClipboard(hWnd,text_);
 			}
@@ -1697,11 +1702,11 @@ INT_PTR CALLBACK ArmDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam 
 
 
 }
-char SelectedPlugin_Aica[512]={0};
-char SelectedPlugin_ExtDev[512]={0};
-char SelectedPlugin_Pvr[512]={0};
-char SelectedPlugin_Gdr[512]={0};
-char SelectedPlugin_maple[4][6][512]={0};
+wchar SelectedPlugin_Aica[512]={0};
+wchar SelectedPlugin_ExtDev[512]={0};
+wchar SelectedPlugin_Pvr[512]={0};
+wchar SelectedPlugin_Gdr[512]={0};
+wchar SelectedPlugin_maple[4][6][512]={0};
 
 int IDC_maple[6]=
 {
@@ -1717,28 +1722,28 @@ int current_maple_port=0;
 void InitMaplePorts(HWND hw)
 {
 	int idef=0;
-	int i2 = ComboBox_AddString(hw,"A"); 
+	int i2 = ComboBox_AddString(hw,L"A"); 
 	ComboBox_SetItemData(hw, i2, 0); 
 	idef=i2;
 
-	i2 = ComboBox_AddString(hw,"B"); 
+	i2 = ComboBox_AddString(hw,L"B"); 
 	ComboBox_SetItemData(hw, i2, 1); 
 
-	i2 = ComboBox_AddString(hw,"C"); 
+	i2 = ComboBox_AddString(hw,L"C"); 
 	ComboBox_SetItemData(hw, i2, 2); 
 
-	i2 = ComboBox_AddString(hw,"D"); 
+	i2 = ComboBox_AddString(hw,L"D"); 
 	ComboBox_SetItemData(hw, i2, 3); 
 	
 	ComboBox_SetCurSel(hw,idef);
 }
-void SetSelected(HWND hw,char* selected)
+void SetSelected(HWND hw,wchar* selected)
 {
 	int item_count=ComboBox_GetCount(hw);
 	for (int i=0;i<item_count;i++)
 	{
-		char * it=(char*)ComboBox_GetItemData(hw,i);
-		if (strcmp(it,selected)==0)
+		wchar * it=(wchar*)ComboBox_GetItemData(hw,i);
+		if (wcscmp(it,selected)==0)
 		{
 			ComboBox_SetCurSel(hw,i);
 			return;
@@ -1747,24 +1752,24 @@ void SetSelected(HWND hw,char* selected)
 	ComboBox_SetCurSel(hw,0);
 }
 
-void AddItemsToCB(PluginInfoList* list,HWND hw,char* selected)
+void AddItemsToCB(PluginInfoList* list,HWND hw,wchar* selected)
 {
 		while(list)
 		{
-			char temp[512];
-			char* dll=strrchr(list->dll,'\\');  
+			wchar temp[512];
+			wchar* dll=_tcsrchr(list->dll,L'\\');  
 			if (dll==0)
 				dll=list->dll;
 			
-			sprintf(temp,"%s v%d.%d.%d (%s)",list->Name
+			swprintf(temp,L"%s v%d.%d.%d (%s)",list->Name
 				,list->Version.major
 				,list->Version.minnor
 				,list->Version.build
 				,dll);
 			
-			size_t dll_len=strlen(dll);
-			char* lp = (char *)malloc(dll_len+1); 
-			strcpy(lp,dll);
+			size_t dll_len=wcslen(dll);
+			wchar* lp = (wchar *)malloc((dll_len+1)*sizeof(wchar)); 
+			_tcscpy(lp,dll);
 			int i2 = ComboBox_AddString(hw, temp); 
 			ComboBox_SetItemData(hw, i2, lp); 
 			list=list->next;
@@ -1772,13 +1777,13 @@ void AddItemsToCB(PluginInfoList* list,HWND hw,char* selected)
 		SetSelected(hw,selected);
 }
 
-void AddMapleItemsToCB(PluginInfoList* list,HWND hw,char* selected)
+void AddMapleItemsToCB(PluginInfoList* list,HWND hw,wchar* selected)
 {
-		char temp[512]="None";
-		char dll[512]="NULL";
+		wchar temp[512]=L"None";
+		wchar dll[512]=L"NULL";
 
-		char* lp = (char * )malloc(5); 
-		strcpy(lp,dll);
+		wchar* lp = (wchar * )malloc(5*sizeof(wchar)); 
+		wcscpy(lp,dll);
 		
 		int i2 = ComboBox_AddString(hw, temp); 
 		ComboBox_SetItemData(hw, i2, lp); 
@@ -1786,22 +1791,22 @@ void AddMapleItemsToCB(PluginInfoList* list,HWND hw,char* selected)
 		AddItemsToCB(list,hw,selected);
 }
 
-void GetCurrent(HWND hw,char* dest)
+void GetCurrent(HWND hw,wchar* dest)
 {
 	int sel=ComboBox_GetCurSel(hw);
-	char* source=(char*)ComboBox_GetItemData(hw,sel);
-	if (source==0 || source==(((char*)0)-1))
-		source="";
-	strcpy(dest,source);
+	wchar* source=(wchar*)ComboBox_GetItemData(hw,sel);
+	if (source==0 || source==(((wchar*)(-1))))
+		source=L"";
+	wcscpy(dest,source);
 }
 
-void SetMapleMain_Mask(char* plugin,HWND hWnd)
+void SetMapleMain_Mask(wchar* plugin,HWND hWnd)
 {
-	if (strcmp(plugin,"NULL")==0)
+	if (wcscmp(plugin,L"NULL")==0)
 	{
 		for (int j=0;j<5;j++)
 		{
-			SetSelected(GetDlgItem(hWnd,IDC_maple[j]),"NULL");
+			SetSelected(GetDlgItem(hWnd,IDC_maple[j]),L"NULL");
 			ComboBox_Enable(GetDlgItem(hWnd,IDC_maple[j]),FALSE);
 		}
 	}
@@ -1811,7 +1816,7 @@ void SetMapleMain_Mask(char* plugin,HWND hWnd)
 		PluginInfoList* ci=lst;
 		while(ci)
 		{
-			if (strcmpi(plugin,ci->dll)==0)
+			if (_tcsicmp(plugin,ci->dll)==0)
 			{
 				for (int j=0;j<5;j++)
 				{
@@ -1821,7 +1826,7 @@ void SetMapleMain_Mask(char* plugin,HWND hWnd)
 					}
 					else
 					{
-						SetSelected(GetDlgItem(hWnd,IDC_maple[j]),"NULL");
+						SetSelected(GetDlgItem(hWnd,IDC_maple[j]),L"NULL");
 						ComboBox_Enable(GetDlgItem(hWnd,IDC_maple[j]),FALSE);
 					}
 				}
@@ -1834,7 +1839,7 @@ void SetMapleMain_Mask(char* plugin,HWND hWnd)
 		{
 			for (int j=0;j<5;j++)
 			{
-				SetSelected(GetDlgItem(hWnd,IDC_maple[j]),"NULL");
+				SetSelected(GetDlgItem(hWnd,IDC_maple[j]),L"NULL");
 				ComboBox_Enable(GetDlgItem(hWnd,IDC_maple[j]),FALSE);
 			}
 		}
@@ -1896,13 +1901,13 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		TCITEM tci; 
 		tci.mask = TCIF_TEXT | TCIF_IMAGE; 
 		tci.iImage = -1; 
-		tci.pszText = "Port A"; 
+		tci.pszText = L"Port A"; 
 		TabCtrl_InsertItem(GetDlgItem(hWnd,IDC_MAPLETAB), 0, &tci); 
-		tci.pszText = "Port B"; 
+		tci.pszText = L"Port B"; 
 		TabCtrl_InsertItem(GetDlgItem(hWnd,IDC_MAPLETAB), 1, &tci); 
-		tci.pszText = "Port C"; 
+		tci.pszText = L"Port C"; 
 		TabCtrl_InsertItem(GetDlgItem(hWnd,IDC_MAPLETAB), 2, &tci); 
-		tci.pszText = "Port D"; 
+		tci.pszText = L"Port D"; 
 		TabCtrl_InsertItem(GetDlgItem(hWnd,IDC_MAPLETAB), 3, &tci); 
 
 		current_maple_port=-1;
@@ -1915,7 +1920,7 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		PluginInfoList* MapleMain=emu.GetMapleDeviceList(MDT_Main);
 		PluginInfoList* MapleSub=emu.GetMapleDeviceList(MDT_Sub);
 
-		char temp[512];
+		wchar temp[512];
 
 		
 		emu.GetSetting(NDCS_PLUGIN_PVR,temp);
@@ -1934,13 +1939,13 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		AddItemsToCB(extdev,GetDlgItem(hWnd,IDC_C_EXTDEV),temp);
 		GetCurrent(GetDlgItem(hWnd,IDC_C_EXTDEV),SelectedPlugin_ExtDev);
 
-		AddMapleItemsToCB(MapleMain,GetDlgItem(hWnd,IDC_MAPLEMAIN),"NONE");
+		AddMapleItemsToCB(MapleMain,GetDlgItem(hWnd,IDC_MAPLEMAIN),L"NONE");
 
-		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB0),"NONE");
-		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB1),"NONE");
-		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB2),"NONE");
-		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB3),"NONE");
-		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB4),"NONE");
+		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB0),L"NONE");
+		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB1),L"NONE");
+		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB2),L"NONE");
+		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB3),L"NONE");
+		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB4),L"NONE");
 
 		emu.FreePluginList(pvr);
 		emu.FreePluginList(gdrom);
@@ -1978,7 +1983,7 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		case IDC_MAPLEMAIN:
 			if (HIWORD(wParam)==CBN_SELCHANGE)
 			{
-				char temp[512];
+				wchar temp[512];
 				GetCurrent(GetDlgItem(hWnd,IDC_MAPLEMAIN),temp);
 				SetMapleMain_Mask(temp,hWnd);
 			}

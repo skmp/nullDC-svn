@@ -5,7 +5,7 @@ class SH4DebugInterface : public DebugInterface
 {
 public:
 	SH4DebugInterface(){} 
-	virtual char *disasm(unsigned int address);
+	virtual wchar *disasm(unsigned int address);
 	virtual int getInstructionSize(int instruction) {return 2;}
 	virtual bool isBreakpoint(unsigned int address);
 	virtual void setBreakpoint(unsigned int address);
@@ -18,7 +18,7 @@ public:
 	virtual void step() {}
 	virtual void runToBreakpoint();
 	virtual int getColor(unsigned int address);
-	virtual char *getDescription(unsigned int address);
+	virtual wchar *getDescription(unsigned int address);
 };
 
 

@@ -4,7 +4,7 @@
 class DebugInterface
 {
 public:
-	virtual char *disasm(unsigned int address) {return "NODEBUGGER";}
+	virtual wchar *disasm(unsigned int address) {return L"NODEBUGGER";}
 	virtual int getInstructionSize(int instruction) {return 1;}
 
 	virtual bool isBreakpoint(unsigned int address) {return false;}
@@ -18,5 +18,5 @@ public:
 	virtual void step() {}
 	virtual void runToBreakpoint() {}
 	virtual int getColor(unsigned int address){return 0xFFFFFFFF;}
-	virtual char *getDescription(unsigned int address) {return "";}
+	virtual wchar *getDescription(unsigned int address) {return L"";}
 };

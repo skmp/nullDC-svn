@@ -9,6 +9,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <tchar.h>
 
 #include <string.h>
 #include <vector>
@@ -19,11 +20,11 @@ using namespace std;
 
 //vars
 extern gui_emu_info emu;
-extern char emu_name[128];
+extern wchar emu_name[128];
 
 //helper stuff
-#define verify(x) if((x)==false){ msgboxf("Verify Failed  : " #x "\n in %s -> %s : %d \n",MBX_ICONERROR,__FUNCTION__,__FILE__,__LINE__); dbgbreak;}
-#define die(reason) { msgboxf("Fatal error : %s\n in %s -> %s : %d \n",MBX_ICONERROR,reason,__FUNCTION__,__FILE__,__LINE__); dbgbreak;}
+#define verify(x) if((x)==false){ msgboxf(L"Verify Failed  : " _T(#x) L"\n in %s -> %s : %d \n",MBX_ICONERROR,_T(__FUNCTION__),_T(__FILE__),__LINE__); dbgbreak;}
+#define die(reason) { msgboxf(L"Fatal error : %s\n in %s -> %s : %d \n",MBX_ICONERROR,reason,_T(__FUNCTION__),_T(__FILE__),__LINE__); dbgbreak;}
 #define fverify verify
 
 //functions
@@ -192,13 +193,13 @@ enum Sh4RegType
 
 #define BPT_OPCODE		0x8A00
 
-void DissasembleOpcode(u16 opcode,u32 pc,char* Dissasm);
+void DissasembleOpcode(u16 opcode,u32 pc,wchar* Dissasm);
 
 u32 Sh4GetRegister(Sh4RegType reg);
 void Sh4SetRegister(Sh4RegType reg,u32 value);
 
-int GetSymbName(u32 address,char *szDesc,bool bUseUnkAddress);
-int msgboxf(char* text,unsigned int type,...);
+int GetSymbName(u32 address,wchar *szDesc,bool bUseUnkAddress);
+int msgboxf(wchar* text,unsigned int type,...);
 
 bool EmuStarted();
 
@@ -213,7 +214,7 @@ void EmuSetPatch(u32 Value,u32 Mask);
 void EmuReset(bool Manual);
 
 bool EmuBootHLE();
-bool EmuLoadBinary(char* file,u32 address);
+bool EmuLoadBinary(wchar* file,u32 address);
 
 bool EmuSelectPlugins();
 void EmuStartProfiler();

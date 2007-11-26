@@ -15,7 +15,7 @@
 
 
 
-char CtrlMemView::szClassName[] = "CtrlMemView";
+wchar CtrlMemView::szClassName[] = L"CtrlMemView";
 
 
 void CtrlMemView::init()
@@ -168,7 +168,7 @@ CtrlMemView::CtrlMemView(HWND _wnd)
 	SetWindowLong(wnd, GWL_STYLE, GetWindowLong(wnd,GWL_STYLE) | WS_VSCROLL);
 	SetScrollRange(wnd, SB_VERT, -1,1,TRUE);
 	font = CreateFont(16,0,0,0,FW_DONTCARE,FALSE,FALSE,FALSE,DEFAULT_CHARSET,
-		OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,DEFAULT_QUALITY,DEFAULT_PITCH, "Courier New");
+		OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,DEFAULT_QUALITY,DEFAULT_PITCH, L"Courier New");
 	curAddress=0;
 	rowHeight=16;
 	align=4;
@@ -217,8 +217,8 @@ void CtrlMemView::onPaint(WPARAM wParam, LPARAM lParam)
 		int rowY1 = rect.bottom/2 + rowHeight*i - rowHeight/2;
 		int rowY2 = rect.bottom/2 + rowHeight*i + rowHeight/2;
 
-		char temp[256];
-		sprintf(temp,"%08x",address);
+		wchar temp[256];
+		swprintf(temp,L"%08x",address);
 
 		//SelectObject(hdc,currentBrush);
 		Rectangle(hdc,0,rowY1,16,rowY2);
@@ -231,15 +231,15 @@ void CtrlMemView::onPaint(WPARAM wParam, LPARAM lParam)
 		Rectangle(hdc,16,rowY1,width,rowY2);
 		SelectObject(hdc,nullBrush);
 		SetTextColor(hdc,0x600000);
-		TextOut(hdc,17,rowY1,temp,(int)strlen(temp));
+		TextOut(hdc,17,rowY1,temp,(int)wcslen(temp));
 		SetTextColor(hdc,0x000000);
 		
 		switch(mode)
 		{
 		case MV_NORMAL:
-			sprintf(temp, "%08X  %08X  %08X  %08X",
+			swprintf(temp, L"%08X  %08X  %08X  %08X",
 				ReadMem32((address+0)), ReadMem32((address+4)), ReadMem32((address+8)), ReadMem32((address+12)));
-			TextOut(hdc,90,rowY1,temp,(int)strlen(temp));
+			TextOut(hdc,90,rowY1,temp,(int)wcslen(temp));
 
 			SetTextColor(hdc,0x0033BB22);
 			((u32*)temp)[0] = ReadMem32(address);
@@ -247,21 +247,21 @@ void CtrlMemView::onPaint(WPARAM wParam, LPARAM lParam)
 			((u32*)temp)[2] = ReadMem32(address+8);
 			((u32*)temp)[3] = ReadMem32(address+12);
 			((u32*)temp)[4] = 0x00000000;
-			TextOut(hdc,420,rowY1,temp,(int)strlen(temp));
+			TextOut(hdc,420,rowY1,temp,(int)wcslen(temp));
 		break;
 
 		case MV_SYMBOLS:
 			SetTextColor(hdc,0x0000FF);
 			int fn = address&3;//Debugger_GetSymbolNum(address);
-			sprintf(temp,"MV_SYMBOLS !!!");
+			swprintf(temp,L"MV_SYMBOLS !!!");
 	//		sprintf(temp, "%s (0x%x b)", Debugger_GetSymbolName(fn),Debugger_GetSymbolSize(fn));
-			TextOut(hdc,200,rowY1,temp,(int)strlen(temp));
+			TextOut(hdc,200,rowY1,temp,(int)wcslen(temp));
 
 			SetTextColor(hdc,0x0000000);
 			UINT value = 0xBADC0D3;//ReadMem(address,4);//CMemory::ReadUnchecked_U32(address);
-			sprintf(temp, "%08x", value );
+			swprintf(temp, L"%08x", value );
 		//	sprintf(temp, "%08x [%s]", value, Debugger_GetSymbolName(Debugger_GetSymbolNum(value)));
-			TextOut(hdc,70,rowY1,temp,(int)strlen(temp));
+			TextOut(hdc,70,rowY1,temp,(int)wcslen(temp));
 		break;
 		}
 	}

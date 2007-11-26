@@ -16,7 +16,7 @@ SH4DebugInterface di;
 
 
 
-char CtrlDisAsmView::szClassName[] = "CtrlDisAsmView";
+wchar CtrlDisAsmView::szClassName[] = L"CtrlDisAsmView";
 
 void CtrlDisAsmView::init()
 {
@@ -47,7 +47,7 @@ BOOL CopyTextToClipboard(HWND hwnd, TCHAR *text)
 {
 	OpenClipboard(hwnd);
 	EmptyClipboard();
-	HANDLE hglbCopy = GlobalAlloc(GMEM_MOVEABLE, (strlen(text) + 1) * sizeof(TCHAR)); 
+	HANDLE hglbCopy = GlobalAlloc(GMEM_MOVEABLE, (wcslen(text) + 1) * sizeof(TCHAR)); 
 	if (hglbCopy == NULL) 
 	{ 
 		CloseClipboard(); 
@@ -57,8 +57,8 @@ BOOL CopyTextToClipboard(HWND hwnd, TCHAR *text)
 	// Lock the handle and copy the text to the buffer. 
 
 	TCHAR *lptstrCopy = (TCHAR *)GlobalLock(hglbCopy); 
-	strcpy(lptstrCopy, text); 
-	lptstrCopy[strlen(text)] = (TCHAR) 0;    // null character 
+	wcscpy(lptstrCopy, text); 
+	lptstrCopy[wcslen(text)] =  0;    // null character 
 	GlobalUnlock(hglbCopy); 
 	SetClipboardData(CF_TEXT,hglbCopy);
 	CloseClipboard();
@@ -169,7 +169,7 @@ CtrlDisAsmView::CtrlDisAsmView(HWND _wnd)
 	SetWindowLong(wnd, GWL_STYLE, GetWindowLong(wnd,GWL_STYLE) | WS_VSCROLL);
 	SetScrollRange(wnd, SB_VERT, -1,1,TRUE);
 	font = CreateFont(16,0,0,0,FW_DONTCARE,FALSE,FALSE,FALSE,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,DEFAULT_QUALITY,DEFAULT_PITCH,
-		"Courier New");
+		L"Courier New");
 	curAddress=0;
 	rowHeight=16;
 	align=2;
@@ -186,7 +186,7 @@ CtrlDisAsmView::~CtrlDisAsmView()
 void fillRect(HDC hdc, RECT *rect, COLORREF colour)
 {
     COLORREF oldcr = SetBkColor(hdc, colour);
-    ExtTextOut(hdc, 0, 0, ETO_OPAQUE, rect, "", 0, 0);
+    ExtTextOut(hdc, 0, 0, ETO_OPAQUE, rect, L"", 0, 0);
     SetBkColor(hdc, oldcr);
 }
 
@@ -232,8 +232,8 @@ void CtrlDisAsmView::onPaint(WPARAM wParam, LPARAM lParam)
 
    
 	HFONT oldFont = (HFONT)SelectObject(hdc,(HGDIOBJ)font);
-	HICON breakPoint = (HICON)LoadIcon(hMod,(LPCSTR)IDI_BRKPT);
-	HICON breakPointDisable = (HICON)LoadIcon(hMod,(LPCSTR)IDI_BRKPTDIS);
+	HICON breakPoint = (HICON)LoadIcon(hMod,(LPCWSTR)IDI_BRKPT);
+	HICON breakPointDisable = (HICON)LoadIcon(hMod,(LPCWSTR)IDI_BRKPTDIS);
 	int i;
 	for (i=-numRows; i<=numRows; i++)
 	{
@@ -241,11 +241,11 @@ void CtrlDisAsmView::onPaint(WPARAM wParam, LPARAM lParam)
 
 		int rowY1 = rect.bottom/2 + rowHeight*i - rowHeight/2;
 		int rowY2 = rect.bottom/2 + rowHeight*i + rowHeight/2;
-		char temp[256];
-		sprintf(temp,"%08X",address);
+		wchar temp[256];
+		swprintf(temp,L"%08X",address);
 
-		TCHAR desc[256]="";
-		strcpy(desc,debugger->getDescription(address));	// do this before getColor()
+		TCHAR desc[256]=L"";
+		wcscpy(desc,debugger->getDescription(address));	// do this before getColor()
 		lbr.lbColor=debugger->getColor(address);
 
 		//SelectObject(hdc,currentBrush);
@@ -269,23 +269,23 @@ void CtrlDisAsmView::onPaint(WPARAM wParam, LPARAM lParam)
 		SelectObject(hdc,currentBrush);
 		DeleteObject(mojsBrush);
 		SetTextColor(hdc,0x600000);
-		TextOut(hdc,17,rowY1,temp,(int)strlen(temp));
+		TextOut(hdc,17,rowY1,temp,(int)wcslen(temp));
 		SetTextColor(hdc,0x000000);
 		
 		TCHAR *dis = debugger->disasm(address);
-		TCHAR *dis2=strchr(dis,'\t');
+		TCHAR *dis2=_tcschr(dis,'\t');
 		if (dis2)
 		{
 			*dis2=0;
 			dis2++;
-			char *mojs=strstr(dis2,"0x8");
+			wchar *mojs=wcsstr(dis2,L"0x8");
 			if (mojs)
 			for (int i=0; i<8; i++)
 			{
 				bool found=false;
 				for (int j=0; j<22; j++)
 				{
-					if (mojs[i+2]=="0123456789ABCDEFabcdef"[j])
+					if (mojs[i+2]==L"0123456789ABCDEFabcdef"[j])
 						found=true;
 				}
 				if (!found)
@@ -297,7 +297,7 @@ void CtrlDisAsmView::onPaint(WPARAM wParam, LPARAM lParam)
 			if (mojs)
 			{
 				int offs;
-				sscanf(mojs+2,"%08X",&offs);
+				swscanf(mojs+2,L"%08X",&offs);
 				branches[numBranches].src=rowY1 + rowHeight/2;
 				branches[numBranches].srcAddr=address/align;
 				branches[numBranches++].dst=(int)(rowY1+((__int64)offs-(__int64)address)*rowHeight/align + rowHeight/2);
@@ -306,17 +306,17 @@ void CtrlDisAsmView::onPaint(WPARAM wParam, LPARAM lParam)
 			}
 			else
 				SetTextColor(hdc,0x000000);
-			TextOut(hdc,198,rowY1,dis2,(int)strlen(dis2));
+			TextOut(hdc,198,rowY1,dis2,(int)wcslen(dis2));
 		}
 
 		SetTextColor(hdc,0x007000);
-		TextOut(hdc,90,rowY1,dis,(int)strlen(dis));
+		TextOut(hdc,90,rowY1,dis,(int)wcslen(dis));
 
 		SetTextColor(hdc,0x0000FF);
 		//char temp[256];
 		//UnDecorateSymbolName(desc,temp,255,UNDNAME_COMPLETE);
-		if (strlen(desc))
-			TextOut(hdc,320,rowY1,desc,(int)strlen(desc));
+		if (wcslen(desc))
+			TextOut(hdc,320,rowY1,desc,(int)wcslen(desc));
 
 		if (debugger->isBreakpoint(address))
 		{
