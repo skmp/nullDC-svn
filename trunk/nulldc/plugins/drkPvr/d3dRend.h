@@ -22,7 +22,7 @@ namespace Direct3DRenderer
 	void ListInit();
 	void SoftReset();
 
-	void SetFpsText(char* text);
+	void SetFpsText(wchar* text);
 	void SetRenderRect(float* rect,bool  drc);
 	void SetFBScale(float x,float y);
 	void ListModes(void(* callback)(u32 w,u32 h,u32 rr));

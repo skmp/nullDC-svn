@@ -82,7 +82,7 @@ namespace Direct3DRenderer
 	
 	u32 FrameNumber=0;
 	bool IsFullscreen=false;
-	char fps_text[512];
+	wchar fps_text[512];
 	float res_scale[4]={0,0,320,-240};
 	float fb_scale[2]={1,1};
 
@@ -97,9 +97,9 @@ namespace Direct3DRenderer
 		{ {D3DTEXF_POINT,1},{D3DTEXF_POINT,1} },//Dynamic,Point
 		{ {D3DTEXF_POINT,1},{D3DTEXF_POINT,2} },//Dynamic,Full
 	};*/
-	void SetFpsText(char* text)
+	void SetFpsText(wchar* text)
 	{
-		strcpy(fps_text,text);
+		wcscpy(fps_text,text);
 		if (!IsFullscreen)
 		{
 			SetWindowText((HWND)emu.GetRenderTarget(), fps_text);

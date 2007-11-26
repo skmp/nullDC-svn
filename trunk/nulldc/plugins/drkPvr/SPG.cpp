@@ -130,23 +130,23 @@ void FASTCALL spgUpdatePvr(u32 cycles)
 				FrameCount=0;
 				vblk_cnt=0;
 
-				char fpsStr[256];
-				char* mode=0;
-				char* res=0;
+				wchar fpsStr[256];
+				wchar* mode=0;
+				wchar* res=0;
 
-				res=SPG_CONTROL.interlace?"480i":"240p";
+				res=SPG_CONTROL.interlace?L"480i":L"240p";
 
 				if (SPG_CONTROL.NTSC==0 && SPG_CONTROL.PAL==1)
-					mode="PAL";
+					mode=L"PAL";
 				else if (SPG_CONTROL.NTSC==1 && SPG_CONTROL.PAL==0)
-					mode="NTSC";
+					mode=L"NTSC";
 				else
 				{
-					res=SPG_CONTROL.interlace?"480i":"480p";
-					mode="VGA";
+					res=SPG_CONTROL.interlace?L"480i":L"480p";
+					mode=L"VGA";
 				}
 
-				sprintf(fpsStr,"%s/%c - %4.2f%% - VPS: %4.2f(%s%s%4.2f) RPS: %4.2f Vert: %4.2fM Sh4: %4.2f mhz", 
+				swprintf(fpsStr,L"%s/%c - %4.2f%% - VPS: %4.2f(%s%s%4.2f) RPS: %4.2f Vert: %4.2fM Sh4: %4.2f mhz", 
 					emu_name,'n',spd_cpu*100/200,spd_vbs,
 					mode,res,fullvbs,
 					spd_fps,mv, spd_cpu);

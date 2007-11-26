@@ -8,6 +8,7 @@
 #include <windows.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <tchar.h>
 
 #include <string.h>
 
@@ -51,25 +52,25 @@ extern u32 render_end_pending_cycles;
 
 extern pvr_init_params params;
 extern emu_info emu;
-extern char emu_name[512];
+extern wchar emu_name[512];
 
 void LoadSettings();
 void SaveSettings();
 
 #if REND_API == REND_D3D
-	#define REND_NAME "Direct3D HAL"
+	#define REND_NAME L"Direct3D HAL"
 	#define GetRenderer GetDirect3DRenderer
 #elif REND_API == REND_OGL
-	#define REND_NAME "OpenGL HAL"
+	#define REND_NAME L"OpenGL HAL"
 	#define GetRenderer GetOpenGLRenderer
 #elif  REND_API == REND_SW
-	#define REND_NAME "Software SBR"
+	#define REND_NAME L"Software SBR"
 	#define GetRenderer GetSWRenderer
 #elif REND_API == REND_D3D_V2
-	#define REND_NAME "Direct3D HAL/V2"
+	#define REND_NAME L"Direct3D HAL/V2"
 	#define GetRenderer GetDirect3DRenderer2
 #elif  REND_API == REND_NONE
-	#define REND_NAME "No Rendering"
+	#define REND_NAME L"No Rendering"
 	#define GetRenderer GetNORenderer
 #else
 	#error invalid config.REND_API must be set with one of REND_D3D/REND_OGL/REND_SW/REND_D3D_V2

@@ -14,7 +14,7 @@
 //void* Hwnd;
 
 emu_info emu;
-char emu_name[512];
+wchar emu_name[512];
 
 pvr_init_params params;
 _settings_type settings;
@@ -49,13 +49,13 @@ public:
 		format=0;
 	}
 	u32 root_menu;
-	char* format;
-	struct itempair { u32 id;int value;char* ex_name;};
+	wchar* format;
+	struct itempair { u32 id;int value;wchar* ex_name;};
 	vector<itempair> items;
 
 	void (*callback) (int val) ;
-	void Add(u32 id,int val,char* ex_name) { itempair t={id,val,ex_name}; items.push_back(t); }
-	void Add(u32 root,char* name,int val,char* ex_name=0,int style=0) 
+	void Add(u32 id,int val,wchar* ex_name) { itempair t={id,val,ex_name}; items.push_back(t); }
+	void Add(u32 root,wchar* name,int val,wchar* ex_name=0,int style=0) 
 	{ 
 		if (root_menu==0)
 			root_menu=root;
@@ -85,8 +85,8 @@ public:
 				{
 					MenuItem t;
 					emu.GetMenuItem(items[i].id,&t,MIM_Text);
-					char temp[512];
-					sprintf(temp,format,items[i].ex_name==0?t.Text:items[i].ex_name);
+					wchar temp[512];
+					swprintf(temp,format,items[i].ex_name==0?t.Text:items[i].ex_name);
 					t.Text=temp;
 					emu.SetMenuItem(root_menu,&t,MIM_Text);
 				}
@@ -113,7 +113,7 @@ public:
 };
 void AddSeperator(u32 menuid)
 {
-	emu.SetMenuItemStyle(emu.AddMenuItem(menuid,-1,"-",0,0),MIS_Seperator,MIS_Seperator);
+	emu.AddMenuItem(menuid,-1,0,0,0);
 }
 OptionGroop menu_res;
 OptionGroop menu_sortmode;
@@ -244,7 +244,7 @@ void handler_SetRes(int val)
 
 void EXPORT_CALL handle_About(u32 id,void* w,void* p)
 {
-	MessageBox((HWND)w,"Made by the nullDC Team","About nullPVR...",MB_ICONINFORMATION);
+	MessageBox((HWND)w,L"Made by the nullDC Team",L"About nullPVR...",MB_ICONINFORMATION);
 }
 u32 sort_menu;
 u32 sort_sm[3];
@@ -265,32 +265,32 @@ void handler_SSM(int val)
 }
 void CreateSortMenu()
 {
-	sort_menu=emu.AddMenuItem(emu.RootMenu,-1,"Sort : %s",0,0);
+	sort_menu=emu.AddMenuItem(emu.RootMenu,-1,L"Sort : %s",0,0);
 	
-	menu_sortmode.format="Sort : %s";
+	menu_sortmode.format=L"Sort : %s";
 
 	menu_sortmode.callback=handler_SSM;
-	menu_sortmode.Add(sort_menu,"Off (Fastest)",0,"Off");
-	menu_sortmode.Add(sort_menu,"Per Strip",1,"Strip");
-	menu_sortmode.Add(sort_menu,"Per Triangle (Slowest)",2,"Triangle");
+	menu_sortmode.Add(sort_menu,L"Off (Fastest)",0,L"Off");
+	menu_sortmode.Add(sort_menu,L"Per Strip",1,L"Strip");
+	menu_sortmode.Add(sort_menu,L"Per Triangle (Slowest)",2,L"Triangle");
 	menu_sortmode.SetValue(settings.Emulation.AlphaSortMode);
 }
 //called when plugin is used by emu (you should do first time init here)
 s32 FASTCALL Load(emu_info* emu_inf)
 {
-	char temp[512];
+	wchar temp[512];
 	memcpy(&emu,emu_inf,sizeof(emu));
-	emu.ConfigLoadStr("emu","shortname",emu_name,0);
+	emu.ConfigLoadStr(L"emu",L"shortname",emu_name,0);
 	
 	LoadSettings();
 
-	sprintf(temp,"Fullscreen(%dx%d@%dHz)",settings.Fullscreen.Res_X,settings.Fullscreen.Res_Y,settings.Fullscreen.Refresh_Rate);
+	swprintf(temp,L"Fullscreen(%dx%d@%dHz)",settings.Fullscreen.Res_X,settings.Fullscreen.Res_Y,settings.Fullscreen.Refresh_Rate);
 	u32 Resolutions_menu=emu.AddMenuItem(emu.RootMenu,-1,temp,0,0);
 	
 	AddSeperator(emu.RootMenu);
 
 	
-	enable_FS_mid=emu.AddMenuItem(Resolutions_menu,-1,"Enable",handler_SetFullscreen,settings.Fullscreen.Enabled);
+	enable_FS_mid=emu.AddMenuItem(Resolutions_menu,-1,L"Enable",handler_SetFullscreen,settings.Fullscreen.Enabled);
 
 	AddSeperator(Resolutions_menu);
 	
@@ -301,7 +301,7 @@ s32 FASTCALL Load(emu_info* emu_inf)
 	std::stable_sort(resolutions.begin(),resolutions.end());
 
 	menu_res.callback=handler_SetRes;
-	menu_res.format="Fullscreen (%s)";
+	menu_res.format=L"Fullscreen (%s)";
 	bool sel_any=false;
 	
 
@@ -313,7 +313,7 @@ s32 FASTCALL Load(emu_info* emu_inf)
 
 		if (sel)
 			sel_any=true;
-		sprintf(temp,"%dx%d@%dHz",resolutions[rc].w,resolutions[rc].h,resolutions[rc].rr);
+		swprintf(temp,L"%dx%d@%dHz",resolutions[rc].w,resolutions[rc].h,resolutions[rc].rr);
 		menu_res.Add(Resolutions_menu,temp,rc);
 		if (sel)
 			menu_res.SetValue(rc);
@@ -321,52 +321,52 @@ s32 FASTCALL Load(emu_info* emu_inf)
 	special_res=0;
 	if (!sel_any)
 	{
-		sprintf(temp,"%dx%d",settings.Fullscreen.Res_X,settings.Fullscreen.Res_Y);
+		swprintf(temp,L"%dx%d",settings.Fullscreen.Res_X,settings.Fullscreen.Res_Y);
 		special_res=emu.AddMenuItem(Resolutions_menu,-1,temp,0,1);
 		emu.SetMenuItemStyle(special_res,MIS_Grayed|MIS_Checked|MIS_Radiocheck,MIS_Grayed|MIS_Checked|MIS_Radiocheck);
 	}
 
-	u32 WSM=emu.AddMenuItem(emu.RootMenu,-1,"Aspect Ratio: %s",0,0);
+	u32 WSM=emu.AddMenuItem(emu.RootMenu,-1,L"Aspect Ratio: %s",0,0);
 	
-	menu_widemode.format="Aspect Ratio: %s";
+	menu_widemode.format=L"Aspect Ratio: %s";
 	menu_widemode.callback=handler_widemode;
 
-	menu_widemode.Add(WSM,"Stretch",0);
-	menu_widemode.Add(WSM,"Borders",1);
-	menu_widemode.Add(WSM,"Extra Geom",2);
+	menu_widemode.Add(WSM,L"Stretch",0);
+	menu_widemode.Add(WSM,L"Borders",1);
+	menu_widemode.Add(WSM,L"Extra Geom",2);
 	menu_widemode.SetValue(settings.Enhancements.AspectRatioMode);
 
-	u32 PMT=emu.AddMenuItem(emu.RootMenu,-1,"Palette Handling",0,0);
+	u32 PMT=emu.AddMenuItem(emu.RootMenu,-1,L"Palette Handling",0,0);
 	
 	menu_palmode.callback=handler_PalMode;
 
-	menu_palmode.format="Paletted Textures: %s";
-	menu_palmode.Add(PMT,"Static",0);
-	menu_palmode.Add(PMT,"Versioned",1);
+	menu_palmode.format=L"Paletted Textures: %s";
+	menu_palmode.Add(PMT,L"Static",0);
+	menu_palmode.Add(PMT,L"Versioned",1);
 	AddSeperator(PMT);
-	menu_palmode.Add(PMT,"Dynamic,Point",2);
-	menu_palmode.Add(PMT,"Dynamic,Full",3);
+	menu_palmode.Add(PMT,L"Dynamic,Point",2);
+	menu_palmode.Add(PMT,L"Dynamic,Full",3);
 
 	menu_palmode.SetValue(settings.Emulation.PaletteMode);
 
 	CreateSortMenu();
 
-	u32 MVM=emu.AddMenuItem(emu.RootMenu,-1,"Modifier Volumes: %s",0,0);
+	u32 MVM=emu.AddMenuItem(emu.RootMenu,-1,L"Modifier Volumes: %s",0,0);
 
-	menu_modvolmode.format="Modifier Volumes: %s";
+	menu_modvolmode.format=L"Modifier Volumes: %s";
 	menu_modvolmode.callback=handler_ModVolMode;
 
-	menu_modvolmode.Add(MVM,"Off",0);
-	menu_modvolmode.Add(MVM,"Normal",1);
-	menu_modvolmode.Add(MVM,"Volumes",2);
+	menu_modvolmode.Add(MVM,L"Off",0);
+	menu_modvolmode.Add(MVM,L"Normal",1);
+	menu_modvolmode.Add(MVM,L"Volumes",2);
 	menu_modvolmode.SetValue(settings.Emulation.ModVolMode);
 
 
-	emu.AddMenuItem(emu.RootMenu,-1,"Show Fps",handler_ShowFps,settings.OSD.ShowFPS);
+	emu.AddMenuItem(emu.RootMenu,-1,L"Show Fps",handler_ShowFps,settings.OSD.ShowFPS);
 
 	AddSeperator(emu.RootMenu);
 	
-	emu.AddMenuItem(emu.RootMenu,-1,"About",handle_About,0);
+	emu.AddMenuItem(emu.RootMenu,-1,L"About",handle_About,0);
 
 	return rv_ok;
 }
@@ -473,7 +473,7 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	c.Type=Plugin_PowerVR;
 	c.InterfaceVersion=PVR_PLUGIN_I_F_VERSION;
 
-	strcpy(c.Name,"nullPVR -- " REND_NAME " built : " __DATE__);
+	wcscpy(c.Name,L"nullPVR -- " REND_NAME L" built : " _T(__DATE__));
 	c.PluginVersion=DC_MakeVersion(1,0,0,DC_VER_NORMAL);
 
 	c.Load=Load;
@@ -570,7 +570,7 @@ void cResetEvent::Wait()//Wait for signal , then reset
 
 //(const char * lpSection, const char * lpKey, char * lpReturn);
 //(const char * lpSection, const char * lpKey, const char * lpString);
-int cfgGetInt(char* key,int def)
+int cfgGetInt(wchar* key,int def)
 {
 	/*
 	char temp1[100];
@@ -581,9 +581,9 @@ int cfgGetInt(char* key,int def)
 	/*if (strcmp("NULL",temp)==0)
 		return def;
 	return atoi(temp1);*/
-	return emu.ConfigLoadInt("drkpvr",key,def);
+	return emu.ConfigLoadInt(L"drkpvr",key,def);
 }
-void cfgSetInt(char* key,int val)
+void cfgSetInt(wchar* key,int val)
 {
 	/*
 	char temp1[100];
@@ -594,58 +594,58 @@ void cfgSetInt(char* key,int val)
 	/*if (strcmp("NULL",temp)==0)
 		return def;
 	return atoi(temp1);*/
-	emu.ConfigSaveInt("drkpvr",key,val);
+	emu.ConfigSaveInt(L"drkpvr",key,val);
 }
 
 void LoadSettings()
 {
-	settings.Emulation.AlphaSortMode			=	cfgGetInt("Emulation.AlphaSortMode",1);
-	settings.Emulation.PaletteMode				=	cfgGetInt("Emulation.PaletteMode",1);
-	settings.Emulation.ModVolMode				= 	cfgGetInt("Emulation.ModVolMode",1);
+	settings.Emulation.AlphaSortMode			=	cfgGetInt(L"Emulation.AlphaSortMode",1);
+	settings.Emulation.PaletteMode				=	cfgGetInt(L"Emulation.PaletteMode",1);
+	settings.Emulation.ModVolMode				= 	cfgGetInt(L"Emulation.ModVolMode",1);
 
-	settings.OSD.ShowFPS						=	cfgGetInt("OSD.ShowFPS",0);
-	settings.OSD.ShowStats						=	cfgGetInt("OSD.ShowStats",0);
+	settings.OSD.ShowFPS						=	cfgGetInt(L"OSD.ShowFPS",0);
+	settings.OSD.ShowStats						=	cfgGetInt(L"OSD.ShowStats",0);
 
-	settings.Fullscreen.Enabled					=	cfgGetInt("Fullscreen.Enabled",0);
+	settings.Fullscreen.Enabled					=	cfgGetInt(L"Fullscreen.Enabled",0);
 	RECT rc;
 	GetWindowRect(GetDesktopWindow(),&rc);
 	
-	settings.Fullscreen.Res_X					=	cfgGetInt("Fullscreen.Res_X",rc.right);
-	settings.Fullscreen.Res_Y					=	cfgGetInt("Fullscreen.Res_Y",rc.top);
-	settings.Fullscreen.Refresh_Rate			=	cfgGetInt("Fullscreen.Refresh_Rate",60);
+	settings.Fullscreen.Res_X					=	cfgGetInt(L"Fullscreen.Res_X",rc.right);
+	settings.Fullscreen.Res_Y					=	cfgGetInt(L"Fullscreen.Res_Y",rc.top);
+	settings.Fullscreen.Refresh_Rate			=	cfgGetInt(L"Fullscreen.Refresh_Rate",60);
 
-	settings.Enhancements.MultiSampleCount		=	cfgGetInt("Enhancements.MultiSampleCount",0);
-	settings.Enhancements.MultiSampleQuality	=	cfgGetInt("Enhancements.MultiSampleQuality",0);
-	settings.Enhancements.AspectRatioMode		=	cfgGetInt("Enhancements.AspectRatioMode",1);
+	settings.Enhancements.MultiSampleCount		=	cfgGetInt(L"Enhancements.MultiSampleCount",0);
+	settings.Enhancements.MultiSampleQuality	=	cfgGetInt(L"Enhancements.MultiSampleQuality",0);
+	settings.Enhancements.AspectRatioMode		=	cfgGetInt(L"Enhancements.AspectRatioMode",1);
 }
 
 
 void SaveSettings()
 {
-	cfgSetInt("Emulation.AlphaSortMode",settings.Emulation.AlphaSortMode);
-	cfgSetInt("Emulation.PaletteMode",settings.Emulation.PaletteMode);
-	cfgSetInt("Emulation.ModVolMode",settings.Emulation.ModVolMode);
+	cfgSetInt(L"Emulation.AlphaSortMode",settings.Emulation.AlphaSortMode);
+	cfgSetInt(L"Emulation.PaletteMode",settings.Emulation.PaletteMode);
+	cfgSetInt(L"Emulation.ModVolMode",settings.Emulation.ModVolMode);
 
-	cfgSetInt("OSD.ShowFPS",settings.OSD.ShowFPS);
-	cfgSetInt("OSD.ShowStats",settings.OSD.ShowStats);
+	cfgSetInt(L"OSD.ShowFPS",settings.OSD.ShowFPS);
+	cfgSetInt(L"OSD.ShowStats",settings.OSD.ShowStats);
 
-	cfgSetInt("Fullscreen.Enabled",settings.Fullscreen.Enabled);
-	cfgSetInt("Fullscreen.Res_X",settings.Fullscreen.Res_X);
-	cfgSetInt("Fullscreen.Res_Y",settings.Fullscreen.Res_Y);
-	cfgSetInt("Fullscreen.Refresh_Rate",settings.Fullscreen.Refresh_Rate);
+	cfgSetInt(L"Fullscreen.Enabled",settings.Fullscreen.Enabled);
+	cfgSetInt(L"Fullscreen.Res_X",settings.Fullscreen.Res_X);
+	cfgSetInt(L"Fullscreen.Res_Y",settings.Fullscreen.Res_Y);
+	cfgSetInt(L"Fullscreen.Refresh_Rate",settings.Fullscreen.Refresh_Rate);
 
-	cfgSetInt("Enhancements.MultiSampleCount",settings.Enhancements.MultiSampleCount);
-	cfgSetInt("Enhancements.MultiSampleQuality",settings.Enhancements.MultiSampleQuality);
-	cfgSetInt("Enhancements.AspectRatioMode",settings.Enhancements.AspectRatioMode);
+	cfgSetInt(L"Enhancements.MultiSampleCount",settings.Enhancements.MultiSampleCount);
+	cfgSetInt(L"Enhancements.MultiSampleQuality",settings.Enhancements.MultiSampleQuality);
+	cfgSetInt(L"Enhancements.AspectRatioMode",settings.Enhancements.AspectRatioMode);
 }
 
-int msgboxf(char* text,unsigned int type,...)
+int msgboxf(wchar* text,unsigned int type,...)
 {
 	va_list args;
 
-	char temp[2048];
+	wchar temp[2048];
 	va_start(args, type);
-	vsprintf(temp, text, args);
+	vswprintf(temp, text, args);
 	va_end(args);
 
 
