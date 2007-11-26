@@ -241,8 +241,10 @@ u32 FASTCALL iso_DriveGetDiscType()
 		return GdRom;
 } 
 
-bool load_gdi(char* file)
+bool load_gdi(wchar* file_)
 {
+	char file[512];
+	wcstombs(file,file_,512);
 	memset(&gdi_toc,0xFFFFFFFF,sizeof(gdi_toc));
 	memset(&gdi_ses,0xFFFFFFFF,sizeof(gdi_ses));
 	FILE* t=fopen(file,"rb");
@@ -303,12 +305,12 @@ bool load_gdi(char* file)
 
 	return true;
 }
-bool iso_init(char* file)
+bool iso_init(wchar* file)
 {
-	size_t len=strlen(file);
+	size_t len=wcslen(file);
 	if (len>4)
 	{
-		if (_stricmp( &file[len-4],".gdi")==0)
+		if (_tcsicmp( &file[len-4],L".gdi")==0)
 		{
 			return load_gdi(file);
 		}

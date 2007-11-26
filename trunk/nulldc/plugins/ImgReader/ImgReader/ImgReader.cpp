@@ -21,35 +21,36 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     return TRUE;
 }
 _setts settings;
-int cfgGetInt(char* key,int def)
+int cfgGetInt(wchar* key,int def)
 {
-	return emu.ConfigLoadInt("ImageReader",key,def);
+	return emu.ConfigLoadInt(L"ImageReader",key,def);
 }
-void cfgSetInt(char* key,int v)
+void cfgSetInt(wchar* key,int v)
 {
-	emu.ConfigSaveInt("ImageReader",key,v);
+	emu.ConfigSaveInt(L"ImageReader",key,v);
 }
-void cfgGetStr(char* key,char* v,const char*def)
+void cfgGetStr(wchar* key,wchar* v,const wchar*def)
 {
-	emu.ConfigLoadStr("ImageReader",key,v,def);
+	emu.ConfigLoadStr(L"ImageReader",key,v,def);
 }
-void cfgSetStr(char* key,const char* v)
+void cfgSetStr(wchar* key,const wchar* v)
 {
-	emu.ConfigSaveStr("ImageReader",key,v);
+	emu.ConfigSaveStr(L"ImageReader",key,v);
 }
 void LoadSettings()
 {
-	settings.PatchRegion=cfgGetInt("PatchRegion",0);
-	settings.LoadDefaultImage=cfgGetInt("LoadDefaultImage",0);
-	cfgGetStr("DefaultImage",settings.DefaultImage,"defualt.cdi");
+	settings.PatchRegion=cfgGetInt(L"PatchRegion",0);
+	settings.LoadDefaultImage=cfgGetInt(L"LoadDefaultImage",0);
+	cfgGetStr(L"DefaultImage",settings.DefaultImage,L"defualt.cdi");
 }
 void SaveSettings()
 {
-	cfgSetInt("PatchRegion",settings.PatchRegion);
-	cfgSetInt("LoadDefaultImage",settings.LoadDefaultImage);
-	cfgSetStr("DefaultImage",settings.DefaultImage);
+	cfgSetInt(L"PatchRegion",settings.PatchRegion);
+	cfgSetInt(L"LoadDefaultImage",settings.LoadDefaultImage);
+	cfgSetStr(L"DefaultImage",settings.DefaultImage);
 }
 #define PLUGIN_NAME "Image Reader plugin by drk||Raziel & GiGaHeRz [" __DATE__ "]"
+#define PLUGIN_NAMEW L"Image Reader plugin by drk||Raziel & GiGaHeRz [" _T(__DATE__) L"]"
 
 void FASTCALL GetSessionInfo(u8* out,u8 ses);
 
@@ -83,7 +84,7 @@ void FASTCALL GetSessionInfo(u8* out,u8 ses)
 	GetDriveSessionInfo(out,ses);
 }
 emu_info emu;
-char emu_name[512];
+wchar emu_name[512];
 void EXPORT_CALL handle_PatchRegion(u32 id,void* w,void* p)
 {
 	if (settings.PatchRegion)
@@ -109,14 +110,14 @@ void EXPORT_CALL handle_UseDefImg(u32 id,void* w,void* p)
 }
 void EXPORT_CALL handle_SelDefImg(u32 id,void* w,void* p)
 {
-	if (GetFile(settings.DefaultImage,"CD/GD Images (*.cdi;*.mds;*.nrg;*.gdi) \0*.cdi;*.mds;*.nrg;*.gdi\0\0"))
+	if (GetFile(settings.DefaultImage,L"CD/GD Images (*.cdi;*.mds;*.nrg;*.gdi) \0*.cdi;*.mds;*.nrg;*.gdi\0\0"))
 	{
 		SaveSettings();
 	}
 }
 void EXPORT_CALL handle_About(u32 id,void* w,void* p)
 {
-	MessageBox((HWND)w,"Made by drk||Raziel & GiGaHeRz","About ImageReader...",MB_ICONINFORMATION);
+	MessageBox((HWND)w,L"Made by drk||Raziel & GiGaHeRz",L"About ImageReader...",MB_ICONINFORMATION);
 }
 void EXPORT_CALL handle_SwitchDisc(u32 id,void* w,void* p)
 {
@@ -143,17 +144,17 @@ s32 FASTCALL Load(emu_info* emu_inf)
 		return rv_ok;
 	memcpy(&emu,emu_inf,sizeof(emu));
 
-	emu.ConfigLoadStr("emu","shortname",emu_name,0);
+	emu.ConfigLoadStr(L"emu",L"shortname",emu_name,0);
 	
 	LoadSettings();
 
-	emu.AddMenuItem(emu.RootMenu,-1,"Swap Disc",handle_SwitchDisc,settings.LoadDefaultImage);
-	emu.SetMenuItemStyle(emu.AddMenuItem(emu.RootMenu,-1,"-",handle_About,0),MIS_Seperator,MIS_Seperator);
-	emu.AddMenuItem(emu.RootMenu,-1,"Use Default Image",handle_UseDefImg,settings.LoadDefaultImage);
-	emu.AddMenuItem(emu.RootMenu,-1,"Select Default Image",handle_SelDefImg,0);
-	emu.AddMenuItem(emu.RootMenu,-1,"Patch GDROM region",handle_PatchRegion,settings.PatchRegion);
-	emu.SetMenuItemStyle(emu.AddMenuItem(emu.RootMenu,-1,"-",handle_About,0),MIS_Seperator,MIS_Seperator);
-	emu.AddMenuItem(emu.RootMenu,-1,"About",handle_About,0);
+	emu.AddMenuItem(emu.RootMenu,-1,L"Swap Disc",handle_SwitchDisc,settings.LoadDefaultImage);
+	emu.AddMenuItem(emu.RootMenu,-1,0,0,0);
+	emu.AddMenuItem(emu.RootMenu,-1,L"Use Default Image",handle_UseDefImg,settings.LoadDefaultImage);
+	emu.AddMenuItem(emu.RootMenu,-1,L"Select Default Image",handle_SelDefImg,0);
+	emu.AddMenuItem(emu.RootMenu,-1,L"Patch GDROM region",handle_PatchRegion,settings.PatchRegion);
+	emu.AddMenuItem(emu.RootMenu,-1,0,0,0);
+	emu.AddMenuItem(emu.RootMenu,-1,L"About",handle_About,0);
 	
 	
 	return rv_ok;
@@ -199,7 +200,7 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	c.Type=Plugin_GDRom;
 	c.InterfaceVersion=GDR_PLUGIN_I_F_VERSION;
 
-	strcpy(c.Name,PLUGIN_NAME);
+	wcscpy(c.Name,PLUGIN_NAMEW);
 	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD,DC_VER_NORMAL);
 	
 	c.Load=Load;

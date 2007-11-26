@@ -42,13 +42,13 @@ DriveIF drives[]=
 
 DriveNotifyEventFP* DriveNotifyEvent;
 
-int msgboxf(char* text,unsigned int type,...)
+int msgboxf(wchar* text,unsigned int type,...)
 {
 	va_list args;
 
-	char temp[2048];
+	wchar temp[2048];
 	va_start(args, type);
-	vsprintf(temp, text, args);
+	vswprintf(temp, text, args);
 	va_end(args);
 
 
@@ -130,7 +130,7 @@ bool ConvertSector(u8* in_buff , u8* out_buff , int from , int to,int sector)
 	return true;
 }
 
-bool InitDrive_(char* fn)
+bool InitDrive_(wchar* fn)
 {
 	if (CurrDrive !=0 && CurrDrive->Inited==true)
 	{
@@ -164,28 +164,28 @@ bool InitDrive()
 {
 	if (settings.LoadDefaultImage)
 	{
-		printf("Loading default image \"%s\"\n",settings.DefaultImage);
+		wprintf(L"Loading default image \"%s\"\n",settings.DefaultImage);
 		if (!InitDrive_(settings.DefaultImage))
 		{
-			msgboxf("Default image \"%s\" failed to load",MB_ICONERROR);
+			msgboxf(L"Default image \"%s\" failed to load",MB_ICONERROR);
 			return false;
 		}
 		else
 			return true;
 	}
 
-	char fn[512]="";
-	if (GetFile(fn,"CD/GD Images (*.cdi;*.mds;*.nrg;*.gdi) \0*.cdi;*.mds;*.nrg;*.gdi\0\0")==false)
+	wchar fn[512]=L"";
+	if (GetFile(fn,L"CD/GD Images (*.cdi;*.mds;*.nrg;*.gdi) \0*.cdi;*.mds;*.nrg;*.gdi\0\0")==false)
 	{
 		CurrDrive=0;
 		NullDriveDiscType=NoDisk;
-		return msgboxf("Would you like to boot w/o GDrom ?",MB_ICONQUESTION | MB_YESNO)==IDYES;
+		return msgboxf(L"Would you like to boot w/o GDrom ?",MB_ICONQUESTION | MB_YESNO)==IDYES;
 		//return false;
 	}
 
 	if (!InitDrive_(fn))
 	{
-		msgboxf("Selected image failed to load",MB_ICONERROR);
+		msgboxf(L"Selected image failed to load",MB_ICONERROR);
 		return false;
 	}
 	else
@@ -275,7 +275,7 @@ void GetDriveSessionInfo(u8* to,u8 session)
 bool GetFile(TCHAR *szFileName, TCHAR *szParse)
 {
 	static OPENFILENAME ofn;
-	static TCHAR szFile[MAX_PATH]="";    
+	static TCHAR szFile[MAX_PATH]=L"";    
 	ZeroMemory(&ofn, sizeof(OPENFILENAME));
 	ofn.lStructSize		= sizeof(OPENFILENAME);
 	ofn.hwndOwner		= NULL;

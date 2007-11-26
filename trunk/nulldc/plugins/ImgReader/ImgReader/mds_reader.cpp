@@ -52,13 +52,13 @@ int nrg_mode(int mode)
 
 #define read_binary(type,source,offset) (*(type*)((source)+(offset)))
 
-bool parse_mds(char *mds_filename,bool verbose)
+bool parse_mds(wchar *mds_filename,bool verbose)
 {
     /*"returns the supposable bin_filename and raw entries, if something went \
     wrong it throws an exception"*/
     // read the file
 
-	FILE*mds_file = fopen (mds_filename,"rb");
+	FILE*mds_file = _tfopen (mds_filename,L"rb");
 	if(!mds_file)
 	{
         fprintf(stderr,"Could not open the mds-file <%s>\n",mds_filename);
@@ -78,7 +78,7 @@ bool parse_mds(char *mds_filename,bool verbose)
 
     if(memcmp(mds_key,"MEDIA DESCRIPTOR",16)!=0)
 	{
-        fprintf(stderr,"Invalid data in <%s>. It is not an MDF/MDS file.\n",mds_filename);
+        fwprintf(stderr,L"Invalid data in <%s>. It is not an MDF/MDS file.\n",mds_filename);
 		fclose(mds_file);
 		return false;
 	}
@@ -89,7 +89,7 @@ bool parse_mds(char *mds_filename,bool verbose)
 
     if(!mds_content)
 	{
-        fprintf(stderr,"Could not allocate a buffer to read <%s>\n",mds_filename);
+        fwprintf(stderr,L"Could not allocate a buffer to read <%s>\n",mds_filename);
 		fclose(mds_file);
 		return false;
 	}
@@ -98,7 +98,7 @@ bool parse_mds(char *mds_filename,bool verbose)
     
     if(memcmp(mds_content,"MEDIA DESCRIPTOR",16)!=0)
 	{
-        fprintf(stderr,"Invalid data in <%s>. It is not an MDF/MDS file.\n",mds_filename);
+        fwprintf(stderr,L"Invalid data in <%s>. It is not an MDF/MDS file.\n",mds_filename);
 		free(mds_content);
 		fclose(mds_file);
 		return false;
@@ -212,15 +212,15 @@ bool parse_mds(char *mds_filename,bool verbose)
     return true;
 }
 
-bool parse_nrg(char*nrg_filename,bool verbose)
+bool parse_nrg(wchar*nrg_filename,bool verbose)
 {
     /*"returns the supposable bin_filename and raw entries, if something went \
     wrong it throws an exception"*/
     // read the file
-    FILE*nrg_file = fopen (nrg_filename,"rb");
+    FILE*nrg_file = _tfopen (nrg_filename,L"rb");
 	if(!nrg_file)
 	{
-        fprintf(stderr,"Could not open the nrg-file <%s>\n",nrg_filename);
+        fwprintf(stderr,L"Could not open the nrg-file <%s>\n",nrg_filename);
 		return false;
 	}
     
@@ -259,7 +259,7 @@ bool parse_nrg(char*nrg_filename,bool verbose)
 		}
         else
 		{
-            fprintf(stderr,"Invalid data in <%s>. It is not an NRG file.",nrg_filename);
+            fwprintf(stderr,L"Invalid data in <%s>. It is not an NRG file.",nrg_filename);
 			return false;
 		}
 	}
@@ -268,7 +268,7 @@ bool parse_nrg(char*nrg_filename,bool verbose)
 	char *nrg_content = (char*)malloc(nrg_filesize - nrg_trailer_offset);
     if(!nrg_content)
 	{
-        fprintf(stderr,"Could not allocate a buffer to read the nrg info from <%s>\n",nrg_filename);
+        fwprintf(stderr,L"Could not allocate a buffer to read the nrg info from <%s>\n",nrg_filename);
 		fclose(nrg_file);
 		return false;
 	}

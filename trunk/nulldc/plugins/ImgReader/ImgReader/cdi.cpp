@@ -180,11 +180,13 @@ void cdi_CreateToc()
 }
 
 HMODULE pfctoc_mod=NULL;
-bool cdi_init(char* file)
+bool cdi_init(wchar* file_)
 {
-	pfctoc_mod=LoadLibrary("plugins\\pfctoc.dll");
+	char file[512];
+	wcstombs(file,file_,512);
+	pfctoc_mod=LoadLibrary(L"plugins\\pfctoc.dll");
 	if (pfctoc_mod==NULL)
-		pfctoc_mod=LoadLibrary("pfctoc.dll");
+		pfctoc_mod=LoadLibrary(L"pfctoc.dll");
 	if(pfctoc_mod==NULL)
 		return false;
 

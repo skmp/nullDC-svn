@@ -84,7 +84,7 @@ struct SPfcToc {                                                // ---> 30h byte
 
 extern "C" {
 
-typedef DWORD PFCTOCAPI PfcGetTocFP(LPCTSTR pszImageName, SPfcToc*& pstToc, DWORD& dwSize);
+typedef DWORD PFCTOCAPI PfcGetTocFP(LPCSTR pszImageName, SPfcToc*& pstToc, DWORD& dwSize);
 //
 // LPCTSTR pszImageName:        pointer to .CDI full pathname
 // SPfcToc*& pstToc:            on exit it will point to a buffer containing .CDI TOC info

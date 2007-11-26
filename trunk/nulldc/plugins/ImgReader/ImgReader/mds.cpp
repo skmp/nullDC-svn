@@ -167,28 +167,28 @@ void mds_CreateToc()
 	mds_TrackCount=track;
 	printf("--GD toc info end--\n\n");
 }
-bool mds_init(char* file)
+bool mds_init(wchar* file)
 {
-	char fn[512]="";
+	wchar fn[512]=L"";
 	
 	bool rv=false;
 	if (rv==false && parse_mds(file,false))
 	{
 		bool found=false;
-		if (strlen(file)>4)
+		if (wcslen(file)>4)
 		{
-			strcpy(&fn[0],file);
-			int len=strlen(fn);
-			strcpy(&fn[len-4],".mdf");
+			wcscpy(&fn[0],file);
+			int len=wcslen(fn);
+			wcscpy(&fn[len-4],L".mdf");
 			
-			fp_mdf=fopen(fn,"rb");
+			fp_mdf=_tfopen(fn,L"rb");
 			found=fp_mdf!=0;
 		}
 		if (!found)
 		{
-			if (GetFile(fn,"mds images (*.mds) \0*.mdf\0\0"))
+			if (GetFile(fn,L"mds images (*.mds) \0*.mdf\0\0"))
 			{
-				fp_mdf=fopen(fn,"rb");
+				fp_mdf=_tfopen(fn,L"rb");
 				found=true;
 			}
 		}
@@ -201,7 +201,7 @@ bool mds_init(char* file)
 	if (rv==false && parse_nrg(file,false))
 	{
 		rv=true;
-		fp_mdf=fopen(file,"rb");
+		fp_mdf=_tfopen(file,L"rb");
 	}
 	if (rv==false)
 		return false;

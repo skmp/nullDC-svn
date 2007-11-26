@@ -30,7 +30,7 @@ struct SessionInfo
 
 
 typedef bool IsCompatableFileFP();
-typedef bool InitFP(char* file);
+typedef bool InitFP(wchar* file);
 typedef void TermFP();
 typedef void DriveGetTocInfoModFP(TocInfo* toc,DiskArea area);
 typedef void DriveGetSessionInfoModFP(SessionInfo* ses);
@@ -71,4 +71,4 @@ void ConvToc(u32* to,TocInfo* from);
 void GetDriveToc(u32* to,DiskArea area);
 void GetDriveSessionInfo(u8* to,u8 session);
 bool GetFile(TCHAR *szFileName, TCHAR *szParse);
-int msgboxf(char* text,unsigned int type,...);
+int msgboxf(wchar* text,unsigned int type,...);

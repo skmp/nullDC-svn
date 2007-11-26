@@ -3,6 +3,7 @@
 #include "..\..\..\nullDC\plugins\plugin_header.h"
 #include <windows.h>
 #include <stdio.h>
+#include <tchar.h>
 #include <stdlib.h>
 
 #include <string.h>
@@ -11,13 +12,13 @@
 #define MINOR 0
 #define MAJOR 1
 extern emu_info emu;
-extern char emu_name[512];
+extern wchar emu_name[512];
 #define verify(x) if((x)==false){ printf("Verify Failed  : " #x "\n in %s -> %s : %d \n",__FUNCTION__,__FILE__,__LINE__); __asm {int 3}}
 struct _setts
 {
 	bool PatchRegion;
 	bool LoadDefaultImage;
-	char DefaultImage[512];
+	wchar DefaultImage[512];
 };
 
 extern _setts settings;
