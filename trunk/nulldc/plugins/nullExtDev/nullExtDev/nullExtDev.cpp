@@ -113,7 +113,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 
 void EXPORT_CALL handle_about(u32 id,void* window,void* p)
 {
-	MessageBox((HWND)window,"Made by the nullDC team\nThis plugin partialy emulates the modem for now.\n\nNow , go back before its too late ...","nullExtDev plugin",MB_OK | MB_ICONINFORMATION);
+	MessageBox((HWND)window,L"Made by the nullDC team\nThis plugin partialy emulates the modem for now.\n\nNow , go back before its too late ...",L"nullExtDev plugin",MB_OK | MB_ICONINFORMATION);
 }
 u32 mids[4];
 void nide_set_selected()
@@ -141,16 +141,16 @@ s32 FASTCALL Load(emu_info* param)
 
 	LoadSettings();
 
-	mids[0]=emu.AddMenuItem(emu.RootMenu,-1,"None",handle_mode<0>,0);
-	mids[1]=emu.AddMenuItem(emu.RootMenu,-1,"Modem",handle_mode<1>,0);
-	mids[2]=emu.AddMenuItem(emu.RootMenu,-1,"Lan Adapter",handle_mode<2>,0);
-	mids[3]=emu.AddMenuItem(emu.RootMenu,-1,"BBA",handle_mode<3>,0);
+	mids[0]=emu.AddMenuItem(emu.RootMenu,-1,L"None",handle_mode<0>,0);
+	mids[1]=emu.AddMenuItem(emu.RootMenu,-1,L"Modem",handle_mode<1>,0);
+	mids[2]=emu.AddMenuItem(emu.RootMenu,-1,L"Lan Adapter",handle_mode<2>,0);
+	mids[3]=emu.AddMenuItem(emu.RootMenu,-1,L"BBA",handle_mode<3>,0);
 
 	nide_set_selected();
 	
-	emu.SetMenuItemStyle(emu.AddMenuItem(emu.RootMenu,-1,"--",0,settings.mode==0),MIS_Seperator,MIS_Seperator);
+	emu.AddMenuItem(emu.RootMenu,-1,0,0,settings.mode==0);
 	
-	emu.AddMenuItem(emu.RootMenu,-1,"About",handle_about,0);
+	emu.AddMenuItem(emu.RootMenu,-1,L"About",handle_about,0);
 	return rv_ok;
 }
 
@@ -209,7 +209,7 @@ bool EXPORT_CALL dcGetInterface(plugin_interface* info)
 	c.Type=Plugin_ExtDevice;
 	c.InterfaceVersion=EXTDEVICE_PLUGIN_I_F_VERSION;
 
-	strcpy(c.Name,"nullExtDev (" __DATE__ ")");
+	wcscpy(c.Name,L"nullExtDev (" _T(__DATE__) L")");
 	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD,DC_VER_NORMAL);
 	
 	c.Load=Load;
@@ -236,11 +236,11 @@ bool EXPORT_CALL dcGetInterface(plugin_interface* info)
 
 void LoadSettings()
 {
-	settings.mode=max(0,min(emu.ConfigLoadInt("nullExtDev","mode",0),3));
-	settings.adapter=emu.ConfigLoadInt("nullExtDev","adapter",0);
+	settings.mode=max(0,min(emu.ConfigLoadInt(L"nullExtDev",L"mode",0),3));
+	settings.adapter=emu.ConfigLoadInt(L"nullExtDev",L"adapter",0);
 }
 void SaveSettings()
 {
-	emu.ConfigSaveInt("nullExtDev","mode",settings.mode);
-	emu.ConfigSaveInt("nullExtDev","adapter",settings.adapter);
+	emu.ConfigSaveInt(L"nullExtDev",L"mode",settings.mode);
+	emu.ConfigSaveInt(L"nullExtDev",L"adapter",settings.adapter);
 }
