@@ -107,7 +107,7 @@ namespace Direct3DRenderer
 	}
 	void HandleEvent(u32 evid,void* p)
 	{
-		if (evid == NDC_GUI_RESIZED )
+		if (evid == NDE_GUI_RESIZED )
 		{
 			if (!settings.Fullscreen.Enabled)
 			{
@@ -116,7 +116,7 @@ namespace Direct3DRenderer
 				resizerq.rev++;
 			}
 		}
-		else if ( evid== NDC_GUI_REQESTFULLSCREEN)
+		else if ( evid== NDE_GUI_REQESTFULLSCREEN)
 		{
 			//vetify(settings.Fullscreen.Enabled?0==p:p!=0);
 			//if (p) 
