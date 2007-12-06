@@ -11,13 +11,13 @@ int SelectedFileValid=-1;
 extern HINSTANCE hInstance;
 u32 fileflags;
 
-bool GetFile_()
+bool GetFile_(HWND hwnd)
 {
 	static OPENFILENAME ofn;
 	static TCHAR szFile[512]=L"";    
 	ZeroMemory(&ofn, sizeof(OPENFILENAME));
 	ofn.lStructSize		= sizeof(OPENFILENAME);
-	ofn.hwndOwner		= NULL;
+	ofn.hwndOwner		= hwnd;
 	ofn.lpstrFile		= SelectedFile;
 	ofn.nMaxFile		= MAX_PATH;
 	ofn.lpstrFilter		= FileFormats;
@@ -25,7 +25,7 @@ bool GetFile_()
 	ofn.nMaxFileTitle	= 128;
 	ofn.lpstrFileTitle	= szFile;
 	ofn.lpstrInitialDir	= NULL;
-	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
+	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR | OFN_HIDEREADONLY;
 
 	if(GetOpenFileName(&ofn)<=0)
 		return false;
@@ -44,7 +44,11 @@ INT_PTR CALLBACK DlgProcModal_SelectFile( HWND hWnd, UINT uMsg, WPARAM wParam, L
 			if (fileflags&1)
 				EnableWindow(GetDlgItem(hWnd,IDC_NODISK),false);
 			if (fileflags&2)
+			{
 				EnableWindow(GetDlgItem(hWnd,IDCANCEL),false);
+				HMENU hMenu =GetSystemMenu(hWnd, false);
+				DeleteMenu(hMenu, 1, 1024);
+			}
 		}
 		return true;
 
@@ -73,11 +77,13 @@ INT_PTR CALLBACK DlgProcModal_SelectFile( HWND hWnd, UINT uMsg, WPARAM wParam, L
 			return true;
 
 		case IDC_BROWSE:
-			if (GetFile_())
+			ShowWindow(hWnd,SW_HIDE);
+			if (GetFile_(hWnd))
 			{
 				Edit_SetText(GetDlgItem(hWnd,IDC_IMGPATH),SelectedFile);
 				SendMessage(hWnd,WM_COMMAND,IDOK,0);
 			}
+			ShowWindow(hWnd,SW_SHOW);
 			return true;
 
 		default: break;
@@ -85,8 +91,9 @@ INT_PTR CALLBACK DlgProcModal_SelectFile( HWND hWnd, UINT uMsg, WPARAM wParam, L
 		return false;
 
 	case WM_CLOSE:
-		if (SelectedFileValid==-2)
+			SendMessage(hWnd,WM_COMMAND,IDCANCEL,0);
 			return true;
+		
 	case WM_DESTROY:
 		EndDialog(hWnd,0);
 		return true;
