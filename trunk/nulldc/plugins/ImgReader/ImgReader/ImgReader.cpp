@@ -5,6 +5,7 @@
 //Get a copy of the operators for structs ... ugly , but works :)
 #include "common.h"
 
+HINSTANCE hInstance;
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
                        LPVOID lpReserved
@@ -13,6 +14,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 	switch (ul_reason_for_call)
 	{
 	case DLL_PROCESS_ATTACH:
+		hInstance=(HINSTANCE)hModule;
 	case DLL_THREAD_ATTACH:
 	case DLL_THREAD_DETACH:
 	case DLL_PROCESS_DETACH:
@@ -41,13 +43,15 @@ void LoadSettings()
 {
 	settings.PatchRegion=cfgGetInt(L"PatchRegion",0);
 	settings.LoadDefaultImage=cfgGetInt(L"LoadDefaultImage",0);
-	cfgGetStr(L"DefaultImage",settings.DefaultImage,L"defualt.cdi");
+	cfgGetStr(L"DefaultImage",settings.DefaultImage,L"defualt.gdi");
+	cfgGetStr(L"LastImage",settings.LastImage,L"c:\\game.gdi");
 }
 void SaveSettings()
 {
 	cfgSetInt(L"PatchRegion",settings.PatchRegion);
 	cfgSetInt(L"LoadDefaultImage",settings.LoadDefaultImage);
 	cfgSetStr(L"DefaultImage",settings.DefaultImage);
+	cfgSetStr(L"LastImage",settings.LastImage);
 }
 #define PLUGIN_NAME "Image Reader plugin by drk||Raziel & GiGaHeRz [" __DATE__ "]"
 #define PLUGIN_NAMEW L"Image Reader plugin by drk||Raziel & GiGaHeRz [" _T(__DATE__) L"]"
@@ -110,7 +114,7 @@ void EXPORT_CALL handle_UseDefImg(u32 id,void* w,void* p)
 }
 void EXPORT_CALL handle_SelDefImg(u32 id,void* w,void* p)
 {
-	if (GetFile(settings.DefaultImage,L"CD/GD Images (*.cdi;*.mds;*.nrg;*.gdi) \0*.cdi;*.mds;*.nrg;*.gdi\0\0"))
+	if (GetFile(settings.DefaultImage,0,1)==1)//no "no disk"
 	{
 		SaveSettings();
 	}
@@ -133,7 +137,9 @@ void EXPORT_CALL handle_SwitchDisc(u32 id,void* w,void* p)
 	DriveNotifyEvent(DiskChange,0);
 	Sleep(150); //tray is open
 
-	InitDrive();
+	while(!InitDrive(2))//no "cancel"
+		msgboxf(L"Init Drive failed, disc must be valid for swap",0x00000010L);
+
 	DriveNotifyEvent(DiskChange,0);
 	//new disc is in
 }

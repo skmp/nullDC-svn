@@ -62,7 +62,7 @@ extern DriveNotifyEventFP* DriveNotifyEvent;
 
 bool ConvertSector(u8* in_buff , u8* out_buff , int from , int to,int sector);
 
-bool InitDrive();
+bool InitDrive(u32 fileflags=0);
 void TermDrive();
 
 void PatchRegion_0(u8* sector,int size);
@@ -70,5 +70,5 @@ void PatchRegion_6(u8* sector,int size);
 void ConvToc(u32* to,TocInfo* from);
 void GetDriveToc(u32* to,DiskArea area);
 void GetDriveSessionInfo(u8* to,u8 session);
-bool GetFile(TCHAR *szFileName, TCHAR *szParse);
+int GetFile(TCHAR *szFileName, TCHAR *szParse=0,u32 flags=0);
 int msgboxf(wchar* text,unsigned int type,...);

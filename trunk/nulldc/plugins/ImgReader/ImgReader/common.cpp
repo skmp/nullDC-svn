@@ -160,7 +160,7 @@ bool InitDrive_(wchar* fn)
 	return false;
 }
 
-bool InitDrive()
+bool InitDrive(u32 fileflags)
 {
 	if (settings.LoadDefaultImage)
 	{
@@ -174,14 +174,20 @@ bool InitDrive()
 			return true;
 	}
 
-	wchar fn[512]=L"";
-	if (GetFile(fn,L"CD/GD Images (*.cdi;*.mds;*.nrg;*.gdi) \0*.cdi;*.mds;*.nrg;*.gdi\0\0")==false)
+	wchar fn[512];
+	wcscpy(fn,settings.LastImage);
+	int gfrv=GetFile(fn,0,fileflags);
+	if (gfrv==0)
 	{
 		CurrDrive=0;
 		NullDriveDiscType=NoDisk;
-		return msgboxf(L"Would you like to boot w/o GDrom ?",MB_ICONQUESTION | MB_YESNO)==IDYES;
-		//return false;
+		return true;
 	}
+	else if (gfrv==-1)
+		return false;
+
+	wcscpy(settings.LastImage,fn);
+	SaveSettings();
 
 	if (!InitDrive_(fn))
 	{
@@ -269,26 +275,4 @@ void GetDriveSessionInfo(u8* to,u8 session)
 		to[4]=driveSeS.SessionFAD[session-1]>>8;
 		to[5]=driveSeS.SessionFAD[session-1]>>0;
 	}
-}
-
-#include <windows.h>
-bool GetFile(TCHAR *szFileName, TCHAR *szParse)
-{
-	static OPENFILENAME ofn;
-	static TCHAR szFile[MAX_PATH]=L"";    
-	ZeroMemory(&ofn, sizeof(OPENFILENAME));
-	ofn.lStructSize		= sizeof(OPENFILENAME);
-	ofn.hwndOwner		= NULL;
-	ofn.lpstrFile		= szFileName;
-	ofn.nMaxFile		= MAX_PATH;
-	ofn.lpstrFilter		= szParse;
-	ofn.nFilterIndex	= 1;
-	ofn.nMaxFileTitle	= 128;
-	ofn.lpstrFileTitle	= szFile;
-	ofn.lpstrInitialDir	= NULL;
-	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
-
-	if(GetOpenFileName(&ofn)<=0)
-		return false;
-	return true;
 }

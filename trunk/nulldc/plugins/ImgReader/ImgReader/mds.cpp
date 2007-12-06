@@ -186,7 +186,7 @@ bool mds_init(wchar* file)
 		}
 		if (!found)
 		{
-			if (GetFile(fn,L"mds images (*.mds) \0*.mdf\0\0"))
+			if (GetFile(fn,L"mds images (*.mds) \0*.mdf\0\0")==1)
 			{
 				fp_mdf=_tfopen(fn,L"rb");
 				found=true;

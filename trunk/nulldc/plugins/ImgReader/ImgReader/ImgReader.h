@@ -19,6 +19,8 @@ struct _setts
 	bool PatchRegion;
 	bool LoadDefaultImage;
 	wchar DefaultImage[512];
+	wchar LastImage[512];
 };
 
 extern _setts settings;
+void SaveSettings();

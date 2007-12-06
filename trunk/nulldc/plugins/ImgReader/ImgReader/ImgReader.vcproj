@@ -251,6 +251,26 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="UI"
+			>
+			<File
+				RelativePath=".\resource.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ui.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\ui.h"
+				>
+			</File>
+			<File
+				RelativePath=".\UI.rc"
+				>
+			</File>
+		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"
 			>
