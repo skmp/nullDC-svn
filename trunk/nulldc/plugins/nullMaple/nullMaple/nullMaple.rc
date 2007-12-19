@@ -1,0 +1,189 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (Ireland) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENI)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_EIRE
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_EVENTFINDER DIALOGEX 0, 0, 275, 146
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "nullMaple Event Finder"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,7,125,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,218,125,50,14
+    CONTROL         "",IDC_TREE1,"SysTreeView32",WS_BORDER | WS_TABSTOP,7,7,261,108
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO 
+BEGIN
+    IDD_EVENTFINDER, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 268
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 139
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+#endif    // English (Ireland) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Greek resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ELL)
+#ifdef _WIN32
+LANGUAGE LANG_GREEK, SUBLANG_DEFAULT
+#pragma code_page(1253)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ConfigKeys DIALOGEX 0, 0, 256, 207
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "nullDC Controller Key config"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    CONTROL         "",IDC_PORTTAB,"SysTabControl32",0x0,4,7,247,165
+    LTEXT           "Analog Up",IDC_STATIC,8,30,57,10
+    PUSHBUTTON      "A UP",IDC_BUTTON19,70,30,56,10,BS_FLAT
+    LTEXT           "Digital Up 2",IDC_STATIC,142,30,43,10
+    PUSHBUTTON      "??????",IDC_BUTTON15,190,30,56,10,BS_FLAT
+    LTEXT           "Analog Left",IDC_STATIC,8,40,57,10
+    PUSHBUTTON      "A LEFT",IDC_BUTTON22,70,40,56,10,BS_FLAT
+    LTEXT           "Digital Left 2",IDC_STATIC,142,40,47,10
+    PUSHBUTTON      "??????",IDC_BUTTON12,190,40,56,10,BS_FLAT
+    LTEXT           "Analog Right",IDC_STATIC,8,50,61,10
+    PUSHBUTTON      "A Right",IDC_BUTTON21,70,50,56,10,BS_FLAT
+    LTEXT           "Digital Right 2",IDC_STATIC,142,50,47,10
+    PUSHBUTTON      "??????",IDC_BUTTON13,190,50,56,10,BS_FLAT
+    LTEXT           "Analog Down",IDC_STATIC,8,60,60,10
+    PUSHBUTTON      "A DOWN",IDC_BUTTON20,70,60,56,10,BS_FLAT
+    LTEXT           "Digital Down 2",IDC_STATIC,142,60,49,10
+    PUSHBUTTON      "??????",IDC_BUTTON14,190,60,56,10,BS_FLAT
+    LTEXT           "Digital Up",IDC_STATIC,8,72,62,10
+    PUSHBUTTON      "D UP",IDC_BUTTON5,70,72,56,10,BS_FLAT
+    LTEXT           "Digital Left",IDC_STATIC,8,82,43,10
+    PUSHBUTTON      "D LEFT",IDC_BUTTON7,70,82,56,10,BS_FLAT
+    LTEXT           "Left Slider",IDC_STATIC,142,82,48,10
+    PUSHBUTTON      "LEFT SLIDER",IDC_BUTTON18,190,82,56,10,BS_FLAT
+    LTEXT           "Digital Right",IDC_STATIC,8,92,59,10
+    PUSHBUTTON      "D RIGHT",IDC_BUTTON8,70,92,56,10,BS_FLAT
+    LTEXT           "Right Slider",IDC_STATIC,142,92,45,10
+    PUSHBUTTON      "RIGHT SLIDER",IDC_BUTTON17,190,92,56,10,BS_FLAT
+    LTEXT           "Digital Down",IDC_STATIC,8,102,59,10
+    PUSHBUTTON      "D DOWN",IDC_BUTTON6,70,102,56,10,BS_FLAT
+    LTEXT           "Y Button",IDC_STATIC,8,114,52,10
+    PUSHBUTTON      "Y BUTTON",IDC_BUTTON10,70,114,56,10,BS_FLAT
+    LTEXT           "X Button",IDC_STATIC,8,124,55,10
+    PUSHBUTTON      "X BUTTON",IDC_BUTTON11,70,124,56,10,BS_FLAT
+    LTEXT           "Z button",IDC_STATIC,142,124,43,10
+    PUSHBUTTON      "Z BUTTON",IDC_BUTTON9,190,124,56,10,BS_FLAT
+    LTEXT           "B Button",IDC_STATIC,8,134,55,8
+    PUSHBUTTON      "B BUTTON",IDC_BUTTON2,70,134,56,10,BS_FLAT
+    LTEXT           "C button",IDC_STATIC,142,134,43,10
+    PUSHBUTTON      "C BUTTON",IDC_BUTTON1,190,134,56,10,BS_FLAT
+    LTEXT           "A Button",IDC_STATIC,8,144,54,10
+    PUSHBUTTON      "A BUTTON",IDC_BUTTON3,70,144,56,10,BS_FLAT
+    LTEXT           "Start  Button",IDC_STATIC,8,156,57,10
+    PUSHBUTTON      "START BUTTON",IDC_BUTTON4,70,156,56,10,BS_FLAT
+    CTEXT           "~[STATUS]~",IDC_STATUS,8,174,240,18
+    DEFPUSHBUTTON   "Close",IDOK,103,190,50,14
+    LTEXT           "D button",IDC_STATIC,141,146,43,10
+    PUSHBUTTON      "D BUTTON",IDC_BUTTON16,190,145,56,10,BS_FLAT
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO 
+BEGIN
+    IDD_ConfigKeys, DIALOG
+    BEGIN
+        LEFTMARGIN, 4
+        RIGHTMARGIN, 251
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 204
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+#endif    // Greek resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+
