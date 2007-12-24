@@ -340,7 +340,7 @@ void _vmem_term()
 HANDLE mem_handle;
 bool _vmem_reserve()
 {
-	mem_handle=CreateFileMapping(INVALID_HANDLE_VALUE,0,PAGE_READWRITE ,0,RAM_SIZE + VRAM_SIZE,"ndc_mem_dataazz");
+	mem_handle=CreateFileMapping(INVALID_HANDLE_VALUE,0,PAGE_READWRITE ,0,RAM_SIZE + VRAM_SIZE,L"ndc_mem_dataazz");
 
 	void* ptr=0;
 	sh4_reserved_mem=(u8*)VirtualAlloc(0,512*1024*1024,MEM_RESERVE,PAGE_NOACCESS);

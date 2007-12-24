@@ -3,9 +3,9 @@
 #include "sh4_mem.h"
 #include "elf.h"
 
-u32 LoadFileToSh4Mem(u32 offset,char*file)
+u32 LoadFileToSh4Mem(u32 offset,wchar*file)
 {
-	FILE * fd = fopen(file, "rb");
+	FILE * fd = _wfopen(file, L"rb");
 	if (fd==NULL) {
 		printf("LoadFileToSh4Mem: can't load file \"%s\" to memory , file not found\n",file);
 		return 0;
@@ -44,7 +44,7 @@ u32 LoadFileToSh4Mem(u32 offset,char*file)
 	}
 }
 
-u32 LoadBinfileToSh4Mem(u32 offset,char*file)
+u32 LoadBinfileToSh4Mem(u32 offset,wchar*file)
 {
 	u8 CheckStr[8]={0x7,0xd0,0x8,0xd1,0x17,0x10,0x5,0xdf};/* String for checking if a binary file has an inbuilt ip.bin */
 	u32 rv=0;
@@ -59,9 +59,9 @@ u32 LoadBinfileToSh4Mem(u32 offset,char*file)
 	}
 	return LoadFileToSh4Mem(0x8000, file);
 }
-bool LoadFileToSh4Bootrom(char *szFile)
+bool LoadFileToSh4Bootrom(wchar *szFile)
 {
-	FILE * fd = fopen(szFile, "rb");
+	FILE * fd = _tfopen(szFile, L"rb");
 	if (fd==NULL) {
 		printf("LoadFileToSh4Bootrom: can't load file \"%s\", file not found\n", szFile);
 		return false;
@@ -90,9 +90,9 @@ bool LoadFileToSh4Bootrom(char *szFile)
 	return true;
 }
 
-bool LoadFileToSh4Flashrom(char *szFile)
+bool LoadFileToSh4Flashrom(wchar *szFile)
 {
-	FILE * fd = fopen(szFile, "rb");
+	FILE * fd = _tfopen(szFile, L"rb");
 	if (fd==NULL) {
 		printf("LoadFileToSh4Flashrom: can't load file \"%s\", file not found\n", szFile);
 		return false;
@@ -116,9 +116,9 @@ bool LoadFileToSh4Flashrom(char *szFile)
 	return true;
 }
 
-bool SaveSh4FlashromToFile(char *szFile)
+bool SaveSh4FlashromToFile(wchar *szFile)
 {
-	FILE * fd = fopen(szFile, "wb");
+	FILE * fd = _tfopen(szFile, L"wb");
 	if (fd==NULL) {
 		printf("SaveSh4FlashromToFile: can't open file \"%s\" \n", szFile);
 		return false;

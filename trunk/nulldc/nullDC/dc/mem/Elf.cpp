@@ -51,9 +51,9 @@ int GetSymbName(u32 address,char *szDesc,bool bUseUnkAddress)
 	return sprintf(szDesc, "%x",address);
 }
 
-bool LoadELF( char* szFileName )
+bool LoadELF( wchar* szFileName )
 {
-	FILE *fElf = fopen( szFileName, "rb" );
+	FILE *fElf = _tfopen( szFileName, L"rb" );
 	if( !fElf )
 		return false;
 

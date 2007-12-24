@@ -420,5 +420,5 @@ struct Elf32_Dyn {
 
 /////////////////////////////////////////////////////////////////////
 
-bool LoadELF( char* szFileName );
+bool LoadELF( wchar* szFileName );
 int GetSymbName(u32 address,char *szDesc,bool bUseUnkAddress);

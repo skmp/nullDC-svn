@@ -167,7 +167,7 @@ void Write_SB_ADST(u32 data)
 		if (SB_ADEN&1)
 		{
 			if (SB_ADDIR==1)
-				msgboxf("AICA DMA : SB_ADDIR==1 !!!!!!!!",MBX_OK | MBX_ICONERROR);
+				msgboxf(L"AICA DMA : SB_ADDIR==1 !!!!!!!!",MBX_OK | MBX_ICONERROR);
 
 			u32 src=SB_ADSTAR;
 			u32 dst=SB_ADSTAG;
