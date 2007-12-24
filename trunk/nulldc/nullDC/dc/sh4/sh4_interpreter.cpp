@@ -8,6 +8,7 @@
 #include "sh4_if.h"
 #include "dc/pvr/pvr_if.h"
 #include "dc/aica/aica_if.h"
+#include "dmac.h"
 #include "dc/gdrom/gdrom_if.h"
 #include "intc.h"
 #include "tmu.h"
@@ -565,16 +566,26 @@ u32 gpc_counter=0;
 
 //Will be added later as global var , comented out for now (338)
 //#define cpu_ratio 100
+s32 gd_cycles=0;
 
 int __fastcall UpdateSystem(u32 Cycles)
 {
 #ifdef cpu_ratio
 	Cycles=Cycles*100/cpu_ratio;
 #endif
+	gd_cycles+=Cycles;
+	if (gd_cycles>6400)
+	{
+		gd_cycles-=6400;
+		UpdateGDRom();
+		//UpdateDMA();
+	}
+	
 	//Cycles=350;
 	aica_cycl+=Cycles;
 	if (aica_cycl>(200*1000*1000/(44100*3)))
 	{
+		
 		rtc_cycl+=aica_cycl;
 		//1.5-2k cycles .These devices dont need more precition , so we save a bit here :)
 		UpdateAica(aica_cycl);
@@ -591,7 +602,6 @@ int __fastcall UpdateSystem(u32 Cycles)
 			gpc_counter=0;
 			gcp_timer++;
 			FreeSuspendedBlocks();
-			UpdateGDRom();
 			if (rtc_cycl>=(200*1000*1000))
 			{
 				rtc_cycl-=(200*1000*1000);

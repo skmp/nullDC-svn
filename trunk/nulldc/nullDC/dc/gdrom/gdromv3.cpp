@@ -1005,25 +1005,18 @@ void WriteMem_gdrom(u32 Addr, u32 data, u32 sz)
 //is this needed ?
 void UpdateGDRom()
 {
-	/*
-	die("UpdateGDRom()");
-	*/
-}
-//Dma Start
-void GDROM_DmaStart(u32 data)
-{
-	if(!(data&1) || !(SB_GDEN &1))
+	if(!(SB_GDST&1) || !(SB_GDEN &1))
 		return;
 
-	//printf(">>\tGDROM : DMA initiated\n");
-	SB_GDST=0;
+	//SB_GDST=0;
 
 	//TODO : Fix dmaor
-	u32 dmaor	= DMAC_DMAOR;
+	u32 dmaor	= DMAC_DMAOR.full;
 
-	u32	src		= SB_GDSTAR,
-		len		= SB_GDLEN ;
+	u32	src		= SB_GDSTARD,
+		len		= SB_GDLEN-SB_GDLEND ;
 
+	len=min(len,(u32)32);
 	// do we need to do this for gdrom dma ?
 	if(0x8201 != (dmaor &DMAOR_MASK)) {
 		printf("\n!\tGDROM: DMAOR has invalid settings (%X) !\n", dmaor);
@@ -1036,7 +1029,7 @@ void GDROM_DmaStart(u32 data)
 
 	if(0 == len) 
 	{
-		printf("\n!\tGDROM: Len: %X, Normal Termination !\n", len);
+		printf("\n!\tGDROM: Len: %X, Abnormal Termination !\n", len);
 	}
 	u32 len_backup=len;
 	if( 1 == SB_GDDIR ) 
@@ -1063,34 +1056,70 @@ void GDROM_DmaStart(u32 data)
 		}
 	}
 	else
-		msgboxf("GDROM: SB_GDDIR %X (TO AICA WAVE MEM?)",MBX_ICONERROR, SB_GDDIR);
+		msgboxf(L"GDROM: SB_GDDIR %X (TO AICA WAVE MEM?)",MBX_ICONERROR, SB_GDDIR);
 
 	//SB_GDLEN = 0x00000000; //13/5/2k7 -> acording to docs these regs are not updated by hardware
 	//SB_GDSTAR = (src + len_backup);
-	SB_GDST=0;//done
 
-	SB_GDLEND = len_backup;
-	SB_GDSTARD = (src + len_backup)&0x1FFFFFFF;
+	SB_GDLEND+= len_backup;
+	SB_GDSTARD+= len_backup;//(src + len_backup)&0x1FFFFFFF;
 
-	// The DMA end interrupt flag
-	asic_RaiseInterrupt(holly_GDROM_DMA);
-
+	if (SB_GDLEND==SB_GDLEN)
+	{
+		//printf("Streamed GDMA end - %d bytes trasnfered\n",SB_GDLEND);
+		SB_GDST=0;//done
+		// The DMA end interrupt flag
+		asic_RaiseInterrupt(holly_GDROM_DMA);
+	}
 	//Readed ALL sectors
 	if (read_params.remaining_sectors==0)
 	{
 		u32 buff_size =read_buff.cache_size - read_buff.cache_index;
 		//And all buffer :p
 		if (buff_size==0)
+		{
+			verify(!SB_GDST&1)		
 			gd_set_state(gds_procpacketdone);
+		}
+	}
+}
+//Dma Start
+void GDROM_DmaStart(u32 data)
+{
+	if (SB_GDEN==0)
+	{
+		printf("Invalid GD-DMA start, SB_GDEN=0.Ingoring it.\n");
+		return;
+	}
+	SB_GDST|=data&1;
+
+	if (SB_GDST==1)
+	{
+		SB_GDSTARD=SB_GDSTAR;
+		SB_GDLEND=0;
+		//printf("Streamed GDMA start\n");
+		UpdateGDRom();
 	}
 }
 
 
+void GDROM_DmaEnable(u32 data)
+{
+	SB_GDEN=data&1;
+	if (SB_GDEN==0 && SB_GDST==1)
+	{
+		printf("GD-DMA aborted\n");
+		SB_GDST=0;
+	}
+}
 //Init/Term/Res
 void gdrom_reg_Init()
 {
 	sb_regs[(SB_GDST_addr-SB_BASE)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA;
 	sb_regs[(SB_GDST_addr-SB_BASE)>>2].writeFunction=GDROM_DmaStart;
+
+	sb_regs[(SB_GDEN_addr-SB_BASE)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA;
+	sb_regs[(SB_GDEN_addr-SB_BASE)>>2].writeFunction=GDROM_DmaEnable;
 }
 void gdrom_reg_Term()
 {

@@ -24,8 +24,8 @@ struct Sh4RegContext
 	fpscr_type old_fpscr;
 };
 void GenerateSinCos();
-__declspec(align(32)) extern u32 r[16];
-__declspec(align(32)) extern u32 r_bank[8];
+__declspec(align(64)) extern u32 r[16];
+__declspec(align(64)) extern u32 r_bank[8];
 
 extern u32 gbr,ssr,spc,sgr,dbr,vbr;
 extern u32 mach,macl,pr,fpul;
@@ -35,8 +35,8 @@ extern StatusReg sr;
 
 extern fpscr_type fpscr;
 
-extern __declspec(align(32)) f32 xf[16];
-extern __declspec(align(32)) f32 fr[16];
+extern __declspec(align(64)) f32 xf[16];
+extern __declspec(align(64)) f32 fr[16];
 
 
 extern u32*  xf_hex,*fr_hex;

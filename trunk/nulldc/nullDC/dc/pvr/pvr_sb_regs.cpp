@@ -21,9 +21,9 @@ void RegWrite_SB_C2DST(u32 data)
 //PVR-DMA
 void do_pvr_dma()
 {
-	u32 chcr	= DMAC_CHCR2,
-	dmaor	= DMAC_DMAOR,
-	dmatcr	= DMAC_DMATCR0;
+	u32 chcr	= DMAC_CHCR[0].full,
+	dmaor	= DMAC_DMAOR.full,
+	dmatcr	= DMAC_DMATCR[0];
 
 	u32	src		= SB_PDSTAR,
 		dst		= SB_PDSTAP,
@@ -54,9 +54,9 @@ void do_pvr_dma()
 		WriteMemBlock_nommu_ptr(dst,(u32*)GetMemPtr(src,len),len);
 	}
 
-	DMAC_SAR0 = (src + len);
-	DMAC_CHCR0 &= 0xFFFFFFFE;
-	DMAC_DMATCR0 = 0x00000000;
+	DMAC_SAR[0] = (src + len);
+	DMAC_CHCR[0].full &= 0xFFFFFFFE;
+	DMAC_DMATCR[0] = 0x00000000;
 
 	SB_PDST = 0x00000000;
 

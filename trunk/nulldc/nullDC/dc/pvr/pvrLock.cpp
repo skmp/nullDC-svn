@@ -195,13 +195,13 @@ vram_block* FASTCALL vramlock_Lock_64(u32 start_offset64,u32 end_offset64,void* 
 
 	if (end_offset64>(VRAM_SIZE-1))
 	{
-		msgboxf("vramlock_Lock_64: end_offset64>(VRAM_SIZE-1) \n Tried to lock area out of vram , possibly bug on the pvr plugin",MBX_OK);
+		msgboxf(L"vramlock_Lock_64: end_offset64>(VRAM_SIZE-1) \n Tried to lock area out of vram , possibly bug on the pvr plugin",MBX_OK);
 		end_offset64=(VRAM_SIZE-1);
 	}
 
 	if (start_offset64>end_offset64)
 	{
-		msgboxf("vramlock_Lock_64: start_offset64>end_offset64 \n Tried to lock negative block , possibly bug on the pvr plugin",MBX_OK);
+		msgboxf(L"vramlock_Lock_64: start_offset64>end_offset64 \n Tried to lock negative block , possibly bug on the pvr plugin",MBX_OK);
 		start_offset64=0;
 	}
 
@@ -236,7 +236,7 @@ bool VramLockedWrite(u8* address)
 				
 				if ((*list)[i])
 				{
-					msgboxf("Error , pvr is suposed to remove lock",MBX_OK);
+					msgboxf(L"Error , pvr is suposed to remove lock",MBX_OK);
 					__asm int 3;
 				}
 
@@ -257,7 +257,7 @@ void FASTCALL vramlock_Unlock_block(vram_block* block)
 {
 	//VRAM_SIZE/PAGE_SIZE;
 	if (block->end>VRAM_SIZE)
-		msgboxf("Error : block end is after vram , skiping unlock",MBX_OK);
+		msgboxf(L"Error : block end is after vram , skiping unlock",MBX_OK);
 	else
 	{
 		vramlock_list_remove(block);

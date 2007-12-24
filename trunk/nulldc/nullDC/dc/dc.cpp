@@ -298,12 +298,12 @@ void Term_DC()
 
 void LoadBiosFiles()
 {
-	char* temp_path=GetEmuPath("data\\");
-	u32 pl=(u32)strlen(temp_path);
+	wchar* temp_path=GetEmuPath(L"data\\");
+	u32 pl=(u32)wcslen(temp_path);
 
 
 #ifdef BUILD_DREAMCAST
-	strcat(temp_path,"dc_boot.bin");
+	wcscat(temp_path,L"dc_boot.bin");
 #elif	BUILD_NAOMI
 	strcat(temp_path,"naomi_boot.bin");
 #else	//BUILD_DEV_UNIT
@@ -318,22 +318,22 @@ void LoadBiosFiles()
 #ifndef BUILD_NAOMI
 	temp_path[pl]=0;
 	//try to load saved flash
-	strcat(temp_path,"dc_flash_wb.bin");
+	wcscat(temp_path,L"dc_flash_wb.bin");
 	if (!LoadFileToSh4Flashrom(temp_path))
 	{
 		//not found , load default :)
 		temp_path[pl]=0;
-		strcat(temp_path,"dc_flash.bin");
+		wcscat(temp_path,L"dc_flash.bin");
 		LoadFileToSh4Flashrom(temp_path);
 	}
 	
 
 	temp_path[pl]=0;
-	strcat(temp_path,"syscalls.bin");
+	wcscat(temp_path,L"syscalls.bin");
 	LoadFileToSh4Mem(0x00000, temp_path);
 
 	temp_path[pl]=0;
-	strcat(temp_path,"IP.bin");
+	wcscat(temp_path,L"IP.bin");
 	LoadFileToSh4Mem(0x08000, temp_path);
 	temp_path[pl]=0;
 
@@ -348,7 +348,7 @@ void LoadBiosFiles()
 
 void SaveFlash()
 {
-	char* temp_path=GetEmuPath("data\\");
+	wchar* temp_path=GetEmuPath(L"data\\");
 	printf("ERROR : FLASH NOT SAVED\n");
 //	u32 pl=(u32)strlen(temp_path);
 	//SaveSh4FlashromToFile(

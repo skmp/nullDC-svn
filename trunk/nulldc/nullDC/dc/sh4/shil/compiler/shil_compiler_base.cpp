@@ -142,7 +142,7 @@ x86_gpr_reg GetSpareReg()
 //#ifdef PROFILE_SLOW_BLOCK
 void InitnullProf()
 {
-	if(profiler_dll.Load("nullprof_server.dll"))
+	if(profiler_dll.Load(L"nullprof_server.dll"))
 	{
 		void* temp=profiler_dll.GetProcAddress("InitProfiller");
 		if (temp)

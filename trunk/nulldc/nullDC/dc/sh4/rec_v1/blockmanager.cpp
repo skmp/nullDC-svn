@@ -361,7 +361,7 @@ void bm_GetStats(bm_stats* stats)
 	stats->block_count=all_block_list.ItemCount;
 
 	u32 sz=0;
-	for (int i=0;i<MemChunkCount;i++)
+	for (u32 i=0;i<MemChunkCount;i++)
 	{
 		sz+=MemChunks[i].index;
 	}

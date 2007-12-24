@@ -9,31 +9,20 @@
 #include "dc/asic/asic.h"
 #include "plugins/plugin_manager.h"
 
-u32 DMAC_SAR0;
-u32 DMAC_DAR0;
-u32 DMAC_DMATCR0;
-u32 DMAC_CHCR0;
-u32 DMAC_SAR1;
-u32 DMAC_DAR1;
-u32 DMAC_DMATCR1;
-u32 DMAC_CHCR1;
-u32 DMAC_SAR2;
-u32 DMAC_DAR2;
-u32 DMAC_DMATCR2;
-u32 DMAC_CHCR2;
-u32 DMAC_SAR3;
-u32 DMAC_DAR3;
-u32 DMAC_DMATCR3;
-u32 DMAC_CHCR3;
-u32 DMAC_DMAOR;
+u32 DMAC_SAR[4];
+u32 DMAC_DAR[4];
+u32 DMAC_DMATCR[4];
+DMAC_CHCR_type DMAC_CHCR[4];
+
+DMAC_DMAOR_type DMAC_DMAOR;
 
 void DMAC_Ch2St()
 {
-	u32 chcr	= DMAC_CHCR2,
-		dmaor	= DMAC_DMAOR,
-		dmatcr	= DMAC_DMATCR2;
+	u32 chcr	= DMAC_CHCR[2].full,
+		dmaor	= DMAC_DMAOR.full,
+		dmatcr	= DMAC_DMATCR[2];
 
-	u32	src		= DMAC_SAR2,
+	u32	src		= DMAC_SAR[2],
 		dst		= SB_C2DSTAT,
 		len		= SB_C2DLEN ;
 
@@ -124,9 +113,9 @@ void DMAC_Ch2St()
 
 	// Setup some of the regs so it thinks we've finished DMA
 
-	DMAC_SAR2 = (src);
-	DMAC_CHCR2 &= 0xFFFFFFFE;
-	DMAC_DMATCR2 = 0x00000000;
+	DMAC_SAR[2] = (src);
+	DMAC_CHCR[2].full &= 0xFFFFFFFE;
+	DMAC_DMATCR[2] = 0x00000000;
 
 	SB_C2DST = 0x00000000;
 	SB_C2DLEN = 0x00000000;
@@ -139,13 +128,42 @@ void DMAC_Ch2St()
 
 //on demand data transfer
 //ch0/on demand data transfer request
-void dmac_ddt_ch0_ddt()
+void dmac_ddt_ch0_ddt(u32 src,u32 dst,u32 count)
 {
-	//InterruptID::sh4_TMU0_TUNI0
+	
 }
 //ch2/direct data transfer request
-void dmac_ddt_ch2_direct()
+void dmac_ddt_ch2_direct(u32 dst,u32 count)
 {
+}
+//transfer 22kb chunks (or less) [704 x 32] (22528)
+void UpdateDMA()
+{
+	/*if (DMAC_DMAOR.AE==1 || DMAC_DMAOR.DME==0)
+		return;//DMA disabled
+
+	//DMAC _must_ be on DDT mode
+	verify(DMAC_DMAOR.DDT==1);
+
+	for (int ch=0;ch<4;ch++)
+	{
+		if (DMAC_CHCR[ch].DE==1 && DMAC_CHCR[ch].TE==0)
+		{
+			verify(DMAC_CHCR[ch].RS<0x8);
+			verify(DMAC_CHCR[ch].RS<0x4);
+		}
+	}*/
+}
+template<u32 ch>
+void WriteCHCR(u32 data)
+{
+	DMAC_CHCR[ch].full=data;
+	//printf("Write to CHCR%d = 0x%X\n",ch,data);
+}
+void WriteDMAOR(u32 data)
+{
+	DMAC_DMAOR.full=data;
+	//printf("Write to DMAOR = 0x%X\n",data);
 }
 //Init term res
 void dmac_Init()
@@ -155,119 +173,119 @@ void dmac_Init()
 	DMAC[(DMAC_SAR0_addr&0xFF)>>2].NextCange=0;
 	DMAC[(DMAC_SAR0_addr&0xFF)>>2].readFunction=0;
 	DMAC[(DMAC_SAR0_addr&0xFF)>>2].writeFunction=0;
-	DMAC[(DMAC_SAR0_addr&0xFF)>>2].data32=&DMAC_SAR0;
+	DMAC[(DMAC_SAR0_addr&0xFF)>>2].data32=&DMAC_SAR[0];
 
 	//DMAC DAR0 0xFFA00004 0x1FA00004 32 Undefined Undefined Held Held Bclk
 	DMAC[(DMAC_DAR0_addr&0xFF)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
 	DMAC[(DMAC_DAR0_addr&0xFF)>>2].NextCange=0;
 	DMAC[(DMAC_DAR0_addr&0xFF)>>2].readFunction=0;
 	DMAC[(DMAC_DAR0_addr&0xFF)>>2].writeFunction=0;
-	DMAC[(DMAC_DAR0_addr&0xFF)>>2].data32=&DMAC_DAR0;
+	DMAC[(DMAC_DAR0_addr&0xFF)>>2].data32=&DMAC_DAR[0];
 
 	//DMAC DMATCR0 0xFFA00008 0x1FA00008 32 Undefined Undefined Held Held Bclk
 	DMAC[(DMAC_DMATCR0_addr&0xFF)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
 	DMAC[(DMAC_DMATCR0_addr&0xFF)>>2].NextCange=0;
 	DMAC[(DMAC_DMATCR0_addr&0xFF)>>2].readFunction=0;
 	DMAC[(DMAC_DMATCR0_addr&0xFF)>>2].writeFunction=0;
-	DMAC[(DMAC_DMATCR0_addr&0xFF)>>2].data32=&DMAC_DMATCR0;
+	DMAC[(DMAC_DMATCR0_addr&0xFF)>>2].data32=&DMAC_DMATCR[0];
 
 	//DMAC CHCR0 0xFFA0000C 0x1FA0000C 32 0x00000000 0x00000000 Held Held Bclk
-	DMAC[(DMAC_CHCR0_addr&0xFF)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
+	DMAC[(DMAC_CHCR0_addr&0xFF)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA;
 	DMAC[(DMAC_CHCR0_addr&0xFF)>>2].NextCange=0;
 	DMAC[(DMAC_CHCR0_addr&0xFF)>>2].readFunction=0;
-	DMAC[(DMAC_CHCR0_addr&0xFF)>>2].writeFunction=0;
-	DMAC[(DMAC_CHCR0_addr&0xFF)>>2].data32=&DMAC_CHCR0;
+	DMAC[(DMAC_CHCR0_addr&0xFF)>>2].writeFunction=WriteCHCR<0>;
+	DMAC[(DMAC_CHCR0_addr&0xFF)>>2].data32=&DMAC_CHCR[0].full;
 
 	//DMAC SAR1 0xFFA00010 0x1FA00010 32 Undefined Undefined Held Held Bclk
 	DMAC[(DMAC_SAR1_addr&0xFF)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
 	DMAC[(DMAC_SAR1_addr&0xFF)>>2].NextCange=0;
 	DMAC[(DMAC_SAR1_addr&0xFF)>>2].readFunction=0;
 	DMAC[(DMAC_SAR1_addr&0xFF)>>2].writeFunction=0;
-	DMAC[(DMAC_SAR1_addr&0xFF)>>2].data32=&DMAC_SAR1;
+	DMAC[(DMAC_SAR1_addr&0xFF)>>2].data32=&DMAC_SAR[1];
 
 	//DMAC DAR1 0xFFA00014 0x1FA00014 32 Undefined Undefined Held Held Bclk
 	DMAC[(DMAC_DAR1_addr&0xFF)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
 	DMAC[(DMAC_DAR1_addr&0xFF)>>2].NextCange=0;
 	DMAC[(DMAC_DAR1_addr&0xFF)>>2].readFunction=0;
 	DMAC[(DMAC_DAR1_addr&0xFF)>>2].writeFunction=0;
-	DMAC[(DMAC_DAR1_addr&0xFF)>>2].data32=&DMAC_DAR1;
+	DMAC[(DMAC_DAR1_addr&0xFF)>>2].data32=&DMAC_DAR[1];
 
 	//DMAC DMATCR1 0xFFA00018 0x1FA00018 32 Undefined Undefined Held Held Bclk
 	DMAC[(DMAC_DMATCR1_addr&0xFF)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
 	DMAC[(DMAC_DMATCR1_addr&0xFF)>>2].NextCange=0;
 	DMAC[(DMAC_DMATCR1_addr&0xFF)>>2].readFunction=0;
 	DMAC[(DMAC_DMATCR1_addr&0xFF)>>2].writeFunction=0;
-	DMAC[(DMAC_DMATCR1_addr&0xFF)>>2].data32=&DMAC_DMATCR1;
+	DMAC[(DMAC_DMATCR1_addr&0xFF)>>2].data32=&DMAC_DMATCR[1];
 
 	//DMAC CHCR1 0xFFA0001C 0x1FA0001C 32 0x00000000 0x00000000 Held Held Bclk
-	DMAC[(DMAC_CHCR1_addr&0xFF)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
+	DMAC[(DMAC_CHCR1_addr&0xFF)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA;
 	DMAC[(DMAC_CHCR1_addr&0xFF)>>2].NextCange=0;
 	DMAC[(DMAC_CHCR1_addr&0xFF)>>2].readFunction=0;
-	DMAC[(DMAC_CHCR1_addr&0xFF)>>2].writeFunction=0;
-	DMAC[(DMAC_CHCR1_addr&0xFF)>>2].data32=&DMAC_CHCR1;
+	DMAC[(DMAC_CHCR1_addr&0xFF)>>2].writeFunction=WriteCHCR<1>;
+	DMAC[(DMAC_CHCR1_addr&0xFF)>>2].data32=&DMAC_CHCR[1].full;
 
 	//DMAC SAR2 0xFFA00020 0x1FA00020 32 Undefined Undefined Held Held Bclk
 	DMAC[(DMAC_SAR2_addr&0xFF)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
 	DMAC[(DMAC_SAR2_addr&0xFF)>>2].NextCange=0;
 	DMAC[(DMAC_SAR2_addr&0xFF)>>2].readFunction=0;
 	DMAC[(DMAC_SAR2_addr&0xFF)>>2].writeFunction=0;
-	DMAC[(DMAC_SAR2_addr&0xFF)>>2].data32=&DMAC_SAR2;
+	DMAC[(DMAC_SAR2_addr&0xFF)>>2].data32=&DMAC_SAR[2];
 
 	//DMAC DAR2 0xFFA00024 0x1FA00024 32 Undefined Undefined Held Held Bclk
 	DMAC[(DMAC_DAR2_addr&0xFF)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
 	DMAC[(DMAC_DAR2_addr&0xFF)>>2].NextCange=0;
 	DMAC[(DMAC_DAR2_addr&0xFF)>>2].readFunction=0;
 	DMAC[(DMAC_DAR2_addr&0xFF)>>2].writeFunction=0;
-	DMAC[(DMAC_DAR2_addr&0xFF)>>2].data32=&DMAC_DAR2;
+	DMAC[(DMAC_DAR2_addr&0xFF)>>2].data32=&DMAC_DAR[2];
 
 	//DMAC DMATCR2 0xFFA00028 0x1FA00028 32 Undefined Undefined Held Held Bclk
 	DMAC[(DMAC_DMATCR2_addr&0xFF)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
 	DMAC[(DMAC_DMATCR2_addr&0xFF)>>2].NextCange=0;
 	DMAC[(DMAC_DMATCR2_addr&0xFF)>>2].readFunction=0;
 	DMAC[(DMAC_DMATCR2_addr&0xFF)>>2].writeFunction=0;
-	DMAC[(DMAC_DMATCR2_addr&0xFF)>>2].data32=&DMAC_DMATCR2;
+	DMAC[(DMAC_DMATCR2_addr&0xFF)>>2].data32=&DMAC_DMATCR[2];
 
 	//DMAC CHCR2 0xFFA0002C 0x1FA0002C 32 0x00000000 0x00000000 Held Held Bclk
-	DMAC[(DMAC_CHCR2_addr&0xFF)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
+	DMAC[(DMAC_CHCR2_addr&0xFF)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA;
 	DMAC[(DMAC_CHCR2_addr&0xFF)>>2].NextCange=0;
 	DMAC[(DMAC_CHCR2_addr&0xFF)>>2].readFunction=0;
-	DMAC[(DMAC_CHCR2_addr&0xFF)>>2].writeFunction=0;
-	DMAC[(DMAC_CHCR2_addr&0xFF)>>2].data32=&DMAC_CHCR2;
+	DMAC[(DMAC_CHCR2_addr&0xFF)>>2].writeFunction=WriteCHCR<2>;
+	DMAC[(DMAC_CHCR2_addr&0xFF)>>2].data32=&DMAC_CHCR[2].full;
 
 	//DMAC SAR3 0xFFA00030 0x1FA00030 32 Undefined Undefined Held Held Bclk
 	DMAC[(DMAC_SAR3_addr&0xFF)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
 	DMAC[(DMAC_SAR3_addr&0xFF)>>2].NextCange=0;
 	DMAC[(DMAC_SAR3_addr&0xFF)>>2].readFunction=0;
 	DMAC[(DMAC_SAR3_addr&0xFF)>>2].writeFunction=0;
-	DMAC[(DMAC_SAR3_addr&0xFF)>>2].data32=&DMAC_SAR3;
+	DMAC[(DMAC_SAR3_addr&0xFF)>>2].data32=&DMAC_SAR[3];
 
 	//DMAC DAR3 0xFFA00034 0x1FA00034 32 Undefined Undefined Held Held Bclk
 	DMAC[(DMAC_DAR3_addr&0xFF)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
 	DMAC[(DMAC_DAR3_addr&0xFF)>>2].NextCange=0;
 	DMAC[(DMAC_DAR3_addr&0xFF)>>2].readFunction=0;
 	DMAC[(DMAC_DAR3_addr&0xFF)>>2].writeFunction=0;
-	DMAC[(DMAC_DAR3_addr&0xFF)>>2].data32=&DMAC_DAR3;
+	DMAC[(DMAC_DAR3_addr&0xFF)>>2].data32=&DMAC_DAR[3];
 
 	//DMAC DMATCR3 0xFFA00038 0x1FA00038 32 Undefined Undefined Held Held Bclk
 	DMAC[(DMAC_DMATCR3_addr&0xFF)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
 	DMAC[(DMAC_DMATCR3_addr&0xFF)>>2].NextCange=0;
 	DMAC[(DMAC_DMATCR3_addr&0xFF)>>2].readFunction=0;
 	DMAC[(DMAC_DMATCR3_addr&0xFF)>>2].writeFunction=0;
-	DMAC[(DMAC_DMATCR3_addr&0xFF)>>2].data32=&DMAC_DMATCR3;
+	DMAC[(DMAC_DMATCR3_addr&0xFF)>>2].data32=&DMAC_DMATCR[3];
 
 	//DMAC CHCR3 0xFFA0003C 0x1FA0003C 32 0x00000000 0x00000000 Held Held Bclk
-	DMAC[(DMAC_CHCR3_addr&0xFF)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
+	DMAC[(DMAC_CHCR3_addr&0xFF)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA ;
 	DMAC[(DMAC_CHCR3_addr&0xFF)>>2].NextCange=0;
 	DMAC[(DMAC_CHCR3_addr&0xFF)>>2].readFunction=0;
-	DMAC[(DMAC_CHCR3_addr&0xFF)>>2].writeFunction=0;
-	DMAC[(DMAC_CHCR3_addr&0xFF)>>2].data32=&DMAC_CHCR3;
+	DMAC[(DMAC_CHCR3_addr&0xFF)>>2].writeFunction=WriteCHCR<3>;
+	DMAC[(DMAC_CHCR3_addr&0xFF)>>2].data32=&DMAC_CHCR[3].full;
 
 	//DMAC DMAOR 0xFFA00040 0x1FA00040 32 0x00000000 0x00000000 Held Held Bclk
-	DMAC[(DMAC_DMAOR_addr&0xFF)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
+	DMAC[(DMAC_DMAOR_addr&0xFF)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA ;
 	DMAC[(DMAC_DMAOR_addr&0xFF)>>2].NextCange=0;
 	DMAC[(DMAC_DMAOR_addr&0xFF)>>2].readFunction=0;
-	DMAC[(DMAC_DMAOR_addr&0xFF)>>2].writeFunction=0;
-	DMAC[(DMAC_DMAOR_addr&0xFF)>>2].data32=&DMAC_DMAOR;
+	DMAC[(DMAC_DMAOR_addr&0xFF)>>2].writeFunction=WriteDMAOR;
+	DMAC[(DMAC_DMAOR_addr&0xFF)>>2].data32=&DMAC_DMAOR.full;
 }
 void dmac_Reset(bool Manual)
 {
@@ -290,11 +308,11 @@ void dmac_Reset(bool Manual)
 	DMAC CHCR3 H'FFA0 003C H'1FA0 003C 32 H'0000 0000 H'0000 0000 Held Held Bclk
 	DMAC DMAOR H'FFA0 0040 H'1FA0 0040 32 H'0000 0000 H'0000 0000 Held Held Bclk
 	*/
-	DMAC_CHCR0 = 0x0;
-	DMAC_CHCR1 = 0x0;
-	DMAC_CHCR2 = 0x0;
-	DMAC_CHCR3 = 0x0;
-	DMAC_DMAOR = 0x0;
+	DMAC_CHCR[0].full = 0x0;
+	DMAC_CHCR[1].full = 0x0;
+	DMAC_CHCR[2].full = 0x0;
+	DMAC_CHCR[3].full = 0x0;
+	DMAC_DMAOR.full = 0x0;
 }
 void dmac_Term()
 {
