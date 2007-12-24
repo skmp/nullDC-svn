@@ -731,7 +731,7 @@ bool BasicBlock::Compile()
 				(op[-1].opcode == shilop_SaveT)							  //and previus was a load to T [== the cmp was right before bt/no bts)
 				)
 			{
-				for (int j=i+1;j<list_sz;j++)
+				for (u32 j=i+1;j<list_sz;j++)
 				{
 					//printf("%d: %d\n",j,op[j-i].opcode);
 					if (op[j-i].opcode!=shilop_mov)
@@ -783,7 +783,7 @@ compile_normaly:
 			x86e->Emit(op_mov32,ECX,(u32)cBB);
 			x86e->Emit(op_jmp,x86_ptr_imm(RewriteBasicBlockGuess_TTG_stub));
 			u32 extrasz=26-(x86e->x86_indx-cBB->ebi.Rewrite.Offset);
-			for (int i=0;i<extrasz;i++)
+			for (u32 i=0;i<extrasz;i++)
 				x86e->write8(0xCC);
 		}
 		break;
