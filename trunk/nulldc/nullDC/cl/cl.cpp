@@ -4,26 +4,26 @@
 #include "config/config.h"
 #include "serial_ipc/serial_ipc_client.h"
 
-char* trim_ws(char* str)
+wchar* trim_ws(wchar* str)
 {
-	if (str==0 || strlen(str)==0)
+	if (str==0 || wcslen(str)==0)
 		return 0;
 
 	while(*str)
 	{
-		if (!isspace(*str))
+		if (!iswspace(*str))
 			break;
 		str++;
 	}
 
-	size_t l=strlen(str);
+	size_t l=wcslen(str);
 	
 	if (l==0)
 		return 0;
 
 	while(l>0)
 	{
-		if (!isspace(str[l-1]))
+		if (!iswspace(str[l-1]))
 			break;
 		str[l-1]=0;
 		l--;
@@ -35,7 +35,7 @@ char* trim_ws(char* str)
 	return str;
 }
 
-int setconfig(char** arg,int cl)
+int setconfig(wchar** arg,int cl)
 {
 	int rv=0;
 	for(;;)
@@ -45,24 +45,24 @@ int setconfig(char** arg,int cl)
 			printf("-config : invalid number of parameters, format is section:key=value\n");
 			return rv;
 		}
-		char* sep=strstr(arg[1],":");
+		wchar* sep=wcsstr(arg[1],L":");
 		if (sep==0)
 		{
-			printf("-config : invalid parameter %s, format is section:key=value\n",arg[1]);
+			wprintf(L"-config : invalid parameter %s, format is section:key=value\n",arg[1]);
 			return rv;
 		}
-		char* value=strstr(sep+1,"=");
+		wchar* value=wcsstr(sep+1,L"=");
 		if (value==0)
 		{
-			printf("-config : invalid parameter %s, format is section:key=value\n",arg[1]);
+			wprintf(L"-config : invalid parameter %s, format is section:key=value\n",arg[1]);
 			return rv;
 		}
 
 		*sep++=0;
 		*value++=0;
 
-		char* sect=trim_ws(arg[1]);
-		char* key=trim_ws(sep);
+		wchar* sect=trim_ws(arg[1]);
+		wchar* key=trim_ws(sep);
 		value=trim_ws(value);
 
 		if (sect==0 || key==0)
@@ -72,13 +72,13 @@ int setconfig(char** arg,int cl)
 		}
 
 		if (value==0)
-			value="";
-		printf("Virtual cfg %s:%s=%s\n",sect,key,value);
+			value=L"";
+		wprintf(L"Virtual cfg %s:%s=%s\n",sect,key,value);
 
 		cfgSetVitual(sect,key,value);
 		rv++;
 
-		if (cl>=3 && strcmpi(arg[2],",")==0)
+		if (cl>=3 && _tcsicmp(arg[2],L",")==0)
 		{
 			cl-=2;
 			arg+=2;
@@ -90,36 +90,36 @@ int setconfig(char** arg,int cl)
 	}
 	return rv;
 }
-int setconfigfile(char** arg,int cl)
+int setconfigfile(wchar** arg,int cl)
 {
 	if (cl<1)
 	{
 		printf("-configfile : invalid number of parameters, format is -configfile <file>\n");
 		return 0;
 	}
-	strcpy(cfgPath,arg[1]);
+	wcscpy(cfgPath,arg[1]);
 	return 1;
 }
-int showhelp(char** arg,int cl)
+int showhelp(wchar** arg,int cl)
 {
 	if (cl>=1)
 	{
-		if (strcmpi(arg[1],"config")==0)
+		if (_tcsicmp(arg[1],L"config")==0)
 		{
 			printf("-config	section:key=value [, ..]: add a virtual config value\n Virtual config values wont be saved to the .cfg file\n unless a different value is writen to em\nNote :\n You can specify many settings in the xx:yy=zz , gg:hh=jj , ...\n format.The spaces betwen the values and ',' are needed.");
 			return 1;
 		}
-		else if (strcmpi(arg[1],"serial")==0)
+		else if (_tcsicmp(arg[1],L"serial")==0)
 		{
 			printf("-serial	<filename>              : serial redirection\nfilename:\n can be a file (ex. c:\\myfile.txt,\"c:\\ spaceses .txt\")\n or a COM port (ex. \\\\COM1)\n");
 			return 1;
 		}
-		else if (strcmpi(arg[1],"slave")==0)
+		else if (_tcsicmp(arg[1],L"slave")==0)
 		{
 			printf("-slave  <piperead> <pipewrite>  : serial redirection, slave ipc mode\npiperead :\n Pipe to read serial data from\npipewrite :\n Pipe to write serial data to\n");
 			return 1;
 		}
-		else if (strcmpi(arg[1],"configfile")==0)
+		else if (_tcsicmp(arg[1],L"configfile")==0)
 		{
 			printf("-configfile <file>              : use <file> instead of nullDC.cfg\nfile : \n a file to use as nullDC config.If not existing\n it will be created.Any changes to the config\n will be saved there.");
 			return 1;
@@ -138,54 +138,54 @@ int showhelp(char** arg,int cl)
 
 	return 0;
 }
-bool ParseCommandLine(int argc,char* argv[])
+bool ParseCommandLine(int argc,wchar* argv[])
 {
 
 	int cl=argc-2;
-	char** arg=argv+1;
+	wchar** arg=argv+1;
 	while(cl>=0)
 	{
-		if (strcmpi(*arg,"-help")==0)
+		if (_tcsicmp(*arg,L"-help")==0)
 		{
 			int as=showhelp(arg,cl);
 			cl-=as;
 			arg+=as;
 			return true;
 		}
-		else if (strcmpi(*arg,"-config")==0)
+		else if (_tcsicmp(*arg,L"-config")==0)
 		{
 			int as=setconfig(arg,cl);
 			cl-=as;
 			arg+=as;
 		}
-		else if (strcmpi(*arg,"-configfile")==0)
+		else if (_tcsicmp(*arg,L"-configfile")==0)
 		{
 			int as=setconfigfile(arg,cl);
 			cl-=as;
 			arg+=as;
 		}
-		else if (strcmpi(*arg,"-slave")==0)
+		else if (_tcsicmp(*arg,L"-slave")==0)
 		{
 			int as=slave_cmdl(arg,cl);
 			cl-=as;
 			arg+=as;
 		}
-		else if (strcmpi(*arg,"-serial")==0)
+		else if (_tcsicmp(*arg,L"-serial")==0)
 		{
 			int as=serial_cmdl(arg,cl);
 			cl-=as;
 			arg+=as;
 		}
-		else if (strcmpi(*arg,"-about")==0)
+		else if (_tcsicmp(*arg,L"-about")==0)
 		{
 			printf("nullDC, a Sega Dreamcast Emulator.Made by the nullDC team -- www.emudev.com/nullDC\n");
-			printf("Version : " VER_FULLNAME " \n");
+			wprintf(L"Version : " VER_FULLNAME L" \n");
 			
 			return true;
 		}
 		else
 		{
-			printf("wtf %s is suposed to do ?\n",*arg);
+			wprintf(L"wtf %s is suposed to do ?\n",*arg);
 		}
 		arg++;
 		cl--;
