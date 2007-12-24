@@ -246,11 +246,6 @@ void uiGetFN(TCHAR *szFileName, TCHAR *szParse)
 ///////////////////
 HWND hDebugger;
 
-__inline static char* _ext( char* szFN, u32 size ) {
-	for( u32 i=0; i<size; i++ )	{
-		if( szFN[i] == 0x2E ) { return &szFN[i]; }	// 0x2E == '.'
-	}	return szFN;
-}
 
 //Dynamic menu code :)
 struct _MenuItem;
@@ -965,7 +960,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 	case WM_SIZE:
 		{
 			NDC_WINDOW_RECT r = { LOWORD(lParam),HIWORD(lParam) };
-			emu.BroardcastEvent(NDC_GUI_RESIZED,&r,BET_All);
+			emu.BroardcastEvent(BET_All,NDE_GUI_RESIZED,&r,0);
 		}
 		break;
 	case WM_CREATE:
@@ -1012,7 +1007,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 		{
 			if (LOWORD(wParam)==VK_RETURN)
 			{
-				emu.BroardcastEvent(NDC_GUI_REQESTFULLSCREEN,0,BET_All);
+				emu.BroardcastEvent(BET_All,NDE_GUI_REQESTFULLSCREEN,0,0);
 				return 0;
 			}
 		}
@@ -1061,9 +1056,9 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 
 					
 					if (Screenshot(fn,g_hWnd))
-						printf("Screenshot saved to %s\n",fn);
+						wprintf(L"Screenshot saved to %s\n",fn);
 					else
-						printf("failed to save screenshot to \"%s\"\n",fn);
+						wprintf(L"failed to save screenshot to \"%s\"\n",fn);
 				}
 				break;
 
