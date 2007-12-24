@@ -62,6 +62,9 @@ s32 EXPORT_CALL b_dbgReadMem(u32 addr,u32 sz,void* dst)
 }
 s32 EXPORT_CALL b_dbgWriteMem(u32 addr,u32 sz,void* dst)
 {
+	u8* ptr=(u8*)dst;
+	while(sz--)
+		WriteMem8(addr++,*ptr++);
 	return rv_ok;
 }
 
@@ -120,7 +123,7 @@ bool EXPORT_CALL b_EmuBootHLE()	//Copies the bin file from the disc , descramble
 {
 	return gdBootHLE();
 }
-bool EXPORT_CALL b_EmuLoadBinary(char* file,u32 address)	//Loads a binary on the address.If the file is elf the address is ingored and the elf's
+bool EXPORT_CALL b_EmuLoadBinary(wchar* file,u32 address)	//Loads a binary on the address.If the file is elf the address is ingored and the elf's
 {
 	return LoadBinfileToSh4Mem(address,file)!=0;
 }													//offsets are used
@@ -137,9 +140,11 @@ void EXPORT_CALL b_EmuStopProfiler()	//Stop the TBP
 	stop_Profiler();
 }
 
-void EXPORT_CALL b_DissasembleOpcode(u16 opcode,u32 pc,char* Dissasm)
+void EXPORT_CALL b_DissasembleOpcode(u16 opcode,u32 pc,wchar* Dissasm)
 {
-	DissasembleOpcode(opcode,pc,Dissasm);
+	char temp[2048];
+	DissasembleOpcode(opcode,pc,temp);
+	mbstowcs(Dissasm,temp,2048);
 }
 u32 EXPORT_CALL b_Sh4GetRegister(u32 reg)
 {
@@ -149,20 +154,23 @@ void EXPORT_CALL b_Sh4SetRegister(u32 reg,u32 value)
 {
 	sh4_cpu->SetRegister((Sh4RegType)reg,value);
 }
-int EXPORT_CALL b_GetSymbName(u32 address,char *szDesc,bool bUseUnkAddress)
+int EXPORT_CALL b_GetSymbName(u32 address,wchar *szDesc,bool bUseUnkAddress)
 {
-	return GetSymbName(address,szDesc,bUseUnkAddress);
+	char temp[2048];
+	int rv=GetSymbName(address,temp,bUseUnkAddress);
+	mbstowcs(szDesc,temp,2048);
+	return rv;
 }
 
-#define maple_sett(x,y) "Current_" "maple" #x "_" #y
+#define maple_sett(x,y) _T("Current_maple") _T(#x) _T("_") _T(#y)
 #define maple_groop(x) maple_sett(x,0), maple_sett(x,1), maple_sett(x,2), maple_sett(x,3), maple_sett(x,4), maple_sett(x,5)
 
-char* ndc_snames[]=
+wchar* ndc_snames[]=
 {
-	"Current_" "PVR",
-	"Current_" "GDR",
-	"Current_" "AICA",
-	"Current_" "ExtDevice",
+	_T("Current_PVR"),
+	_T("Current_GDR"),
+	_T("Current_AICA"),
+	_T("Current_ExtDevice"),
 
 	maple_groop(0),
 	maple_groop(1),
@@ -212,7 +220,7 @@ void SwitchCpu()
 }
 s32 EXPORT_CALL GetEmuSetting(u32 sid,void* value)
 {
-	char* sptr=(char*)value;
+	wchar* sptr=(wchar*)value;
 	u32* tptr=(u32*)value;
 	switch(sid)
 	{
@@ -229,7 +237,7 @@ s32 EXPORT_CALL GetEmuSetting(u32 sid,void* value)
 	default:
 		if (sid<NDCS_COUNT)
 		{
-			cfgLoadStr("nullDC_plugins",ndc_snames[sid-NDCS_PLUGIN_PVR],sptr,0);
+			cfgLoadStr(_T("nullDC_plugins"),ndc_snames[sid-NDCS_PLUGIN_PVR],sptr,0);
 			return rv_ok;
 		}
 		else
@@ -243,7 +251,7 @@ s32 EXPORT_CALL GetEmuSetting(u32 sid,void* value)
 #define _esai_(n,v,ma) 		case NDCS_##n:settings.##v=min(*tptr,ma);SaveSettings();
 s32 EXPORT_CALL SetEmuSetting(u32 sid,void* value)
 {
-	char* sptr=(char*)value;
+	wchar* sptr=(wchar*)value;
 	u32* tptr=(u32*)value;
 	
 	switch(sid)
@@ -274,7 +282,7 @@ s32 EXPORT_CALL SetEmuSetting(u32 sid,void* value)
 	default:
 		if (sid<NDCS_COUNT)
 		{
-			cfgSaveStr("nullDC_plugins",ndc_snames[sid-NDCS_PLUGIN_PVR],sptr);
+			cfgSaveStr(_T("nullDC_plugins"),ndc_snames[sid-NDCS_PLUGIN_PVR],sptr);
 			return rv_ok;
 		}
 		else
@@ -283,28 +291,30 @@ s32 EXPORT_CALL SetEmuSetting(u32 sid,void* value)
 
 	return rv_ok;
 }
-char about_text[] = "Credits :" "\r\n"
-				" drk||Raziel \t: Main coder" "\r\n"
-				" ZeZu \t\t: Main coder" "\r\n"
-				" GiGaHeRz \t: Plugin work/misc stuff"  "\r\n"
-				" PsyMan \t\t: Mental support, managment,""\r\n"
-				"        \t\t  beta testing & everything else"  "\r\n"
-				" General Plot \t\t: www & forum WIP"   "\r\n"
-				"\r\n"
-				"Beta testing :"  "\r\n"
-				" emwearz, Miretank, gb_away, Raziel, General Plot,"  "\r\n"
-				" Refraction, Ckemu,Falcon4ever, ChaosCode"  "\r\n"
-				"\r\n"
-				"Many thanks to :" "\r\n"
-				"Ector, Jim Denson, Flea, Jupi, Chankast team, lev|" "\r\n"
-				"and everyone else we forgot" "\r\n"
-				"\r\n"
-				"Hate list:" "\r\n"
-				"Xylene, for trying to mess channels by impersonating people..." "\r\n"
-				" dont worry, you'l never get as good as they are.""\r\n"
-				"\r\n"
+#define nlw _T("\r\n")
+wchar about_text[] =
+				_T("Credits :") nlw
+				_T(" drk||Raziel \t: Main coder") nlw
+				_T(" ZeZu \t\t: Main coder") nlw
+				_T(" GiGaHeRz \t: Plugin work/misc stuff") nlw
+				_T(" PsyMan \t\t: Mental support, managment,") nlw
+				_T("        \t\t  beta testing & everything else") nlw
+				_T(" General Plot \t\t: www & forum WIP") nlw
+				nlw
+				_T("Beta testing :") nlw
+				_T(" emwearz, Miretank, gb_away, Raziel, General Plot,") nlw
+				_T(" Refraction, Ckemu,Falcon4ever, ChaosCode") nlw
+				nlw
+				_T("Many thanks to :") nlw
+				_T("Ector, Jim Denson, Flea, Jupi, Chankast team, lev|") nlw
+				_T("and everyone else we forgot") nlw
+				nlw
+				_T("Hate list:") nlw
+				_T("Xylene, for trying to mess channels by impersonating people...") nlw
+				_T(" dont worry, you'l never get as good as they are.") nlw
+				nlw
 				;
-char* EXPORT_CALL GetAboutText()
+wchar* EXPORT_CALL GetAboutText()
 {
 	return about_text;
 }
@@ -313,13 +323,13 @@ PluginInfoList* EXPORT_CALL b_GetPluginList(u32 Type)
 	List<PluginLoadInfo>* lst= GetPluginList((PluginType)Type);
 
 	PluginInfoList* rt=0,*rc=0,*rv=0;
-	for (int i=0;i<lst->itemcount;i++)
+	for (u32 i=0;i<lst->itemcount;i++)
 	{
 		rc = new PluginInfoList();
 		
-		strcpy(rc->Name,(*lst)[i].Name);
+		wcscpy(rc->Name,(*lst)[i].Name);
 		rc->Version=(*lst)[i].PluginVersion;
-		strcpy(rc->dll,(*lst)[i].dll);
+		wcscpy(rc->dll,(*lst)[i].dll);
 
 		if(rt)
 			rt->next=rc;
@@ -338,13 +348,13 @@ PluginInfoList* EXPORT_CALL b_GetMapleDeviceList(u32 DeviceType)
 	List<MapleDeviceDefinition>* lst= GetMapleDeviceList((MapleDeviceType)DeviceType);
 
 	PluginInfoList* rt=0,*rc=0,*rv=0;
-	for (int i=0;i<lst->itemcount;i++)
+	for (u32 i=0;i<lst->itemcount;i++)
 	{
 		rc = new PluginInfoList();
 		
-		strcpy(rc->Name,(*lst)[i].Name);
+		wcscpy(rc->Name,(*lst)[i].Name);
 		rc->Version=(*lst)[i].PluginVersion;
-		strcpy(rc->dll,(*lst)[i].dll);
+		wcscpy(rc->dll,(*lst)[i].dll);
 		rc->Flags=(*lst)[i].Flags;
 
 		if(rt)
@@ -436,11 +446,11 @@ void EXPORT_CALL b_GetPerformanceInfo(nullDCPerfomanceInfo* dst)
 }
 
 
-bool OpenAndLoadGUI(char* file)
+bool OpenAndLoadGUI(wchar* file)
 {
 	if (!gui.Load(file))
 	{
-		msgboxf("Unable to open gui dll (%s)",MBX_ICONERROR,file);
+		msgboxf(_T("Unable to open gui dll (%s)"),MBX_ICONERROR,file);
 		return false;
 	}
 
@@ -448,7 +458,7 @@ bool OpenAndLoadGUI(char* file)
 
 	if (!gi)
 	{
-		msgboxf("Unable to resolve %s:ndcGetInterface",MBX_ICONERROR,file);
+		msgboxf(_T("Unable to resolve %s:ndcGetInterface"),MBX_ICONERROR,file);
 		return false;
 	}
 	gi(&libgui);
@@ -511,13 +521,13 @@ bool OpenAndLoadGUI(char* file)
 }
 bool CreateGUI()
 {
-	char gui[128];
-	cfgLoadStr("nullDC_plugins","GUI",gui,"nullDC_GUI_Win32.dll");
+	wchar gui[128];
+	cfgLoadStr(_T("nullDC_plugins"),_T("GUI"),gui,_T("nullDC_GUI_Win32.dll"));
 	if (!OpenAndLoadGUI(gui))
 	{
-		if (msgboxf("Do you want to load default gui ?",MBX_YESNO) == MBX_RV_YES)
+		if (msgboxf(_T("Do you want to load default gui ?"),MBX_YESNO) == MBX_RV_YES)
 		{
-			if (!OpenAndLoadGUI("nullDC_GUI_Win32.dll"))
+			if (!OpenAndLoadGUI(_T("nullDC_GUI_Win32.dll")))
 				return false;
 			else
 				return true;

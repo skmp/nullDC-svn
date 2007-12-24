@@ -11,29 +11,6 @@ void* EXPORT_CALL GetRenderTargetHandle();
 bool SelectPluginsGui();
 void EmuEventBroadcast();
 
-#ifndef _MenuItemSelectedFP_
-#define _MenuItemSelectedFP_
-typedef void EXPORT_CALL MenuItemSelectedFP(u32 id,void* WindowHandle,void* user);
-
-
-enum MenuItemMask
-{
-	MIM_Text=1,
-	MIM_Handler=2,
-	MIM_Bitmap=4,
-	MIM_Style=8,
-	MIM_PUser=16,
-	MIM_All=0xFFFFFFFF,
-};
-struct MenuItem
-{
-	char* Text;			//Text of the menu item
-	MenuItemSelectedFP* Handler;	//called when the menu is clicked
-	void* Bitmap;		//bitmap handle
-	u32 Style;			//MIS_* combination
-	void* PUser;		//User defined pointer :)
-};
-#endif
 //void EXPORT_CALL DeleteAllMenuItemChilds(u32 id);
 void SetMenuItemHandler(u32 id,MenuItemSelectedFP* h);
 /*
