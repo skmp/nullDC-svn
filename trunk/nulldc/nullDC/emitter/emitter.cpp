@@ -1,3 +1,4 @@
+#include "types.h"
 #include "emitter.h"
 #include "windows.h"
 
@@ -65,32 +66,32 @@ x86_features::x86_features()
 		__asm emms;
 
 
-	char* command_line = GetCommandLine();
+	wchar* command_line = GetCommandLine();
 
-	if (ssse_3 && strstr(command_line,"-nossse3"))
+	if (ssse_3 && wcsstr(command_line,L"-nossse3"))
 	{
 		printf("sSSE3 detected but disabled[-nossse3]\n");
 		ssse_3=false;
 	}
-	if (sse_3 && strstr(command_line,"-nosse3"))
+	if (sse_3 && wcsstr(command_line,L"-nosse3"))
 	{
 		printf("SSE3 detected but disabled[-nosse3]\n");
 		sse_3=false;
 	}
 
-	if (sse_2 && strstr(command_line,"-nosse2"))
+	if (sse_2 && wcsstr(command_line,L"-nosse2"))
 	{
 		printf("SSE2 detected but disabled[-nosse2]\n");
 		sse_2=false;
 	}
 
-	if (sse_1 && strstr(command_line,"-nosse1"))
+	if (sse_1 && wcsstr(command_line,L"-nosse1"))
 	{
 		printf("SSE1 detected but disabled[-nosse1]\n");
 		sse_1=false;
 	}
 
-	if (mmx && strstr(command_line,"-nommx"))
+	if (mmx && wcsstr(command_line,L"-nommx"))
 	{
 		printf("MMX detected but disabled[-nommx]\n");
 		mmx=false;
