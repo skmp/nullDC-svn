@@ -117,13 +117,13 @@ void AnalyseTick(u32 pc,prof_info* to)
 		 //Update Stats if needed
 		 if (info.total_tick_count>MAX_TICK_COUNT)
 		 {
-			 char temp[512];
+			 wchar temp[512];
 
 			 memcpy(&profile_info,&info,sizeof(prof_info));
 			 memset(&info,0,sizeof(prof_info));
 
 			 profile_info.ToText(temp);
-			 printf("%s \n",temp);
+			 wprintf(_T("%s \n"),temp);
 		 }
 
 		 //Sleep , so we dont realy use the cpu much

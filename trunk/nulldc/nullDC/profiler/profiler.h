@@ -23,23 +23,23 @@ struct prof_info
 
 	#define percent(x) (x##_tick_count*100.0)/(total_tick_count)
 	#define effsceas(x)    (cd/(double)x##_tick_count/1000.0/1000.0/20.0) 
-	void ToText(char* dest)
+	void ToText(wchar* dest)
 	{
 		if (total_tick_count==0)
 		{
-			strcpy(dest,"No profile info");
+			wcscpy(dest,_T("No profile info"));
 			return;
 		}
 		u64 cd=CycleDiff();
-		dest+=sprintf(dest,"gfx %.3f,% 3.1f%% | ",effsceas(gfx),percent(gfx));
-		dest+=sprintf(dest,"aica %.3f,% 3.1f%% | ",effsceas(aica),percent(aica));
+		dest+=swprintf(dest,_T("gfx %.3f,% 3.1f%% | "),effsceas(gfx),percent(gfx));
+		dest+=swprintf(dest,_T("aica %.3f,% 3.1f%% | "),effsceas(aica),percent(aica));
 		if (percent(gdrom)!=0)
 		{
-			dest+=sprintf(dest,"gdrom %.3f,% 3.1f%% | ",effsceas(gdrom),percent(gdrom));
+			dest+=swprintf(dest,_T("gdrom %.3f,% 3.1f%% | "),effsceas(gdrom),percent(gdrom));
 		}
-		dest+=sprintf(dest,"main %.3f,% 3.1f%% | ",effsceas(main),percent(main));
-		dest+=sprintf(dest,"dyna %.3f,% 3.1f%% | ",effsceas(dyna),percent(dyna));
-		dest+=sprintf(dest,"rest %.3f,% 3.1f%%",effsceas(rest),percent(rest));
+		dest+=swprintf(dest,_T("main %.3f,% 3.1f%% | "),effsceas(main),percent(main));
+		dest+=swprintf(dest,_T("dyna %.3f,% 3.1f%% | "),effsceas(dyna),percent(dyna));
+		dest+=swprintf(dest,_T("rest %.3f,% 3.1f%%"),effsceas(rest),percent(rest));
 		
 	}
 	#undef percent
