@@ -113,11 +113,12 @@ struct InputFunctionClass : MapleFunction
 			if (InputButtons & (1<<i))
 			{
 				GUID dev;
-				u32 p1;
+				u32 p[3];
 				u32 p2;
-				profile->GetMapParams(esid,&dev,&p1,&p2);
-				Events[i].id=p1;
-				Events[i].type=p2;
+				profile->GetMapParams(esid,&dev,p,3);
+				//provider
+				Events[i].id=p[1];
+				Events[i].type=p[2];
 
 				s32 pindx=GetProviderIdx(dev);
 				if (pindx>=0)
@@ -207,21 +208,21 @@ MapleFunction* CreateFunction0(MapleDevice* dev,u32 lparam,void* dparam)
 }
 void SetupSubProfile0(SubProfile* sp,u32 lparam,void* dparam)
 {
-	sp->AddMap(L"Up",0,0);
-	sp->AddMap(L"Down",0,0);
-	sp->AddMap(L"Left",0,0);
-	sp->AddMap(L"Right",0,0);
-	sp->AddMap(L"Analog Up",0,0);
-	sp->AddMap(L"Analog Down",0,0);
-	sp->AddMap(L"Analog Left",0,0);
-	sp->AddMap(L"Analog Right",0,0);
-	sp->AddMap(L"Start",0,0);
-	sp->AddMap(L"Y",0,0);
-	sp->AddMap(L"X",0,0);
-	sp->AddMap(L"B",0,0);
-	sp->AddMap(L"A",0,0);
-	sp->AddMap(L"Left Slider",0,0);
-	sp->AddMap(L"Right Slider",0,0);
+	sp->AddMap(L"Up",3);
+	sp->AddMap(L"Down",3);
+	sp->AddMap(L"Left",3);
+	sp->AddMap(L"Right",3);
+	sp->AddMap(L"Analog Up",3);
+	sp->AddMap(L"Analog Down",3);
+	sp->AddMap(L"Analog Left",3);
+	sp->AddMap(L"Analog Right",3);
+	sp->AddMap(L"Start",3);
+	sp->AddMap(L"Y",3);
+	sp->AddMap(L"X",3);
+	sp->AddMap(L"B",3);
+	sp->AddMap(L"A",3);
+	sp->AddMap(L"Left Slider",3);
+	sp->AddMap(L"Right Slider",3);
 
 	sp->Commit();
 }

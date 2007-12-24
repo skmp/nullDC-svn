@@ -267,7 +267,7 @@
 				>
 			</File>
 			<Filter
-				Name="0: Input"
+				Name="0 Input"
 				>
 				<File
 					RelativePath=".\InputFunction.cpp"
@@ -279,24 +279,10 @@
 					<File
 						RelativePath=".\dinput.cpp"
 						>
-						<FileConfiguration
-							Name="Debug|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-							/>
-						</FileConfiguration>
 					</File>
 					<File
 						RelativePath=".\InputProviders.cpp"
 						>
-						<FileConfiguration
-							Name="Debug|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-							/>
-						</FileConfiguration>
 					</File>
 					<File
 						RelativePath=".\InputProviders.h"
@@ -305,7 +291,7 @@
 				</Filter>
 			</Filter>
 			<Filter
-				Name="1: Storage"
+				Name="1 Storage"
 				>
 				<File
 					RelativePath=".\StorageFunction.cpp"
@@ -319,13 +305,6 @@
 			<File
 				RelativePath=".\Profiles.cpp"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\Profiles.h"

@@ -12,18 +12,20 @@
 struct SubProfile
 {	
 	//Get/Set the name
+	//NOTE: this is the name of the profile, not of the subprofile
 	virtual void GetName(wstring* name) const=0;
 	virtual void SetName(const wstring& name) = 0;
 
 	//Create a new map
-	virtual u32 AddMap(const wstring& name,u32 param1,u32 param2)=0;
+	//The new map is saved to file before this function returns (no need to call Commit)
+	virtual u32 AddMap(const wstring& name,u32 count)=0;
 	
 	//Set mapping info
-	virtual bool SetMapParams(u32 id,GUID device,u32 param1,u32 param2)=0;
+	virtual bool SetMapParams(u32 id,GUID device,u32* params,u32 count)=0;
 	virtual bool SetMapName(u32 id,const wstring& name)=0;
 
 	//Get Mapping info
-	virtual bool GetMapParams(u32 id,GUID* device,u32* param1,u32* param2)=0;
+	virtual bool GetMapParams(u32 id,GUID* device,u32* params,u32 count)=0;
 	virtual bool GetMapName(u32 id,wstring* name)=0;
 
 	//Returns true if the Profile isnt on sync with the config file.Else returns false.
@@ -36,8 +38,13 @@ struct SubProfile
 
 struct Profile
 {
-	virtual SubProfile* AddSub(const wstring& name)=0;
+	//unbuffered
+	virtual SubProfile* AddSub(const wstring& title)=0;
 	virtual SubProfile* GetSub(u32 id)=0;
+
+	//buffered
+	virtual void GetName(wstring* name) const=0;
+	virtual void SetName(const wstring& name) = 0;
 
 	//Get the profile guid
 	virtual GUID GetGuid()=0;

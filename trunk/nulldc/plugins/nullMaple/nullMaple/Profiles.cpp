@@ -12,6 +12,7 @@ struct SubProfileImpl : SubProfile
 {
 	ProfileData* parent;
 	wstring Name;
+	wstring Title;
 	bool Dirty;
 	u32 id;
 
@@ -23,16 +24,10 @@ struct SubProfileImpl : SubProfile
 		this->id=id;
 		this->parent=parent;
 	}
-	void GetName(wstring* name) const
+	u32 AddMap(const wstring& name,u32 param1)
 	{
-		*name=Name;
+		return 0;
 	}
-	void SetName(const wstring& name) 
-	{
-		Dirty=true;
-		Name=name;
-	}
-
 	u32 AddMap(const wstring& name,u32 param1,u32 param2)
 	{
 		Dirty=true;
@@ -42,14 +37,26 @@ struct SubProfileImpl : SubProfile
 		return (u32)maps.size()-1;
 	}
 
-	bool SetMapParams(u32 id,GUID device,u32 param1,u32 param2)
+	void GetName(wstring* name) const
+	{
+		*name=Name;
+//		parent->GetName(name);
+	}
+	void SetName(const wstring& name) 
+	{
+		Dirty=true;
+		Name=name;
+//		parent->SetName(name);
+	}
+
+	bool SetMapParams(u32 id,GUID device,u32* params,u32 count)
 	{
 		if (id>=maps.size())
 			return false;
 	
 		Dirty=true;
-		maps[id].p1=param1;
-		maps[id].p2=param2;
+//		maps[id].p1=param1;
+	//	maps[id].p2=param2;
 
 		return true;
 	}
@@ -64,13 +71,13 @@ struct SubProfileImpl : SubProfile
 		return true;
 	}
 
-	bool GetMapParams(u32 id,GUID* device,u32* param1,u32* param2)
+	bool GetMapParams(u32 id,GUID* device,u32* params,u32 count)
 	{
-		if (id>=maps.size() || param1==0 || param2==0)
-			return false;
+//		if (id>=maps.size() || param1==0 || param2==0)
+//			return false;
 		
-		*param1=maps[id].p1;
-		*param2=maps[id].p2;
+//		*param1=maps[id].p1;
+//		*param2=maps[id].p2;
 
 		return true;
 	}
