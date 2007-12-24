@@ -19,85 +19,85 @@ u32 fastrand()
 }
 
 //Misc function to get relative source directory for printf's
-char temp[1000];
-char* GetNullDCSoruceFileName(char* full)
+wchar temp[1000];
+wchar* GetNullDCSoruceFileName(wchar* full)
 {
-	size_t len = strlen(full);
+	size_t len = wcslen(full);
 	while(len>18)
 	{
 		if (full[len]=='\\')
 		{
 			memcpy(&temp[0],&full[len-14],15*sizeof(char));
 			temp[15*sizeof(char)]=0;
-			if (strcmp(&temp[0],"\\nulldc\\nulldc\\")==0)
+			if (wcscmp(&temp[0],L"\\nulldc\\nulldc\\")==0)
 			{
-				strcpy(temp,&full[len+1]);
+				wcscpy(temp,&full[len+1]);
 				return temp;
 			}
 		}
 		len--;
 	}
-	strcpy(temp,full);
+	wcscpy(temp,full);
 	return &temp[0];
 }
 
-char* GetPathFromFileNameTemp(char* full)
+wchar* GetPathFromFileNameTemp(wchar* full)
 {
-	size_t len = strlen(full);
+	size_t len = wcslen(full);
 	while(len>2)
 	{
 		if (full[len]=='\\')
 		{
-			memcpy(&temp[0],&full[0],(len+1)*sizeof(char));
+			memcpy(&temp[0],&full[0],(len+1)*sizeof(wchar));
 			temp[len+1]=0;
 			return temp;	
 		}
 		len--;
 	}
-	strcpy(temp,full);
+	wcscpy(temp,full);
 	return &temp[0];
 }
 
-void GetPathFromFileName(char* path)
+void GetPathFromFileName(wchar* path)
 {
-	strcpy(path,GetPathFromFileNameTemp(path));
+	wcscpy(path,GetPathFromFileNameTemp(path));
 }
 
-void GetFileNameFromPath(char* path,char* outp)
+void GetFileNameFromPath(wchar* path,wchar* outp)
 {
 	
-	size_t i=strlen(path);
+	size_t i=wcslen(path);
 	
 	while (i>0)
 	{
 		i--;
 		if (path[i]=='\\')
 		{
-			strcpy(outp,&path[i+1]);
+			wcscpy(outp,&path[i+1]);
 			return;
 		}
 	}
 
-	strcpy(outp,path);
+	wcscpy(outp,path);
 }
 
-char AppPath[1024];
-void GetApplicationPath(char* path,u32 size)
+wchar AppPath[1024];
+void GetApplicationPath(wchar* path,u32 size)
 {
 	if (AppPath[0]==0)
 	{
-		GetModuleFileNameA(NULL,&AppPath[0],1024);
+		GetModuleFileName(NULL,&AppPath[0],1024);
 		GetPathFromFileName(AppPath);
 	}
 
-	strcpy(path,AppPath);
+	wcscpy(path,AppPath);
 }
 
-char* GetEmuPath(char* subpath)
+wchar* GetEmuPath(wchar* subpath)
 {
-	char* temp=(char*)malloc(1024);
+	wchar* temp=(wchar*)malloc(1024);
 	GetApplicationPath(temp,1024);
-	strcat(temp,subpath);
+	wcscat(temp,subpath);
 	return temp;
 }
 
@@ -182,9 +182,9 @@ cDllHandler::~cDllHandler()
 	}
 }
 
-bool cDllHandler::Load(char* dll)
+bool cDllHandler::Load(wchar* dll)
 {
-	lib=LoadLibraryA(dll);
+	lib=LoadLibrary(dll);
 	if (lib==0)
 	{
 	#ifdef DEBUG_DLL
@@ -240,17 +240,17 @@ void* cDllHandler::GetProcAddress(char* name)
 }
 
 //File Enumeration
-void FindAllFiles(FileFoundCB* callback,char* dir,void* param)
+void FindAllFiles(FileFoundCB* callback,wchar* dir,void* param)
 {
-	WIN32_FIND_DATAA FindFileData;
+	WIN32_FIND_DATA FindFileData;
 	HANDLE hFind = INVALID_HANDLE_VALUE;
-	char DirSpec[MAX_PATH + 1];  // directory specification
+	wchar DirSpec[MAX_PATH + 1];  // directory specification
 	DWORD dwError;
 
-	strncpy (DirSpec, dir, strlen(dir)+1);
+	wcsncpy (DirSpec, dir, wcslen(dir)+1);
 	//strncat (DirSpec, "\\*", 3);
 
-	hFind = FindFirstFileA( DirSpec, &FindFileData);
+	hFind = FindFirstFile( DirSpec, &FindFileData);
 
 	if (hFind == INVALID_HANDLE_VALUE) 
 	{
@@ -264,7 +264,7 @@ void FindAllFiles(FileFoundCB* callback,char* dir,void* param)
 			callback(FindFileData.cFileName,param);
 		}
 u32 rv;
-		while ( (rv=FindNextFileA(hFind, &FindFileData)) != 0) 
+		while ( (rv=FindNextFile(hFind, &FindFileData)) != 0) 
 		{ 
 			if ((FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)==0)
 			{
@@ -382,13 +382,13 @@ int ExeptionHandler(u32 dwCode, void* pExceptionPointers)
 	return EXCEPTION_CONTINUE_SEARCH;
 }
 
-int msgboxf(char* text,unsigned int type,...)
+int msgboxf(wchar* text,unsigned int type,...)
 {
 	va_list args;
 
-	char temp[2048];
+	wchar temp[2048];
 	va_start(args, type);
-	vsprintf(temp, text, args);
+	vswprintf(temp, text, args);
 	va_end(args);
 
 	if (libgui.MsgBox!=0)

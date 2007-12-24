@@ -35,12 +35,8 @@ BOOL CtrlHandler( DWORD fdwCtrlType )
   } 
 } 
 
-int RunGui(int argc, char* argv[])
-{
-	return 0;
-}
 //Simple command line bootstrap
-int RunDC(int argc, char* argv[])
+int RunDC(int argc, wchar* argv[])
 {
 
 	if(settings.dynarec.Enable)
@@ -78,7 +74,7 @@ void EnumPlugins()
 	printf("PowerVR plugins :\n");
 	for (u32 i=0;i<pvr->itemcount;i++)
 	{
-		printf("*\tFound %s v%d.%d.%d\n" ,(*pvr)[i].Name,
+		wprintf(L"*\tFound %s v%d.%d.%d\n" ,(*pvr)[i].Name,
 			(*pvr)[i].PluginVersion.major,
 			(*pvr)[i].PluginVersion.minnor,
 			(*pvr)[i].PluginVersion.build);
@@ -87,7 +83,7 @@ void EnumPlugins()
 	printf("\nGDRom plugins :\n");
 	for (u32 i=0;i<gdrom->itemcount;i++)
 	{
-		printf("*\tFound %s v%d.%d.%d\n" ,(*gdrom)[i].Name,
+		wprintf(L"*\tFound %s v%d.%d.%d\n" ,(*gdrom)[i].Name,
 			(*gdrom)[i].PluginVersion.major,
 			(*gdrom)[i].PluginVersion.minnor,
 			(*gdrom)[i].PluginVersion.build);
@@ -97,7 +93,7 @@ void EnumPlugins()
 	printf("\nAica plugins :\n");
 	for (u32 i=0;i<aica->itemcount;i++)
 	{
-		printf("*\tFound %s v%d.%d.%d\n" ,(*aica)[i].Name,
+		wprintf(L"*\tFound %s v%d.%d.%d\n" ,(*aica)[i].Name,
 			(*aica)[i].PluginVersion.major,
 			(*aica)[i].PluginVersion.minnor,
 			(*aica)[i].PluginVersion.build);
@@ -106,7 +102,7 @@ void EnumPlugins()
 	printf("\nMaple plugins :\n");
 	for (u32 i=0;i<maple->itemcount;i++)
 	{
-		printf("*\tFound %s v%d.%d.%d\n" ,(*maple)[i].Name,
+		wprintf(L"*\tFound %s v%d.%d.%d\n" ,(*maple)[i].Name,
 			(*maple)[i].PluginVersion.major,
 			(*maple)[i].PluginVersion.minnor,
 			(*maple)[i].PluginVersion.build);
@@ -114,7 +110,7 @@ void EnumPlugins()
 	printf("\nExtDevice plugins :\n");
 	for (u32 i=0;i<extdev->itemcount;i++)
 	{
-		printf("*\tFound %s v%d.%d.%d\n" ,(*extdev)[i].Name,
+		wprintf(L"*\tFound %s v%d.%d.%d\n" ,(*extdev)[i].Name,
 			(*extdev)[i].PluginVersion.major,
 			(*extdev)[i].PluginVersion.minnor,
 			(*extdev)[i].PluginVersion.build);
@@ -127,7 +123,7 @@ void EnumPlugins()
 	delete extdev;
 }
 
-int main___(int argc,char* argv[])
+int main___(int argc,wchar* argv[])
 {
 	if(ParseCommandLine(argc,argv))
 	{
@@ -137,35 +133,35 @@ int main___(int argc,char* argv[])
 
 	if(!cfgOpen())
 	{
-		msgboxf("Unable to open config file",MBX_ICONERROR);
+		msgboxf(_T("Unable to open config file"),MBX_ICONERROR);
 		return -4;
 	}
 	LoadSettings();
 
 	if (!CreateGUI())
 	{
-		msgboxf("Creating GUI failed\n",MBX_ICONERROR);
+		msgboxf(_T("Creating GUI failed\n"),MBX_ICONERROR);
 		return -1;
 	}
 	int rv= 0;
 
-	char* temp_path=GetEmuPath("data\\dc_boot.bin");
+	wchar* temp_path=GetEmuPath(_T("data\\dc_boot.bin"));
 	
-	FILE* fr=fopen(temp_path,"r");
+	FILE* fr=_wfopen(temp_path,L"r");
 	if (!fr)
 	{
-		msgboxf("Unable to find bios -- exiting\n%s",MBX_ICONERROR,temp_path);
+		msgboxf(_T("Unable to find bios -- exiting\n%s"),MBX_ICONERROR,temp_path);
 		rv=-3;
 		goto cleanup;
 	}
 	free(temp_path);
 
-	temp_path=GetEmuPath("data\\dc_flash.bin");
+	temp_path=GetEmuPath(_T("data\\dc_flash.bin"));
 	
-	fr=fopen(temp_path,"r");
+	fr=_wfopen (temp_path,L"r");
 	if (!fr)
 	{
-		msgboxf("Unable to find flash -- exiting\n%s",MBX_ICONERROR,temp_path);
+		msgboxf(_T("Unable to find flash -- exiting\n%s"),MBX_ICONERROR,temp_path);
 		rv=-6;
 		goto cleanup;
 	}
@@ -173,8 +169,8 @@ int main___(int argc,char* argv[])
 	free(temp_path);
 
 	fclose(fr);
-	char * currpath=GetEmuPath("");
-	SetCurrentDirectoryA(currpath);
+	wchar * currpath=GetEmuPath(L"");
+	SetCurrentDirectory(currpath);
 	free(currpath);
 
 	EnumPlugins();
@@ -183,7 +179,7 @@ int main___(int argc,char* argv[])
 	{
 		if (!plugins_Select())
 		{
-			msgboxf("Unable to load plugins -- exiting\n",MBX_ICONERROR);
+			msgboxf(L"Unable to load plugins -- exiting\n",MBX_ICONERROR);
 			rv = -2;
 			goto cleanup;
 		}
@@ -206,11 +202,11 @@ cleanup:
 	return rv;
 }
 
-int main(int argc, char* argv[])
+int _tmain(int argc, wchar* argv[])
 {
 	if (!_vmem_reserve())
 	{
-		msgboxf("Unable to reserve nullDC memory ...",MBX_OK | MBX_ICONERROR);
+		msgboxf(L"Unable to reserve nullDC memory ...",MBX_OK | MBX_ICONERROR);
 		return -5;
 	}
 	int rv=0;
@@ -236,24 +232,24 @@ int main(int argc, char* argv[])
 
 void LoadSettings()
 {
-	settings.dynarec.Enable=cfgLoadInt("nullDC","Dynarec.Enabled",1);
-	settings.dynarec.CPpass=cfgLoadInt("nullDC","Dynarec.DoConstantPropagation",1);
-	settings.dynarec.UnderclockFpu=cfgLoadInt("nullDC","Dynarec.UnderclockFpu",0);
+	settings.dynarec.Enable=cfgLoadInt(L"nullDC",L"Dynarec.Enabled",1);
+	settings.dynarec.CPpass=cfgLoadInt(L"nullDC",L"Dynarec.DoConstantPropagation",1);
+	settings.dynarec.UnderclockFpu=cfgLoadInt(L"nullDC",L"Dynarec.UnderclockFpu",0);
 	
-	settings.dreamcast.cable=cfgLoadInt("nullDC","Dreamcast.Cable",3);
-	settings.dreamcast.RTC=cfgLoadInt("nullDC","Dreamcast.RTC",GetRTC_now());
+	settings.dreamcast.cable=cfgLoadInt(L"nullDC",L"Dreamcast.Cable",3);
+	settings.dreamcast.RTC=cfgLoadInt(L"nullDC",L"Dreamcast.RTC",GetRTC_now());
 
-	settings.emulator.AutoStart=cfgLoadInt("nullDC","Emulator.AutoStart",0);
+	settings.emulator.AutoStart=cfgLoadInt(L"nullDC",L"Emulator.AutoStart",0);
 
 	//make sure values are valid
 	settings.dreamcast.cable=min(max(settings.dreamcast.cable,0),3);
 }
 void SaveSettings()
 {
-	cfgSaveInt("nullDC","Dynarec.Enabled",settings.dynarec.Enable);
-	cfgSaveInt("nullDC","Dynarec.DoConstantPropagation",settings.dynarec.CPpass);
-	cfgSaveInt("nullDC","Dynarec.UnderclockFpu",settings.dynarec.UnderclockFpu);
-	cfgSaveInt("nullDC","Dreamcast.Cable",settings.dreamcast.cable);
-	cfgSaveInt("nullDC","Dreamcast.RTC",settings.dreamcast.RTC);
-	cfgSaveInt("nullDC","Emulator.AutoStart",settings.emulator.AutoStart);
+	cfgSaveInt(L"nullDC",L"Dynarec.Enabled",settings.dynarec.Enable);
+	cfgSaveInt(L"nullDC",L"Dynarec.DoConstantPropagation",settings.dynarec.CPpass);
+	cfgSaveInt(L"nullDC",L"Dynarec.UnderclockFpu",settings.dynarec.UnderclockFpu);
+	cfgSaveInt(L"nullDC",L"Dreamcast.Cable",settings.dreamcast.cable);
+	cfgSaveInt(L"nullDC",L"Dreamcast.RTC",settings.dreamcast.RTC);
+	cfgSaveInt(L"nullDC",L"Emulator.AutoStart",settings.emulator.AutoStart);
 }

@@ -23,6 +23,7 @@
 //Basic types :)
 #include "basic_types.h"
 #include <vector>
+#include <string>
 using namespace std;
 
 #define No_gdb_stub
@@ -40,6 +41,8 @@ using namespace std;
 //basic includes from runtime lib
 #include <stdlib.h>
 #include <stdio.h>
+#include <wchar.h>
+#include <tchar.h>
 
 //used for asm-olny functions
 #ifdef X86
@@ -134,36 +137,36 @@ using namespace std;
 //basic includes
 #include "stdclass.h"
 
-#define EMUERROR(x)(printf("Error in %s:" __FUNCTION__":%d  -> " x"\n",GetNullDCSoruceFileName(__FILE__),__LINE__))
-#define EMUERROR2(x,a)(printf("Error in %s:" __FUNCTION__":%d  -> " x"\n",GetNullDCSoruceFileName(__FILE__),__LINE__,a))
-#define EMUERROR3(x,a,b)(printf("Error in %s:" __FUNCTION__":%d  -> " x"\n",GetNullDCSoruceFileName(__FILE__),__LINE__,a,b))
-#define EMUERROR4(x,a,b,c)(printf("Error in %s:" __FUNCTION__":%d  -> " x"\n",GetNullDCSoruceFileName(__FILE__),__LINE__,a,b,c))
+#define EMUERROR(x)(wprintf(_T("Error in %s:") _T(__FUNCTION__) _T(":%d  -> ") _T(x)  _T("\n"),GetNullDCSoruceFileName(_T(__FILE__)),__LINE__))
+#define EMUERROR2(x,a)(wprintf(_T("Error in %s:") _T(__FUNCTION__) _T(":%d  -> ") _T(x)  _T("\n)"),GetNullDCSoruceFileName(_T(__FILE__)),__LINE__,a))
+#define EMUERROR3(x,a,b)(wprintf(_T("Error in %s:") _T(__FUNCTION__) _T(":%d  -> ") _T(x)  _T("\n)"),GetNullDCSoruceFileName(_T(__FILE__)),__LINE__,a,b))
+#define EMUERROR4(x,a,b,c)(wprintf(_T("Error in %s:") _T(__FUNCTION__) _T(":%d  -> ") _T(x)  _T("\n"),GetNullDCSoruceFileName(_T(__FILE__)),__LINE__,a,b,c))
 
-#define EMUWARN(x)(printf("Warning in %s:" __FUNCTION__":%d  -> " x "\n",GetNullDCSoruceFileName(__FILE__),__LINE__))
-#define EMUWARN2(x,a)(printf("Warning in %s:"__FUNCTION__":%d  -> " x"\n",GetNullDCSoruceFileName(__FILE__),__LINE__,a))
-#define EMUWARN3(x,a,b)(printf("Warning in %s:" __FUNCTION__":%d  -> " x"\n",GetNullDCSoruceFileName(__FILE__),__LINE__,a,b))
-#define EMUWARN4(x,a,b,c)(printf("Warning in %s:" __FUNCTION__":%d  -> " x"\n",GetNullDCSoruceFileName(__FILE__),__LINE__,a,b,c))
+#define EMUWARN(x)(wprintf( _T("Warning in %s:") _T(__FUNCTION__) _T(":%d  -> ") _T(x)  _T("\n"),GetNullDCSoruceFileName(_T(__FILE__)),_T(__LINE__)))
+#define EMUWARN2(x,a)(wprintf( _T("Warning in %s:") _T(__FUNCTION__) _T(":%d  -> ") _T(x) _T("\n"),GetNullDCSoruceFileName(_T(__FILE__)),_T(__LINE__),a))
+#define EMUWARN3(x,a,b)(wprintf( _T("Warning in %s:")  _T(__FUNCTION__) _T(":%d  -> ") _T(x) _T("\n"),GetNullDCSoruceFileName(_T(__FILE__)),_T(__LINE__),a,b))
+#define EMUWARN4(x,a,b,c)(wprintf( _T("Warning in %s:") _T(__FUNCTION__) _T(":%d  -> ") _T(x) _T("\n"),GetNullDCSoruceFileName(_T(__FILE__)),_T(__LINE__),a,b,c))
 
 #define BUILD_VER 0
 #define MAJOR_VER 1
 #define MINOR_VER 0
 
 #ifndef NO_MMU
-#define _X_x_X_MMU_VER_STR "/mmu"
+#define _X_x_X_MMU_VER_STR L"/mmu"
 #else
-#define _X_x_X_MMU_VER_STR ""
+#define _X_x_X_MMU_VER_STR L""
 #endif
 
-#define VER_EMUNAME		"nullDC"
-#define VER_FULLNAME	VER_EMUNAME " v1.0.0 beta 1.6"_X_x_X_MMU_VER_STR" (built " __DATE__ "@" __TIME__ ")"
-#define VER_SHORTNAME	VER_EMUNAME " 1.0.0b1.6"_X_x_X_MMU_VER_STR
+#define VER_EMUNAME		_T("nullDC")
+#define VER_FULLNAME	VER_EMUNAME L" v1.0.0 beta 1.6" _X_x_X_MMU_VER_STR L" (built " _T(__DATE__) L"@" _T(__TIME__) L")"
+#define VER_SHORTNAME	VER_EMUNAME L" 1.0.0b1.6" _X_x_X_MMU_VER_STR
 
 #define dbgbreak __asm {int 3}
 
 #define fastcall __fastcall
 #define FASTCALL __fastcall
-#define verify(x) if((x)==false){ msgboxf("Verify Failed  : " #x "\n in %s -> %s : %d \n",MBX_ICONERROR,__FUNCTION__,__FILE__,__LINE__); dbgbreak;}
-#define die(reason) { msgboxf("Fatal error : %s\n in %s -> %s : %d \n",MBX_ICONERROR,reason,__FUNCTION__,__FILE__,__LINE__); dbgbreak;}
+#define verify(x) if((x)==false){ msgboxf(_T("Verify Failed  : ") _T(#x) _T("\n in %s -> %s : %d \n"),MBX_ICONERROR,_T(__FUNCTION__),_T(__FILE__),__LINE__); dbgbreak;}
+#define die(reason) { msgboxf(_T("Fatal error : %s\n in %s -> %s : %d \n"),MBX_ICONERROR,_T(reason),_T(__FUNCTION__),_T(__FILE__),__LINE__); dbgbreak;}
 #define fverify verify
 
 //will be removed sometime soon
