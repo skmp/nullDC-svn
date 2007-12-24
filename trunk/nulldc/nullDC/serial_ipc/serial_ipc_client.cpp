@@ -22,7 +22,7 @@ u32 last_serial_Tx_tick=0;
 
 void StartGDBSession();
 
-int serial_cmdl(char** arg,int cl)
+int serial_cmdl(wchar** arg,int cl)
 {
 	if (cl<1)
 		printf("-serial : too few params.-serial <FILE> must be used\n");
@@ -30,11 +30,11 @@ int serial_cmdl(char** arg,int cl)
 	if (writep)
 		printf("-serial : -serial/-slave allready used ...\n");
 
-	printf("Serial port to \"%s\" redirection version %s\n",arg[1],sipcver);
+	wprintf(_T("Serial port to \"%s\" redirection version %s\n"),arg[1],sipcver);
 	writep = CreateFile(arg[1],GENERIC_READ | GENERIC_WRITE,0,NULL,OPEN_EXISTING , FILE_ATTRIBUTE_NORMAL ,NULL );
 	if (writep==INVALID_HANDLE_VALUE)
 	{
-		printf("Unable to open \"%\".The file must exist \n",arg[1]);
+		wprintf(_T("Unable to open \"%\".The file must exist \n"),arg[1]);
 		writep=NULL;
 		return 0;
 	}
@@ -67,15 +67,14 @@ int serial_cmdl(char** arg,int cl)
 	
 	return 1;
 }
-int slave_cmdl(char** arg,int cl)
+int slave_cmdl(wchar** arg,int cl)
 {
 	if (cl<2)
 		printf("-slave : too few params.-slave <piperead> <pipewrite> must be used\n");
 
-
 	//TODO : how to do on 64b compatable code ?
-	HANDLE laddWrSlave = (HANDLE)(u64)atoi(arg[1]);
-	HANDLE laddRdSlave = (HANDLE)(u64)atoi(arg[2]);
+	HANDLE laddWrSlave = (HANDLE)(u64)_wtoi(arg[1]);
+	HANDLE laddRdSlave = (HANDLE)(u64)_wtoi(arg[2]);
 	if (laddWrSlave ==0 || laddRdSlave==0)
 	{
 		printf("Invalid param @ slave, pipe cant be 0/non number\n");
@@ -90,7 +89,7 @@ int slave_cmdl(char** arg,int cl)
 
 	return 2;
 }
-void PrintSerialIPUsage(int argc, char *argv[])
+void PrintSerialIPUsage(int argc, wchar *argv[])
 {
 	/*
 	if (argc==1)
