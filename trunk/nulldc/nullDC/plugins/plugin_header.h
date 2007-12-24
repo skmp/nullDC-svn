@@ -36,6 +36,8 @@ typedef unsigned __int64 u64;
 typedef float f32;
 typedef double f64;
 
+#define wchar wchar_t
+
 #define EXPORT extern "C" __declspec(dllexport)
 
 #define EXPORT_CALL __stdcall

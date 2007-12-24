@@ -22,7 +22,7 @@
 #define EXCEPTION_CONTINUE_SEARCH       0
 #define EXCEPTION_CONTINUE_EXECUTION    -1
 
-char* lcp_name;
+wchar* lcp_name;
 s32 lcp_error=0;
 
 //Currently Loaded plugins
@@ -38,7 +38,7 @@ emu_info					eminf;
 //more to come
 
 bool plugins_inited=false;
-char plugins_path[1000]="";
+wchar plugins_path[1000]=_T("");
 bool plugins_enumerated=false;
 bool plugins_first_load=false;
 
@@ -58,26 +58,26 @@ enum PluginValidationErrors
 void EXPORT_CALL plgmng_nileh(u32 nid,void* p)
 {
 }
-void EXPORT_CALL BroadcastEvent(u32 nid,void* data)
+void EXPORT_CALL BroadcastEvent(u32 target,u32 eid,void* pdata,u32 ldata)
 {
 	if (libPvr.Loaded)
-		libPvr.EventHandler(nid,data);
+		libPvr.EventHandler(eid,pdata);
 
 	if (libGDR.Loaded)
-		libGDR.EventHandler(nid,data);
+		libGDR.EventHandler(eid,pdata);
 
 	if (libAICA.Loaded)
-		libAICA.EventHandler(nid,data);
+		libAICA.EventHandler(eid,pdata);
 
 	for (u32 i=0;i<libMaple.size();i++)
 		if (libMaple[i]->Loaded)
-			libMaple[i]->EventHandler(nid,data);
+			libMaple[i]->EventHandler(eid,pdata);
 
 	if (libExtDevice.Loaded)
-		libExtDevice.EventHandler(nid,data);
+		libExtDevice.EventHandler(eid,pdata);
 
 	
-	libgui.EventHandler(nid,data);
+	libgui.EventHandler(eid,pdata);
 }
 s32 ValidatePlugin(plugin_interface* plugin)
 {
@@ -140,7 +140,7 @@ s32 ValidatePlugin(plugin_interface* plugin)
 
 	return rv_ok;
 }
-bool AddToPluginList(char* dll)
+bool AddToPluginList(wchar* dll)
 {
 	cDllHandler* lib=new cDllHandler();
 	LoadedTempDlls.Add(lib);
@@ -174,7 +174,7 @@ bool AddToPluginList(char* dll)
 	load_info.Type=(PluginType)info.common.Type;
 
 	//load_info.subdev_info=info.maple.subdev_info;
-	strcpy(load_info.Name,info.common.Name);
+	wcscpy(load_info.Name,info.common.Name);
 	GetFileNameFromPath(dll,load_info.dll);
 
 	//if correct ver , add em to plugins list :)
@@ -183,14 +183,14 @@ bool AddToPluginList(char* dll)
 	if (info.common.Type==Plugin_Maple)
 	{
 		MapleDeviceDefinition t;
-		strcpy(t.dll_file,load_info.dll);
+		wcscpy(t.dll_file,load_info.dll);
 		t.PluginVersion.full=info.common.PluginVersion;
 		for (int i=0;i<16;i++)
 		{
 			if (info.maple.devices[i].Type==MDT_EndOfList)
 				break;
 			t.id=i;
-			sprintf(t.dll,"%s:%d",load_info.dll,i);
+			swprintf(t.dll,_T("%s:%d"),load_info.dll,i);
 			maple_device_definition* mdd=&t;
 			memcpy(mdd,&info.maple.devices[i],sizeof(maple_device_definition));
 
@@ -202,11 +202,11 @@ bool AddToPluginList(char* dll)
 	return true;
 }
 
-void plugin_FileIsFound(char* file,void* param)
+void plugin_FileIsFound(wchar* file,void* param)
 {
-	char dllfile[1024]="";
-	strcat(dllfile,plugins_path);
-	strcat(dllfile,file);
+	wchar dllfile[1024]=_T("");
+	wcscat(dllfile,plugins_path);
+	wcscat(dllfile,file);
 	AddToPluginList(dllfile);
 }
 //Get a list of all plugins that exist on plugin directory and can be loaded
@@ -228,7 +228,7 @@ List<MapleDeviceDefinition>* GetMapleDeviceList(MapleDeviceType type)
 	List<MapleDeviceDefinition>* rv = new List<MapleDeviceDefinition>();
 	for (size_t i=0;i<MapleDeviceList_cached.size();i++)
 	{
-		if ((type==MDT_EndOfList) || MapleDeviceList_cached[i].Type==type)
+		if ((type==MDT_EndOfList) || MapleDeviceList_cached[i].Type==(u32)type)
 		{
 			rv->Add(MapleDeviceList_cached[i]);
 		}
@@ -241,15 +241,15 @@ void EnumeratePlugins()
 		return;
 	plugins_enumerated=true;
 
-	cfgLoadStr("emu","PluginPath",plugins_path,0);
+	cfgLoadStr(_T("emu"),_T("PluginPath"),plugins_path,0);
 
 	PluginList_cached.clear();
 	MapleDeviceList_cached.clear();
 
 	
-	char dllfile[1024]="";
-	strcat(dllfile,plugins_path);
-	strcat(dllfile,"*.dll");
+	wchar dllfile[1024]=_T("");
+	wcscat(dllfile,plugins_path);
+	wcscat(dllfile,_T("*.dll"));
 	//Look & load all dll's :)
 	FindAllFiles(plugin_FileIsFound,dllfile,0);
 
@@ -277,36 +277,36 @@ void EnumeratePlugins()
 //-107 LoadI (plugin specialised interface) failed
 //-108 Invalid id (id >= count)
 //0 (rv_ok) -> ok :)
-s32 nullDC_plugin::Open(char* plugin)
+s32 nullDC_plugin::Open(wchar* plugin)
 {
 	Inited=false;
 	Loaded=false;
 
-	if (!strcmp(plugin,"NULL"))
+	if (!wcscmp(plugin,_T("NULL")))
 	{
 		return -101;
 	}
 
-	if (strlen(plugin)>480)
+	if (wcslen(plugin)>480)
 	{
-		msgboxf("Plugin dll path is way too long",MBX_ICONERROR | MBX_OK);
+		msgboxf(_T("Plugin dll path is way too long"),MBX_ICONERROR | MBX_OK);
 		return -102;
 	}
 	
-	char ttt[512];
-	strcpy(dll_file,plugin);
-	size_t dllfl=strlen(dll_file);
-	size_t pathl=strlen(plugins_path);
+	wchar ttt[512];
+	wcscpy(dll_file,plugin);
+	size_t dllfl=wcslen(dll_file);
+	size_t pathl=wcslen(plugins_path);
 	if (dllfl<=pathl || (memcmp(dll_file,plugins_path,pathl)!=0))
 	{
-		strcpy(ttt,plugins_path);
-		strcat(ttt,dll_file);
-		strcpy(dll_file,plugin);
+		wcscpy(ttt,plugins_path);
+		wcscat(ttt,dll_file);
+		wcscpy(dll_file,plugin);
 	}
 	else
 	{
-		strcpy(ttt,dll_file);
-		strcpy(dll_file,&dll_file[pathl]);
+		wcscpy(ttt,dll_file);
+		wcscpy(dll_file,&dll_file[pathl]);
 	}
 	if (!dll.Load(ttt))
 		return -104;
@@ -406,15 +406,15 @@ void nullDC_ExtDevice_plugin::LoadI(plugin_interface* t)
 	b:
 	Unload
 */
-void maple_cfg_name(int i,int j,char * out)
+void maple_cfg_name(int i,int j,wchar * out)
 {
-	sprintf(out,"Current_maple%d_%d",i,j);
+	swprintf(out,_T("Current_maple%d_%d"),i,j);
 }
-void maple_cfg_plug(int i,int j,char * out)
+void maple_cfg_plug(int i,int j,wchar * out)
 {
-	char temp[512];
+	wchar temp[512];
 	maple_cfg_name(i,j,temp);
-	cfgLoadStr("nullDC_plugins",temp,out,"NULL");
+	cfgLoadStr(_T("nullDC_plugins"),temp,out,_T("NULL"));
 }
 u8 GetMaplePort(u32 port,u32 device)
 {
@@ -428,60 +428,81 @@ nullDC_Maple_plugin* FindMaplePlugin(MapleDeviceDefinition* mdd)
 {
 	for (u32 i=0;i<libMaple.size();i++)
 	{
-		if (strcmp(libMaple[i]->dll_file,mdd->dll_file)==0)
+		if (wcscmp(libMaple[i]->dll_file,mdd->dll_file)==0)
 			return libMaple[i];
 	}
-	msgboxf("Fatal error :nullDC_Maple_plugin* FindMaplePlugin(MapleDeviceDefinition* mdd) failed",MBX_ICONERROR);
+	msgboxf(_T("Fatal error :nullDC_Maple_plugin* FindMaplePlugin(MapleDeviceDefinition* mdd) failed"),MBX_ICONERROR);
 	return 0;
 }
-MapleDeviceDefinition* FindMapleDevice(char* mfdn)
+MapleDeviceDefinition* FindMapleDevice(wchar* mfdn)
 {
 	for (u32 i=0;i<MapleDeviceList_cached.size();i++)
 	{
-		if (strcmp(MapleDeviceList_cached[i].dll,mfdn)==0)
+		if (wcscmp(MapleDeviceList_cached[i].dll,mfdn)==0)
 			return &MapleDeviceList_cached[i];
 	}
-	msgboxf("Fatal error :MapleDeviceDefinition* FindMapleDevice(char* mfdn) failed",MBX_ICONERROR);
+	msgboxf(_T("Fatal error :MapleDeviceDefinition* FindMapleDevice(char* mfdn=%s) failed"),MBX_ICONERROR,mfdn);
 	return 0;
 }
 
-s32 CreateMapleDevice(u32 pos,char* device,bool hotplug);
+s32 CreateMapleDevice(u32 pos,wchar* device,bool hotplug);
+s32 CreateMapleSubDevice(u32 pos,u32 subport,wchar* device,bool hotplug);
+s32 DestroyMapleDevice(u32 pos);
+s32 DestroyMapleSubDevice(u32 pos,u32 subport);
+u32 GetMaplePort(u32 addr);
+void EXPORT_CALL menu_handle_attach_sub(u32 id,void* win,void* p)
+{
+	size_t offs=(u8*)p-(u8*)0;
+	u32 plid=(u32)offs&0xFFFFFF;
+	u32 port=((u32)offs>>24);
+
+	CreateMapleSubDevice(port&3,port>>2,MapleDeviceList_cached[plid].dll,true);
+}
+void EXPORT_CALL menu_handle_detach_sub(u32 id,void* win,void* p)
+{
+	size_t offs=(u8*)p-(u8*)0;
+
+	u32 port=((u32)offs>>24);
+
+	DestroyMapleSubDevice(port&3,port>>2);
+}
 void cm_MampleSubEmpty(u32 root,u32 port,u32 subport)
 {
 	libgui.DeleteAllMenuItemChilds(root);
 	//l8r
-	/*
 	for (size_t i=0;i<MapleDeviceList_cached.size();i++)
 	{
 		if (!(MapleDeviceList_cached[i].Flags & MDTF_Hotplug))
 			continue;
 		if (MapleDeviceList_cached[i].Type!=MDT_Sub)
 			continue;
-		char text[512];
-		sprintf(text,"Attach %s %d.%d.%d",MapleDeviceList_cached[i].Name,MapleDeviceList_cached[i].PluginVersion.major,MapleDeviceList_cached[i].PluginVersion.minnor,MapleDeviceList_cached[i].PluginVersion.build);
+		wchar text[512];
+		swprintf(text,_T("Attach %s %d.%d.%d"),MapleDeviceList_cached[i].Name,MapleDeviceList_cached[i].PluginVersion.major,MapleDeviceList_cached[i].PluginVersion.minnor,MapleDeviceList_cached[i].PluginVersion.build);
 		//Attach NAME
-		u32 menu=AddMenuItem(root,-1,text,0,0);
+		u32 menu=libgui.AddMenuItem(root,-1,text,menu_handle_attach_sub,0);
 		MenuItem mi;
 		u8* t=0;
 		t+=MapleDeviceList_cached[i].id;
-		t+=(port<<24);
+		t+=(port<<24)|(subport<<26);
 		mi.PUser=t;
-		SetMenuItem(menu,&mi,MIM_PUser);
+		libgui.SetMenuItem(menu,&mi,MIM_PUser);
 	}
-	AddMenuItem(root,-1,"Click Me To Crash",(MenuItemSelectedFP*)666,0);
-	*/
 }
 void cm_MampleSubUsed(u32 root,u32 port,u32 subport)
 {
 	libgui.DeleteAllMenuItemChilds(root);
 	//l8r
-	/*
-	AddMenuItem(root,-1,"Unplug",0,0);
-	u32 sep=AddMenuItem(root,-1,"",0,0);
-	SetMenuItemStyle(sep,MIS_Seperator,MIS_Seperator);
-	*/
+	u32 menu=libgui.AddMenuItem(root,-1,_T("Unplug"),menu_handle_detach_sub,0);
+	MenuItem mi;
+	u8* t=0;
+	t+=(port<<24);
+	t+=(subport<<26);
+	mi.PUser=t;
+	libgui.SetMenuItem(menu,&mi,MIM_PUser);
+
+	libgui.AddMenuItem(root,-1,0,0,0);
 }
-void FASTCALL menu_handle_attach_main(u32 id,void* win,void* p)
+void EXPORT_CALL menu_handle_attach_main(u32 id,void* win,void* p)
 {
 	size_t offs=(u8*)p-(u8*)0;
 	u32 plid=(u32)offs&0xFFFFFF;
@@ -489,31 +510,38 @@ void FASTCALL menu_handle_attach_main(u32 id,void* win,void* p)
 
 	CreateMapleDevice(port,MapleDeviceList_cached[plid].dll,true);
 }
+void EXPORT_CALL menu_handle_detach_main(u32 id,void* win,void* p)
+{
+	size_t offs=(u8*)p-(u8*)0;
+
+	u32 port=((u32)offs>>24);
+
+	DestroyMapleDevice(port);
+}
 void cm_MampleMainEmpty(u32 root,u32 port)
 {
 	libgui.DeleteAllMenuItemChilds(root);
 	for (int i=0;i<5;i++)
 		MenuIDs.Maple_port[port][i]=0;
 	//Add the
-	/*
+	
 	for (size_t i=0;i<MapleDeviceList_cached.size();i++)
 	{
 		if (!(MapleDeviceList_cached[i].Flags & MDTF_Hotplug))
 			continue;
 		if (MapleDeviceList_cached[i].Type!=MDT_Main)
 			continue;
-		char text[512];
-		sprintf(text,"Attach %s %d.%d.%d",MapleDeviceList_cached[i].Name,MapleDeviceList_cached[i].PluginVersion.major,MapleDeviceList_cached[i].PluginVersion.minnor,MapleDeviceList_cached[i].PluginVersion.build);
+		wchar text[512];
+		swprintf(text,_T("Attach %s %d.%d.%d"),MapleDeviceList_cached[i].Name,MapleDeviceList_cached[i].PluginVersion.major,MapleDeviceList_cached[i].PluginVersion.minnor,MapleDeviceList_cached[i].PluginVersion.build);
 		//Attach NAME
-		u32 menu=AddMenuItem(root,-1,text,menu_handle_attach_main,0);
+		u32 menu=libgui.AddMenuItem(root,-1,text,menu_handle_attach_main,0);
 		MenuItem mi;
 		u8* t=0;
 		t+=MapleDeviceList_cached[i].id;
 		t+=(port<<24);
 		mi.PUser=t;
-		SetMenuItem(menu,&mi,MIM_PUser);
+		libgui.SetMenuItem(menu,&mi,MIM_PUser);
 	}
-	*/
 }
 void cm_MampleMainUsed(u32 root,u32 port,u32 flags)
 {
@@ -524,8 +552,8 @@ void cm_MampleMainUsed(u32 root,u32 port,u32 flags)
 	{
 		if (flags & (1<<i))
 		{
-			char temp[512];
-			sprintf(temp,"Subdevice %d",i+1);
+			wchar temp[512];
+			swprintf(temp,_T("Subdevice %d"),i+1);
 			u32 sdr=libgui.AddMenuItem(root,-1,temp,0,0);
 			MenuIDs.Maple_port[port][i]=sdr;
 			cm_MampleSubEmpty(sdr,port,i);
@@ -536,13 +564,16 @@ void cm_MampleMainUsed(u32 root,u32 port,u32 flags)
 		}
 	}
 	
-	/*
+	
 	//-
-	u32 sep=AddMenuItem(root,-1,"",0,0);
-	SetMenuItemStyle(sep,MIS_Seperator,MIS_Seperator);
+	libgui.AddMenuItem(root,-1,0,0,0);
 	//Unplug
-	AddMenuItem(root,-1,"Unplug",0,0);
-	*/
+	u32 menu=libgui.AddMenuItem(root,-1,_T("Unplug"),menu_handle_detach_main,0);
+	MenuItem mi;
+	u8* t=0;
+	t+=(port<<24);
+	mi.PUser=t;
+	libgui.SetMenuItem(menu,&mi,MIM_PUser);
 }
 //These are the 'raw' functions , they handle creation/destruction of a device *only*
 enum pmd_errors
@@ -551,9 +582,11 @@ enum pmd_errors
 	pmde_invalid_pos=-251,		//invalid device pos (0~3 , 0~4 are valid only)
 	pmde_failed_create=-252,	//failed to create device
 	pmde_failed_create_s=-253,	//failed to create device , silent error
+	pmde_failed_find_mdd_s=-254,//failed to find maple device definition
+	pmde_failed_find_maple_plugin_s=-255,//failed to find maple plugin
 
 };
-s32 CreateMapleDevice(u32 pos,char* device,bool hotplug)
+s32 CreateMapleDevice(u32 pos,wchar* device,bool hotplug)
 {
 	if (pos>3)
 		return pmde_invalid_pos;
@@ -562,9 +595,11 @@ s32 CreateMapleDevice(u32 pos,char* device,bool hotplug)
 		return pmde_device_state;
 
 	MapleDeviceDefinition* mdd=FindMapleDevice(device);
-
+	if (!mdd)
+		return pmde_failed_find_mdd_s;
 	nullDC_Maple_plugin* plg =FindMaplePlugin(mdd);
-	
+	if (!mdd)
+		return pmde_failed_find_maple_plugin_s;
 	cm_MampleMainUsed(MenuIDs.Maple_port[pos][5],pos,mdd->Flags);
 	MapleDevices[pos].port=GetMaplePort(pos,5);
 	
@@ -589,6 +624,8 @@ s32 DestroyMapleDevice(u32 pos)
 	if (!MapleDevices[pos].connected)
 		return pmde_device_state;
 
+	//MapleDevices_dd[pos][5].Inited
+
 	MapleDeviceDefinition* mdd=MapleDevices_dd[pos][5].mdd;
 	MapleDevices_dd[pos][5].mdd=0;
 	nullDC_Maple_plugin* plg =FindMaplePlugin(mdd);
@@ -600,7 +637,7 @@ s32 DestroyMapleDevice(u32 pos)
 
 	return rv_ok;
 }
-s32 CreateMapleSubDevice(u32 pos,u32 subport,char* device,bool hotplug)
+s32 CreateMapleSubDevice(u32 pos,u32 subport,wchar* device,bool hotplug)
 {
 	if (pos>3)
 		return pmde_invalid_pos;
@@ -659,7 +696,7 @@ s32 DestroyMapleSubDevice(u32 pos,u32 subport)
 /*********Plugin Load/Unload*********/
 /************************************/
 template<typename T>
-s32 load_plugin(char* dll,T* plug,u32 rootmenu)
+s32 load_plugin(wchar* dll,T* plug,u32 rootmenu)
 {
 	lcp_error=-100;
 	lcp_name=dll;
@@ -676,7 +713,7 @@ s32 load_plugin(char* dll,T* plug,u32 rootmenu)
 			return rv;
 		}
 		plug->Loaded=true;
-		printf("Loaded %s[%s]\n",plug->Name,lcp_name);
+		wprintf(L"Loaded %s[%s]\n",plug->Name,lcp_name);
 	}
 
 	return rv_ok;
@@ -693,7 +730,7 @@ void unload_plugin(T* plug,u32 rootmenu)
 		{
 			plug->Unload(); 
 			plug->Loaded=false;
-			printf("Unloaded %s[%s]\n",plug->Name,plug->dll_file);
+			wprintf(L"Unloaded %s[%s]\n",plug->Name,plug->dll_file);
 		}
 		plug->Close(); 
 	}
@@ -701,9 +738,9 @@ void unload_plugin(T* plug,u32 rootmenu)
 
 #define load_plugin_(cfg_name,to,menu,def) \
 { \
-	char dllf[512]; \
+	wchar dllf[512]; \
 	dllf[0]=0; \
-	cfgLoadStr("nullDC_plugins",cfg_name,dllf,def); \
+	cfgLoadStr(_T("nullDC_plugins"),cfg_name,dllf,def); \
 	if (s32 rv=load_plugin(dllf,to,menu)) \
 		return rv; \
 }
@@ -733,10 +770,10 @@ s32 plugins_Load_()
 	eminf.DebugMenu=MenuIDs.Debug;
 	eminf.BroardcastEvent=BroadcastEvent;
 
-	load_plugin_("Current_PVR",&libPvr,MenuIDs.PowerVR,"nullPvr_Win32.dll");
-	load_plugin_("Current_GDR",&libGDR,MenuIDs.GDRom,"nullGDR_Win32.dll");
-	load_plugin_("Current_AICA",&libAICA,MenuIDs.Aica,"nullAica_Win32.dll");
- 	load_plugin_("Current_ExtDevice",&libExtDevice,MenuIDs.ExtDev,"nullExtDev_Win32.dll");
+	load_plugin_(_T("Current_PVR"),&libPvr,MenuIDs.PowerVR,_T("nullPvr_Win32.dll"));
+	load_plugin_(_T("Current_GDR"),&libGDR,MenuIDs.GDRom,_T("nullGDR_Win32.dll"));
+	load_plugin_(_T("Current_AICA"),&libAICA,MenuIDs.Aica,_T("nullAica_Win32.dll"));
+ 	load_plugin_(_T("Current_ExtDevice"),&libExtDevice,MenuIDs.ExtDev,_T("nullExtDev_Win32.dll"));
 
 	List<PluginLoadInfo>* mpl= GetPluginList(Plugin_Maple);
 
@@ -744,7 +781,7 @@ s32 plugins_Load_()
 	{
 		for (size_t i=0;i<mpl->size();i++)
 		{
-			char fname[512];
+			wchar fname[512];
 			nullDC_Maple_plugin* cmp= new nullDC_Maple_plugin();
 
 			GetFileNameFromPath((*mpl)[i].dll,fname);
@@ -761,12 +798,12 @@ s32 plugins_Load_()
 
 	//Create Maple Devices
 
-	char plug_name[512];
+	wchar plug_name[512];
 	for (int port=0;port<4;port++)
 	{
 		maple_cfg_plug(port,5,plug_name);
 		lcp_name=plug_name;
-		if (strcmp(plug_name,"NULL")!=0)
+		if (wcscmp(plug_name,_T("NULL"))!=0)
 		{
 			if (!MapleDevices_dd[port][5].Created)
 			{
@@ -789,7 +826,7 @@ s32 plugins_Load_()
 
 				maple_cfg_plug(port,subport,plug_name);
 				lcp_name=plug_name;
-				if (strcmp(plug_name,"NULL")!=0)
+				if (wcscmp(plug_name,_T("NULL"))!=0)
 				{
 					if (!MapleDevices_dd[port][subport].Created)
 					{
@@ -817,13 +854,13 @@ s32 plugins_Load_()
 //Loads plugins , if allready loaded does nothing :)
 bool plugins_Load()
 {
-	__try 
+	//__try 
 	{
 		if (s32 rv=plugins_Load_())
 		{
 			if (rv==rv_error)
 			{
-				msgboxf("Unable to load %s plugin , errorlevel=%d",MBX_ICONERROR,lcp_name,lcp_error);
+				msgboxf(_T("Unable to load %s plugin , errorlevel=%d"),MBX_ICONERROR,lcp_name,lcp_error);
 			}
 
 			plugins_Unload();
@@ -832,12 +869,12 @@ bool plugins_Load()
 		else
 			return true;
 	}
-	__except(EXCEPTION_EXECUTE_HANDLER)
+	/*__except(EXCEPTION_EXECUTE_HANDLER)
 	{
-		msgboxf("Unhandled exeption while loading %s plugin",MBX_ICONERROR,lcp_name);
+		msgboxf(_T("Unhandled exeption while loading %s plugin"),MBX_ICONERROR,lcp_name);
 		plugins_Unload();
 		return false;
-	}
+	}*/
 }
 
 //Unloads plugins , if allready unloaded does nothing
@@ -894,19 +931,19 @@ void plugins_Unload()
 	}
 	__except(EXCEPTION_EXECUTE_HANDLER)
 	{
-		msgboxf("Unhandled exeption while unloading %s\n",MBX_ICONERROR,lcp_name);
+		msgboxf(_T("Unhandled exeption while unloading %s\n"),MBX_ICONERROR,lcp_name);
 	}
 }
 /************************************/
 /******Plugin selection-switch*******/
 /************************************/
 template<typename T>
-void CheckPlugin(char*cfg_name, T* plug,u32 rootmenu)
+void CheckPlugin(wchar*cfg_name, T* plug,u32 rootmenu)
 {
-	char dllf[512];
+	wchar dllf[512];
 	dllf[0]=0;
-	cfgLoadStr("nullDC_plugins",cfg_name,dllf,"NULL");
-	if (strcmp(plug->dll_file,dllf)!=0)
+	cfgLoadStr(_T("nullDC_plugins"),cfg_name,dllf,_T("NULL"));
+	if (wcscmp(plug->dll_file,dllf)!=0)
 	{
 		unload_plugin(plug,rootmenu);
 	}
@@ -919,7 +956,7 @@ bool plugins_Select()
 {
 	if (plugins_inited)
 	{
-		if (msgboxf("Emulation is started , plugins can't be changed now ..\r\nWant to Continue anyway ? (Changes will will take effect after retart)",MBX_YESNO | MBX_ICONEXCLAMATION | MBX_TASKMODAL)==MBX_RV_NO)
+		if (msgboxf(_T("Emulation is started , plugins can't be changed now ..\r\nWant to Continue anyway ? (Changes will will take effect after retart)"),MBX_YESNO | MBX_ICONEXCLAMATION | MBX_TASKMODAL)==MBX_RV_NO)
 			return false;
 	}
 
@@ -927,20 +964,20 @@ bool plugins_Select()
 
 	if (rv && plugins_inited==false)
 	{
-		CheckPlugin("Current_PVR",&libPvr,MenuIDs.PowerVR);
-		CheckPlugin("Current_GDR",&libGDR,MenuIDs.GDRom);
-		CheckPlugin("Current_AICA",&libAICA,MenuIDs.Aica);
- 		CheckPlugin("Current_ExtDevice",&libExtDevice,MenuIDs.ExtDev);
+		CheckPlugin(_T("Current_PVR"),&libPvr,MenuIDs.PowerVR);
+		CheckPlugin(_T("Current_GDR"),&libGDR,MenuIDs.GDRom);
+		CheckPlugin(_T("Current_AICA"),&libAICA,MenuIDs.Aica);
+ 		CheckPlugin(_T("Current_ExtDevice"),&libExtDevice,MenuIDs.ExtDev);
 
 		//Maple plugins
 		for (int port =0;port<4;port++)
 		{
-			char dllf[512];
+			wchar dllf[512];
 			maple_cfg_plug(port,5,dllf);
 			if (MapleDevices_dd[port][5].Created)
 			{
 				//Check if main device is changed 
-				if (strcmp(dllf,MapleDevices_dd[port][5].mdd->dll)!=0)
+				if (wcscmp(dllf,MapleDevices_dd[port][5].mdd->dll)!=0)
 				{
 					//if it is destroy it & its childs
 					for (int i=4;i>=0;i--)
@@ -959,7 +996,7 @@ bool plugins_Select()
 							continue;
 						maple_cfg_plug(port,i,dllf);
 						//else , check if a child is changed & destroy it
-						if (strcmp(dllf,MapleDevices_dd[port][i].mdd->dll)!=0)
+						if (wcscmp(dllf,MapleDevices_dd[port][i].mdd->dll)!=0)
 						{
 							DestroyMapleSubDevice(port,i);
 							MapleDevices_dd[port][i].Created=false;
@@ -1020,7 +1057,7 @@ s32 plugins_Init_()
 	{
 		if (MapleDevices_dd[i][5].Created)
 		{
-			lcp_name="Made Device";
+			lcp_name=_T("Made Device");
 			verify(MapleDevices_dd[i][5].mdd!=0);
 			//Init
 			nullDC_Maple_plugin *nmp=FindMaplePlugin(MapleDevices_dd[i][5].mdd);
@@ -1034,7 +1071,7 @@ s32 plugins_Init_()
 			{
 				if (MapleDevices_dd[i][j].Created)
 				{
-					lcp_name="Made SubDevice";
+					lcp_name=_T("Made SubDevice");
 					verify(MapleDevices_dd[i][j].mdd!=0);
 					//Init
 					nullDC_Maple_plugin *nmp=FindMaplePlugin(MapleDevices_dd[i][j].mdd);
@@ -1073,7 +1110,7 @@ bool plugins_Init()
 		{
 			if (rv==rv_error)
 			{
-				msgboxf("Failed to init %s",MBX_ICONERROR,lcp_name);				
+				msgboxf(_T("Failed to init %s"),MBX_ICONERROR,lcp_name);				
 			}
 			plugins_Term();
 			return false;
@@ -1082,7 +1119,7 @@ bool plugins_Init()
 	}
 	__except(EXCEPTION_EXECUTE_HANDLER)
 	{
-		msgboxf("Unhandled exeption while Initing %s plugin",MBX_ICONERROR,lcp_name);
+		msgboxf(_T("Unhandled exeption while Initing %s plugin"),MBX_ICONERROR,lcp_name);
 		plugins_Term();
 		return false;
 	}

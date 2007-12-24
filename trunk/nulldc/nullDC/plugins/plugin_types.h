@@ -59,23 +59,41 @@ struct NDC_WINDOW_RECT
 	u32 width;
 	u32 height;
 };
+/*
+	Enumerations using the event interface
+	Enum request (NDE_*_*ENUM)	: p depends on the enum type(by default its ingored),l param is dst mask
+								: Request while an enumeration is in progress are simply ingored for the same bitmask
+	Enum reply	 (NDE_*_*EITEM)	: p -> pointer to first item, l -> count of items.If l is 0 then this is the end of the enumeration
+*/
 enum ndc_events
 {
-	NDC_GUI_RESIZED=0,	//gui was resized, p points to a NDC_WINDOW_RECT with the new size.This event is not guaratneed to have any thread anfinity.The plugin
-						//must handle sync. betwen threads to ensure proper operation.
-	NDC_GUI_REQESTFULLSCREEN=1,	//if (p) -> goto fullscreen.Set *(u32*)p to 1 too. Else goto window.Do not touchy p then.
+	//gui -> *
+	NDE_GUI_RESIZED=0,			//gui was resized, p points to a NDC_WINDOW_RECT with the new size.This event is not guaratneed to have any thread anfinity.The plugin
+								//must handle sync. betwen threads to ensure proper operation.Borderless fullscreen use this, not NDC_GUI_REQESTFULLSCREEN
+	
+	NDE_GUI_REQESTFULLSCREEN,	//if (l) -> goto fullscreen, else goto window.This event can be safely ingored
+	
+	NDE_GUI_WINDOWCHANGE,		//if (l) old window handle is still valid, else it has been replaced with a new one.This event is sent with l!=0 before destructing the window, and then with l==0
+								//after creating a new one.It is not sent for the initial or final window creation/destruction.
 
-	NDC_CUSTOM_EVENT=0xFF000000,	//Base for custom events.be carefull with how you use these, as all plugins get em ;)
+	//pvr -> *
+	NDE_PVR_FULLSCREEN,			//if (l) -> new mode is fullscreen, else its window
+
+	//* -> gdrom
+	NDE_GD_IMAGEENUM,			//Enumerate gdrom images.Folowes the enumerator rules
+
+	//Misc
+	NDE_CUSTOM=0xFF000000,		//Base for custom events.be carefull with how you use these, as all plugins get em ;)
 };
 #define PLUGIN_I_F_VERSION DC_MakeVersion(1,0,1,DC_VER_BETA)
 
 //These are provided by the emu
-typedef void EXPORT_CALL ConfigLoadStrFP(const char * lpSection, const char * lpKey, char * lpReturn,const char* lpDefault);
-typedef void EXPORT_CALL ConfigSaveStrFP(const char * lpSection, const char * lpKey, const char * lpString);
+typedef void EXPORT_CALL ConfigLoadStrFP(const wchar * lpSection, const wchar * lpKey, wchar * lpReturn,const wchar* lpDefault);
+typedef void EXPORT_CALL ConfigSaveStrFP(const wchar * lpSection, const wchar * lpKey, const wchar * lpString);
 
-typedef s32 EXPORT_CALL ConfigLoadIntFP(const char * lpSection, const char * lpKey,const s32 Default);
-typedef void EXPORT_CALL ConfigSaveIntFP(const char * lpSection, const char * lpKey, const s32 Value);
-typedef s32 EXPORT_CALL ConfigExistsFP(const char * lpSection, const char * lpKey);
+typedef s32 EXPORT_CALL ConfigLoadIntFP(const wchar * lpSection, const wchar * lpKey,const s32 Default);
+typedef void EXPORT_CALL ConfigSaveIntFP(const wchar * lpSection, const wchar * lpKey, const s32 Value);
+typedef s32 EXPORT_CALL ConfigExistsFP(const wchar * lpSection, const wchar * lpKey);
 
 enum MenuItemStyles
 {
@@ -87,11 +105,7 @@ enum MenuItemStyles
 	MIS_Checked		=0x80000000,
 };
 
-
-#ifndef _MenuItemSelectedFP_
-#define _MenuItemSelectedFP_
 typedef void EXPORT_CALL MenuItemSelectedFP(u32 id,void* WindowHandle,void* user);
-
 
 enum MenuItemMask
 {
@@ -104,21 +118,35 @@ enum MenuItemMask
 };
 struct MenuItem
 {
-	char* Text;			//Text of the menu item
+	wchar* Text;			//Text of the menu item
 	MenuItemSelectedFP* Handler;	//called when the menu is clicked
 	void* Bitmap;		//bitmap handle
 	u32 Style;			//MIS_* combination
 	void* PUser;		//User defined pointer :)
 };
-#endif
+enum BroadcastEventTarget
+{
+	BET_Core=1,
+	BET_Gui =2,
+	BET_PowerVR=4,
+	BET_GDRom=8,
+	BET_Maple=16,			//controler ,mouse , vmu (both main and subdevs)
+	BET_ExtDevice=32,		//BBA , Lan adapter , other 
+	BET_All=0xFFFFFFFF,
+};
+enum SyncSourceFlags
+{
+	SSF_NeedsSync=1,	//The provider needs perfect sync, like audio stream out or vsync'd video
+};
 
-typedef u32 EXPORT_CALL AddMenuItemFP(u32 parent,s32 pos,char* text,MenuItemSelectedFP* handler , u32 checked);
+typedef u32 EXPORT_CALL AddMenuItemFP(u32 parent,s32 pos,wchar* text,MenuItemSelectedFP* handler , u32 checked);
 typedef void EXPORT_CALL SetMenuItemStyleFP(u32 id,u32 style,u32 mask);
 typedef void EXPORT_CALL GetMenuItemFP(u32 id,MenuItem* info,u32 mask);
 typedef void EXPORT_CALL SetMenuItemFP(u32 id,MenuItem* info,u32 mask);
 typedef void EXPORT_CALL DeleteMenuItemFP(u32 id);
 typedef void* EXPORT_CALL GetRenderTargetFP();
-typedef void EXPORT_CALL BroardcastEventFP(u32 nid,void* data);
+typedef void EXPORT_CALL BroardcastEventFP(u32 target,u32 eid,void* pdata,u32 ldata);
+typedef void EXPORT_CALL RegisterSyncSourceFP(wchar* name,u32 id,u32 freq,u32 flags);
 
 struct emu_info
 {
@@ -139,6 +167,8 @@ struct emu_info
 	BroardcastEventFP* BroardcastEvent;
 	u32 RootMenu;
 	u32 DebugMenu;
+
+	RegisterSyncSourceFP* RegisterSyncSource;
 };
 
 //common plugin functions
@@ -147,7 +177,6 @@ typedef s32 FASTCALL PluginInitFP(emu_info* param);
 
 //called when plugin is unloaded by emu , olny if dcInit is called (eg , not called to enumerate plugins)
 typedef void FASTCALL PluginTermFP();
-
 
 //Unhandled Write Exeption handler
 typedef bool FASTCALL ExeptionHanlderFP(void* addr);
@@ -162,7 +191,7 @@ typedef void EXPORT_CALL EventHandlerFP(u32 nid,void* p);
 
 struct common_info
 {
-	char			Name[128];			//plugin name
+	wchar			Name[128];			//plugin name
 	u32				PluginVersion;		//plugin version
 	u32				Type;				//plugin type
 	u32				InterfaceVersion;	//Note : this version is of the interface for this type of plugin :)
@@ -264,7 +293,7 @@ typedef void FASTCALL DriveReadSubChannelFP(u8 * buff, u32 format, u32 len);
 //passed on GDRom init call
 struct gdr_init_params
 {
-	//HollyRaiseInterruptFP*	RaiseInterrupt;
+	wchar* source;
 	DriveNotifyEventFP* DriveNotifyEvent;
 };
 
@@ -402,7 +431,7 @@ enum MapleDeviceTypeFlags
 };
 struct maple_device_definition
 {
-	char Name[128];
+	wchar Name[128];
 	u32 Type;
 	u32 Flags;
 };
