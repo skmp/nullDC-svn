@@ -5,9 +5,7 @@
 #include <memory.h>
 
 emu_info host;
-#ifdef UNICODE
-#undef UNICODE
-#endif
+
 #define _WIN32_WINNT 0x500
 #include <windowsx.h>
 #include <winsock2.h>
@@ -379,7 +377,7 @@ void ENABLESHITFACE(HWND hWnd,u32 state)
 		Static_Enable(GetDlgItem(hWnd,kid_to_did[kk]),state);
 	}
 }
-void get_name(int VK,char* text)
+void get_name(int VK,wchar* text)
 {
 	int scancode = MapVirtualKey(VK,0);
 	switch(VK) {
@@ -399,7 +397,7 @@ void get_name(int VK,char* text)
 }
 void UpdateKeySelectionNames(HWND hWnd)
 {
-	char temp[512];
+	wchar temp[512];
 	for (int i=0;joypad_settings_K[i].name;i++)
 	{
 		if (kid_to_did[i]==0)
@@ -417,19 +415,19 @@ INT_PTR CALLBACK ConfigKeysDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 			TCITEM tci; 
 			tci.mask = TCIF_TEXT | TCIF_IMAGE; 
 			tci.iImage = -1; 
-			tci.pszText = "Port A"; 
+			tci.pszText = L"Port A"; 
 			TabCtrl_InsertItem(GetDlgItem(hWnd,IDC_PORTTAB), 0, &tci); 
-			tci.pszText = "Port B"; 
+			tci.pszText = L"Port B"; 
 			TabCtrl_InsertItem(GetDlgItem(hWnd,IDC_PORTTAB), 1, &tci); 
-			tci.pszText = "Port C"; 
+			tci.pszText = L"Port C"; 
 			TabCtrl_InsertItem(GetDlgItem(hWnd,IDC_PORTTAB), 2, &tci); 
-			tci.pszText = "Port D"; 
+			tci.pszText = L"Port D"; 
 			TabCtrl_InsertItem(GetDlgItem(hWnd,IDC_PORTTAB), 3, &tci); 
 
 			TabCtrl_SetCurSel(GetDlgItem(hWnd,IDC_PORTTAB),current_port);
 
 			SetTimer(hWnd,0,1000/kbratio,0);
-			Static_SetText(GetDlgItem(hWnd,IDC_STATUS),"Click a button , then press the key you want to use for it.If you want to use joysticks try the joy2key utility");
+			Static_SetText(GetDlgItem(hWnd,IDC_STATUS),L"Click a button , then press the key you want to use for it.If you want to use joysticks try the joy2key utility");
 			UpdateKeySelectionNames(hWnd);
 		}
 		return true;
@@ -476,7 +474,7 @@ INT_PTR CALLBACK ConfigKeysDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 		return false;
 	case WM_TIMER:
 	{
-		char temp[512];
+		wchar temp[512];
 		if (waiting_key)
 		{
 			int VK_down=-1;
@@ -494,7 +492,7 @@ INT_PTR CALLBACK ConfigKeysDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 			{
 				waiting_key=false;
 
-				sprintf(temp,"Updated Key Mapping,%d",VK_down);
+				swprintf(temp,L"Updated Key Mapping,%d",VK_down);
 				Static_SetText(GetDlgItem(hWnd,IDC_STATUS),temp);
 				joypad_settings[current_port][edited_key].KC=VK_down;
 				SaveSettings();
@@ -504,7 +502,7 @@ INT_PTR CALLBACK ConfigKeysDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 
 		if(waiting_key)
 		{
-			char temp[512];
+			wchar temp[512];
 			
 			waiting_key_timer--;
 			if (waiting_key_timer==0)
@@ -517,12 +515,12 @@ INT_PTR CALLBACK ConfigKeysDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 				waiting_key=false;
 				waiting_key_timer=6;
 
-				sprintf(temp,"Timed out while waiting for new key",waiting_key_timer/kbratio);
+				swprintf(temp,L"Timed out while waiting for new key",waiting_key_timer/kbratio);
 				Static_SetText(GetDlgItem(hWnd,IDC_STATUS),temp);
 			}
 			else
 			{
-				sprintf(temp,"Waiting for key ...%d\n",waiting_key_timer/kbratio);
+				swprintf(temp,L"Waiting for key ...%d\n",waiting_key_timer/kbratio);
 				Static_SetText(GetDlgItem(hWnd,IDC_STATUS),temp);
 			}
 		}
@@ -570,7 +568,7 @@ void FASTCALL  Unload()
 {
 	if (oldptr!=0)
 	{
-		SetWindowLongPtr((HWND)host.GetRenderTarget(),GWL_WNDPROC,(LONG)oldptr);
+		SetWindowLongPtrW((HWND)host.GetRenderTarget(),GWL_WNDPROC,(LONG)oldptr);
 		oldptr=0;
 	}
 }
@@ -2066,10 +2064,10 @@ void EXPORT_CALL config_keys(u32 id,void* w,void* p)
 }
 s32 FASTCALL CreateMain(maple_device_instance* inst,u32 id,u32 flags,u32 rootmenu)
 {
-	char temp[512];
+	wchar temp[512];
 	if (id<=1)
 	{
-		sprintf(temp,"Config keys for Player %d",(inst->port>>6)+1);
+		swprintf(temp,L"Config keys for Player %d",(inst->port>>6)+1);
 		u32 ckid=host.AddMenuItem(rootmenu,-1,temp,config_keys,0);
 		MenuItem mi;
 		mi.PUser=inst;
@@ -2079,31 +2077,31 @@ s32 FASTCALL CreateMain(maple_device_instance* inst,u32 id,u32 flags,u32 rootmen
 	{
 		inst->dma=ControllerDMA;
 		inst->data=0;
-		sprintf(temp,"Controller[winhook] : 0x%02X",inst->port);
+		swprintf(temp,L"Controller[winhook] : 0x%02X",inst->port);
 	}
 	else if (id==1)
 	{
 		inst->dma=ControllerDMA_net;
 		inst->data=0;
-		sprintf(temp,"Controller[winhook,net] : 0x%02X",inst->port);
+		swprintf(temp,L"Controller[winhook,net] : 0x%02X",inst->port);
 	}
 	else if (id==3)
 	{
 		inst->dma=KbdDMA;
 		inst->data=0;
-		sprintf(temp,"Keyboard : 0x%02X",inst->port);
+		swprintf(temp,L"Keyboard : 0x%02X",inst->port);
 	}
 	else if (id==4)
 	{
 		inst->dma=ControllerDMA_nul;
 		inst->data=0;
-		sprintf(temp,"Controller [no input] : 0x%02X",inst->port);
+		swprintf(temp,L"Controller [no input] : 0x%02X",inst->port);
 	}
 	else if (id==5)
 	{
 		inst->dma=MouseDMA;
 		inst->data=0;
-		sprintf(temp,"Mouse [winhook] : 0x%02X",inst->port);
+		swprintf(temp,L"Mouse [winhook] : 0x%02X",inst->port);
 	}
 	host.AddMenuItem(rootmenu,-1,temp,0,0);
 /*
@@ -2164,9 +2162,9 @@ void FASTCALL DestroyMain(maple_device_instance* inst,u32 id)
 }
 s32 FASTCALL CreateSub(maple_subdevice_instance* inst,u32 id,u32 flags,u32 rootmenu)
 {
-	char temp[512];
-	sprintf(temp,"VMU :vmu_data_port%02X.bin",inst->port);
-	host.AddMenuItem(rootmenu,-1,temp,0,0);
+	wchar wtemp[512];
+	swprintf(wtemp,L"VMU :vmu_data_port%02X.bin",inst->port);
+	host.AddMenuItem(rootmenu,-1,wtemp,0,0);
 	inst->data=malloc(sizeof(VMU_info));
 	sprintf(((VMU_info*)inst->data)->file,"vmu_data_port%02X.bin",inst->port);
 	FILE* f=fopen(((VMU_info*)inst->data)->file,"rb");
@@ -2193,19 +2191,21 @@ void FASTCALL DestroySub(maple_subdevice_instance* inst,u32 id)
 }
 
 #define MMD(name,flags) \
-	strcpy(km.devices[mdi].Name,name);	\
+	wcscpy(km.devices[mdi].Name,name);	\
 	km.devices[mdi].Type=MDT_Main;	\
 	km.devices[mdi].Flags= flags;	\
 	mdi++;
 
 #define MSD(name,flags)	\
-	strcpy(km.devices[mdi].Name,name);	\
+	wcscpy(km.devices[mdi].Name,name);	\
 	km.devices[mdi].Type=MDT_Sub;	\
 	km.devices[mdi].Flags= flags;	\
 	mdi++;
 
 #define MDLE() km.devices[mdi].Type=MDT_EndOfList;
 //Give a list of the devices to teh emu
+#define __T(x) L##x
+#define _T(x) __T(x)
 void EXPORT_CALL dcGetInterface(plugin_interface* info)
 {
 
@@ -2222,7 +2222,7 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	c.Type=Plugin_Maple;
 	c.PluginVersion=DC_MakeVersion(1,0,0,DC_VER_NORMAL);
 	
-	strcpy(c.Name,"nullDC Maple Devices (" __DATE__ ")");
+	wcscpy(c.Name,L"nullDC Maple Devices (" _T(__DATE__) L")");
 
 	km.CreateMain=CreateMain;
 	km.InitMain=InitMain;
@@ -2236,22 +2236,22 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 
 	u32 mdi=0;
 	//0
-	MMD("nullDC Controller [WinHook] (" __DATE__ ")",MDTF_Hotplug|MDTF_Sub0|MDTF_Sub1);
+	MMD(L"nullDC Controller [WinHook] (" _T(__DATE__) L")",MDTF_Hotplug|MDTF_Sub0|MDTF_Sub1);
 
 	//1
-	MMD("nullDC Controller [WinHook,NET] (" __DATE__ ")",MDTF_Hotplug|MDTF_Sub0|MDTF_Sub1);
+	MMD(L"nullDC Controller [WinHook,NET] (" _T(__DATE__) L")",MDTF_Hotplug|MDTF_Sub0|MDTF_Sub1);
 
 	//2
-	MSD("nullDC VMU (" __DATE__ ")",MDTF_Hotplug);
+	MSD(L"nullDC VMU (" _T(__DATE__) L")",MDTF_Hotplug);
 
 	//3
-	MMD("nullDC Keyboard [WinHook] (" __DATE__ ")",MDTF_Hotplug);
+	MMD(L"nullDC Keyboard [WinHook] (" _T(__DATE__) L")",MDTF_Hotplug);
 
 	//4
-	MMD("nullDC Controller [no input] (" __DATE__ ")",MDTF_Hotplug|MDTF_Sub0|MDTF_Sub1);
+	MMD(L"nullDC Controller [no input] (" _T(__DATE__) L")",MDTF_Hotplug|MDTF_Sub0|MDTF_Sub1);
 
 	//5
-	MMD("nullDC Mouse [WinHook] (" __DATE__ ")",MDTF_Hotplug);
+	MMD(L"nullDC Mouse [WinHook] (" _T(__DATE__) L")",MDTF_Hotplug);
 
 	/*
 
@@ -2326,14 +2326,17 @@ void LoadSettings()
 	{
 		for (int i=0;joypad_settings_K[i].name;i++)
 		{
-			char temp[512];
-			sprintf(temp,"Port%c_%s",port+'A',&joypad_settings_K[i].name[4]);
-			joypad_settings[port][i].KC=host.ConfigLoadInt("ndc_hookjoy",temp,joypad_settings_K[i].KC);
+			wchar temp[512];
+			swprintf(temp,L"Port%c_%s",port+'A',&joypad_settings_K[i].name[4]);
+			joypad_settings[port][i].KC=host.ConfigLoadInt(L"ndc_hookjoy",temp,joypad_settings_K[i].KC);
 		}
 	}
-	local_port=host.ConfigLoadInt("ndc_hookjoy","local_port",0);
-	host.ConfigLoadStr("ndc_hookjoy","server_addr",server_addr,"192.168.1.33");
-	host.ConfigLoadStr("ndc_hookjoy","server_port",server_port,"11122");
+	local_port=host.ConfigLoadInt(L"ndc_hookjoy",L"local_port",0);
+	wchar temp[512];
+	host.ConfigLoadStr(L"ndc_hookjoy",L"server_addr",temp,L"192.168.1.33");
+	wcstombs(server_addr,temp,sizeof(temp));
+	host.ConfigLoadStr(L"ndc_hookjoy",L"server_port",temp,L"11122");
+	wcstombs(server_port,temp,sizeof(temp));
 }
 
 void SaveSettings()
@@ -2342,12 +2345,15 @@ void SaveSettings()
 	{
 		for (int i=0;joypad_settings_K[i].name;i++)
 		{
-			char temp[512];
-			sprintf(temp,"Port%c_%s",port+'A',&joypad_settings_K[i].name[4]);
-			host.ConfigSaveInt("ndc_hookjoy",temp,joypad_settings[port][i].KC);
+			wchar temp[512];
+			swprintf(temp,L"Port%c_%s",port+'A',&joypad_settings_K[i].name[4]);
+			host.ConfigSaveInt(L"ndc_hookjoy",temp,joypad_settings[port][i].KC);
 		}
 	}
-	host.ConfigSaveInt("ndc_hookjoy","local_port",0);
-	host.ConfigSaveStr("ndc_hookjoy","server_addr",server_addr);
-	host.ConfigSaveStr("ndc_hookjoy","server_port",server_port);
+	wchar temp[512];
+	host.ConfigSaveInt(L"ndc_hookjoy",L"local_port",0);
+	mbstowcs(temp,server_addr,sizeof(temp));
+	host.ConfigSaveStr(L"ndc_hookjoy",L"server_addr",temp);
+	mbstowcs(temp,server_port,sizeof(temp));
+	host.ConfigSaveStr(L"ndc_hookjoy",L"server_port",temp);
 }
