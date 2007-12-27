@@ -13,7 +13,7 @@ struct nillInputProvider : InputProvider
 	}
 	virtual const GUID GetGuid() const
 	{
-		return NullInputProvider;
+		return GUID_NULL;
 	}
 
 	virtual const wchar* GetDeviceName() const
@@ -22,7 +22,7 @@ struct nillInputProvider : InputProvider
 	}
 	virtual const GUID GetDeviceGuid() const
 	{
-		return NullInputProviderDevice;
+		return GUID_NULL;
 	}
 		
 	virtual u32 GetType() const

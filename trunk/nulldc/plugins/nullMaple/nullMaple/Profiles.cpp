@@ -3,94 +3,97 @@
 
 struct ProfileData
 {
-	GUID mdev;
-	GUID prguid;
-	wstring Name;
+	u32 pid;
+	wstring Section;
 };
 
-struct SubProfileImpl : SubProfile
+struct SubProfileImpl : SubProfile,SubProfileDDI
 {
 	ProfileData* parent;
 	wstring Name;
-	wstring Title;
 	bool Dirty;
+	bool Saved;
 	u32 id;
+	u32 rev;
 
-	struct mapping { wstring name;u32 p1;u32 p2;};
+	struct mapping { wstring name;u32 t;wstring v;u32 p[8];};
 	vector<mapping> maps;
 	
-	SubProfileImpl(u32 id,ProfileData* parent)
+	SubProfileImpl(u32 id,ProfileData* const parent,const wstring& name)
 	{
 		this->id=id;
 		this->parent=parent;
+		Name=name;
+		Dirty=false;
+		Saved=false;
+		rev=0;
 	}
-	u32 AddMap(const wstring& name,u32 param1)
+	u32 GetSPRev() { return rev; }
+	u32 AddMap(const wstring & n,u32 count)
 	{
-		return 0;
-	}
-	u32 AddMap(const wstring& name,u32 param1,u32 param2)
-	{
-		Dirty=true;
-		mapping t = { wstring(name),param1,param2 };
-		maps.push_back(t);
+		mapping m;
+		m.name=n;
+		m.t=count;
+		
+		if (m.t==0)
+			m.v=L"";
+		else
+			memset(m.p,0,sizeof(m.p));
+
+		maps.push_back(m);
 
 		return (u32)maps.size()-1;
 	}
 
-	void GetName(wstring* name) const
+	void GetName(wstring* const name) const
 	{
 		*name=Name;
-//		parent->GetName(name);
 	}
-	void SetName(const wstring& name) 
+	////
+	bool SetStr(u32 id,const wstring& string)
 	{
-		Dirty=true;
-		Name=name;
-//		parent->SetName(name);
-	}
+		if (id>=maps.size() || maps[id].t!=0)
+			return false;
 
-	bool SetMapParams(u32 id,GUID device,u32* params,u32 count)
+		Dirty=true;
+		rev++;
+		maps[id].v=string;
+		return true;
+	}
+	bool GetStr(u32 id,wstring* const string)
 	{
-		if (id>=maps.size())
+		if (id>=maps.size() || maps[id].t!=0)
+			return false;
+
+		*string=maps[id].v;
+		return true;
+	}
+	bool SetArr(u32 id,const u32* const params,u32 count)
+	{
+		if (id>=maps.size() || maps[id].t==0)
 			return false;
 	
 		Dirty=true;
-//		maps[id].p1=param1;
-	//	maps[id].p2=param2;
-
+		for (u32 i=0;i<count;i++)
+		{
+			maps[id].p[i]=params[i];
+		}
+		rev++;
 		return true;
 	}
-	bool SetMapName(u32 id,const wstring& name)
+	bool GetArr(u32 id,u32* const params,u32 count)
 	{
-		if (id>=maps.size())
-			return false;
-		
-		Dirty=true;
-		maps[id].name=wstring(name);
-
-		return true;
-	}
-
-	bool GetMapParams(u32 id,GUID* device,u32* params,u32 count)
-	{
-//		if (id>=maps.size() || param1==0 || param2==0)
-//			return false;
-		
-//		*param1=maps[id].p1;
-//		*param2=maps[id].p2;
-
-		return true;
-	}
-	bool GetMapName(u32 id,wstring* name)
-	{
-		if (id>=maps.size())
+		if (id>=maps.size() || params==0 || maps[id].t==0)
 			return false;
 
-		*name=maps[id].name.c_str();
+		for (u32 i=0;i<count;i++)
+		{
+			params[i]=maps[id].p[i];
+		}
 
 		return true;
 	}
-
+	////
 	bool IsDirty()
 	{
 		return Dirty;
@@ -105,107 +108,177 @@ struct SubProfileImpl : SubProfile
 		if (Dirty)
 			Write();
 	}
+	////
 	bool Read()
 	{
-		wchar item[128];
-		wstring value;
-		u32 listsize=0;
-		u32 p1,p2;
-		wchar value2[2048];
-		value2[0]=0;
-
-		wstring sect=CFG_NAME L"_Profile_";
-		sect+=GuidToText(parent->prguid);
-		sect+=GuidToText(parent->mdev);
-
-		wsprintf(item,L"s_%d_Info",id);
-		value=ReadStr(sect,item);
-
-		swscanf(value.c_str(),L"%[^:]:%d",value2,&listsize);
-		Name=value2;
-		for (u32 i=0;i<listsize;i++)
+		for (u32 i=0;i<maps.size();i++)
 		{
-			p1=p2=0;
-			value2[0]=0;
+			wstring en=Name;
+			en+=L"_";
+			en+= maps[i].name;
+			if (host.ConfigExists(parent->Section.c_str(),en.c_str())!=2)
+			{
+				if (maps[i].t==0)
+					maps[i].v=L"";
+				else
+					memset(maps[i].p,0,sizeof(maps[i].p));
+				continue;
+			}
 
-			wsprintf(item,L"s_%d_map_%d",id,i);
-			value=ReadStr(sect,item);
-			
-			swscanf(value.c_str(),L"%[^:]:%d,%d",value2,&p1,&p2);
-			mapping mpi={value2,p1,p2};
-			maps.push_back(mpi);
+			wstring v=ReadStr(parent->Section,en);
+			if (maps[i].t==0)
+				maps[i].v=v;
+			else
+			{
+				vector<wstring> strs=Tokenize(v,L",");
+				for (u32 j=0;j<maps[i].t;j++)
+				{
+					if (strs.size()>j)
+						swscanf(strs[i].c_str(),L"%d",&maps[i].p[j]);
+					else
+						maps[i].p[j]=0;
+				}
+			}
 		}
-
+		
 		Dirty=false;
+		rev++;
 		return true;
 	}
 	void Write()
 	{
-		wchar item[128];
-		wchar value[2048];
-
-		wstring sect=CFG_NAME L"_Profile_";
-		sect+=GuidToText(parent->prguid);
-		sect+=GuidToText(parent->mdev);
 		
-		wsprintf(item,L"s_%d_Info",id);
-		wsprintf(value,L"%s:%d",Name.c_str(),maps.size());
+		//Name_MapName=value(s)
 
-		WriteStr(sect,item,value);
 		for (u32 i=0;i<maps.size();i++)
 		{
-			wsprintf(item,L"s_%d_map_%d",id,i);
-			wsprintf(value,L"%s:%d,%d",maps[i].name.c_str(),maps[i].p1,maps[i].p2);
+			wstring en=Name;
+			en+=L"_";
+			en+= maps[i].name;
 
-			WriteStr(sect,item,value);
+			if (maps[i].t==0)
+			{
+				WriteStr(parent->Section,en,maps[i].v);
+			}
+			else
+			{
+				wstring val;
+				wchar tstr[10];
+				for (u32 j=0;j<maps[i].t;j++)
+				{
+					swprintf_s(tstr,L"%d",maps[i].p[j]);
+					
+					if (j!=0)
+						val+=L",";
+					val+=tstr;
+				}
+
+				WriteStr(parent->Section,en,val);
+			}
 		}
+		
 		Dirty=false;
+		Saved=true;
 	}
 };
 
-struct ProfileImpl : ProfileData,Profile
+struct ProfileImpl : ProfileData,Profile,ProfileDDI
 {
 	vector<SubProfileImpl*> sprof;
 
-	ProfileImpl() {}
+	void Init(u32 id)
+	{
+		Section=CFG_NAME L"_Profile";
+		wchar t[10];
+		swprintf(t,L"%d",id);
+		Section+=t;
 
-	void GetName(wstring* name) const
-	{
-		*name=Name;
+		SubProfileDDI* spd= AddSub(L"Profile");
+		
+		spd->AddMap(L"PTID",1);	//mdid|ftid
+		spd->AddMap(L"FTDK",0);	//string
 	}
-	void SetName(const wstring& name) 
+	ProfileImpl(u32 id) 
 	{
-		Name=name;
+		Init(id);
+
+		sprof[0]->Read();
+
+		FindMDF(GetPCID()>>16)->SetupProfile(this,GetPCID()&0xFFFF);
+		
+		Read();
+	}
+	ProfileImpl(u32 id,u32 pcid,const wstring& ftdk) 
+	{
+		Init(id);
+
+		sprof[0]->SetArr(0,&pcid,1);
+		sprof[0]->SetStr(1,ftdk);
+		sprof[0]->Commit();
+
+		FindMDF(GetPCID()>>16)->SetupProfile(this,GetPCID()&0xFFFF);
 	}
 
-	GUID GetGuid()
+	bool Saved()
 	{
-		return prguid;
+		for (u32 i=0;i<sprof.size();i++)
+		{
+			if (sprof[i]->Saved)
+				return true;
+		}
+		return false;
+	}
+	//Returns true if the Profile isnt on sync with the config file.Else returns false.
+	virtual bool IsDirty()
+	{
+		for (u32 i=0;i<sprof.size();i++)
+		{
+			if (sprof[i]->IsDirty())
+				return true;
+		}
+		return false;
+	}
+	//if the profile is dirty it discards the changes to it
+	virtual void Revert()
+	{
+		for (u32 i=0;i<sprof.size();i++)
+		{
+			sprof[i]->Revert();
+		}
+	}
+	//if the profile is dirty it saves the changes on the config file
+	virtual void Commit()
+	{
+		for (u32 i=0;i<sprof.size();i++)
+		{
+			sprof[i]->Commit();
+		}
+	}
+
+	u32 GetPCID()
+	{
+		u32 rv;
+		sprof[0]->GetArr(0,&rv,1);
+		return rv;
+	}
+
+	wstring GetHint()
+	{
+		wstring rv;
+		sprof[0]->GetStr(1,&rv);
+		return rv;
 	}
 	
-	GUID GetMDevGuid()
+	SubProfileDDI* AddSub(const wstring& name)
 	{
-		return mdev;
-	}
-
-	SubProfile* AddSub(const wstring& name)
-	{
-		wchar t[32];
-		swprintf(t,L"%d",sprof.size()+1);
-		wstring sect=CFG_NAME L"_Profile_";
-		sect+=GuidToText(prguid);
-		sect+=GuidToText(mdev);
-		WriteStr(sect,L"SubCount",t);
-
-		SubProfileImpl* spi= new SubProfileImpl(sprof.size(),this);
-		spi->Name=name;
+		SubProfileImpl* spi= new SubProfileImpl((u32)sprof.size(),this,name);
 		sprof.push_back(spi);
-		spi->Commit();
 
 		return spi;
 	}
 	SubProfile* GetSub(u32 id)
 	{
+		id++;
 		if (id >=sprof.size())
 			return 0;
 		else
@@ -214,23 +287,13 @@ struct ProfileImpl : ProfileData,Profile
 
 	bool Read()
 	{
-		wstring sect=CFG_NAME L"_Profile_";
-		sect+=GuidToText(prguid);
-		sect+=GuidToText(mdev);
-		wstring v=ReadStr(sect,L"SubCount");
-		u32 c;
-		swscanf(v.c_str(),L"%d",&c);
-
-		for (u32 i=0;i<c;i++)
+		for (u32 i=0;i<sprof.size();i++)
 		{
-			SubProfileImpl* spi = new SubProfileImpl(i,this);
-			if (!spi->Read())
+			if (!sprof[i]->Read())
 			{
-				delete spi;
 				return false;
 			}
 		}
-
 		return true;
 	}
 };
@@ -239,138 +302,43 @@ struct ProfileImpl : ProfileData,Profile
 
 vector<ProfileImpl*>	Profiles;
 
-Profile* Profile::GetProfile(GUID mdev,GUID prguid,bool ret0)
+Profile* Profile::GetProfile(const u32 PTID,const wstring& hint)
 {
 	//try to find one
 	for (u32 i=0;i<Profiles.size();i++)
 	{
-		if (Profiles[i]->mdev==mdev && Profiles[i]->prguid==prguid)
+		if (Profiles[i]->GetPCID()==PTID && Profiles[i]->GetHint().compare(hint)==0)
 		{
 			return Profiles[i];
 		}
 	}
 
-	if (ret0)
-		return 0;
-	else
-	{
-		verify(prguid!=NullInputProvider);
-		return GetProfile(mdev,NullInputProvider);
-	}
+	return 0;
 }
 
-
-ProfileImpl* CreateFixed(GUID mdev,GUID prguid)
+Profile* Profile::Create(const u32 PTID,const wstring& hint)
 {
-	MapleDeviceDesc* mdd = FindMDF(mdev);
-	if (!mdd)
-		return 0;
+	ProfileImpl* p;
 	
-	ProfileImpl* p= new ProfileImpl();
-	p->mdev=mdev;
-	p->Name=mdd->GetName();
-
-	p->prguid=prguid;
-
-	mdd->SetupProfile(p);
-	Profiles.push_back(p);
-
-	return p;
-}
-Profile* Profile::Create(GUID mdev)
-{
-	GUID g;
-	CoCreateGuid(&g);
-	ProfileImpl* p= CreateFixed(mdev,g);
+	Profiles.push_back((p=new ProfileImpl(Profiles.size(),PTID,hint)));
 
 	return p;
 }
 
-u32 ReadProfilesSub(const GUID& mdev)
-{
-	u32 rv=0;
-	wstring sentry=L"Profiles_";
-	sentry+=GuidToText(mdev);
-	vector<wstring> vec=Tokenize(ReadStr(CFG_NAME,sentry),L",");//{guid1} {guid2},...
-
-	for (u32 i=0;i<vec.size();i++)
-	{
-		if (vec[i].size()>=38)
-		{
-			wstring pure=JoinStr(Tokenize(vec[i]),L"");
-			GUID pg=ParseGuid(pure.c_str());
-			if (pg!=GUID_NULL)
-			{
-				//read the config :)
-				ProfileImpl* p= new ProfileImpl();
-				p->mdev=mdev;
-				p->prguid=pg;
-				if (!p->Read())
-				{
-					delete p;
-					continue;
-				}
-
-				Profiles.push_back(p);
-				rv++;
-			}
-		}
-	}
-	return rv;
-}
 void Profile::Init()
 {
-	for (u32 i=0;i<Devices.size();i++)
+	int pcount=host.ConfigLoadInt(CFG_NAME,L"ProfileCount",0);
+	
+	for (int i=0;i<pcount;i++)
 	{
-		u32 rps=ReadProfilesSub(Devices[i]->GetGuid());
-		if (Devices[i]->GetExtendedFlags()&1)
-		{
-			for (u32 j=0;j<Profiles.size();j++)
-			{
-				if (Profiles[j]->mdev==Devices[i]->GetGuid() && Profiles[j]->prguid!=GUID_NULL)
-				{
-					Profiles.erase(Profiles.begin()+j);
-					j--;
-					rps--;
-				}
-			}
-			if (rps==0)
-			{
-				//Add default null config
-				verify(CreateFixed(Devices[i]->GetGuid(),GUID_NULL)!=0);
-			}
-			continue;
-		}
-		for (u32 j=0;j<Providers.size();j++)
-		{
-			if (Profile* p=Profile::GetProfile(Devices[i]->GetGuid(),Providers[j]->GetGuid(),true))
-			{
-				//p->Destroy();//destroy the copy
-			}
-			else
-			{
-				verify(CreateFixed(Devices[i]->GetGuid(),Providers[j]->GetGuid())!=0);
-			}
-		}
+		Profiles.push_back(new ProfileImpl(i));
 	}
 }
 void Profile::Term()
 {
-	for (u32 i=0;i<Devices.size();i++)
-	{
-		vector<wstring> guids;
-		for (u32 j=0;j<Profiles.size();j++)
-		{
-			if (Profiles[j]->mdev==Devices[i]->GetGuid())
-			{
-				guids.push_back(GuidToText(Profiles[j]->prguid));
-			}
-		}
-
-		wstring sentry=L"Profiles_";
-		sentry+=GuidToText(Devices[i]->GetGuid());
-		WriteStr(CFG_NAME,sentry,JoinStr(guids,L","));
-	}
+		
+	host.ConfigSaveInt(CFG_NAME,L"ProfileCount",Profiles.size());
+	
 
 	for (u32 i=0;i<Profiles.size();i++)
 	{

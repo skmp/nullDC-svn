@@ -5,31 +5,74 @@
 enum IEventType { ET_None,ET_Pressed,ET_AxisP,ET_AxisN,ET_AxisFRP,ET_AxisFRN,ET_AxisFR,ET_AxisFRI };
 struct IEvent {InputProvider* ip; u32 id;u32 type;};
 
-struct InputFunctionClass : MapleFunction
+#define BSWAP(v) (((v&0xFF)<<24) | ((v&0xFF00)<<8) | ((v>>8)&0xFF00) | (v>>24))
+
+struct InputFunctionClass : MapleFunction,OptionGroopCallBack
 {
-	IEvent Events[32];//up to 32 events -- keyboard uses special mapping
-	vector<InputProvider*> Providers;
-	SubProfile* profile;
+	IEvent Events[32];//up to 32 events
+	InputProvider* prov;
+	SubProfile* sp;
+	Profile* pr;
+	MapleDevice* device;
 
-	u32 InputButtons;
+	u32 Desc;
+	u32 LastCfgRev;
+	
+	CRITICAL_SECTION spcs;
+	OptionGroop* og;
+	wstring cfgkey;
 
+	void SetDevice(GUID dev)
+	{
+		if (prov)
+		{
+			prov->Term();
+		}
+		prov=InputProvider::Find(dev);
+		wstring val=GuidToText(prov->GetGuid());
+		host.ConfigSaveStr(CFG_NAME,cfgkey.c_str(),val.c_str());
+
+		pr=Profile::GetProfile((device->GetMDID()<<16)|0,val);
+		if (!pr)
+		{
+			pr=Profile::Create((device->GetMDID()<<16)|0,val);
+		}
+		sp=pr->GetSub(0);
+		LastCfgRev=~sp->GetSPRev();
+	}
 	InputFunctionClass(MapleDevice* device,u32 functions)
 	{
-		InputButtons=functions;
+		this->device=device;
+		Desc=functions;
 		memset(Events,0,sizeof(Events));
-		profile=0;
-	}
-	s32 GetProviderIdx(const GUID& prov)
-	{
+		//find curr function
+		wchar key[512];
+		wchar val[512];
+		swprintf_s(key,L"Setting_%02X_%d_%d",device->GetPort(),device->GetMDID(),0);
+		cfgkey=key;
+		host.ConfigLoadStr(CFG_NAME,key,val,L"{0}");
+
+		prov=0;
+		SetDevice(ParseGuid(val));
+
+		InitializeCriticalSection(&spcs);
+		
+		og = new OptionGroop(this);
 		for (u32 i=0;i<Providers.size();i++)
 		{
-			if (Providers[i]->GetGuid()==prov)
-			{
-				return i;
-			}
+			og->Add(device->GetMenu(),Providers[i]->GetName(),i,Providers[i]);
+			if (Providers[i]->GetGuid()==prov->GetGuid())
+				og->SetValue(i,0);
 		}
-		
-		return -1;
+	}
+
+	virtual void OnMenuClick(int val,void* pUser,void* window)
+	{
+		//og->SetValue(val,window)// not needed ;)
+		EnterCriticalSection(&spcs);
+		InputProvider* ip=(InputProvider*)pUser;
+		SetDevice(ip->GetGuid());
+		LeaveCriticalSection(&spcs);
 	}
 
 	u32 GetBitState(int eid)
@@ -106,50 +149,49 @@ struct InputFunctionClass : MapleFunction
 
 	void PopulateEvents()
 	{
-		vector<InputProvider*> pnew;
-		u32 esid=0;
-		for (u32 i=0;i<32;i++)
+		EnterCriticalSection(&spcs);
+		if (LastCfgRev!=sp->GetSPRev())
 		{
-			if (InputButtons & (1<<i))
+			LastCfgRev=sp->GetSPRev();
+			
+			u32 InputButtons= BSWAP(Desc);
+
+			u32 esid=0;
+			for (u32 i=0;i<18;i++)
 			{
-				GUID dev;
-				u32 p[3];
-				u32 p2;
-				profile->GetMapParams(esid,&dev,p,3);
-				//provider
-				Events[i].id=p[1];
-				Events[i].type=p[2];
-
-				s32 pindx=GetProviderIdx(dev);
-				if (pindx>=0)
+				if (InputButtons & (1<<i))
 				{
-					pnew.push_back(Events[i].ip=Providers[pindx]);
-					Providers.erase(Providers.begin() + pindx);
-				}
-				else
-				{
-					pnew.push_back(Events[i].ip=InputProvider::Find(dev));
-				}
+					u32 p[2];
+					sp->GetArr(esid,p,2);
+					//provider
+					Events[i].id=p[0];
+					Events[i].type=p[1];
 
-				esid++;
+					esid++;
+				}
+			}
+			for (u32 i=18;i<22;i++)
+			{
+				if (InputButtons & (1<<i))
+				{
+					for (int j=0;j<2;j++)
+					{
+						u32 p[2];
+						sp->GetArr(esid,p,2);
+						
+						Events[i].id=p[0];
+						Events[i].type=p[1];
+
+						esid++;
+					}
+				}
 			}
 		}
-
-		for (u32 i=0;i<Providers.size();i++)
-		{
-			Providers[i]->Term();
-		}
-		Providers.clear();
-
-		for (u32 i=0;i<pnew.size();i++)
-		{
-			Providers.push_back(pnew[i]);
-		}
-		pnew.clear();
+		LeaveCriticalSection(&spcs);
 	}
 
 	virtual u32 GetID() { return MFID_0_Input; }
-	virtual u32 GetDesc() { return InputButtons; }
+	virtual u32 GetDesc() { return Desc; }
 	
 	virtual bool Init()
 	{
@@ -158,14 +200,18 @@ struct InputFunctionClass : MapleFunction
 	}
 	virtual void Term()
 	{
+		
 	}
 	virtual void Destroy()
 	{
+		prov->Term();
+		prov=0;
 		delete this;
 	}
 
 	virtual void Dma(u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
 	{
+		PopulateEvents();
 		u8*buffer_out_b=(u8*)buffer_out;
 
 		switch (Command)
@@ -206,23 +252,79 @@ MapleFunction* CreateFunction0(MapleDevice* dev,u32 lparam,void* dparam)
 
 	return rv;
 }
-void SetupSubProfile0(SubProfile* sp,u32 lparam,void* dparam)
+wchar* KeyMapNames[32]=
 {
-	sp->AddMap(L"Up",3);
-	sp->AddMap(L"Down",3);
-	sp->AddMap(L"Left",3);
-	sp->AddMap(L"Right",3);
-	sp->AddMap(L"Analog Up",3);
-	sp->AddMap(L"Analog Down",3);
-	sp->AddMap(L"Analog Left",3);
-	sp->AddMap(L"Analog Right",3);
-	sp->AddMap(L"Start",3);
-	sp->AddMap(L"Y",3);
-	sp->AddMap(L"X",3);
-	sp->AddMap(L"B",3);
-	sp->AddMap(L"A",3);
-	sp->AddMap(L"Left Slider",3);
-	sp->AddMap(L"Right Slider",3);
+	L"C",
+	L"B",
+	L"A",
+	L"Start",
+	//
+	L"Up_1",
+	L"Down_1",
+	L"Left_1",
+	L"Right_1",
 
-	sp->Commit();
+	
+	L"Z",
+	L"Y",
+	L"X",
+	L"D",
+	//
+	L"Up_2",
+	L"Down_2",
+	L"Left_2",
+	L"Right_2",
+
+	L"Axis_LS",
+	L"Axis_RS",
+	L"Axis_X_1",
+	L"Axis_Y_1",
+	//
+	L"Axis_X_2",
+	L"Axis_Y_2",
+	L"22",
+	L"23",
+
+	L"24",
+	L"25",
+	L"26",
+	L"27",
+	//
+	L"28",
+	L"29",
+	L"30",
+	L"31",
+
+};
+void SetupProfile0(ProfileDDI* p,u32 lparam,void* dparam)
+{
+	SubProfileDDI* sp=p->AddSub(L"Key");
+	
+	u32 InputButtons= BSWAP(lparam);
+	u32 esid=0;
+	for (u32 i=0;i<18;i++)
+	{
+		if (InputButtons & (1<<i))
+		{
+			sp->AddMap(KeyMapNames[i],2);
+			esid++;
+		}
+	}
+	for (u32 i=18;i<22;i++)
+	{
+		if (InputButtons & (1<<i))
+		{
+			wstring str;
+
+			str=KeyMapNames[i];
+			str+= L"_Pos";
+			sp->AddMap(str,2);
+			esid++;
+
+			str=KeyMapNames[i];
+			str+= L"_Neg";
+			sp->AddMap(str,2);
+			esid++;
+		}
+	}
 }

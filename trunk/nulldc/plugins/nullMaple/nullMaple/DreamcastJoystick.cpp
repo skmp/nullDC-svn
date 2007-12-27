@@ -34,15 +34,15 @@ struct JoystickDeviceDesc : virtual MapleDeviceDesc
 		return L"nullDC Joystick/n";
 	}
 
-	virtual GUID GetGuid() const
+	virtual u32 GetMDID() const
 	{
-		GUID rv= {0x7611486b,0x58a4,0x46dd,{0x89,0xbc,0x37,0x74,0x93,0x24,0x05,0x26}};
-		return rv;
+		return 0;
 	}
-	virtual void SetupProfile(Profile* prof) const
+	
+	virtual void SetupProfile(ProfileDDI* prof,u32 ftid) const
 	{
-		SubProfile* s0=prof->AddSub(L"Function 0");
-		MapleFunction::SetupSubProfile(s0,MFID_0_Input,0xfe060f00,0);
+		if (ftid==0)
+			MapleFunction::SetupProfile(prof,MFID_0_Input,0xfe060f00,0);
 	}
 };
 
@@ -52,13 +52,19 @@ public:
 	maple_device_instance* inst;
 	Profile* map;
 
-	JoystickDevice(maple_device_instance* ins) 
+	JoystickDevice(maple_device_instance* ins,u32 menu) 
 	{	
+		this->menu=menu;
 		inst=ins;	
-		map=Profile::GetProfile(GetGuid(),ReadGuid(GetGuid(),inst->port));
-		WriteGuid(GetGuid(),inst->port,map->GetGuid());
+/*
+		map=Profile::GetProfile(GetMDID(),ReadGuid(GetGuid(),inst->port));
 		
-		functs.push_back(MapleFunction::Create(this,map->GetSub(0),MFID_0_Input,0xfe060f00,0));
+		if (!map)
+			map=Profile::GetOrCreate(GetGuid(),L"None",NullInputProvider);
+
+		WriteGuid(GetGuid(),inst->port,map->GetGuid());
+*/		
+		functs.push_back(MapleFunction::Create(this,MFID_0_Input,0xfe060f00,0));
 		
 		memcpy(&mdi,&joymdi,sizeof(joymdi));
 	}

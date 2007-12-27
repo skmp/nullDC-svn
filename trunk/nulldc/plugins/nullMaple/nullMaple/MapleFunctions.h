@@ -16,8 +16,8 @@ struct MapleFunction
 	virtual void Dma(u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce) =0;
 
 	MapleDevice* dev;
-	static MapleFunction* Create(MapleDevice* dev,SubProfile* sp,u32 function,u32 lparam,void* dparam);
-	static void MapleFunction::SetupSubProfile(SubProfile* sp,u32 function,u32 lparam,void* dparam);
+	static MapleFunction* Create(MapleDevice* dev,u32 function,u32 lparam,void* dparam);
+	static void SetupProfile(ProfileDDI* sp,u32 function,u32 lparam,void* dparam);
 };
 //Varius low level structs and constants used at the packet layer
 #pragma pack(push,1)

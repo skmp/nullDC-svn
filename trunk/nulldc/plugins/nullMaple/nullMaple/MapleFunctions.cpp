@@ -1,15 +1,16 @@
 #include "MapleFunctions.h"
 
 MapleFunction* CreateFunction0(MapleDevice* dev,u32 lparam,void* dparam);
-void SetupSubProfile0(SubProfile* sp,u32 lparam,void* dparam);
+void SetupProfile0(ProfileDDI* sp,u32 lparam,void* dparam);
+
 MapleFunction* CreateFunction1(MapleDevice* dev,u32 lparam,void* dparam);
 
-void MapleFunction::SetupSubProfile(SubProfile* sp,u32 function,u32 lparam,void* dparam)
+void MapleFunction::SetupProfile(ProfileDDI* sp,u32 function,u32 lparam,void* dparam)
 {
 	switch(function)
 	{
 	case MFID_0_Input:	//input
-		SetupSubProfile0(sp,lparam,dparam);
+		SetupProfile0(sp,lparam,dparam);
 		return;
 	case MFID_1_Storage:	//storage
 	case MFID_2_LCD:	//LCD
@@ -27,7 +28,7 @@ void MapleFunction::SetupSubProfile(SubProfile* sp,u32 function,u32 lparam,void*
 	}
 }
 
-MapleFunction* MapleFunction::Create(MapleDevice* dev,SubProfile* sp,u32 function,u32 lparam,void* dparam)
+MapleFunction* MapleFunction::Create(MapleDevice* dev,u32 function,u32 lparam,void* dparam)
 {
 	switch(function)
 	{
@@ -47,6 +48,5 @@ MapleFunction* MapleFunction::Create(MapleDevice* dev,SubProfile* sp,u32 functio
 	case MFID_11_Camera: //DreamEye
 	default:
 		return 0;
-
 	}
 }

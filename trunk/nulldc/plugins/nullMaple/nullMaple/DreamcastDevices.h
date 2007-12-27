@@ -8,7 +8,9 @@ struct MapleDevBase:  virtual MapleDevice,  virtual DevInfo
 	vector<MapleFunction*> functs;
 
 	MapleDeviceInfo mdi;
-	
+	u32 menu;
+	u32 GetMenu() const{ return menu; }
+
 	//functions must be added on correct order before calling this
 	//Inits functions, mdi.funct and mdi.function_data
 	bool InitFunc()
@@ -121,11 +123,12 @@ struct MapleDevBase:  virtual MapleDevice,  virtual DevInfo
 template<typename DevInfo,typename DevImpl>
 struct MapleDevMFactBase :  virtual DevInfo, virtual MapleDeviceFactory
 {
-	virtual MapleDevice* Create(maple_device_instance* inst)
+	virtual MapleDevice* Create(maple_device_instance* inst,u32 menu)
 	{
-		return new DevImpl(inst);
+		DevImpl* rv = new DevImpl(inst,menu);
+		return rv;
 	}
-	virtual MapleDevice* Create(maple_subdevice_instance* inst)
+	virtual MapleDevice* Create(maple_subdevice_instance* inst,u32 menu)
 	{
 		return 0;//not supported
 	}
@@ -133,12 +136,13 @@ struct MapleDevMFactBase :  virtual DevInfo, virtual MapleDeviceFactory
 template<typename DevInfo,typename DevImpl>
 struct MapleDevSFactBase : virtual DevInfo,virtual MapleDeviceFactory
 {
-	virtual MapleDevice* Create(maple_device_instance* inst)
+	virtual MapleDevice* Create(maple_device_instance* inst,u32 menu)
 	{
 		return 0;//not supported
 	}
-	virtual MapleDevice* Create(maple_subdevice_instance* inst)
+	virtual MapleDevice* Create(maple_subdevice_instance* inst,u32 menu)
 	{
-		return new DevImpl(inst);
+		DevImpl* rv = new DevImpl(inst,menu);
+		return rv;
 	}
 };

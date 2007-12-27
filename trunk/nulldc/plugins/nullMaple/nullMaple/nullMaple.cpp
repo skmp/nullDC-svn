@@ -126,7 +126,7 @@ s32 FASTCALL CreateDev(DIT* inst,u32 id,u32 flags,u32 rootmenu)
 
 	inst->dma=Class_DMA<DIT>;
 	
-	inst->data=Devices[id]->Create(inst);
+	inst->data=Devices[id]->Create(inst,rootmenu);
 	
 	return rv_ok;
 }
@@ -261,11 +261,11 @@ u32 GetMapleSubPort(u32 addr)
 	return 0;
 }
 
-MapleDeviceFactory* FindMDF(const GUID& mdev)
+MapleDeviceFactory* FindMDF(const u32 mdid)
 {
 	for (u32 i=0;i<Devices.size();i++)
 	{
-		if (Devices[i]->GetGuid()==mdev)
+		if (Devices[i]->GetMDID()==mdid)
 			return Devices[i];
 	}
 

@@ -31,25 +31,26 @@ struct VMUDesc : virtual MapleDeviceDesc
 	{
 		return L"nullDC VMU/n";
 	}
-	virtual GUID GetGuid() const
+	
+	virtual u32 GetMDID() const
 	{
-		GUID rv= {0x89afed81,0xa047,0x4253,{0x89,0xbc,0x37,0x74,0x93,0x24,0x05,0x26}};
-		return rv;
+		return 0;
 	}
-	virtual void SetupProfile(Profile* prof) const
+
+	virtual void SetupProfile(ProfileDDI* prof,u32 ftid) const
 	{
 	}
-	virtual u32 GetExtendedFlags() const { return 1; }
 };
 
 struct VMU : virtual MapleDevBase< VMUDesc >
 {
 public:
 	maple_subdevice_instance* inst;
-	VMU(maple_subdevice_instance* ins) 
+	VMU(maple_subdevice_instance* ins,u32 menu) 
 	{	
+		this->menu=menu;
 		inst=ins;	
-		functs.push_back(MapleFunction::Create(this,0,MFID_1_Storage,0x00410f00,0));
+		functs.push_back(MapleFunction::Create(this,MFID_1_Storage,0x00410f00,0));
 		
 		memcpy(&mdi,&vmumdi,sizeof(vmumdi));
 	}

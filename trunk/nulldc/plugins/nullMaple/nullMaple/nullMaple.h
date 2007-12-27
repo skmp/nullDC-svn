@@ -27,8 +27,6 @@ using namespace std;
 #define verify(x) if((x)==false){ printf("Verify Failed  : " #x "\n in %s -> %s : %d \n",__FUNCTION__,__FILE__,__LINE__); dbgbreak;}
 #define die(reason) { msgboxf(L"Fatal error : %s\n in %s -> %s : %d \n",MB_ICONERROR,_T(reason),_T(__FUNCTION__),_T(__FILE__),__LINE__); dbgbreak;}
 
-extern const GUID  NullInputProvider;
-extern const GUID  NullInputProviderDevice;
 extern emu_info host;
 extern HINSTANCE hInstance; 
 
@@ -59,7 +57,7 @@ public:
 	OptionGroopCallBack* callbackobj;
 
 	
-	void Add(u32 root,wchar* name,int val,void* pUser,wchar* ex_name=0,int style=0) 
+	void Add(u32 root,const wchar* name,int val,void* pUser,wchar* ex_name=0,int style=0) 
 	{ 
 		if (root_menu==0)
 			root_menu=root;
@@ -72,7 +70,7 @@ public:
 
 		Add(false,ids,val,ex_name,pUser);
 	}
-	void Add(wchar* name,int val,void* pUser,wchar* ex_name=0,int style=0) 
+	void Add(const wchar* name,int val,void* pUser,wchar* ex_name=0,int style=0) 
 	{ 
 		Add(root_menu,name,val,pUser,ex_name,style);
 	}
@@ -129,7 +127,7 @@ public:
 //
 //Maple Devices
 struct MapleDevice;
-struct Profile;
+struct ProfileDDI;
 //maple Devices descriptors
 struct MapleDeviceDesc
 {
@@ -137,14 +135,13 @@ struct MapleDeviceDesc
 
 	virtual MapleDeviceType GetType() const=0;
 	virtual u32 GetFlags() const=0;
-	virtual u32 GetExtendedFlags() const=0;	//1 means dev. doesnt use iproviders
-	virtual GUID GetGuid() const=0;
-	virtual void SetupProfile(Profile* prof) const =0;
+	virtual u32 GetMDID() const=0;
+	virtual void SetupProfile(ProfileDDI* prof,u32 ftid) const =0;
 };
 struct MapleDeviceFactory : virtual MapleDeviceDesc
 {
-	virtual MapleDevice* Create(maple_device_instance* inst)=0;
-	virtual MapleDevice* Create(maple_subdevice_instance* inst)=0;
+	virtual MapleDevice* Create(maple_device_instance* inst,u32 menu)=0;
+	virtual MapleDevice* Create(maple_subdevice_instance* inst,u32 menu)=0;
 };
 
 //
@@ -158,6 +155,7 @@ struct MapleDevice : virtual MapleDeviceDesc
 	virtual void Dma(u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce) =0;
 
 	virtual u8 GetPort() const =0;
+	virtual u32 GetMenu() const=0;
 };
 
 //Lists
@@ -191,7 +189,7 @@ u32 GetMapleSubPort(u32 addr);
 //0 if not known
 //duplicate instances are possible, thats why you must call Release instead of delete :)
 //InputProvider* GetInputProvider(const GUID& instance);
-MapleDeviceFactory* FindMDF(const GUID& mdev);
+MapleDeviceFactory* FindMDF(const u32 mdid);
 
 int msgboxf(wchar* text,unsigned int type,...);
 void ReadConfig();
