@@ -1,7 +1,7 @@
 #pragma once
 #include "nullDC_GUI.h"
 
-u32 EXPORT_CALL AddMenuItem(u32 parent,s32 pos,wchar* text,MenuItemSelectedFP* handler ,u32 checked);
+u32 EXPORT_CALL AddMenuItem(u32 parent,s32 pos,const wchar* text,MenuItemSelectedFP* handler ,u32 checked);
 void EXPORT_CALL DeleteAllMenuItemChilds(u32 id);
 void EXPORT_CALL SetMenuItemStyle(u32 id,u32 style,u32 mask);
 void EXPORT_CALL GetMenuItem(u32 id,MenuItem* info,u32 mask);

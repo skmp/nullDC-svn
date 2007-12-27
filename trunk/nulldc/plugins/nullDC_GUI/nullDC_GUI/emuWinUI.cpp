@@ -453,7 +453,7 @@ void _MenuItem::RemoveChild(u32 id)
 
 	//delete MenuItems[id];
 }
-u32 CreateMenuItem(wchar* text,MenuItemSelectedFP* handler , void* puser)
+u32 CreateMenuItem(const wchar* text,MenuItemSelectedFP* handler , void* puser)
 {
 	u32 gmid = MenuItems.size();
 	_MenuItem* t=new _MenuItem(_tcsdup(text),gmid+10,gmid);
@@ -462,7 +462,7 @@ u32 CreateMenuItem(wchar* text,MenuItemSelectedFP* handler , void* puser)
 	MenuItems.push_back(t);
 	return gmid;
 }
-u32 EXPORT_CALL AddMenuItem(u32 parent,s32 pos,wchar* text,MenuItemSelectedFP* handler ,u32 checked)
+u32 EXPORT_CALL AddMenuItem(u32 parent,s32 pos,const wchar* text,MenuItemSelectedFP* handler ,u32 checked)
 {
 	u32 rv= CreateMenuItem(text,handler,0);
 	
