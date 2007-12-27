@@ -20,7 +20,7 @@
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(SolutionDir)\obj\$(ProjectName)\$(PlatformName)\$(ConfigurationName)\"
 			ConfigurationType="1"
-			CharacterSet="2"
+			CharacterSet="1"
 			BuildLogFile="$(SolutionDir)\obj\$(ProjectName)\$(PlatformName)\$(ConfigurationName)\BuildLog.htm"
 			>
 			<Tool
@@ -104,7 +104,7 @@
 			OutputDirectory="$(SolutionDir)\WorkDir"
 			IntermediateDirectory="$(SolutionDir)\obj\$(ProjectName)\$(PlatformName)\$(ConfigurationName)\"
 			ConfigurationType="1"
-			CharacterSet="2"
+			CharacterSet="1"
 			WholeProgramOptimization="1"
 			BuildLogFile="$(SolutionDir)\obj\$(ProjectName)\$(PlatformName)\$(ConfigurationName)\BuildLog.htm"
 			>
@@ -186,13 +186,12 @@
 			OutputDirectory="$(SolutionDir)\WorkDir"
 			IntermediateDirectory="$(SolutionDir)\obj\$(ProjectName)\$(PlatformName)\$(ConfigurationName)\"
 			ConfigurationType="1"
-			CharacterSet="2"
+			CharacterSet="1"
 			WholeProgramOptimization="1"
 			BuildLogFile="$(SolutionDir)\obj\$(ProjectName)\$(PlatformName)\$(ConfigurationName)\BuildLog.htm"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
-				Description=""
 				CommandLine=""
 			/>
 			<Tool
@@ -238,7 +237,7 @@
 			<Tool
 				Name="VCPreLinkEventTool"
 				Description="Copying Libs"
-				CommandLine="copy &quot;$(SolutionDir)..\emitter\bins\emitter_$(PlatformName).dll&quot; &quot;$(SolutionDir)deps\&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)..\emitter\bins\emitter_$(PlatformName).lib&quot; &quot;$(SolutionDir)deps\&quot;"
+				CommandLine="copy &quot;$(SolutionDir)..\emitter\bins\emitter_$(PlatformName).dll&quot; &quot;$(SolutionDir)deps\&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)..\emitter\bins\emitter_$(PlatformName).lib&quot; &quot;$(SolutionDir)deps\&quot;&#x0D;&#x0A;"
 			/>
 			<Tool
 				Name="VCLinkerTool"
@@ -283,7 +282,7 @@
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(SolutionDir)\obj\$(ProjectName)\$(PlatformName)\$(ConfigurationName)\"
 			ConfigurationType="1"
-			CharacterSet="2"
+			CharacterSet="1"
 			BuildLogFile="$(SolutionDir)\obj\$(ProjectName)\$(PlatformName)\$(ConfigurationName)\BuildLog.htm"
 			>
 			<Tool

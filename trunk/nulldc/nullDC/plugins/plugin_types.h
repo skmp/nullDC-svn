@@ -139,7 +139,7 @@ enum SyncSourceFlags
 	SSF_NeedsSync=1,	//The provider needs perfect sync, like audio stream out or vsync'd video
 };
 
-typedef u32 EXPORT_CALL AddMenuItemFP(u32 parent,s32 pos,wchar* text,MenuItemSelectedFP* handler , u32 checked);
+typedef u32 EXPORT_CALL AddMenuItemFP(u32 parent,s32 pos,const wchar* text,MenuItemSelectedFP* handler , u32 checked);
 typedef void EXPORT_CALL SetMenuItemStyleFP(u32 id,u32 style,u32 mask);
 typedef void EXPORT_CALL GetMenuItemFP(u32 id,MenuItem* info,u32 mask);
 typedef void EXPORT_CALL SetMenuItemFP(u32 id,MenuItem* info,u32 mask);
