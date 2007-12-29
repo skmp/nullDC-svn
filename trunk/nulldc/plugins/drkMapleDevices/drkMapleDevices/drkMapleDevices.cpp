@@ -16,6 +16,7 @@ emu_info host;
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <tchar.h>
 
 #include <string.h>
 #include <commctrl.h>
@@ -108,9 +109,9 @@ struct _joypad_settings_entry
 {
 	u8 KC;
 	u32 BIT;
-	char* name;
+	wchar* name;
 };
-#define D(x) x ,#x
+#define D(x) x ,_T( #x)
 _joypad_settings_entry joypad_settings_K[] = 
 {
 	{'B',D(key_CONT_C)},
