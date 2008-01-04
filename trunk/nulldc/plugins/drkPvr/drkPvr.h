@@ -12,7 +12,7 @@
 
 #include <string.h>
 
-int msgboxf(char* text,unsigned int type,...);
+int msgboxf(wchar* text,unsigned int type,...);
 
 #define BUILD 0
 #define MINOR 1
@@ -28,9 +28,9 @@ float GetSeconds();
 #define fastcall __fastcall
 
 #if DO_VERIFY==OP_ON
-#define verify(x) if((x)==false){ static bool d_msg=true; if (d_msg) { d_msg = msgboxf("Verify Failed  : " #x "\n in %s -> %s : %d \nWant to report this error again ?",MB_ICONERROR|MB_YESNO,__FUNCTION__,__FILE__,__LINE__)==IDYES?true:false;} if (d_msg){ dbgbreak;}}
-#define verifyf(x) if((x)==false){ msgboxf("Verify Failed  : " #x "\n in %s -> %s : %d \n",MB_ICONERROR,__FUNCTION__,__FILE__,__LINE__); dbgbreak;}
-#define verifyc(x) if(FAILED(x)){ msgboxf("Verify Failed  : " #x "\n in %s -> %s : %d \n",MB_ICONERROR,__FUNCTION__,__FILE__,__LINE__); dbgbreak;}
+#define verify(x) if((x)==false){ static bool d_msg=true; if (d_msg) { d_msg = msgboxf(L"Verify Failed  : " _T(#x) L"\n in %s -> %s : %d \nWant to report this error again ?",MB_ICONERROR|MB_YESNO,_T(__FUNCTION__),_T(__FILE__),__LINE__)==IDYES?true:false;} if (d_msg){ dbgbreak;}}
+#define verifyf(x) if((x)==false){ msgboxf(L"Verify Failed  : " _T(#x) L"\n in %s -> %s : %d \n",MB_ICONERROR,_T(__FUNCTION__),_T(__FILE__),__LINE__); dbgbreak;}
+#define verifyc(x) if(FAILED(x)){ msgboxf(L"Verify Failed  : " _T(#x) L"\n in %s -> %s : %d \n",MB_ICONERROR,_T(__FUNCTION__),_T(__FILE__),__LINE__); dbgbreak;}
 #else
 #define verify(x)
 #define verifyf(x) (x)
