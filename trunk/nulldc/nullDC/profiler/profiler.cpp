@@ -19,6 +19,54 @@ cThread* prof_thread;
 u32 THREADCALL ProfileThead(void* param);
 extern u32 rtc_cycl;
 
+struct Module
+{
+	u32 base;
+	u32 end;
+	u32 len;
+	
+	bool Inside(u32 val) { return val>=base && val<=end; }
+	void FromAddress(void* ptr)
+	{
+		wchar filename[512];
+		wchar filename2[512];
+		static void* ptr_old=0;
+		if (ptr_old==ptr)
+			return;
+		ptr_old=ptr;
+
+		MEMORY_BASIC_INFORMATION mbi;
+		VirtualQuery(ptr,&mbi,sizeof(mbi));
+		base=(u32)mbi.AllocationBase;
+		GetModuleFileName((HMODULE)mbi.AllocationBase,filename,512);
+		len=(u8*)mbi.BaseAddress-(u8*)mbi.AllocationBase+mbi.RegionSize;
+
+		for(;;)
+		{
+			VirtualQuery(((u8*)base)+len,&mbi,sizeof(mbi));
+			if (!(mbi.Type&MEM_IMAGE))
+				break;
+			
+			if (!GetModuleFileName((HMODULE)mbi.AllocationBase,filename2,512))
+				break;
+
+			if (wcscmp(filename,filename2)!=0)
+				break;
+			len+=mbi.RegionSize;
+		}
+		
+
+		end=base+len-1;
+	}
+	void FromValues(void* b,u32 s)
+	{
+		base= (u32)b;
+		len=s;
+		end=base+len-1;
+	}
+};
+Module main_mod,aica_mod,pvr_mod,gdrom_mod,dyna_mod;
+
 u64 oldcycles;
 u64 CycleDiff()
 {
@@ -28,6 +76,14 @@ u64 CycleDiff()
 }
 bool RunProfiler;
 bool TBP_Enabled;
+void init_ProfilerModules()
+{
+	main_mod.FromAddress(init_ProfilerModules);
+	aica_mod.FromAddress(libAICA.Init);
+	pvr_mod.FromAddress(libPvr.Init);
+	gdrom_mod.FromAddress(libGDR.Init);
+	dyna_mod.FromValues(DynarecCache,DynarecCacheSize);
+}
 void init_Profiler(void* param)
 {
 	//Clear profile info
@@ -40,6 +96,8 @@ void init_Profiler(void* param)
 }
 void start_Profiler()
 {
+	init_ProfilerModules();
+
 	TBP_Enabled=true;
 	CycleDiff();
 	if (prof_thread)
@@ -63,31 +121,23 @@ void term_Profiler()
 
 void AnalyseTick(u32 pc,prof_info* to)
 {
-	u32 main_base=((u32)AnalyseTick) & 0xFFE00000;
-	u32 aica_base=((u32)libAICA.Load) & 0xFFE00000;
-	u32 pvr_base=((u32)libPvr.Load) & 0xFFE00000;
-	u32 gdrom_base=((u32)libGDR.Load) & 0xFFE00000;
-
-	u32 DynarecRam_Start = (u32)DynarecCache;
-	u32 DynarecRam_End = (u32)DynarecCache+DynarecCacheSize;
-	//printf("0x%X 0x%X to 0x%X\n",pc,DynarecRam_Start,DynarecRam_End);
-	if (aica_base==(pc& 0xFFE00000))
+	if (aica_mod.Inside(pc))
 	{
 		to->aica_tick_count++;
 	}
-	else if (pvr_base==(pc& 0xFFE00000))
+	else if (pvr_mod.Inside(pc))
 	{
 		to->gfx_tick_count++;
 	}
-	else if (gdrom_base==(pc& 0xFFE00000))
+	else if (gdrom_mod.Inside(pc))
 	{
 		to->gdrom_tick_count++;
 	}
-	else if (main_base==(pc& 0xFFE00000))
+	else if (main_mod.Inside(pc))
 	{
 		to->main_tick_count++;
 	}
-	else if ((pc>=DynarecRam_Start) && (pc<=(DynarecRam_End+4096)))
+	else if (dyna_mod.Inside(pc))
 	{
 		//dyna_profiler_tick((void*)pc);
 		to->dyna_tick_count++;
@@ -95,6 +145,7 @@ void AnalyseTick(u32 pc,prof_info* to)
 	else
 		to->rest_tick_count++;
 }
+extern u32 no_interrupts,yes_interrupts;
  u32 THREADCALL ProfileThead(void* param)
  {
 	 prof_info info;
@@ -124,6 +175,12 @@ void AnalyseTick(u32 pc,prof_info* to)
 
 			 profile_info.ToText(temp);
 			 wprintf(_T("%s \n"),temp);
+			 if ( yes_interrupts+no_interrupts)
+			 {
+				 printf("Interrupts : %d yes, %d no, %f ratio\n",yes_interrupts,no_interrupts,100*yes_interrupts/(float)(yes_interrupts+no_interrupts));
+				 yes_interrupts=no_interrupts=0;
+			 }
+			 init_ProfilerModules();
 		 }
 
 		 //Sleep , so we dont realy use the cpu much
