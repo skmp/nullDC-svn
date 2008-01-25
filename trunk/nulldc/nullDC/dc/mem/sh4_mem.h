@@ -1,26 +1,6 @@
 #pragma once
 #include "types.h"
 
-#ifdef BUILD_DREAMCAST
-#define RAM_SIZE (16*1024*1024)
-#else
-#define RAM_SIZE (32*1024*1024)
-#endif
-
-
-#define RAM_MASK (RAM_SIZE-1)
-
-#ifndef BUILD_DEV_UNIT
-#define BIOS_SIZE (2*1024*1024)
-#else
-#define BIOS_SIZE (4*1024*1024)
-#endif
-#define BIOS_MASK (BIOS_SIZE-1)
-
-
-#define FLASH_SIZE (128*1024)
-#define FLASH_MASK (FLASH_SIZE-1)
-
 //main system mem
 extern VArray2 mem_b;
 

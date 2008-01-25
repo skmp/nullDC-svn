@@ -158,31 +158,31 @@ direct:
 //defualt read handlers
 u8 fastcall _vmem_ReadMem8_not_mapped(u32 addresss)
 {
-	printf("Read8 from 0x%X, not mapped [_vmem default handler]\n",addresss);
+	printf("[sh4]Read8 from 0x%X, not mapped [_vmem default handler]\n",addresss);
 	return 0xD3;
 }
 u16 fastcall _vmem_ReadMem16_not_mapped(u32 addresss)
 {
-	printf("Read16 from 0x%X, not mapped [_vmem default handler]\n",addresss);
+	printf("[sh4]Read16 from 0x%X, not mapped [_vmem default handler]\n",addresss);
 	return 0xC0D3;
 }
 u32 fastcall _vmem_ReadMem32_not_mapped(u32 addresss)
 {
-	printf("Read32 from 0x%X, not mapped [_vmem default handler]\n",addresss);
+	printf("[sh4]Read32 from 0x%X, not mapped [_vmem default handler]\n",addresss);
 	return 0xDEADC0D3;
 }
 //defualt write handers
 void fastcall _vmem_WriteMem8_not_mapped(u32 addresss,u8 data)
 {
-	printf("Write8 to 0x%X=0x%X, not mapped [_vmem default handler]\n",addresss,data);
+	printf("[sh4]Write8 to 0x%X=0x%X, not mapped [_vmem default handler]\n",addresss,data);
 }
 void fastcall _vmem_WriteMem16_not_mapped(u32 addresss,u16 data)
 {
-	printf("Write16 to 0x%X=0x%X, not mapped [_vmem default handler]\n",addresss,data);
+	printf("[sh4]Write16 to 0x%X=0x%X, not mapped [_vmem default handler]\n",addresss,data);
 }
 void fastcall _vmem_WriteMem32_not_mapped(u32 addresss,u32 data)
 {
-	printf("Write32 to 0x%X=0x%X, not mapped [_vmem default handler]\n",addresss,data);
+	printf("[sh4]Write32 to 0x%X=0x%X, not mapped [_vmem default handler]\n",addresss,data);
 }
 //code to register handlers
 //0 is considered error :)
@@ -338,9 +338,50 @@ void _vmem_term()
 #define _VMEM_FILE_MAPPING
 #ifdef _VMEM_FILE_MAPPING
 HANDLE mem_handle;
+
+#define MAP_RAM_START_OFFSET  0
+#define MAP_VRAM_START_OFFSET (MAP_RAM_START_OFFSET+RAM_SIZE)
+#define MAP_ARAM_START_OFFSET (MAP_VRAM_START_OFFSET+VRAM_SIZE)
+
+void* _nvmem_map_buffer(u32 dst,u32 addrsz,u32 offset,u32 size)
+{
+	void* ptr;
+	void* rv;
+
+	u32 map_times=addrsz/size;
+	verify((addrsz%size)==0);
+	verify(map_times>=1);
+
+	rv= MapViewOfFileEx(mem_handle,FILE_MAP_READ |FILE_MAP_WRITE,0,offset,size,&sh4_reserved_mem[dst]);
+	if (!rv)
+		return 0;
+
+	for (int i=1;i<map_times;i++)
+	{
+		dst+=size;
+		ptr=MapViewOfFileEx(mem_handle,FILE_MAP_READ,0,offset,size,&sh4_reserved_mem[dst]);
+		if (!ptr) return 0;
+	}
+
+	return rv;
+}
+
+
+void* _nvmem_unused_buffer(u32 start,u32 end)
+{
+	void* ptr=VirtualAlloc(&sh4_reserved_mem[start],end-start,MEM_RESERVE,PAGE_NOACCESS);
+	if (ptr==0)
+		return 0;
+	return ptr;
+}
+
+#define map_buffer(dsts,dste,offset,sz) {ptr=_nvmem_map_buffer(dsts,dste-dsts,offset,sz);if (!ptr) return false;}
+#define unused_buffer(start,end) {ptr=_nvmem_unused_buffer(start,end);if (!ptr) return false;}
+
+
 bool _vmem_reserve()
 {
-	mem_handle=CreateFileMapping(INVALID_HANDLE_VALUE,0,PAGE_READWRITE ,0,RAM_SIZE + VRAM_SIZE,L"ndc_mem_dataazz");
+	mem_handle=CreateFileMapping(INVALID_HANDLE_VALUE,0,PAGE_READWRITE ,0,RAM_SIZE + VRAM_SIZE +ARAM_SIZE,L"ndc_mem_dataazz");
 
 	void* ptr=0;
 	sh4_reserved_mem=(u8*)VirtualAlloc(0,512*1024*1024,MEM_RESERVE,PAGE_NOACCESS);
@@ -348,100 +389,57 @@ bool _vmem_reserve()
 		return false;
 	VirtualFree(sh4_reserved_mem,0,MEM_RELEASE);
 	
-	
-	
-	
 	//Area 0
 	//[0x00000000 ,0x00800000) -> unused
-	ptr=VirtualAlloc(&sh4_reserved_mem[0x00000000],0x00800000,MEM_RESERVE,PAGE_NOACCESS);
-	if (ptr==0)
-		return false;
-	//[0x00800000,0x00A00000);
-	ptr=VirtualAlloc(&sh4_reserved_mem[0x00800000],0x00200000,MEM_RESERVE|MEM_COMMIT,PAGE_READWRITE);
-	if (ptr==0)
-		return false;
-	aica_ram.size=0x00200000;
-	aica_ram.data=(u8*)ptr;
-	//[0x00A00000 ,0x04000000) -> unused
-	ptr=VirtualAlloc(&sh4_reserved_mem[0x00A00000],0x04000000-0x00A00000,MEM_RESERVE,PAGE_NOACCESS);
-	if (ptr==0)
-		return false;
-	//Area 1
-	//[0x04000000,0x05000000) -> vram | mirror
-	//[0x05000000,0x06000000) -> unused (32b path)
-	//[0x06000000,0x07000000) -> vram   mirror
-	//[0x07000000,0x08000000) -> unused (32b path) mirror
+	unused_buffer(0x00000000,0x00800000);
 
-	//vram #0
-	ptr= MapViewOfFileEx(mem_handle,FILE_MAP_READ |FILE_MAP_WRITE,0,RAM_SIZE,VRAM_SIZE,&sh4_reserved_mem[0x04000000]);
-	if (ptr==0)
-		return false;
+	//i wonder, aica ram warps here ?.?
+	//i realy should check teh docs before codin ;p
+	//[0x00800000,0x00A00000);
+	map_buffer(0x00800000,0x01000000,MAP_ARAM_START_OFFSET,ARAM_SIZE);
+	
+	aica_ram.size=ARAM_SIZE;
+	aica_ram.data=(u8*)ptr;
+	//[0x01000000 ,0x04000000) -> unused
+	unused_buffer(0x01000000,0x04000000);
+	
+	//Area 1
+	//[0x04000000,0x05000000) -> vram (16mb, warped on dc)
+	map_buffer(0x04000000,0x05000000,MAP_VRAM_START_OFFSET,VRAM_SIZE);
+	
 	vram.size=VRAM_SIZE;
 	vram.data=(u8*)ptr;
 
-	//and mirror
-	ptr= MapViewOfFileEx(mem_handle,FILE_MAP_READ ,0,RAM_SIZE,VRAM_SIZE,&sh4_reserved_mem[0x04000000+VRAM_SIZE]);
-	if (ptr==0)
-		return false;
+	//[0x05000000,0x06000000) -> unused (32b path)
+	unused_buffer(0x05000000,0x06000000);
 
-	//32b area
-	ptr=VirtualAlloc(&sh4_reserved_mem[0x05000000],0x01000000,MEM_RESERVE,PAGE_NOACCESS);
-	if (ptr==0)
-		return false;
+	//[0x06000000,0x07000000) -> vram   mirror
+	map_buffer(0x06000000,0x07000000,MAP_VRAM_START_OFFSET,VRAM_SIZE);
 
-	//and 2 more mirrors xD
-	//upper 32 mb mirror of the vram (only 16 mb mapped here-- up to 0x0700)
-	for (int rb=0;rb<2;rb++)
-	{
-		//and mirror paradise !
-		//rb=0,1
-		ptr= MapViewOfFileEx(mem_handle,FILE_MAP_READ ,0,RAM_SIZE,VRAM_SIZE,&sh4_reserved_mem[0x06000000+VRAM_SIZE*rb]);
-		if (ptr==0)
-			return false;
-	}
-	//32b area mirror
-	ptr=VirtualAlloc(&sh4_reserved_mem[0x07000000],0x01000000,MEM_RESERVE,PAGE_NOACCESS);
-	if (ptr==0)
-		return false;
+	//[0x07000000,0x08000000) -> unused (32b path) mirror
+	unused_buffer(0x07000000,0x08000000);
 	
-
-
-
 	//Area 2
 	//[0x08000000,0x0C000000) -> unused
-	ptr=VirtualAlloc(&sh4_reserved_mem[0x08000000],0x04000000,MEM_RESERVE,PAGE_NOACCESS);
-	if (ptr==0)
-		return false;
+	unused_buffer(0x08000000,0x0C000000);
+	
 	//Area 3
 	//[0x0C000000,0x0D000000) -> main ram
 	//[0x0D000000,0x0E000000) -> main ram mirror
 	//[0x0E000000,0x0F000000) -> main ram mirror
 	//[0x0F000000,0x10000000) -> main ram mirror
-		//ram #0
-	ptr= MapViewOfFileEx(mem_handle,FILE_MAP_READ |FILE_MAP_WRITE,0,0,RAM_SIZE,&sh4_reserved_mem[0x0C000000]);
-	if (ptr==0)
-		return false;
+	map_buffer(0x0C000000,0x10000000,MAP_RAM_START_OFFSET,RAM_SIZE);
+	
 	mem_b.size=RAM_SIZE;
 	mem_b.data=(u8*)ptr;
 	
-	for (int rb=1;rb<4;rb++)
-	{
-		//ram #n, n=1,2,3 (all mirrors as read only
-		ptr= MapViewOfFileEx(mem_handle,FILE_MAP_READ,0,0,RAM_SIZE,&sh4_reserved_mem[0x0C000000+RAM_SIZE*rb]);
-		if (ptr==0)
-			return false;
-	}
-
 	//Area 4
 	//Area 5
 	//Area 6
 	//Area 7
 	//all -> Unused 
 	//[0x10000000,0x20000000) -> unused
-	
-	ptr=VirtualAlloc(&sh4_reserved_mem[0x10000000],0x10000000,MEM_RESERVE,PAGE_NOACCESS);
-	if (ptr==0)
-		return false;
+	unused_buffer(0x10000000,0x20000000);
 
 	sh4_ram_alt= (u8*)MapViewOfFile(mem_handle,FILE_MAP_READ |FILE_MAP_WRITE,0,0,RAM_SIZE);	//alternative ram map location, BE CAREFULL THIS BYPASSES DYNAREC PROTECTION LOGIC
 	if (sh4_ram_alt==0)

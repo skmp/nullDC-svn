@@ -350,10 +350,8 @@ void map_area0(u32 base)
 	_vmem_map_handler(area0_handler_71_71,0x0071|base,0x0071|base);
 	//0x0080-0x00FF
 	//_vmem_map_handler(area0_handler_80_FF,0x0080|base,0x00FF|base);
-	_vmem_map_block(aica_ram.data,0x0080|base,0x009F|base);
-	_vmem_map_block(aica_ram.data,0x00A0|base,0x00BF|base);
-	_vmem_map_block(aica_ram.data,0x00C0|base,0x00DF|base);
-	_vmem_map_block(aica_ram.data,0x00E0|base,0x00FF|base);
+	_vmem_map_block_mirror(aica_ram.data,0x0080|base,0x00FF|base,ARAM_SIZE);
+
 	//0x0100-0x01FF
 	_vmem_map_handler(area0_handler_100_1FF,0x0100|base,0x01FF|base);
 

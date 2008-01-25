@@ -51,30 +51,13 @@ void map_area1(u32 base)
 {
 	//map vram
 	
-	//if vram is 8 mb , it mirrors ?
-
+	//Lower 32 mb map
 	//64b interface
-	u32 start= 0x0400 | base;
-	u32 end  = start+(VRAM_MASK>>16);
-	_vmem_map_block(vram.data,start,end);
-	if (end!=0x04FF)
-	{
-		start+=(VRAM_SIZE>>16);
-		end+=(VRAM_SIZE>>16);
-		_vmem_map_block(vram.data,start,end);
-	}
+	_vmem_map_block_mirror(vram.data,0x0400 | base,0x04FF | base,VRAM_SIZE);
 	//32b interface
-	start= 0x0500 | base;
-	end  = start+(VRAM_MASK>>16);
-	_vmem_map_handler(area1_32b,start,end);
-	if (end!=0x05FF)
-	{
-		start+=(VRAM_SIZE>>16);
-		end+=(VRAM_SIZE>>16);
-		_vmem_map_block(vram.data,start,end);
-	}
-
-	//upper 32mb mirror lower 32 mb
+	_vmem_map_handler(area1_32b,0x0500 | base,0x05FF | base);
+	
+	//Upper 32 mb mirror
 	//0x0600 to 0x07FF
 	_vmem_mirror_mapping(0x0600|base,0x0400|base,0x0200);
 }
@@ -98,18 +81,8 @@ void map_area3_init()
 
 void map_area3(u32 base)
 {
-	u32 start = 0x0C00 | base;
-	u32 end   = start+(RAM_MASK>>16);
-	//Map top 32 mb (16 mb mirrored , or 32mb , depending on naomi/dc)
-	for (u32 j=0;j<0x1FFFFFF;j+=RAM_SIZE)
-	{
-		_vmem_map_block(mem_b.data,start,end);
-		start+=(RAM_SIZE)>>16;
-		end+=(RAM_SIZE)>>16;
-	}
-
-	//upper 32mb mirror lower 32 mb
-	_vmem_mirror_mapping(0x0E00|base,0x0C00|base,0x0200);
+	//32x2 or 16x4
+	_vmem_map_block_mirror(mem_b.data,0x0C00 | base,0x0FFF | base,RAM_SIZE);
 }
 
 //AREA 4

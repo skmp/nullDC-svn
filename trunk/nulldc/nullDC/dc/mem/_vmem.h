@@ -40,6 +40,8 @@ void _vmem_map_handler(_vmem_handler Handler,u32 start,u32 end);
 void _vmem_map_block(void* base,u32 start,u32 end);
 void _vmem_mirror_mapping(u32 new_region,u32 start,u32 size);
 
+#define _vmem_map_block_mirror(base,start,end,blck_size) {u32 block_size=(blck_size)>>16;u32 map_sz=(end)-(start)+1;verify((map_sz%block_size)==0);u32 map_times=map_sz/(block_size); for (u32 _maip=(start);_maip<(end);_maip+=block_size) _vmem_map_block((base),_maip,_maip+block_size-1);}
+
 //ReadMem(s)
 u8 fastcall _vmem_ReadMem8(u32 Address);
 u16 fastcall _vmem_ReadMem16(u32 Address);
