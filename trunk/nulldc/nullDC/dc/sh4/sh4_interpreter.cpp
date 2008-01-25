@@ -10,6 +10,7 @@
 #include "dc/aica/aica_if.h"
 #include "dmac.h"
 #include "dc/gdrom/gdrom_if.h"
+#include "naomi/naomi.h"
 #include "intc.h"
 #include "tmu.h"
 #include "sh4_cst.h"
@@ -577,7 +578,11 @@ int __fastcall UpdateSystem(u32 Cycles)
 	if (gd_cycles>6400)
 	{
 		gd_cycles-=6400;
-		UpdateGDRom();
+		#if DC_PLATFORM!=DC_PLATFORM_NAOMI
+			UpdateGDRom();
+		#else
+			Update_naomi();
+		#endif
 		//UpdateDMA();
 	}
 	

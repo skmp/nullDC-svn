@@ -58,10 +58,14 @@ u32 vreg_2=0;
 u32 mask_read=0;
 u32 mask_pull_up=0;
 u32 mask_write=0;
+#include "naomi\naomi.h"
 
 void write_BSC_PCTRA(u32 data)
 {
-	printf("C:BSC_PCTRA = %08X\n",data);
+	#ifdef BUILD_NAOMI
+		NaomiBoardIDWriteControl(data);
+	#endif
+	//printf("C:BSC_PCTRA = %08X\n",data);
 
 	mask_read=0;
 	mask_pull_up=0;
@@ -98,13 +102,20 @@ void write_BSC_PCTRA(u32 data)
 void write_BSC_PDTRA(u32 data)
 {
 	BSC_PDTRA.full=data;
-	printf("D:BSC_PDTRA = %08X\n",data);
+	//printf("D:BSC_PDTRA = %08X\n",data);
 
 	vreg_2&=~mask_write;
 	vreg_2|=BSC_PDTRA.full&mask_write;
+
+	#ifdef BUILD_NAOMI
+		NaomiBoardIDWrite(data);
+	#endif
 }
 u32 read_BSC_PDTRA()
 {
+	#ifdef BUILD_NAOMI
+		return NaomiBoardIDRead();
+	#endif
 	/* chankast */
 	u32 tpctra = BSC_PCTRA.full;
 	u32 tpdtra = BSC_PDTRA.full;

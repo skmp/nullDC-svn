@@ -60,7 +60,7 @@
 
 	now , let's get to the code
 */
-
+//#define COUNT_INTERRUPT_UPDATES
 //Return interrupt pririty level
 template<u32 IRL>
 u32 GetIRLPriority()
@@ -226,6 +226,9 @@ void fastcall VirtualInterrupt(u32 id)
 		SRdecode();
 	}
 }
+#ifdef COUNT_INTERRUPT_UPDATES
+u32 no_interrupts,yes_interrupts;
+#endif
 naked int UpdateINTC()
 {
 	__asm
@@ -236,9 +239,15 @@ naked int UpdateINTC()
 		ja handle_inerrupt;			//handle em
 		//else exit
 		xor eax,eax;
+#ifdef COUNT_INTERRUPT_UPDATES
+		add no_interrupts,1;
+#endif
 		ret;
 
 handle_inerrupt:
+#ifdef COUNT_INTERRUPT_UPDATES
+		add yes_interrupts,1;
+#endif
 		test ecx,0xF0000000;
 		jnz  virtual_interrupt;
 		bsr eax,ecx;							//find first interrupt
