@@ -110,7 +110,13 @@ int GetFile(TCHAR *szFileName, TCHAR *szParse,u32 flags)
 	if (szParse==0)
 		szParse=L"CD/GD Images (*.cdi;*.mds;*.nrg;*.gdi) \0*.cdi;*.mds;*.nrg;*.gdi\0\0";
 	wcscpy(SelectedFile,szFileName);
-	wcscpy(FileFormats,szParse);
+	
+	TCHAR* dst=FileFormats;
+	while(szParse[0]!=0 || szParse[1]!=0)
+		*dst++=*szParse++;
+	*dst++=0;
+	*dst++=0;
+
 	DialogBox(hInstance,MAKEINTRESOURCE(IDD_FILESELECT),(HWND)emu.GetRenderTarget(),DlgProcModal_SelectFile);
 	
 	if (SelectedFileValid==1)

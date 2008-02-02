@@ -207,7 +207,7 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	c.InterfaceVersion=GDR_PLUGIN_I_F_VERSION;
 
 	wcscpy(c.Name,PLUGIN_NAMEW);
-	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD,DC_VER_NORMAL);
+	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD);
 	
 	c.Load=Load;
 	c.Unload=Unload;
