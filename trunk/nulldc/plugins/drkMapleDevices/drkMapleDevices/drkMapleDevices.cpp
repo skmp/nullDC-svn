@@ -1313,7 +1313,13 @@ void FASTCALL MouseDMA(maple_device_instance* device_instance,u32 Command,u32* b
 			break;
 	}
 }
-
+struct _NaomiState
+{
+	BYTE Cmd;
+	BYTE Mode;
+	BYTE Node;
+};
+_NaomiState State;
 
 void FASTCALL ControllerDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
 {
@@ -1447,6 +1453,345 @@ void FASTCALL ControllerDMA(maple_device_instance* device_instance,u32 Command,u
 
 		default:
 			printf("UNKOWN MAPLE COMMAND %d\n",Command);
+			break;
+	}
+}
+
+void printState(u32 cmd,u32* buffer_in,u32 buffer_in_len)
+{
+	printf("Command : 0x%X",cmd);
+	if (buffer_in_len>0)
+		printf(",Data : %d bytes\n",buffer_in_len);
+	else
+		printf("\n");
+	buffer_in_len>>=2;
+	while(buffer_in_len-->0)
+	{
+		printf("%08X ",*buffer_in++);
+		if (buffer_in_len==0)
+			printf("\n");
+	}
+}
+void FASTCALL ControllerDMA_naomi(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+{
+#define ret(x) { responce=(x); return; }
+
+	//printf("ControllerDMA Called 0x%X;Command %d\n",device_instance->port,Command);
+	u8*buffer_out_b=(u8*)buffer_out;
+	u8*buffer_in_b=(u8*)buffer_in;
+	buffer_out_len=0;
+	u32 port=device_instance->port>>6;
+	switch (Command)
+	{
+		case 0x86:
+			{
+				u32 subcode=*(u8*)buffer_in;
+				//printf("Naomi 0x86 : %x\n",SubCode);
+				switch(subcode)
+				{
+				case 0x15:
+					{
+						buffer_out[0]=0xffffffff;
+						buffer_out[1]=0xffffffff;
+
+						if(GetKeyState(VK_F4)&0x8000)		//Service
+							buffer_out[0]&=~(1<<0x1b);
+
+						if(GetKeyState(VK_F5)&0x8000)		//Test
+							buffer_out[0]&=~(1<<0x1a);
+
+						if(State.Mode==0)	//Get Caps
+						{
+							buffer_out_b[0x11+1]=0x8E;	//Valid data check
+							buffer_out_b[0x11+2]=0x01;
+							buffer_out_b[0x11+3]=0x00;
+							buffer_out_b[0x11+4]=0xFF;
+							buffer_out_b[0x11+5]=0xE0;
+							buffer_out_b[0x11+8]=0x01;
+
+							switch(State.Cmd)
+							{
+								//Reset, in : 2 bytes, out : 0
+								case 0xF0:
+									break;
+
+								//Find nodes?
+								//In addressing Slave address, in : 2 bytes, out : 1
+								case 0xF1:
+									{
+										buffer_out_len=4*4;
+									}
+									break;
+
+								//Speed Change, in : 2 bytes, out : 0
+								case 0xF2:
+									break;
+
+								//Name
+								//"In the I / O ID" "Reading each slave ID data"
+								//"NAMCO LTD.; I / O PCB-1000; ver1.0; for domestic only, no analog input"
+								//in : 1 byte, out : max 102
+								case 0x10:
+									{
+										static char ID1[102]="nullDC Team; I/O Plugin-1; ver0.2; for nullDC or other emus";
+										buffer_out_b[0x8+0x10]=(BYTE)strlen(ID1)+3;
+										for(int i=0;ID1[i]!=0;++i)
+										{
+											buffer_out_b[0x8+0x13+i]=ID1[i];
+										}
+									}
+									break;
+
+								//CMD Version
+								//REV in command|Format command to read the (revision)|One|Two 
+								//in : 1 byte, out : 2 bytes
+								case 0x11:
+									{
+										buffer_out_b[0x8+0x13]=0x13;
+									}
+									break;
+
+								//JVS Version
+								//In JV REV|JAMMA VIDEO standard reading (revision)|One|Two 
+								//in : 1 byte, out : 2 bytes
+								case 0x12:
+									{
+										buffer_out_b[0x8+0x13]=0x30;
+									}
+									break;
+
+								//COM Version
+								//VER in the communication system|Read a communication system compliant version of |One|Two
+								//in : 1 byte, out : 2 bytes
+								case 0x13:
+									{
+										buffer_out_b[0x8+0x13]=0x10;
+									}
+									break;
+
+								//Features
+								//Check in feature |Each features a slave to read |One |6 to
+								//in : 1 byte, out : 6 + (?)
+								case 0x14:
+									{
+										unsigned char *FeatPtr=buffer_out_b+0x8+0x13;
+										buffer_out_b[0x8+0x9+0x3]=0x0;
+										buffer_out_b[0x8+0x9+0x9]=0x1;
+										#define ADDFEAT(Feature,Count1,Count2,Count3)	*FeatPtr++=Feature; *FeatPtr++=Count1; *FeatPtr++=Count2; *FeatPtr++=Count3;
+										ADDFEAT(1,2,10,0);	//Feat 1=Digital Inputs.  2 Players. 10 bits
+										ADDFEAT(2,2,0,0);	//Feat 2=Coin inputs. 2 Inputs
+										ADDFEAT(3,2,0,0);	//Feat 3=Analog. 2 Chans
+
+										ADDFEAT(0,0,0,0);	//End of list
+									}
+									break;
+
+								default:
+									printf("Unkown CAP %X\n",State.Cmd);
+							}
+						
+						}
+						else if(State.Mode==1)	//Get Data
+						{
+							printf("Get Data 0x%X\n",State.Cmd);
+							int a=1;
+							//memset(buffer_out_b,0xEE,16);
+							//OutLen=16;
+							//return MAPLE_RESPONSE_DATATRF;
+							//buffer_out_len=4*4;
+							//responce=8;
+							//return;
+						}
+						buffer_out_len=4*4;
+						/*ID.Keys=0xFFFFFFFF;
+						if(GetKeyState(VK_F1)&0x8000)		//Service
+						ID.Keys&=~(1<<0x1b);
+						if(GetKeyState(VK_F2)&0x8000)		//Test
+						ID.Keys&=~(1<<0x1a);
+						memcpy(OutData,&ID,sizeof(ID));
+						OutData[0x12]=0x8E;
+						OutLen=sizeof(ID);
+						*/
+					}
+					break;
+					//Select Subdevice
+				case 0x17:
+					{
+						State.Mode=0;
+						State.Cmd=buffer_in_b[8];
+						State.Node=buffer_in_b[9];
+						buffer_out_len=0;
+					}
+					ret(7);
+				
+					//Wha?
+				case 0x27:
+					{
+						State.Mode=1;
+						State.Cmd=buffer_in_b[8];
+						State.Node=buffer_in_b[9];
+						buffer_out_len=0;
+					}
+					ret(7);
+				
+					//EEprom access (Writting)
+				case 0x0B:
+					{
+						int address=buffer_in_b[1];
+						int size=buffer_in_b[2];
+		//				memcpy(EEprom+address,buffer_in_b+4,size);
+					}
+					ret(7);
+				
+					//IF I return all FF, then board runs in low res
+				case 0x31:
+					{
+						buffer_out[0]=0xffffffff;
+						buffer_out[1]=0xffffffff;
+					}
+					ret(8);
+				
+				//case 0x3:
+				//	break;
+				
+				//case 0x1:
+				//	break;
+				default:
+					printf("Unkown 0x86 : SubCommand 0x%X - State: Cmd 0x%X Mode :  0x%X Node : 0x%X\n",subcode,State.Cmd,State.Mode,State.Node);
+					printState(Command,buffer_in,buffer_in_len);
+				}
+
+				responce= 8;//MAPLE_RESPONSE_DATATRF
+				return;
+			}
+			break;
+
+		/*typedef struct {
+			DWORD		func;//4
+			DWORD		function_data[3];//3*4
+			u8		area_code;//1
+			u8		connector_direction;//1
+			char		product_name[30];//30*1
+			char		product_license[60];//60*1
+			WORD		standby_power;//2
+			WORD		max_power;//2
+		} maple_devinfo_t;*/
+		case 1:
+			{
+				//header
+				//WriteMem32(ptr_out,(u32)(0x05 | //response
+				//			(((u16)sendadr << 8) & 0xFF00) |
+				//			((((recadr == 0x20) ? 0x20 : 0) << 16) & 0xFF0000) |
+				//			(((112/4) << 24) & 0xFF000000))); ptr_out += 4;
+
+				responce=5;
+
+				//caps
+				//4
+				w32(1 << 24);
+
+				//struct data
+				//3*4
+				w32( 0xfe060f00); 
+				w32( 0);
+				w32( 0);
+				//1	area code
+				w8(0xFF);
+				//1	direction
+				w8(0);
+				//30
+				for (u32 i = 0; i < 30; i++)
+				{
+					if (testJoy_strName[i]!=0)
+					{
+						w8((u8)testJoy_strName[i]);
+					}
+					else
+					{
+						w8(0x20);
+					}
+					//if (!testJoy_strName[i])
+					//	break;
+				}
+				//ptr_out += 30;
+
+				//60
+				for (u32 i = 0; i < 60; i++)
+				{
+					if (testJoy_strBrand_2[i]!=0)
+					{
+						w8((u8)testJoy_strBrand_2[i]);
+					}
+					else
+					{
+						w8(0x20);
+					}
+					//if (!testJoy_strBrand[i])
+					//	break;
+				}
+				//ptr_out += 60;
+
+				//2
+				w16(0xAE01); 
+
+				//2
+				w16(0xF401); 
+			}
+			break;
+
+		/* controller condition structure 
+		typedef struct {//8 bytes
+		WORD buttons;			///* buttons bitfield	/2
+		u8 rtrig;			///* right trigger			/1
+		u8 ltrig;			///* left trigger 			/1
+		u8 joyx;			////* joystick X 			/1
+		u8 joyy;			///* joystick Y				/1
+		u8 joy2x;			///* second joystick X 		/1
+		u8 joy2y;			///* second joystick Y 		/1
+		} cont_cond_t;*/
+		case 9:
+			{
+				//header
+				//WriteMem32(ptr_out, (u32)(0x08 | // data transfer (response)
+				//			(((u16)sendadr << 8) & 0xFF00) |
+				//			((((recadr == 0x20) ? 0x20 : 1) << 16) & 0xFF0000) |
+				//			(((12 / 4 ) << 24) & 0xFF000000))); ptr_out += 4;
+				responce=0x08;
+				//caps
+				//4
+				//WriteMem32(ptr_out, (1 << 24)); ptr_out += 4;
+				w32(1 << 24);
+				//struct data
+				//2
+				w16(kcode[port] | 0xF901); 
+				
+				//triger
+				//1 R
+				w8(rt[port]);
+				//1 L
+				w8(lt[port]); 
+				//joyx
+				//1
+				w8(GetBtFromSgn(joyx[port]));
+				//joyy
+				//1
+				w8(GetBtFromSgn(joyy[port]));
+
+				//1
+				w8(0x80); 
+				//1
+				w8(0x80); 
+				//are these needed ?
+				//1
+				//WriteMem8(ptr_out, 10); ptr_out += 1;
+				//1
+				//WriteMem8(ptr_out, 10); ptr_out += 1;
+			}
+			break;
+
+		default:
+			printf("UNKOWN MAPLE Frame\n");
+			printState(Command,buffer_in,buffer_in_len);
 			break;
 	}
 }
@@ -2076,7 +2421,11 @@ s32 FASTCALL CreateMain(maple_device_instance* inst,u32 id,u32 flags,u32 rootmen
 	}
 	if (id==0)
 	{
+#ifdef BUILD_NAOMI
+		inst->dma=ControllerDMA_naomi;
+#else
 		inst->dma=ControllerDMA;
+#endif
 		inst->data=0;
 		swprintf(temp,L"Controller[winhook] : 0x%02X",inst->port);
 	}
@@ -2221,7 +2570,7 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	c.Load=Load;
 	c.Unload=Unload;
 	c.Type=Plugin_Maple;
-	c.PluginVersion=DC_MakeVersion(1,0,0,DC_VER_NORMAL);
+	c.PluginVersion=DC_MakeVersion(1,0,0);
 	
 	wcscpy(c.Name,L"nullDC Maple Devices (" _T(__DATE__) L")");
 
@@ -2235,6 +2584,10 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	km.TermSub=TermSub;
 	km.DestroySub=DestroySub;
 
+#ifdef BUILD_NAOMI
+	u32 mdi=0;
+	MMD(L"nullDC NAOMI JAMMA Controller[WinHook] (" _T(__DATE__) L")",MDTF_Hotplug|MDTF_Sub0|MDTF_Sub1);
+#else
 	u32 mdi=0;
 	//0
 	MMD(L"nullDC Controller [WinHook] (" _T(__DATE__) L")",MDTF_Hotplug|MDTF_Sub0|MDTF_Sub1);
@@ -2253,7 +2606,7 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 
 	//5
 	MMD(L"nullDC Mouse [WinHook] (" _T(__DATE__) L")",MDTF_Hotplug);
-
+#endif
 	/*
 
 	//6
