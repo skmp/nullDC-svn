@@ -21,7 +21,7 @@ void EXPORT_CALL handle_About(u32 id,void* w,void* p)
 void EXPORT_CALL handle_SyncAudio(u32 id,void* w,void* p)
 {
 	FrameLimit=!FrameLimit;
-	emu.ConfigSaveInt("ElsemiAICA","SyncAudio",FrameLimit);
+	emu.ConfigSaveInt(L"ElsemiAICA",L"SyncAudio",FrameLimit);
 	emu.SetMenuItemStyle(id,FrameLimit?MIS_Checked:0,MIS_Checked);
 }
 //called when plugin is used by emu (you should do first time init here)
@@ -29,11 +29,11 @@ s32 FASTCALL Load(emu_info * p)
 {
 	memcpy(&emu,p,sizeof(*p));
 
-	FrameLimit = emu.ConfigLoadInt("ElsemiAICA","SyncAudio",1)!=0;
+	FrameLimit = emu.ConfigLoadInt(L"ElsemiAICA",L"SyncAudio",1)!=0;
 
-	emu.AddMenuItem(emu.RootMenu,-1,"Sync Audio",handle_SyncAudio,FrameLimit);
+	emu.AddMenuItem(emu.RootMenu,-1,L"Sync Audio",handle_SyncAudio,FrameLimit);
 	emu.AddMenuItem(emu.RootMenu,-1,0,0,0);
-	emu.AddMenuItem(emu.RootMenu,-1,"About",handle_About,0);
+	emu.AddMenuItem(emu.RootMenu,-1,L"About",handle_About,0);
 
 	return rv_ok;
 }
@@ -91,9 +91,11 @@ EXPORT void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	*/
 #define c info->common
 #define a info->aica
+#define __T(x)      L ## x
+#define _T(x) __T(x)
 
-	strcpy(c.Name,"Elsemi's AICA (" __DATE__ ")");
-	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD,DC_VER_NORMAL);
+	wcscpy(c.Name,L"Elsemi's AICA (" _T(__DATE__ ) L")");
+	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD);
 
 	c.InterfaceVersion=AICA_PLUGIN_I_F_VERSION;
 	c.Type=Plugin_AICA;

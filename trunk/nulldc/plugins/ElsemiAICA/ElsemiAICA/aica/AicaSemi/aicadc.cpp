@@ -1303,7 +1303,9 @@ signed int inline AICA_UpdateSlot(_SLOT *slot)
 		signed char *p=(signed char *) (slot->base+(addr));
 		int s;
 		signed int fpart=slot->cur_addr&((1<<SHIFT)-1);
-		s=(int) p[0]*((1<<SHIFT)-fpart)+(int) p[1]*fpart;
+		signed int prev=slot->Prev;
+		slot->Prev=p[0];
+		s=(int) prev*(((1<<SHIFT)-1)-fpart)+(int) p[0]*fpart;
 		/*sample=(s>>SHIFT)<<8;*/
 		sample=CHOOSE((s>>SHIFT)<<8,p[0]<<8);
 		//sample=0;
@@ -1313,7 +1315,15 @@ signed int inline AICA_UpdateSlot(_SLOT *slot)
 		signed short *p=(signed short *) (slot->base+addr);
 		int s;
 		signed int fpart=slot->cur_addr&((1<<SHIFT)-1);
-		s=(int) p[0]*((1<<SHIFT)-fpart)+(int) p[1]*fpart;
+		signed int prev=slot->Prev;
+		signed int smpl=p[0];
+		if(smpl==-32768 && !(prev&0x8000))
+		{
+			//printf("//wtf is this ? why is it here ?"); // -> it actualy fixes SA2 music . why ?
+			smpl=0x7fff;
+		}
+		slot->Prev=smpl;
+		s=(int) prev*(((1<<SHIFT)-1)-fpart)+(int) smpl*fpart;
 		/*sample=(s>>SHIFT);*/
 		sample=CHOOSE(s>>SHIFT,p[0]);
 		//sample=0;
