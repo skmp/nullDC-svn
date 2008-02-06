@@ -175,7 +175,7 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	c.Load=Load;
 	c.Unload=Unload;
 	c.Type=Plugin_Maple;
-	c.PluginVersion=DC_MakeVersion(1,0,2,DC_VER_NORMAL);
+	c.PluginVersion=DC_MakeVersion(1,0,2);
 	
 	wcscpy(c.Name,L"nullDC Maple Devices (" _T(__DATE__) L")");
 
