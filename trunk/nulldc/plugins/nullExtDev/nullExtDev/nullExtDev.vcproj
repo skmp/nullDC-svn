@@ -20,7 +20,7 @@
 			OutputDirectory="$(SolutionDir)\obj\$(ProjectName)\$(PlatformName)\$(ConfigurationName)\"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="2"
-			CharacterSet="2"
+			CharacterSet="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -40,6 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				EnableIntrinsicFunctions="true"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;nullExtDev_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -255,7 +256,11 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\rtl8139c.c"
+				RelativePath=".\rtl8139c.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\rtl8139c.h"
 				>
 			</File>
 		</Filter>

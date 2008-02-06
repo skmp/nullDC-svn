@@ -72,7 +72,9 @@ u32 update_timer;
 void (*update_callback) ();
 void SetUpdateCallback(void (*callback) (),u32 ms)
 {
-	verify(update_callback==0);
+	verify(update_callback==0 || update_callback==callback);
+	if (update_callback)
+		return;
 	update_callback=callback;
 	update_timer=ms*DCclock/1000;
 }
@@ -210,7 +212,7 @@ bool EXPORT_CALL dcGetInterface(plugin_interface* info)
 	c.InterfaceVersion=EXTDEVICE_PLUGIN_I_F_VERSION;
 
 	wcscpy(c.Name,L"nullExtDev (" _T(__DATE__) L")");
-	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD,DC_VER_NORMAL);
+	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD);
 	
 	c.Load=Load;
 	c.Unload=Unload;

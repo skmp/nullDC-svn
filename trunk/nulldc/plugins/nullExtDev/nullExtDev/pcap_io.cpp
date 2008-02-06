@@ -5,6 +5,8 @@
 
 #include <Iphlpapi.h>
 
+#include "nullExtDev.h"
+
 mac_address virtual_mac   = { 0x76, 0x6D, 0x61, 0x63, 0x30, 0x31 };
 //mac_address virtual_mac   = { 0x6D, 0x76, 0x63, 0x61, 0x31, 0x30 };
 mac_address broadcast_mac = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
@@ -12,7 +14,7 @@ mac_address broadcast_mac = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 ip_address virtual_ip = { 192, 168, 2, 4};
 
 pcap_t *adhandle;
-int pcap_io_running=0;
+volatile int pcap_io_running=0;
 
 char errbuf[PCAP_ERRBUF_SIZE];
 
@@ -53,38 +55,6 @@ int GetMACaddress(char *adapter, mac_address* addr)
 	return 0;
 }
 
-int pcap_io_init(char *adapter)
-{
-	printf("WINPCAP: Opening adapter '%s'...",adapter);
-
-	GetMACaddress(adapter,&host_mac);
-		
-	/* Open the adapter */
-	if ((adhandle= pcap_open_live(adapter,	// name of the device
-							 65536,			// portion of the packet to capture. 
-											// 65536 grants that the whole packet will be captured on all the MACs.
-							 1,				// promiscuous mode (nonzero means promiscuous)
-							 1,			// read timeout
-							 errbuf			// error buffer
-							 )) == NULL)
-	{
-		printf("\nWINPCAP: Unable to open the adapter. %s is not supported by WinPcap\n", adapter);
-		return -1;
-	}
-
-	if(pcap_setnonblock(adhandle,1,errbuf)==-1)
-	{
-		printf("WINPCAP: Error setting non-blocking mode. Default mode will be used.\n");
-	}
-
-	packet_log=fopen("logs/packet.log","w");
-
-	dump_pcap = pcap_dump_open(adhandle,"logs/pkt_log.pcap");
-
-	pcap_io_running=1;
-	printf("WINPCAP: Ok.\n");
-	return 0;
-}
 
 int gettimeofday (struct timeval *tv, void* tz)
 {
@@ -102,7 +72,7 @@ int pcap_io_send(void* packet, int plen)
 
 	if(pcap_io_running<=0)
 		return -1;
-	printf("WINPCAP:  * pcap io: Sending %d byte packet.\n",plen);
+	//printf("WINPCAP:  * pcap io: Sending %d byte packet.\n",plen);
 
 	if(dump_pcap)
 	{
@@ -145,7 +115,7 @@ int pcap_io_send(void* packet, int plen)
 	return pcap_sendpacket(adhandle, (const u_char*)packet, plen);
 }
 
-int pcap_io_recv(void* packet, int max_len)
+int pcap_io_recv_blocking(void* packet, int max_len)
 {
 	int res;
 	struct pcap_pkthdr *header;
@@ -194,15 +164,96 @@ int pcap_io_recv(void* packet, int max_len)
 
 	return -1;
 }
+#define PacketBufferSize (2048*64)
+#define PacketBufferMask (PacketBufferSize-1)
 
+volatile long PacketCount;
+volatile u8 PacketBuffer[PacketBufferSize+2048];
+volatile u32 WriteCursor;
+volatile u32 ReadCursor;
+
+#pragma intrinsic 
+// statement.
+#include <intrin.h>
+
+#pragma intrinsic (_InterlockedIncrement)
+#pragma intrinsic (_InterlockedDecrement)
+
+
+DWORD WINAPI rx_thread( LPVOID p)
+{
+	if (SetThreadPriority(GetCurrentThread(),THREAD_PRIORITY_TIME_CRITICAL))
+		printf("rx_thread : THREAD_PRIORITY_TIME_CRITICAL ;)\n");
+
+	PacketCount=0;
+	WriteCursor=0;
+
+	while(pcap_io_running)
+	{
+		u32 RCval=ReadCursor;
+		if (WriteCursor<RCval && (WriteCursor+2048)>RCval)
+		{
+			printf("rx_thread : buffer full !\n");
+			Sleep(10);//whee ?
+		}
+		else
+		{
+			int len=pcap_io_recv_blocking((void*)&PacketBuffer[WriteCursor+4],1520);
+			if (len>0)
+			{
+				//only this thread uses the write cursor
+				*(u32*)&PacketBuffer[WriteCursor]=len;
+				WriteCursor+=len+4;
+				if (WriteCursor>=PacketBufferSize)
+					WriteCursor=0;
+
+				//This however, needs to be interlocked
+				_InterlockedIncrement(&PacketCount);
+				//EnterCriticalSection(&cs);
+				//PacketCount++;
+				//ExitCriticalSection(&cs);
+			}
+		}
+	}
+	printf("rx-thread : Terminated\n");
+	return 0;
+}
+int pcap_io_recv(void* packet, int max_len)
+{
+	if (PacketCount==0)
+		return 0;
+
+	u32 len=*(u32*)&PacketBuffer[ReadCursor];
+	if (max_len<len)
+		__debugbreak;
+	
+	memcpy(packet,(void*)&PacketBuffer[ReadCursor+4],len);
+
+	//Make sure ReadCursor allways has a valid value :)
+	//not even sure that much is needed tbh, bored to think :P
+
+	u32 RCpos=ReadCursor;
+
+	RCpos+=len+4;
+	if (RCpos>=PacketBufferSize)
+		RCpos=0;
+	ReadCursor=RCpos;
+
+	//This however, needs to be interlocked
+	_InterlockedDecrement(&PacketCount);
+	//EnterCriticalSection(&cs);
+	//PacketCount--;
+	//ExitCriticalSection(&cs);
+	return len;
+}
 void pcap_io_close()
 {
+	pcap_io_running=0;
 	if(packet_log)
 		fclose(packet_log);
 	if(dump_pcap)
 		pcap_dump_close(dump_pcap);
-	pcap_close(adhandle);  
-	pcap_io_running=0;
+	pcap_close(adhandle); 
 }
 
 int pcap_io_get_dev_num()
@@ -276,4 +327,40 @@ char* pcap_io_get_dev_desc(int num)
 	pcap_freealldevs(alldevs);
 
 	return NULL;
+}
+
+int pcap_io_init(char *adapter)
+{
+	printf("WINPCAP: Opening adapter '%s'...",adapter);
+
+	GetMACaddress(adapter,&host_mac);
+		
+	/* Open the adapter */
+	if ((adhandle= pcap_open_live(adapter,	// name of the device
+							 65536,			// portion of the packet to capture. 
+											// 65536 grants that the whole packet will be captured on all the MACs.
+							 1,				// promiscuous mode (nonzero means promiscuous)
+							 1,			// read timeout
+							 errbuf			// error buffer
+							 )) == NULL)
+	{
+		printf("\nWINPCAP: Unable to open the adapter. %s is not supported by WinPcap\n", adapter);
+		return -1;
+	}
+
+	/*
+	if(pcap_setnonblock(adhandle,1,errbuf)==-1)
+	{
+		printf("WINPCAP: Error setting non-blocking mode. Default mode will be used.\n");
+	}
+	*/
+
+	packet_log=fopen("logs/packet.log","w");
+
+	dump_pcap = pcap_dump_open(adhandle,"logs/pkt_log.pcap");
+
+	CreateThread(0,0,rx_thread,0,0,0);
+	pcap_io_running=1;
+	printf("WINPCAP: Ok.\n");
+	return 0;
 }
