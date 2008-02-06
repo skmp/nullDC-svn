@@ -469,8 +469,10 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			EndDialog(hWnd, IDOK);
 
 			char DriveStr[512];
+			wchar DriveStrW[512];
 			sprintf_s(DriveStr, "%c:", devList[uiSel].Letter);
-			eminf.ConfigSaveStr("zNullGD","Drive", DriveStr);
+			mbstowcs(DriveStrW,DriveStr,512);
+			eminf.ConfigSaveStr(L"zNullGD",L"Drive", DriveStrW);
 
 			printf("->> Selected Drive[%x]: %c: %s\n", uiSel, devList[uiSel].Letter, devList[uiSel].Label);
 			return TRUE;
@@ -490,8 +492,10 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			EndDialog(hWnd, IDOK);
 
 			char DriveStr[512];
+			wchar DriveStrW[512];
 			sprintf_s(DriveStr, "%c:", devList[uiSel].Letter);
-			eminf.ConfigSaveStr("zNullGD","Drive", DriveStr);
+			mbstowcs(DriveStrW,DriveStr,512);
+			eminf.ConfigSaveStr(L"zNullGD",L"Drive", DriveStrW);
 
 			printf("->> Selected Drive[%x]: %c: %s\n", uiSel, devList[uiSel].Letter, devList[uiSel].Label);
 			return TRUE;
@@ -526,7 +530,9 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	info->common.InterfaceVersion=GDR_PLUGIN_I_F_VERSION;
 	info->common.PluginVersion=DC_MakeVersion(1,0,0,DC_VER_NORMAL);
 	info->common.Type=Plugin_GDRom;
-	strcpy(info->common.Name,"zNullGD, SCSI Passthru GDROM Plugin By _ZeZu_ [" __DATE__ "]");
+	char t[128];
+	strcpy(t,"zNullGD, SCSI Passthru GDROM Plugin By _ZeZu_ [" __DATE__ "]");
+	mbstowcs(info->common.Name,t,128);
 
 	info->common.Load=PluginLoad;
 	info->common.Unload=PluginUnload;
