@@ -17,7 +17,7 @@ prof_info profile_info;
 cThread* prof_thread;
 
 u32 THREADCALL ProfileThead(void* param);
-extern u32 rtc_cycl;
+extern s32 rtc_cycles;
 
 struct Module
 {
@@ -71,7 +71,7 @@ u64 oldcycles;
 u64 CycleDiff()
 {
 	u64 oo=oldcycles;
-	oldcycles=rtc_cycl+(u64)settings.dreamcast.RTC*200*1000*1000;
+	oldcycles=200*1000*1000-rtc_cycles+(u64)settings.dreamcast.RTC*200*1000*1000;
 	return oldcycles-oo;
 }
 bool RunProfiler;
@@ -92,6 +92,7 @@ void init_Profiler(void* param)
 	RunProfiler=true;
 
 	prof_thread = new cThread(ProfileThead,param);
+	SetThreadPriority(prof_thread->hThread,THREAD_PRIORITY_TIME_CRITICAL);
 	//prof_thread->Start();
 }
 void start_Profiler()
