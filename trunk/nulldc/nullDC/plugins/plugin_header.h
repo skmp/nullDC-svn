@@ -36,7 +36,15 @@ typedef unsigned __int64 u64;
 typedef float f32;
 typedef double f64;
 
-#define wchar wchar_t
+#ifdef X86
+typedef u32 unat;
+#endif
+
+#ifdef X64
+typedef u64 unat;
+#endif
+
+typedef wchar_t wchar;
 
 #define EXPORT extern "C" __declspec(dllexport)
 

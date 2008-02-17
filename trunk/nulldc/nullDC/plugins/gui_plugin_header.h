@@ -1,4 +1,5 @@
 #pragma once
+#include "plugin_header.h"
 
 #define maple_sett(x,y) NDCS_PLUGIN_MAPLE_##x##_##y
 #define maple_groop(x) maple_sett(x,0), maple_sett(x,1), maple_sett(x,2), maple_sett(x,3), maple_sett(x,4), maple_sett(x,5)

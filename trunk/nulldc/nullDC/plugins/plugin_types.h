@@ -1,9 +1,7 @@
 #pragma once
-#ifndef _PLUGIN_HEADER_
-#include "types.h"
 
-#include "dc/sh4/sh4_if.h"
-#include "dc/pvr/pvrLock.h"
+#ifndef _PLUGIN_HEADER_
+#error beef
 #endif
 
 struct VersionNumber
@@ -14,7 +12,8 @@ struct VersionNumber
 		{
 			u8 major:8;
 			u8 minnor:8;
-			u16 build:16;
+			u8 build:8;
+			u8 flags:8;
 		};
 		u32 full;
 	};
@@ -24,14 +23,83 @@ struct VersionNumber
 
 #define EXPORT_CALL __stdcall
 #define FASTCALL __fastcall
-#define CDECL __cdecl
+#define C_CALL __cdecl
 
-//NDC_ so it's not confused w/ win32 one
-#define DC_MakeVersion(major,minor,build,flags) (((flags)<<24)|((build)<<16)|((minor)<<8)|(major))
-#define DC_VER_NORMAL 0
-#define DC_VER_BETA 1
-#define DC_VER_PRIVATE 2
-#define DC_VER_PRIVBETA (DC_VER_BETA|DC_VER_PRIVATE)
+//DC_ so it's not confused w/ win32 one
+#define DC_PLATFORM_MASK		7
+#define DC_PLATFORM_NORMAL		0
+#define DC_PLATFORM_DEV_UNIT	1
+#define DC_PLATFORM_NAOMI		2
+#define DC_PLATFORM_NAOMI2		3
+#define DC_PLATFORM_ATOMISWAVE	4
+
+#define DC_PLATFORM DC_PLATFORM_NORMAL
+
+
+//Flash size is fixed at 128k atm
+#define FLASH_SIZE (128*1024)
+
+#if (DC_PLATFORM==DC_PLATFORM_NORMAL)
+
+	#define BUILD_DREAMCAST 1
+	
+	//DC : 16 mb ram, 8 mb vram, 2 mb aram, 2 mb bios, 128k flash
+	#define RAM_SIZE (16*1024*1024)
+	#define VRAM_SIZE (8*1024*1024)
+	#define ARAM_SIZE (2*1024*1024)
+	#define BIOS_SIZE (2*1024*1024)
+
+#elif  (DC_PLATFORM==DC_PLATFORM_DEV_UNIT)
+	
+	#define BUILD_DEV_UNIT 1
+
+	//Devkit : 32 mb ram, 8? mb vram, 2? mb aram, 2? mb bios, ? flash
+	#define RAM_SIZE (32*1024*1024)
+	#define VRAM_SIZE (8*1024*1024)
+	#define ARAM_SIZE (2*1024*1024)
+	#define BIOS_SIZE (2*1024*1024)
+
+#elif  (DC_PLATFORM==DC_PLATFORM_NAOMI)
+	
+	#define BUILD_NAOMI 1
+	#define BUILD_NAOMI1 1
+
+	//Naomi : 32 mb ram, 16 mb vram, 8 mb aram, 2 mb bios, ? flash
+	#define RAM_SIZE (32*1024*1024)
+	#define VRAM_SIZE (16*1024*1024)
+	#define ARAM_SIZE (8*1024*1024)
+	#define BIOS_SIZE (2*1024*1024)
+#elif  (DC_PLATFORM==DC_PLATFORM_NAOMI2)
+	
+	#define BUILD_NAOMI 1
+	#define BUILD_NAOMI2 1
+
+	//Naomi2 : 32 mb ram, 16 mb vram, 8 mb aram, 2 mb bios, ? flash
+	#define RAM_SIZE (32*1024*1024)
+	#define VRAM_SIZE (16*1024*1024)
+	#define ARAM_SIZE (8*1024*1024)
+	#define BIOS_SIZE (2*1024*1024)
+#elif  (DC_PLATFORM==DC_PLATFORM_ATOMISWAVE)
+	
+	#define BUILD_ATOMISWAVE 1
+
+	//Atomiswave : 16(?) mb ram, 16 mb vram, 8 mb aram, 128kb? bios, ? flash
+	#define RAM_SIZE (16*1024*1024)
+	#define VRAM_SIZE (16*1024*1024)
+	#define ARAM_SIZE (8*1024*1024)
+	#define BIOS_SIZE (2*1024*1024)
+#else
+	#error invalid build config
+#endif
+
+#define RAM_MASK	(RAM_SIZE-1)
+#define VRAM_MASK	(VRAM_SIZE-1)
+#define ARAM_MASK	(ARAM_SIZE-1)
+#define BIOS_MASK	(BIOS_SIZE-1)
+#define FLASH_MASK	(FLASH_SIZE-1)
+
+
+#define DC_MakeVersion(major,minor,build) (((DC_PLATFORM)<<24)|((build)<<16)|((minor)<<8)|(major))
 
 enum PluginType
 {
@@ -85,7 +153,7 @@ enum ndc_events
 	//Misc
 	NDE_CUSTOM=0xFF000000,		//Base for custom events.be carefull with how you use these, as all plugins get em ;)
 };
-#define PLUGIN_I_F_VERSION DC_MakeVersion(1,0,1,DC_VER_BETA)
+#define PLUGIN_I_F_VERSION DC_MakeVersion(1,0,1)
 
 //These are provided by the emu
 typedef void EXPORT_CALL ConfigLoadStrFP(const wchar * lpSection, const wchar * lpKey, wchar * lpReturn,const wchar* lpDefault);
@@ -208,7 +276,7 @@ struct common_info
 //*********************** PowerVR **********************
 //******************************************************
 
-#define PVR_PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0,DC_VER_BETA)
+#define PVR_PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0)
  
 typedef void FASTCALL vramlock_Unlock_blockFP  (vram_block* block);
 typedef vram_block* FASTCALL vramlock_LockFP(u32 start_offset,u32 end_offset,void* userdata);
@@ -288,7 +356,7 @@ typedef void FASTCALL DriveGetSessionInfoFP(u8* pout,u8 session);
 //Get subchannel data
 typedef void FASTCALL DriveReadSubChannelFP(u8 * buff, u32 format, u32 len);
 
-#define GDR_PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0,DC_VER_BETA)
+#define GDR_PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0)
 
 //passed on GDRom init call
 struct gdr_init_params
@@ -320,7 +388,7 @@ struct gdr_plugin_if
 
 typedef void FASTCALL CDDA_SectorFP(s16* sector);
 
-#define AICA_PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0,DC_VER_BETA)
+#define AICA_PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0)
 
 //passed on AICA init call
 struct aica_init_params
@@ -355,7 +423,7 @@ struct aica_plugin_if
 //****************** Maple devices ******************
 //******************************************************
 
-#define MAPLE_PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0,DC_VER_BETA)
+#define MAPLE_PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0)
 
 enum MapleDeviceCreationFlags
 {
@@ -459,7 +527,7 @@ struct maple_plugin_if
 //********************* Ext.Device *********************
 //******************************************************
 
-#define EXTDEVICE_PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0,DC_VER_BETA)
+#define EXTDEVICE_PLUGIN_I_F_VERSION DC_MakeVersion(1,0,0)
 
 //passed on Ext.Device init call
 struct ext_device_init_params

@@ -1,6 +1,5 @@
 #pragma once
 #include "types.h"
-#include "plugin_types.h"
 #include "gui_plugin_header.h"
 #include "dc/sh4/sh4_if.h"
 

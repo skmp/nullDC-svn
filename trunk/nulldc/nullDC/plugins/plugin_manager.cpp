@@ -6,6 +6,7 @@
 #include "types.h"
 #include "plugin_manager.h"
 #include "dc/pvr/pvr_if.h"
+#include "dc/pvr/pvrLock.h"
 #include "dc/aica/aica_if.h"
 #include "dc/asic/asic.h"
 #include "dc/gdrom/gdrom_if.h"
@@ -13,6 +14,7 @@
 #include "dc/maple/maple_if.h"
 #include "config/config.h"
 #include "gui/base.h"
+#include "naomi/naomi.h"
 
 #include <string.h>
 #include "dc\mem\sb.h"
@@ -1025,6 +1027,11 @@ s32 plugins_Init_()
 	if (s32 rv = libGDR.Init(&gdr_info))
 		return rv;
 	libGDR.Inited=true;
+
+	#ifdef BUILD_NAOMI
+	if (!NaomiSelectFile(GetRenderTargetHandle()))
+		return rv_serror;
+	#endif
 	
 
 	aica_init_params aica_info;
