@@ -171,9 +171,9 @@ sh4op(i1100_0011_iiii_iiii)
 	int i=0,s=1;
 
 	pc+=2;//so that Interrupt return is on next opcode
-	while (!UpdateSystem(2500))
+	while (!UpdateSystem())//448
 	{
-		if (i++>100)
+		if (i++>1000)
 		{
 			s=0;
 			break;
