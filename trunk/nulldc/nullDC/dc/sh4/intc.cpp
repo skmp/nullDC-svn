@@ -69,13 +69,28 @@ u32 GetIRLPriority()
 }
 //Return interrupt pririty level
 template<u16* reg,u32 part>
-u32 GetPriority()
+u32 GetPriority_bug()	//VC++ bugs this ;p
 {
 	return ((*reg)>>(4*part))&0xF;
 }
-#define GIPA(p) GetPriority< &INTC_IPRA.reg_data, p >
-#define GIPB(p)  GetPriority< &INTC_IPRB.reg_data, p >
-#define GIPC(p)  GetPriority< &INTC_IPRC.reg_data, p >
+template<u32 part>
+u32 GetPriority_a()
+{
+	return ((INTC_IPRA.reg_data)>>(4*part))&0xF;
+}
+template<u32 part>
+u32 GetPriority_b()
+{
+	return ((INTC_IPRB.reg_data)>>(4*part))&0xF;
+}
+template<u32 part>
+u32 GetPriority_c()
+{
+	return ((INTC_IPRC.reg_data)>>(4*part))&0xF;
+}
+#define GIPA(p) GetPriority_a< p >
+#define GIPB(p)  GetPriority_b< p >
+#define GIPC(p)  GetPriority_c< p >
 
 const InterptSourceList_Entry InterruptSourceList[]=
 {
@@ -226,9 +241,9 @@ void fastcall VirtualInterrupt(u32 id)
 		SRdecode();
 	}
 }
-#ifdef COUNT_INTERRUPT_UPDATES
+//#ifdef COUNT_INTERRUPT_UPDATES
 u32 no_interrupts,yes_interrupts;
-#endif
+//#endif
 naked int UpdateINTC()
 {
 	__asm
