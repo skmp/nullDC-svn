@@ -115,21 +115,24 @@ sh4op(i0000_0000_0011_1000)
 //ocbi @<REG_N>                 
 sh4op(i0000_nnnn_1001_0011)
 {
-	//iNimp("ocbi @<REG_N> ");
+	u32 n = GetN(op);
+	//printf("ocbi @0x%08X \n",r[n]);
 } 
 
 
 //ocbp @<REG_N>                 
 sh4op(i0000_nnnn_1010_0011)
 {
-	//iNimp("ocbp @<REG_N> ");
+	u32 n = GetN(op);
+	//printf("ocbp @0x%08X \n",r[n]);
 } 
 
 
 //ocbwb @<REG_N>                
 sh4op(i0000_nnnn_1011_0011)
 {
-	//iNimp("ocbwb @<REG_N> ");
+	u32 n = GetN(op);
+	//printf("ocbwb @0x%08X \n",r[n]);
 } 
 
 //pref @<REG_N>                 
@@ -619,11 +622,22 @@ sh4op(i0011_nnnn_mmmm_1110)
 // addv <REG_M>,<REG_N>          
 sh4op(i0011_nnnn_mmmm_1111)
 {
-	iNimp(op, "addv <REG_M>,<REG_N>");
+	//iNimp(op, "addv <REG_M>,<REG_N>");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
-	s64 br=(s64)(s32)r[n]+(s64)(s32)r[m];
-	
+	//s64 br=(s64)(s32)r[n]+(s64)(s32)r[m];
+	u32 rm=r[m];
+	u32 rn=r[n];
+	__asm 
+	{
+		mov eax,rm;
+		mov ecx,rn;
+		add eax,ecx;
+		seto sr.T;
+		mov rn,eax;
+	};
+	r[n]=rn;
+	/*
 	if (br >=0x80000000)
 		sr.T=1;
 	else if (br < (s64) (0xFFFFFFFF80000000u))
@@ -635,7 +649,7 @@ sh4op(i0011_nnnn_mmmm_1111)
 	else
 		sr.T=0;*/
 	
-	r[n]+=r[m];
+	//r[n]+=r[m];
 }
 
 //subc <REG_M>,<REG_N>          
@@ -661,23 +675,34 @@ sh4op(i0011_nnnn_mmmm_1010)
 //subv <REG_M>,<REG_N>          
 sh4op(i0011_nnnn_mmmm_1011)
 {
-	iNimp(op, "subv <REG_M>,<REG_N>");
+	//iNimp(op, "subv <REG_M>,<REG_N>");
 	u32 n = GetN(op);
 	u32 m = GetM(op);
-	s64 br=(s64)(s32)r[n]-(s64)(s32)r[m];
+	/*s64 br=(s64)(s32)r[n]-(s64)(s32)r[m];
 	
 	if (br >=0x80000000)
 		sr.T=1;
 	else if (br < (s64) (0xFFFFFFFF80000000u))
 		sr.T=1;
 	else
-		sr.T=0;
+		sr.T=0;*/
 	/*if (br>>32)
 		sr.T=1;
 	else
 		sr.T=0;*/
 	
-	r[n]-=r[m];
+	//r[n]-=r[m];
+	u32 rm=r[m];
+	u32 rn=r[n];
+	__asm 
+	{
+		mov eax,rm;
+		mov ecx,rn;
+		sub eax,ecx;
+		seto sr.T;
+		mov rn,eax;
+	};
+	r[n]=rn;
 }
 //dt <REG_N>                    
 sh4op(i0100_nnnn_0001_0000)
@@ -1025,15 +1050,19 @@ sh4op(i0100_nnnn_0001_1011)
 	if (sh4_exept_raised)
 		return;
 
+	u32 srT;
 	if (val == 0)
-		sr.T = 1;
+		srT = 1;
 	else
-		sr.T = 0;
+		srT = 0;
 
 	val |= 0x80;
 
 	WriteMem8(r[n], val);
-	verify(sh4_exept_raised!=true);
+	if(sh4_exept_raised)
+		printf("PAGEFAULT AT tas.b @<REG_N>  \n");
+	else
+		sr.T=srT;
 }
 
 //************************ Opcodes that read/write the status registers ************************
