@@ -37,7 +37,7 @@ u32 GetRTC_now()
 	u32 RTC=0x5bfc8900 + (u32)rawtime;// add delta to known dc time
 	return RTC;
 }
-extern u32 rtc_cycl;
+extern s32 rtc_cycles;
 u32 ReadMem_aica_rtc(u32 addr,u32 sz)
 {
 	//settings.dreamcast.RTC=GetRTC_now();
@@ -73,7 +73,7 @@ void WriteMem_aica_rtc(u32 addr,u32 data,u32 sz)
 		{
 			settings.dreamcast.RTC&=0xFFFF0000;
 			settings.dreamcast.RTC|= data&0xFFFF;
-			rtc_cycl=0;	//clear the internal cycle counter ;)
+			rtc_cycles=200*1000*1000;	//clear the internal cycle counter ;)
 		}
 		return;
 	case 8:	
@@ -195,12 +195,68 @@ void Write_SB_ADST(u32 data)
 	}
 }
 
+void Write_SB_E1ST(u32 data)
+{
+	//0x005F7800	SB_ADSTAG	RW	AICA:G2-DMA G2 start address 
+	//0x005F7804	SB_ADSTAR	RW	AICA:G2-DMA system memory start address 
+	//0x005F7808	SB_ADLEN	RW	AICA:G2-DMA length 
+	//0x005F780C	SB_ADDIR	RW	AICA:G2-DMA direction 
+	//0x005F7810	SB_ADTSEL	RW	AICA:G2-DMA trigger select 
+	//0x005F7814	SB_ADEN	RW	AICA:G2-DMA enable 
+	//0x005F7818	SB_ADST	RW	AICA:G2-DMA start 
+	//0x005F781C	SB_ADSUSP	RW	AICA:G2-DMA suspend 
+	
+	if (data&1)
+	{
+		if (SB_E1EN&1)
+		{
+			u32 src=SB_E1STAR;
+			u32 dst=SB_E1STAG;
+			u32 len=SB_E1LEN & 0x7FFFFFFF;
+
+			if (SB_E1DIR==1)
+			{
+				u32 t=src;
+				src=dst;
+				dst=t;
+				printf("G2-EXT1 DMA : SB_E1DIR==1 DMA Read to 0x%X from 0x%X %d bytes\n",dst,src,len);
+			}
+			else
+				printf("G2-EXT1 DMA : SB_E1DIR==0:DMA Write to 0x%X from 0x%X %d bytes\n",dst,src,len);
+
+			for (u32 i=0;i<len;i+=4)
+			{
+				u32 data=ReadMem32_nommu(src+i);
+				WriteMem32_nommu(dst+i,data);
+			}
+
+			if (SB_E1LEN & 0x80000000)
+				SB_E1EN=1;//
+			else
+				SB_E1EN=0;//
+
+			SB_E1STAR+=len;
+			SB_E1STAG+=len;
+			SB_E1ST = 0x00000000;//dma done
+			SB_E1LEN = 0x00000000;
+
+			
+			asic_RaiseInterrupt(holly_EXT_DMA1);
+		}
+	}
+}
+
 void aica_sb_Init()
 {
 	//NRM
 	//6
 	sb_regs[((SB_ADST_addr-SB_BASE)>>2)].flags=REG_32BIT_READWRITE | REG_READ_DATA;
 	sb_regs[((SB_ADST_addr-SB_BASE)>>2)].writeFunction=Write_SB_ADST;
+
+	//I realy need to implement G2 dma (and rest dmas actualy) properly
+	//THIS IS NOT AICA, its G2-EXT (BBA)
+	sb_regs[((SB_E1ST_addr-SB_BASE)>>2)].flags=REG_32BIT_READWRITE | REG_READ_DATA;
+	sb_regs[((SB_E1ST_addr-SB_BASE)>>2)].writeFunction=Write_SB_E1ST;
 }
 
 void aica_sb_Reset(bool Manual)
