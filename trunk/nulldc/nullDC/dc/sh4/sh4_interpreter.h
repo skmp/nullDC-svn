@@ -47,6 +47,6 @@ void Sh4_int_SetRegister(Sh4RegType reg,u32 regdata);
 //Other things (mainly used by the cpu core
 bool ExecuteDelayslot();
 bool ExecuteDelayslot_RTE();
-int  __fastcall UpdateSystem(u32 Cycles);
+int  __fastcall UpdateSystem();
 //timer that ticks @ ~ 13,216 khz , used to free blocks & time delta for block promotion
 extern u32 gcp_timer;

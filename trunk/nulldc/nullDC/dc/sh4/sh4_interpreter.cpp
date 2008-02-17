@@ -230,27 +230,16 @@ i_run_opcode:
 		//exeption rollback point
 		//if an exeption happened , resume execution here
 i_exept_rp:
-
 		//update system  and run a new timeslice
 		xor eax,eax;			//zero eax [used later]
 
-		//esi is 0 or negative here
-		//cc = CPU_TIMESLICE - esi
-		//cc =  (-esi) + CPU_TIMESLICE
-		//we want cc on ecx (to call update)
+		//Calculate next timeslice
+		sub esi,exec_cycles;	//Add delayslot cycles
+		add esi,CPU_TIMESLICE;
 
-		mov ecx,esi;			//save leftover cycles
-		mov esi,CPU_TIMESLICE;	//reset cycle count
+		mov exec_cycles,eax;	//zero out delayslot cycles
 
-		neg ecx;				//ecx=-ecx , now we have leftover as positive
-		add ecx,esi;			//add ecx+=CPU_TIMESLICE , so we have total cycles on ecx
-
-		//take in acount delay slots now
-		add ecx,exec_cycles;	//add cycles to ecx
-		mov exec_cycles,eax;	//zero out cycles [rember ? we zero'd out eax lots ago :p]
-
-		//ecx : passed cycles
-		//esi : new cycle count , inited
+		//Call update system (cycle cnt is fixed to 448)
 		call UpdateSystem;
 
 		//if cpu still on go for one more brust of opcodes :)
@@ -554,68 +543,69 @@ bool ExecuteDelayslot_RTE()
 
 #include "ccn.h"
 
-//General update
-//u32 gdCnt=0;
-u32 aica_cycl=0;
-u32 rtc_cycl=0;
 void FreeSuspendedBlocks();;
 void DynaPrintCycles();
-u32 shitaaa=0;
 
+//General update
+s32 rtc_cycles=0;
+u32 update_cnt;
 u32 gcp_timer=0;
-u32 gpc_counter=0;
 
-//Will be added later as global var , comented out for now (338)
-//#define cpu_ratio 100
-s32 gd_cycles=0;
 
-int __fastcall UpdateSystem(u32 Cycles)
+//typicaly, 446428 calls/second (448 cycles/call)
+//fast update is 448 cycles
+//medium update is 448*8=3584 cycles
+//slow update is 448*16=7168  cycles
+
+//14336 Cycles
+void __fastcall VerySlowUpdate()
 {
-#ifdef cpu_ratio
-	Cycles=Cycles*100/cpu_ratio;
-#endif
-	gd_cycles+=Cycles;
-	if (gd_cycles>6400)
+	//gpc_counter=0;
+	gcp_timer++;
+	rtc_cycles-=14336;
+	if (rtc_cycles<=0)
 	{
-		gd_cycles-=6400;
-		#if DC_PLATFORM!=DC_PLATFORM_NAOMI
-			UpdateGDRom();
-		#else
-			Update_naomi();
-		#endif
-		//UpdateDMA();
+		rtc_cycles+=200*1000*1000;
+		settings.dreamcast.RTC++;
 	}
+	//This is a patch for the DC LOOPBACK test GDROM (disables serial i/o)
+	/*
+	*(u16*)&mem_b.data[(0xC0196EC)& 0xFFFFFF] =9;
+	*(u16*)&mem_b.data[(0xD0196D8+2)& 0xFFFFFF]=9;
+	*/
+	FreeSuspendedBlocks();
+}
+//7168 Cycles
+void __fastcall SlowUpdate()
+{
+	#if DC_PLATFORM!=DC_PLATFORM_NAOMI
+		UpdateGDRom();		
+	#else
+		Update_naomi();
+	#endif	
+	if (!(update_cnt&0x10))
+		VerySlowUpdate();
+}
+//3584 Cycles
+void __fastcall MediumUpdate()
+{
+	UpdateAica(3584);
+	libExtDevice.UpdateExtDevice(3584);
+	UpdateDMA();
+	if (!(update_cnt&0x8))
+		SlowUpdate();
+}
+
+//448 Cycles
+//as of 7/2/2k8 this is fixed to 448 cycles
+int __fastcall UpdateSystem()
+{
+	if (!(update_cnt&0x7))
+		MediumUpdate();
 	
-	//Cycles=350;
-	aica_cycl+=Cycles;
-	if (aica_cycl>(200*1000*1000/(44100*3)))
-	{
-		
-		rtc_cycl+=aica_cycl;
-		//1.5-2k cycles .These devices dont need more precition , so we save a bit here :)
-		UpdateAica(aica_cycl);
-		libExtDevice.UpdateExtDevice(aica_cycl);
-		gpc_counter++;
-		if (gpc_counter>10)
-		{
-			//This is a patch for the DC LOOPBACK test GDROM (disables serial i/o)
-			/*
-			*(u16*)&mem_b.data[(0xC0196EC)& 0xFFFFFF] =9;
-			*(u16*)&mem_b.data[(0xD0196D8+2)& 0xFFFFFF]=9;
-			*/
-			//~20-15k cycles
-			gpc_counter=0;
-			gcp_timer++;
-			FreeSuspendedBlocks();
-			if (rtc_cycl>=(200*1000*1000))
-			{
-				rtc_cycl-=(200*1000*1000);
-				settings.dreamcast.RTC++;
-			}
-		}
-		aica_cycl=0;
-	}
-	UpdateTMU(Cycles);
-	UpdatePvr(Cycles);
+	update_cnt++;
+
+	UpdateTMU(448);
+	UpdatePvr(448);
 	return UpdateINTC();
 }
