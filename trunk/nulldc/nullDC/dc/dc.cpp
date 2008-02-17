@@ -305,9 +305,9 @@ void LoadBiosFiles()
 #ifdef BUILD_DREAMCAST
 	wcscat(temp_path,L"dc_boot.bin");
 #elif	BUILD_NAOMI
-	strcat(temp_path,"naomi_boot.bin");
+	wcscat(temp_path,L"naomi_boot.bin");
 #else	//BUILD_DEV_UNIT
-	strcat(temp_path,"hkt_boot.bin");
+	wcscat(temp_path,L"hkt_boot.bin");
 #endif
 
 	if (!LoadFileToSh4Bootrom(temp_path))
