@@ -151,7 +151,8 @@ direct:
 	}
 }
 
-
+//0xDEADC0D3 or 0
+#define MEM_ERROR_RETURN_VALUE 0xDEADC0D3
 
 //phew .. that was lota asm code ;) lets go back to C :D
 //default mem handlers ;)
@@ -159,17 +160,17 @@ direct:
 u8 fastcall _vmem_ReadMem8_not_mapped(u32 addresss)
 {
 	printf("[sh4]Read8 from 0x%X, not mapped [_vmem default handler]\n",addresss);
-	return 0xD3;
+	return (u8)MEM_ERROR_RETURN_VALUE;
 }
 u16 fastcall _vmem_ReadMem16_not_mapped(u32 addresss)
 {
 	printf("[sh4]Read16 from 0x%X, not mapped [_vmem default handler]\n",addresss);
-	return 0xC0D3;
+	return (u16)MEM_ERROR_RETURN_VALUE;
 }
 u32 fastcall _vmem_ReadMem32_not_mapped(u32 addresss)
 {
 	printf("[sh4]Read32 from 0x%X, not mapped [_vmem default handler]\n",addresss);
-	return 0xDEADC0D3;
+	return (u32)MEM_ERROR_RETURN_VALUE;
 }
 //defualt write handers
 void fastcall _vmem_WriteMem8_not_mapped(u32 addresss,u8 data)
