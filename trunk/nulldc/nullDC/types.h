@@ -1,11 +1,9 @@
 #pragma once
 
-//this looks like the main header ? -Z
-#define BUILD_DREAMCAST	(1)
-//#define BUILD_DEV_UNIT	(1)
-//#define BUILD_NAOMI	(1)
-
 #define NO_MMU
+
+//Basic types & stuff
+#include "plugins\plugin_header.h"
 
 //SHUT UP M$ COMPILER !@#!@$#
 #ifdef _CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES
@@ -21,7 +19,7 @@
 #define _CRT_SECURE_NO_DEPRECATE 
 
 //Basic types :)
-#include "basic_types.h"
+//#include "basic_types.h"
 #include <vector>
 #include <string>
 using namespace std;
@@ -157,9 +155,20 @@ using namespace std;
 #define _X_x_X_MMU_VER_STR L""
 #endif
 
-#define VER_EMUNAME		_T("nullDC")
-#define VER_FULLNAME	VER_EMUNAME L" v1.0.0 beta 1.6" _X_x_X_MMU_VER_STR L" (built " _T(__DATE__) L"@" _T(__TIME__) L")"
-#define VER_SHORTNAME	VER_EMUNAME L" 1.0.0b1.6" _X_x_X_MMU_VER_STR
+
+#if DC_PLATFORM==DC_PLATFORM_NORMAL
+	#define VER_EMUNAME		L"nullDC"
+#elif DC_PLATFORM==DC_PLATFORM_DEV_UNIT
+	#define VER_EMUNAME		L"nullDC-DevKit-SET5.21"
+#elif DC_PLATFORM==DC_PLATFORM_NAOMI
+	#define VER_EMUNAME		L"nullDC-Naomi"
+#else
+	#error Unkown target platform
+#endif
+
+
+#define VER_FULLNAME	VER_EMUNAME L" v1.0.0 beta 2" _X_x_X_MMU_VER_STR L" (built " _T(__DATE__) L"@" _T(__TIME__) L")"
+#define VER_SHORTNAME	VER_EMUNAME L" 1.0.0b2" _X_x_X_MMU_VER_STR
 
 #define dbgbreak __asm {int 3}
 
@@ -228,7 +237,3 @@ extern __settings settings;
 void LoadSettings();
 void SaveSettings();
 u32 GetRTC_now();
-
-#define EXPORT_CALL __stdcall
-#define FASTCALL __fastcall
-#define C_CALL __cdecl

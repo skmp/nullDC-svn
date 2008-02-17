@@ -575,8 +575,8 @@ class cThread
 private:
 	ThreadEntryFP* Entry;
 	void* param;
-	THREADHANDLE hThread;
 public :
+	THREADHANDLE hThread;
 	cThread(ThreadEntryFP* function,void* param);
 	~cThread();
 	//Simple thread functions
