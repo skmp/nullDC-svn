@@ -63,8 +63,8 @@ u32 mask_write=0;
 void write_BSC_PCTRA(u32 data)
 {
 	#ifdef BUILD_NAOMI
-		NaomiBoardIDWriteControl(data);
-	#endif
+		NaomiBoardIDWriteControl((u16)data);
+	#else
 	//printf("C:BSC_PCTRA = %08X\n",data);
 
 	mask_read=0;
@@ -97,53 +97,63 @@ void write_BSC_PCTRA(u32 data)
 	BSC_PCTRA.full=data;
 	vreg_2&=~mask_write;
 	vreg_2|=BSC_PDTRA.full&mask_write;
+	
+	#endif
 }
 //u32 port_out_data;
 void write_BSC_PDTRA(u32 data)
 {
-	BSC_PDTRA.full=data;
+	BSC_PDTRA.full=(u16)data;
 	//printf("D:BSC_PDTRA = %08X\n",data);
 
 	vreg_2&=~mask_write;
 	vreg_2|=BSC_PDTRA.full&mask_write;
 
 	#ifdef BUILD_NAOMI
-		NaomiBoardIDWrite(data);
+		NaomiBoardIDWrite((u16)data);
 	#endif
 }
 u32 read_BSC_PDTRA()
 {
 	#ifdef BUILD_NAOMI
+
 		return NaomiBoardIDRead();
-	#endif
-	/* chankast */
-	u32 tpctra = BSC_PCTRA.full;
-	u32 tpdtra = BSC_PDTRA.full;
+
+	#else
 	
-	u32 tfinal=0;
-	// magic values
-	if ((tpctra&0xf) == 0x8)		//if bit 1 is input , and not pulled up , set bit 0 (input , puled up)(hack ?)
-		tfinal = 3;
-	else if ((tpctra&0xf) == 0xB)   //bit 1 : input , npu , bit 0 : output , npu , set bit 0 (?)
-		tfinal = 3;				//this preserves tpdtra value
-	else			
-		tfinal = 0;				//huh ?
+		/* chankast */
+		u32 tpctra = BSC_PCTRA.full;
+		u32 tpdtra = BSC_PDTRA.full;
+		
+		u32 tfinal=0;
+		// magic values
+		if ((tpctra&0xf) == 0x8)		//if bit 1 is input , and not pulled up , set bit 0 (input , puled up)(hack ?)
+			tfinal = 3;
+		else if ((tpctra&0xf) == 0xB)   //bit 1 : input , npu , bit 0 : output , npu , set bit 0 (?)
+			tfinal = 3;				//this preserves tpdtra value
+		else			
+			tfinal = 0;				//huh ?
 
 
-	//bit 1 : input , npu , bit 0 : output , npu
-	//if writen to bit 1 was '1' then return 0 (o.O ?)
-	if ((tpctra&0xf) == 0xB && (tpdtra&0xf) == 2)
-		tfinal = 0;
-	else if ((tpctra&0xf) == 0xC && (tpdtra&0xf) == 2)
-		tfinal = 3;      
+		//bit 1 : input , npu , bit 0 : output , npu
+		//if writen to bit 1 was '1' then return 0 (o.O ?)
+		if ((tpctra&0xf) == 0xB && (tpdtra&0xf) == 2)
+			tfinal = 0;
+		else if ((tpctra&0xf) == 0xC && (tpdtra&0xf) == 2)
+			tfinal = 3;      
 
-	tfinal |= settings.dreamcast.cable <<8;  
-/*
-	if (tpctra == 0x0)
-		tfinal| = 3<<8;  
-*/
+		tfinal |= settings.dreamcast.cable <<8;  
+	/*
+		if (tpctra == 0x0)
+			tfinal| = 3<<8;  
+	*/
 
-	return tfinal;
+		return tfinal;
+
+	#endif
+
+	/**
+
 	//printf("-Sett : %08X Data : %08X\n",tpctra,tpdtra);	
 	printf("-Sett : %08X Data : %08X\n",tpctra,tfinal);	
 
@@ -161,6 +171,8 @@ u32 read_BSC_PDTRA()
 	printf("+Sett : %08X Data : %08X\n",tpctra,rv);
 	printf("+Read : %08X Presrve : %08X Pull UP : %08X\n",mask_read,mask_write,mask_pull_up);
 	return rv;
+
+	*/
 }
 u32 read_BSC_PDTRB()
 {
@@ -295,26 +307,26 @@ void bsc_Reset(bool Manual)
 #ifndef BUILD_NAOMI
 	BSC_RFCR.full = 17;
 #endif
-/*
-BSC BCR1 H'FF80 0000 H'1F80 0000 32 H'0000 0000*2 Held Held Held Bclk
-BSC BCR2 H'FF80 0004 H'1F80 0004 16 H'3FFC*2 Held Held Held Bclk
-BSC WCR1 H'FF80 0008 H'1F80 0008 32 H'7777 7777 Held Held Held Bclk
-BSC WCR2 H'FF80 000C H'1F80 000C 32 H'FFFE EFFF Held Held Held Bclk
-BSC WCR3 H'FF80 0010 H'1F80 0010 32 H'0777 7777 Held Held Held Bclk
+	/*
+	BSC BCR1 H'FF80 0000 H'1F80 0000 32 H'0000 0000*2 Held Held Held Bclk
+	BSC BCR2 H'FF80 0004 H'1F80 0004 16 H'3FFC*2 Held Held Held Bclk
+	BSC WCR1 H'FF80 0008 H'1F80 0008 32 H'7777 7777 Held Held Held Bclk
+	BSC WCR2 H'FF80 000C H'1F80 000C 32 H'FFFE EFFF Held Held Held Bclk
+	BSC WCR3 H'FF80 0010 H'1F80 0010 32 H'0777 7777 Held Held Held Bclk
 
-BSC MCR H'FF80 0014 H'1F80 0014 32 H'0000 0000 Held Held Held Bclk
-BSC PCR H'FF80 0018 H'1F80 0018 16 H'0000 Held Held Held Bclk
-BSC RTCSR H'FF80 001C H'1F80 001C 16 H'0000 Held Held Held Bclk
-BSC RTCNT H'FF80 0020 H'1F80 0020 16 H'0000 Held Held Held Bclk
-BSC RTCOR H'FF80 0024 H'1F80 0024 16 H'0000 Held Held Held Bclk
-BSC RFCR H'FF80 0028 H'1F80 0028 16 H'0000 Held Held Held Bclk
-BSC PCTRA H'FF80 002C H'1F80 002C 32 H'0000 0000 Held Held Held Bclk
-BSC PDTRA H'FF80 0030 H'1F80 0030 16 Undefined Held Held Held Bclk
-BSC PCTRB H'FF80 0040 H'1F80 0040 32 H'0000 0000 Held Held Held Bclk
-BSC PDTRB H'FF80 0044 H'1F80 0044 16 Undefined Held Held Held Bclk
-BSC GPIOIC H'FF80 0048 H'1F80 0048 16 H'0000 0000 Held Held Held Bclk
-BSC SDMR2 H'FF90 xxxx H'1F90 xxxx 8 Write-only Bclk
-BSC SDMR3 H'FF94 xxxx H'1F94 xxxx 8 Bclk
+	BSC MCR H'FF80 0014 H'1F80 0014 32 H'0000 0000 Held Held Held Bclk
+	BSC PCR H'FF80 0018 H'1F80 0018 16 H'0000 Held Held Held Bclk
+	BSC RTCSR H'FF80 001C H'1F80 001C 16 H'0000 Held Held Held Bclk
+	BSC RTCNT H'FF80 0020 H'1F80 0020 16 H'0000 Held Held Held Bclk
+	BSC RTCOR H'FF80 0024 H'1F80 0024 16 H'0000 Held Held Held Bclk
+	BSC RFCR H'FF80 0028 H'1F80 0028 16 H'0000 Held Held Held Bclk
+	BSC PCTRA H'FF80 002C H'1F80 002C 32 H'0000 0000 Held Held Held Bclk
+	BSC PDTRA H'FF80 0030 H'1F80 0030 16 Undefined Held Held Held Bclk
+	BSC PCTRB H'FF80 0040 H'1F80 0040 32 H'0000 0000 Held Held Held Bclk
+	BSC PDTRB H'FF80 0044 H'1F80 0044 16 Undefined Held Held Held Bclk
+	BSC GPIOIC H'FF80 0048 H'1F80 0048 16 H'0000 0000 Held Held Held Bclk
+	BSC SDMR2 H'FF90 xxxx H'1F90 xxxx 8 Write-only Bclk
+	BSC SDMR3 H'FF94 xxxx H'1F94 xxxx 8 Bclk
 	*/
 	BSC_BCR1.full=0x0;
 	BSC_BCR2.full=0x3FFC;
