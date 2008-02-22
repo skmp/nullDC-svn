@@ -88,10 +88,10 @@ u32 AICA_GenerateSamples(u32 sh4_cycles)
 		mixr = 0;
 		AICA_Sample();
 
-		if (((s16)mixl) != mixl)
-			printf("Cliped mixl %d\n",mixl);
-		if (((s16)mixr) != mixr)
-			printf("Cliped mixr %d\n",mixr);
+		//if (((s16)mixl) != mixl)
+		//	printf("Cliped mixl %d\n",mixl);
+		//if (((s16)mixr) != mixr)
+		//	printf("Cliped mixr %d\n",mixr);
 
 		clip16(mixl);
 		clip16(mixr);
@@ -817,7 +817,7 @@ void sgc_Init()
 	for (u32 i=0;i<16;i++)
 	{
 		//volume_lut[i]=(pow(10,-3.0*(0xF-(double)i)/20.0))*pow(2.0,12.0);
-		volume_lut[i]=(s32)(dbToval(-3.0*(0xF-(double)i))*(1<<15));
+		volume_lut[i]=(s32)(dbToval(-3.010299956*(0xF-(double)i))*(1<<15));
 		//volume_lut[i]=i;
 		if (i==0)
 			volume_lut[i]=0;
@@ -828,35 +828,35 @@ void sgc_Init()
 		
 		if (i & (1<<0))
 		{
-			db-=0.4;
+			db-=0.3762874946;
 		}
 		if (i & (1<<1))
 		{
-			db-=0.8;
+			db-=0.7525749891;
 		}
 		if (i & (1<<2))
 		{
-			db-=1.5;
+			db-=1.505149978;
 		}
 		if (i & (1<<3))
 		{
-			db-=3;
+			db-=3.010299956;
 		}
 		if (i & (1<<4))
 		{
-			db-=6;
+			db-= 6.020599913;//?
 		}
 		if (i & (1<<5))
 		{
-			db-=12;
+			db-=12.04119983;//?
 		}
 		if (i & (1<<6))
 		{
-			db-=24;
+			db-= 24.08239965;//?
 		}
 		if (i & (1<<7))
 		{
-			db-=48;
+			db-=48.16479931;//?
 		}
 		
 		tl_lut[i]=(s32)(dbToval(db)*(1<<15));
@@ -966,7 +966,7 @@ void AICA_Sample()
 	mixr=(s32)FPMul((s64)mixr,val,15);					
 
 
-	if (!CommonData->DAC18B)
+	if (CommonData->DAC18B)
 	{
 		//If 18 bit output , make it 16b :p
 		mixl=FPRound(mixl,2);
