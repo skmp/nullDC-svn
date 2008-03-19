@@ -79,9 +79,7 @@ namespace SWRenderer
 		ConvertBuffer<2,1>,
 		ConvertBuffer<3,1> 
 	};
-#define VRAM_SIZE (0x00800000)
 
-#define VRAM_MASK (VRAM_SIZE-1)
 	//Convert offset32 to offset64
 	u32 vramlock_ConvOffset32toOffset64(u32 offset32)
 	{
@@ -107,7 +105,7 @@ namespace SWRenderer
 return;
 		//SetWindowPos(SdlWnd,0,0,640,480,0,SWP_NOZORDER);	 
 		//FB_R_CTRL & 0x1000000
-		u32* fba=(u32*)&params.vram[vramlock_ConvOffset32toOffset64(FB_R_SOF1 & 0x7FFFFF)];
+		u32* fba=(u32*)&params.vram[vramlock_ConvOffset32toOffset64(FB_R_SOF1 & VRAM_MASK)];
 
 		u32 mode=FB_R_CTRL.fb_depth;
 		u32 sz=(640+640*(mode>>1))*2;
@@ -236,7 +234,7 @@ return;
 		FrameCount++;
 
 		//Render frame
-		u16* fba=(u16*)&params.vram[vramlock_ConvOffset32toOffset64(FB_R_SOF1 & 0x7FFFFF)];
+		u16* fba=(u16*)&params.vram[vramlock_ConvOffset32toOffset64(FB_R_SOF1 & VRAM_MASK)];
 
 		if (vertlist.used<3)
 			return;
