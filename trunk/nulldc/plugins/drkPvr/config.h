@@ -2,7 +2,6 @@
 #define OP_OFF 2
 
 //TA stuff
-#define TA_SQ_CACHE OP_OFF
 
 //Rendering stuff :)
 #define REND_D3D  1
