@@ -34,15 +34,15 @@ bool dosort=false;
 	#define VB_CREATE_FLAGS D3DUSAGE_SOFTWAREPROCESSING
 #endif
 */
-#define VRAM_MASK 0x7FFFFF
+
 //Convert offset32 to offset64
 u32 vramlock_ConvOffset32toOffset64(u32 offset32)
 {
 		//64b wide bus is archevied by interleaving the banks every 32 bits
 		//so bank is Address<<3
 		//bits <4 are <<1 to create space for bank num
-		//bank 1 is mapped at 400000 (32b offset) and after
-		u32 bank=((offset32>>22)&0x1)<<2;//bank will be used ass uper offset too
+		//bank 0 is mapped at 400000 (32b offset) and after
+		u32 bank=((offset32>>22)&0x1)<<2;//bank will be used as uper offset too
 		u32 lv=offset32&0x3; //these will survive
 		offset32<<=1;
 		//       |inbank offset    |       bank id        | lower 2 bits (not changed)
@@ -58,7 +58,9 @@ namespace Direct3DRenderer
 	IDirect3DVertexBuffer9* vb;
 	IDirect3DVertexShader9* compiled_vs;
 	IDirect3DPixelShader9* compiled_ps[384]={0};
-	IDirect3DPixelShader9* nullPixelShader=0;
+	IDirect3DPixelShader9* ShadeColPixelShader=0;
+	IDirect3DPixelShader9* ZPixelShader=0;
+	
 	IDirect3DTexture9* pal_texture=0;
 	IDirect3DTexture9* rtt_texture=0;
 	u32 rtt_address=0;
@@ -85,6 +87,15 @@ namespace Direct3DRenderer
 	wchar fps_text[512];
 	float res_scale[4]={0,0,320,-240};
 	float fb_scale[2]={1,1};
+
+	u32 ZBufferCF=D3DCLEAR_STENCIL | D3DCLEAR_ZBUFFER;
+	u32 ZBufferMode=0;
+	const char* ZBufferModeName[]=
+	{
+		"Float Z Buffering (D24FS8)",
+		"Float Z Buffering Emulation (D24S8+FPE)",
+		"Fixed Point Z Buffering (D24S8)",
+	};
 
 	//x=emulation mode
 	//y=filter mode
@@ -183,12 +194,12 @@ namespace Direct3DRenderer
 
 
 		D3DCMP_NEVER,				//0	Never
-		D3DCMP_GREATER/*EQUAL*/,	//1	Less
+		D3DCMP_LESS/*EQUAL*/,		//1	Less
 		D3DCMP_EQUAL,				//2	Equal
-		D3DCMP_GREATEREQUAL,		//3	Less Or Equal
-		D3DCMP_LESS/*EQUAL*/,		//4	Greater
+		D3DCMP_LESSEQUAL,			//3	Less Or Equal
+		D3DCMP_GREATER/*EQUAL*/,	//4	Greater
 		D3DCMP_NOTEQUAL,			//5	Not Equal
-		D3DCMP_LESSEQUAL,			//6	Greater Or Equal
+		D3DCMP_GREATEREQUAL,		//6	Greater Or Equal
 		D3DCMP_ALWAYS,				//7	Always
 
 	};
@@ -369,7 +380,7 @@ namespace Direct3DRenderer
 			Updates++;
 			dirty=false;
 
-			u32 sa=(tcw.NO_PAL.TexAddr<<3) & 0x7FFFFF;
+			u32 sa=(tcw.NO_PAL.TexAddr<<3) & VRAM_MASK;
 
 			if (Texture==0)
 			{
@@ -507,20 +518,20 @@ namespace Direct3DRenderer
 			//PrintTextureName();
 			if (!lock_block)
 				lock_list.push_back(this);
-			/*
+			
 			char file[512];
-
-			sprintf(file,"d:\\textures\\0x%x_%d_%s_VQ%d_TW%d_MM%d_.jpg",Start,Lookups,texFormatName[tcw.NO_PAL.PixelFmt]
+/*
+			sprintf(file,"g:\\textures\\0x%08x_%08x_%s_%d_VQ%d_TW%d_MM%d_.jpg",tcw.full,tsp.full,texFormatName[tcw.NO_PAL.PixelFmt],Lookups
 			,tcw.NO_PAL.VQ_Comp,tcw.NO_PAL.ScanOrder,tcw.NO_PAL.MipMapped);
 			D3DXSaveTextureToFileA( file,D3DXIFF_JPG,Texture,0);*/
 		}
 		void LockVram()
 		{
-			u32 sa=(tcw.NO_PAL.TexAddr<<3) & 0x7FFFFF;
+			u32 sa=(tcw.NO_PAL.TexAddr<<3) & VRAM_MASK;
 			u32 ea=sa+w*h*2;
-			if (ea>=(8*1024*1024))
+			if (ea>VRAM_MASK)
 			{
-				ea=(8*1024*1024)-1;
+				ea=VRAM_MASK;
 			}
 			lock_block = params.vram_lock_64(sa,ea,this);
 		}
@@ -555,7 +566,7 @@ namespace Direct3DRenderer
 
 	IDirect3DTexture9* __fastcall GetTexture(TSP tsp,TCW tcw)
 	{	
-		u32 addr=(tcw.NO_PAL.TexAddr<<3) & 0x7FFFFF;
+		u32 addr=(tcw.NO_PAL.TexAddr<<3) & VRAM_MASK;
 		if (addr==rtt_address)
 		{
 			rtt_FrameNumber=FrameNumber;
@@ -699,6 +710,17 @@ namespace Direct3DRenderer
 
 	static Vertex* vert_reappend;
 
+	union ISP_Modvol
+	{
+		struct
+		{
+			u32 id:26;
+			u32 VolumeLast:1;
+			u32	CullMode	: 2;
+			u32	DepthMode	: 3;
+		};
+		u32 full;
+	};
 	//vertex lists
 	struct TA_context
 	{
@@ -708,7 +730,7 @@ namespace Direct3DRenderer
 		f32 invW_max;
 		List2<Vertex> verts;
 		List<ModTriangle>	modtrig;
-		List<u32>			modsz;
+		List<ISP_Modvol>	global_param_mvo;
 
 		List<PolyParam> global_param_op;
 		List<PolyParam> global_param_pt;
@@ -719,9 +741,10 @@ namespace Direct3DRenderer
 			verts.Init();
 			global_param_op.Init();
 			global_param_pt.Init();
+			global_param_mvo.Init();
 			global_param_tr.Init();
+
 			modtrig.Init();
-			modsz.Init();
 		}
 		void Clear()
 		{
@@ -730,7 +753,7 @@ namespace Direct3DRenderer
 			global_param_pt.Clear();
 			global_param_tr.Clear();
 			modtrig.Clear();
-			modsz.Clear();
+			global_param_mvo.Clear();
 			invW_min= 1000000.0f;
 			invW_max=-1000000.0f;
 		}
@@ -741,7 +764,7 @@ namespace Direct3DRenderer
 			global_param_pt.Free();
 			global_param_tr.Free();
 			modtrig.Free();
-			modsz.Free();
+			global_param_mvo.Free();
 		}
 	};
 	
@@ -817,6 +840,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 	}
 	void fastcall SetCurrentTARC(u32 addr)
 	{
+		addr&=0xF00000;
 		//return;
 		//printf("SetCurrentTARC:0x%X\n",addr);
 		if (addr==tarc.Address)
@@ -844,8 +868,9 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 	}
 	void fastcall SetCurrentPVRRC(u32 addr)
 	{
+		addr&=0xF00000;
 		//return;
-	//	printf("SetCurrentPVRRC:0x%X\n",addr);
+		//printf("SetCurrentPVRRC:0x%X\n",addr);
 		if (addr==tarc.Address)
 		{
 			memcpy(&pvrrc,&tarc,sizeof(TA_context));
@@ -1042,8 +1067,8 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 	#define idx_pp_ShadInstr 2
 	#define idx_pp_IgnoreTexA 3
 	#define idx_pp_UseAlpha 4
-	#define idx_pp_proj2Dtex 5
-	#define idx_pp_TextureLookup 6
+	#define idx_pp_TextureLookup 5
+	#define idx_ZBufferMode 6
 
 	D3DXMACRO ps_macros[]=
 	{
@@ -1052,8 +1077,8 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		{"pp_ShadInstr",0},
 		{"pp_IgnoreTexA",0},
 		{"pp_UseAlpha",0},
-		{"proj2Dtex",0},	//Shader profile version , just defined , no value :)
 		{"TextureLookup",0},	//use shader to emulate pals
+		{"ZBufferMode",0},		//Z mode. 0 -> D24FS8, 1 -> D24S8 + FPemu, 2 -> D24S8 + scaling
 		{0,0}	//end of list
 	};
 	// -> function to do projected lookup
@@ -1071,11 +1096,6 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		"TextureLookup_Palette",
 		"TextureLookup_Palette_Bilinear",
 	};
-	char* ps_macro_proj2Dtex[]=
-	{
-		"tex2D",
-		"tex2Dproj",
-	};
 
 	void CompilePS(u32 mode,const char* profile)
 	{
@@ -1087,7 +1107,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		ID3DXConstantTable* consts;
 
 		D3DXCompileShaderFromFileA("ps_hlsl.fx"
-			,ps_macros,NULL,"PixelShader_main",profile,NULL,&shader,&perr,&consts);
+			,ps_macros,NULL,"PixelShader_main",profile,D3DXSHADER_DEBUG,&shader,&perr,&consts);
 		if (perr)
 		{
 			char* text=(char*)perr->GetBufferPointer();
@@ -1105,15 +1125,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		strcpy(temp,D3DXGetPixelShaderProfile(dev));
 		//printf(&temp[3]);
 
-		//Old shaders don't have tex2DProj
-		if (strcmp(temp,"ps_1_3")==0 || 
-			strcmp(temp,"ps_1_2")==0 ||
-			strcmp(temp,"ps_1_1")==0 ||
-			strcmp(temp,"ps_1_0")==0 
-			)
-			ps_macros[idx_pp_proj2Dtex].Definition=ps_macro_proj2Dtex[0];
-		else
-			ps_macros[idx_pp_proj2Dtex].Definition=ps_macro_proj2Dtex[1];
+		ps_macros[idx_ZBufferMode].Definition=ps_macro_numers[ZBufferMode];
 
 		const char * profile=D3DXGetPixelShaderProfile(dev);
 
@@ -1540,10 +1552,10 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 	void DrawOSD()
 	{
 		//dev->SetRenderState(D3DRS_ZFUNC,D3DCMP_ALWAYS);
-		dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-		dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
+		dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+		dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 		dev->SetRenderState(D3DRS_ALPHABLENDENABLE,TRUE);
-		/*
+		
 		dev->SetRenderState( D3DRS_ALPHATESTENABLE,  TRUE );
 		dev->SetRenderState( D3DRS_ALPHAREF,         0x08 );
 		dev->SetRenderState( D3DRS_ALPHAFUNC,  D3DCMP_GREATEREQUAL );
@@ -1558,13 +1570,32 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		dev->SetRenderState( D3DRS_COLORWRITEENABLE,
 		D3DCOLORWRITEENABLE_RED  | D3DCOLORWRITEENABLE_GREEN |
 		D3DCOLORWRITEENABLE_BLUE | D3DCOLORWRITEENABLE_ALPHA );
-		*/
+
+		dev->SetRenderState( D3DRS_ZENABLE,FALSE);
+		
 		if (settings.OSD.ShowFPS)
 		{
 			DrawFPS();
 		}
 		if (settings.OSD.ShowStats)
 		{
+			wchar text[512];
+			wchar* cpath_vs[2]={L"H/W VS1.1+",L"Emulated VS3"};
+			wchar* cpath_ps[2]={L"PS2+",L"Fixed-Function"};
+
+			wsprintf(text,
+				L"Config : %s;%s" L"\n"
+				L"Texture Cache : %d textures" L"\n",cpath_vs[UseSVP],cpath_ps[UseFixedFunction],TexCache.textures);
+			RECT rct;
+			rct.left=2;
+			rct.right=780;
+			rct.top=30;
+			rct.bottom=rct.top+300;
+
+			//font->
+			// Draw some text
+			//i need to set a new PS/FP state here .. meh ...
+			font->DrawText(NULL, text, -1, &rct, 0, D3DCOLOR_ARGB(255,0x38,0x4F,0x88)  );
 		}
 	}
 	//
@@ -1589,6 +1620,57 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		}
 		pal_texture->UnlockRect(0);
 	}
+	void SetMVS_Mode(u32 mv_mode,ISP_Modvol ispc)
+	{
+		if (mv_mode==0)	//normal trigs
+		{
+			//set states
+			verifyc(dev->SetRenderState(D3DRS_ZENABLE,TRUE));
+			verifyc(dev->SetRenderState(D3DRS_STENCILWRITEMASK,2));	//write bit 1
+			verifyc(dev->SetRenderState(D3DRS_STENCILFUNC,D3DCMP_ALWAYS));	//allways pass
+			verifyc(dev->SetRenderState(D3DRS_STENCILPASS,D3DSTENCILOP_INVERT));	//flip bit 1
+			verifyc(dev->SetRenderState(D3DRS_STENCILZFAIL,D3DSTENCILOP_KEEP));		//else keep it
+			dev->SetRenderState(D3DRS_CULLMODE,CullMode[ispc.CullMode]); //-> needs to be properly set
+		}
+		else
+		{
+			//1 (last in) or 2 (last out)
+			//each trinagle forms the last of a volume
+			if (mv_mode==1)
+			{
+				//res : old : final 
+				//0   : 0      : 00
+				//0   : 1      : 01
+				//1   : 0      : 01
+				//1   : 1      : 01
+
+				//if !=0 -> set to 10
+				verifyc(dev->SetRenderState(D3DRS_STENCILFUNC,D3DCMP_LESSEQUAL));	//if (st>=1) st=1; else st=0;
+				verifyc(dev->SetRenderState(D3DRS_STENCILREF,1));					
+				verifyc(dev->SetRenderState(D3DRS_STENCILPASS,D3DSTENCILOP_REPLACE));
+				verifyc(dev->SetRenderState(D3DRS_STENCILFAIL,D3DSTENCILOP_ZERO));
+			}
+			else
+			{
+				die ("HAHA\n");
+				//res : old : final 
+				//0   : 0   : 00
+				//0   : 1   : 00
+				//1   : 0   : 00
+				//1   : 1   : 01
+
+				verifyc(dev->SetRenderState(D3DRS_STENCILFUNC,D3DCMP_GREATER));			//if (st>2) then st=1; else st=0
+				verifyc(dev->SetRenderState(D3DRS_STENCILREF,2));						
+				verifyc(dev->SetRenderState(D3DRS_STENCILPASS,D3DSTENCILOP_REPLACE));
+				verifyc(dev->SetRenderState(D3DRS_STENCILFAIL,D3DSTENCILOP_ZERO));
+			}
+
+			//common states :)
+			verifyc(dev->SetRenderState(D3DRS_ZENABLE,FALSE));	//no Z testing, we just want to sum up all of the modvol area ...
+			verifyc(dev->SetRenderState(D3DRS_STENCILWRITEMASK,3));	//write 2 lower bits
+			verifyc(dev->SetRenderState(D3DRS_STENCILMASK,3));		//read 2 lower ones
+		}
+	}
 	//
 	void DoRender()
 	{
@@ -1604,7 +1686,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		if (rtt)
 		{
 			rtt_FrameNumber=FrameNumber;
-			rtt_address=FB_W_SOF1&0x7FFFFF;
+			rtt_address=FB_W_SOF1&VRAM_MASK;
 			verifyc(dev->SetRenderTarget(0,rtt_surf));
 		}
 
@@ -1614,11 +1696,11 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		dev->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE); 
 		if (rtt || clear_rt==0)
 		{
-			verifyc(dev->Clear( 0, NULL, D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL , D3DCOLOR_XRGB(0,0,0), 1.0f, 0 ));
+			verifyc(dev->Clear( 0, NULL, ZBufferCF  , D3DCOLOR_XRGB(0,0,0), 0.0f, 0 ));
 		}
 		else
 		{
-			verifyc(dev->Clear( 0, NULL, D3DCLEAR_TARGET |D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL , D3DCOLOR_XRGB(0,0,0), 1.0f, 0 ));
+			verifyc(dev->Clear( 0, NULL, D3DCLEAR_TARGET | ZBufferCF , D3DCOLOR_XRGB(0,0,0), 0.0f, 0 ));
 			if(clear_rt)
 				clear_rt--;
 		}
@@ -1769,20 +1851,25 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 
 			
 			//OP mod vols
-			if (settings.Emulation.ModVolMode!=0 && pvrrc.modsz.used>0)
+			if (settings.Emulation.ModVolMode!=0 && pvrrc.modtrig.used>0)
 			{
-				//!GetAsyncKeyState(VK_F4)
-				if(settings.Emulation.ModVolMode==1)
+				if(ZBufferCF & D3DCLEAR_STENCIL && settings.Emulation.ModVolMode==1)
 				{
-					dev->SetRenderState(D3DRS_ALPHABLENDENABLE,FALSE);
+					/*
+					mode :
+					normal trig : flip
+					last *in*   : flip, merge*in* &clear from last merge
+					last *out*  : flip, merge*out* &clear from last merge
+					*/
+					dev->SetRenderState(D3DRS_ALPHABLENDENABLE,TRUE); //->BUG on nvdrivers (163 && 169 tested so far)
 					dev->SetRenderState(D3DRS_ALPHATESTENABLE,FALSE);
 					dev->SetRenderState(D3DRS_COLORWRITEENABLE,0);
 
 					dev->SetRenderState(D3DRS_ZWRITEENABLE,FALSE);
-					verifyc(dev->SetRenderState(D3DRS_ZFUNC,D3DCMP_LESS));
-					dev->SetRenderState(D3DRS_CULLMODE,D3DCULL_NONE); //-> needs to be properly set
+					verifyc(dev->SetRenderState(D3DRS_ZFUNC,D3DCMP_GREATER));
+					
 
-					verifyc(dev->SetPixelShader(nullPixelShader));
+					verifyc(dev->SetPixelShader(ZPixelShader));
 					verifyc(dev->SetRenderState(D3DRS_STENCILENABLE,TRUE));
 
 					//we WANT stencil to have all 1's here for bit 1
@@ -1800,40 +1887,56 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 					*/
 					//set correct declaration
 					verifyc(dev->SetVertexDeclaration(vdecl_mod));
-					u32 mod_base=0;
 
-					for (int cmv=0;cmv<pvrrc.modsz.used;cmv++)
+					u32 mod_base=0;	//cur base
+					u32 mod_last=0; //last merge
+
+					u32 cmv_count=(pvrrc.global_param_mvo.used-1);
+					//ISP_Modvol
+					for (u32 cmv=0;cmv<cmv_count;cmv++)
 					{
-						u32 sz=pvrrc.modsz.data[cmv];
+						u32 sz=pvrrc.global_param_mvo.data[cmv+1].id;
+						
+						ISP_Modvol ispc=pvrrc.global_param_mvo.data[cmv];
+						mod_base=ispc.id;
+						sz-=mod_base;
+						
+						u32 mv_mode = ispc.DepthMode;
+						
 						//We read from Z buffer, but dont write :)
 						verifyc(dev->SetRenderState(D3DRS_ZENABLE,TRUE));
 						//enable stenciling, and set bit 1 for mod vols that dont pass the Z test as closed ones (not even count of em)
 
 
-						verifyc(dev->SetRenderState(D3DRS_STENCILWRITEMASK,2));	//write bit 1
-						verifyc(dev->SetRenderState(D3DRS_STENCILFUNC,D3DCMP_ALWAYS));	//allways pass
-						verifyc(dev->SetRenderState(D3DRS_STENCILPASS,D3DSTENCILOP_INVERT));	//flip bit 1
-						verifyc(dev->SetRenderState(D3DRS_STENCILZFAIL,D3DSTENCILOP_KEEP));		//else keep it
-
-						//render volume (count intersections)
-						if ((mod_base+sz)<pvrrc.modtrig.used)
+						if (mv_mode==0)	//normal trigs
+						{
+							SetMVS_Mode(0,ispc);
+							//Render em (counts intersections)
 							verifyc(dev->DrawPrimitiveUP(D3DPT_TRIANGLELIST,sz,pvrrc.modtrig.data+mod_base,3*4));
+						}
+						else if (mv_mode<3)
+						{
+							while(sz)
+							{
+								//merge and clear all the prev. stencil bits
+								
+								//Count Intersections (last poly)
+								SetMVS_Mode(0,ispc);
+								verifyc(dev->DrawPrimitiveUP(D3DPT_TRIANGLELIST,1,pvrrc.modtrig.data+mod_base,3*4));
+								//Sum the area
+								SetMVS_Mode(mv_mode,ispc);
+								verifyc(dev->DrawPrimitiveUP(D3DPT_TRIANGLELIST,mod_base-mod_last+1,pvrrc.modtrig.data+mod_last,3*4));
 
-						//render volume (set bit 0/clear bit 1)
-
-						verifyc(dev->SetRenderState(D3DRS_ZENABLE,FALSE));	//no Z testing, we just want to sum up all of the modvol area ...
-
-						verifyc(dev->SetRenderState(D3DRS_STENCILWRITEMASK,3));	//write 2 lower bits
-						verifyc(dev->SetRenderState(D3DRS_STENCILMASK,3));		//read 2 lower ones
-
-						verifyc(dev->SetRenderState(D3DRS_STENCILFUNC,D3DCMP_LESSEQUAL));	//if any bit is set, set bit 0 and clear 1
-						verifyc(dev->SetRenderState(D3DRS_STENCILREF,1));						//if (st>=1) st=1; else st=0;
-						verifyc(dev->SetRenderState(D3DRS_STENCILPASS,D3DSTENCILOP_REPLACE));
-						verifyc(dev->SetRenderState(D3DRS_STENCILFAIL,D3DSTENCILOP_ZERO));
-						if ((mod_base+sz)<pvrrc.modtrig.used)
-							verifyc(dev->DrawPrimitiveUP(D3DPT_TRIANGLELIST,sz,pvrrc.modtrig.data+mod_base,3*4));
-
-						mod_base+=sz;
+								//update pointers
+								mod_last=mod_base+1;
+								sz--;
+								mod_base++;
+							}
+						}
+						else
+						{
+							//die("Not supported mv_mode\n");
+						}
 					}
 
 					//black out any stencil with '1'
@@ -1850,21 +1953,22 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 
 					verifyc(dev->SetRenderState(D3DRS_ZENABLE,FALSE));
 
+					verifyc(dev->SetPixelShader(ShadeColPixelShader));
 					//render a fullscreen quad
 
 					verifyc(dev->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP,2,fsq,3*4));
 
 					verifyc(dev->SetRenderState(D3DRS_STENCILENABLE,FALSE));	//turn stencil off ;)
 				}
-				else
+				else if (settings.Emulation.ModVolMode==2)
 				{
-					verifyc(dev->SetPixelShader(nullPixelShader));
+					verifyc(dev->SetPixelShader(ZPixelShader));
 					dev->SetRenderState(D3DRS_ALPHABLENDENABLE,TRUE);
 					dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
 					dev ->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA); 
 					dev->SetRenderState(D3DRS_ALPHATESTENABLE,FALSE);
 
-					dev->SetRenderState(D3DRS_ZENABLE,FALSE);
+					dev->SetRenderState(D3DRS_ZENABLE,TRUE);
 					dev->SetRenderState(D3DRS_ZWRITEENABLE,FALSE);
 					dev->SetRenderState(D3DRS_CULLMODE,D3DCULL_NONE);
 
@@ -1943,6 +2047,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 	{
 		{"res_x",0},
 		{"res_y",0},
+		{"ZBufferMode",0},		//Z mode. 0 -> D24FS8, 1 -> D24S8 + FPemu, 2 -> D24S8 + scaling
 		{0,0}	//end of list
 	};
 	
@@ -1971,16 +2076,57 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		ppar.hDeviceWindow=(HWND)Hwnd;
 */
 		LoadSettings();
+		
+
+		bool FZB= D3D_OK==d3d9->CheckDeviceFormat(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,D3DFMT_X8B8G8R8,D3DUSAGE_DEPTHSTENCIL,D3DRTYPE_SURFACE,D3DFMT_D24FS8);
+		if (FZB)
+			printf("Device Supports D24FS8\n");
+
+		if (ZBufferMode==0 && !FZB)
+		{
+			printf("Cant use D24FS8, falling back to D24S8+FPE\n");
+			ZBufferMode=1;
+		}
+
+		D3DCAPS9 caps;
+		d3d9->GetDeviceCaps(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,&caps);
+
+		printf("Device caps... VS : %X ; PS : %X\n",caps.VertexShaderVersion,caps.PixelShaderVersion);
+
+		if (caps.VertexShaderVersion<D3DVS_VERSION(1, 0))
+		{
+			UseSVP=true;
+		}
+		if (caps.PixelShaderVersion>=D3DPS_VERSION(2, 0))
+		{
+			UseFixedFunction=false;
+		}
+		else
+		{
+			UseFixedFunction=true;
+		}
+
+		printf("Will use %s\n",ZBufferModeName[ZBufferMode]);
+		printf(UseSVP?"Will use SVP\n":"Will use Vertex Shaders\n");
+
+		if (UseFixedFunction)
+		{
+			if (settings.Emulation.PaletteMode>1)
+			{
+				printf("Palette Mode that needs pixel shaders is selected, but no shaders are avaialbe\nReverting to VPT mode\n");
+				settings.Emulation.PaletteMode=1;
+			}
+			if (ZBufferMode==1)
+			{
+				ZBufferMode=FZB?0:2;
+				printf("Fixed function does not support %s, switching to %s\n",ZBufferModeName[1],ZBufferModeName[ZBufferMode]);
+			}
+		}
+
 		ppar.SwapEffect = D3DSWAPEFFECT_DISCARD;
 
 		ppar.PresentationInterval=D3DPRESENT_INTERVAL_IMMEDIATE;
 
-		ppar.EnableAutoDepthStencil=TRUE;
-		ppar.AutoDepthStencilFormat = D3DFMT_D24S8;
-
-		ppar.MultiSampleType = (D3DMULTISAMPLE_TYPE)settings.Enhancements.MultiSampleCount;
-		ppar.MultiSampleQuality = settings.Enhancements.MultiSampleQuality;
-		
 		if (settings.Fullscreen.Enabled)
 		{
 			GetWindowRect((HWND)emu.GetRenderTarget(),&window_rect);
@@ -2001,36 +2147,17 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			printf("drkpvr: Initialising windowed");
 			IsFullscreen=false;
 		}
-		//ppar.Flags |= D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
 
+		ppar.EnableAutoDepthStencil=TRUE;
+		ppar.AutoDepthStencilFormat = ZBufferMode==0 ? D3DFMT_D24FS8 : D3DFMT_D24S8;
+
+		ppar.MultiSampleType = (D3DMULTISAMPLE_TYPE)settings.Enhancements.MultiSampleCount;
+		ppar.MultiSampleQuality = settings.Enhancements.MultiSampleQuality;
+		
 		printf(" AA:%dx%x\n",ppar.MultiSampleType,ppar.MultiSampleQuality);
 
-		D3DCAPS9 caps;
-		d3d9->GetDeviceCaps(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,&caps);
-
-		printf("Device caps... VS : %X ; PS : %X\n",caps.VertexShaderVersion,caps.PixelShaderVersion);
-
-		if (caps.VertexShaderVersion<D3DVS_VERSION(1, 0))
-		{
-			UseSVP=true;
-		}
-		if (caps.PixelShaderVersion>=D3DPS_VERSION(2, 0))
-		{
-			UseFixedFunction=false;
-		}
-		else
-		{
-			UseFixedFunction=true;
-		}
-
-		printf(UseSVP?"Will use SVP\n":"Will use Vertex Shaders\n");
-
-		if (UseFixedFunction && settings.Emulation.PaletteMode>1)
-		{
-			printf("Palette Mode that needs pixel shaders is selected, but no shaders are avaialbe\nReverting to VPT mode\n");
-			settings.Emulation.PaletteMode=1;
-		}
-
+		//ppar.Flags |= D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
+		
 		if (UseSVP || FAILED(d3d9->CreateDevice(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,(HWND)emu.GetRenderTarget(),/*D3DCREATE_MULTITHREADED|*/
 			D3DCREATE_HARDWARE_VERTEXPROCESSING,&ppar,&dev)))
 		{
@@ -2056,6 +2183,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		sprintf(temp[1],"%d",ppar.BackBufferHeight);
 		vs_macros[0].Definition=temp[0];
 		vs_macros[1].Definition=temp[1];
+		vs_macros[2].Definition=ps_macro_numers[ZBufferMode];
 
 
 		if (ppar.MultiSampleType!=D3DMULTISAMPLE_NONE)
@@ -2071,7 +2199,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		ID3DXBuffer* shader;
 
 
-		verifyc(D3DXCompileShaderFromFileA("vs_hlsl.fx",vs_macros,NULL,"VertexShader_main",vsp , 0, &shader,&perr,&shader_consts));
+		verifyc(D3DXCompileShaderFromFileA("vs_hlsl.fx",vs_macros,NULL,"VertexShader_main",vsp , D3DXSHADER_DEBUG, &shader,&perr,&shader_consts));
 		if (perr)
 		{
 			char* text=(char*)perr->GetBufferPointer();
@@ -2093,13 +2221,26 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			ID3DXConstantTable* consts;
 
 			D3DXCompileShaderFromFileA("ps_hlsl.fx"
-				,ps_macros,NULL,"PixelShader_null",D3DXGetPixelShaderProfile(dev),NULL,&shader,&perr,&consts);
+				,ps_macros,NULL,"PixelShader_Z",D3DXGetPixelShaderProfile(dev),D3DXSHADER_DEBUG,&shader,&perr,&consts);
 			if (perr)
 			{
 				char* text=(char*)perr->GetBufferPointer();
 				printf("%s\n",text);
 			}
-			verifyc(dev->CreatePixelShader((DWORD*)shader->GetBufferPointer(),&nullPixelShader));
+			verifyc(dev->CreatePixelShader((DWORD*)shader->GetBufferPointer(),&ZPixelShader));
+			if (perr)
+				perr->Release();
+			shader->Release();
+			consts->Release();
+
+			D3DXCompileShaderFromFileA("ps_hlsl.fx"
+				,ps_macros,NULL,"PixelShader_ShadeCol",D3DXGetPixelShaderProfile(dev),D3DXSHADER_DEBUG,&shader,&perr,&consts);
+			if (perr)
+			{
+				char* text=(char*)perr->GetBufferPointer();
+				printf("%s\n",text);
+			}
+			verifyc(dev->CreatePixelShader((DWORD*)shader->GetBufferPointer(),&ShadeColPixelShader));
 			if (perr)
 				perr->Release();
 			shader->Release();
@@ -2163,7 +2304,8 @@ nl:
 		for(int i=0;i<384;i++)
 			safe_release(compiled_ps[i]);
 
-		safe_release(nullPixelShader);
+		safe_release(ShadeColPixelShader);
+		safe_release(ZPixelShader);
 		
 		safe_release(bb_surf);
 		safe_release(rtt_surf);
@@ -2287,7 +2429,7 @@ nl:
 		bgpp->first=0;
 		bgpp->tileclip=0;//disabled ! HA ~
 
-		//bgpp->isp.DepthMode=7;// -> this makes things AWFULLY slow .. sometimes
+		bgpp->isp.DepthMode=7;// -> this makes things AWFULLY slow .. sometimes
 
 		//Set some pcw bits .. i should realy get rid of pcw ..
 		bgpp->pcw.UV_16bit=bgpp->isp.UV_16b;
@@ -2335,7 +2477,7 @@ nl:
 			u32 stride=lr.Pitch/4;
 
 			pixel+=stride*FB_Y_CLIP.min;
-			u32 dest=FB_W_SOF1&0x7FFFFF;
+			u32 dest=FB_W_SOF1&VRAM_MASK;
 			u32 pvr_stride=(FB_W_LINESTRIDE&0xFF)*8;
 			for (u32 y=FB_Y_CLIP.min;y<FB_Y_CLIP.max;y++)
 			{
@@ -2416,7 +2558,7 @@ nl:
 
 #ifdef MODVOL
 	ModTriangle* lmr=0;
-	s32 lmr_count=0;
+	//s32 lmr_count=0;
 #endif
 	u32 tileclip_val=0;
 	struct VertexDecoder
@@ -2459,11 +2601,9 @@ nl:
 			CurrentPPlist=0;
 			if (ListType==ListType_Opaque_Modifier_Volume)
 			{
-				if (lmr_count>0)
-				{
-					*tarc.modsz.Append()=lmr_count;
-					lmr_count=0;
-				}
+				ISP_Modvol p;
+				p.id=tarc.modtrig.used;
+				*tarc.global_param_mvo.Append()=p;
 			}
 		}
 
@@ -2662,10 +2802,10 @@ nl:
 #else
 	//Precaclulated intesinty (saves 8 bytes / vertex)
 	#define vert_face_base_color(baseint) \
-		vert_float_color_(cv->col,FaceBaseColor[3]*vtx->baseint,FaceBaseColor[0]*vtx->baseint,FaceBaseColor[1]*vtx->baseint,FaceBaseColor[2]*vtx->baseint);
+		vert_float_color_(cv->col,FaceBaseColor[3]/**vtx->baseint*/,FaceBaseColor[0]*vtx->baseint,FaceBaseColor[1]*vtx->baseint,FaceBaseColor[2]*vtx->baseint);
 
 	#define vert_face_offs_color(offsint) \
-		vert_float_color_(cv->spc,FaceOffsColor[3]*vtx->offsint,FaceOffsColor[0]*vtx->offsint,FaceOffsColor[1]*vtx->offsint,FaceOffsColor[2]*vtx->offsint);	
+		vert_float_color_(cv->spc,FaceOffsColor[3]/**vtx->offsint*/,FaceOffsColor[0]*vtx->offsint,FaceOffsColor[1]*vtx->offsint,FaceOffsColor[2]*vtx->offsint);	
 
 	#define vert_int_no_base()
 	#define vert_int_no_offs()
@@ -3007,6 +3147,15 @@ nl:
 		{
 			if (TileAccel.CurrentList!=ListType_Opaque_Modifier_Volume)
 				return;
+			ISP_Modvol p;
+			p.full=param->isp.full;
+			p.VolumeLast=param->pcw.Volume;
+			p.id=tarc.modtrig.used;
+
+			*tarc.global_param_mvo.Append()=p;
+			/*
+			printf("MOD VOL %d - 0x%08X 0x%08X 0x%08X \n",tarc.modtrig.used,param->pcw.Volume,param->isp.DepthMode,param->isp.CullMode);
+			
 			if (param->pcw.Volume || param->isp.DepthMode)
 			{
 				//if (lmr_count)
@@ -3015,6 +3164,7 @@ nl:
 					lmr_count=-1;
 				//}
 			}
+			*/
 		}
 		__forceinline
 		static void AppendModVolVertexA(TA_ModVolA* mvv)
@@ -3032,7 +3182,7 @@ nl:
 			lmr->z1=mvv->z1;
 			lmr->x2=mvv->x2;
 
-			lmr_count++;
+			//lmr_count++;
 		#endif	
 		}
 		__forceinline

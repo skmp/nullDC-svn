@@ -7,47 +7,35 @@
 //pp_UseAlpha -> 1 if on  0 if off , works when no textures are used too ?
 //
 //misc #defines :
-//proj2Dtex -> function to do projected lookup, either tex2D or tex2Dproj
+//ZBufferMode -> z buffer mode :p
+//ZBufferMode : 0 -> fp fixup (nop)
+//ZBufferMode : 1 -> fp Z emu (emulate fp on matnissa bits)
+//ZBufferMode : 2 -> rescale  (nop)
+
 //TextureLookup -> function to use for texture lookup.One of TextureLookup_Normal,TextureLookup_Palette,TextureLookup_Palette_Bilinear
 struct pixel 
 {
-	float4 col : COLOR0;
+	float4 col : TEXCOORD1;
 	
 	#if pp_Texture==1
 		#if pp_Offset==1
-			float4 offs : COLOR1;
+			float4 offs : TEXCOORD2;
 		#endif
-	
-		float4 uv : TEXCOORD0;
+		//uv is now allways passed
 	#endif
+	
+	float4 uv : TEXCOORD0;
 };
-
+ 
 sampler2D samplr : register(s0);
 sampler2D tex_pal : register(s1);
 
 float4 current_pal: register(c0);
 float4 texture_size: register(c1);
 
-float4 PixelShader_null() : COLOR0
-{
-	return float4(0,0,0,0.5f); 
-}
-
 float4 TextureLookup_Normal(float4 uv)
 {
-		//tex2D -> same as tex2Dproj
-		/*
-		//no longer used, replaces with a #define
-		#if ps_no_tex2D == 1
-			//s.uv.xy/=s.uv.w; //cant do that on 1.1/2/3 so its useless
-			float4 texcol=tex2D( samplr, s.uv); //ps 1.1 , 1.2 and 1.3 use this one.tex2Dproj is not supported on em
-												//and , tex2D lookups take in acount the PROJECTED flag (witch i set)
-		#else
-			float4 texcol=tex2Dproj( samplr, s.uv);	//ps 1.4 and above ingore the Texture lookup flags , but they
-													//have projected lookups ;)
-		#endif
-		*/
-		return proj2Dtex( samplr, uv);
+	return tex2Dproj( samplr, uv);
 }
 
 //utility function for pal. lookups :)
@@ -113,11 +101,29 @@ float4 TextureLookup_Palette_Bilinear(float4 uv)
     
 	return( final );
 }
-
+//compress Z to D{s6e18}S8
+float CompressZ(float w)
+{
+	float x=floor(log2(w));
+	float powx=pow(2,x);
+	x=clamp(x-16,-63,0);	//s6e18, max : 2^16*(2^18-1)/2(^18) , min : 2^-47*(2^18-1)/2(^18)
+	x+=62;					//bias to positive, +1 more is done by the add below.x_max =62,x_min = -1 (63;0)
+	float y=(w/powx);		//mantissa bits, allways in [1..2) range as 0 is not a valid input :)
+	return (x+y)/64.0f;		//Combine and save the exp + mantissa at the mantissa field.Min value is 0 (-1+1), max value is 63 +(2^18-1)/2(^18).
+							//Normalised by 64 so that it falls in the [0..1) range :)
+}
+struct PSO
+{
+	float4 col:COLOR0;
+	#if ZBufferMode==1
+	float  z  :DEPTH;
+	#endif
+};
 //pvr only supports ARGB8888 colors, but they are pre-clamped on the vertex shader (no need to do it here)
-float4 PixelShader_main(in pixel s ) : COLOR0
+PSO PixelShader_main(in pixel s )
 { 
-	float4 color=s.col;
+	float4 color=saturate(s.col/s.uv.w);
+	clip(s.uv.z);
 	
 	#if pp_UseAlpha==0
 		color.a=1;
@@ -158,11 +164,34 @@ float4 PixelShader_main(in pixel s ) : COLOR0
 	
 		//if offset is enabled , add it :)
 		#if pp_Offset==1
-			color.rgb+=s.offs.rgb;
+			color.rgb+=saturate(s.offs.rgb/s.uv.w);
 		#endif
 	#else
 		//we don't realy have anything to do here -- just return the color ...
 	#endif
 	
-	return color; 
+	PSO rv;
+	rv.col=color;
+	#if ZBufferMode==1
+	rv.z=CompressZ(s.uv.w);
+	#endif
+	
+	return rv; 
+}
+
+PSO PixelShader_Z(float4 uv : TEXCOORD0)
+{
+	PSO rv;
+	rv.col=float4(0,0,0,0.5f);
+	
+	#if ZBufferMode==1
+	rv.z=CompressZ(uv.w);
+	#endif
+	
+	return rv;
+}
+
+float4 PixelShader_ShadeCol() :COLOR0
+{
+	return  float4(0,0,0,0.5f);
 }
