@@ -40,7 +40,7 @@ float GetSeconds();
 #define die(reason) { printf("Fatal error : " #reason "\n in %s -> %s : %d \n",__FUNCTION__,__FILE__,__LINE__); dbgbreak;}
 #define fverify verify
 
-#define log(xx) printf(xx " (from "__FUNCTION__ ")\n");
+#define log0(xx) printf(xx " (from "__FUNCTION__ ")\n");
 #define log1(xx,yy) printf(xx " (from "__FUNCTION__ ")\n",yy);
 #define log2(xx,yy,zz) printf(xx " (from "__FUNCTION__ ")\n",yy,zz);
 #define log3(xx,yy,gg) printf(xx " (from "__FUNCTION__ ")\n",yy,zz,gg);
@@ -61,7 +61,7 @@ void SaveSettings();
 	#define REND_NAME L"Direct3D HAL"
 	#define GetRenderer GetDirect3DRenderer
 #elif REND_API == REND_OGL
-	#define REND_NAME L"OpenGL HAL"
+	#define REND_NAME L"OpenGL SM4+ HAL"
 	#define GetRenderer GetOpenGLRenderer
 #elif  REND_API == REND_SW
 	#define REND_NAME L"Software SBR"

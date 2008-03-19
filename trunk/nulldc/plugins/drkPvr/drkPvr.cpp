@@ -86,7 +86,7 @@ public:
 					MenuItem t;
 					emu.GetMenuItem(items[i].id,&t,MIM_Text);
 					wchar temp[512];
-					swprintf(temp,format,items[i].ex_name==0?t.Text:items[i].ex_name);
+					swprintf(temp,512,format,items[i].ex_name==0?t.Text:items[i].ex_name);
 					t.Text=temp;
 					emu.SetMenuItem(root_menu,&t,MIM_Text);
 				}
@@ -284,7 +284,7 @@ s32 FASTCALL Load(emu_info* emu_inf)
 	
 	LoadSettings();
 
-	swprintf(temp,L"Fullscreen(%dx%d@%dHz)",settings.Fullscreen.Res_X,settings.Fullscreen.Res_Y,settings.Fullscreen.Refresh_Rate);
+	swprintf(temp,512,L"Fullscreen(%dx%d@%dHz)",settings.Fullscreen.Res_X,settings.Fullscreen.Res_Y,settings.Fullscreen.Refresh_Rate);
 	u32 Resolutions_menu=emu.AddMenuItem(emu.RootMenu,-1,temp,0,0);
 	
 	AddSeperator(emu.RootMenu);
@@ -313,7 +313,7 @@ s32 FASTCALL Load(emu_info* emu_inf)
 
 		if (sel)
 			sel_any=true;
-		swprintf(temp,L"%dx%d@%dHz",resolutions[rc].w,resolutions[rc].h,resolutions[rc].rr);
+		swprintf(temp,512,L"%dx%d@%dHz",resolutions[rc].w,resolutions[rc].h,resolutions[rc].rr);
 		menu_res.Add(Resolutions_menu,temp,rc);
 		if (sel)
 			menu_res.SetValue(rc);
@@ -321,7 +321,7 @@ s32 FASTCALL Load(emu_info* emu_inf)
 	special_res=0;
 	if (!sel_any)
 	{
-		swprintf(temp,L"%dx%d",settings.Fullscreen.Res_X,settings.Fullscreen.Res_Y);
+		swprintf(temp,512,L"%dx%d",settings.Fullscreen.Res_X,settings.Fullscreen.Res_Y);
 		special_res=emu.AddMenuItem(Resolutions_menu,-1,temp,0,1);
 		emu.SetMenuItemStyle(special_res,MIS_Grayed|MIS_Checked|MIS_Radiocheck,MIS_Grayed|MIS_Checked|MIS_Radiocheck);
 	}
@@ -474,7 +474,7 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	c.InterfaceVersion=PVR_PLUGIN_I_F_VERSION;
 
 	wcscpy(c.Name,L"nullPVR -- " REND_NAME L" built : " _T(__DATE__));
-	c.PluginVersion=DC_MakeVersion(1,0,0,DC_VER_NORMAL);
+	c.PluginVersion=DC_MakeVersion(1,0,0);
 
 	c.Load=Load;
 	c.Unload=Unload;
@@ -645,7 +645,7 @@ int msgboxf(wchar* text,unsigned int type,...)
 
 	wchar temp[2048];
 	va_start(args, type);
-	vswprintf(temp, text, args);
+	vswprintf(temp,2048, text, args);
 	va_end(args);
 
 
