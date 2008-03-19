@@ -263,21 +263,24 @@ struct code_patch
 	};
 	u32 offset;			//offset in opcode stream :)
 };
+
 //A block of x86 code :p
 class __declspec(dllexport) x86_block
 {
 private:
-	vector<x86_Label*> labels;
+	void* _labels;
 	void ApplyPatches(u8* base);
 	dyna_reallocFP* ralloc;
 	dyna_finalizeFP* allocfin;
 public:
-	vector<code_patch> patches;
+	void* _patches;
+
 	u8* x86_buff;
 	u32 x86_indx;
 	u32 x86_size;
 	bool do_realloc;
 
+	x86_block();
 	~x86_block();
 	void x86_buffer_ensure(u32 size);
 

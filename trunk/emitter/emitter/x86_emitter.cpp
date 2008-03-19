@@ -77,6 +77,8 @@ void x86_block::Init(dyna_reallocFP* ral,dyna_finalizeFP* alf)
 	x86_size=0;
 	do_realloc=true;
 }
+#define patches (*(vector<code_patch>*) _patches)
+#define labels (*(vector<x86_Label*>*) _labels)
 
 //Generates code.if user_data is non zero , user_data_size bytes are allocated after the executable code
 //and user_data is set to the first byte of em.Allways 16 byte alligned
@@ -143,10 +145,17 @@ void x86_block::ApplyPatches(u8* base)
 		}
 	}
 }
+x86_block::x86_block()
+{
+	_patches=new vector<code_patch>;
+	_labels=new vector<code_patch>;
+}
 x86_block::~x86_block()
 {
 	//ensure everything is free'd :)
 	Free();
+	delete &patches;
+	delete &labels;
 }
 //Will free any used resources exept generated code
 void x86_block::Free()
@@ -454,6 +463,7 @@ x86_mrm x86_mrm::create(x86_reg base,x86_reg index,x86_sib_scale scale,x86_ptr d
 		{
 			rv.sib=make_sib(scale,index,EBP);
 			disp_sz=2|4;//olny 32b disp , return 0 on mrm type
+			force_disp=true;
 		}
 		else
 			rv.sib=make_sib(scale,index,base);

@@ -228,6 +228,8 @@ void __fastcall encode_rex(x86_block* block,encoded_type* mrm,u32 mrm_reg,u32 of
 	}
 }
 #endif
+#define block_patches (*(vector<code_patch>*) block->_patches)
+
 //Encoding function (partialy) specialised by templates to gain speed :)
 template < enc_param enc_1,enc_imm enc_2,u32 sz,x86_operand_size enc_op_size>
 void __fastcall x86_encode_opcode_tmpl(x86_block* block, const x86_opcode* op, encoded_type* p1,encoded_type* p2,u32 p3)
@@ -299,7 +301,7 @@ void __fastcall x86_encode_opcode_tmpl(x86_block* block, const x86_opcode* op, e
 		cp.type=4|0;
 		cp.offset=block->x86_indx;
 		
-		block->patches.push_back(cp);
+		block_patches.push_back(cp);
 
 		block->write32(0x12345678);
 
@@ -315,7 +317,7 @@ void __fastcall x86_encode_opcode_tmpl(x86_block* block, const x86_opcode* op, e
 		if (p1->ptr_type)
 			cp.type|=16;
 		cp.offset=block->x86_indx;
-		block->patches.push_back(cp);
+		block_patches.push_back(cp);
 
 		block->write8(0x12);
 		break;
@@ -328,7 +330,7 @@ void __fastcall x86_encode_opcode_tmpl(x86_block* block, const x86_opcode* op, e
 		if (p1->ptr_type)
 			cp.type|=16;
 		cp.offset=block->x86_indx;
-		block->patches.push_back(cp);
+		block_patches.push_back(cp);
 
 		block->write16(0x1234);
 		break;
@@ -341,7 +343,7 @@ void __fastcall x86_encode_opcode_tmpl(x86_block* block, const x86_opcode* op, e
 		if (p1->ptr_type)
 			cp.type|=16;
 		cp.offset=block->x86_indx;
-		block->patches.push_back(cp);
+		block_patches.push_back(cp);
 
 		block->write32(0x12345678);
 		break;
