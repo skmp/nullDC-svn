@@ -992,6 +992,10 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 		}
 		break;
 
+	case WM_SYSCOMMAND:
+		if (SC_SCREENSAVE == wParam || SC_MONITORPOWER == wParam)
+			return 0;	//disable Screen Saver/Monitor turn off
+		break;
 
 	case WM_CLOSE:
 	case WM_DESTROY:
