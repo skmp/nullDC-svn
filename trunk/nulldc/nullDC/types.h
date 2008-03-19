@@ -167,8 +167,8 @@ using namespace std;
 #endif
 
 
-#define VER_FULLNAME	VER_EMUNAME L" v1.0.0 beta 2" _X_x_X_MMU_VER_STR L" (built " _T(__DATE__) L"@" _T(__TIME__) L")"
-#define VER_SHORTNAME	VER_EMUNAME L" 1.0.0b2" _X_x_X_MMU_VER_STR
+#define VER_FULLNAME	VER_EMUNAME L" v1.0.1 pre-1" _X_x_X_MMU_VER_STR L" (built " _T(__DATE__) L"@" _T(__TIME__) L")"
+#define VER_SHORTNAME	VER_EMUNAME L" 1.0.1p1" _X_x_X_MMU_VER_STR
 
 #define dbgbreak __asm {int 3}
 
