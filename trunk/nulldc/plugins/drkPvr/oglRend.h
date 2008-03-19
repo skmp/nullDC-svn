@@ -22,6 +22,7 @@ namespace OpenGLRenderer
 
 
 	void VramLockedWrite(vram_block* bl);
+	void SetFpsText(wchar* text);
 };
 #define rend_init         OpenGLRenderer::InitRenderer
 #define rend_term         OpenGLRenderer::TermRenderer
@@ -38,4 +39,10 @@ namespace OpenGLRenderer
 #define rend_list_srst OpenGLRenderer::SoftReset
 
 #define rend_text_invl OpenGLRenderer::VramLockedWrite
+
+#define rend_set_fps_text OpenGLRenderer::SetFpsText
+#define rend_set_render_rect()
+#define rend_set_fb_scale()
+#define rend_list_modes()
+#define rend_handle_event()
 #endif

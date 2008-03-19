@@ -1,5 +1,9 @@
 ﻿#include "oglRend.h"
 #include <windows.h>
+
+#include "glew.h"
+#include "wglew.h"
+
 #include <gl\gl.h>
 #include "regs.h"
 #include "vector"
@@ -10,6 +14,7 @@ using namespace std;
 #pragma comment(lib, "opengl32.lib") 
 #pragma comment(lib, "glu32.lib") 
 #pragma comment(lib, "glaux.lib") 
+#pragma comment(lib, "glew32-drkpvr.lib") 
 
 
 #include <gl\glaux.h>
@@ -17,6 +22,11 @@ using namespace TASplitter;
 
 namespace OpenGLRenderer
 {
+	void SetFpsText(wchar* text)
+	{
+		SetWindowText((HWND)emu.GetRenderTarget(), text);
+	}
+
 	u32 texFormat[8]=
 	{
 		GL_RGB5_A1 ,//0	1555 value: 1 bit; RGB values: 5 bits each
@@ -184,7 +194,7 @@ namespace OpenGLRenderer
 				memset(temp_tex_buffer,0xFFFFFFFF,w*h*4);
 			}
 
-			PrintTextureName();
+			//PrintTextureName();
 			u32 ea=sa+w*h*2;
 			if (ea>=(8*1024*1024))
 			{
@@ -193,7 +203,7 @@ namespace OpenGLRenderer
 			//(u32 start_offset64,u32 end_offset64,void* userdata);
 			lock_block = params.vram_lock_64(sa,ea,this);
 
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, temp_tex_buffer);
+			glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA8 , w, h, 0, GL_BGRA, GL_UNSIGNED_BYTE, temp_tex_buffer);
 
 			//printf("Updated Texture @ 0x%X\n",tcw.NO_PAL.TexAddr<<3);
 		}
@@ -234,7 +244,7 @@ namespace OpenGLRenderer
 		if (addr==RenderToTextureAddr)
 			return RenderToTextureTex;
 
-		TextureCacheData* tf = TexCache.Find(addr);
+		TextureCacheData* tf = TexCache.Find(tcw.full,tsp.full);
 		if (tf)
 		{
 			if (tf->dirty)
@@ -310,23 +320,27 @@ namespace OpenGLRenderer
 
 		if(!(hDC=GetDC(hWnd)))
 		{
-			MessageBox(hWnd,"Can't Create A GL Device Context.","ERROR",MB_OK|MB_ICONEXCLAMATION);
+			MessageBoxA(hWnd,"Can't Create A GL Device Context.","ERROR",MB_OK|MB_ICONEXCLAMATION);
 			//Term();	return false;
 		}
-		if( !(PixelFormat=ChoosePixelFormat(hDC,&pfd)) ||
-			!SetPixelFormat(hDC,PixelFormat,&pfd))
+		if( !(PixelFormat=ChoosePixelFormat(hDC,&pfd)))
 		{
-			MessageBox(hWnd,"Can't Set The PixelFormat.","ERROR",MB_OK|MB_ICONEXCLAMATION);
+			MessageBoxA(hWnd,"Can't Set The PixelFormat.","ERROR",MB_OK|MB_ICONEXCLAMATION);
+			//		Term();	return false;
+		}
+		if( !SetPixelFormat(hDC,PixelFormat,&pfd))
+		{
+			MessageBoxA(hWnd,"Can't Set The PixelFormat.","ERROR",MB_OK|MB_ICONEXCLAMATION);
 			//		Term();	return false;
 		}
 		if(!(hRC=wglCreateContext(hDC)) || !wglMakeCurrent(hDC,hRC))
 		{
-			MessageBox(hWnd,"Can't Activate The GL Rendering Context.","ERROR",MB_OK|MB_ICONEXCLAMATION);
+			MessageBoxA(hWnd,"Can't Activate The GL Rendering Context.","ERROR",MB_OK|MB_ICONEXCLAMATION);
 			//		Term();	return false;
 		}
 		/*if (GLEW_OK != glewInit())
 		{
-		MessageBox(hWnd,"Couldn't Initialize GLEW.","ERROR",MB_OK|MB_ICONEXCLAMATION);
+		MessageBoxA(hWnd,"Couldn't Initialize GLEW.","ERROR",MB_OK|MB_ICONEXCLAMATION);
 		//		Term();	return false;
 		}*/
 
@@ -433,46 +447,34 @@ namespace OpenGLRenderer
 		u32 vlc;
 
 		//lets see what more :)
-		GLuint texID;	//0xFFFFFFFF if no texture
+		TCW tcw;	//0xFFFFFFFF if no texture
 		TSP tsp;
 
 		void SetRenderMode_Op()
 		{
-			if (texID!=0xFFFFFFFF)
+			if (first&0x80000000)
 			{
-				if (!gl_Text2D_enabled)
-				{
-					gl_Text2D_enabled=true;
-					glEnable(GL_TEXTURE_2D);
-				}
+				GLuint texID=GetTexture(tsp,tcw);
+			
+				glEnable(GL_TEXTURE_2D);
+				
 
 				glBindTexture(GL_TEXTURE_2D,texID);
 
-				if (!gl_TextCord_enabled)
-				{
-					gl_TextCord_enabled=true;
-					glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-				}
+				glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 				glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 			}
 			else
 			{
-				if (gl_TextCord_enabled)
-				{
-					gl_TextCord_enabled=false;
-					glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-				}
-				if (gl_Text2D_enabled)
-				{
-					gl_Text2D_enabled=false;
-					glDisable(GL_TEXTURE_2D);
-				}
+				glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+				glDisable(GL_TEXTURE_2D);
 			}
 		}
 		void SetRenderMode_Tr()
 		{
-			if (texID!=0xFFFFFFFF)
+			if (first&0x80000000)
 			{
+				GLuint texID=GetTexture(tsp,tcw);
 				//verify(glIsTexture(texID));
 				glEnable(GL_TEXTURE_2D);
 				glBindTexture(GL_TEXTURE_2D,texID);
@@ -495,8 +497,9 @@ namespace OpenGLRenderer
 		}
 		void SetRenderMode_Pt()
 		{
-			if (texID!=0xFFFFFFFF)
+			if (first&0x80000000)
 			{
+				GLuint texID=GetTexture(tsp,tcw);
 				glEnable(GL_TEXTURE_2D);
 				glBindTexture(GL_TEXTURE_2D,texID);
 				glEnableClientState( GL_TEXTURE_COORD_ARRAY );
@@ -567,7 +570,14 @@ namespace OpenGLRenderer
 
 	void Resize(u32 w,u32 h,bool inv=false)
 	{
-		glViewport( 0,0, w, h );
+		static u32 ow=INFINITE,oh=INFINITE,oinv=INFINITE;
+		if (!((w==ow) && (h==oh) && (oinv==(inv?1:0))))
+		{
+			ow=w;
+			oh=h;
+			oinv=(inv?1:0);
+			glViewport( 0,0, w, h );
+		}
 
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
@@ -587,7 +597,7 @@ namespace OpenGLRenderer
 	void Resize()
 	{
 		RECT rClient;
-		GetClientRect((HWND)params.WindowHandle,&rClient);
+		GetClientRect((HWND)emu.GetRenderTarget(),&rClient);
 
 		Resize((u32)(rClient.right-rClient.left), (u32)(rClient.bottom-rClient.top) );
 	}
@@ -609,7 +619,7 @@ namespace OpenGLRenderer
 
 		while(vlc--)
 		{
-			glDrawArrays(GL_TRIANGLE_STRIP, v->first, v->sz);
+			glDrawArrays(GL_TRIANGLE_STRIP, v->first&0x7FFFFFFF, v->sz);
 			v++;//next vertex list
 		}
 	}
@@ -959,18 +969,45 @@ namespace OpenGLRenderer
 	bool running=true;
 	cResetEvent rs(false,true);
 	cResetEvent re(false,true);
-
+	GLuint VertexBufferObject;
 	void DoRender();
-
-	u32 THREADCALL RenderThead(void* param)
+	bool InitGL()
 	{
 		//start open gl !
-		EnableOpenGL((HWND)params.WindowHandle,hdc1,hglrc1);
+		EnableOpenGL((HWND)emu.GetRenderTarget(),hdc1,hglrc1);
+		GLenum err = glewInit();
+		if (err!=GLEW_OK || !GLEW_EXT_gpu_shader4 || !GLEW_EXT_geometry_shader4 || !GLEW_NV_depth_buffer_float)
+		{
+			printf("This plugin needs GLEW_EXT_gpu_shader4,GLEW_EXT_geometry_shader4,GLEW_NV_depth_buffer_float\n");
+			DisableOpenGL((HWND)emu.GetRenderTarget(),hdc1,hglrc1);
+			return false;
+		}
+		//glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT32F_NV, 640, 480);
+		
+		GLboolean db3;
+		glGetBooleanv(GL_DEPTH_BUFFER_FLOAT_MODE_NV,&db3);
+
 		glGenTextures(1,&RenderToTextureTex);
 		glBindTexture(GL_TEXTURE_2D, RenderToTextureTex);			// Bind The Texture
 		glTexImage2D(GL_TEXTURE_2D, 0, 4, 1024, 1024, 0,GL_RGBA, GL_UNSIGNED_BYTE, temp_tex_buffer);
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+		
+		glGenBuffersARB(1,&VertexBufferObject);
+
+		running=true;
+		return true;
+	}
+
+	volatile bool OpenGlSucceeded=false;
+	u32 THREADCALL RenderThead(void* param)
+	{
+		bool bext=InitGL();
+		OpenGlSucceeded=bext;
+		re.Set();
+		if (!bext)
+			return 0;
+		
 
 		while(1)
 		{
@@ -983,8 +1020,8 @@ namespace OpenGLRenderer
 		}
 
 		//terminate opengl :)
-		DisableOpenGL((HWND)params.WindowHandle,hdc1,hglrc1);
 		glDeleteTextures(1,&RenderToTextureTex);
+		DisableOpenGL((HWND)emu.GetRenderTarget(),hdc1,hglrc1);
 		return 0;
 	}
 
@@ -1041,6 +1078,7 @@ namespace OpenGLRenderer
 
 		if ((FB_W_SOF1 & 0x1000000)!=0)
 		{
+			return;
 			//yay render to texture yay
 			Resize(2048,2048,true);
 		}
@@ -1061,9 +1099,14 @@ namespace OpenGLRenderer
 			glClearDepth(1.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-			glColorPointer(4, GL_FLOAT, sizeof(Vertex),  pvrrc.verts.data->col);
-			glVertexPointer(3, GL_FLOAT, sizeof(Vertex), pvrrc.verts.data->xyz);
-			glTexCoordPointer(4, GL_FLOAT, sizeof(Vertex), pvrrc.verts.data->uv);
+			glBindBufferARB( GL_ARRAY_BUFFER_ARB, VertexBufferObject );
+			glBufferDataARB(GL_ARRAY_BUFFER,pvrrc.verts.used*sizeof(Vertex),pvrrc.verts.data,GL_STREAM_DRAW);
+
+			Vertex* pvtx0=0;
+			glColorPointer(4, GL_FLOAT, sizeof(Vertex),  pvtx0->col);
+			glTexCoordPointer(4, GL_FLOAT, sizeof(Vertex), pvtx0->uv);
+			glVertexPointer(3, GL_FLOAT, sizeof(Vertex), pvtx0->xyz);
+			
 
 			glEnableClientState( GL_COLOR_ARRAY );
 			glEnableClientState( GL_VERTEX_ARRAY );
@@ -1151,11 +1194,10 @@ namespace OpenGLRenderer
 		d_pp->first=tarc.vertlists.used;\
 		d_pp->vlc=0;\
 		if (pp->pcw.Texture)\
-			d_pp->texID=GetTexture(pp->tsp,pp->tcw);\
-		else\
-			d_pp->texID=0xFFFFFFFF;\
+			d_pp->first|=0x80000000;\
 			\
-		d_pp->tsp=pp->tsp;\
+		d_pp->tcw=pp->tcw;\
+		d_pp->tsp=pp->tsp;
 
 	//poly param handling
 	__forceinline
@@ -1472,25 +1514,16 @@ namespace OpenGLRenderer
 
 		//Sprite Vertex Handlers
 		__forceinline
-		static void AppendSpriteVertex0A(TA_Sprite0A* sv)
+		static void AppendSpriteVertexA(TA_Sprite1A* sv)
 		{
 
 		}
 		__forceinline
-		static void AppendSpriteVertex0B(TA_Sprite0B* sv)
+		static void AppendSpriteVertexB(TA_Sprite1B* sv)
 		{
 
 		}
-		__forceinline
-		static void AppendSpriteVertex1A(TA_Sprite1A* sv)
-		{
-			
-		}
-		__forceinline
-		static void AppendSpriteVertex1B(TA_Sprite1B* sv)
-		{
 
-		}
 
 		//ModVolumes
 		__forceinline
@@ -1521,6 +1554,19 @@ namespace OpenGLRenderer
 		static void AppendModVolVertexB(TA_ModVolB* mvv)
 		{
 
+		}
+		static void StartModVol(TA_ModVolParam* param)
+		{
+		}
+		__forceinline
+		static void SetTileClip(u32 xmin,u32 ymin,u32 xmax,u32 ymax)
+		{
+			
+		}
+		__forceinline
+		static void TileClipMode(u32 mode)
+		{
+		
 		}
 
 		//Misc
@@ -1579,7 +1625,9 @@ namespace OpenGLRenderer
 	bool ThreadStart()
 	{
 		rth.Start();
-		return true;
+		re.Wait(INFINITE);
+		
+		return OpenGlSucceeded;
 	}
 
 	void ThreadEnd()
