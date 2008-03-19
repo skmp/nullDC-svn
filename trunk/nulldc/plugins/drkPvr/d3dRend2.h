@@ -21,8 +21,8 @@ namespace Direct3DRenderer2
 	void ListInit();
 	void SoftReset();
 
-	void SetFpsText(char* text);
-	void SetRenderRect(float* rect);
+	void SetFpsText(wchar* text);
+	void SetRenderRect(float* rect,bool do_clear);
 	void SetFBScale(float x,float y);
 
 	void VramLockedWrite(vram_block* bl);
@@ -43,7 +43,10 @@ namespace Direct3DRenderer2
 
 #define rend_text_invl Direct3DRenderer2::VramLockedWrite
 #define rend_is_fullscreen Direct3DRenderer2::IsFullscreen
-#define rend_set_fps_text Direct3DRenderer2::SetFpsText
-#define rend_set_render_rect Direct3DRenderer2::SetRenderRect
+#define rend_set_fps_text()
+#define rend_set_render_rect()
 #define rend_set_fb_scale Direct3DRenderer2::SetFBScale
+
+#define rend_handle_event()
+#define rend_list_modes()
 #endif
