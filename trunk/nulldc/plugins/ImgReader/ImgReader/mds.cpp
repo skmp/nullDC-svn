@@ -102,7 +102,7 @@ void mds_CreateToc()
 				CD_DA=true;
 			
 			//verify((c_track->mode==236) || (c_track->mode==169))
-			
+			 
 
 			mds_toc.tracks[track].Addr=0;//hmm is that ok ?
 			mds_toc.tracks[track].Session=s;

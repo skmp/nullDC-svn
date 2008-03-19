@@ -59,14 +59,6 @@ void iso_ReadSSect(u8* p_out,u32 sector,u32 secsz)
 	{
 		if (iso_tracks[i].ReadSector(p_out,sector,secsz))
 			break;
-		/*{
-			u32 fad_off=sector-Track[i].FAD;
-			fseek(fp_cdi,Track[i].Offset+fad_off*Track[i].SectorSize,SEEK_SET);
-			fread(SecTemp,Track[i].SectorSize,1,fp_cdi);
-
-			ConvertSector(SecTemp,p_out,Track[i].SectorSize,secsz,sector);
-			break;
-		}*/
 	}
 }
 
