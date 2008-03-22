@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="zNullPvrGL"
 	ProjectGUID="{96D32B6C-E11C-4FD7-A4CD-B296415D2560}"
 	RootNamespace="zNullPvrGL"
@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="C:\Program Files\Microsoft DirectX SDK (April 2006)\Include"
+				AdditionalIncludeDirectories="$(SolutionDir)"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;ZNULLPVRGL_EXPORTS;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -122,7 +122,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;C:\Program Files\NVIDIA Corporation\Cg\include&quot;;&quot;C:\Program Files\Microsoft DirectX SDK (April 2006)\Include&quot;"
+				AdditionalIncludeDirectories="$(SolutionDir)"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;ZNULLPVRGL_EXPORTS;_CRT_SECURE_NO_DEPRECATE;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"

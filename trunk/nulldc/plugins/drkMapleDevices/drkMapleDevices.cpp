@@ -1,7 +1,7 @@
 // drkMapleDevices.cpp : Defines the entry point for the DLL application.
 //
 
-#include "..\..\..\nullDC\plugins\plugin_header.h"
+#include "nullDC\plugins\plugin_header.h"
 #include <memory.h>
 
 emu_info host;

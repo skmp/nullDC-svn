@@ -73,7 +73,7 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	pci->Type				= Plugin_Maple;
 	pci->PluginVersion		= DC_MakeVersion(1,0,0,DC_VER_NORMAL);
 	pci->InterfaceVersion	= MAPLE_PLUGIN_I_F_VERSION;
-	sprintf(pci->Name,		"nullMaple v1.0 beta1");
+	swprintf(pci->Name,		L"ZnullMaple v1.0 beta1");
 
 	pm->InitSub				= InitSub;
 	pm->InitMain			= Init;
@@ -84,7 +84,7 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	pm->DestroyMain			= Destroy;
 	pm->DestroySub			= DestroySub;
 
-	sprintf(pm->devices[0].Name, "Controller Device");
+	swprintf(pm->devices[0].Name, L"Controller Device");
 	pm->devices[1].Type		= MDT_EndOfList;
 	pm->devices[0].Type		= MDT_Main;
 	pm->devices[0].Flags	= MDF_Controller;
@@ -96,22 +96,22 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 
 void WriteDefCfg()
 {
-	char cfg_key[512], cfg_sub[512];
+	wchar cfg_key[512], cfg_sub[512];
 	for(int p=0; p<4; p++) {
-		sprintf(cfg_key, "zNullMaple_port%02X", p);
+		swprintf(cfg_key, L"zNullMaple_port%02X", p);
 		printf("Writing DefCfg for %s\n", cfg_key);
 
-		ei.ConfigSaveInt(cfg_key, "DGUID_Data1", 0);	// long
-		ei.ConfigSaveInt(cfg_key, "DGUID_Data2", 0);	// short
-		ei.ConfigSaveInt(cfg_key, "DGUID_Data3", 0);	// short
-		ei.ConfigSaveInt(cfg_key, "DGUID_Data4a", 0);	// char[0-3] -> long
-		ei.ConfigSaveInt(cfg_key, "DGUID_Data4b", 0);	// char[4-7] -> long
+		ei.ConfigSaveInt(cfg_key, L"DGUID_Data1", 0);	// long
+		ei.ConfigSaveInt(cfg_key, L"DGUID_Data2", 0);	// short
+		ei.ConfigSaveInt(cfg_key, L"DGUID_Data3", 0);	// short
+		ei.ConfigSaveInt(cfg_key, L"DGUID_Data4a", 0);	// char[0-3] -> long
+		ei.ConfigSaveInt(cfg_key, L"DGUID_Data4b", 0);	// char[4-7] -> long
 
-		ei.ConfigSaveInt(cfg_key, "Connected", 0);
-		ei.ConfigSaveInt(cfg_key, "DevType", 0);
+		ei.ConfigSaveInt(cfg_key, L"Connected", 0);
+		ei.ConfigSaveInt(cfg_key, L"DevType", 0);
 
 		for(size_t k=0; k<32; k++) {
-			sprintf(cfg_sub, "KeyMap[%02X]", k);
+			swprintf(cfg_sub, L"KeyMap[%02X]", k);
 			ei.ConfigSaveInt(cfg_key, cfg_sub, 0);
 		}
 	}
@@ -120,22 +120,22 @@ void WriteDefCfg()
 void SaveCfg()
 {
 	GUID tguid;
-	char cfg_key[512], cfg_sub[512];
+	wchar cfg_key[512], cfg_sub[512];
 	for(int p=0; p<4; p++) {
 		tguid = InputDev[p].guidDev;
-		sprintf(cfg_key, "zNullMaple_port%02X", p);
+		swprintf(cfg_key, L"zNullMaple_port%02X", p);
 
-		ei.ConfigSaveInt(cfg_key, "DGUID_Data1", tguid.Data1);	// long
-		ei.ConfigSaveInt(cfg_key, "DGUID_Data2", tguid.Data2);	// short
-		ei.ConfigSaveInt(cfg_key, "DGUID_Data3", tguid.Data3);	// short
-		ei.ConfigSaveInt(cfg_key, "DGUID_Data4a", ((u32*)tguid.Data4)[0]);	// char[0-3] -> long
-		ei.ConfigSaveInt(cfg_key, "DGUID_Data4b", ((u32*)tguid.Data4)[1]);	// char[4-7] -> long
+		ei.ConfigSaveInt(cfg_key, L"DGUID_Data1", tguid.Data1);	// long
+		ei.ConfigSaveInt(cfg_key, L"DGUID_Data2", tguid.Data2);	// short
+		ei.ConfigSaveInt(cfg_key, L"DGUID_Data3", tguid.Data3);	// short
+		ei.ConfigSaveInt(cfg_key, L"DGUID_Data4a", ((u32*)tguid.Data4)[0]);	// char[0-3] -> long
+		ei.ConfigSaveInt(cfg_key, L"DGUID_Data4b", ((u32*)tguid.Data4)[1]);	// char[4-7] -> long
 
-		ei.ConfigSaveInt(cfg_key, "Connected", InputDev[p].Connected);
-		ei.ConfigSaveInt(cfg_key, "DevType", InputDev[p].DevType);
+		ei.ConfigSaveInt(cfg_key, L"Connected", InputDev[p].Connected);
+		ei.ConfigSaveInt(cfg_key, L"DevType", InputDev[p].DevType);
 
 		for(size_t k=0; k<32; k++) {
-			sprintf(cfg_sub, "KeyMap[%02X]", k);
+			swprintf(cfg_sub, L"KeyMap[%02X]", k);
 			ei.ConfigSaveInt(cfg_key, cfg_sub, InputDev[p].KeyMap[k]);
 		}
 	}
@@ -144,25 +144,25 @@ void SaveCfg()
 void LoadCfg()
 {
 	GUID tguid;
-	char cfg_key[512], cfg_sub[512];
+	wchar cfg_key[512], cfg_sub[512];
 	for(int p=0; p<4; p++) {
-		sprintf(cfg_key, "zNullMaple_port%02X", p);
+		swprintf(cfg_key, L"zNullMaple_port%02X", p);
 
-		if(!ei.ConfigExists(cfg_key, "Connected"))
+		if(!ei.ConfigExists(cfg_key, L"Connected"))
 			WriteDefCfg();
 
-		tguid.Data1	= ei.ConfigLoadInt(cfg_key, "DGUID_Data1", 0);	// long
-		tguid.Data2	= ei.ConfigLoadInt(cfg_key, "DGUID_Data2", 0);	// short
-		tguid.Data3	= ei.ConfigLoadInt(cfg_key, "DGUID_Data3", 0);	// short
-		((u32*)tguid.Data4)[0]	= ei.ConfigLoadInt(cfg_key, "DGUID_Data4a", 0);	// char[0-3] -> long
-		((u32*)tguid.Data4)[1]	= ei.ConfigLoadInt(cfg_key, "DGUID_Data4b", 0);	// char[4-7] -> long
+		tguid.Data1	= ei.ConfigLoadInt(cfg_key, L"DGUID_Data1", 0);	// long
+		tguid.Data2	= ei.ConfigLoadInt(cfg_key, L"DGUID_Data2", 0);	// short
+		tguid.Data3	= ei.ConfigLoadInt(cfg_key, L"DGUID_Data3", 0);	// short
+		((u32*)tguid.Data4)[0]	= ei.ConfigLoadInt(cfg_key, L"DGUID_Data4a", 0);	// char[0-3] -> long
+		((u32*)tguid.Data4)[1]	= ei.ConfigLoadInt(cfg_key, L"DGUID_Data4b", 0);	// char[4-7] -> long
 
 		InputDev[p].guidDev		= tguid;
-		InputDev[p].Connected	= ei.ConfigLoadInt(cfg_key, "Connected", 0);
-		InputDev[p].DevType		= ei.ConfigLoadInt(cfg_key, "DevType", 0);
+		InputDev[p].Connected	= ei.ConfigLoadInt(cfg_key, L"Connected", 0);
+		InputDev[p].DevType		= ei.ConfigLoadInt(cfg_key, L"DevType", 0);
 
 		for(size_t k=0; k<32; k++) {
-			sprintf(cfg_sub, "KeyMap[%02X]", k);
+			swprintf(cfg_sub, L"KeyMap[%02X]", k);
 			InputDev[p].KeyMap[k] = ei.ConfigLoadInt(cfg_key, cfg_sub, 0);
 		}
 	}
@@ -372,9 +372,9 @@ void EXPORT_CALL menu_cb(u32 id, void* handle, void* p)
 
 s32  FASTCALL Create(maple_device_instance* inst,u32 id,u32 flags,u32 rootmenu)
 {
-	char menu_str[512];
+	wchar menu_str[512];
 	curr_port = (inst->port>>6);
-	sprintf(menu_str, "Maple Device Config, Port: %d",curr_port);
+	swprintf(menu_str, L"Maple Device Config, Port: %d",curr_port);
 	u32 mID = ei.AddMenuItem(rootmenu, -1, menu_str, menu_cb, 0);
 
 	MenuItem mi;

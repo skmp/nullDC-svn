@@ -39,6 +39,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				AdditionalIncludeDirectories="$(SolutionDir)"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				EnableFunctionLevelLinking="true"
@@ -110,6 +111,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalIncludeDirectories="$(SolutionDir)"
 				RuntimeLibrary="2"
 				WarningLevel="4"
 				DebugInformationFormat="3"

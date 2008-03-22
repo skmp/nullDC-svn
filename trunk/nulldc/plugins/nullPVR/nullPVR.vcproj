@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\nullDC&quot;"
+				AdditionalIncludeDirectories="$(SolutionDir)"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;nullPVR_EXPORTS;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -123,7 +123,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\nullDC&quot;"
+				AdditionalIncludeDirectories="$(SolutionDir)"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;nullPVR_EXPORTS;_CRT_SECURE_NO_DEPRECATE;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"

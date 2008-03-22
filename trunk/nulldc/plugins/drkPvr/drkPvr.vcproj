@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="windows-1253"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="drkPvr"
 	ProjectGUID="{0520BA33-1A98-4DDE-8B36-99F25EDC5BD6}"
 	RootNamespace="drkPvr"
 	Keyword="Win32Proj"
-	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -42,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="C:\Program Files\Microsoft DirectX SDK (April 2006)\Include"
+				AdditionalIncludeDirectories="$(SolutionDir)"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;DRKPVR_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -73,8 +72,6 @@
 				ModuleDefinitionFile="exports.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -94,6 +91,9 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -131,7 +131,7 @@
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="C:\Program Files\Microsoft DirectX SDK (April 2006)\Include"
+				AdditionalIncludeDirectories="$(SolutionDir)"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;DRKPVR_EXPORTS"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
@@ -165,8 +165,6 @@
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -186,6 +184,9 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -367,7 +368,7 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
-							CommandLine="copy  &quot;$(InputFileName)&quot;  &quot;$(TargetDir)..\&quot;"
+							CommandLine="copy  &quot;$(InputFileName)&quot;  &quot;$(TargetDir)..\&quot;&#x0D;&#x0A;"
 							AdditionalDependencies=""
 							Outputs="$(TargetDir)..\$(InputFileName)"
 						/>
@@ -377,7 +378,7 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
-							CommandLine="copy  &quot;$(InputFileName)&quot;  &quot;$(TargetDir)..\&quot;"
+							CommandLine="copy  &quot;$(InputFileName)&quot;  &quot;$(TargetDir)..\&quot;&#x0D;&#x0A;"
 							AdditionalDependencies=""
 							Outputs="$(TargetDir)..\$(InputFileName)"
 						/>
@@ -391,7 +392,7 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
-							CommandLine="copy  &quot;$(InputFileName)&quot;  &quot;$(TargetDir)..\&quot;"
+							CommandLine="copy  &quot;$(InputFileName)&quot;  &quot;$(TargetDir)..\&quot;&#x0D;&#x0A;"
 							AdditionalDependencies=""
 							Outputs="$(TargetDir)..\$(InputFileName)"
 						/>
@@ -401,7 +402,7 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
-							CommandLine="copy  &quot;$(InputFileName)&quot;  &quot;$(TargetDir)..\&quot;"
+							CommandLine="copy  &quot;$(InputFileName)&quot;  &quot;$(TargetDir)..\&quot;&#x0D;&#x0A;"
 							AdditionalDependencies=""
 							Outputs="$(TargetDir)..\$(InputFileName)"
 						/>

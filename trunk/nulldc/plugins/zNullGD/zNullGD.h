@@ -14,7 +14,7 @@
 #include "zSCSI.h"
 
 //yes , it is ugly , yes , you have to live w/ it for now :P
-#include "..\..\..\nullDC\plugins\plugin_header.h"
+#include "nullDC\plugins\plugin_header.h"
 
 /*
 **	Modified Plugin Specs for NullDC

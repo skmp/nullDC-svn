@@ -1,5 +1,5 @@
 #pragma once
-#include "..\..\..\nullDC\plugins\plugin_header.h"
+#include "nullDC\plugins\plugin_header.h"
 
 #define PLUGIN_NAME_CFG L"nullMaple"
 

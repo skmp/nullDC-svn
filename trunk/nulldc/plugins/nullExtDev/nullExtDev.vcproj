@@ -41,6 +41,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				EnableIntrinsicFunctions="true"
+				AdditionalIncludeDirectories="$(SolutionDir)"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;nullExtDev_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -124,7 +125,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="&quot;C:\Program Files\Microsoft DirectX SDK (February 2006)\Include&quot;"
+				AdditionalIncludeDirectories="$(SolutionDir)"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;nullExtDev_EXPORTS"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"

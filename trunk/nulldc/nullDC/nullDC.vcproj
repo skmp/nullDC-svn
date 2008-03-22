@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1253"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="nullDC"
 	ProjectGUID="{47CE9BF1-542B-4C45-A22A-353A9FC97322}"
 	RootNamespace="nullDC"
@@ -43,7 +43,7 @@
 				Optimization="0"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="false"
-				AdditionalIncludeDirectories="&quot;C:\Program Files\Microsoft DirectX SDK (February 2006)\Include&quot;;&quot;$(SolutionDir)\nullDC&quot;;&quot;$(SolutionDir)\..\emitter\&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\nullDC&quot;;&quot;$(SolutionDir)\..\emitter\&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;TRACE;DEBUG;NULLDC;X86"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
@@ -65,7 +65,7 @@
 			<Tool
 				Name="VCPreLinkEventTool"
 				Description="Copying Libs"
-				CommandLine="mkdir &quot;$(SolutionDir)deps\&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)..\emitter\bins\emitter_$(PlatformName).*&quot; &quot;$(SolutionDir)deps\&quot;"
+				CommandLine="mkdir &quot;$(SolutionDir)deps\&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)..\emitter\bins\emitter_$(PlatformName).*&quot; &quot;$(SolutionDir)deps\&quot;&#x0D;&#x0A;"
 			/>
 			<Tool
 				Name="VCLinkerTool"
@@ -129,7 +129,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;C:\Program Files\Microsoft DirectX SDK (February 2006)\Include&quot;;&quot;$(SolutionDir)\nullDC&quot;;&quot;$(SolutionDir)\..\emitter\&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\nullDC&quot;;&quot;$(SolutionDir)\..\emitter\&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;TRACE;NULLDC;X86"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
@@ -149,7 +149,7 @@
 			<Tool
 				Name="VCPreLinkEventTool"
 				Description="Copying Libs"
-				CommandLine="mkdir &quot;$(SolutionDir)deps\&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)..\emitter\bins\emitter_$(PlatformName).*&quot; &quot;$(SolutionDir)deps\&quot;"
+				CommandLine="mkdir &quot;$(SolutionDir)deps\&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)..\emitter\bins\emitter_$(PlatformName).*&quot; &quot;$(SolutionDir)deps\&quot;&#x0D;&#x0A;"
 			/>
 			<Tool
 				Name="VCLinkerTool"
@@ -224,7 +224,7 @@
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="&quot;C:\Program Files\Microsoft DirectX SDK (February 2006)\Include&quot;;&quot;$(SolutionDir)\nullDC&quot;;&quot;$(SolutionDir)\..\emitter\&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\nullDC&quot;;&quot;$(SolutionDir)\..\emitter\&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;NULLDC;X86;RELEASE"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
@@ -245,11 +245,11 @@
 			<Tool
 				Name="VCPreLinkEventTool"
 				Description="Copying Libs"
-				CommandLine="mkdir &quot;$(SolutionDir)deps\&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)..\emitter\bins\emitter_$(PlatformName).*&quot; &quot;$(SolutionDir)deps\&quot;"
+				CommandLine="mkdir &quot;$(SolutionDir)deps\&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)..\emitter\bins\emitter_$(PlatformName).*&quot; &quot;$(SolutionDir)deps\&quot;&#x0D;&#x0A;"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="winmm.lib wsock32.lib comctl32.lib $(SolutionDir)deps\emitter_$(PlatformName).lib"
+				AdditionalDependencies="winmm.lib wsock32.lib comctl32.lib"
 				OutputFile="$(SolutionDir)\WorkDir\$(ProjectName)_$(PlatformName)_$(ConfigurationName).exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
@@ -313,7 +313,7 @@
 				Optimization="0"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="false"
-				AdditionalIncludeDirectories="&quot;C:\Program Files\Microsoft DirectX SDK (February 2006)\Include&quot;;&quot;$(SolutionDir)\nullDC&quot;;&quot;$(SolutionDir)\..\emitter\&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\nullDC&quot;;&quot;$(SolutionDir)\..\emitter\&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;DEBUG;NULLDC;X86"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
@@ -335,7 +335,7 @@
 			<Tool
 				Name="VCPreLinkEventTool"
 				Description="Copying Libs"
-				CommandLine="mkdir &quot;$(SolutionDir)deps\&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)..\emitter\bins\emitter_$(PlatformName).*&quot; &quot;$(SolutionDir)deps\&quot;"
+				CommandLine="mkdir &quot;$(SolutionDir)deps\&quot;&#x0D;&#x0A;copy &quot;$(SolutionDir)..\emitter\bins\emitter_$(PlatformName).*&quot; &quot;$(SolutionDir)deps\&quot;&#x0D;&#x0A;"
 			/>
 			<Tool
 				Name="VCLinkerTool"

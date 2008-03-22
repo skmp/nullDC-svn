@@ -3,7 +3,7 @@
 */
 #pragma once
 
-#include "plugin_header.h"	// plugin header, we'll typedef some shit to make it match my naming schemes etc
+#include "nullDC\plugins\plugin_header.h"	// plugin header, we'll typedef some shit to make it match my naming schemes etc
 
 
 #define PL_CALL	FASTCALL
