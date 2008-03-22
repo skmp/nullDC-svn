@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="nullAICA"
-	ProjectGUID="{70FF77F6-E0CE-44EF-AF61-1BBAF3F60CD2}"
+	ProjectGUID="{9C6F5978-A6CE-4A09-A3EA-5FE45CC12232}"
 	RootNamespace="nullAICA"
 	Keyword="Win32Proj"
 	>
