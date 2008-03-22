@@ -181,7 +181,7 @@ struct gui_emu_info
 	FreePluginListFP*     FreePluginList;
 
 	GetEmuPerformanceInfoFP* GetPerformanceInfo;
-	BroardcastEventFP*		BroardcastEvent;
+	SendMsgFP*		BroardcastEvent;
 };
 struct MenuIDList
 {

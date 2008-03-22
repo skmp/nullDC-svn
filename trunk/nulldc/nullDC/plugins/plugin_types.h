@@ -192,15 +192,15 @@ struct MenuItem
 	u32 Style;			//MIS_* combination
 	void* PUser;		//User defined pointer :)
 };
-enum BroadcastEventTarget
+enum MsgTarget
 {
-	BET_Core=1,
-	BET_Gui =2,
-	BET_PowerVR=4,
-	BET_GDRom=8,
-	BET_Maple=16,			//controler ,mouse , vmu (both main and subdevs)
-	BET_ExtDevice=32,		//BBA , Lan adapter , other 
-	BET_All=0xFFFFFFFF,
+	MT_Core=1<<0,
+	MT_Gui =1<<1,
+	MT_PowerVR=1<<2,
+	MT_GDRom=1<<3,
+	MT_Maple=1<<4,			//controler ,mouse , vmu (both main and subdevs)
+	MT_ExtDevice=1<<5,		//BBA , Lan adapter , other 
+	MT_All=0xFFFFFFFF,
 };
 enum SyncSourceFlags
 {
@@ -213,7 +213,7 @@ typedef void EXPORT_CALL GetMenuItemFP(u32 id,MenuItem* info,u32 mask);
 typedef void EXPORT_CALL SetMenuItemFP(u32 id,MenuItem* info,u32 mask);
 typedef void EXPORT_CALL DeleteMenuItemFP(u32 id);
 typedef void* EXPORT_CALL GetRenderTargetFP();
-typedef void EXPORT_CALL BroardcastEventFP(u32 target,u32 eid,void* pdata,u32 ldata);
+typedef void EXPORT_CALL SendMsgFP(u32 target,u32 eid,void* pdata,u32 ldata);
 typedef void EXPORT_CALL RegisterSyncSourceFP(wchar* name,u32 id,u32 freq,u32 flags);
 
 struct emu_info
@@ -232,7 +232,7 @@ struct emu_info
 	GetMenuItemFP*		GetMenuItem;
 	DeleteMenuItemFP*	DeleteMenuItem;
 
-	BroardcastEventFP* BroardcastEvent;
+	SendMsgFP* BroardcastEvent;
 	u32 RootMenu;
 	u32 DebugMenu;
 
@@ -298,6 +298,42 @@ typedef s32 FASTCALL PvrInitFP(pvr_init_params* param);
 typedef void FASTCALL TaDMAFP(u32* data,u32 size);
 typedef void FASTCALL TaSQFP(u32* data);
 
+//OSD interface extentions
+
+//can i fold that into a single line ?
+struct osdTexture_i;
+typedef osdTexture_i* osdTexture;
+
+//Texture formats
+enum OSDFORMAT
+{
+	OSDFMT_A,
+	OSDFMT_RGB,
+	OSDFMT_RGBA,
+};
+
+//Texture Data
+typedef void osdTexFillDataFP(void* privdata,u8* data,u32 pitch);
+typedef void osdTexDestroyPrivFP(void* privdata);
+
+struct osdTexHandlerFP
+{
+	osdTexFillDataFP*		osdTexFillData;
+	osdTexDestroyPrivFP*	osdTexDestroyPrivFP;
+};
+
+//Texture Functions
+typedef s32 FASTCALL osdTexCreateFP(u32 w,u32 h,OSDFORMAT fmt,void* privdata,osdTexHandlerFP* handler);
+typedef s32 FASTCALL osdTexInvalidateDataFP(osdTexture tex);
+typedef s32 FASTCALL osdTexIsValidFP(osdTexture tex);
+typedef s32 FASTCALL osdTexDestroyFP(osdTexture tex);
+
+//Vertexes !
+typedef s32 FASTCALL osdVtxColFP(float a,float r,float g,float b);
+typedef s32 FASTCALL osdVtxCoordFP(float u,float v);
+typedef s32 FASTCALL osdVtxKickFP(float x,float y,float z);
+typedef s32 FASTCALL osdVtxFP(float x,float y,float z,float a,float r,float g,float b,float u,float v);
+
 struct pvr_plugin_if
 {
 	PvrInitFP*		Init;
@@ -315,6 +351,22 @@ struct pvr_plugin_if
 
 	//Will be called only when pvr locking is enabled
 	vramLockCBFP*	LockedBlockWrite;	//set to 0 if not used
+
+	//osd interface
+	//I realy need to decide if this will be optional or not
+	struct 
+	{
+		osdVtxColFP*	VtxCol;
+		osdVtxCoordFP*	VtxCoord;
+		osdVtxKickFP*	VtxKick;
+		osdVtxFP*		Vtx;
+
+		//
+		osdTexCreateFP*			TexCreate;
+		osdTexInvalidateDataFP* TexInvalidateData;
+		osdTexIsValidFP*		TexIsValid;
+		osdTexDestroyFP*		TexDestroy;
+	} osd;
 };
 //******************************************************
 //************************ GDRom ***********************
