@@ -1,7 +1,7 @@
 #pragma once
 #include "aica.h"
 
-u32 AICA_GenerateSamples(u32 sh4_cycles);
+void AICA_Sample();
 
 //u32 ReadChannelReg(u32 channel,u32 reg);
 void WriteChannelReg8(u32 channel,u32 reg);
@@ -44,7 +44,7 @@ typedef s32 SampleType;
 extern SampleType mixl;
 extern SampleType mixr;
 
-void ReadCommonReg8(u32 reg);
+void ReadCommonReg(u32 reg,bool byte);
 void WriteCommonReg8(u32 reg,u32 data);
 #define clip(x,min,max) if ((x)<(min)) (x)=(min); else if ((x)>(max)) (x)=(max);
 #define clip16(x) clip(x,-32768,32767)

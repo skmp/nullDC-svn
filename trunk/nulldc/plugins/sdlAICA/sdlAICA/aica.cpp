@@ -4,9 +4,16 @@
 #include "mem.h"
 #include <math.h>
 
-#define SH4_IRQ_BIT (1<<((u32)holly_SPU_IRQ&(u32)InterruptIDMask))
+
+#define SAMPLE_CYCLES (DCclock/(44100/441))
+
+s32 rem_sh4_cycles=0;
+
+
+#define SH4_IRQ_BIT (1<<(u8)holly_SPU_IRQ)
 
 CommonData_struct* CommonData;
+DSPData_struct* DSPData;
 InterruptInfo* MCIEB;
 InterruptInfo* MCIPD;
 InterruptInfo* MCIRE;
@@ -14,6 +21,8 @@ InterruptInfo* SCIEB;
 InterruptInfo* SCIPD;
 InterruptInfo* SCIRE;
 
+//Interrupts
+//arm side
 //This is an intc that replaces the m68k cpu's intc .. i name it e68k :p
 void SetL(u32 witch)
 {
@@ -45,7 +54,7 @@ void update_e68k()
 	if (!e68k_out)
 	{
 		//if no pending int
-		//find for one !
+		//look for one !
 		u32 p_ints = SCIEB->full & SCIPD->full;
 
 		//if there is one pending
@@ -69,7 +78,30 @@ void update_e68k()
 	}
 }
 
+//sh4 side
+void UpdateSh4Ints()
+{
+	u32 p_ints = MCIEB->full & MCIPD->full;
+	if (p_ints)
+	{
+		if ((*aica_params.SB_ISTEXT & SH4_IRQ_BIT )==0)
+		{
+			//if no interrupt is allready pending then raise one :)
+			aica_params.RaiseInterrupt(holly_SPU_IRQ);
+		}
+	}
+	else
+	{
+		if (*aica_params.SB_ISTEXT&SH4_IRQ_BIT)
+		{
+			aica_params.CancelInterrupt(holly_SPU_IRQ);
+		}
+	}
+
+}
+
 ////
+//Timers :)
 struct AicaTimerData
 {
 	union
@@ -88,7 +120,7 @@ class AicaTimer
 {
 public:
 	AicaTimerData* data;
-	u32 c_step;
+	s32 c_step;
 	u32 m_step;
 	u32 id;
 	void Init(u8* regbase,u32 timer)
@@ -96,18 +128,17 @@ public:
 		data=(AicaTimerData*)&regbase[0x2890 + timer*4];
 		id=timer;
 		m_step=1<<(data->md);
-		c_step=0;
+		c_step=m_step;
 	}
-	void UpdateTimer(u32 samples)
+	void StepTimer()
 	{
-		c_step+=samples;
-		while (c_step>=m_step)
+		c_step--;
+		if (c_step==0)
 		{
-			c_step-=m_step;
+			c_step=m_step;
 			data->count++;
 			if (data->count==0)
 			{
-				//wiii
 				if (id==0)
 				{
 					SCIPD->TimerA=1;
@@ -123,7 +154,6 @@ public:
 					SCIPD->TimerC=1;
 					MCIPD->TimerC=1;
 				}
-				update_e68k();
 			}
 		}
 	}
@@ -134,48 +164,42 @@ public:
 		if (n_step!=m_step)
 		{
 			m_step=n_step;
-			c_step=0;
+			c_step=m_step;
 		}
 	}
 };
 
 AicaTimer timers[3];
-void UpdateSh4Ints()
-{
-	u32 p_ints = MCIEB->full & MCIPD->full;
-	if (p_ints)
-	{
-		if ((*aica_params.SB_ISTEXT & SH4_IRQ_BIT )==0)
-		{
-			//if no interrupt is allready pending then raise one :)
-			aica_params.RaiseInterrupt(holly_SPU_IRQ);
-		}
-	}
-	else
-		*aica_params.SB_ISTEXT&=~SH4_IRQ_BIT;
 
-}
+//Mainloop
 void FASTCALL UpdateAICA(u32 Cycles)
 {
-	//run arm
-	arm_Run(Cycles/(arm_sh4_bias*arm_sh4_ratio));
-	//Generate sound 
-	u32 sc=AICA_GenerateSamples(Cycles);
-	
-	if (sc==0)
-		return;
+	rem_sh4_cycles-=Cycles*441;
 
-	SCIPD->SAMPLE_DONE=1;
+	while(rem_sh4_cycles<=0)
+	{
+		//note that this trades off some sh4/arm sync for simplicity of code :)
+		//run arm *first*. Register reads should reflect the current aica state.
+		//Note that writes should affect the next state .. meh :p cant have everything :)
+		//Interrupts are (idealy) raised right after the sample is done, so they go after aica_sample
+		arm_Run(512/arm_sh4_bias);
+		AICA_Sample();
 
-	for (int i=0;i<3;i++)
-		timers[i].UpdateTimer(sc);
+		SCIPD->SAMPLE_DONE=1;
 
-	update_e68k();
+		for (int i=0;i<3;i++)
+			timers[i].StepTimer();
 
-	UpdateSh4Ints();
-	//Interrupts for arm are handled from the arm mainloop directly :) (jeez , gota love the simple arm interr. system ;p)
+		update_e68k();
+
+		rem_sh4_cycles+=SAMPLE_CYCLES;
+	}
+
+	//Make sure sh4 interrupt system is up to date :)
+	UpdateSh4Ints();	
 }
 
+//Memory i/o
 template<u32 sz>
 void WriteAicaReg(u32 reg,u32 data)
 {
@@ -256,9 +280,14 @@ void WriteAicaReg(u32 reg,u32 data)
 template void WriteAicaReg<1>(u32 reg,u32 data);
 template void WriteAicaReg<2>(u32 reg,u32 data);
 
+//misc :p
 void AICA_Init()
 {
+	verify(sizeof(*CommonData)==0x508);
+	verify(sizeof(*DSPData)==0x15C8);
+
 	CommonData=(CommonData_struct*)&aica_reg[0x2800];
+	DSPData=(DSPData_struct*)&aica_reg[0x3000];
 	//slave cpu (arm7)
 
 	SCIEB=(InterruptInfo*)&aica_reg[0x289C];
@@ -272,20 +301,7 @@ void AICA_Init()
 	sgc_Init();
 	for (int i=0;i<3;i++)
 		timers[i].Init(aica_reg,i);
-
-	#define log2(n) (log((float) n)/log((float) 2))
-
-	/*for (int i=0;i<0x400;i++)
-	{
-		double fcent=(double)log2((double)(((double) 1024.0+(double)i)/(double)1024.0));
-		
-		fcent=(double) 44100.0*pow(2.0,fcent);
-		fns_pitch[i]=(float)fcent;
-	}
-	weee , actualy all that pitch shit translates to :
-	sample'=sample<<(oct)*(1024+fns)
-	sample'=sample<<(oct+10) + sample*fns
-	*/
+	rem_sh4_cycles=0;
 }
 
 

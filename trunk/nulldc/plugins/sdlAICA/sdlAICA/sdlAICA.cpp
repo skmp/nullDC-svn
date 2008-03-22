@@ -8,6 +8,7 @@
 #include "mem.h"
 #include "audiostream.h"
 #include "gui.h"
+#include <tchar.h>
 
 setts settings;
 aica_init_params aica_params;
@@ -70,15 +71,15 @@ s32 FASTCALL OnLoad(emu_info* em)
 
 	LoadSettings();
 
-	config_scmi=eminf.AddMenuItem(em->RootMenu,-1,"Config",handle_Config,0);
-	config_stami=eminf.AddMenuItem(em->RootMenu,-1,"Sync Audio",handle_SA,settings.LimitFPS);
-	eminf.AddMenuItem(em->RootMenu,-1,"Mute CDDA",handle_MCDDA,settings.CDDAMute);
-	eminf.AddMenuItem(em->RootMenu,-1,"Mute Sound",handle_GS,settings.GlobalMute);
+	config_scmi=eminf.AddMenuItem(em->RootMenu,-1,L"Config",handle_Config,0);
+	config_stami=eminf.AddMenuItem(em->RootMenu,-1,L"Sync Audio",handle_SA,settings.LimitFPS);
+	eminf.AddMenuItem(em->RootMenu,-1,L"Mute CDDA",handle_MCDDA,settings.CDDAMute);
+	eminf.AddMenuItem(em->RootMenu,-1,L"Mute Sound",handle_GS,settings.GlobalMute);
 
-	eminf.SetMenuItemStyle(eminf.AddMenuItem(em->RootMenu,-1,"-",0,0),MIS_Seperator,MIS_Seperator);
-	eminf.AddMenuItem(em->RootMenu,-1,"About",handle_About,0);
+	eminf.AddMenuItem(em->RootMenu,-1,0,0,0);
+	eminf.AddMenuItem(em->RootMenu,-1,L"About",handle_About,0);
 
-	eminf.AddMenuItem(em->DebugMenu,-1,"AICA SGC Debugger",handle_ShowASD,0);
+	eminf.AddMenuItem(em->DebugMenu,-1,L"AICA SGC Debugger",handle_ShowASD,0);
 	return rv_ok;
 }
 
@@ -143,8 +144,8 @@ EXPORT void EXPORT_CALL dcGetInterface(plugin_interface* info)
 #define c info->common
 #define a info->aica
 
-	strcpy(c.Name,"nullAICA , built :" __DATE__ "");
-	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD,DC_VER_NORMAL);
+	wcscpy(c.Name,L"nullAICA , built :" _T(__DATE__));
+	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD);
 
 	c.InterfaceVersion=AICA_PLUGIN_I_F_VERSION;
 	c.Type=Plugin_AICA;
@@ -166,11 +167,15 @@ EXPORT void EXPORT_CALL dcGetInterface(plugin_interface* info)
 
 int cfgGetInt(char* key,int def)
 {
-	return eminf.ConfigLoadInt("nullAica",key,def);
+	wchar t[512];
+	mbstowcs(t,key,512);
+	return eminf.ConfigLoadInt(L"nullAica",t,def);
 }
 void cfgSetInt(char* key,int def)
 {
-	eminf.ConfigSaveInt("nullAica",key,def);
+	wchar t[512];
+	mbstowcs(t,key,512);
+	eminf.ConfigSaveInt(L"nullAica",t,def);
 }
 
 void LoadSettings()

@@ -4,7 +4,7 @@
 #define C_CORE
 
 //#define CPUReadHalfWordQuick(addr) arm_ReadMem16(addr & 0x7FFFFF)
-#define CPUReadMemoryQuick(addr) arm_ReadMem32(addr & 0x7FFFFF)
+#define CPUReadMemoryQuick(addr) arm_ReadMem32(addr & ARAM_MASK)
 #define CPUReadByte arm_ReadMem8
 #define CPUReadMemory arm_ReadMem32
 #define CPUReadHalfWord arm_ReadMem16
@@ -149,8 +149,10 @@ void CPUUndefinedException();
 void CPUInterrupt();
 void CPUFiq();
 
+//void CreateTables();
 void arm_Init()
 {
+	//CreateTables();
 	arm_Reset();
 	
 	int i;

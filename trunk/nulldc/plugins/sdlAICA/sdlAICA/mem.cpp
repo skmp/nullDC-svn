@@ -1,4 +1,5 @@
 #include "mem.h"
+#include "dsp.h"
 #include "arm7.h"
 #include "sgc_if.h"
 #include "_vmem.h"
@@ -21,13 +22,13 @@ u32 ReadReg(u32 addr)
 	{
 		if (sz==1)
 		{
-			ReadCommonReg8(addr);
+			ReadCommonReg(addr,true);
 			ReadMemArrRet(aica_reg,addr,1);
 		}
 		else
 		{
-			ReadCommonReg8(addr);
-			ReadCommonReg8(addr+1);
+			ReadCommonReg(addr,false);
+			//ReadCommonReg8(addr+1);
 			ReadMemArrRet(aica_reg,addr,2);
 		}
 	}
@@ -93,6 +94,20 @@ void WriteReg(u32 addr,u32 data)
 		}
 	}
 
+	if (addr>=0x3000)
+	{
+		if (sz==1)
+		{
+			WriteMemArr(aica_reg,addr,data,1);
+			dsp_writenmem(addr);
+		}
+		else
+		{
+			WriteMemArr(aica_reg,addr,data,2);
+			dsp_writenmem(addr);
+			dsp_writenmem(addr+1);
+		}
+	}
 	if (sz==1)
 		WriteAicaReg<1>(addr,data);
 	else
@@ -118,9 +133,9 @@ inline void fastcall arm_WriteMem(u32 addr,T data)
 //Reg reads from sh4 side ...
 u32 FASTCALL sh4_ReadMem_reg(u32 addr,u32 size)
 {
-	if (size==1)
+	if (size!=4 || addr&3)
 	{
-		printf("AICA : 1 byte Read WTF\n");
+		printf("AICA : 4 byte/unalign Read WTF\n");
 	}
 
 	if (size==1)
@@ -134,6 +149,10 @@ u32 FASTCALL sh4_ReadMem_reg(u32 addr,u32 size)
 
 void FASTCALL sh4_WriteMem_reg(u32 addr,u32 data,u32 size)
 {
+	if (size!=4 || addr&3)
+	{
+		printf("AICA : 4 byte/unalign Read WTF\n");
+	}
 	if (size==1)
 		WriteReg<1,false>(addr & 0x7FFF,data);
 	else
@@ -141,17 +160,9 @@ void FASTCALL sh4_WriteMem_reg(u32 addr,u32 data,u32 size)
 }
 
 //Ram reads from sh4 side
+/*
 u32 sh4_ReadMem_ram(u32 addr,u32 size)
 {
-	/*
-	if (0x00800104==addr)
-		return *(u32*)&aica_ram[addr&AICA_MEM_MASK]^=0xFFFFFFFF;
-	if (0x00800164==addr)
-		return *(u32*)&aica_ram[addr&AICA_MEM_MASK]^=0xFFFFFFFF;
-	if (0x008001C4==addr)
-		return *(u32*)&aica_ram[addr&AICA_MEM_MASK]^=0xFFFFFFFF;
-	*/
-
 	if (size==1)
 		return aica_ram[addr&AICA_RAM_MASK];
 	else if (size==2)
@@ -171,6 +182,7 @@ void sh4_WriteMem_ram(u32 addr,u32 data,u32 size)
 	else if (size==4)
 		*(u32*)&aica_ram[addr&AICA_RAM_MASK]=data;
 }
+*/
 //Map using _vmem .. yay
 void init_mem()
 {
@@ -208,5 +220,4 @@ void term_mem()
 {
 	_vmem_term();
 	free(aica_reg);
-	//free(aica_ram);
 }

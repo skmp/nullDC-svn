@@ -208,7 +208,55 @@ struct CommonData_struct
 	entry(pad504_0,7);
 
 	u32 :16;
+};
 
+//should be 0x15C8 in size
+struct DSPData_struct
+{
+	//+0x000
+	u32 COEF[128];		//15:3
+
+	//+0x200
+	u32 MADRS[64];		//15:0
+	
+	//+0x300
+	u8 PAD0[0x100];
+
+	//+0x400
+	u32 MPRO[128*4];	//15:0
+	
+	//+0xC00
+	u8 PAD1[0x400];
+
+	//+0x1000
+	struct 
+	{ 
+		u32 l;			//7:0
+		u32 h;			//15:0 (23:8)
+	} 
+	TEMP[128];
+
+	//+0x1400
+	struct 
+	{ 
+		u32 l;			//7:0
+		u32 h;			//15:0 (23:8)
+	} 
+	MEMS[32];
+	
+	//+0x1500
+	struct 
+	{ 
+		u32 l;			//3:0
+		u32 h;			//15:0 (19:4)
+	} 
+	MIXS[16];
+
+	//+0x1580
+	u32 EFREG[16];		//15:0
+	
+	//+0x15C0
+	u32 EXTS[2];		//15:0
 };
 union InterruptInfo
 {
@@ -252,6 +300,7 @@ extern InterruptInfo* SCIRE;
 #undef entry
 
 extern CommonData_struct* CommonData;
+extern DSPData_struct*	  DSPData;
 
 void FASTCALL UpdateAICA(u32 Cycles);
 

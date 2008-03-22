@@ -40,7 +40,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;NULLAICA_EXPORTS"
+				AdditionalIncludeDirectories="G:\L\ndc_omg\emitter"
+				PreprocessorDefinitions="X86;WIN32;_DEBUG;_WINDOWS;_USRDLL;NULLAICA_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="0"
@@ -64,9 +65,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="sdl.lib Dsound.lib"
+				AdditionalDependencies="sdl.lib Dsound.lib emitter_Win32.lib"
 				OutputFile="$(SolutionDir)\WorkDir\Plugins\$(ProjectName)_$(PlatformName).dll"
 				LinkIncremental="2"
+				AdditionalLibraryDirectories="G:\L\ndc_omg\nulldc\deps"
 				ModuleDefinitionFile="exports.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -122,8 +124,8 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;C:\Program Files\Microsoft DirectX SDK (February 2006)\Include&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;NULLAICA_EXPORTS"
+				AdditionalIncludeDirectories="G:\L\ndc_omg\emitter"
+				PreprocessorDefinitions="X86;WIN32;NDEBUG;_WINDOWS;_USRDLL;NULLAICA_EXPORTS"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="false"
 				EnableEnhancedInstructionSet="0"
@@ -144,9 +146,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="sdl.lib Dsound.lib"
+				AdditionalDependencies="sdl.lib Dsound.lib emitter_Win32.lib"
 				OutputFile="$(SolutionDir)\WorkDir\Plugins\$(ProjectName)_$(PlatformName).dll"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="G:\L\ndc_omg\nulldc\deps"
 				ModuleDefinitionFile="exports.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -251,6 +254,14 @@
 			<Filter
 				Name="sgc"
 				>
+				<File
+					RelativePath=".\dsp.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\dsp.h"
+					>
+				</File>
 				<File
 					RelativePath=".\sgc_if.cpp"
 					>
