@@ -1,4 +1,8 @@
 ﻿#include "oglRend.h"
+
+
+#if REND_API == REND_OGL
+
 #include <windows.h>
 
 #include "glew.h"
@@ -7,10 +11,8 @@
 #include <gl\gl.h>
 #include "regs.h"
 #include "vector"
+
 using namespace std;
-
-#if REND_API == REND_OGL
-
 #pragma comment(lib, "opengl32.lib") 
 #pragma comment(lib, "glu32.lib") 
 #pragma comment(lib, "glaux.lib") 
