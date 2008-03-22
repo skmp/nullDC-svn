@@ -1,7 +1,7 @@
 // drkPvr.cpp : Defines the entry point for the DLL application.
 //
 
-#include "drkPvr.h"
+#include "chankaPvr.h"
 
 #include "spg.h"
 #include "pvr.h"
@@ -318,7 +318,7 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	char namet[512];
 	strcpy(namet,"Chankast's video(" __DATE__ ")");
 	mbstowcs(c.Name,namet,512);
-	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD,DC_VER_NORMAL);
+	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD);
 	
 	c.Load=Load;
 	c.Unload=Unload;

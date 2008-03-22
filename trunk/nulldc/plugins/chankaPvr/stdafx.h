@@ -24,7 +24,7 @@
 //#include "sh4_dynaRec.h"
 //#include "sh4.h"
 
-#include "drkPvr.h"
+#include "chankaPvr.h"
 void SaveSSERegs();
 void LoadSSERegs();
 #define g_uVideoMemorySize VRAM_SIZE

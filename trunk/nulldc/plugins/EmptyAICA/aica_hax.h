@@ -1,5 +1,5 @@
 #pragma once
-#include "nullAICA.h"
+#include "EmptyAICA.h"
 
 u32 FASTCALL ReadMem_reg(u32 addr,u32 size);
 void FASTCALL WriteMem_reg(u32 addr,u32 data,u32 size);

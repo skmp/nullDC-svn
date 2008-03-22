@@ -1,5 +1,5 @@
 #pragma once
-#include "drkPvr.h"
+#include "chankaPvr.h"
 
 #define RegSize (0x8000)
 #define RegMask (RegSize-1)

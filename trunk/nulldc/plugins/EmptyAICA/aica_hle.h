@@ -1,5 +1,5 @@
 #pragma once
-#include "nullAICA.h"
+#include "EmptyAICA.h"
 #include "aica_hax.h"
 
 void ARM_Katana_Driver_Info();

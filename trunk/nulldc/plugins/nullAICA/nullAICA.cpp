@@ -1,7 +1,7 @@
 // nullAICA.cpp : Defines the entry point for the DLL application.
 //
 
-#include "sdlAICA.h"
+#include "nullAICA.h"
 #include "sgc_if.h"
 #include "aica.h"
 #include "arm7.h"

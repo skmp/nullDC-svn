@@ -1,5 +1,5 @@
 #pragma once
-#include "sdlAICA.h"
+#include "nullAICA.h"
 
 #ifdef _INCLUDE_SDL
 void sdl_InitAudio();

@@ -1139,13 +1139,13 @@ static void FillBltTexture()
 		  memcpy(pBufferDest,pBank2+offset,4);pBufferDest+=4;
 		  offset+=4;
 	  }*/
-  for (int i=0;i<uNumBytesPerLine;i+=1)
+	  for (int i=0;i<uNumBytesPerLine;i+=1)
 	  {
 		  u32 new_offset= vramlock_ConvOffset32toOffset64(uDispAddr + offset);
 		  char* nof=SH4GetVideoRAMPtr(new_offset);
 		  *pBufferDest=*nof;
-		   pBufferDest++;
-		   offset++;
+		  pBufferDest++;
+		  offset++;
 	  }
 
     }

@@ -4,7 +4,7 @@
 	Version="8.00"
 	Name="EmptyAICA"
 	ProjectGUID="{8004518C-2321-4CFC-BA6C-873736195691}"
-	RootNamespace="nullAICA"
+	RootNamespace="EmptyAICA"
 	Keyword="Win32Proj"
 	>
 	<Platforms>
@@ -193,11 +193,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\nullAICA.cpp"
+				RelativePath=".\EmptyAICA.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\nullAICA.h"
+				RelativePath=".\EmptyAICA.h"
 				>
 			</File>
 		</Filter>
