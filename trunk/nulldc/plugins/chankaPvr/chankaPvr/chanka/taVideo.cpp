@@ -872,28 +872,28 @@ void TASendPackedData(DWORD* pBuffer, DWORD uLength)
           {
           case TPVR::PVR_LIST_OP_POLY:
             //TSH4_ASIC::EventCompleted(TSH4_ASIC::ASIC_EVT_PVR_OPAQUEDONE);
-			  RaiseInterrupt(holly_OPAQUE);
+			  param.RaiseInterrupt(holly_OPAQUE);
             m_uListsCompleted|=(1<<m_uCurrentList);
             break;
           case TPVR::PVR_LIST_OP_MOD:
             //TSH4_ASIC::EventCompleted(TSH4_ASIC::ASIC_EVT_PVR_OPAQUEMODDONE);
-			  RaiseInterrupt(holly_OPAQUEMOD);
+			  param.RaiseInterrupt(holly_OPAQUEMOD);
             m_uListsCompleted|=(1<<m_uCurrentList);
             break;
           case TPVR::PVR_LIST_TR_POLY:
             //TSH4_ASIC::EventCompleted(TSH4_ASIC::ASIC_EVT_PVR_TRANSDONE);
-			  RaiseInterrupt(holly_TRANS);
+			  param.RaiseInterrupt(holly_TRANS);
             m_uListsCompleted|=(1<<m_uCurrentList);
             break;
           case TPVR::PVR_LIST_TR_MOD:
             //TSH4_ASIC::EventCompleted(TSH4_ASIC::ASIC_EVT_PVR_TRANSMODDONE);
-			  RaiseInterrupt(holly_TRANSMOD);
+			  param.RaiseInterrupt(holly_TRANSMOD);
             m_uListsCompleted|=(1<<m_uCurrentList);
             break;
           case TPVR::PVR_LIST_PT_POLY:
 			
             //TSH4_ASIC::EventCompleted(TSH4_ASIC::ASIC_EVT_PVR_PTDONE);
-			    RaiseInterrupt(holly_PUNCHTHRU);
+			    param.RaiseInterrupt(holly_PUNCHTHRU);
             m_uListsCompleted|=(1<<m_uCurrentList);
             break;
           }
@@ -1634,9 +1634,9 @@ void TAStartRender()
   else
     //TSH4_ASIC::EventCompleted(TSH4_ASIC::ASIC_EVT_PVR_RENDERDONE);
   {
-	RaiseInterrupt(holly_RENDER_DONE);
-	RaiseInterrupt(holly_RENDER_DONE_isp);
-	RaiseInterrupt(holly_RENDER_DONE_vd);
+	param.RaiseInterrupt(holly_RENDER_DONE);
+	param.RaiseInterrupt(holly_RENDER_DONE_isp);
+	param.RaiseInterrupt(holly_RENDER_DONE_vd);
   }
 }
 

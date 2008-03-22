@@ -38,7 +38,7 @@ void FASTCALL WritePvrRegister(u32 addr,u32 data,u32 size);
 
 extern u8*	vram_64;
 extern void* Hwnd;
-extern RaiseInterruptFP* RaiseInterrupt;
+//extern RaiseInterruptFP* RaiseInterrupt;
 
 float GetSeconds();
 

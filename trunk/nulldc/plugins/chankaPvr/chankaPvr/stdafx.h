@@ -27,7 +27,7 @@
 #include "drkPvr.h"
 void SaveSSERegs();
 void LoadSSERegs();
-#define g_uVideoMemorySize 0x800000
+#define g_uVideoMemorySize VRAM_SIZE
 
 extern int CurrentFrame;
 extern char* g_pSH4TextureMemory;
@@ -47,7 +47,7 @@ DWORD SH4HWRegistersGetValue(DWORD uAddress,DWORD uMask=0xffffffff,DWORD uShift=
 
 #define SH4HWRegistersGetPaletteTable()  ((char*)PALETTE_RAM)
 #define GETVALUEHWREGISTER(a,b) SH4HWRegistersGetValue(a,b##_MASK,b##_SHIFT)
-#define SH4GetVideoRAMPtr(aa)  ((char*)&g_pSH4TextureMemory[(aa) & 0x7FFFFF])
+#define SH4GetVideoRAMPtr(aa)  ((char*)&g_pSH4TextureMemory[(aa) & VRAM_MASK])
 #define SH4HWRegistersGetPtr(aa) ((DWORD*)&regs[(aa)&RegMask])
 
 enum

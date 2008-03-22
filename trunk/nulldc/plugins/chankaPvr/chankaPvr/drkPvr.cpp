@@ -11,7 +11,7 @@
 pvr_init_params param;
 emu_info em_inf;
 
-RaiseInterruptFP* RaiseInterrupt;
+//RaiseInterruptFP* RaiseInterrupt;
 
 int CurrentFrame=0;
 void* Hwnd;
@@ -31,11 +31,15 @@ int g_iMultiSampleCount;
 
 void cfgSetInt(char* key,int v)
 {
-	em_inf.ConfigSaveInt("chankast_pvr",key,v);
+	wchar t[512];
+	mbstowcs(t,key,512);
+	em_inf.ConfigSaveInt(L"chankast_pvr",t,v);
 }
 int cfgGetInt(char* key,int def)
 {
-	return em_inf.ConfigLoadInt("chankast_pvr",key,def);
+	wchar t[512];
+	mbstowcs(t,key,512);
+	return em_inf.ConfigLoadInt(L"chankast_pvr",t,def);
 }
 extern bool g_bForceSVP;
 void LoadSettings()
@@ -206,26 +210,28 @@ void EXPORT_CALL handle_TCH(u32 id,void* w,void* p)
 
 s32 FASTCALL Load(emu_info* inf)
 {
+	wchar ename[512];
 	u32 rmenu=inf->RootMenu;
 	em_inf=*inf;
-	em_inf.ConfigLoadStr("emu","shortname",emu_name,0);
+	em_inf.ConfigLoadStr(L"emu",L"shortname",ename,0);
+	wcstombs(emu_name,ename,512);
 	Hwnd=em_inf.GetRenderTarget();
 	g_hWnd=(HWND)Hwnd;
 	LoadSettings();
 
-	u32 fs_menu=em_inf.AddMenuItem(rmenu,-1,"Fullscreen",0,0);
-	em_inf.AddMenuItem(fs_menu,-1,"Enable",handle_TCH<(bool*)&g_bCreationFullScreen>,g_bCreationFullScreen);
-	em_inf.SetMenuItemStyle(em_inf.AddMenuItem(fs_menu,-1,"-",0,0),MIS_Seperator,MIS_Seperator);
-	em_inf.AddMenuItem(fs_menu,-1,"640x480",0,0);
+	u32 fs_menu=em_inf.AddMenuItem(rmenu,-1,L"Fullscreen",0,0);
+	em_inf.AddMenuItem(fs_menu,-1,L"Enable",handle_TCH<(bool*)&g_bCreationFullScreen>,g_bCreationFullScreen);
+	em_inf.AddMenuItem(fs_menu,-1,0,0,0);
+	em_inf.AddMenuItem(fs_menu,-1,L"640x480",0,0);
 
-	em_inf.AddMenuItem(rmenu,-1,"Use ZWrite",handle_TCH<&g_bUSE_ZWRITE>,g_bUSE_ZWRITE);
-	em_inf.AddMenuItem(rmenu,-1,"Use Alpha Test ZWrite",handle_TCH<&g_bUSE_ALPHATEST_ZWRITE>,g_bUSE_ALPHATEST_ZWRITE);
-	em_inf.AddMenuItem(rmenu,-1,"Wireframe",handle_TCH<&g_bWireframe>,g_bWireframe);
-	em_inf.AddMenuItem(rmenu,-1,"Show Stats",handle_TCH<&g_bShowStats>,g_bShowStats);
+	em_inf.AddMenuItem(rmenu,-1,L"Use ZWrite",handle_TCH<&g_bUSE_ZWRITE>,g_bUSE_ZWRITE);
+	em_inf.AddMenuItem(rmenu,-1,L"Use Alpha Test ZWrite",handle_TCH<&g_bUSE_ALPHATEST_ZWRITE>,g_bUSE_ALPHATEST_ZWRITE);
+	em_inf.AddMenuItem(rmenu,-1,L"Wireframe",handle_TCH<&g_bWireframe>,g_bWireframe);
+	em_inf.AddMenuItem(rmenu,-1,L"Show Stats",handle_TCH<&g_bShowStats>,g_bShowStats);
 
-	em_inf.SetMenuItemStyle(em_inf.AddMenuItem(rmenu,-1,"-",0,0),MIS_Seperator,MIS_Seperator);
+	em_inf.AddMenuItem(rmenu,-1,0,0,0);
 
-	em_inf.AddMenuItem(rmenu,-1,"About",handle_About,0);
+	em_inf.AddMenuItem(rmenu,-1,L"About",handle_About,0);
 
 	return rv_ok;
 }
@@ -240,8 +246,6 @@ s32 FASTCALL InitPvr(pvr_init_params* aparam)
 
 	vram_64=param.vram;
 	g_pSH4TextureMemory=(char*)vram_64;
-
-	RaiseInterrupt=param.RaiseInterrupt;
 	//g_bChangeDisplayEnable = true;
 	//g_bDraw = true;
 	LoadSettings();
@@ -311,7 +315,9 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	c.InterfaceVersion=PVR_PLUGIN_I_F_VERSION;
 	c.Type=Plugin_PowerVR;
 	
-	strcpy(c.Name,"Chankast's video(" __DATE__ ")");
+	char namet[512];
+	strcpy(namet,"Chankast's video(" __DATE__ ")");
+	mbstowcs(c.Name,namet,512);
 	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD,DC_VER_NORMAL);
 	
 	c.Load=Load;
