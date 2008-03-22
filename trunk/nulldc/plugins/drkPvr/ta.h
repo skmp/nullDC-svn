@@ -268,7 +268,7 @@ namespace TASplitter
 strip_end:
 			StripStarted=false;
 			TA_decoder::EndPolyStrip();
-			return data+SZ32;
+			return data+poly_size;
 		}
 
 				

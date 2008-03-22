@@ -960,7 +960,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 	case WM_SIZE:
 		{
 			NDC_WINDOW_RECT r = { LOWORD(lParam),HIWORD(lParam) };
-			emu.BroardcastEvent(BET_All,NDE_GUI_RESIZED,&r,0);
+			emu.BroardcastEvent(MT_All,NDE_GUI_RESIZED,&r,0);
 		}
 		break;
 	case WM_CREATE:
@@ -1011,7 +1011,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 		{
 			if (LOWORD(wParam)==VK_RETURN)
 			{
-				emu.BroardcastEvent(BET_All,NDE_GUI_REQESTFULLSCREEN,0,0);
+				emu.BroardcastEvent(MT_All,NDE_GUI_REQESTFULLSCREEN,0,0);
 				return 0;
 			}
 		}
