@@ -3,31 +3,31 @@ Microsoft Visual Studio Solution File, Format Version 9.00
 # Visual Studio 2005
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nullDC", "nullDC\nullDC.vcproj", "{47CE9BF1-542B-4C45-A22A-353A9FC97322}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EmptyAICA", "plugins\nullAICA\nullAICA\nullAICA.vcproj", "{8004518C-2321-4CFC-BA6C-873736195691}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EmptyAICA", "plugins\EmptyAICA\nullAICA.vcproj", "{8004518C-2321-4CFC-BA6C-873736195691}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "chankaAICA", "plugins\chankaAICA\chankaAICA\chankaAICA.vcproj", "{71E731E3-8111-41B6-BD13-F2249DBF9928}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "chankaAICA", "plugins\chankaAICA\chankaAICA.vcproj", "{71E731E3-8111-41B6-BD13-F2249DBF9928}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zNullPvrGL", "plugins\zNullPvrGL\zNullPvrGL\zNullPvrGL.vcproj", "{96D32B6C-E11C-4FD7-A4CD-B296415D2560}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zNullPvrGL", "plugins\zNullPvrGL\zNullPvrGL.vcproj", "{96D32B6C-E11C-4FD7-A4CD-B296415D2560}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zNullGD", "plugins\zNullGD\zNullGD\zNullGD.vcproj", "{1C41AE86-5DF0-4442-B994-B3C6CA482FE1}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zNullGD", "plugins\zNullGD\zNullGD.vcproj", "{1C41AE86-5DF0-4442-B994-B3C6CA482FE1}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "drkMapleDevices", "plugins\drkMapleDevices\drkMapleDevices\drkMapleDevices.vcproj", "{73FFA215-6F86-4C88-AA59-5735505A8B05}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "drkMapleDevices", "plugins\drkMapleDevices\drkMapleDevices.vcproj", "{73FFA215-6F86-4C88-AA59-5735505A8B05}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ImgReader", "plugins\ImgReader\ImgReader\ImgReader.vcproj", "{2415C385-C878-4D66-A097-FF25BCCDC1EB}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ImgReader", "plugins\ImgReader\ImgReader.vcproj", "{2415C385-C878-4D66-A097-FF25BCCDC1EB}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "drkPvr", "plugins\drkPvr\drkPvr.vcproj", "{0520BA33-1A98-4DDE-8B36-99F25EDC5BD6}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zNullMaple", "plugins\zNullMaple\zNullMaple.vcproj", "{B44CF6A8-A9AB-4C80-8A20-D4BFC2687FCC}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nullExtDev", "plugins\nullExtDev\nullExtDev\nullExtDev.vcproj", "{70FF77F6-E0CE-44EF-AF61-1BBAF3F60CD2}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nullExtDev", "plugins\nullExtDev\nullExtDev.vcproj", "{70FF77F6-E0CE-44EF-AF61-1BBAF3F60CD2}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nullPVR", "plugins\nullPVR\nullPVR\nullPVR.vcproj", "{4A98B197-EB69-4906-A816-BA866A3B7A5D}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nullPVR", "plugins\nullPVR\nullPVR.vcproj", "{4A98B197-EB69-4906-A816-BA866A3B7A5D}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nullDC_GUI", "plugins\nullDC_GUI\nullDC_GUI\nullDC_GUI.vcproj", "{BA607CBC-BBF5-441B-9778-B86FD2D710EB}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nullDC_GUI", "plugins\nullDC_GUI\nullDC_GUI.vcproj", "{BA607CBC-BBF5-441B-9778-B86FD2D710EB}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nullMaple", "plugins\nullMaple\nullMaple\nullMaple.vcproj", "{73666215-6F86-4C88-AA59-5735505A8B05}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nullMaple", "plugins\nullMaple\nullMaple.vcproj", "{73666215-6F86-4C88-AA59-5735505A8B05}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ElsemiAICA", "plugins\ElsemiAICA\ElsemiAICA\ElsemiAICA.vcproj", "{7FE731E3-8111-41B6-BD13-F2249DBF9928}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ElsemiAICA", "plugins\ElsemiAICA\ElsemiAICA.vcproj", "{7FE731E3-8111-41B6-BD13-F2249DBF9928}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "emitter", "..\emitter\emitter\emitter.vcproj", "{B0B56062-39D6-4BEA-B0C9-A06AC2A65555}"
 EndProject
