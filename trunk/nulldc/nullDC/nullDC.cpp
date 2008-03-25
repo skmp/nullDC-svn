@@ -138,6 +138,9 @@ int main___(int argc,wchar* argv[])
 	}
 	LoadSettings();
 
+	if (settings.emulator.NoConsole)
+		FreeConsole();
+
 	if (!CreateGUI())
 	{
 		msgboxf(_T("Creating GUI failed\n"),MBX_ICONERROR);
@@ -240,6 +243,7 @@ void LoadSettings()
 	settings.dreamcast.RTC=cfgLoadInt(L"nullDC",L"Dreamcast.RTC",GetRTC_now());
 
 	settings.emulator.AutoStart=cfgLoadInt(L"nullDC",L"Emulator.AutoStart",0);
+	settings.emulator.NoConsole=cfgLoadInt(L"nullDC",L"Emulator.NoConsole",0);
 
 	//make sure values are valid
 	settings.dreamcast.cable=min(max(settings.dreamcast.cable,0),3);
@@ -252,4 +256,5 @@ void SaveSettings()
 	cfgSaveInt(L"nullDC",L"Dreamcast.Cable",settings.dreamcast.cable);
 	cfgSaveInt(L"nullDC",L"Dreamcast.RTC",settings.dreamcast.RTC);
 	cfgSaveInt(L"nullDC",L"Emulator.AutoStart",settings.emulator.AutoStart);
+	cfgSaveInt(L"nullDC",L"Emulator.NoConsole",settings.emulator.NoConsole);
 }

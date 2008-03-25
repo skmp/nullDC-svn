@@ -230,6 +230,7 @@ struct __settings
 	struct 
 	{
 		bool AutoStart;
+		bool NoConsole;
 	} emulator;
 };
 extern __settings settings;
