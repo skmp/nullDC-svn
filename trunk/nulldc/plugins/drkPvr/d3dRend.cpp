@@ -520,10 +520,10 @@ namespace Direct3DRenderer
 				lock_list.push_back(this);
 			
 			char file[512];
-/*
-			sprintf(file,"g:\\textures\\0x%08x_%08x_%s_%d_VQ%d_TW%d_MM%d_.jpg",tcw.full,tsp.full,texFormatName[tcw.NO_PAL.PixelFmt],Lookups
+
+			/*sprintf(file,"g:\\textures\\0x%08x_%08x_%s_%d_VQ%d_TW%d_MM%d_.png",tcw.full,tsp.full,texFormatName[tcw.NO_PAL.PixelFmt],Lookups
 			,tcw.NO_PAL.VQ_Comp,tcw.NO_PAL.ScanOrder,tcw.NO_PAL.MipMapped);
-			D3DXSaveTextureToFileA( file,D3DXIFF_JPG,Texture,0);*/
+			D3DXSaveTextureToFileA( file,D3DXIFF_PNG,Texture,0);*/
 		}
 		void LockVram()
 		{
@@ -2077,8 +2077,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 */
 		LoadSettings();
 		
-
-		bool FZB= D3D_OK==d3d9->CheckDeviceFormat(D3DADAPTER_DEFAULT,D3DDEVTYPE_HAL,D3DFMT_X8B8G8R8,D3DUSAGE_DEPTHSTENCIL,D3DRTYPE_SURFACE,D3DFMT_D24FS8);
+		bool FZB= SUCCEEDED(d3d9->CheckDeviceFormat(D3DADAPTER_DEFAULT,D3DDEVTYPE_REF,D3DFMT_X8B8G8R8,D3DUSAGE_DEPTHSTENCIL,D3DRTYPE_SURFACE,D3DFMT_D24FS8));
 		if (FZB)
 			printf("Device Supports D24FS8\n");
 
