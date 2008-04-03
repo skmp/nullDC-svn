@@ -281,7 +281,7 @@ struct vitem
 	wstring s;
 	wstring n;
 	wstring v;
-	vitem(wstring a,wstring b,wstring c){s=a;b=n;v=c;}
+	vitem(wstring a,wstring b,wstring c){s=a;n=b;v=c;}
 };
 vector<vitem> vlist;
 wchar* trim_ws(wchar* str);
@@ -371,7 +371,7 @@ bool cfgOpen()
 
 	for (size_t i=0;i<vlist.size();i++)
 	{
-		cfgdb.GetEntry(vlist[i].s)->SetEntry(vlist[i].s,vlist[i].v,CEM_VIRTUAL);
+		cfgdb.GetEntry(vlist[i].s)->SetEntry(vlist[i].n,vlist[i].v,CEM_VIRTUAL);
 	}
 	if (cfgfile)
 	{
