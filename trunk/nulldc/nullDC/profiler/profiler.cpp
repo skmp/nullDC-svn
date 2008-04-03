@@ -79,9 +79,9 @@ bool TBP_Enabled;
 void init_ProfilerModules()
 {
 	main_mod.FromAddress(init_ProfilerModules);
-	aica_mod.FromAddress(libAICA.Init);
-	pvr_mod.FromAddress(libPvr.Init);
-	gdrom_mod.FromAddress(libGDR.Init);
+	aica_mod.FromAddress(libAICA.Load);
+	pvr_mod.FromAddress(libPvr.Load);
+	gdrom_mod.FromAddress(libGDR.Load);
 	dyna_mod.FromValues(DynarecCache,DynarecCacheSize);
 }
 void init_Profiler(void* param)
