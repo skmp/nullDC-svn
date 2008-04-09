@@ -3,6 +3,7 @@
 
 #include "nullDC\plugins\plugin_header.h"
 #include <memory.h>
+#include <math.h>
 
 emu_info host;
 
@@ -156,7 +157,16 @@ struct VMU_info
 {
 	u8 data[256*1024];
 	char file[512];
+	struct {
+		HWND handle;
+		BYTE data[192];
+		WORD bitmap[48*32];
+//		BITMAPINFO bmi;
+		bool visible;
+	} lcd;
 };
+BITMAPINFO vmu_bmi;
+
 bool ikbmap=false;
 void kb_down(u8 kc)
 {
@@ -2256,8 +2266,48 @@ typedef struct {
 	(((u32) (val) & (u32) 0x0000ff00U) <<  8) | \
 	(((u32) (val) & (u32) 0x00ff0000U) >>  8) | \
 	(((u32) (val) & (u32) 0xff000000U) >> 24)))
+
+INT_PTR CALLBACK VMULCDProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	VMU_info* dev=(VMU_info*) (GetWindowLong(hWnd,GWL_USERDATA));
+	switch(msg)
+	{	
+		case WM_INITDIALOG:
+			{
+				SetWindowLong(hWnd,GWL_USERDATA,lParam);
+			}
+			return TRUE;
+		case WM_ERASEBKGND:
+			return TRUE;
+		case WM_PAINT:
+			{
+				PAINTSTRUCT ps;
+				HDC hdc=BeginPaint(hWnd,&ps);
+				int x=0;//(ps.rcPaint.left)/3;
+				int y=0;//(ps.rcPaint.top)/3;
+				int wx=48;//(ps.rcPaint.right+2)/3-x;
+				int wy=32;//(ps.rcPaint.bottom+2)/3-y;
+				
+				
+				SetStretchBltMode(hdc,BLACKONWHITE);
+
+				StretchDIBits(hdc,	x*3,y*3,wx*3,wy*3,
+									x  ,y  ,wx  ,wy  ,
+									dev->lcd.bitmap,&vmu_bmi,DIB_RGB_COLORS,SRCCOPY);
+
+				EndPaint(hWnd,&ps);
+			}
+			break;
+		//case WM_ACTIVATE:
+		//	printf("VMU GOT FOCUS !\n");
+		//	break;
+	}
+	return FALSE;
+}
+
 void FASTCALL VmuDMA(maple_subdevice_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
 {
+	VMU_info* dev=(VMU_info*)((*device_instance).data);
 	u8*buffer_out_b=(u8*)buffer_out;
 	//printf("VmuDMA Called for port 0x%X, Command %d\n",device_instance->port,Command);
 	switch (Command)
@@ -2283,13 +2333,13 @@ void FASTCALL VmuDMA(maple_subdevice_instance* device_instance,u32 Command,u32* 
 
 			//caps
 			//4
-			w32(2 << 24);
+			w32(14 << 24);
 
 			//struct data
 			//3*4
-			w32( 0x00410f00); 
-			w32( 0);
-			w32( 0);
+			w32( 0x403f7e7e); 
+			w32( 0x00100500);
+			w32( 0x00410f00);
 			//1	area code
 			w8(0xFF);
 			//1	direction
@@ -2349,7 +2399,7 @@ void FASTCALL VmuDMA(maple_subdevice_instance* device_instance,u32 Command,u32* 
 		case 11:
 			if(buffer_in[0]&(2<<24))
 			{
-				VMU_info* dev=(VMU_info*)((*device_instance).data);
+				//VMU_info* dev=(VMU_info*)((*device_instance).data);
 
 				buffer_out[0] = (2<<24);
 				u32 Block = (SWAP32(buffer_in[1]))&0xffff;
@@ -2364,14 +2414,20 @@ void FASTCALL VmuDMA(maple_subdevice_instance* device_instance,u32 Command,u32* 
 				buffer_out_len=(512+8);
 				responce=8;//data transfer
 			}
-			else
+			else if (buffer_in[0]&(4<<24))
+			{
+				buffer_out[0] = (4<<24);
+				buffer_out[1] = buffer_in[1];
+				memcpy(&buffer_out[2],(dev->lcd.data),192);
+				buffer_out_len=(192+8);
+				responce=8;//data transfer
+			}
+			else 
 				responce=-2;//bad function
 			break;
 		case 12:
 			if(buffer_in[0]&(2<<24))
 			{
-				VMU_info* dev=(VMU_info*)((*device_instance).data);
-
 				u32 Block = (SWAP32(buffer_in[1]))&0xffff;
 				u32 Phase = ((SWAP32(buffer_in[1]))>>16)&0xff; 
 				//printf("Block wirte : %d:%d , %d bytes\n",Block,Phase,(buffer_in_len-8));
@@ -2387,6 +2443,41 @@ void FASTCALL VmuDMA(maple_subdevice_instance* device_instance,u32 Command,u32* 
 					printf("Failed to open %s for saving vmu data\n",dev->file);
 				responce=7;//just ko
 			}
+			else if (buffer_in[0]&(4<<24))
+			{
+				memcpy(dev->lcd.data,&buffer_in[2],192);
+				//Update lcd window
+				if (!dev->lcd.visible)
+				{
+					ShowWindow(dev->lcd.handle,SHOW_OPENNOACTIVATE);
+					dev->lcd.visible=true;
+				}
+				//if(LCDBitmap)
+				{
+					const WORD white=0xffff;
+					const WORD black=0x0000;
+
+					for(int y=0;y<32;++y)
+					{
+						WORD *dst=dev->lcd.bitmap+y*48;
+						BYTE *src=dev->lcd.data+6*y+5;
+						for(int x=0;x<48/8;++x)
+						{
+							BYTE val=*src;
+							for(int m=0;m<8;++m)
+							{
+								if(val&(1<<(m)))
+									*dst++=black;
+								else
+									*dst++=white;
+							}
+							--src;
+						}
+					}
+					InvalidateRect(dev->lcd.handle,NULL,FALSE);
+				}
+				responce=7;//just ko
+			}
 			else
 				responce=-2;//bad function
 			break;
@@ -2394,6 +2485,16 @@ void FASTCALL VmuDMA(maple_subdevice_instance* device_instance,u32 Command,u32* 
 		case 13:
 			responce=7;//just ko
 			break;
+		case 14:
+			if (buffer_in[0]&(8<<24))
+			{
+				printf("BEEP : %d %d | %d %d\n",((u8*)buffer_in)[4],((u8*)buffer_in)[5],((u8*)buffer_in)[6],((u8*)buffer_in)[7]);
+				responce=7;//just ko
+			}
+			else
+				responce=-2;//bad function
+			break;
+			
 
 		default:
 			printf("UNKOWN MAPLE COMMAND %d\n",Command);
@@ -2517,6 +2618,7 @@ s32 FASTCALL CreateSub(maple_subdevice_instance* inst,u32 id,u32 flags,u32 rootm
 	host.AddMenuItem(rootmenu,-1,wtemp,0,0);
 	inst->data=malloc(sizeof(VMU_info));
 	sprintf(((VMU_info*)inst->data)->file,"vmu_data_port%02X.bin",inst->port);
+	((VMU_info*)inst->data)->lcd.handle=0;
 	FILE* f=fopen(((VMU_info*)inst->data)->file,"rb");
 	if (f)
 	{
@@ -2524,7 +2626,46 @@ s32 FASTCALL CreateSub(maple_subdevice_instance* inst,u32 id,u32 flags,u32 rootm
 		fclose(f);
 	}
 	inst->dma=VmuDMA;
+	VMU_info* dev=(VMU_info* )inst->data;
+	dev->lcd.visible=false;
 
+
+	dev->lcd.handle=CreateDialogParam(hInstance,MAKEINTRESOURCE(IDD_LCD),0,VMULCDProc,(LPARAM)dev);
+
+	if (vmu_bmi.bmiHeader.biSize==0)
+	{
+		memset(&vmu_bmi,0,sizeof(BITMAPINFO));
+		BITMAPINFO& bmi=vmu_bmi;
+
+		bmi.bmiHeader.biSize=sizeof(BITMAPINFOHEADER);
+		bmi.bmiHeader.biBitCount=16;
+		bmi.bmiHeader.biCompression=BI_RGB;
+		bmi.bmiHeader.biHeight=32;
+		bmi.bmiHeader.biWidth=48;
+		bmi.bmiHeader.biPlanes=1;
+		//memset(&bmi.bmiColors[0],0x00,4);
+		//memset(&bmi.bmiColors[1],0xFF,4);
+	}
+
+	memset(dev->lcd.bitmap,0xff,32*48*2);
+
+	RECT rc={0,0,48*3,32*3};
+	AdjustWindowRectEx(&rc,GetWindowLong(dev->lcd.handle,GWL_STYLE),FALSE,GetWindowLong(dev->lcd.handle,GWL_EXSTYLE));
+	static int lastPosX=0;
+	static int lastPosY=0;
+	SetWindowPos(dev->lcd.handle,NULL,32+lastPosX*192,32+lastPosY*128,rc.right-rc.left,rc.bottom-rc.top,SWP_NOZORDER|SWP_NOACTIVATE);
+	lastPosX++;
+	if (lastPosX>2)
+	{
+		lastPosY++;
+		lastPosX=0;
+	}
+	if (lastPosY>4)
+		lastPosY=0;
+	wchar windowtext[512];
+	swprintf(windowtext,L"VMU %c%d",'A'+(inst->port>>6),(int)(log10f(inst->port&31)/log10f(2)));
+	SetWindowText(dev->lcd.handle,windowtext);
+	EnableWindow(dev->lcd.handle,TRUE);
 	return rv_ok;
 }
 s32 FASTCALL InitSub(maple_subdevice_instance* inst,u32 id,maple_init_params* params)
@@ -2536,6 +2677,9 @@ void FASTCALL TermSub(maple_subdevice_instance* inst,u32 id)
 }
 void FASTCALL DestroySub(maple_subdevice_instance* inst,u32 id)
 {
+	VMU_info* dev=(VMU_info* )inst->data;
+	if (dev->lcd.handle)
+		DestroyWindow(dev->lcd.handle);
 	if (inst->data)
 		free(inst->data);
 }

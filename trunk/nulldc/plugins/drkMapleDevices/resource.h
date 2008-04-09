@@ -3,6 +3,8 @@
 // Used by drkMapleDevices.rc
 //
 #define IDD_ConfigKeys                  101
+#define IDD_VMU                         102
+#define IDD_LCD                         102
 #define IDC_PORTTAB                     1002
 #define IDC_BUTTON1                     1007
 #define IDC_BUTTON2                     1008
@@ -32,7 +34,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        102
+#define _APS_NEXT_RESOURCE_VALUE        103
 #define _APS_NEXT_COMMAND_VALUE         40001
 #define _APS_NEXT_CONTROL_VALUE         1023
 #define _APS_NEXT_SYMED_VALUE           101
