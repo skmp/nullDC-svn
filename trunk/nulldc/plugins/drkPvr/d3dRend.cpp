@@ -133,11 +133,35 @@ namespace Direct3DRenderer
 			//if (p) 
 			//{
 			//	*(u32*)p=1;
-			fullsrq.goto_fs=!settings.Fullscreen.Enabled;
-			//}
-			//else
+			if (settings.Fullscreen.Res_X==-1)
+			{
+				HMONITOR hmon=MonitorFromWindow((HWND)emu.GetRenderTarget(),0);
+				MONITORINFO mi;
+				mi.cbSize=sizeof(mi);
+				GetMonitorInfo(hmon,&mi);
+				static RECT oldrect;
+
+				if (GetWindowLong((HWND)emu.GetRenderTarget(),GWL_STYLE)&WS_CAPTION)
+				{
+					GetWindowRect((HWND)emu.GetRenderTarget(),&oldrect);
+					SetWindowLong((HWND)emu.GetRenderTarget(),GWL_STYLE,(GetWindowLong((HWND)emu.GetRenderTarget(),GWL_STYLE)&~WS_OVERLAPPEDWINDOW) | WS_POPUP);
+					SetWindowPos((HWND)emu.GetRenderTarget(),HWND_TOPMOST,mi.rcMonitor.left,mi.rcMonitor.top,mi.rcMonitor.right-mi.rcMonitor.left,mi.rcMonitor.bottom-mi.rcMonitor.top,0);
+				}
+				else
+				{
+					SetWindowLong((HWND)emu.GetRenderTarget(),GWL_STYLE,(GetWindowLong((HWND)emu.GetRenderTarget(),GWL_STYLE)&~WS_POPUP) | WS_OVERLAPPEDWINDOW);
+					SetWindowPos((HWND)emu.GetRenderTarget(),0,oldrect.left,oldrect.top,oldrect.right-oldrect.left,oldrect.bottom-oldrect.top,0);
+				}
+				
+			}
+			else
+			{
+				fullsrq.goto_fs=!settings.Fullscreen.Enabled;
+				//}
+				//else
 				//fullsrq.goto_fs=false;
-			fullsrq.rev++;
+				fullsrq.rev++;
+			}
 		}
 	}
 	void SetRenderRect(float* rect,bool do_clear)

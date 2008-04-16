@@ -209,13 +209,12 @@ struct resolution
 bool operator<(const resolution &left, const resolution &right)
 {
 	/* put any condition you want to sort on here */
-	if (left.h*left.w>right.h*right.w)
+	if (left.h*(u64)left.w>right.h*(u64)right.w)
 		return true;
-	else if (left.h*left.w==right.h*right.w)
+	else if (left.h*(u64)left.w==right.h*(u64)right.w)
 		return left.rr>right.rr;
 	else
 		return false;
-	//return left.zMin<right.zMax;
 }
 vector<resolution> resolutions;
 void res_callback(u32 w,u32 h,u32 rr)
@@ -230,10 +229,11 @@ void res_callback(u32 w,u32 h,u32 rr)
 u32 special_res=0;
 void handler_SetRes(int val)
 {
+
 	settings.Fullscreen.Res_X=resolutions[val].w;
 	settings.Fullscreen.Res_Y=resolutions[val].h;
 	settings.Fullscreen.Refresh_Rate=resolutions[val].rr;
-	
+
 	if (special_res)
 	{
 		emu.DeleteMenuItem(special_res);
@@ -295,6 +295,8 @@ s32 FASTCALL Load(emu_info* emu_inf)
 	AddSeperator(Resolutions_menu);
 	
 	//Resolutions !
+	resolution r={-1,-1,-1};
+	resolutions.push_back(r);
 	//List em !
 	rend_list_modes(res_callback);
 	
@@ -314,7 +316,10 @@ s32 FASTCALL Load(emu_info* emu_inf)
 		if (sel)
 			sel_any=true;
 		swprintf(temp,512,L"%dx%d@%dHz",resolutions[rc].w,resolutions[rc].h,resolutions[rc].rr);
-		menu_res.Add(Resolutions_menu,temp,rc);
+		if (rc==0)
+			menu_res.Add(Resolutions_menu,L"Auto",rc);
+		else
+			menu_res.Add(Resolutions_menu,temp,rc);
 		if (sel)
 			menu_res.SetValue(rc);
 	}
@@ -607,12 +612,12 @@ void LoadSettings()
 	settings.OSD.ShowStats						=	cfgGetInt(L"OSD.ShowStats",0);
 
 	settings.Fullscreen.Enabled					=	cfgGetInt(L"Fullscreen.Enabled",0);
-	RECT rc;
-	GetWindowRect(GetDesktopWindow(),&rc);
+	//RECT rc;
+	//GetWindowRect(GetDesktopWindow(),&rc);
 	
-	settings.Fullscreen.Res_X					=	cfgGetInt(L"Fullscreen.Res_X",rc.right);
-	settings.Fullscreen.Res_Y					=	cfgGetInt(L"Fullscreen.Res_Y",rc.top);
-	settings.Fullscreen.Refresh_Rate			=	cfgGetInt(L"Fullscreen.Refresh_Rate",60);
+	settings.Fullscreen.Res_X					=	cfgGetInt(L"Fullscreen.Res_X",-1);//rc.right
+	settings.Fullscreen.Res_Y					=	cfgGetInt(L"Fullscreen.Res_Y",-1);//rc.bottom
+	settings.Fullscreen.Refresh_Rate			=	cfgGetInt(L"Fullscreen.Refresh_Rate",-1);//60
 
 	settings.Enhancements.MultiSampleCount		=	cfgGetInt(L"Enhancements.MultiSampleCount",0);
 	settings.Enhancements.MultiSampleQuality	=	cfgGetInt(L"Enhancements.MultiSampleQuality",0);
