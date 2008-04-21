@@ -28,7 +28,7 @@ using namespace std;
 //#define DEBUG_DLL
 
 //Do not complain when i use enum::member
-#pragma warning( disable : 4482)
+//#pragma warning( disable : 4482)
 
 //unnamed struncts/unions
 #pragma warning( disable : 4201)

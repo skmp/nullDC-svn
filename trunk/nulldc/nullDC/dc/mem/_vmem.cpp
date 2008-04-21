@@ -1,5 +1,18 @@
 //new memory mapping code ..."_vmem" ... Don't ask where i got the name , it somehow poped on my head :p
 //
+/*
+_vmem v2 :
+
+physical map :
+	_vmem : generic functions
+	dvmem : direct access (using memory mapping)
+	nvmem : native acc (dyn/etc)
+
+Translated map:
+	tvmem : generic function, may use the exception mechanism
+	dbg 
+
+*/
 #include "_vmem.h"
 #include "dc/aica/aica_if.h"
 
@@ -357,7 +370,7 @@ void* _nvmem_map_buffer(u32 dst,u32 addrsz,u32 offset,u32 size)
 	if (!rv)
 		return 0;
 
-	for (int i=1;i<map_times;i++)
+	for (u32 i=1;i<map_times;i++)
 	{
 		dst+=size;
 		ptr=MapViewOfFileEx(mem_handle,FILE_MAP_READ,0,offset,size,&sh4_reserved_mem[dst]);

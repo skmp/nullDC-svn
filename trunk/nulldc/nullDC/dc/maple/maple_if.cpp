@@ -198,7 +198,7 @@ void DoMapleDma()
 			u32 command=p_data[0] &0xFF;
 			u32 reci=(p_data[0] >> 8) & 0xFF;//0-5;
 			u32 subport=GetMaplePort(reci);
-			u32 wtfport=reci>>6;
+			//u32 wtfport=reci>>6;
 			u32 send=(p_data[0] >> 16) & 0xFF;
 			u32 inlen=(p_data[0]>>24) & 0xFF;
 			u32 resp=0;

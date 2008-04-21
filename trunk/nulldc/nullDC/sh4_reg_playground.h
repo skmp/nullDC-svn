@@ -16,9 +16,9 @@
 //Replace	= null
 //}
 
-//Iclk is 200 mrhz
-//Bclk is 100 mrhz
-//Pclk is 50  mrhz
+//Iclk is 200 mhz
+//Bclk is 100 mhz
+//Pclk is 50  mhz
 
 //bah given up on regex for that complex things , not i'l use some vb6 code to gather info :P
 

@@ -439,7 +439,7 @@ void intc_Reset(bool Manual)
 
 	interrupt_vpend=0x00000000;	//rebuild & recalc
 	interrupt_vmask=0xFFFFFFFF;	//no masking
-	decoded_srimask=0;			//everything is allowed
+	decoded_srimask=0;			//nothing is real, everything is allowed ...
 
 	RequestSIIDRebuild();		//we have to rebuild the table.
 

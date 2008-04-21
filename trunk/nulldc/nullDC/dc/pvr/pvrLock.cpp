@@ -135,7 +135,7 @@ void vramlock_list_remove(vram_block* block)
 	for (u32 i=base;i<=end;i++)
 	{
 		vector<vram_block*>* list=&VramLocks[i];
-		for (int j=0;j<list->size();j++)
+		for (size_t j=0;j<list->size();j++)
 		{
 			if ((*list)[j]==block)
 			{

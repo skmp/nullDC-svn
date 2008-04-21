@@ -53,6 +53,10 @@ typedef void __fastcall shil_compileFP(shil_opcode* op);
 
 bool inited=false;
 
+//[R|W][sz][M/F][addr]
+__declspec(align(64))
+void* mio_pvt[2][4][2][8];
+
 /*
 int fallbacks=0;
 int native=0;
@@ -1541,6 +1545,27 @@ void __fastcall shil_compile_readm(shil_opcode* op)
 	x86_reg fast_reg;
 	u32 fast_reg_offset;
 	x86_reg reg_addr = readwrteparams(op,&fast_reg,&fast_reg_offset);
+	/*
+	x86e->Emit(op_mov32,EAX,ECX);
+	x86e->Emit(op_shr32,EAX,29);
+	x86e->Emit(op_call32,x86_mrm::create(NO_REG,EAX,sib_scale_4,&mio_pvt[0][size][0][0]));
+
+	if (size==FLAG_64)
+	{
+		//EAX:EDX copy
+	}
+	else
+	{
+		if (is_float)
+		{
+			//EAX
+		}
+		else
+		{
+			//EAX
+		}
+	}*/
+	
 	old_offset=x86e->x86_indx-old_offset;
 	//x86_Label* patch_point= x86e->CreateLabel(true,0);
 	x86_Label* p4_handler = x86e->CreateLabel(false,0);
@@ -1668,6 +1693,11 @@ void __fastcall shil_compile_writem(shil_opcode* op)
 	x86_reg fast_reg;
 	u32 fast_reg_offset;
 	x86_reg reg_addr = readwrteparams(op,&fast_reg,&fast_reg_offset);
+	/*
+	x86e->Emit(op_mov32,EAX,ECX);
+	x86e->Emit(op_shr32,EAX,29);
+	x86e->Emit(op_call32,x86_mrm::create(NO_REG,EAX,sib_scale_4,&mio_pvt[1][size][0][0]));
+	*/
 	old_offset=x86e->x86_indx-old_offset;
 	
 	x86_Label* patch_point= x86e->CreateLabel(true,0);

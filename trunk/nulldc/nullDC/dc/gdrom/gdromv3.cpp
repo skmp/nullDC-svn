@@ -560,21 +560,22 @@ void gd_process_spi_cmd()
 	case 0x71:
 		{
 			printf_spicmd("SPI : unkown ? [0x71]\n");
-
+			printf("SPI : unkown ? [0x71]\n");
+		extern u32 g_aValues0x71_b_sz;
 			
-			u32 uCount;
-			static u32 iAux = 0;
+			/*u32 uCount;
+			static u32 iAux = 1;
 			uCount  =ByteCount.full;
 
 			if (iAux)
 			{      
-				gd_spi_pio_end((u8*)&g_aValues0x71[0],uCount);
+				gd_spi_pio_end((u8*)&g_aValues0x71[0],g_aValues0x71_sz);//uCount
 			}
 			else
-			{
-				gd_spi_pio_end((u8*)&g_aValues0x71_b[0],uCount);
-			}
-			iAux^=1;
+			{*/
+				gd_spi_pio_end((u8*)&g_aValues0x71_b[0],g_aValues0x71_b_sz);//uCount
+			//}
+			//iAux^=1;
 		}
 		break;
 	case SPI_SET_MODE:

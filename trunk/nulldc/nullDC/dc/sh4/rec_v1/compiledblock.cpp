@@ -144,6 +144,7 @@ case COMPILED_##NAME##_BLOCK:\
 		GENERIC_CASE(Basic,BASIC);
 		GENERIC_CASE(Super,SUPER);
 	}
+#undef GENERIC_CASE
 }
 
 CompiledBlockInfo* CreateBlock(u32 type)
@@ -172,6 +173,7 @@ case COMPILED_##NAME##_BLOCK:\
 		GENERIC_CASE(Basic,BASIC);
 		GENERIC_CASE(Super,SUPER);
 	}
+#undef GENERIC_CASE
 	rv->block_type.full=type;
 	return rv;
 }

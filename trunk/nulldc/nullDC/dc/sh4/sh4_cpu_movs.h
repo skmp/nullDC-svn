@@ -152,7 +152,6 @@
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 	WriteMemBOU32(r[0], r[n], r[m]);
-	//WriteMemoryL(R(0) + R(n), (DWORD*)&R(m));
 }
 
 

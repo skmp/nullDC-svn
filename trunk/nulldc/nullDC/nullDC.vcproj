@@ -758,10 +758,6 @@
 				<Filter
 					Name="rec_v2"
 					>
-					<File
-						RelativePath=".\dc\sh4\rec_v2\rec_v2_r&amp;d.txt"
-						>
-					</File>
 				</Filter>
 			</Filter>
 			<Filter

@@ -235,15 +235,15 @@ int _tmain(int argc, wchar* argv[])
 
 void LoadSettings()
 {
-	settings.dynarec.Enable=cfgLoadInt(L"nullDC",L"Dynarec.Enabled",1);
-	settings.dynarec.CPpass=cfgLoadInt(L"nullDC",L"Dynarec.DoConstantPropagation",1);
-	settings.dynarec.UnderclockFpu=cfgLoadInt(L"nullDC",L"Dynarec.UnderclockFpu",0);
+	settings.dynarec.Enable=cfgLoadInt(L"nullDC",L"Dynarec.Enabled",1)!=0;
+	settings.dynarec.CPpass=cfgLoadInt(L"nullDC",L"Dynarec.DoConstantPropagation",1)!=0;
+	settings.dynarec.UnderclockFpu=cfgLoadInt(L"nullDC",L"Dynarec.UnderclockFpu",0)!=0;
 	
 	settings.dreamcast.cable=cfgLoadInt(L"nullDC",L"Dreamcast.Cable",3);
 	settings.dreamcast.RTC=cfgLoadInt(L"nullDC",L"Dreamcast.RTC",GetRTC_now());
 
-	settings.emulator.AutoStart=cfgLoadInt(L"nullDC",L"Emulator.AutoStart",0);
-	settings.emulator.NoConsole=cfgLoadInt(L"nullDC",L"Emulator.NoConsole",0);
+	settings.emulator.AutoStart=cfgLoadInt(L"nullDC",L"Emulator.AutoStart",0)!=0;
+	settings.emulator.NoConsole=cfgLoadInt(L"nullDC",L"Emulator.NoConsole",0)!=0;
 
 	//make sure values are valid
 	settings.dreamcast.cable=min(max(settings.dreamcast.cable,0),3);

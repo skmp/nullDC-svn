@@ -65,7 +65,7 @@ emu_thread_rv_t emu_rtc(emu_thread_state_t cmd)
 	while(emu_thread_rv==RV_WAIT && cmd!=EMU_SOFTRESET)
 	{
 		Sleep(10);
-		if( PeekMessage(&msg, NULL, 0,0, PM_REMOVE) != 0 )
+		while( PeekMessage(&msg, NULL, 0,0, PM_REMOVE) != 0 )
 		{
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);

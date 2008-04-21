@@ -230,6 +230,8 @@ u32 fastcall mmu_full_SQ(u32 va,u32& rv)
 }
 
 
+//MMU TLB cache.Internal cache build by the emulator on top of the tlb
+//Gets automaticaly sync'd to tlb by the emulator
 union mmu_cache_entry
 {
 	struct
@@ -313,9 +315,9 @@ u32 fastcall mmu_fast_translation(u32 va,u32& rv)
 		u32 access_mask=0;
 
 		if (!read)
-			access_mask|=MMU_ICC_UA;
-		if (!priv)
 			access_mask|=MMU_ICC_WA;
+		if (!priv)
+			access_mask|=MMU_ICC_UA;
 
 		if (!(dst.full&access_mask))
 		{
@@ -361,7 +363,10 @@ u32 fastcall mmu_data_translation(u32 va,u32& rv)
 		rv=va;
 		return MMU_ERROR_NONE;
 	}
-
+	if ( CCN_CCR.ORA && ((va&0xFC000000)==0x7C000000))
+	{
+		return va;
+	}
 	u32 entry;
 	u32 lookup=mmu_full_lookup(va,entry,rv);
 	
