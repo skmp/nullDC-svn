@@ -28,7 +28,18 @@ bool GetFile_(HWND hwnd)
 	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR | OFN_HIDEREADONLY;
 
 	if(GetOpenFileName(&ofn)<=0)
+	{
+		DWORD err= CommDlgExtendedError();
+		if (err==FNERR_INVALIDFILENAME)
+		{
+			ofn.lpstrFile		= 0;
+			if(GetOpenFileName(&ofn)<=0)
+				return false;
+			else
+				return true;
+		}
 		return false;
+	}
 	return true;
 }
 
