@@ -291,6 +291,7 @@ void GetDriveSessionInfo(u8* to,u8 session)
 
 void printtoc(TocInfo* toc,SessionInfo* ses)
 {
+	printf("Sessions %d\n",ses->SessionCount);
 	for (u32 i=0;i<ses->SessionCount;i++)
 	{
 		printf("Session %d: FAD %d,First Track %d\n",i+1,ses->SessionFAD[i],ses->SessionStart[i]);

@@ -142,6 +142,7 @@ bool ioctl_init(wchar* file)
 	 	CDROM_TOC_FULL_TOC_DATA *ftd=(CDROM_TOC_FULL_TOC_DATA*)buff;
 	
 		ULONG BytesRead;
+		memset(buff,0,sizeof(buff));
 		int code = DeviceIoControl(ioctl_handle,IOCTL_CDROM_READ_TOC_EX,&tocrq,sizeof(tocrq),ftd, 2048, &BytesRead, NULL);
 		wprintf(L" Readed TOC\n");
 		
@@ -161,8 +162,11 @@ bool ioctl_init(wchar* file)
 			ioctl_toc.LastTrack=0;
 			ioctl_ses.SessionCount=0;
 
-			for (u32 i=0;i<101;i++)
-			{	
+			BytesRead-=sizeof(CDROM_TOC_FULL_TOC_DATA);
+			BytesRead/=sizeof(ftd->Descriptors[0]);
+
+			for (u32 i=0;i<BytesRead;i++)
+			{
 				if (ftd->Descriptors[i].Point==0xA2)
 				{
 					ioctl_ses.SessionsEndFAD=msf2fad(ftd->Descriptors[i].Msf);

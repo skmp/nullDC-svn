@@ -41,8 +41,8 @@ void cfgSetStr(wchar* key,const wchar* v)
 }
 void LoadSettings()
 {
-	settings.PatchRegion=cfgGetInt(L"PatchRegion",0);
-	settings.LoadDefaultImage=cfgGetInt(L"LoadDefaultImage",0);
+	settings.PatchRegion=cfgGetInt(L"PatchRegion",0)!=0;
+	settings.LoadDefaultImage=cfgGetInt(L"LoadDefaultImage",0)!=0;
 	cfgGetStr(L"DefaultImage",settings.DefaultImage,L"defualt.gdi");
 	cfgGetStr(L"LastImage",settings.LastImage,L"c:\\game.gdi");
 }
