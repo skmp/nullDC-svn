@@ -105,7 +105,7 @@ void FASTCALL ioctl_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u3
 			if ( 0 == DeviceIoControl( ioctl_handle, IOCTL_CDROM_RAW_READ, &Info, sizeof(Info), temp, RAW_SECTOR_SIZE, &Dummy, NULL ) )
 			{
 				Info.TrackMode=(TRACK_MODE_TYPE)((Info.TrackMode+1)%3);
-				if (tr==3)
+				if (tr==2)
 					printf("GDROM: Totaly failed to read sector @LBA %d\n",StartSector+soff-150);
 			}
 		}
