@@ -91,6 +91,7 @@ DiscType ioctl_Disctype=CdRom;
 HANDLE ioctl_handle;
 void FASTCALL ioctl_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 {
+	printf("ioctl_DriveReadSector(0x%08X,%d,%d,%d);\n",buff,StartSector,SectorCount,secsz);
 	static RAW_READ_INFO Info={{0,0},1,XAForm2};
 	//Info.TrackMode = XAForm2 ;
 	//Info.SectorCount = 1;
