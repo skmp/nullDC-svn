@@ -178,7 +178,7 @@ bool mds_init(wchar* file)
 		if (wcslen(file)>4)
 		{
 			wcscpy(&fn[0],file);
-			int len=wcslen(fn);
+			size_t len=wcslen(fn);
 			wcscpy(&fn[len-4],L".mdf");
 			
 			fp_mdf=_tfopen(fn,L"rb");

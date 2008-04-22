@@ -95,7 +95,7 @@ void FASTCALL ioctl_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u3
 	//Info.TrackMode = XAForm2 ;
 	//Info.SectorCount = 1;
 	u8 temp[2500];
-	for (int soff=0;soff<SectorCount;soff++)
+	for (u32 soff=0;soff<SectorCount;soff++)
 	{
 		Info.DiskOffset.QuadPart = (StartSector+soff-150) * CD_SECTOR_SIZE;
 		ULONG Dummy;
@@ -125,11 +125,13 @@ bool ioctl_init(wchar* file)
 {
 	if (wcslen(file)==3 && GetDriveType(file)==DRIVE_CDROM)
 	{
+		wprintf(L"Opening device %s ...",file);
 		wchar fn[]={ L'\\', L'\\', L'.', L'\\', file[0], L':', L'\0' };
 		if ( INVALID_HANDLE_VALUE == ( ioctl_handle = CreateFile( fn, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL ) ) )
 		{
 			return false;//its there .. but wont open ...
 		}
+		wprintf(L" Opened device %s, reading TOC ...",fn);
 		// Get track-table and add it to the intern array
 		CDROM_READ_TOC_EX tocrq={0};
 		 
@@ -141,9 +143,9 @@ bool ioctl_init(wchar* file)
 	
 		ULONG BytesRead;
 		int code = DeviceIoControl(ioctl_handle,IOCTL_CDROM_READ_TOC_EX,&tocrq,sizeof(tocrq),ftd, 2048, &BytesRead, NULL);
-
+		wprintf(L" Readed TOC\n");
 		
-		CDROM_TOC toc;
+//		CDROM_TOC toc;
 		int currs=-1;
 		if (0==code)
 		{
