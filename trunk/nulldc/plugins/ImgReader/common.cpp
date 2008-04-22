@@ -2,6 +2,8 @@
 #include "cdi.h"
 #include "mds.h"
 #include "iso9660.h"
+#include "ioctl.h"
+
 #include <memory.h>
 #include <windows.h>
 u32 NullDriveDiscType;
@@ -37,6 +39,16 @@ DriveIF drives[]=
 		iso_init,//these need to be filled
 		iso_term,
 		"ISO reader"
+	},
+	{
+		//ioctl
+		ioctl_DriveReadSector,
+		ioctl_DriveGetTocInfo,
+		ioctl_DriveGetDiscType,
+		ioctl_GetSessionsInfo,
+		ioctl_init,//these need to be filled
+		ioctl_term,
+		"IOCTL (CD DRIVE) reader"
 	},
 };
 
@@ -141,7 +153,7 @@ bool InitDrive_(wchar* fn)
 
 	CurrDrive=0;
 
-	for (u32 i=0;i<3;i++)
+	for (u32 i=0;i<4;i++)
 	{
 		if (drives[i].Init(fn))
 		{
