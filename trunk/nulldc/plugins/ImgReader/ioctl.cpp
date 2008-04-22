@@ -190,6 +190,7 @@ bool ioctl_init(wchar* file)
 			ioctl_toc.LeadOut.Control=0;
 			ioctl_toc.LeadOut.Session=0;
 		}
+		printtoc(&ioctl_toc,&ioctl_ses);
 /*		if ( 0 == DeviceIoControl( ioctl_handle, IOCTL_CDROM_READ_TOC, NULL, 0, &toc, sizeof(toc), &BytesRead, NULL ) )
 		{
 			ioctl_Disctype=NoDisk;

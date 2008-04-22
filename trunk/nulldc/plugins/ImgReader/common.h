@@ -72,3 +72,4 @@ void GetDriveToc(u32* to,DiskArea area);
 void GetDriveSessionInfo(u8* to,u8 session);
 int GetFile(TCHAR *szFileName, TCHAR *szParse=0,u32 flags=0);
 int msgboxf(wchar* text,unsigned int type,...);
+void printtoc(TocInfo* toc,SessionInfo* ses);

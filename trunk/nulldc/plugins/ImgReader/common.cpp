@@ -288,3 +288,19 @@ void GetDriveSessionInfo(u8* to,u8 session)
 		to[5]=driveSeS.SessionFAD[session-1]>>0;
 	}
 }
+
+void printtoc(TocInfo* toc,SessionInfo* ses)
+{
+	for (u32 i=0;i<ses->SessionCount;i++)
+	{
+		printf("Session %d: FAD %d,First Track %d\n",i+1,ses->SessionFAD[i],ses->SessionStart[i]);
+		for (u32 t=toc->FistTrack-1;t<=toc->LastTrack;t++)
+		{
+			if (toc->tracks[t].Session==i+1)
+			{
+				printf("\tTrack %d : FAD %d CTRL %d ADR %d\n",t,toc->tracks[t].FAD,toc->tracks[t].Control,toc->tracks[t].Addr);
+			}
+		}
+	}
+	printf("Session END: FAD END %d\n",ses->SessionsEndFAD);
+}
