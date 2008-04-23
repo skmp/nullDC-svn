@@ -1,6 +1,11 @@
 #include "cdi.h"
 #include "mds_reader.h"
 
+#include <stddef.h>
+#include <devioctl.h>
+#include <ntddscsi.h>
+#include "SCSIDEFS.H"
+
 //#include <wxp\winioctl.h>
 //#include <wxp\ntddcdvd.h>
 //#include <wxp\Ntddcdrm.h>
@@ -74,6 +79,13 @@ typedef struct _CDROM_READ_TOC_EX
     UCHAR  Reserved3;
  } CDROM_READ_TOC_EX, *PCDROM_READ_TOC_EX;
 #endif
+struct spti_s 
+{
+	SCSI_PASS_THROUGH_DIRECT sptd;
+	DWORD alignmentDummy;
+	BYTE  senseBuf[0x12];
+} ;
+
 ULONG msf2fad( UCHAR Addr[4] )
 {
 	ULONG Sectors = ( Addr[0] * (CD_BLOCKS_PER_SECOND*60) ) + ( Addr[1]*CD_BLOCKS_PER_SECOND) + Addr[2];
@@ -89,30 +101,88 @@ SessionInfo ioctl_ses;
 TocInfo ioctl_toc;
 DiscType ioctl_Disctype=CdRom;
 HANDLE ioctl_handle;
+SCSI_ADDRESS ioctl_addr;
+bool ioctl_usescsi;
+
+bool spti_ReadSector(HANDLE hand,void * pdata,u32 sector)
+{
+	spti_s s;
+	memset(&s,0,sizeof(spti_s));
+
+	s.sptd.Cdb[0]	= SCSI_READ10;
+	s.sptd.Cdb[1]	= (ioctl_addr.Lun&7) << 5;// | DPO ;	DPO = 8
+
+	s.sptd.Cdb[2]	= (BYTE)(sector >> 0x18 & 0xFF);	// MSB
+	s.sptd.Cdb[3]	= (BYTE)(sector >> 0x10 & 0xFF);
+	s.sptd.Cdb[4]	= (BYTE)(sector >> 0x08 & 0xFF);
+	s.sptd.Cdb[5]	= (BYTE)(sector >> 0x00 & 0xFF);	// LSB
+
+	s.sptd.Cdb[7]	= 0;
+	s.sptd.Cdb[8]	= 1;
+
+	s.sptd.Length             = sizeof(SCSI_PASS_THROUGH_DIRECT);
+	s.sptd.PathId             = ioctl_addr.PathId;
+	s.sptd.TargetId           = ioctl_addr.TargetId;
+	s.sptd.Lun                = ioctl_addr.Lun;
+	s.sptd.TimeOutValue       = 30;
+	s.sptd.CdbLength			= 0x0A;
+	s.sptd.SenseInfoLength    = 0x12;
+	s.sptd.SenseInfoOffset    = offsetof(spti_s, senseBuf);
+	s.sptd.DataIn             = 0x01;//DATA_IN
+	s.sptd.DataTransferLength = 0x800;
+	s.sptd.DataBuffer         = pdata;
+
+	DWORD bytesReturnedIO = 0;
+	if(!DeviceIoControl(hand, IOCTL_SCSI_PASS_THROUGH_DIRECT, &s, sizeof(s), &s, sizeof(s), &bytesReturnedIO, NULL)) 
+		return false;
+
+	if(s.sptd.ScsiStatus)
+		return false;
+	return true;
+}
 void FASTCALL ioctl_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 {
 	printf("ioctl_DriveReadSector(0x%08X,%d,%d,%d);\n",buff,StartSector,SectorCount,secsz);
 	static RAW_READ_INFO Info={{0,0},1,XAForm2};
-	//Info.TrackMode = XAForm2 ;
-	//Info.SectorCount = 1;
-	u8 temp[2500];
 	for (u32 soff=0;soff<SectorCount;soff++)
 	{
-		Info.DiskOffset.QuadPart = (StartSector+soff-150) * CD_SECTOR_SIZE;
-		ULONG Dummy;
-		for (int tr=0;tr<3;tr++)
+		//Info.TrackMode = XAForm2 ;
+		//Info.SectorCount = 1;
+		u32 sectr=StartSector+soff-150;
+		if (ioctl_usescsi && secsz==2048 && spti_ReadSector(ioctl_handle, buff,sectr))
 		{
-			if ( 0 == DeviceIoControl( ioctl_handle, IOCTL_CDROM_RAW_READ, &Info, sizeof(Info), temp, RAW_SECTOR_SIZE, &Dummy, NULL ) )
+
+		}
+		else
+		{
+			u8 temp[2500];
+			if (secsz==20480)
 			{
-				Info.TrackMode=(TRACK_MODE_TYPE)((Info.TrackMode+1)%3);
-				if (tr==2)
-					printf("GDROM: Totaly failed to read sector @LBA %d\n",StartSector+soff-150);
+				DWORD BytesReaded;
+				DWORD p=SetFilePointer(ioctl_handle,sectr*2048,0,FILE_BEGIN);
+				DWORD e=GetLastError();
+				DWORD pe=ReadFile(ioctl_handle,buff,SectorCount*2048,&BytesReaded,0);
+				DWORD em=GetLastError();
+				printf("");
+			}
+			else
+			{
+				Info.DiskOffset.QuadPart = (sectr) * CD_SECTOR_SIZE;
+				ULONG Dummy;
+				for (int tr=0;tr<3;tr++)
+				{
+					if ( 0 == DeviceIoControl( ioctl_handle, IOCTL_CDROM_RAW_READ, &Info, sizeof(Info), temp, RAW_SECTOR_SIZE, &Dummy, NULL ) )
+					{
+						Info.TrackMode=(TRACK_MODE_TYPE)((Info.TrackMode+1)%3);
+						if (tr==2)
+							printf("GDROM: Totaly failed to read sector @LBA %d\n",StartSector+soff-150);
+					}
+				}
+				ConvertSector(temp,buff,2352,secsz,StartSector+soff);
 			}
 		}
-		ConvertSector(temp,buff,2352,secsz,StartSector+soff);
 		buff+=secsz;
 	}
-
 }
 void ioctl_DriveGetTocInfo(TocInfo* toc,DiskArea area)
 {
@@ -128,7 +198,10 @@ bool ioctl_init(wchar* file)
 	{
 		wprintf(L"Opening device %s ...",file);
 		wchar fn[]={ L'\\', L'\\', L'.', L'\\', file[0], L':', L'\0' };
-		if ( INVALID_HANDLE_VALUE == ( ioctl_handle = CreateFile( fn, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL ) ) )
+		if ( INVALID_HANDLE_VALUE == ( ioctl_handle = CreateFile( fn, GENERIC_READ|GENERIC_WRITE,
+FILE_SHARE_READ|FILE_SHARE_WRITE,
+NULL, OPEN_EXISTING, 0, NULL)))
+			//GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL ) ) )
 		{
 			return false;//its there .. but wont open ...
 		}
@@ -198,20 +271,14 @@ bool ioctl_init(wchar* file)
 			ioctl_toc.LeadOut.Session=0;
 		}
 		printtoc(&ioctl_toc,&ioctl_ses);
-/*		if ( 0 == DeviceIoControl( ioctl_handle, IOCTL_CDROM_READ_TOC, NULL, 0, &toc, sizeof(toc), &BytesRead, NULL ) )
-		{
-			ioctl_Disctype=NoDisk;
-		}
-		ioctl_toc.FistTrack=toc.FirstTrack;
-		ioctl_toc.LastTrack=toc.LastTrack;
-		for ( ULONG i=toc.FirstTrack-1; i<toc.LastTrack; i++ )
-		{
-			ioctl_toc.tracks[i].Addr=toc.TrackData[i].Adr;
-			ioctl_toc.tracks[i].Control=toc.TrackData[i].Control;
-			ioctl_toc.tracks[i].FAD=msf2fad( toc.TrackData[i].Address);
-		}
-*/
+
+		DWORD bytesReturnedIO = 0;
+		BOOL resultIO = DeviceIoControl(ioctl_handle, IOCTL_SCSI_GET_ADDRESS, NULL, 0, &ioctl_addr, sizeof(ioctl_addr), &bytesReturnedIO, NULL);
 		//done !
+		if (resultIO)
+			ioctl_usescsi=true;
+		else
+			ioctl_usescsi=false;
 		return true;
 	}
 	else

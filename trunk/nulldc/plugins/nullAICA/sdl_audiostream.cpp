@@ -1,8 +1,11 @@
-#include <SDL.h>
+
 #include "audiostream_rif.h"
 #include "audiostream.h"
 
 #ifdef _INCLUDE_SDL
+#include <SDL.h>
+#pragma comment(lib, "sdl.lib") 
+
 /* Prototype of our callback function */
 void sdl_fill_audio(void *userdata, Uint8 *stream, int len);
 void sdl_InitAudio()

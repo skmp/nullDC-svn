@@ -260,6 +260,10 @@
 				RelativePath=".\pfctoc.h"
 				>
 			</File>
+			<File
+				RelativePath=".\SCSIDEFS.H"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="UI"

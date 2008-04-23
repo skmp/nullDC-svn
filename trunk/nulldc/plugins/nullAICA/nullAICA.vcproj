@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1253"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="8,00"
 	Name="nullAICA"
 	ProjectGUID="{9C6F5978-A6CE-4A09-A3EA-5FE45CC12232}"
 	RootNamespace="nullAICA"
@@ -65,7 +65,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="sdl.lib Dsound.lib"
+				AdditionalDependencies="Dsound.lib"
 				OutputFile="$(SolutionDir)\WorkDir\Plugins\$(ProjectName)_$(PlatformName).dll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories=""
@@ -146,7 +146,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="sdl.lib Dsound.lib"
+				AdditionalDependencies="Dsound.lib"
 				OutputFile="$(SolutionDir)\WorkDir\Plugins\$(ProjectName)_$(PlatformName).dll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories=""
