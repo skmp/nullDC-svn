@@ -833,6 +833,7 @@ void gd_process_spi_cmd()
 				//7-9	???
 				//we'l see about em ;p
 				sz=12;
+				printf("NON raw subcode read -- partialy wrong\n");
 			}
 
 			gd_spi_pio_end((u8*)&subc_info[0],sz);
