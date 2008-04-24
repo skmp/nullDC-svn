@@ -963,7 +963,10 @@ void AICA_Sample()
 		cdda_index=0;
 		aica_params.CDDA_Sector(cdda_sector);
 	}
+	s32 EXTS0L=cdda_sector[cdda_index];
+	s32 EXTS0R=cdda_sector[cdda_index+1];
 	cdda_index+=2;
+
 	//No dsp tho ;p
 
 	//Final MIX ..
@@ -972,9 +975,6 @@ void AICA_Sample()
 	//CDDA
 	if (settings.CDDAMute==0) 
 	{
-		s32 EXTS0L=cdda_sector[cdda_index];
-		s32 EXTS0R=cdda_sector[cdda_index+1];
-
 		VOLPAN(EXTS0L,dsp_out_vol[16].EFSDL,dsp_out_vol[16].EFPAN,mixl,mixr);
 		VOLPAN(EXTS0R,dsp_out_vol[17].EFSDL,dsp_out_vol[17].EFPAN,mixl,mixr);
 	}
