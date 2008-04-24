@@ -32,7 +32,7 @@ bool GetFile_(HWND hwnd)
 		DWORD err= CommDlgExtendedError();
 		if (err==FNERR_INVALIDFILENAME)
 		{
-			ofn.lpstrFile		= 0;
+			SelectedFile[0]=0;
 			if(GetOpenFileName(&ofn)<=0)
 				return false;
 			else
