@@ -797,41 +797,41 @@ void gd_process_spi_cmd()
 				else
 					subc_info[1]=0x15;//15h	No audio status information
 			}
-			//2	DATA Length MSB (0 = 0h)
-			subc_info[2]=0;
-			//3	DATA Length LSB (14 = Eh)
-			subc_info[3]=0xE;
-			//4	Control	ADR
-			subc_info[4]=1;	//Audio :p
-			//5-13	DATA-Q
-			u8* subc=&subc_info[5];
-			//-When ADR = 1
-			//Byte	Description
-			//0	Control	1(ADR)
-			subc[0]=1;
-			//1	TNO
-			subc[1]=4;//Track number .. duno whats it :P gota parse toc xD ;p
-			//2	X
-			subc[2]=1;//gap #1 (main track)
-			//3-5	Elapsed FAD within track
-			u32 FAD_el=cdda.CurrAddr.FAD-cdda.StartAddr.FAD;
-			subc[3]=(u8)(FAD_el>>16);
-			subc[4]=(u8)(FAD_el>>8);
-			subc[5]=(u8)(FAD_el>>0);
-			//6	0	0	0	0	0	0	0	0
-			subc[6]=0;//
-			//7-9	???
-			//we'l see about em ;p
 
 			if (format==0)
 			{
 				sz=100;
-				memcpy(&subc_info[12+4],subc,12);
-				//memset(&subc_info[4],11,100);
+				subc_info[2]=0;
 				subc_info[3]=100;
+				libGDR.ReadSubChannel(subc_info+4,0,96);
 			}
 			else
 			{
+				//2	DATA Length MSB (0 = 0h)
+				subc_info[2]=0;
+				//3	DATA Length LSB (14 = Eh)
+				subc_info[3]=0xE;
+				//4	Control	ADR
+				subc_info[4]=1;	//Audio :p
+				//5-13	DATA-Q
+				u8* subc=&subc_info[5];
+				//-When ADR = 1
+				//Byte	Description
+				//0	Control	1(ADR)
+				subc[0]=1;
+				//1	TNO
+				subc[1]=4;//Track number .. duno whats it :P gota parse toc xD ;p
+				//2	X
+				subc[2]=1;//gap #1 (main track)
+				//3-5	Elapsed FAD within track
+				u32 FAD_el=cdda.CurrAddr.FAD-cdda.StartAddr.FAD;
+				subc[3]=(u8)(FAD_el>>16);
+				subc[4]=(u8)(FAD_el>>8);
+				subc[5]=(u8)(FAD_el>>0);
+				//6	0	0	0	0	0	0	0	0
+				subc[6]=0;//
+				//7-9	???
+				//we'l see about em ;p
 				sz=12;
 			}
 

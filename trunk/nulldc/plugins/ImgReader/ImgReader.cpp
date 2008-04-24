@@ -60,7 +60,10 @@ void FASTCALL GetSessionInfo(u8* out,u8 ses);
 
 void FASTCALL DriveReadSubChannel(u8 * buff, u32 format, u32 len)
 {
-//	printf("SUB CODE READ DOES NOTHING : 0x%p,0x%X,%d\n",buff,format,len);
+	if (format==0)
+	{
+		memcpy(buff,q_subchannel,len);
+	}
 }
 
 void FASTCALL DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)

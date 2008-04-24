@@ -25,7 +25,7 @@ bool GetFile_(HWND hwnd)
 	ofn.nMaxFileTitle	= 128;
 	ofn.lpstrFileTitle	= szFile;
 	ofn.lpstrInitialDir	= NULL;
-	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR | OFN_HIDEREADONLY;
+	ofn.Flags = OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
 
 	if(GetOpenFileName(&ofn)<=0)
 	{

@@ -53,6 +53,7 @@ DriveIF drives[]=
 };
 
 DriveNotifyEventFP* DriveNotifyEvent;
+u8 q_subchannel[96];
 
 int msgboxf(wchar* text,unsigned int type,...)
 {
@@ -108,7 +109,12 @@ bool ConvertSector(u8* in_buff , u8* out_buff , int from , int to,int sector)
 		memcpy(out_buff,in_buff,to);
 		return true;
 	}
-
+	//get subchannel data, if any
+	if (from==2448)
+	{
+		memcpy(q_subchannel,in_buff+2352,96);
+		from-=96;
+	}
 	switch (to)
 	{
 	case 2048:

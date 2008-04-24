@@ -104,7 +104,30 @@ HANDLE ioctl_handle;
 SCSI_ADDRESS ioctl_addr;
 bool ioctl_usescsi;
 
-bool spti_ReadSector(HANDLE hand,void * pdata,u32 sector)
+bool spti_SendCommand(HANDLE hand,spti_s& s)
+{
+	s.sptd.Length             = sizeof(SCSI_PASS_THROUGH_DIRECT);
+	s.sptd.PathId             = ioctl_addr.PathId;
+	s.sptd.TargetId           = ioctl_addr.TargetId;
+	s.sptd.Lun                = ioctl_addr.Lun;
+	s.sptd.TimeOutValue       = 30;
+	//s.sptd.CdbLength		 = 0x0A;
+	s.sptd.SenseInfoLength    = 0x12;
+	s.sptd.SenseInfoOffset    = offsetof(spti_s, senseBuf);
+//	s.sptd.DataIn             = 0x01;//DATA_IN
+//	s.sptd.DataTransferLength = 0x800;
+//	s.sptd.DataBuffer         = pdata;
+
+	DWORD bytesReturnedIO = 0;
+	if(!DeviceIoControl(hand, IOCTL_SCSI_PASS_THROUGH_DIRECT, &s, sizeof(s), &s, sizeof(s), &bytesReturnedIO, NULL)) 
+		return false;
+
+	if(s.sptd.ScsiStatus)
+		return false;
+	return true;
+}
+
+bool spti_Read10(HANDLE hand,void * pdata,u32 sector)
 {
 	spti_s s;
 	memset(&s,0,sizeof(spti_s));
@@ -119,27 +142,50 @@ bool spti_ReadSector(HANDLE hand,void * pdata,u32 sector)
 
 	s.sptd.Cdb[7]	= 0;
 	s.sptd.Cdb[8]	= 1;
-
-	s.sptd.Length             = sizeof(SCSI_PASS_THROUGH_DIRECT);
-	s.sptd.PathId             = ioctl_addr.PathId;
-	s.sptd.TargetId           = ioctl_addr.TargetId;
-	s.sptd.Lun                = ioctl_addr.Lun;
-	s.sptd.TimeOutValue       = 30;
-	s.sptd.CdbLength			= 0x0A;
-	s.sptd.SenseInfoLength    = 0x12;
-	s.sptd.SenseInfoOffset    = offsetof(spti_s, senseBuf);
+	
+	s.sptd.CdbLength		 = 0x0A;
 	s.sptd.DataIn             = 0x01;//DATA_IN
 	s.sptd.DataTransferLength = 0x800;
 	s.sptd.DataBuffer         = pdata;
 
-	DWORD bytesReturnedIO = 0;
-	if(!DeviceIoControl(hand, IOCTL_SCSI_PASS_THROUGH_DIRECT, &s, sizeof(s), &s, sizeof(s), &bytesReturnedIO, NULL)) 
-		return false;
-
-	if(s.sptd.ScsiStatus)
-		return false;
-	return true;
+	return spti_SendCommand(hand,s);
 }
+bool spti_ReadCD(HANDLE hand,void * pdata,u32 sector)
+{
+	spti_s s;
+	memset(&s,0,sizeof(spti_s));
+	MMC_READCD& r=*(MMC_READCD*)s.sptd.Cdb;
+
+	r.opcode	= MMC_READCD_OPCODE;
+	
+
+	//lba
+	r.LBA[0]	= (BYTE)(sector >> 0x18 & 0xFF);
+	r.LBA[1]	= (BYTE)(sector >> 0x10 & 0xFF);
+	r.LBA[2]	= (BYTE)(sector >> 0x08 & 0xFF);
+	r.LBA[3]	= (BYTE)(sector >> 0x00 & 0xFF);
+
+	//1 sector
+	r.len[0]=0;
+	r.len[1]=0;
+	r.len[2]=1;
+	
+	//0xF8
+	r.sync=1;
+	r.HeaderCodes=3;
+	r.UserData=1;
+	r.EDC_ECC=1;
+	
+
+	r.subchannel=1;
+	
+	s.sptd.CdbLength		 = 12;
+	s.sptd.DataIn             = 0x01;//DATA_IN
+	s.sptd.DataTransferLength = 2448;
+	s.sptd.DataBuffer         = pdata;
+	return spti_SendCommand(hand,s);
+}
+
 void FASTCALL ioctl_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 {
 	printf("ioctl_DriveReadSector(0x%08X,%d,%d,%d);\n",buff,StartSector,SectorCount,secsz);
@@ -149,13 +195,24 @@ void FASTCALL ioctl_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u3
 		//Info.TrackMode = XAForm2 ;
 		//Info.SectorCount = 1;
 		u32 sectr=StartSector+soff-150;
-		if (ioctl_usescsi && secsz==2048 && spti_ReadSector(ioctl_handle, buff,sectr))
-		{
+		u32 fmt=0;
+		u8 temp[2500];
 
-		}
-		else
+		if (ioctl_usescsi)
 		{
-			u8 temp[2500];
+			if (!spti_ReadCD(ioctl_handle, temp,sectr))
+			{
+				if (spti_Read10(ioctl_handle, buff,sectr))
+				{
+					fmt=2048;
+				}
+			}
+			else
+				fmt=2448;
+		}
+
+		if (fmt==0)
+		{
 			if (secsz==20480)
 			{
 				DWORD BytesReaded;
@@ -178,9 +235,10 @@ void FASTCALL ioctl_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u3
 							printf("GDROM: Totaly failed to read sector @LBA %d\n",StartSector+soff-150);
 					}
 				}
-				ConvertSector(temp,buff,2352,secsz,StartSector+soff);
 			}
 		}
+		if (fmt!=secsz)
+			ConvertSector(temp,buff,fmt,secsz,StartSector+soff);
 		buff+=secsz;
 	}
 }

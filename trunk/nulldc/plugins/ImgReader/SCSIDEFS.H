@@ -273,3 +273,32 @@ typedef struct {
 #define ANSI_SCSI2      0x2     // Device complies to SCSI-2
 #define ANSI_RESLO      0x3     // Reserved (low)
 #define ANSI_RESHI      0x7     // Reserved (high)
+
+
+#define MMC_READCD_OPCODE 0xBE
+struct MMC_READCD
+{
+	//+0
+	u8 opcode;
+	//+1
+	u8 RelADR:1;
+	u8 res_1:1;
+	u8 ExpectedSectorType:3;
+	u8 res_2:3;
+	//+2
+	u8 LBA[4];
+	//+6
+	u8 len[3];
+	//+9
+	u8 res_3:1;
+	u8 err:2;
+	u8 EDC_ECC:1;
+	u8 UserData:1;
+	u8 HeaderCodes:2;
+	u8 sync:1;
+	//+10
+	u8 subchannel:3;
+	u8 res:5;
+	//+11
+	u8 control;
+};
