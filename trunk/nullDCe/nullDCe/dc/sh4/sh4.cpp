@@ -10,6 +10,7 @@ f32 fr[16];
 #define fr_hex ((u32*)fr)
 u32 macl;
 u32 fpul;
+u32 pr;
 struct 
 {
 	u32 T;

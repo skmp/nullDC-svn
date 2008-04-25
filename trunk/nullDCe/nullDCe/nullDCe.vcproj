@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1253"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="8,00"
 	Name="nullDCe"
 	ProjectGUID="{CAC8E2F7-E2FE-4EF9-99E6-486D6C64A923}"
 	RootNamespace="nullDCe"
@@ -16,7 +16,7 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)\"
+			OutputDirectory="$(SolutionDir)workdir"
 			IntermediateDirectory="$(SolutionDir)$(ConfigurationName)\"
 			ConfigurationType="1"
 			WholeProgramOptimization="1"
@@ -44,7 +44,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				ExecutionBucket="8"
-				Optimization="3"
+				Optimization="0"
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
@@ -72,6 +72,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				OutputFile="$(OutDir)\$(ProjectName)_$(ConfigurationName).exe"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -195,11 +196,15 @@
 					>
 				</File>
 				<File
-					RelativePath=".\sh4_decoder.h"
+					RelativePath=".\dc\sh4\sh4_corerun.h"
 					>
 				</File>
 				<File
-					RelativePath=".\sh4_handlers.h"
+					RelativePath=".\dc\sh4\sh4_decoder.h"
+					>
+				</File>
+				<File
+					RelativePath=".\dc\sh4\sh4_handlers.h"
 					>
 				</File>
 			</Filter>

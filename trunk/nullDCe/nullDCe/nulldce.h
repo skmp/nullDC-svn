@@ -14,8 +14,8 @@
 #define BUILD_DREAMCAST 1
 	
 //DC : 16 mb ram, 8 mb vram, 2 mb aram, 2 mb bios, 128k flash
-#define RAM_SIZE (4*1024*1024)
-#define VRAM_SIZE (2*1024*1024)
+#define RAM_SIZE (16*1024*1024)
+#define VRAM_SIZE (8*1024*1024)
 #define ARAM_SIZE (2*1024*1024)
 #define BIOS_SIZE (2*1024*1024)
 

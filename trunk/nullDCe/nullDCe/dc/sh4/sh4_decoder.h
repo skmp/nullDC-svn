@@ -170,12 +170,12 @@ case 0x0:
 		break;
 	case 0xB:
 		//0x000B 0x000B -> 0xFFFF
-		missing_op(opcode);
-		/*switch(~opcode~)
-		{
-		default:
-		invalid_op(opcode);
-		} */
+		//missing_op(opcode);
+		if (opcode==0xb)
+			call_opcode(i0000_0000_0000_1011);
+		else
+			invalid_op(opcode);
+		
 		break;
 	case 0x000C:
 		//0xF00F 0x000C i0000_nnnn_mmmm_1100 mov.b @(R0,<REG_M>),<REG_N>

@@ -94,8 +94,11 @@ bool sh4MemReset(bool phys)
 	memset(sh4_ram,0,RAM_SIZE);
 	memset(sh4_vram,0,VRAM_SIZE);
 	memset(sh4_bios,0,BIOS_SIZE);
-	FILE* f=fopen("256b.bin","rb");
-	fread(&sh4_ram[0x10000],256,1,f);
+	FILE* f=fopen("3dtest.bin","rb");
+	fseek(f,0,SEEK_END);
+	u32 flen=ftell(f);
+	fseek(f,0,SEEK_SET);
+	fread(&sh4_ram[0x10000],flen,1,f);
 	fclose(f);
 	return true;
 }
@@ -109,12 +112,20 @@ void sh4MemTerm()
 template<typename T,u32 sz>
 s32 sh4MemFullRead(u32 addr)
 {
+	printf("sh4MemRead 0x%08X!\n",addr);
+	if (0xA05F810C==addr)
+	{
+		static u32 rv=0;
+		rv^=1;
+		return rv;
+	}
 	return 0;
 }
 
 template<typename T,u32 sz>
 s32 sh4MemFullWrite(u32 addr,T data)
 {
+	printf("sh4MemWrite 0x%08X!\n",addr);
 	return 0;
 }
 
