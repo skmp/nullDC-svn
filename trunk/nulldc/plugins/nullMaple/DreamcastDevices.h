@@ -41,7 +41,14 @@ struct MapleDevBase:  virtual MapleDevice,  virtual DevInfo
 		functs.clear();
 	}
 
-	virtual void MiscDma(u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)=0;
+	virtual void MiscDma(u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+	{
+		u8*buffer_out_b=(u8*)buffer_out;
+		
+		printf("UNKOWN MAPLE COMMAND %d\n",Command);
+		responce=MDRE_UnkownCmd;
+
+	}
 	virtual void Dma(u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
 	{
 		u8*buffer_out_b=(u8*)buffer_out;

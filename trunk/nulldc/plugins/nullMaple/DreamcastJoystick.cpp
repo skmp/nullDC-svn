@@ -87,21 +87,6 @@ public:
 	{
 		return inst->port;
 	}
-	
-	virtual void MiscDma(u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
-	{
-		u8*buffer_out_b=(u8*)buffer_out;
-		
-		switch (Command)
-		{
-		default:
-			{
-				printf("UNKOWN MAPLE COMMAND %d\n",Command);
-				responce=MDRE_UnkownCmd;
-			}
-			break;
-		}
-	}
 };
 
 
