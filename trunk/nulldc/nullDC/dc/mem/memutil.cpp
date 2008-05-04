@@ -7,7 +7,7 @@ u32 LoadFileToSh4Mem(u32 offset,wchar*file)
 {
 	FILE * fd = _wfopen(file, L"rb");
 	if (fd==NULL) {
-		printf("LoadFileToSh4Mem: can't load file \"%s\" to memory , file not found\n",file);
+		wprintf(L"LoadFileToSh4Mem: can't load file \"%s\" to memory , file not found\n",file);
 		return 0;
 	}
 
@@ -19,7 +19,7 @@ u32 LoadFileToSh4Mem(u32 offset,wchar*file)
 	{
 		fclose(fd);
 		if(!LoadELF(file)) {
-			printf("!\tERROR: LoadELF(%s) has terminated unsuccessfully!\n\n",file);
+			wprintf(L"!\tERROR: LoadELF(%s) has terminated unsuccessfully!\n\n",file);
 			return 0;
 		}
 		LoadSyscallHooks();
@@ -38,7 +38,7 @@ u32 LoadFileToSh4Mem(u32 offset,wchar*file)
 		fclose(fd);
 		toff+=size;
 
-		printf("LoadFileToSh4Mem: loaded file \"%s\" to {SysMem[%x]-SysMem[%x]}\nLoadFileToSh4Mem: file size : %d bytes\n",file,offset,toff-1,toff-offset);
+		wprintf(L"LoadFileToSh4Mem: loaded file \"%s\" to {SysMem[%x]-SysMem[%x]}\nLoadFileToSh4Mem: file size : %d bytes\n",file,offset,toff-1,toff-offset);
 		LoadSyscallHooks();
 		return 1;
 	}
@@ -63,7 +63,7 @@ bool LoadFileToSh4Bootrom(wchar *szFile)
 {
 	FILE * fd = _tfopen(szFile, L"rb");
 	if (fd==NULL) {
-		printf("LoadFileToSh4Bootrom: can't load file \"%s\", file not found\n", szFile);
+		wprintf(L"LoadFileToSh4Bootrom: can't load file \"%s\", file not found\n", szFile);
 		return false;
 	}
 	fseek(fd, 0, SEEK_END);	// to end of file
@@ -72,7 +72,7 @@ bool LoadFileToSh4Bootrom(wchar *szFile)
 
 #ifndef BUILD_DEV_UNIT
 	if( flen > (1024 * 1024 * 2) ) {
-		printf("LoadFileToSh4Bootrom: can't load file \"%s\", Too Large! size(%d bytes)\n", szFile, flen);
+		wprintf(L"LoadFileToSh4Bootrom: can't load file \"%s\", Too Large! size(%d bytes)\n", szFile, flen);
 		return false;
 	}
 #else
@@ -85,7 +85,7 @@ bool LoadFileToSh4Bootrom(wchar *szFile)
 		bios_b[i] = buf;
 	}
 
-	printf("LoadFileToSh4Bootrom: loaded file \"%s\" ,size : %d bytes\n",szFile,flen);
+	wprintf(L"LoadFileToSh4Bootrom: loaded file \"%s\" ,size : %d bytes\n",szFile,flen);
 	fclose(fd);
 	return true;
 }
@@ -94,7 +94,7 @@ bool LoadFileToSh4Flashrom(wchar *szFile)
 {
 	FILE * fd = _tfopen(szFile, L"rb");
 	if (fd==NULL) {
-		printf("LoadFileToSh4Flashrom: can't load file \"%s\", file not found\n", szFile);
+		wprintf(L"LoadFileToSh4Flashrom: can't load file \"%s\", file not found\n", szFile);
 		return false;
 	}
 	fseek(fd, 0, SEEK_END);	// to end of file
@@ -102,7 +102,7 @@ bool LoadFileToSh4Flashrom(wchar *szFile)
 	fseek(fd, 0, SEEK_SET);	// to beginning of file
 
 	if( flen > (128 * 1024 ) ) {
-		printf("LoadFileToSh4Flashrom: can't load file \"%s\", Too Large! size(%d bytes)\n", szFile, flen);
+		wprintf(L"LoadFileToSh4Flashrom: can't load file \"%s\", Too Large! size(%d bytes)\n", szFile, flen);
 		return false;
 	}
 
@@ -111,7 +111,7 @@ bool LoadFileToSh4Flashrom(wchar *szFile)
 		fread(&buf, 1,1, fd);
 		flash_b[i] = buf;
 	}
-	printf("LoadFileToSh4Flashrom: loaded file \"%s\" ,size : %d bytes\n",szFile,flen);
+	wprintf(L"LoadFileToSh4Flashrom: loaded file \"%s\" ,size : %d bytes\n",szFile,flen);
 	fclose(fd);
 	return true;
 }
@@ -120,7 +120,7 @@ bool SaveSh4FlashromToFile(wchar *szFile)
 {
 	FILE * fd = _tfopen(szFile, L"wb");
 	if (fd==NULL) {
-		printf("SaveSh4FlashromToFile: can't open file \"%s\" \n", szFile);
+		wprintf(L"SaveSh4FlashromToFile: can't open file \"%s\" \n", szFile);
 		return false;
 	}
 	
@@ -130,7 +130,7 @@ bool SaveSh4FlashromToFile(wchar *szFile)
 	for( int i=0; i<128*1024; i++ )	{
 		fwrite(&flash_b[i], 1,1, fd);
 	}
-	printf("SaveSh4FlashromToFile: Saved flash file \"%s\"\n",szFile);
+	wprintf(L"SaveSh4FlashromToFile: Saved flash file \"%s\"\n",szFile);
 	fclose(fd);
 	return true;
 }
