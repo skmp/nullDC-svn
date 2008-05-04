@@ -207,6 +207,10 @@
 					RelativePath=".\dc\sh4\sh4_handlers.h"
 					>
 				</File>
+				<File
+					RelativePath=".\dc\sh4\sh4_handlers_ng.h"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="mem"
