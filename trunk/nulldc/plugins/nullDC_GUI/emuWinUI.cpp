@@ -1528,17 +1528,17 @@ void RefreshDebugger(HWND hDlg)
 	case 3:	// Vector: XMTX | FV
 		if(fpm&4) {
 			swprintf(szBuf, L"XMTX\n"
-				L"(%.3f\t%.3f\t%.3f\t%.3f)\n" L"(%.3f\t%.3f\t%.3f\t%.3f)\n"
-				L"(%.3f\t%.3f\t%.3f\t%.3f)\n" L"(%.3f\t%.3f\t%.3f\t%.3f)\n\n",
+				L"(%.5f\t%.5f\t%.5f\t%.5f)\n" L"(%.5f\t%.5f\t%.5f\t%.5f)\n"
+				L"(%.5f\t%.5f\t%.5f\t%.5f)\n" L"(%.5f\t%.5f\t%.5f\t%.5f)\n\n",
 				GetXf(0), GetXf(4), GetXf(8), GetXf(12), GetXf(1), GetXf(5), GetXf(9), GetXf(13),
 				GetXf(2), GetXf(6), GetXf(10), GetXf(14), GetXf(3), GetXf(7), GetXf(11), GetXf(15) );
 			_tcscat(szFPU,szBuf);
 		} else {
 			swprintf(szBuf,
-				L"FV0 :\n%.3f\t%.3f\t%.3f\t%.3f\n" L"FV4 :\n%.3f\t%.3f\t%.3f\t%.3f\n"
-				L"FV8 :\n%.3f\t%.3f\t%.3f\t%.3f\n" L"FV12:\n%.3f\t%.3f\t%.3f\t%.3f\n\n",
-				GetFr(0), GetFr(4), GetFr(8), GetFr(12),	GetFr(1), GetFr(5), GetFr(9), GetFr(13),
-				GetFr(2), GetFr(6), GetFr(10), GetFr(14),GetFr(3), GetFr(7), GetFr(11), GetFr(15) );
+				L"FV0 :\n%.5f\t%.5f\t%.5f\t%.5f\n" L"FV4 :\n%.5f\t%.5f\t%.5f\t%.5f\n"
+				L"FV8 :\n%.5f\t%.5f\t%.5f\t%.5f\n" L"FV12:\n%.5f\t%.5f\t%.5f\t%.5f\n\n",
+				GetFr(0), GetFr(1), GetFr(2), GetFr(3),	GetFr(4), GetFr(5), GetFr(6), GetFr(7),
+				GetFr(9), GetFr(9), GetFr(10), GetFr(11),GetFr(12), GetFr(13), GetFr(14), GetFr(15) );
 			_tcscat(szFPU,szBuf);
 		}
 	break;
