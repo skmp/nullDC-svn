@@ -236,7 +236,21 @@ void GenerateSinCos()
 	int j=0;
 	for (double i=0;i<0x10000;i++)
 	{
-		sin_table[j]=safesin(((2*PI)*i)/65536.0);
+		if (j<0x4000)
+		{
+			sin_table[j]=safesin(((2*PI)*i)/65536.0);
+		}
+		else if (j==0x4000)
+			sin_table[j]=1;
+		else if (j<=0x8000)
+		{
+			sin_table[j]=sin_table[0x8000-j];
+		}
+		else
+		{
+			sin_table[j]=-sin_table[j-0x8000];
+		}
+
 		j++;
 	}
 }
