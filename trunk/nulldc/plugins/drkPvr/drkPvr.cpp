@@ -119,6 +119,7 @@ OptionGroop menu_res;
 OptionGroop menu_sortmode;
 OptionGroop menu_modvolmode;
 OptionGroop menu_palmode;
+OptionGroop menu_zbuffer;
 OptionGroop menu_widemode;
 int oldmode=-1;
 int osx=-1,osy=-1;
@@ -183,6 +184,11 @@ void handler_PalMode(int  mode)
 void handler_ModVolMode(int  mode)
 {
 	settings.Emulation.ModVolMode=mode;
+	SaveSettings();
+}
+void handler_ZBufferMode(int  mode)
+{
+	settings.Emulation.ZBufferMode=mode;
 	SaveSettings();
 }
 u32 enable_FS_mid;
@@ -366,6 +372,16 @@ s32 FASTCALL Load(emu_info* emu_inf)
 	menu_modvolmode.Add(MVM,L"Volumes",2);
 	menu_modvolmode.SetValue(settings.Emulation.ModVolMode);
 
+	u32 ZBM=emu.AddMenuItem(emu.RootMenu,-1,L"Z Buffer Mode: %s",0,0);
+
+	menu_zbuffer.format=L"Z Buffer Mode: %s";
+	menu_zbuffer.callback=handler_ZBufferMode;
+
+	menu_zbuffer.Add(ZBM,L"D24FS8 (Fast when avaiable,Best Precition)",0);
+	menu_zbuffer.Add(ZBM,L"D24S8+FPE (Slow,Good Precition)",1);
+	menu_zbuffer.Add(ZBM,L"D24S8 (Lower Precition)",2);
+	menu_zbuffer.SetValue(settings.Emulation.ZBufferMode);
+	
 
 	emu.AddMenuItem(emu.RootMenu,-1,L"Show Fps",handler_ShowFps,settings.OSD.ShowFPS);
 
@@ -607,6 +623,7 @@ void LoadSettings()
 	settings.Emulation.AlphaSortMode			=	cfgGetInt(L"Emulation.AlphaSortMode",1);
 	settings.Emulation.PaletteMode				=	cfgGetInt(L"Emulation.PaletteMode",1);
 	settings.Emulation.ModVolMode				= 	cfgGetInt(L"Emulation.ModVolMode",1);
+	settings.Emulation.ZBufferMode				= 	cfgGetInt(L"Emulation.ZBufferMode",0);
 
 	settings.OSD.ShowFPS						=	cfgGetInt(L"OSD.ShowFPS",0);
 	settings.OSD.ShowStats						=	cfgGetInt(L"OSD.ShowStats",0);
@@ -630,6 +647,7 @@ void SaveSettings()
 	cfgSetInt(L"Emulation.AlphaSortMode",settings.Emulation.AlphaSortMode);
 	cfgSetInt(L"Emulation.PaletteMode",settings.Emulation.PaletteMode);
 	cfgSetInt(L"Emulation.ModVolMode",settings.Emulation.ModVolMode);
+	cfgSetInt(L"Emulation.ZBufferMode",settings.Emulation.ZBufferMode);
 
 	cfgSetInt(L"OSD.ShowFPS",settings.OSD.ShowFPS);
 	cfgSetInt(L"OSD.ShowStats",settings.OSD.ShowStats);

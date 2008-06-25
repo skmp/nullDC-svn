@@ -1561,15 +1561,16 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 
 		// Create a rectangle to indicate where on the screen it should be drawn
 		RECT rct;
-		rct.left=2;
-		rct.right=780;
+		GetClientRect((HWND)emu.GetRenderTarget(),&rct);
+		//rct.left=0;
+		//rct.right=640;
 		rct.top=10;
 		rct.bottom=rct.top+30;
 
 		//font->
 		// Draw some text
 		//i need to set a new PS/FP state here .. meh ...
-		font->DrawText(NULL, fps_text, -1, &rct, 0, fontColor );
+		font->DrawText(NULL, fps_text, -1, &rct, DT_CENTER , fontColor );
 		//DrawText(
 	}
 
@@ -2100,7 +2101,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		ppar.hDeviceWindow=(HWND)Hwnd;
 */
 		LoadSettings();
-		
+		ZBufferMode=settings.Emulation.ZBufferMode;
 		bool FZB= SUCCEEDED(d3d9->CheckDeviceFormat(D3DADAPTER_DEFAULT,D3DDEVTYPE_REF,D3DFMT_X8B8G8R8,D3DUSAGE_DEPTHSTENCIL,D3DRTYPE_SURFACE,D3DFMT_D24FS8));
 		if (FZB)
 			printf("Device Supports D24FS8\n");
