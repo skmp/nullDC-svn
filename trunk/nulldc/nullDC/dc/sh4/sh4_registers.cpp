@@ -185,73 +185,25 @@ void UpdateFPSCR()
 	old_fpscr=fpscr;
 	SetFloatStatusReg();//ensure they are on sync :)
 }
-//#include <math.h>
-#define M_PI 3.1415926535897932384626433832795
-double msin(double angle)
-{
-    double angle2=angle*angle; //X^2
-    double result=angle; //X
- 
-    angle*=angle2;
-    result-=angle/(3.0*2.0);
- 
-    angle*=angle2;
-    result+=angle/(5.0*4.0*3.0*2.0);
- 
-    angle*=angle2;
-    result-=angle/(7.0*6.0*5.0*4.0*3.0*2.0);
- 
-    angle*=angle2;
-    result+=angle/(9.0*8.0*7.0*6.0*5.0*4.0*3.0*2.0);
- 
-    angle*=angle2;
-    result-=angle/(11.0*10.0*9.0*8.0*7.0*6.0*5.0*4.0*3.0*2.0);
- 
-    angle*=angle2;
-    result+=angle/(13.0*12.0*11.0*10.0*9.0*8.0*7.0*6.0*5.0*4.0*3.0*2.0);
- 
-    angle*=angle2;
-    result-=angle/(15.0*14.0*13.0*12.0*11.0*10.0*9.0*8.0*7.0*6.0*5.0*4.0*3.0*2.0);
- 
-    angle*=angle2;
-    result+=angle/(17.0*16.0*15.0*14.0*13.0*12.0*11.0*10.0*9.0*8.0*7.0*6.0*5.0*4.0*3.0*2.0);
- 
-    return result;
-}
- 
-double safesin(double x)
-{
-    const double pi2=M_PI*2.0;
- 
-    while(x>M_PI) x-=pi2;
-    while(x<-M_PI) x+=pi2;
- 
-    return msin(x);
-}
- 
 
 void GenerateSinCos()
 {
-	#define PI (3.1415926535897932384626433832795)
-	int j=0;
-	for (double i=0;i<0x10000;i++)
-	{
-		if (j<0x4000)
-		{
-			sin_table[j]=safesin(((2*PI)*i)/65536.0);
-		}
-		else if (j==0x4000)
-			sin_table[j]=1;
-		else if (j<=0x8000)
-		{
-			sin_table[j]=sin_table[0x8000-j];
-		}
-		else
-		{
-			sin_table[j]=-sin_table[j-0x8000];
-		}
+	wchar* path=GetEmuPath(L"data\\fsca-table.bin");
+	FILE* tbl=_wfopen(path,L"rb");
+	free(path);
+	if (!tbl)
+		die("fsca-table.bin is missing!");
+	fread(sin_table,1,4*0x8000,tbl);
+	fclose(tbl);
 
-		j++;
+	for (int i=0;i<0x10000;i++)
+	{
+		if (i<0x8000)
+			__noop;
+		else if (i==0x8000)
+			sin_table[i]=0;
+		else
+			sin_table[i]=-sin_table[i-0x8000];
 	}
 }
 #ifdef DEBUG
