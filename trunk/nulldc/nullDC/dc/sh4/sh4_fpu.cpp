@@ -776,7 +776,7 @@ sh4op(i1111_nnnn_mmmm_1110)
 		u32 n = GetN(op);
 		u32 m = GetM(op);
 
-		fr[n] += fr[0] * fr[m];
+		fr[n] =(f32) ((f64)fr[n]+(f64)fr[0] * (f64)fr[m]);
 		CHECK_FPU_32(fr[n]);
 	}
 	else

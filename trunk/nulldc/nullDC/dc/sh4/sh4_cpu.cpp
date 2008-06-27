@@ -802,7 +802,7 @@ sh4op(i0100_nnnn_mmmm_1100)
 	u32 m = GetM(op);
 	u32 sgn = r[m] & 0x80000000;
 	if (sgn == 0)
-		r[n] <<= (r[m] & 0x1F);
+		r[n] <<= (r[m] & 0x1F); 
 	else if ((r[m] & 0x1F) == 0)
 	{
 		if ((r[n] & 0x80000000) == 0)
@@ -830,7 +830,7 @@ sh4op(i0100_nnnn_mmmm_1101)
 	else if ((r[m] & 0x1f) == 0)
 		r[n] = 0;
 	else
-		r[n] = (u32)r[n] >> (32-r[m]);*/
+		r[n] = (u32)r[n] >> (32-r[m]);*/ // -> bug ! 32-r[m] -> -(r[m]&0x1F)
 
 	u32 n = GetN(op);
 	u32 m = GetM(op);
