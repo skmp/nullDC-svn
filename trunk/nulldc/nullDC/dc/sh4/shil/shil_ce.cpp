@@ -12,7 +12,7 @@ typedef shilh(FP);
 
 shilh(nimp)
 {
-	//lol ?
+	die("Fatal error : Dynarec CE NIMP!");//lol ?
 	return false;
 }
 
@@ -44,6 +44,7 @@ void SetShilHanlder(shil_opcodes op,shil_ce_FP* ha)
 
 	shil_ce_lut[op]=ha;
 }
+shilh(pref);
 shilh(adc);
 shilh(add);
 shilh(and);
@@ -113,6 +114,7 @@ void Init_ce()
 
 	Inited_ce_pass=true;
 	//
+	SetShilHanlder(shilop_pref,shil_ce_pref);
 	SetShilHanlder(shilop_adc,shil_ce_adc);
 	SetShilHanlder(shilop_add,shil_ce_add);
 	SetShilHanlder(shilop_and,shil_ce_and);
@@ -582,6 +584,17 @@ if ((op->flags & FLAG_REG2) && (ce_IsConst(op->reg2)))\
 		//----*----\
 		//reg2 has to be writen back , but it will remain constant ;)
 		//-> not needed , if const , the reg1,imm1 form is used
+shilh(pref)
+{
+	if ((op->flags & FLAG_REG1) && (ce_IsConst(op->reg1)))
+	{
+		op->imm1=ce_GetConst(op->reg1);
+		op->flags|=FLAG_IMM1;
+		op->flags&=~FLAG_REG1;
+	}
+	DefHanlder(op,bb,il);
+	return false;
+}
 shilh(adc)
 {
 	DefHanlder(op,bb,il);

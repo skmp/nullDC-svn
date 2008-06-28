@@ -2794,7 +2794,8 @@ shil_compileFP* sclt[shilop_count]=
 	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,
 	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,
 	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,
-	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp
+	shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,shil_compile_nimp,
+	shil_compile_nimp
 };
 
 void SetH(shil_opcodes op,shil_compileFP* ha)
