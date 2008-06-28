@@ -28,7 +28,8 @@ shil_ce_FP* shil_ce_lut[shilop_count]=
 	shil_ce_nimp,shil_ce_nimp,shil_ce_nimp,shil_ce_nimp,
 	shil_ce_nimp,shil_ce_nimp,shil_ce_nimp,shil_ce_nimp,
 	shil_ce_nimp,shil_ce_nimp,shil_ce_nimp,shil_ce_nimp,
-	shil_ce_nimp,shil_ce_nimp,shil_ce_nimp,shil_ce_nimp
+	shil_ce_nimp,shil_ce_nimp,shil_ce_nimp,shil_ce_nimp,
+	shil_ce_nimp
 };
 void SetShilHanlder(shil_opcodes op,shil_ce_FP* ha)
 {

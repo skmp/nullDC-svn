@@ -2364,7 +2364,37 @@ void __fastcall shil_compile_fabs(shil_opcode* op)
 	}
 }
 
+//pref !
+void __fastcall do_pref(u32 Dest);
+void __fastcall shil_compile_pref(shil_opcode* op)
+{
+	assert(0==(op->flags & (FLAG_REG2|FLAG_IMM2)));
+	assert(op->flags & (FLAG_REG1|FLAG_IMM1));
+	
+	u32 sz=op->flags & 3;
+	assert(sz==FLAG_32);
 
+	if (op->flags&FLAG_REG1)
+	{
+		x86_reg raddr=LoadReg_force(ECX,op->reg1);
+		x86e->Emit(op_mov32,EDX,ECX);
+		x86e->Emit(op_and32,EDX,0xFC000000);
+		x86e->Emit(op_cmp32,EDX,0xE0000000);
+
+		x86_Label* after=x86e->CreateLabel(false,8);
+		x86e->Emit(op_jne,after);
+		x86e->Emit(op_call,x86_ptr_imm(do_pref));
+		x86e->MarkLabel(after);
+	}
+	else if (op->flags&FLAG_IMM1)
+	{
+		if((op->imm1&0xFC000000)==0xE0000000)
+		{
+			x86e->Emit(op_mov32,ECX,op->imm1);
+			x86e->Emit(op_call,x86_ptr_imm(do_pref));
+		}
+	}
+}
 
 //complex opcodes
 void __fastcall shil_compile_fcmp(shil_opcode* op)
@@ -2832,6 +2862,8 @@ void sclt_Init()
 	SetH(shilop_fsrra,shil_compile_fsrra);
 	SetH(shilop_div32,shil_compile_div32);
 	SetH(shilop_fcmp,shil_compile_fcmp);
+
+	SetH(shilop_pref,shil_compile_pref);
 
 	/*
 	u32 shil_nimp=shilop_count;

@@ -99,7 +99,9 @@ sh4op(i0000_nnnn_1011_0011)
 //pref @<REG_N>                 
 sh4op(i0000_nnnn_1000_0011)
 {
-	shil_interpret(op);
+	u32 n = GetN(op);
+	ilst->pref(r[n]);
+	//shil_interpret(op);
 	/*
 	//iNimp("pref @<REG_N>");
 	u32 n = GetN(op);

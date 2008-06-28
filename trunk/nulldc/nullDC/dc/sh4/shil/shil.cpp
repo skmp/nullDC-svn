@@ -72,7 +72,7 @@ bool shil_opcode::WritesReg(Sh4RegType reg)
 
 	if (this->flags & FLAG_REG1)
 	{
-		if (opcode!=shilop_cmp && opcode!=shilop_test && opcode!=shilop_writem)
+		if (opcode!=shilop_cmp && opcode!=shilop_test && opcode!=shilop_writem && opcode!=shilop_pref)
 			used |= (reg1==reg) ;
 	}
 
@@ -151,6 +151,7 @@ void shil_stream::emit32(shil_opcodes op,Sh4RegType reg1,Sh4RegType  reg2,u32 ex
 }
 void shil_stream::pref(Sh4RegType addr)
 {
+	emit32(shilop_pref,addr);
 }
 void shil_stream::emitReg(shil_opcodes op,Sh4RegType reg1,u32 flags)
 {
