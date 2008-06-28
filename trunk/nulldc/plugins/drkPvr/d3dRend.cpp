@@ -1900,7 +1900,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 					//we WANT stencil to have all 1's here for bit 1
 					//set it as needed here :) -> not realy , we want em 0'd
 
-					f32 fsq[] = {0,0,0, 0,480*4,0, 640*4,0,0, 640*4,480*4,0};
+					f32 fsq[] = {-640*8,-480*8,0, -640*8,480*8,0, 640*8,-480*8,0, 640*8,480*8,0};
 					/*
 					verifyc(dev->SetRenderState(D3DRS_ZENABLE,FALSE));						//Z doesnt matter
 					verifyc(dev->SetRenderState(D3DRS_STENCILFUNC,D3DCMP_ALWAYS));			//allways pass
