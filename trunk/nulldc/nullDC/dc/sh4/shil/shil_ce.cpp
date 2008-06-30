@@ -105,10 +105,12 @@ struct RegData
 };
 
 RegData shil_ce_gpr[sh4_reg_count];
-
+vector<u32> static_reads;
+bool shil_ce_is_locked=true;
 void Init_ce()
 {
 	memset(shil_ce_gpr,0,sizeof(shil_ce_gpr));
+	
 	if (Inited_ce_pass)
 		return;
 
@@ -299,6 +301,20 @@ void ce_WriteBack_aks_all(shil_stream* il)
 		ce_WriteBack_aks(i,il);
 }
 bool ce_re_run;
+
+void shil_ce_add_static(u32 addr,u32 sz)
+{
+	static_reads.push_back(addr);
+}
+bool shil_ce_check_static(u32 addr,u32 sz)
+{
+	for (int i=0;i<static_reads.size();i++)
+	{
+		if (static_reads[i]==addr)
+			return true;
+	}
+	return false;
+}
 //Optimisation pass mainloop
 u32 shil_optimise_pass_ce_main(SBL_BasicBlock* bb)
 {
@@ -486,6 +502,10 @@ void shil_optimise_pass_ce_driver(BasicBlock* bb)
 {
 	if (settings.dynarec.CPpass==0)
 		return;
+
+	shil_ce_is_locked=true;
+	static_reads.clear();
+
 	ce_re_run=true;
 	u32 rv=0;
 	u32 pass=0;
@@ -504,6 +524,8 @@ void shil_optimise_pass_ce_driver(BasicBlock* bb)
 
 	total_ops_removed+=old_Size-bb->ilst.opcodes.size();
 	shil_optimise_pass_btp_main(bb);
+
+	static_reads.clear();
 	//if (rv)
 	//	printf("Optimised block 0x%X , %d opts : %d passes ,delta=%d, total removed %d \n",bb->start,rv,pass,old_Size-bb->ilst.opcodes.size(),total_ops_removed);
 
@@ -773,9 +795,10 @@ shilh(readm)
 	if (GetRamReadAdr(op,&addr))
 	{
 		u32 size=op->flags&3;
-		if (bb->IsMemLocked(addr) && (size!=FLAG_64))
+		if (shil_ce_is_locked && bb->IsMemLocked(addr) && (size!=FLAG_64))
 		{
 			u32 data=0;
+			shil_ce_add_static(addr,size);
 			if (size==FLAG_64)
 			{
 				Sh4RegType base=(Sh4RegType)GetSingleFromDouble(op->reg1);
@@ -837,6 +860,24 @@ shilh(readm)
 shilh(writem)
 {
 	bool rv=ce_ReadWriteParams(op);
+	u32 addr;
+	bool kill_all=false;
+	if (GetRamReadAdr(op,&addr))
+	{
+		u32 size=op->flags&3;
+		if (shil_ce_is_locked && bb->IsMemLocked(addr) && (size!=FLAG_64))
+		{
+			shil_ce_is_locked=false;
+			printf("CE: Block will be demoted to manual for the CE pass\n");
+			/*
+			if (shil_ce_check_static(addr,size))
+			{
+				printf("WRITEMEM:KILLALL");
+				kill_all=true;
+				shil_ce_is_locked=true;
+			}*/
+		}
+	}
 	//even if we did optimise smth , a readback may be needed
 	//since it uses opcode flags to decode what to write back , it should't cause any non needed write backs ;)
 	DefHanlder(op,bb,il);
@@ -844,7 +885,10 @@ shilh(writem)
 	//we did chainge smth :0
 	if (rv)//we optimised something , re run the ce pass once more
 		ce_re_run=true;
-
+/*
+	if (kill_all)
+		ce_WriteBack_aks_all(il);
+*/
 	return false;
 }
 shilh(rol)
