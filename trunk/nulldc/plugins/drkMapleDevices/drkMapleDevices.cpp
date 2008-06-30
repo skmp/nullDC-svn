@@ -1588,7 +1588,7 @@ void FASTCALL ControllerDMA_naomi(maple_device_instance* device_instance,u32 Com
 										buffer_out_b[0x8+0x9+0x3]=0x0;
 										buffer_out_b[0x8+0x9+0x9]=0x1;
 										#define ADDFEAT(Feature,Count1,Count2,Count3)	*FeatPtr++=Feature; *FeatPtr++=Count1; *FeatPtr++=Count2; *FeatPtr++=Count3;
-										ADDFEAT(1,2,10,0);	//Feat 1=Digital Inputs.  2 Players. 10 bits
+										ADDFEAT(1,2,12,0);	//Feat 1=Digital Inputs.  2 Players. 10 bits
 										ADDFEAT(2,2,0,0);	//Feat 2=Coin inputs. 2 Inputs
 										ADDFEAT(3,2,0,0);	//Feat 3=Analog. 2 Chans
 
@@ -1599,20 +1599,94 @@ void FASTCALL ControllerDMA_naomi(maple_device_instance* device_instance,u32 Com
 								default:
 									printf("Unkown CAP %X\n",State.Cmd);
 							}
-						
+							buffer_out_len=4*4;
 						}
-						else if(State.Mode==1)	//Get Data
+						else if(State.Mode==1 || State.Mode==2)	//Get Data
 						{
-							printf("Get Data 0x%X\n",State.Cmd);
-							int a=1;
-							//memset(buffer_out_b,0xEE,16);
-							//OutLen=16;
-							//return MAPLE_RESPONSE_DATATRF;
-							//buffer_out_len=4*4;
-							//responce=8;
-							//return;
+							unsigned char glbl=0x00;
+							unsigned char p1_1=0x00;
+							unsigned char p1_2=0x00;
+							static unsigned char LastKey[256];
+							static unsigned short coin1=0x0000;
+							unsigned char Key[256];
+							GetKeyboardState(Key);
+							if(Key[VK_F2]&0x80)
+								glbl|=0x80;
+							if(Key[VK_F1]&0x80)
+								p1_1|=0x40;
+							if(Key['1']&0x80)
+								p1_1|=0x80;
+							if(Key[VK_UP]&0x80)
+								p1_1|=0x20;
+							if(Key[VK_DOWN]&0x80)
+								p1_1|=0x10;
+							if(Key[VK_LEFT]&0x80)
+								p1_1|=0x08;
+							if(Key[VK_RIGHT]&0x80)
+								p1_1|=0x04;
+							if(Key['A']&0x80)
+								p1_1|=0x02;
+							if(Key['S']&0x80)
+								p1_1|=0x01;
+							if(Key['D']&0x80)
+								p1_2|=0x80;
+							if(Key['Z']&0x80)
+								p1_2|=0x40;
+							if(Key['X']&0x80)
+								p1_2|=0x20;
+							if(Key['C']&0x80)
+								p1_2|=0x10;
+							if(((Key['5']^LastKey['5'])&Key['5'])&0x80)
+								coin1++;
+
+							buffer_out_b[0x11+0]=0x00;
+							buffer_out_b[0x11+1]=0x8E;	//Valid data check
+							buffer_out_b[0x11+2]=0x01;
+							buffer_out_b[0x11+3]=0x00;
+							buffer_out_b[0x11+4]=0xFF;
+							buffer_out_b[0x11+5]=0xE0;
+							buffer_out_b[0x11+8]=0x01;
+
+							//memset(OutData+8+0x11,0x00,0x100);
+
+							buffer_out_b[8+0x12+0]=1;
+							buffer_out_b[8+0x12+1]=glbl;
+							buffer_out_b[8+0x12+2]=p1_1;
+							buffer_out_b[8+0x12+3]=p1_2;
+							buffer_out_b[8+0x12+4]=0x00;
+							buffer_out_b[8+0x12+5]=0x00;
+							buffer_out_b[8+0x12+6]=1;
+							buffer_out_b[8+0x12+7]=coin1>>8;
+							buffer_out_b[8+0x12+8]=coin1&0xff;
+							buffer_out_b[8+0x12+9]=0x00;
+							buffer_out_b[8+0x12+10]=0x00;
+							buffer_out_b[8+0x12+11]=1;
+							buffer_out_b[8+0x12+12]=0x00;
+							buffer_out_b[8+0x12+13]=0x00;
+							buffer_out_b[8+0x12+14]=0x00;
+							buffer_out_b[8+0x12+15]=0x00;
+							buffer_out_b[8+0x12+16]=0x00;
+							buffer_out_b[8+0x12+17]=0x00;
+							buffer_out_b[8+0x12+18]=0x00;
+							buffer_out_b[8+0x12+19]=0x00;
+							buffer_out_b[8+0x12+20]=0x00;
+
+							memcpy(LastKey,Key,sizeof(Key));
+
+							if(State.Mode==1)
+							{
+								buffer_out_b[0x11+0x7]=19;
+								buffer_out_b[0x11+0x4]=19+5;
+							}
+							else
+							{
+								buffer_out_b[0x11+0x7]=17;
+								buffer_out_b[0x11+0x4]=17-1;
+							}
+
+							//OutLen=8+0x11+16;
+							buffer_out_len=8+0x12+20;
 						}
-						buffer_out_len=4*4;
 						/*ID.Keys=0xFFFFFFFF;
 						if(GetKeyState(VK_F1)&0x8000)		//Service
 						ID.Keys&=~(1<<0x1b);
@@ -1623,9 +1697,9 @@ void FASTCALL ControllerDMA_naomi(maple_device_instance* device_instance,u32 Com
 						OutLen=sizeof(ID);
 						*/
 					}
-					break;
-					//Select Subdevice
-				case 0x17:
+					ret(8);
+					
+				case 0x17:	//Select Subdevice
 					{
 						State.Mode=0;
 						State.Cmd=buffer_in_b[8];
@@ -1634,8 +1708,7 @@ void FASTCALL ControllerDMA_naomi(maple_device_instance* device_instance,u32 Com
 					}
 					ret(7);
 				
-					//Wha?
-				case 0x27:
+				case 0x27:	//Transfer request
 					{
 						State.Mode=1;
 						State.Cmd=buffer_in_b[8];
@@ -1643,7 +1716,14 @@ void FASTCALL ControllerDMA_naomi(maple_device_instance* device_instance,u32 Com
 						buffer_out_len=0;
 					}
 					ret(7);
-				
+				case 0x21:		//Transfer request with repeat
+					{
+						State.Mode=2;
+						State.Cmd=buffer_in_b[8];
+						State.Node=buffer_in_b[9];
+						buffer_out_len=0;
+					}
+					ret(7);
 					//EEprom access (Writting)
 				case 0x0B:
 					{
@@ -1675,7 +1755,14 @@ void FASTCALL ControllerDMA_naomi(maple_device_instance* device_instance,u32 Com
 				return;
 			}
 			break;
-
+		case 0x82:
+			{
+				const char *ID="315-6149    COPYRIGHT SEGA E\x83\x00\x20\x05NTERPRISES CO,LTD.  ";
+				memset(buffer_out_b,0x20,256);
+				memcpy(buffer_out_b,ID,0x38-4);
+				buffer_out_len=256;
+				ret(0x83);
+			}
 		/*typedef struct {
 			DWORD		func;//4
 			DWORD		function_data[3];//3*4
