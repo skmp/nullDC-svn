@@ -60,7 +60,29 @@ float4 TextureLookup_Palette_Nproj(float2 uv)
 	return PalleteLookup(pal_color);
 }
 //large .. no ? 
+/*
+	Bilinear filtering
+	Screen space perspective -> Texture space linear (*W)
+	Texture space quad, filtered
+*/
 float4 TextureLookup_Palette_Bilinear(float4 uv)
+{
+	float2 tcpoj=uv.xy/uv.w;			//Project texture to 2d tc space
+	float2 Img=tcpoj*texture_size.xy-float2(0.5,0.5);	//to image space to get the frac/ceil
+	float4 ltrb=float4(floor(Img),ceil(Img))*texture_size.zwzw;//zw=1/xy
+	float2 weight=frac(Img);
+	
+	float4 top_left = TextureLookup_Palette_Nproj( ltrb.xy );
+	float4 top_right = TextureLookup_Palette_Nproj( ltrb.zy );
+	float4 bot_left = TextureLookup_Palette_Nproj( ltrb.xw );
+	float4 bot_right = TextureLookup_Palette_Nproj( ltrb.zw ); 
+	
+	float4 top = lerp( top_left, top_right, weight.x );	//.x=0 -> left, .x=1 -> right
+	float4 bot = lerp( bot_left, bot_right, weight.x );
+	float4 final = lerp( top, bot, weight.y );			//.y=0 -> top , .y=1 -> bottom
+	return final;
+}
+float4 TextureLookup_Palette_Bilinear_lol(float4 uv)
 {
 	// Find point sampled texels coodinates in image space
 	// -> this is correct for bilinear, wrong for anisotropic

@@ -52,13 +52,6 @@ vertex_out VertexShader_main(in vertex_in vin)
 	
 	vo.pos.xy+=float2((-1.0/res_x)-1.0,(1.0/res_y)+1.0);
 	
-	/*
-	//this doesnt have the desired effect.. why ? (alligns texture cord to pixel, so bilinear doesnt 'leak' from wrong pixels)
-	float2 sng=sign(vtx.uv.xy);
-	vtx.uv.xy=abs(vtx.uv.xy) + (texture_size.zw/2);
-	vtx.uv.xy-=fmod(vtx.uv.xy,texture_size.zw);
-	vtx.uv.xy*=sng;
-	*/	
 	vo.uv.xy=vin.uv*vin.pos.z;
 	
 	vo.col=saturate(vin.col)*vin.pos.z;

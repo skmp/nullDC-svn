@@ -24,6 +24,7 @@ using namespace TASplitter;
 bool UseSVP=false;
 bool UseFixedFunction=false;
 bool dosort=false;
+#define SHADER_DEBUG 0 /*D3DXSHADER_DEBUG|D3DXSHADER_SKIPOPTIMIZATION*/,
 /*
 #define DEV_CREATE_FLAGS D3DCREATE_HARDWARE_VERTEXPROCESSING
 //#define DEV_CREATE_FLAGS D3DCREATE_SOFTWARE_VERTEXPROCESSING
@@ -1131,7 +1132,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		ID3DXConstantTable* consts;
 
 		D3DXCompileShaderFromFileA("ps_hlsl.fx"
-			,ps_macros,NULL,"PixelShader_main",profile,D3DXSHADER_DEBUG,&shader,&perr,&consts);
+			,ps_macros,NULL,"PixelShader_main",profile,SHADER_DEBUG/*D3DXSHADER_DEBUG|D3DXSHADER_SKIPOPTIMIZATION*/,&shader,&perr,&consts);
 		if (perr)
 		{
 			char* text=(char*)perr->GetBufferPointer();
@@ -2223,7 +2224,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		ID3DXBuffer* shader;
 
 
-		verifyc(D3DXCompileShaderFromFileA("vs_hlsl.fx",vs_macros,NULL,"VertexShader_main",vsp , D3DXSHADER_DEBUG, &shader,&perr,&shader_consts));
+		verifyc(D3DXCompileShaderFromFileA("vs_hlsl.fx",vs_macros,NULL,"VertexShader_main",vsp , SHADER_DEBUG, &shader,&perr,&shader_consts));
 		if (perr)
 		{
 			char* text=(char*)perr->GetBufferPointer();
@@ -2245,7 +2246,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			ID3DXConstantTable* consts;
 
 			D3DXCompileShaderFromFileA("ps_hlsl.fx"
-				,ps_macros,NULL,"PixelShader_Z",D3DXGetPixelShaderProfile(dev),D3DXSHADER_DEBUG,&shader,&perr,&consts);
+				,ps_macros,NULL,"PixelShader_Z",D3DXGetPixelShaderProfile(dev),SHADER_DEBUG,&shader,&perr,&consts);
 			if (perr)
 			{
 				char* text=(char*)perr->GetBufferPointer();
@@ -2258,7 +2259,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			consts->Release();
 
 			D3DXCompileShaderFromFileA("ps_hlsl.fx"
-				,ps_macros,NULL,"PixelShader_ShadeCol",D3DXGetPixelShaderProfile(dev),D3DXSHADER_DEBUG,&shader,&perr,&consts);
+				,ps_macros,NULL,"PixelShader_ShadeCol",D3DXGetPixelShaderProfile(dev),SHADER_DEBUG,&shader,&perr,&consts);
 			if (perr)
 			{
 				char* text=(char*)perr->GetBufferPointer();
