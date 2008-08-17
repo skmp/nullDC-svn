@@ -984,11 +984,13 @@ void AICA_Sample()
 		VOLPAN(EXTS0R,dsp_out_vol[17].EFSDL,dsp_out_vol[17].EFPAN,mixl,mixr);
 	}
 	if (settings.DSPEnabled)
+	{
 		dsp_step();
 
-	for (int i=0;i<16;i++)
-	{
-		VOLPAN( (*(s16*)&DSPData->EFREG[i]) ,dsp_out_vol[i].EFSDL,dsp_out_vol[i].EFPAN,mixl,mixr);
+		for (int i=0;i<16;i++)
+		{
+			VOLPAN( (*(s16*)&DSPData->EFREG[i]) ,dsp_out_vol[i].EFSDL,dsp_out_vol[i].EFPAN,mixl,mixr);
+		}
 	}
 
 	//Mono !
