@@ -42,9 +42,67 @@ struct _INST
 
 
 #define DYNBUF	0x10000
-
+/*
 //#define USEFLOATPACK
+//pack s24 to s1e4s11
+naked u16 packasm(s32 val)
+{
+	__asm
+	{
+		mov edx,ecx;		//eax will be sign
+		and edx,0x80000;	//get the sign
+		
+		jz poz;
+		neg ecx;
 
+		poz:
+		bsr eax,ecx;
+		jnz _zero;
+
+		//24 -> 11
+		//13 -> 0
+		//12..0 -> 0
+		sub eax,11;
+		cmovs eax,0;	//if <0 -> 0
+
+		shr ecx,eax;	//shift out mantissa as needed (yeah i know, no rounding here and all .. )
+
+		shr eax,12;		//[14:12] is exp
+		or edx,ecx;		//merge [15] | [11:0]
+		or eax,edx;		//merge [14:12] | ([15] | [11:0]), result on eax
+		ret;
+
+_zero:
+		xor eax,eax;
+		ret;
+	}
+}
+//ONLY lower 16 bits are valid, rest are ingored but do movzx to avoid partial stalls :)
+naked s32 unpackasm(u32 val)
+{
+	__asm
+	{
+		mov eax,ecx;		//get mantissa bits
+		and ecx,0x7FF;		//
+		
+		shl eax,11;			//get shift factor (shift)
+		mov edx,eax;		//keep a copy for the sign
+		and eax,0xF;		//get shift factor (mask)
+
+		shl ecx,eax;		//shift mantissa to normal position
+
+		test edx,0x10;		//signed ?
+		jnz _negme;
+		
+		ret;	//nop, return as is
+
+_negme:
+		//yep, negate and return
+		neg eax;
+		ret;
+
+	}
+}*/
 static UINT16 __fastcall PACK(INT32 val)
 {
 	UINT32 temp;
@@ -781,7 +839,7 @@ void dsp_readmem(u32 addr)
 
 
 //MAME - Elsemi :)
-
+#ifdef _NONRAZDSP_
 void dsp_emu_grandia()
 {
 	static bool stuff=true;
@@ -3931,3 +3989,4 @@ void dsp_recompile_elsemi()
 	//fwrite(DSP->DoSteps,1,PtrInsts-(unsigned char *)DSP->DoSteps,f);
 	//fclose(f);
 }
+#endif

@@ -44,6 +44,16 @@ void EXPORT_CALL handle_SA(u32 id,void* w,void* p)
 	eminf.SetMenuItemStyle(id,settings.LimitFPS?MIS_Checked:0,MIS_Checked);
 	SaveSettings();
 }
+void EXPORT_CALL handle_DSP(u32 id,void* w,void* p)
+{
+	if (settings.DSPEnabled)
+		settings.DSPEnabled=0;
+	else
+		settings.DSPEnabled=1;
+
+	eminf.SetMenuItemStyle(id,settings.DSPEnabled?MIS_Checked:0,MIS_Checked);
+	SaveSettings();
+}
 void EXPORT_CALL handle_MCDDA(u32 id,void* w,void* p)
 {
 	if (settings.CDDAMute)
@@ -73,8 +83,10 @@ s32 FASTCALL OnLoad(emu_info* em)
 
 	config_scmi=eminf.AddMenuItem(em->RootMenu,-1,L"Config",handle_Config,0);
 	config_stami=eminf.AddMenuItem(em->RootMenu,-1,L"Sync Audio",handle_SA,settings.LimitFPS);
+	eminf.AddMenuItem(em->RootMenu,-1,L"DSP Emulation",handle_DSP,settings.DSPEnabled);
 	eminf.AddMenuItem(em->RootMenu,-1,L"Mute CDDA",handle_MCDDA,settings.CDDAMute);
 	eminf.AddMenuItem(em->RootMenu,-1,L"Mute Sound",handle_GS,settings.GlobalMute);
+	
 
 	eminf.AddMenuItem(em->RootMenu,-1,0,0,0);
 	eminf.AddMenuItem(em->RootMenu,-1,L"About",handle_About,0);
@@ -189,6 +201,7 @@ void LoadSettings()
 	settings.BufferCount=cfgGetInt("BufferCount",1);
 	settings.CDDAMute=cfgGetInt("CDDAMute",0);
 	settings.GlobalMute=cfgGetInt("GlobalMute",0);
+	settings.DSPEnabled=cfgGetInt("DSPEnabled",0);
 }
 
 void SaveSettings()
@@ -203,6 +216,7 @@ void SaveSettings()
 	cfgSetInt("BufferCount",settings.BufferCount);
 	cfgSetInt("CDDAMute",settings.CDDAMute);
 	cfgSetInt("GlobalMute",settings.GlobalMute);
+	cfgSetInt("DSPEnabled",settings.DSPEnabled);
 }
 
 //Windoze Code implementation of commong classes from here and after ..

@@ -3,6 +3,11 @@
 #include "mem.h"
 #include <math.h>
 
+//#define CLIP_WARN
+#define key_printf(x)
+#define aeg_printf(x)
+#define step_printf(x)
+
 //Sound generation , mixin , and chanel regs emulation
 
 SampleType mixl;
@@ -337,7 +342,7 @@ struct AicaChannel
 			prev_sample=0;
 
 			CalcUpdateRate();
-			printf("[%d] KEY_ON %s @ %f hrz, loop : %d\n",Channel,stream_names[ChanData->PCMS],(44100.0*update_rate)/1024,ChanData->LPCTL);
+			key_printf("[%d] KEY_ON %s @ %f hrz, loop : %d\n",Channel,stream_names[ChanData->PCMS],(44100.0*update_rate)/1024,ChanData->LPCTL);
 			//Decode first sample
 			//Decoder_Step();
 		}
@@ -352,7 +357,7 @@ struct AicaChannel
 		verify(!ChanData->KYONB);
 		if (AEG.state!=EG_Release)
 		{
-			printf("[%d] KEY_OFF -> Release\n",Channel);
+			key_printf("[%d] KEY_OFF -> Release\n",Channel);
 			AEG.state=EG_Release;
 			//switch to release state
 		}
@@ -375,7 +380,7 @@ struct AicaChannel
 	void disable()
 	{
 		ChanData->KYONB=0;
-		printf("[%d] Channel disabled\n",Channel);
+		key_printf("[%d] Channel disabled\n",Channel);
 		AEG.SetValue(0x3ff);
 		enabled=false;
 	}
@@ -414,7 +419,7 @@ struct AicaChannel
 			{
 				if ((AEG.state==EG_Attack) && (CA>=ChanData->LSA))
 				{
-					printf("[%d]LPSLNK : Switching to EG_Decay1 %X\n",Channel,AEG.GetValue());
+					step_printf("[%d]LPSLNK : Switching to EG_Decay1 %X\n",Channel,AEG.GetValue());
 					AEG.state=EG_Decay1;
 				}
 			}
@@ -548,7 +553,7 @@ struct AicaChannel
 					AEG.SetValue(0);
 					if (!ChanData->LPSLNK)
 					{
-						printf("[%d]AEG_step : Switching to EG_Decay1 %d\n",Channel,AEG.GetValue());
+						aeg_printf("[%d]AEG_step : Switching to EG_Decay1 %d\n",Channel,AEG.GetValue());
 						AEG.state=EG_Decay1;
 					}
 				}
@@ -560,7 +565,7 @@ struct AicaChannel
 				AEG.val+=AEG_DSR_SPS[AEG_EffRate(ChanData->D1R)];
 				if (((u32)AEG.GetValue()>>5)>=ChanData->DL)
 				{
-					printf("[%d]AEG_step : Switching to EG_Decay2 @ %x\n",Channel,AEG.GetValue());
+					aeg_printf("[%d]AEG_step : Switching to EG_Decay2 @ %x\n",Channel,AEG.GetValue());
 					AEG.state=EG_Decay2;
 				}
 			}
@@ -573,7 +578,7 @@ struct AicaChannel
 				{
 					AEG.SetValue(0x3FF);
 					EnterReleaseState();
-					printf("[%d]AEG_step : Switching to EG_Release @ %x\n",Channel,AEG.GetValue());
+					aeg_printf("[%d]AEG_step : Switching to EG_Release @ %x\n",Channel,AEG.GetValue());
 				}
 			}
 			break;
@@ -978,8 +983,8 @@ void AICA_Sample()
 		VOLPAN(EXTS0L,dsp_out_vol[16].EFSDL,dsp_out_vol[16].EFPAN,mixl,mixr);
 		VOLPAN(EXTS0R,dsp_out_vol[17].EFSDL,dsp_out_vol[17].EFPAN,mixl,mixr);
 	}
-	
-	dsp_step();
+	if (settings.DSPEnabled)
+		dsp_step();
 
 	for (int i=0;i<16;i++)
 	{
@@ -1010,10 +1015,13 @@ void AICA_Sample()
 	}
 
 	//Sample is ready ! clip/saturate and store :}
+
+#ifdef CLIP_WARN
 	if (((s16)mixl) != mixl)
 		printf("Cliped mixl %d\n",mixl);
 	if (((s16)mixr) != mixr)
 		printf("Cliped mixr %d\n",mixr);
+#endif
 
 	clip16(mixl);
 	clip16(mixr);
