@@ -415,7 +415,7 @@ namespace Direct3DRenderer
 				}
 				else
 				{*/
-				if (tcw.NO_PAL.MipMapped)
+				if (tcw.NO_PAL.MipMapped && (!(settings.Emulation.PaletteMode>=2 && (tcw.NO_PAL.PixelFmt==5 || tcw.NO_PAL.PixelFmt==6))) )
 				{
 					verifyc(dev->CreateTexture(w,h,0,D3DUSAGE_AUTOGENMIPMAP,D3DFMT_A8R8G8B8,D3DPOOL_MANAGED,&Texture,0));
 				}
@@ -2407,6 +2407,12 @@ nl:
 				if ((ptext->data.tcw.PAL.PixelFmt == 5) || (ptext->data.tcw.PAL.PixelFmt == 6))
 				{
 					ptext->data.dirty=true;
+					//Force it to recreate the texture
+					if (ptext->data.Texture!=0)
+					{
+						ptext->data.Texture->Release();
+						ptext->data.Texture=0;
+					}
 				}
 				ptext=ptext->prev;
 			}

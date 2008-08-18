@@ -53,76 +53,40 @@ float4 TextureLookup_Palette(float4 uv)
 	return PalleteLookup(pal_color);
 }
 
-float4 TextureLookup_Palette_Nproj(float2 uv)
-{
-	float4 pal_color=tex2D(samplr,uv);
-	
-	return PalleteLookup(pal_color);
-}
-//large .. no ? 
 /*
 	Bilinear filtering
 	Screen space perspective -> Texture space linear (*W)
 	Texture space quad, filtered
+	This also takes dx/dy/mipmaps into account correctly, but drkpvr so far does not generate pal. texture index mipmaps so i commented it out for now
 */
+float4 TextureLookup_Palette_Nproj(float2 uv/*,float2 dx,float2 dy*/)
+{
+	float4 pal_color=tex2D/*grad*/(samplr,uv/*,dx,dy*/);
+	
+	return PalleteLookup(pal_color);
+}
 float4 TextureLookup_Palette_Bilinear(float4 uv)
 {
 	float2 tcpoj=uv.xy/uv.w;			//Project texture to 2d tc space
+	/*
+	float2 dx=ddx(tcpoj.xy);			//Get x derivatives for mip mapping
+	float2 dy=ddy(tcpoj.xy);			//Get y derivatives for mip mapping
+	*/
 	float2 Img=tcpoj*texture_size.xy-float2(0.5,0.5);	//to image space to get the frac/ceil
 	float4 ltrb=float4(floor(Img),ceil(Img))*texture_size.zwzw;//zw=1/xy
 	float2 weight=frac(Img);
 	
-	float4 top_left = TextureLookup_Palette_Nproj( ltrb.xy );
-	float4 top_right = TextureLookup_Palette_Nproj( ltrb.zy );
-	float4 bot_left = TextureLookup_Palette_Nproj( ltrb.xw );
-	float4 bot_right = TextureLookup_Palette_Nproj( ltrb.zw ); 
+	float4 top_left = TextureLookup_Palette_Nproj( ltrb.xy /*,dx,dy*/);
+	float4 top_right = TextureLookup_Palette_Nproj( ltrb.zy /*,dx,dy*/);
+	float4 bot_left = TextureLookup_Palette_Nproj( ltrb.xw /*,dx,dy*/);
+	float4 bot_right = TextureLookup_Palette_Nproj( ltrb.zw /*,dx,dy*/); 
 	
 	float4 top = lerp( top_left, top_right, weight.x );	//.x=0 -> left, .x=1 -> right
 	float4 bot = lerp( bot_left, bot_right, weight.x );
 	float4 final = lerp( top, bot, weight.y );			//.y=0 -> top , .y=1 -> bottom
 	return final;
 }
-float4 TextureLookup_Palette_Bilinear_lol(float4 uv)
-{
-	// Find point sampled texels coodinates in image space
-	// -> this is correct for bilinear, wrong for anisotropic
-	uv.xy/=uv.w;
-	
-	//store sign/texutre_size (zw is 1/xy)
-	float2 sgn=sign(uv.xy)*texture_size.zw;
-   
-    //Calculate weight/pixel coords
-	float2 TexCoordImageSpace = abs(uv.xy) * texture_size.xy;
-	
-	float2 weight = frac( TexCoordImageSpace );
-	
-	// Get Texture coodinates for all texels to sample
-	// sng = sing/TextureSize
-	float4 flce = float4(floor( TexCoordImageSpace ),ceil( TexCoordImageSpace))*sgn.xyxy;
-	
-	/*
-	|(x,y)|(z,y)| -> top_0,top_1
-	|(x,w)|(z,w)| -> bot_0,bot_1
-	*/
-	
-	// Use texture coodinates to sample actual texels
-	//NON projected lookups (we 'unprojected' to get in image space)
-	float4 top_0 = TextureLookup_Palette_Nproj( flce.xy );
-	float4 top_1 = TextureLookup_Palette_Nproj( flce.zy );
-	float4 bot_0 = TextureLookup_Palette_Nproj( flce.xw );
-	float4 bot_1 = TextureLookup_Palette_Nproj( flce.zw ); 
-	
-	//interpolate
-	float4 top = lerp( top_0, top_1, weight.x );
-	float4 bot = lerp( bot_0, bot_1, weight.x );
-	float4 final = lerp( top, bot, weight.y );
-   
-    final.a=1;
-    final.rb=weight;
-    final.g=0;
-    
-	return( final );
-}
+
 //compress Z to D{s6e18}S8
 float CompressZ(float w)
 {
