@@ -937,6 +937,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 	//PCW cache_pcw;
 	ISP_TSP cache_isp;
 	u32 cache_clipmode=0xFFFFFFFF;
+	bool cache_clip_alpha_on_zero=true;
 	void GPstate_cache_reset(PolyParam* gp)
 	{
 		cache_tsp.full = ~gp->tsp.full;
@@ -944,6 +945,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		//cache_pcw.full = ~gp->pcw.full;
 		cache_isp.full = ~gp->isp.full;
 		cache_clipmode=0xFFFFFFFF;
+		cache_clip_alpha_on_zero=true;
 	}
 	//for fixed pipeline
 	__forceinline
@@ -1345,7 +1347,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		
 	}
 	//
-	template <u32 Type,bool FFunction,bool df>
+	template <u32 Type,bool FFunction,bool df,bool SortingEnabled>
 	__forceinline
 	void SetGPState(PolyParam* gp,u32 cflip=0)
 	{	/*
@@ -1390,6 +1392,12 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 				{
 					dev->SetRenderState(D3DRS_SRCBLEND, SrcBlendGL[gp->tsp.SrcInstr]);
 					dev->SetRenderState(D3DRS_DESTBLEND, DstBlendGL[gp->tsp.DstInstr]);
+					bool clip_alpha_on_zero=gp->tsp.SrcInstr==4 && gp->tsp.DstInstr==5;
+					if (clip_alpha_on_zero!=cache_clip_alpha_on_zero)
+					{
+						cache_clip_alpha_on_zero=clip_alpha_on_zero;
+						dev->SetRenderState(D3DRS_ALPHATESTENABLE,clip_alpha_on_zero);
+					}
 				}
 
 				SetTexMode<D3DSAMP_ADDRESSV>(gp->tsp.ClampV,gp->tsp.FlipV);
@@ -1428,7 +1436,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			}
 			else if (Type==ListType_Translucent)
 			{
-				if (dosort)
+				if (SortingEnabled)
 					dev->SetRenderState(D3DRS_ZFUNC,Zfunction[6]); // : GEQ
 				else
 					dev->SetRenderState(D3DRS_ZFUNC,Zfunction[gp->isp.DepthMode]);
@@ -1442,11 +1450,11 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			dev->SetRenderState(D3DRS_ZWRITEENABLE,gp->isp.ZWriteDis==0);
 		}
 	}
-	template <u32 Type,bool FFunction>
+	template <u32 Type,bool FFunction,bool SortingEnabled>
 	__forceinline
 	void RendStrips(PolyParam* gp)
 	{
-			SetGPState<Type,FFunction,false>(gp);
+			SetGPState<Type,FFunction,false,SortingEnabled>(gp);
 			if (gp->count>2)//0 vert polys ? why does games even bother sending em  ? =P
 			{		
 				dev->DrawPrimitive(D3DPT_TRIANGLESTRIP,gp->first ,
@@ -1454,7 +1462,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			}
 	}
 
-	template <u32 Type,bool FFunction>
+	template <u32 Type,bool FFunction,bool SortingEnabled>
 	void RendPolyParamList(List<PolyParam>& gpl)
 	{
 		if (gpl.used==0)
@@ -1466,7 +1474,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 
 		for (u32 i=0;i<gpl.used;i++)
 		{		
-			RendStrips<Type,FFunction>(&gpl.data[i]);
+			RendStrips<Type,FFunction,SortingEnabled>(&gpl.data[i]);
 		}
 	}
 	
@@ -1547,7 +1555,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		for (u32 i=0;i<sorttemp.size();i++)
 		{
 			u32 fl=((sorttemp[i].id - sorttemp[i].pparam->first)&1)<<2;
-			SetGPState<ListType_Translucent,FFunction,true>(sorttemp[i].pparam,fl);
+			SetGPState<ListType_Translucent,FFunction,true,true>(sorttemp[i].pparam,fl);
 			dev->DrawPrimitive(D3DPT_TRIANGLESTRIP,sorttemp[i].id ,
 					1);
 		}
@@ -1849,11 +1857,11 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			{
 				if (UseFixedFunction)
 				{
-					RendPolyParamList<ListType_Opaque,true>(pvrrc.global_param_op);
+					RendPolyParamList<ListType_Opaque,true,false>(pvrrc.global_param_op);
 				}
 				else
 				{
-					RendPolyParamList<ListType_Opaque,false>(pvrrc.global_param_op);
+					RendPolyParamList<ListType_Opaque,false,false>(pvrrc.global_param_op);
 				}
 			}
 
@@ -1867,11 +1875,11 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			{
 				if (UseFixedFunction)
 				{
-					RendPolyParamList<ListType_Punch_Through,true>(pvrrc.global_param_pt);
+					RendPolyParamList<ListType_Punch_Through,true,false>(pvrrc.global_param_pt);
 				}
 				else
 				{
-					RendPolyParamList<ListType_Punch_Through,false>(pvrrc.global_param_pt);
+					RendPolyParamList<ListType_Punch_Through,false,false>(pvrrc.global_param_pt);
 				}
 			}
 
@@ -2038,11 +2046,17 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 				{
 					if (UseFixedFunction)
 					{
-						RendPolyParamList<ListType_Translucent,true>(pvrrc.global_param_tr);
+						if (dosort)
+							RendPolyParamList<ListType_Translucent,true,true>(pvrrc.global_param_tr);
+						else
+							RendPolyParamList<ListType_Translucent,true,false>(pvrrc.global_param_tr);
 					}
 					else
 					{
-						RendPolyParamList<ListType_Translucent,false>(pvrrc.global_param_tr);
+						if (dosort)
+							RendPolyParamList<ListType_Translucent,false,true>(pvrrc.global_param_tr);
+						else
+							RendPolyParamList<ListType_Translucent,false,false>(pvrrc.global_param_tr);
 					}
 				}
 			}
