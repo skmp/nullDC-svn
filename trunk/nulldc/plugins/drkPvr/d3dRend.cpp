@@ -1373,13 +1373,13 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			{
 				dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
 				dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
-				dev->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
+				dev->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_POINT);	//_NONE ? this disables mipmapping alltogether ?
 			}
 			else
 			{
 				dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
 				dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-				dev->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
+				dev->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);	//LINEAR for Trilinear filtering
 			}
 
 			if (gp->tsp.full!=cache_tsp.full)
