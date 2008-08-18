@@ -770,10 +770,10 @@ void FASTCALL KbdDMA(maple_device_instance* device_instance,u32 Command,u32* buf
 			//ptr_out += 60;
 
 			//2
-			w16(0x04FF); 
+			w16(0x01AE); 
 
 			//2
-			w16(0x0069); 
+			w16(0x01F5); 
 			break;
 
 		/* controller condition structure 
@@ -1262,10 +1262,10 @@ void FASTCALL MouseDMA(maple_device_instance* device_instance,u32 Command,u32* b
 			//ptr_out += 60;
 
 			//2
-			w16(0x04FF); 
+			w16(0x0069); 
 
 			//2
-			w16(0x0069); 
+			w16(0x0120); 
 			break;
 
 		/* controller condition structure 
@@ -1404,10 +1404,10 @@ void FASTCALL ControllerDMA(maple_device_instance* device_instance,u32 Command,u
 			//ptr_out += 60;
 
 			//2
-			w16(0xAE01); 
+			w16(0x01AE); 
 
 			//2
-			w16(0xF401); 
+			w16(0x01F4); 
 			break;
 
 		/* controller condition structure 
@@ -2131,10 +2131,10 @@ void FASTCALL ControllerDMA_net(maple_device_instance* device_instance,u32 Comma
 			//ptr_out += 60;
 
 			//2
-			w16(0x04FF); 
+			w16(0x01AE); 
 
 			//2
-			w16(0x0069); 
+			w16(0x01F4); 
 			break;
 
 		/* controller condition structure 
@@ -2265,10 +2265,10 @@ void FASTCALL ControllerDMA_nul(maple_device_instance* device_instance,u32 Comma
 			//ptr_out += 60;
 
 			//2
-			w16(0x04FF); 
+			w16(0x01AE); 
 
 			//2
-			w16(0x0069); 
+			w16(0x01F4); 
 			break;
 
 		/* controller condition structure 
@@ -2450,10 +2450,10 @@ void FASTCALL VmuDMA(maple_subdevice_instance* device_instance,u32 Command,u32* 
 			//ptr_out += 60;
 
 			//2
-			w16(0x7c00); 
+			w16(0x007c); 
 
 			//2
-			w16(0x8200); 
+			w16(0x0082); 
 			break;
 
 				//in[0] is function used ?
