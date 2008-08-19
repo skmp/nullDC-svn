@@ -55,6 +55,9 @@ u32 vramlock_ConvOffset32toOffset64(u32 offset32)
  
 		return rv;
 }
+//these can be used to force a profile
+//#define D3DXGetPixelShaderProfile(x) "ps_2_0"
+//#define D3DXGetVertexShaderProfile(x) "vs_2_0"
 
 namespace Direct3DRenderer
 {
@@ -1681,16 +1684,21 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		
 		D3DLOCKED_RECT rect;
 		//fog is 128x1 texure
+		//.bg -> .rg
 		//ARGB 8888 -> B G R A -> B=7:0 aka '1', G=15:8 aka '0'
+		//ARGB 8888 -> B G R A -> R=7:0 aka '1', G=15:8 aka '0'
 		fog_texture->LockRect(0,&rect,NULL,D3DLOCK_DISCARD);
 
-		u32* tex=(u32*)rect.pBits;
+		u8* tex=(u8*)rect.pBits;
 
 		//could just memcpy ;p
-		u32* for_table=FOG_TABLE;
+		u8* fog_table=(u8*)FOG_TABLE;
 		for (int i=0;i<128;i++)
 		{
-			tex[i]=for_table[i];
+			tex[i*4+0]=0;//B
+			tex[i*4+1]=fog_table[i*4+0];//G
+			tex[i*4+2]=fog_table[i*4+1];//R
+			tex[i*4+3]=0;//A
 		}
 		fog_texture->UnlockRect(0);
 	}

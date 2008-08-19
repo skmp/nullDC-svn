@@ -456,31 +456,33 @@ pixelcvt_next(convPAL8_TW,2,4)
 pixelcvt_next(convPAL4_X_TW,4,4)
 {
 	u8* p_in=(u8*)data;
+	//20 -> 16 + 4 (*16 to fixup step size)
+	//goes to red
+	pb->prel(0,0,(p_in[0]&0xF)<<20);
+	pb->prel(0,1,(p_in[0]&0xF0)<<16);p_in++;
+	pb->prel(1,0,(p_in[0]&0xF)<<20);
+	pb->prel(1,1,(p_in[0]&0xF0)<<16);p_in++;
 
-	pb->prel(0,0,(p_in[0]&0xF)<<4);
-	pb->prel(0,1,p_in[0]&0xF0);p_in++;
-	pb->prel(1,0,(p_in[0]&0xF)<<4);
-	pb->prel(1,1,p_in[0]&0xF0);p_in++;
+	pb->prel(0,2,(p_in[0]&0xF)<<20);
+	pb->prel(0,3,(p_in[0]&0xF0)<<16);p_in++;
+	pb->prel(1,2,(p_in[0]&0xF)<<20);
+	pb->prel(1,3,(p_in[0]&0xF0)<<16);p_in++;
 
-	pb->prel(0,2,(p_in[0]&0xF)<<4);
-	pb->prel(0,3,p_in[0]&0xF0);p_in++;
-	pb->prel(1,2,(p_in[0]&0xF)<<4);
-	pb->prel(1,3,p_in[0]&0xF0);p_in++;
+	pb->prel(2,0,(p_in[0]&0xF)<<20);
+	pb->prel(2,1,(p_in[0]&0xF0)<<16);p_in++;
+	pb->prel(3,0,(p_in[0]&0xF)<<20);
+	pb->prel(3,1,(p_in[0]&0xF0)<<16);p_in++;
 
-	pb->prel(2,0,(p_in[0]&0xF)<<4);
-	pb->prel(2,1,p_in[0]&0xF0);p_in++;
-	pb->prel(3,0,(p_in[0]&0xF)<<4);
-	pb->prel(3,1,p_in[0]&0xF0);p_in++;
-
-	pb->prel(2,2,(p_in[0]&0xF)<<4);
-	pb->prel(2,3,p_in[0]&0xF0);p_in++;
-	pb->prel(3,2,(p_in[0]&0xF)<<4);
-	pb->prel(3,3,p_in[0]&0xF0);p_in++;
+	pb->prel(2,2,(p_in[0]&0xF)<<20);
+	pb->prel(2,3,(p_in[0]&0xF0)<<16);p_in++;
+	pb->prel(3,2,(p_in[0]&0xF)<<20);
+	pb->prel(3,3,(p_in[0]&0xF0)<<16);p_in++;
 }
 pixelcvt_next(convPAL8_X_TW,2,4)
 {
 	u8* p_in=(u8*)data;
-#define COL ((p_in[0]&0xF)<<4) | ((p_in[0]&0xF0)<<6)
+		//			4+16 (red) |       4+6 (2+8) green
+#define COL ((p_in[0]&0xF)<<20) | ((p_in[0]&0xF0)<<6)
 	pb->prel(0,0,COL);p_in++;
 	pb->prel(0,1,COL);p_in++;
 	pb->prel(1,0,COL);p_in++;

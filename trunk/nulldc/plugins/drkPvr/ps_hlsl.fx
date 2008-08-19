@@ -46,7 +46,7 @@ float4 TextureLookup_Normal(float4 uv)
 float4 PalleteLookup(float4 pos)
 {
 	//xyzw -> x=index , y=bank
-	float4 texcol=tex2D(tex_pal,pos.bg+current_pal.xy);
+	float4 texcol=tex2D(tex_pal,pos.rg+current_pal.xy);
 	return texcol;
 }
 
@@ -69,7 +69,34 @@ float4 TextureLookup_Palette_Nproj(float2 uv/*,float2 dx,float2 dy*/)
 	
 	return PalleteLookup(pal_color);
 }
+
 float4 TextureLookup_Palette_Bilinear(float4 uv)
+{
+	float2 tcpoj=uv.xy/uv.w;			//Project texture to 2d tc space
+	/*
+	float2 dx=ddx(tcpoj.xy);			//Get x derivatives for mip mapping
+	float2 dy=ddy(tcpoj.xy);			//Get y derivatives for mip mapping
+	*/
+	float2 Img=tcpoj*texture_size.xy-float2(0.5,0.5);	//to image space to get the frac/ceil
+	float2 lt=floor(Img)/texture_size.xy;
+	float2 weight=frac(Img);
+	
+	float4 top_left = TextureLookup_Palette_Nproj( lt /*,dx,dy*/);
+	lt.x+=1/texture_size.x;
+	float4 top_right = TextureLookup_Palette_Nproj( lt /*,dx,dy*/);
+	float4 bot_right = TextureLookup_Palette_Nproj( lt /*,dx,dy*/); 
+	lt.y+=1/texture_size.y;
+	lt.x-=1/texture_size.x;
+	float4 bot_left = TextureLookup_Palette_Nproj( lt/*,dx,dy*/);
+	
+	
+	float4 top = lerp( top_left, top_right, weight.x );	//.x=0 -> left, .x=1 -> right
+	float4 bot = lerp( bot_left, bot_right, weight.x );
+	float4 final = lerp( top, bot, weight.y );			//.y=0 -> top , .y=1 -> bottom
+	return final;
+}
+
+float4 TextureLookup_Palette_Bilinear_ko(float4 uv)
 {
 	float2 tcpoj=uv.xy/uv.w;			//Project texture to 2d tc space
 	/*
@@ -90,6 +117,7 @@ float4 TextureLookup_Palette_Bilinear(float4 uv)
 	float4 final = lerp( top, bot, weight.y );			//.y=0 -> top , .y=1 -> bottom
 	return final;
 }
+
 /*
 float fdecp(float flt,out float e)
 {
@@ -166,7 +194,7 @@ struct PSO
 //pvr only supports ARGB8888 colors, but they are pre-clamped on the vertex shader (no need to do it here)
 PSO PixelShader_main(in pixel s )
 { 
-	float4 color=saturate(s.col/s.uv.w);
+	float4 color=s.col/s.uv.w;
 	clip(s.uv.z);
 	
 	#if pp_UseAlpha==0
@@ -174,9 +202,9 @@ PSO PixelShader_main(in pixel s )
 	#endif
 	
 	#if pp_FogCtrl==3
-		color.a=fog_mode2(s.uv.w);
+		//color.a=;
 		
-		color.rgb=FOG_COL_RAM.rgb;
+		color=float4(FOG_COL_RAM.rgb,fog_mode2(s.uv.w));
 	#endif
 	
 	#if pp_Texture==1
@@ -214,7 +242,7 @@ PSO PixelShader_main(in pixel s )
 	
 		//if offset is enabled , add it :)
 		#if pp_Offset==1
-			float4 offscol=saturate(s.offs/s.uv.w);
+			float4 offscol=s.offs/s.uv.w;
 			color.rgb+=offscol.rgb;
 			
 			#if pp_FogCtrl==1
