@@ -5,7 +5,7 @@
 //pp_ShadInstr -> 0 to 3 , see pvr docs , valid only when texture is enabled
 //pp_IgnoreTexA -> 1 if on  0 if off , valid only w/ textures on
 //pp_UseAlpha -> 1 if on  0 if off , works when no textures are used too ?
-//
+//pp_FogCtrl
 //misc #defines :
 //ZBufferMode -> z buffer mode :p
 //ZBufferMode : 0 -> fp fixup (nop)
@@ -29,9 +29,13 @@ struct pixel
  
 sampler2D samplr : register(s0);
 sampler2D tex_pal : register(s1);
+sampler1D fog_table: register(s2);
 
 float4 current_pal: register(c0);
 float4 texture_size: register(c1);
+float4 FOG_COL_VERT:register(c2);
+float4 FOG_COL_RAM :register(c3);
+float4 FOG_DENSITY :register(c4);
 
 float4 TextureLookup_Normal(float4 uv)
 {
@@ -98,6 +102,45 @@ float CompressZ(float w)
 	return (x+y)/64.0f;		//Combine and save the exp + mantissa at the mantissa field.Min value is 0 (-1+1), max value is 63 +(2^18-1)/2(^18).
 							//Normalised by 64 so that it falls in the [0..1) range :)
 }
+float fog_mode2(float invW)
+{
+	//pixel z* scale, scale is on m1.7es8 format,result is
+	//1.m0.7eu3, with clamping (min val = 1<<0 -> 1, max value = 1.1111111<<7=11111111.0 -> 255.0
+	//FOG lookup uses idx=eu3:m[6:3] -> 0, .. 127 [128 values pairs]
+	//Then it interpolates lerp(FOG[idx][0],FOG[idx][1],0.m[2:0])
+	float foginvW=FOG_DENSITY*invW;
+	foginvW=clamp(foginvW,1,255);
+
+	float fogexp=floor(log2(foginvW));				//0 ... 7
+	float fogexp_pow=pow(2,fogexp);					//0 ... 128
+	float fogman=(foginvW/fogexp_pow);				//[1,2) mantissa bits. that is 1.m
+	float fogman_hi=fogman*16-16;					//[16,32) -16 -> [0,16)
+	float fogman_idx=floor(fogman_hi);					//[0,15]
+	float fogman_blend=frac(fogman_hi);				//[0,1) -- can also be fogman_idx-fogman_idx !
+	float fog_idx_fr=fogexp*16+fogman_idx;			//[0,127]
+	//D3D9 texture mapping rule : [0.0, 1.0] (0.0 to 1.0, inclusive) to an integer texel space value ranging from [ - 0.5, n - 0.5]
+	//0 (0/255) -> 0.5 BEFORE 1st texture pixel (#0)
+	//1 (256/256)-> 0.5 AFTER LAST texture pixel (#255)
+	//? (0.5/255) -> EXACTLY 1st pixel (#0)
+	//? (255.5/256) -> EXACTLY LAST pixel (#255)
+	//on an 256x1 texture , pixel 0 is at 0, 1 at 1 .. 255 at 255
+	//idx select index *2.idx=0 -> pixel 0(0.5) ,idx=1 -> pixel 2 (2.5), .. idx=127-> pixel 254 (254.5)
+	//fraction then blends betwen the idx pixel, and the next pixel
+	//I'l use bilinear filter for that work, so idx=127 is  [254.5,255.4999)  -> 254.5 (idx*2+0.5) + blend factor
+	// -> actualy, i can use .r and .g to store the cooefs and do the lerp manualy !
+	// -> so, [0.5, 127.5]
+	float fog_idx_pixel_fr=fog_idx_fr+0.5f;
+	float fog_idx_pixel_n=fog_idx_pixel_fr/128;//normalise to [0.5/128,127.5/128) coordinates ;p
+
+	//fog is 128x1 texure
+	//ARGB 8888 -> B G R A -> B=7:0 aka '1', G=15:8 aka '0'
+	float2 fog_coefs=tex1D(fog_table,fog_idx_pixel_n).gb;
+	//frexp(foginvW,out fogexp);	//for exp .. 0 .. 7
+
+	float fog_coef=lerp(fog_coefs.r,fog_coefs.g,fogman_blend);
+	
+	return fog_coef;
+}
 struct PSO
 {
 	float4 col:COLOR0;
@@ -113,6 +156,12 @@ PSO PixelShader_main(in pixel s )
 	
 	#if pp_UseAlpha==0
 		color.a=1;
+	#endif
+	
+	#if pp_FogCtrl==3
+		color.a=fog_mode2(s.uv.w);
+		
+		color.rgb=FOG_COL_RAM.rgb;
 	#endif
 	
 	#if pp_Texture==1
@@ -150,10 +199,22 @@ PSO PixelShader_main(in pixel s )
 	
 		//if offset is enabled , add it :)
 		#if pp_Offset==1
-			color.rgb+=saturate(s.offs.rgb/s.uv.w);
+			float4 offscol=saturate(s.offs/s.uv.w);
+			color.rgb+=offscol.rgb;
+			
+			#if pp_FogCtrl==1
+				color.rgb=lerp(color.rgb,FOG_COL_VERT.rgb,offscol.a);
+			#endif
 		#endif
+		
 	#else
 		//we don't realy have anything to do here -- just return the color ...
+	#endif
+	
+	#if pp_FogCtrl==0
+		float fog_blend=fog_mode2(s.uv.w);
+		
+		color.rgb=lerp(color.rgb,FOG_COL_RAM.rgb,fog_blend);
 	#endif
 	
 	PSO rv;

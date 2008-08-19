@@ -24,7 +24,11 @@ using namespace TASplitter;
 bool UseSVP=false;
 bool UseFixedFunction=false;
 bool dosort=false;
-#define SHADER_DEBUG 0 /*D3DXSHADER_DEBUG|D3DXSHADER_SKIPOPTIMIZATION*/
+#if _DEBUG
+	#define SHADER_DEBUG D3DXSHADER_DEBUG|D3DXSHADER_SKIPOPTIMIZATION
+#else
+	#define SHADER_DEBUG 0 /*D3DXSHADER_DEBUG|D3DXSHADER_SKIPOPTIMIZATION*/
+#endif
 /*
 #define DEV_CREATE_FLAGS D3DCREATE_HARDWARE_VERTEXPROCESSING
 //#define DEV_CREATE_FLAGS D3DCREATE_SOFTWARE_VERTEXPROCESSING
@@ -58,11 +62,12 @@ namespace Direct3DRenderer
 	IDirect3DDevice9* dev;
 	IDirect3DVertexBuffer9* vb;
 	IDirect3DVertexShader9* compiled_vs;
-	IDirect3DPixelShader9* compiled_ps[384]={0};
+	IDirect3DPixelShader9* compiled_ps[384*4]={0};
 	IDirect3DPixelShader9* ShadeColPixelShader=0;
 	IDirect3DPixelShader9* ZPixelShader=0;
 	
 	IDirect3DTexture9* pal_texture=0;
+	IDirect3DTexture9* fog_texture=0;
 	IDirect3DTexture9* rtt_texture=0;
 	u32 rtt_address=0;
 	u32 rtt_FrameNumber=0xFFFFFFFF;
@@ -1096,16 +1101,18 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 	#define idx_pp_UseAlpha 4
 	#define idx_pp_TextureLookup 5
 	#define idx_ZBufferMode 6
+	#define idx_pp_FogCtrl 7
 
 	D3DXMACRO ps_macros[]=
 	{
-		{"pp_Texture",0},
-		{"pp_Offset",0},
-		{"pp_ShadInstr",0},
-		{"pp_IgnoreTexA",0},
-		{"pp_UseAlpha",0},
-		{"TextureLookup",0},	//use shader to emulate pals
-		{"ZBufferMode",0},		//Z mode. 0 -> D24FS8, 1 -> D24S8 + FPemu, 2 -> D24S8 + scaling
+		{"pp_Texture","0"},
+		{"pp_Offset","0"},
+		{"pp_ShadInstr","0"},
+		{"pp_IgnoreTexA","0"},
+		{"pp_UseAlpha","0"},
+		{"TextureLookup","0"},	//use shader to emulate pals
+		{"ZBufferMode","0"},		//Z mode. 0 -> D24FS8, 1 -> D24S8 + FPemu, 2 -> D24S8 + scaling
+		{"pp_FogCtrl","0"},
 		{0,0}	//end of list
 	};
 	// -> function to do projected lookup
@@ -1126,7 +1133,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 
 	void CompilePS(u32 mode,const char* profile)
 	{
-		verify(mode<384);
+		verify(mode<(384*4));
 		if (compiled_ps[mode]!=0)
 			return;
 		ID3DXBuffer* perr;
@@ -1164,52 +1171,60 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			forl(UseAlpha,0,1)
 			{
 				ps_macros[idx_pp_UseAlpha].Definition=ps_macro_numers[UseAlpha];
-				if (Texture)
+				forl(FogCtrl,0,3)
 				{
-					forl(pal_tex,0,2)
+					ps_macros[idx_pp_FogCtrl].Definition=ps_macro_numers[FogCtrl];
+					if (Texture)
 					{
-						ps_macros[idx_pp_TextureLookup].Definition=ps_macro_TLUM[pal_tex];
-						forl(Offset,0,1)
+						forl(pal_tex,0,2)
 						{
-							ps_macros[idx_pp_Offset].Definition=ps_macro_numers[Offset];
-							forl(ShadInstr,0,3)
+							ps_macros[idx_pp_TextureLookup].Definition=ps_macro_TLUM[pal_tex];
+							forl(Offset,0,1)
 							{
-								ps_macros[idx_pp_ShadInstr].Definition=ps_macro_numers[ShadInstr];
-								forl(IgnoreTexA,0,1)
+								ps_macros[idx_pp_Offset].Definition=ps_macro_numers[Offset];
+								forl(ShadInstr,0,3)
 								{
-									ps_macros[idx_pp_IgnoreTexA].Definition=ps_macro_numers[IgnoreTexA];
+									ps_macros[idx_pp_ShadInstr].Definition=ps_macro_numers[ShadInstr];
+									forl(IgnoreTexA,0,1)
+									{
+										ps_macros[idx_pp_IgnoreTexA].Definition=ps_macro_numers[IgnoreTexA];
 
-									u32 mode=0;			
-									mode|=pal_tex;
-									mode<<=1;
-									mode|=Offset;
-									mode<<=2;
-									mode|=ShadInstr;
-									mode<<=1;
-									mode|=IgnoreTexA;
-									mode<<=1;
-									mode|=Texture;
-									mode<<=1;
-									mode|=UseAlpha;
+										u32 mode=0;			
+										mode|=pal_tex;
+										mode<<=1;
+										mode|=Offset;
+										mode<<=2;
+										mode|=ShadInstr;
+										mode<<=1;
+										mode|=IgnoreTexA;
+										mode<<=1;
+										mode|=Texture;
+										mode<<=1;
+										mode|=UseAlpha;
+										mode<<=2;
+										mode|=FogCtrl;
 
-									CompilePS(mode,profile);
+										CompilePS(mode,profile);
+									}
 								}
 							}
 						}
 					}
-				}
-				else
-				{
-					ps_macros[idx_pp_Offset].Definition=ps_macro_numers[0];
-					ps_macros[idx_pp_ShadInstr].Definition=ps_macro_numers[0];
-					ps_macros[idx_pp_IgnoreTexA].Definition=ps_macro_numers[0];
+					else
+					{
+						ps_macros[idx_pp_Offset].Definition=ps_macro_numers[0];
+						ps_macros[idx_pp_ShadInstr].Definition=ps_macro_numers[0];
+						ps_macros[idx_pp_IgnoreTexA].Definition=ps_macro_numers[0];
 
-					u32 mode=0;			
-					mode|=Texture;
-					mode<<=1;
-					mode|=UseAlpha;
+						u32 mode=0;			
+						mode|=Texture;
+						mode<<=1;
+						mode|=UseAlpha;
+						mode<<=2;
+						mode|=FogCtrl;
 
-					CompilePS(mode,profile);
+						CompilePS(mode,profile);
+					}
 				}
 			}
 		}
@@ -1271,6 +1286,9 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 
 		mode<<=1;
 		mode|=gp->tsp.UseAlpha;
+
+		mode<<=2;
+		mode|=gp->tsp.FogCtrl;
 
 		SetPS(mode);
 	}
@@ -1654,6 +1672,26 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		}
 		pal_texture->UnlockRect(0);
 	}
+	void UpdateFogTableTexure()
+	{
+		if (fog_texture==0)
+			return;
+		
+		D3DLOCKED_RECT rect;
+		//fog is 128x1 texure
+		//ARGB 8888 -> B G R A -> B=7:0 aka '1', G=15:8 aka '0'
+		fog_texture->LockRect(0,&rect,NULL,D3DLOCK_DISCARD);
+
+		u32* tex=(u32*)rect.pBits;
+
+		//could just memcpy ;p
+		u32* for_table=FOG_TABLE;
+		for (int i=0;i<128;i++)
+		{
+			tex[i]=for_table[i];
+		}
+		fog_texture->UnlockRect(0);
+	}
 	void SetMVS_Mode(u32 mv_mode,ISP_Modvol ispc)
 	{
 		if (mv_mode==0)	//normal trigs
@@ -1754,13 +1792,23 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		//memset(pvrrc.verts.data,0xFEA345FD,pvrrc.verts.size*sizeof(Vertex));
 
 		UpdatePaletteTexure();
+		UpdateFogTableTexure();
 
 		// Begin the scene
 		if( SUCCEEDED( dev->BeginScene() ) )
 		{			
+			/*
+				Pal texture stuff
+			*/
 			if (pal_texture!=0)
 			{
 				verifyc(dev->SetTexture(1,pal_texture));
+				verifyc(dev->SetSamplerState(1, D3DSAMP_MINFILTER, D3DTEXF_POINT));
+				verifyc(dev->SetSamplerState(1, D3DSAMP_MAGFILTER, D3DTEXF_POINT));
+			}
+			if (fog_texture!=0)
+			{
+				verifyc(dev->SetTexture(2,fog_texture));
 				verifyc(dev->SetSamplerState(1, D3DSAMP_MINFILTER, D3DTEXF_POINT));
 				verifyc(dev->SetSamplerState(1, D3DSAMP_MAGFILTER, D3DTEXF_POINT));
 			}
@@ -1779,6 +1827,30 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			dev->SetVertexShaderConstantF(0,&c0,1);
 			dev->SetVertexShaderConstantF(1,&c1,1);
 #endif
+			/*
+				Set constants !
+			*/
+
+			//VERT and RAM constants
+			u8* fog_colvert_bgra=(u8*)&FOG_COL_VERT;
+			u8* fog_colram_bgra=(u8*)&FOG_COL_RAM;
+			float ps_FOG_COL_VERT[4]={fog_colvert_bgra[2]/255.0f,fog_colvert_bgra[1]/255.0f,fog_colvert_bgra[0]/255.0f,1};
+			float ps_FOG_COL_RAM[4]={fog_colram_bgra[2]/255.0f,fog_colram_bgra[1]/255.0f,fog_colram_bgra[0]/255.0f,1};
+
+			dev->SetPixelShaderConstantF(2,ps_FOG_COL_VERT,1);
+			dev->SetPixelShaderConstantF(3,ps_FOG_COL_RAM,1);
+
+			//Fog density constant
+			u8* fog_density=(u8*)&FOG_DENSITY;
+			float fog_den_mant=fog_density[1]/128.0f;		//bit 7 -> x. bit, so [6:0] -> fraction -> /128
+			s32 fog_den_exp=(s8)fog_density[0];
+			float fog_den_float=fog_den_mant*pow(2.0f,fog_den_exp);
+
+			float ps_FOG_DENSITY[4]= { fog_den_float,0,0,1 };
+			dev->SetPixelShaderConstantF(4,ps_FOG_DENSITY,1);
+			/*
+				Setup initial render states
+			*/
 			dev->SetRenderState(D3DRS_ZENABLE,D3DZB_TRUE);
 
 			dev->SetVertexDeclaration(vdecl);
@@ -2252,6 +2324,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		if (!UseFixedFunction)
 		{
 			verifyc(dev->CreateTexture(16,64,1,D3DUSAGE_DYNAMIC,D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,&pal_texture,0));
+			verifyc(dev->CreateTexture(128,1,1,D3DUSAGE_DYNAMIC,D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,&fog_texture,0));
 			PrecompilePS();
 
 #if MODVOL
@@ -2350,6 +2423,7 @@ nl:
 		safe_release(rtt_surf);
 
 		safe_release(pal_texture);
+		safe_release(fog_texture);
 		safe_release(rtt_texture);
 
 		
