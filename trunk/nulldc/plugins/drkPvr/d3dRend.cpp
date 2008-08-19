@@ -1384,6 +1384,8 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		{
 			SetGPState_ps(gp);
 		}
+		dev->SetRenderState(D3DRS_STENCILREF,gp->pcw.Shadow?0x80:0x00);						//Clear/Set bit 7 (Clear for non 2 volume stuff)
+		
 
 		if ((gp->tcw.full != cache_tcw.full) || (gp->tsp.full!=cache_tsp.full))
 		{
@@ -1924,6 +1926,15 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			dev->SetVertexShaderConstantF(2,current_scalef,1);
 
 
+			//stencil modes
+			verifyc(dev->SetRenderState(D3DRS_STENCILENABLE,TRUE));
+			verifyc(dev->SetRenderState(D3DRS_STENCILWRITEMASK,0xFF));				//write bit 7.I set em all here as a speed optimisation to minimise RMW operations
+			verifyc(dev->SetRenderState(D3DRS_STENCILFUNC,D3DCMP_ALWAYS));			//allways pass
+			verifyc(dev->SetRenderState(D3DRS_STENCILPASS,D3DSTENCILOP_REPLACE));	//flip bit 1
+			verifyc(dev->SetRenderState(D3DRS_STENCILZFAIL,D3DSTENCILOP_KEEP));		//else keep it
+			verifyc(dev->SetRenderState(D3DRS_STENCILREF,0x00));						//Clear/Set bit 7 (Clear for non 2 volume stuff)
+			
+
 			//OPAQUE
 			if (!GetAsyncKeyState(VK_F1))
 			{
@@ -2050,10 +2061,10 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 					dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
 					dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA); 
 
-					dev->SetRenderState(D3DRS_COLORWRITEENABLE,0xFFFFFFFF);
+					dev->SetRenderState(D3DRS_COLORWRITEENABLE,0xF);
 					verifyc(dev->SetRenderState(D3DRS_STENCILFUNC,D3DCMP_EQUAL));	//only the odd ones are 'in'
-					verifyc(dev->SetRenderState(D3DRS_STENCILREF,1));	//allways
-					verifyc(dev->SetRenderState(D3DRS_STENCILMASK,1));	//allways
+					verifyc(dev->SetRenderState(D3DRS_STENCILREF,0x81));	//allways (stencil volume mask && 'in')
+					verifyc(dev->SetRenderState(D3DRS_STENCILMASK,0x81));	//allways (as above)
 
 					verifyc(dev->SetRenderState(D3DRS_STENCILWRITEMASK,0));	//dont write to stencil
 
