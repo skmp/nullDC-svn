@@ -90,7 +90,21 @@ float4 TextureLookup_Palette_Bilinear(float4 uv)
 	float4 final = lerp( top, bot, weight.y );			//.y=0 -> top , .y=1 -> bottom
 	return final;
 }
-
+/*
+float fdecp(float flt,out float e)
+{
+	float l2=log2(w);
+	e=floor(l2);
+	return pow(2,frac(l2));
+}*/
+/*
+float fdecp(float flt,out float e)
+{
+	float e=floor(log2(w));
+	float powe=pow(2,e);
+	return (w/powx);
+}
+*/
 //compress Z to D{s6e18}S8
 float CompressZ(float w)
 {
@@ -114,6 +128,7 @@ float fog_mode2(float invW)
 	float fogexp=floor(log2(foginvW));				//0 ... 7
 	float fogexp_pow=pow(2,fogexp);					//0 ... 128
 	float fogman=(foginvW/fogexp_pow);				//[1,2) mantissa bits. that is 1.m
+	
 	float fogman_hi=fogman*16-16;					//[16,32) -16 -> [0,16)
 	float fogman_idx=floor(fogman_hi);					//[0,15]
 	float fogman_blend=frac(fogman_hi);				//[0,1) -- can also be fogman_idx-fogman_idx !
@@ -134,7 +149,7 @@ float fog_mode2(float invW)
 
 	//fog is 128x1 texure
 	//ARGB 8888 -> B G R A -> B=7:0 aka '1', G=15:8 aka '0'
-	float2 fog_coefs=tex1D(fog_table,fog_idx_pixel_n).gb;
+	float2 fog_coefs=tex1D(fog_table,fog_idx_pixel_n).rg;
 	//frexp(foginvW,out fogexp);	//for exp .. 0 .. 7
 
 	float fog_coef=lerp(fog_coefs.r,fog_coefs.g,fogman_blend);
