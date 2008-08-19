@@ -56,8 +56,8 @@ u32 vramlock_ConvOffset32toOffset64(u32 offset32)
 		return rv;
 }
 //these can be used to force a profile
-#define D3DXGetPixelShaderProfile(x) "ps_2_0"
-#define D3DXGetVertexShaderProfile(x) "vs_2_0"
+//#define D3DXGetPixelShaderProfile(x) "ps_2_0"
+//#define D3DXGetVertexShaderProfile(x) "vs_2_0"
 
 namespace Direct3DRenderer
 {
