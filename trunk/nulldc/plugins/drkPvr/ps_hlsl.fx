@@ -81,12 +81,13 @@ float4 TextureLookup_Palette_Bilinear(float4 uv)
 	float2 lt=floor(Img)/texture_size.xy;
 	float2 weight=frac(Img);
 	
+	float ltx=lt.x;
 	float4 top_left = TextureLookup_Palette_Nproj( lt /*,dx,dy*/);
 	lt.x+=1/texture_size.x;
 	float4 top_right = TextureLookup_Palette_Nproj( lt /*,dx,dy*/);
-	float4 bot_right = TextureLookup_Palette_Nproj( lt /*,dx,dy*/); 
 	lt.y+=1/texture_size.y;
-	lt.x-=1/texture_size.x;
+	float4 bot_right = TextureLookup_Palette_Nproj( lt /*,dx,dy*/); 
+	lt.x=ltx;
 	float4 bot_left = TextureLookup_Palette_Nproj( lt/*,dx,dy*/);
 	
 	
@@ -118,17 +119,22 @@ float4 TextureLookup_Palette_Bilinear_ko(float4 uv)
 	return final;
 }
 
+//same as below, but uses fewer sm2 opcodes so that the damn shader can fit on 2_0 cards
+float fdecp(float flt,out float e)
+{
+	float lg2=log2(flt);	//ie , 2.5
+	float frc=frac(lg2);	//ie , 0.5
+	e=lg2-frc;				//ie , 2.5-0.5=2 (exp)
+	return pow(2,frc);		//2^0.5 (manitsa)
+}
 /*
 float fdecp(float flt,out float e)
 {
-	float l2=log2(w);
-	e=floor(l2);
-	return pow(2,frac(l2));
-}*/
-/*
-float fdecp(float flt,out float e)
-{
-	float e=floor(log2(w));
+	//float fogexp=floor(log2(foginvW));				//0 ... 7
+	//float fogexp_pow=pow(2,fogexp);					//0 ... 128
+	//float fogman=(foginvW/fogexp_pow);				//[1,2) mantissa bits. that is 1.m
+
+	e=floor(log2(flt));
 	float powe=pow(2,e);
 	return (w/powx);
 }
@@ -136,11 +142,11 @@ float fdecp(float flt,out float e)
 //compress Z to D{s6e18}S8
 float CompressZ(float w)
 {
-	float x=floor(log2(w));
-	float powx=pow(2,x);
+	float x;
+	float y=fdecp(w,x);
 	x=clamp(x-16,-63,0);	//s6e18, max : 2^16*(2^18-1)/2(^18) , min : 2^-47*(2^18-1)/2(^18)
 	x+=62;					//bias to positive, +1 more is done by the add below.x_max =62,x_min = -1 (63;0)
-	float y=(w/powx);		//mantissa bits, allways in [1..2) range as 0 is not a valid input :)
+	//y						//mantissa bits, allways in [1..2) range as 0 is not a valid input :)
 	return (x+y)/64.0f;		//Combine and save the exp + mantissa at the mantissa field.Min value is 0 (-1+1), max value is 63 +(2^18-1)/2(^18).
 							//Normalised by 64 so that it falls in the [0..1) range :)
 }
@@ -153,9 +159,8 @@ float fog_mode2(float invW)
 	float foginvW=FOG_DENSITY*invW;
 	foginvW=clamp(foginvW,1,255);
 
-	float fogexp=floor(log2(foginvW));				//0 ... 7
-	float fogexp_pow=pow(2,fogexp);					//0 ... 128
-	float fogman=(foginvW/fogexp_pow);				//[1,2) mantissa bits. that is 1.m
+	float fogexp;									//0 ... 7
+	float fogman=fdecp(foginvW, fogexp);			//[1,2) mantissa bits. that is 1.m
 	
 	float fogman_hi=fogman*16-16;					//[16,32) -16 -> [0,16)
 	float fogman_idx=floor(fogman_hi);					//[0,15]

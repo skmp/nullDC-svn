@@ -56,16 +56,17 @@ u32 vramlock_ConvOffset32toOffset64(u32 offset32)
 		return rv;
 }
 //these can be used to force a profile
-//#define D3DXGetPixelShaderProfile(x) "ps_2_0"
-//#define D3DXGetVertexShaderProfile(x) "vs_2_0"
+#define D3DXGetPixelShaderProfile(x) "ps_2_0"
+#define D3DXGetVertexShaderProfile(x) "vs_2_0"
 
 namespace Direct3DRenderer
 {
+#define PS_SHADER_COUNT (384*4)
 	IDirect3D9* d3d9;
 	IDirect3DDevice9* dev;
 	IDirect3DVertexBuffer9* vb;
 	IDirect3DVertexShader9* compiled_vs;
-	IDirect3DPixelShader9* compiled_ps[384*4]={0};
+	IDirect3DPixelShader9* compiled_ps[PS_SHADER_COUNT]={0};
 	IDirect3DPixelShader9* ShadeColPixelShader=0;
 	IDirect3DPixelShader9* ZPixelShader=0;
 	
@@ -1136,7 +1137,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 
 	void CompilePS(u32 mode,const char* profile)
 	{
-		verify(mode<(384*4));
+		verify(mode<(PS_SHADER_COUNT));
 		if (compiled_ps[mode]!=0)
 			return;
 		ID3DXBuffer* perr;
@@ -2432,7 +2433,7 @@ nl:
 		safe_release(vdecl);
 		safe_release(vdecl_mod);
 
-		for(int i=0;i<384;i++)
+		for(int i=0;i<PS_SHADER_COUNT;i++)
 			safe_release(compiled_ps[i]);
 
 		safe_release(ShadeColPixelShader);
