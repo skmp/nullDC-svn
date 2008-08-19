@@ -1416,7 +1416,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 				{
 					dev->SetRenderState(D3DRS_SRCBLEND, SrcBlendGL[gp->tsp.SrcInstr]);
 					dev->SetRenderState(D3DRS_DESTBLEND, DstBlendGL[gp->tsp.DstInstr]);
-					bool clip_alpha_on_zero=gp->tsp.SrcInstr==4 && gp->tsp.DstInstr==5;
+					bool clip_alpha_on_zero=gp->tsp.SrcInstr==4 && (gp->tsp.DstInstr==1 || gp->tsp.DstInstr==5);
 					if (clip_alpha_on_zero!=cache_clip_alpha_on_zero)
 					{
 						cache_clip_alpha_on_zero=clip_alpha_on_zero;
