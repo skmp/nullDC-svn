@@ -67,6 +67,12 @@ public:
 		functs.push_back(MapleFunction::Create(this,MFID_0_Input,0xfe060f00,0));
 		
 		memcpy(&mdi,&joymdi,sizeof(joymdi));
+		for (int i=0;i<30;i++)
+			if (mdi.product_name[i]==0)
+				mdi.product_name[i]=0x20;
+		for (int i=0;i<60;i++)
+			if (mdi.product_license[i]==0)
+				mdi.product_license[i]=0x20;
 	}
 
 	virtual void Init()
