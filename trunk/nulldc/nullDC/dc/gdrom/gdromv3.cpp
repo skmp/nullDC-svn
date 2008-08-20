@@ -147,6 +147,7 @@ void nilprintf(...){}
 #define printf_ata nilprintf
 #define printf_spi nilprintf
 #define printf_spicmd nilprintf
+#define printf_subcode nilprintf 
 
 void FASTCALL gdrom_get_cdda(s16* sector)
 {
@@ -329,9 +330,9 @@ void gd_set_state(gd_states state)
 
 void gd_setdisc()
 {
-	gd_disk_type = (DiscType)libGDR.GetDiscType();
+	DiscType newd = (DiscType)libGDR.GetDiscType();
 	
-	switch(gd_disk_type)
+	switch(newd)
 	{
 	case NoDisk:
 		SecNumber.Status = GD_NODISC;
@@ -345,8 +346,8 @@ void gd_setdisc()
 		break;
 	case Busy:
 		SecNumber.Status = GD_BUSY;
-		//GDStatus.BSY=1;
-		//GDStatus.DRDY=0;
+		GDStatus.BSY=1;
+		GDStatus.DRDY=0;
 		break;
 	default :
 		if (SecNumber.Status==GD_BUSY)
@@ -357,6 +358,13 @@ void gd_setdisc()
 		//GDStatus.DRDY=1;
 		break;
 	}
+	if (gd_disk_type==Busy && newd!=Busy)
+	{
+		GDStatus.BSY=0;
+		GDStatus.DRDY=1;
+	}
+
+	gd_disk_type=newd;
 
 	SecNumber.DiscFormat=gd_disk_type>>4;
 }
@@ -797,6 +805,8 @@ void gd_process_spi_cmd()
 				else
 					subc_info[1]=0x15;//15h	No audio status information
 			}
+			
+			subc_info[1]=0x15;
 
 			if (format==0)
 			{
@@ -812,28 +822,28 @@ void gd_process_spi_cmd()
 				//3	DATA Length LSB (14 = Eh)
 				subc_info[3]=0xE;
 				//4	Control	ADR
-				subc_info[4]=1;	//Audio :p
+				subc_info[4]=(4<<4) | (1);	//Audio :p
 				//5-13	DATA-Q
-				u8* subc=&subc_info[5];
+				u8* data_q=&subc_info[5-1];
 				//-When ADR = 1
 				//Byte	Description
-				//0	Control	1(ADR)
-				subc[0]=1;
 				//1	TNO
-				subc[1]=4;//Track number .. duno whats it :P gota parse toc xD ;p
+				data_q[1]=1;//Track number .. duno whats it :P gota parse toc xD ;p
 				//2	X
-				subc[2]=1;//gap #1 (main track)
+				data_q[2]=1;//gap #1 (main track)
 				//3-5	Elapsed FAD within track
 				u32 FAD_el=cdda.CurrAddr.FAD-cdda.StartAddr.FAD;
-				subc[3]=(u8)(FAD_el>>16);
-				subc[4]=(u8)(FAD_el>>8);
-				subc[5]=(u8)(FAD_el>>0);
+				data_q[3]=0;//(u8)(FAD_el>>16);
+				data_q[4]=0;//(u8)(FAD_el>>8);
+				data_q[5]=0;//(u8)(FAD_el>>0);
 				//6	0	0	0	0	0	0	0	0
-				subc[6]=0;//
-				//7-9	???
-				//we'l see about em ;p
-				sz=12;
-				printf("NON raw subcode read -- partialy wrong\n");
+				data_q[6]=0;//
+				//7-9	-> seems to be FAD
+				data_q[7]=0;//(u8)(cdda.CurrAddr.FAD>>16);
+				data_q[8]=0x0;//(u8)(cdda.CurrAddr.FAD>>8);
+				data_q[9]=0x96;//(u8)(cdda.CurrAddr.FAD>>0);
+				sz=0xE;
+				printf_subcode("NON raw subcode read -- partialy wrong [fmt=%d]\n",format);
 			}
 
 			gd_spi_pio_end((u8*)&subc_info[0],sz);
@@ -869,7 +879,6 @@ u32 ReadMem_gdrom(u32 Addr, u32 sz)
 	case GD_BYCTLHI	:
 		printf_rm("GDROM: Read From GD_BYCTLHI\n");
 		return ByteCount.hi;
-
 
 	case GD_DATA:
 		if(2!=sz)
