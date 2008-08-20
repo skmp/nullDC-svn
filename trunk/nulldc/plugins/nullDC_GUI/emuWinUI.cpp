@@ -854,7 +854,7 @@ void CreateBasicMenus()
 
 	//File menu
 	AddMenuItem(menu_file,-1,L"Normal Boot",Handle_System_Start,0);
-	AddMenuItem(menu_file,-1,L"Hle GDROM boot",Handle_File_BootHLE,0);
+	//AddMenuItem(menu_file,-1,L"Hle GDROM boot",Handle_File_BootHLE,0);
 	AddSeperator(menu_file);
 	AddMenuItem(menu_file,-1,L"Open bin/elf",Handle_File_OpenBin,0);
 	AddMenuItem(menu_file,-1,L"Load bin/elf",Handle_File_LoadBin,0);

@@ -197,7 +197,7 @@ bool InitDrive(u32 fileflags)
 #ifdef BUILD_DREAMCAST
 	int gfrv=GetFile(fn,0,fileflags);
 #else
-	gfrv=0;
+	int gfrv=0;
 #endif
 	if (gfrv==0)
 	{

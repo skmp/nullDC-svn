@@ -147,9 +147,14 @@ int main___(int argc,wchar* argv[])
 		return -1;
 	}
 	int rv= 0;
-
+#ifdef BUILD_DREAMCAST
 	wchar* temp_path=GetEmuPath(_T("data\\dc_boot.bin"));
-	
+#endif
+
+#ifdef BUILD_NAOMI
+	wchar* temp_path=GetEmuPath(_T("data\\naomi_boot.bin"));
+#endif
+
 	FILE* fr=_wfopen(temp_path,L"r");
 	if (!fr)
 	{
@@ -159,6 +164,7 @@ int main___(int argc,wchar* argv[])
 	}
 	free(temp_path);
 
+#ifdef BUILD_DREAMCAST
 	temp_path=GetEmuPath(_T("data\\dc_flash.bin"));
 	
 	fr=_wfopen (temp_path,L"r");
@@ -170,6 +176,7 @@ int main___(int argc,wchar* argv[])
 	}
 
 	free(temp_path);
+#endif
 
 	fclose(fr);
 	wchar * currpath=GetEmuPath(L"");

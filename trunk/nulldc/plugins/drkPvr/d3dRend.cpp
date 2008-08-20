@@ -2196,6 +2196,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 	}
 	u32 THREADCALL RenderThead(void* param)
 	{
+		render_restart=false;
 		d3d9 = Direct3DCreate9(D3D_SDK_VERSION);
 		char temp[2][30];
 		D3DPRESENT_PARAMETERS ppar;

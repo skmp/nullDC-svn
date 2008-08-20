@@ -2830,7 +2830,7 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 
 #ifdef BUILD_NAOMI
 	u32 mdi=0;
-	MMD(L"nullDC NAOMI JAMMA Controller[WinHook] (" _T(__DATE__) L")",MDTF_Hotplug|MDTF_Sub0|MDTF_Sub1);
+	MMD(L"nullDC NAOMI JAMMA Controller[WinHook] (" _T(__DATE__) L")",0);
 #else
 	u32 mdi=0;
 	//0
