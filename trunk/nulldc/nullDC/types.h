@@ -145,9 +145,6 @@ using namespace std;
 #define EMUWARN3(x,a,b)(wprintf( _T("Warning in %s:")  _T(__FUNCTION__) _T(":%d  -> ") _T(x) _T("\n"),GetNullDCSoruceFileName(_T(__FILE__)),_T(__LINE__),a,b))
 #define EMUWARN4(x,a,b,c)(wprintf( _T("Warning in %s:") _T(__FUNCTION__) _T(":%d  -> ") _T(x) _T("\n"),GetNullDCSoruceFileName(_T(__FILE__)),_T(__LINE__),a,b,c))
 
-#define BUILD_VER 0
-#define MAJOR_VER 1
-#define MINOR_VER 0
 
 #ifndef NO_MMU
 #define _X_x_X_MMU_VER_STR L"/mmu"
@@ -167,8 +164,8 @@ using namespace std;
 #endif
 
 
-#define VER_FULLNAME	VER_EMUNAME L" v1.0.1 pre-1" _X_x_X_MMU_VER_STR L" (built " _T(__DATE__) L"@" _T(__TIME__) L")"
-#define VER_SHORTNAME	VER_EMUNAME L" 1.0.1p1" _X_x_X_MMU_VER_STR
+#define VER_FULLNAME	VER_EMUNAME L" v1.0.3" _X_x_X_MMU_VER_STR L" (built " _T(__DATE__) L"@" _T(__TIME__) L")"
+#define VER_SHORTNAME	VER_EMUNAME L" 1.0.3" _X_x_X_MMU_VER_STR
 
 #define dbgbreak __asm {int 3}
 

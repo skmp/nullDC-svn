@@ -93,7 +93,7 @@ void GetApplicationPath(wchar* path,u32 size)
 	wcscpy(path,AppPath);
 }
 
-wchar* GetEmuPath(wchar* subpath)
+wchar* GetEmuPath(const wchar* subpath)
 {
 	wchar* temp=(wchar*)malloc(1024);
 	GetApplicationPath(temp,1024);

@@ -653,6 +653,7 @@ s32 CreateMapleSubDevice(u32 pos,u32 subport,wchar* device,bool hotplug)
 		return pmde_device_state;
 
 	MapleDeviceDefinition* mdd=FindMapleDevice(device);
+		return pmde_failed_create_s;
 
 	nullDC_Maple_plugin* plg =FindMaplePlugin(mdd);
 	

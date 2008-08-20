@@ -621,7 +621,7 @@ public:
 typedef void FileFoundCB(wchar* file,void* param);
 void FindAllFiles(FileFoundCB* callback,wchar* dir,void* param);
 void GetApplicationPath(wchar* path,u32 size);
-wchar* GetEmuPath(wchar* subpath);
+wchar* GetEmuPath(const wchar* subpath);
 
 
 
