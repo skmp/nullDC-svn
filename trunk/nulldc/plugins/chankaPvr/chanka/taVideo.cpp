@@ -1149,7 +1149,44 @@ static void FillBltTexture()
 	  }
 
     }
-    pTextureD3D->UnlockRect(0);
+	pTextureD3D->UnlockRect(0);
+  }
+  else if (uColFormat == TPVR::PVR_FB_CFG_1_COL_RGB888)
+  {
+	  D3DLOCKED_RECT lockedRect;
+	  RECT rect;
+	  rect.left = 0; rect.top = 0;
+	  rect.bottom = uNumLines; rect.right = uResX;
+
+	  HRESULT hr = pTextureD3D->LockRect(0,&lockedRect,&rect,D3DLOCK_NOSYSLOCK);
+	  ASSERT(!FAILED(hr));
+	  for (j=0;j<uNumLines;j++)
+	  {
+		  unsigned char* pBufferDest = (unsigned char*)lockedRect.pBits + j*lockedRect.Pitch;
+		  DWORD offset = (j*(/*uModulo*uBytesPerPixel +*/ uNumBytesPerLine));
+
+		  /*const char* pBank1 = SH4GetVideoRAMPtr(0xa5000000 + (uDispAddr>>1));
+		  const char* pBank2 = SH4GetVideoRAMPtr(0xa5400000 + (uDispAddr>>1));
+		  //memcpy(pBufferDest,pBufferSrc,uNumBytesPerLine);
+		  DWORD bpp=uNumBytesPerLine>>1;
+		  bpp>>=2;
+		  for (int i=0;i<bpp;i++) 
+		  {
+		  memcpy(pBufferDest,pBank1+offset,4);pBufferDest+=4;
+		  memcpy(pBufferDest,pBank2+offset,4);pBufferDest+=4;
+		  offset+=4;
+		  }*/
+		  for (int i=0;i<uNumBytesPerLine;i+=1)
+		  {
+			  u32 new_offset= vramlock_ConvOffset32toOffset64(uDispAddr + offset);
+			  char* nof=SH4GetVideoRAMPtr(new_offset);
+			  *pBufferDest=*nof;
+			  pBufferDest++;
+			  offset++;
+		  }
+
+	  }
+	  pTextureD3D->UnlockRect(0);
   }
 
 
