@@ -315,7 +315,7 @@ void LoadBiosFiles()
 
 	}
 
-#ifndef BUILD_NAOMI
+#ifdef BUILD_DREAMCAST
 	temp_path[pl]=0;
 	//try to load saved flash
 	wcscat(temp_path,L"dc_flash_wb.bin");

@@ -235,11 +235,13 @@ void mem_Term()
 	sh4_internal_reg_Term();
 	sh4_area0_Term();
 
+#ifdef BUILD_DREAMCAST
 	//write back flash ?
 	wchar* temp_path=GetEmuPath(L"data\\");
 	wcscat(temp_path,L"dc_flash_wb.bin");
 	SaveSh4FlashromToFile(temp_path);
 	free(temp_path);
+#endif
 	
 
 	//Free allocated mem for memory/bios/flash

@@ -194,7 +194,11 @@ bool InitDrive(u32 fileflags)
 
 	wchar fn[512];
 	wcscpy(fn,settings.LastImage);
+#ifdef BUILD_DREAMCAST
 	int gfrv=GetFile(fn,0,fileflags);
+#else
+	gfrv=0;
+#endif
 	if (gfrv==0)
 	{
 		CurrDrive=0;
