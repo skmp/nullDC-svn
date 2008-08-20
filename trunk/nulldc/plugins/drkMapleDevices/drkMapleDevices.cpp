@@ -1610,31 +1610,31 @@ void FASTCALL ControllerDMA_naomi(maple_device_instance* device_instance,u32 Com
 							static unsigned short coin1=0x0000;
 							unsigned char Key[256];
 							GetKeyboardState(Key);
-							if(Key[VK_F2]&0x80)
+							if(Key[VK_F2]&0x80)			//Service ?
 								glbl|=0x80;
-							if(Key[VK_F1]&0x80)
+							if(Key[VK_F1]&0x80)			//Test
 								p1_1|=0x40;
-							if(Key['1']&0x80)
+							if(Key['1']&0x80)			//start ?
 								p1_1|=0x80;
-							if(Key[VK_UP]&0x80)
+							if(Key[VK_UP]&0x80)			//up
 								p1_1|=0x20;
-							if(Key[VK_DOWN]&0x80)
+							if(Key[VK_DOWN]&0x80)		//down
 								p1_1|=0x10;
-							if(Key[VK_LEFT]&0x80)
+							if(Key[VK_LEFT]&0x80)		//left
 								p1_1|=0x08;
-							if(Key[VK_RIGHT]&0x80)
+							if(Key[VK_RIGHT]&0x80)		//right
 								p1_1|=0x04;
-							if(Key['A']&0x80)
+							if(Key['A']&0x80)			//btn1
 								p1_1|=0x02;
-							if(Key['S']&0x80)
+							if(Key['S']&0x80)			//btn2
 								p1_1|=0x01;
-							if(Key['D']&0x80)
+							if(Key['D']&0x80)			//btn3
 								p1_2|=0x80;
-							if(Key['Z']&0x80)
+							if(Key['Z']&0x80)			//btn4
 								p1_2|=0x40;
-							if(Key['X']&0x80)
+							if(Key['X']&0x80)			//btn5
 								p1_2|=0x20;
-							if(Key['C']&0x80)
+							if(Key['C']&0x80)			//btn6
 								p1_2|=0x10;
 							if(((Key['5']^LastKey['5'])&Key['5'])&0x80)
 								coin1++;
@@ -2359,6 +2359,9 @@ INT_PTR CALLBACK VMULCDProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	VMU_info* dev=(VMU_info*) (GetWindowLong(hWnd,GWL_USERDATA));
 	switch(msg)
 	{	
+		case WM_CLOSE:
+			ShowWindow(hWnd,SW_HIDE);
+			break;
 		case WM_INITDIALOG:
 			{
 				SetWindowLong(hWnd,GWL_USERDATA,lParam);
@@ -2575,7 +2578,7 @@ void FASTCALL VmuDMA(maple_subdevice_instance* device_instance,u32 Command,u32* 
 		case 14:
 			if (buffer_in[0]&(8<<24))
 			{
-				printf("BEEP : %d %d | %d %d\n",((u8*)buffer_in)[4],((u8*)buffer_in)[5],((u8*)buffer_in)[6],((u8*)buffer_in)[7]);
+				//printf("BEEP : %d %d | %d %d\n",((u8*)buffer_in)[4],((u8*)buffer_in)[5],((u8*)buffer_in)[6],((u8*)buffer_in)[7]);
 				responce=7;//just ko
 			}
 			else
@@ -2698,11 +2701,17 @@ void FASTCALL DestroyMain(maple_device_instance* inst,u32 id)
 	if (inst->data)
 		free( inst->data);
 }
+void EXPORT_CALL vmu_showwindow(u32 id,void* w,void* p)
+{
+	ShowWindow((HWND)p,SHOW_OPENNOACTIVATE);
+}
 s32 FASTCALL CreateSub(maple_subdevice_instance* inst,u32 id,u32 flags,u32 rootmenu)
 {
 	wchar wtemp[512];
 	swprintf(wtemp,L"VMU :vmu_data_port%02X.bin",inst->port);
 	host.AddMenuItem(rootmenu,-1,wtemp,0,0);
+	u32 mitem=host.AddMenuItem(rootmenu,-1,L"Show VMU",vmu_showwindow,0);
+	
 	inst->data=malloc(sizeof(VMU_info));
 	sprintf(((VMU_info*)inst->data)->file,"vmu_data_port%02X.bin",inst->port);
 	((VMU_info*)inst->data)->lcd.handle=0;
@@ -2719,6 +2728,10 @@ s32 FASTCALL CreateSub(maple_subdevice_instance* inst,u32 id,u32 flags,u32 rootm
 
 	dev->lcd.handle=CreateDialogParam(hInstance,MAKEINTRESOURCE(IDD_LCD),0,VMULCDProc,(LPARAM)dev);
 
+	MenuItem mi;
+	mi.PUser=dev->lcd.handle;
+	host.SetMenuItem(mitem,&mi,MIM_PUser);
+	
 	if (vmu_bmi.bmiHeader.biSize==0)
 	{
 		memset(&vmu_bmi,0,sizeof(BITMAPINFO));
