@@ -320,7 +320,7 @@ u32* Sh4_int_GetRegisterPtr(Sh4RegType reg)
 			break;
 
 		case reg_sr :
-			return &sr.m_full;
+			return 0;//&sr.m_full; ?
 			break;
 
 		case reg_sr_T :

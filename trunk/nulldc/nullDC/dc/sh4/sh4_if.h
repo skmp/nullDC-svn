@@ -137,13 +137,12 @@ struct StatusReg
 	u32 T;
 	INLINE u32 GetFull()
 	{
-		T_h=0;
-		return m_full | T;
+		return (m_full&0x700083F2) | T;
 	}
 
 	INLINE void SetFull(u32 value)
 	{
-		m_full=value & 0x700083F3;
+		m_full=value & 0x700083F2;
 		T=value&1;
 	}
 
