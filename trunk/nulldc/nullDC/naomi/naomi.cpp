@@ -363,7 +363,7 @@ void _WriteMem_naomi(u32 Addr, u32 data, u32 sz)
 
 //DIMM board
 //Uses interrupt ext#3  (holly_EXT_PCI)
-u32 reg_dimm_4c=0x11;	
+
 //status/flags ? 0x1 is some completion/init flag(?), 0x100 is the interrupt disable flag (?)
 //n1 bios rev g (n2/epr-23605b has similar behavior of not same):
 //3c=0x1E03
@@ -386,8 +386,35 @@ u32 reg_dimm_4c=0x11;
 //n1 bios writes the value -1, meaning it expects the bit 0 to be set
 //.//
 
-u32 reg_dimm_3c;	//writen, 0x1E03 some flag ?
+u32 reg_dimm_3c;	//IO window ! writen, 0x1E03 some flag ?
+u32 reg_dimm_40;	//parameters
+u32 reg_dimm_44;	//parameters
+u32 reg_dimm_48;	//parameters
 
+u32 reg_dimm_4c=0x11;	//status/control reg ?
+
+void naomi_process(u32 r3c,u32 r40,u32 r44, u32 r48)
+{
+	printf("Naomi process 0x%04X 0x%04X 0x%04X 0x%04X\n",r3c,r40,r44,r48);
+	printf("Possible format 0 %d 0x%02X 0x%04X\n",r3c>>15,(r3c&0x7e00)>>9,r3c&0x1FF);
+	printf("Possible format 1 0x%02X 0x%02X\n",(r3c&0xFF00)>>8,r3c&0xFF);
+
+	u32 param=(r3c&0xFF);
+	if (param==0xFF)
+	{
+		printf("invalid opcode or smth ?");
+	}
+	static int opcd=0;
+	//else if (param!=3)
+	if (opcd<255)
+	{
+		reg_dimm_3c=0x8000 | (opcd%12<<9) | (0x0);
+		printf("new reg is 0x%X\n",reg_dimm_3c);
+		asic_RaiseInterrupt(holly_EXP_PCI);
+		printf("Interrupt raised\n");
+		opcd++;
+	}
+}
 u32  ReadMem_naomi(u32 Addr, u32 sz)
 {
 	verify(sz!=1);
@@ -395,7 +422,17 @@ u32  ReadMem_naomi(u32 Addr, u32 sz)
 	switch(Addr&255)
 	{
 	case 0x3c:
+		printf("naomi GD? READ: %X, %d\n", Addr, sz);
 		return reg_dimm_3c;
+	case 0x40:
+		printf("naomi GD? READ: %X, %d\n", Addr, sz);
+		return reg_dimm_40;
+	case 0x44:
+		printf("naomi GD? READ: %X, %d\n", Addr, sz);
+		return reg_dimm_44;
+	case 0x48:
+		printf("naomi GD? READ: %X, %d\n", Addr, sz);
+		return reg_dimm_48;
 
 		//These are known to be valid on normal ROMs and DIMM board
 	case NAOMI_ROM_OFFSETH_addr&255:
@@ -422,18 +459,22 @@ u32  ReadMem_naomi(u32 Addr, u32 sz)
 		//What should i do to emulate 'nothing' ?
 	case NAOMI_COMM_OFFSET_addr&255:
 	case NAOMI_COMM_DATA_addr&255:
+		//printf("naomi COMM: %X, %d\n", Addr, sz);
 		return 1;
 
 
 		//This should be valid
 	case NAOMI_DMA_OFFSETH_addr&255:
+		return DmaOffset>>16;
 	case NAOMI_DMA_OFFSETL_addr&255:
+		return DmaOffset&0xFFFF;
+
 	case NAOMI_BOARDID_WRITE_addr&255:
 		printf("naomi ReadMem: %X, %d\n", Addr, sz);
 		return 1;
 
 	case 0x04C:
-		printf("naomi?WTF? ReadMem: %X, %d\n", Addr, sz);
+		printf("naomi GD? READ: %X, %d\n", Addr, sz);
 		return reg_dimm_4c;
 
 	default: break;
@@ -456,7 +497,21 @@ void WriteMem_naomi(u32 Addr, u32 data, u32 sz)
 			 reg_dimm_4c|=1;*/
 		 }
 		 reg_dimm_3c=data;
+		 printf("naomi GD? Write: %X <= %X, %d\n", Addr, data, sz);
 		 return;
+
+	case 0x40:
+		reg_dimm_40=data;
+		printf("naomi GD? Write: %X <= %X, %d\n", Addr, data, sz);
+		return;
+	case 0x44:
+		reg_dimm_44=data;
+		printf("naomi GD? Write: %X <= %X, %d\n", Addr, data, sz);
+		return;
+	case 0x48:
+		reg_dimm_48=data;
+		printf("naomi GD? Write: %X <= %X, %d\n", Addr, data, sz);
+		return;
 
 	case 0x4C:
 		if (data&0x100)
@@ -465,9 +520,14 @@ void WriteMem_naomi(u32 Addr, u32 data, u32 sz)
 			naomi_updates=100;
 		}
 		else if ((data&1)==0)
-			asic_RaiseInterrupt(holly_EXP_PCI);
+		{
+			/*FILE* ramd=fopen("c:\\ndc.ram.bin","wb");
+			fwrite(mem_b.data,1,RAM_SIZE,ramd);
+			fclose(ramd);*/
+			naomi_process(reg_dimm_3c,reg_dimm_40,reg_dimm_44,reg_dimm_48);
+		}
 		reg_dimm_4c=data&~0x100;
-		printf("naomi WriteMem: %X <= %X, %d\n", Addr, data, sz);
+		printf("naomi GD? Write: %X <= %X, %d\n", Addr, data, sz);
 		return;
 
 		//These are known to be valid on normal ROMs and DIMM board
@@ -507,6 +567,7 @@ void WriteMem_naomi(u32 Addr, u32 data, u32 sz)
 		//What should i do to emulate 'nothing' ?
 	case NAOMI_COMM_OFFSET_addr&255:
 	case NAOMI_COMM_DATA_addr&255:
+		//printf("naomi COMM: %X <= %X, %d\n", Addr, data, sz);
 		return;
 
 		//This should be valid
@@ -694,7 +755,7 @@ bool NaomiSelectFile(void* handle)
 	ofn.hInstance		= (HINSTANCE)GetModuleHandle(0);
 	ofn.lpstrFile		= SelectedFile;
 	ofn.nMaxFile		= MAX_PATH;
-	ofn.lpstrFilter		= L"rom.lst\0rom.lst\0\0";
+	ofn.lpstrFilter		= L"*.lst\0*.lst\0\0";
 	ofn.nFilterIndex	= 0;
 	ofn.hwndOwner		=(HWND)handle;
 	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
