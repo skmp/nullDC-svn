@@ -20,7 +20,7 @@
 //#include <D3dx9shader.h>
 
 using namespace TASplitter;
-
+volatile bool render_restart = false;
 bool UseSVP=false;
 bool UseFixedFunction=false;
 bool dosort=false;
@@ -104,7 +104,8 @@ namespace Direct3DRenderer
 	{
 		"Float Z Buffering (D24FS8)",
 		"Float Z Buffering Emulation (D24S8+FPE)",
-		"Fixed Point Z Buffering (D24S8)",
+		"Z Scale mode 1 (D24S8)",
+		"Z Scale mode 2 (D24S8)",
 	};
 
 	//x=emulation mode
@@ -2671,12 +2672,13 @@ nl:
 
 		resizerq.needs_resize=false;
 
-		if (do_resize)
+		if (do_resize || render_restart)
 		{
 			//Kill renderer
 			ThreadEnd();
 			//Start renderer
 			ThreadStart();
+			render_restart=false;
 		}
 
 		if (fullsrq.goto_fs != (settings.Fullscreen.Enabled!=0))

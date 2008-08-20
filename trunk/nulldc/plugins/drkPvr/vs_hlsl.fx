@@ -36,7 +36,15 @@ float W_max: register(c1);
 float4 res_scale: register(c2);
 float4 texture_size:  register(c3);
 
-float CompressZ(float w)
+float fdecp(float flt,out float e)
+{
+	float lg2=log2(flt);	//ie , 2.5
+	float frc=frac(lg2);	//ie , 0.5
+	e=lg2-frc;				//ie , 2.5-0.5=2 (exp)
+	return pow(2,frc);		//2^0.5 (manitsa)
+}
+
+float CompressZ1(float w)
 {
 	float e,m;
 	m=frexp(w,e);
@@ -44,6 +52,31 @@ float CompressZ(float w)
 	return ldexp(m,e);
 }
 
+float CompressZ2(float w)
+{
+	float x;
+	float y=fdecp(w,x);
+	x=clamp(x-16,-63,0);	//s6e18, max : 2^16*(2^18-1)/2(^18) , min : 2^-47*(2^18-1)/2(^18)
+	x+=62;					//bias to positive, +1 more is done by the add below.x_max =62,x_min = -1 (63;0)
+	//y						//mantissa bits, allways in [1..2) range as 0 is not a valid input :)
+	return (x+y)/64.0f;		//Combine and save the exp + mantissa at the mantissa field.Min value is 0 (-1+1), max value is 63 +(2^18-1)/2(^18).
+							//Normalised by 64 so that it falls in the [0..1) range :)
+}
+float CompressZ3(float w)
+{
+	if (w<128)
+	{
+		return 0.875*(w/128);
+	}
+	else if (w<8192)
+	{
+		return  0.875 + 0.0625*(w/8192);
+	}
+	else
+	{
+		return (0.875 + 0.0625) + 0.0625*(w/FLT_MAX);
+	}
+}
 vertex_out VertexShader_main(in vertex_in vin) 
 {
 	vertex_out vo;
@@ -66,23 +99,15 @@ vertex_out VertexShader_main(in vertex_in vin)
 		vo.uv.z=0;
 		 
 	#if ZBufferMode==0
-		vo.pos.z=CompressZ(vin.pos.z);
+		vo.pos.z=CompressZ1(vin.pos.z);
 	#elif ZBufferMode==1
 		vo.pos.z=0;
 	#elif ZBufferMode==2
 		//vo.pos.z=1-1/(1+vin.pos.z);
-		if (vin.pos.z<128)
-		{
-			vo.pos.z=0.875*(vin.pos.z/128);
-		}
-		else if (vin.pos.z<8192)
-		{
-			vo.pos.z=0.875 + 0.0625*(vin.pos.z/8192);
-		}
-		else
-		{
-			vo.pos.z=(0.875 + 0.0625) + 0.0625*(vin.pos.z/FLT_MAX);
-		}
+		vo.pos.z=CompressZ2(vin.pos.z);
+	#elif ZBufferMode==3
+		//vo.pos.z=1-1/(1+vin.pos.z);
+		vo.pos.z=CompressZ3(vin.pos.z);
 	#endif
 	
 	vo.pos.w=1;

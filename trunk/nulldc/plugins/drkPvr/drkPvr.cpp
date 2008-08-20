@@ -186,10 +186,12 @@ void handler_ModVolMode(int  mode)
 	settings.Emulation.ModVolMode=mode;
 	SaveSettings();
 }
+extern volatile bool render_restart;
 void handler_ZBufferMode(int  mode)
 {
 	settings.Emulation.ZBufferMode=mode;
 	SaveSettings();
+	render_restart=true;
 }
 u32 enable_FS_mid;
 u32 AA_mid_menu;
@@ -379,7 +381,8 @@ s32 FASTCALL Load(emu_info* emu_inf)
 
 	menu_zbuffer.Add(ZBM,L"D24FS8 (Fast when avaiable,Best Precition)",0);
 	menu_zbuffer.Add(ZBM,L"D24S8+FPE (Slow,Good Precition)",1);
-	menu_zbuffer.Add(ZBM,L"D24S8 (Lower Precition)",2);
+	menu_zbuffer.Add(ZBM,L"D24S8 Mode 1(Lower Precition)",2);
+	menu_zbuffer.Add(ZBM,L"D24S8 Mode 2(Lower Precition)",3);
 	menu_zbuffer.SetValue(settings.Emulation.ZBufferMode);
 	
 
@@ -623,7 +626,7 @@ void LoadSettings()
 	settings.Emulation.AlphaSortMode			=	cfgGetInt(L"Emulation.AlphaSortMode",1);
 	settings.Emulation.PaletteMode				=	cfgGetInt(L"Emulation.PaletteMode",1);
 	settings.Emulation.ModVolMode				= 	cfgGetInt(L"Emulation.ModVolMode",1);
-	settings.Emulation.ZBufferMode				= 	cfgGetInt(L"Emulation.ZBufferMode",0);
+	settings.Emulation.ZBufferMode				= 	cfgGetInt(L"Emulation.ZBufferMode",3);
 
 	settings.OSD.ShowFPS						=	cfgGetInt(L"OSD.ShowFPS",0);
 	settings.OSD.ShowStats						=	cfgGetInt(L"OSD.ShowStats",0);
