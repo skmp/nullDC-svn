@@ -1873,8 +1873,8 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
 			dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 
-			dev->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS,
-				D3DTTFF_COUNT4 | D3DTTFF_PROJECTED);
+			//dev->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS,
+			//	D3DTTFF_COUNT4 | D3DTTFF_PROJECTED);
 			
 			dev->SetRenderState(D3DRS_TEXTUREFACTOR, 0xFFFFFFFF);
 

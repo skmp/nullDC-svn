@@ -26,9 +26,9 @@ struct vertex_in
 struct vertex_out
 { 
 	float4 pos : POSITION; 
-	float4 col : TEXCOORD1;
-	float4 spc : TEXCOORD2; 
-	float4 uv : TEXCOORD0; 
+	float4 col : COLOR0;
+	float4 spc : COLOR1; 
+	float3 uv : TEXCOORD0; 
 };
 
 float W_min: register(c0);
@@ -80,37 +80,46 @@ float CompressZ3(float w)
 vertex_out VertexShader_main(in vertex_in vin) 
 {
 	vertex_out vo;
+	float vtx_w=1/vin.pos.z;
+	
 	vo.pos.xy=vin.pos.xy+res_scale.xy;
 	vo.pos.xy/=res_scale.zw;
 	
 	vo.pos.xy+=float2((-1.0/res_x)-1.0,(1.0/res_y)+1.0);
 	
-	vo.uv.xy=vin.uv*vin.pos.z;
+	vo.pos.xy*=vtx_w;
 	
-	vo.col=saturate(vin.col)*vin.pos.z;
-	vo.spc=saturate(vin.spc)*vin.pos.z;
+	vo.uv.xy=vin.uv;
 	
-	vo.uv.w=vin.pos.z;
+	vo.col=saturate(vin.col);
+	vo.spc=saturate(vin.spc);
 	
-	//I need to do smth about fixed function for this one
-	if (! (vin.pos.z<FLT_MAX && vin.pos.z>0))
-		vo.uv.z=-1;
-	else
-		vo.uv.z=0;
+	vo.uv.z=vtx_w;//vin.pos.z;
 		 
+	float newZ;
 	#if ZBufferMode==0
-		vo.pos.z=CompressZ1(vin.pos.z);
+		newZ=CompressZ1(vin.pos.z);
 	#elif ZBufferMode==1
-		vo.pos.z=0;
+		newZ=0;
 	#elif ZBufferMode==2
 		//vo.pos.z=1-1/(1+vin.pos.z);
-		vo.pos.z=CompressZ2(vin.pos.z);
+		newZ=CompressZ2(vin.pos.z);
 	#elif ZBufferMode==3
 		//vo.pos.z=1-1/(1+vin.pos.z);
-		vo.pos.z=CompressZ3(vin.pos.z);
+		newZ=CompressZ3(vin.pos.z);
 	#endif
-	
-	vo.pos.w=1;
 
+	//I need to do smth about fixed function for this one
+	if (! (vin.pos.z<FLT_MAX && vin.pos.z>0))
+	{
+		vo.pos.w=1;							//clips everything realy
+		vo.pos.z=-1;
+	}
+	else
+	{
+		vo.pos.z=newZ*vtx_w;
+		vo.pos.w=vtx_w;							//clips everything realy
+	}
+		
 	return vo; 
 }
