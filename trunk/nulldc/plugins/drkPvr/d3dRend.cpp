@@ -56,6 +56,8 @@ u32 vramlock_ConvOffset32toOffset64(u32 offset32)
 		return rv;
 }
 //these can be used to force a profile
+#define FORCE_SW_VERTEX_SHADERS (0)
+#define FORCE_FIXED_FUNCTION    (0)
 //#define D3DXGetPixelShaderProfile(x) "ps_2_0"
 //#define D3DXGetVertexShaderProfile(x) "vs_2_0"
 
@@ -131,7 +133,7 @@ namespace Direct3DRenderer
 	{
 		if (evid == NDE_GUI_RESIZED )
 		{
-			if (!settings.Fullscreen.Enabled)
+			if (!settings.Video.Fullscreen.Enabled)
 			{
 				resizerq.needs_resize=true;
 				memcpy((void*)&resizerq.new_size,p,sizeof(NDC_WINDOW_RECT));
@@ -140,11 +142,11 @@ namespace Direct3DRenderer
 		}
 		else if ( evid== NDE_GUI_REQESTFULLSCREEN)
 		{
-			//vetify(settings.Fullscreen.Enabled?0==p:p!=0);
+			//vetify(settings.Video.Fullscreen.Enabled?0==p:p!=0);
 			//if (p) 
 			//{
 			//	*(u32*)p=1;
-			if (settings.Fullscreen.Res_X==-1)
+			if (settings.Video.Fullscreen.Res_X==-1)
 			{
 				HMONITOR hmon=MonitorFromWindow((HWND)emu.GetRenderTarget(),0);
 				MONITORINFO mi;
@@ -167,7 +169,7 @@ namespace Direct3DRenderer
 			}
 			else
 			{
-				fullsrq.goto_fs=!settings.Fullscreen.Enabled;
+				fullsrq.goto_fs=!settings.Video.Fullscreen.Enabled;
 				//}
 				//else
 				//fullsrq.goto_fs=false;
@@ -2226,17 +2228,17 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 
 		printf("Device caps... VS : %X ; PS : %X\n",caps.VertexShaderVersion,caps.PixelShaderVersion);
 
-		if (caps.VertexShaderVersion<D3DVS_VERSION(1, 0))
+		if (caps.VertexShaderVersion<D3DVS_VERSION(1, 0) || FORCE_SW_VERTEX_SHADERS)
 		{
 			UseSVP=true;
 		}
-		if (caps.PixelShaderVersion>=D3DPS_VERSION(2, 0))
+		if (caps.PixelShaderVersion<D3DPS_VERSION(2, 0)|| FORCE_FIXED_FUNCTION)
 		{
-			UseFixedFunction=false;
+			UseFixedFunction=true;
 		}
 		else
 		{
-			UseFixedFunction=true;
+			UseFixedFunction=false;
 		}
 
 		printf("Will use %s\n",ZBufferModeName[ZBufferMode]);
@@ -2258,18 +2260,18 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 
 		ppar.SwapEffect = D3DSWAPEFFECT_DISCARD;
 
-		ppar.PresentationInterval=D3DPRESENT_INTERVAL_IMMEDIATE;
+		ppar.PresentationInterval=settings.Video.VSync?D3DPRESENT_INTERVAL_ONE:D3DPRESENT_INTERVAL_IMMEDIATE;
 
-		if (settings.Fullscreen.Enabled)
+		if (settings.Video.Fullscreen.Enabled)
 		{
 			GetWindowRect((HWND)emu.GetRenderTarget(),&window_rect);
 			ppar.Windowed =   FALSE;
 			ppar.BackBufferFormat = D3DFMT_UNKNOWN;
 
-			ppar.BackBufferWidth        = settings.Fullscreen.Res_X;
-			ppar.BackBufferHeight       = settings.Fullscreen.Res_Y;
+			ppar.BackBufferWidth        = settings.Video.Fullscreen.Res_X;
+			ppar.BackBufferHeight       = settings.Video.Fullscreen.Res_Y;
 			ppar.BackBufferFormat       = D3DFMT_X8R8G8B8;
-			ppar.FullScreen_RefreshRateInHz	=settings.Fullscreen.Refresh_Rate ;
+			ppar.FullScreen_RefreshRateInHz	=settings.Video.Fullscreen.Refresh_Rate ;
 			printf("drkpvr: Initialising fullscreen @%dx%d@%d",ppar.BackBufferWidth,ppar.BackBufferHeight,ppar.FullScreen_RefreshRateInHz);
 			IsFullscreen=true;
 		}
@@ -2308,6 +2310,9 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			vsp="vs_3_0";
 			printf("Strange , D3DXGetVertexShaderProfile(dev) failed , defaulting to \"vs_3_0\"\n");
 		}
+
+		if (UseSVP)
+			vsp="vs_3_sw";
 
 		printf(UseSVP?"Using SVP/%s\n":"Using Vertex Shaders/%s\n",vsp);
 		printf(UseFixedFunction?"Using Fixed Function\n":"Using Pixel Shaders/%s\n",D3DXGetPixelShaderProfile(dev));
@@ -2418,7 +2423,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			hr=dev->TestCooperativeLevel();
 			if (FAILED(hr) )
 			{
-				fullsrq.goto_fs=!settings.Fullscreen.Enabled;
+				fullsrq.goto_fs=!settings.Video.Fullscreen.Enabled;
 				goto nl;
 			}
 			//render
@@ -2682,11 +2687,11 @@ nl:
 			render_restart=false;
 		}
 
-		if (fullsrq.goto_fs != (settings.Fullscreen.Enabled!=0))
+		if (fullsrq.goto_fs != (settings.Video.Fullscreen.Enabled!=0))
 		{
 			//Kill renderer
 			ThreadEnd();
-			settings.Fullscreen.Enabled=fullsrq.goto_fs?1:0;
+			settings.Video.Fullscreen.Enabled=fullsrq.goto_fs?1:0;
 			SaveSettings();
 			//Start renderer
 			ThreadStart();
@@ -3431,7 +3436,7 @@ nl:
 		tarc.Init();
 		//pvrrc needs no init , it is ALLWAYS copied from a valid tarc :)
 
-		fullsrq.goto_fs=settings.Fullscreen.Enabled;
+		fullsrq.goto_fs=settings.Video.Fullscreen.Enabled;
 
 		return TileAccel.Init();
 	}

@@ -198,12 +198,12 @@ u32 AA_mid_menu;
 u32 AA_mid_0;
 void EXPORT_CALL handler_SetFullscreen(u32 id,void* win,void* puser)
 {
-	if (settings.Fullscreen.Enabled)
-		settings.Fullscreen.Enabled=0;
+	if (settings.Video.Fullscreen.Enabled)
+		settings.Video.Fullscreen.Enabled=0;
 	else
-		settings.Fullscreen.Enabled=1;
+		settings.Video.Fullscreen.Enabled=1;
 
-	emu.SetMenuItemStyle(id,settings.Fullscreen.Enabled?MIS_Checked:0,MIS_Checked);
+	emu.SetMenuItemStyle(id,settings.Video.Fullscreen.Enabled?MIS_Checked:0,MIS_Checked);
 	
 	SaveSettings();
 }
@@ -238,9 +238,9 @@ u32 special_res=0;
 void handler_SetRes(int val)
 {
 
-	settings.Fullscreen.Res_X=resolutions[val].w;
-	settings.Fullscreen.Res_Y=resolutions[val].h;
-	settings.Fullscreen.Refresh_Rate=resolutions[val].rr;
+	settings.Video.Fullscreen.Res_X=resolutions[val].w;
+	settings.Video.Fullscreen.Res_Y=resolutions[val].h;
+	settings.Video.Fullscreen.Refresh_Rate=resolutions[val].rr;
 
 	if (special_res)
 	{
@@ -292,13 +292,13 @@ s32 FASTCALL Load(emu_info* emu_inf)
 	
 	LoadSettings();
 
-	swprintf(temp,512,L"Fullscreen(%dx%d@%dHz)",settings.Fullscreen.Res_X,settings.Fullscreen.Res_Y,settings.Fullscreen.Refresh_Rate);
+	swprintf(temp,512,L"Fullscreen(%dx%d@%dHz)",settings.Video.Fullscreen.Res_X,settings.Video.Fullscreen.Res_Y,settings.Video.Fullscreen.Refresh_Rate);
 	u32 Resolutions_menu=emu.AddMenuItem(emu.RootMenu,-1,temp,0,0);
 	
 	AddSeperator(emu.RootMenu);
 
 	
-	enable_FS_mid=emu.AddMenuItem(Resolutions_menu,-1,L"Enable",handler_SetFullscreen,settings.Fullscreen.Enabled);
+	enable_FS_mid=emu.AddMenuItem(Resolutions_menu,-1,L"Enable",handler_SetFullscreen,settings.Video.Fullscreen.Enabled);
 
 	AddSeperator(Resolutions_menu);
 	
@@ -317,9 +317,9 @@ s32 FASTCALL Load(emu_info* emu_inf)
 
 	for (u32 rc=0;rc<resolutions.size();rc++)
 	{
-		bool sel=(resolutions[rc].rr==settings.Fullscreen.Refresh_Rate) && 
-			(resolutions[rc].w==settings.Fullscreen.Res_X) && 
-			(resolutions[rc].h==settings.Fullscreen.Res_Y);
+		bool sel=(resolutions[rc].rr==settings.Video.Fullscreen.Refresh_Rate) && 
+			(resolutions[rc].w==settings.Video.Fullscreen.Res_X) && 
+			(resolutions[rc].h==settings.Video.Fullscreen.Res_Y);
 
 		if (sel)
 			sel_any=true;
@@ -334,7 +334,7 @@ s32 FASTCALL Load(emu_info* emu_inf)
 	special_res=0;
 	if (!sel_any)
 	{
-		swprintf(temp,512,L"%dx%d",settings.Fullscreen.Res_X,settings.Fullscreen.Res_Y);
+		swprintf(temp,512,L"%dx%d",settings.Video.Fullscreen.Res_X,settings.Video.Fullscreen.Res_Y);
 		special_res=emu.AddMenuItem(Resolutions_menu,-1,temp,0,1);
 		emu.SetMenuItemStyle(special_res,MIS_Grayed|MIS_Checked|MIS_Radiocheck,MIS_Grayed|MIS_Checked|MIS_Radiocheck);
 	}
@@ -631,13 +631,14 @@ void LoadSettings()
 	settings.OSD.ShowFPS						=	cfgGetInt(L"OSD.ShowFPS",0);
 	settings.OSD.ShowStats						=	cfgGetInt(L"OSD.ShowStats",0);
 
-	settings.Fullscreen.Enabled					=	cfgGetInt(L"Fullscreen.Enabled",0);
+	settings.Video.Fullscreen.Enabled					=	cfgGetInt(L"Fullscreen.Enabled",0);
 	//RECT rc;
 	//GetWindowRect(GetDesktopWindow(),&rc);
 	
-	settings.Fullscreen.Res_X					=	cfgGetInt(L"Fullscreen.Res_X",-1);//rc.right
-	settings.Fullscreen.Res_Y					=	cfgGetInt(L"Fullscreen.Res_Y",-1);//rc.bottom
-	settings.Fullscreen.Refresh_Rate			=	cfgGetInt(L"Fullscreen.Refresh_Rate",-1);//60
+	settings.Video.Fullscreen.Res_X					=	cfgGetInt(L"Video.Fullscreen.Res_X",-1);//rc.right
+	settings.Video.Fullscreen.Res_Y					=	cfgGetInt(L"Video.Fullscreen.Res_Y",-1);//rc.bottom
+	settings.Video.Fullscreen.Refresh_Rate			=	cfgGetInt(L"Video.Fullscreen.Refresh_Rate",-1);//60
+	settings.Video.VSync							=	cfgGetInt(L"Video.VSync",0);//60
 
 	settings.Enhancements.MultiSampleCount		=	cfgGetInt(L"Enhancements.MultiSampleCount",0);
 	settings.Enhancements.MultiSampleQuality	=	cfgGetInt(L"Enhancements.MultiSampleQuality",0);
@@ -655,10 +656,11 @@ void SaveSettings()
 	cfgSetInt(L"OSD.ShowFPS",settings.OSD.ShowFPS);
 	cfgSetInt(L"OSD.ShowStats",settings.OSD.ShowStats);
 
-	cfgSetInt(L"Fullscreen.Enabled",settings.Fullscreen.Enabled);
-	cfgSetInt(L"Fullscreen.Res_X",settings.Fullscreen.Res_X);
-	cfgSetInt(L"Fullscreen.Res_Y",settings.Fullscreen.Res_Y);
-	cfgSetInt(L"Fullscreen.Refresh_Rate",settings.Fullscreen.Refresh_Rate);
+	cfgSetInt(L"Video.Fullscreen.Enabled",settings.Video.Fullscreen.Enabled);
+	cfgSetInt(L"Video.Fullscreen.Res_X",settings.Video.Fullscreen.Res_X);
+	cfgSetInt(L"Video.Fullscreen.Res_Y",settings.Video.Fullscreen.Res_Y);
+	cfgSetInt(L"Video.Fullscreen.Refresh_Rate",settings.Video.Fullscreen.Refresh_Rate);
+	cfgSetInt(L"Video.VSync",settings.Video.VSync);
 
 	cfgSetInt(L"Enhancements.MultiSampleCount",settings.Enhancements.MultiSampleCount);
 	cfgSetInt(L"Enhancements.MultiSampleQuality",settings.Enhancements.MultiSampleQuality);

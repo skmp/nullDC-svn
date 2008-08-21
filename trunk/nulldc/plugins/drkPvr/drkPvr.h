@@ -78,13 +78,18 @@ void SaveSettings();
 
 struct _settings_type
 {
-	struct 
+	struct
 	{
-		u32 Enabled;
-		u32 Res_X;
-		u32 Res_Y;
-		u32 Refresh_Rate;
-	} Fullscreen;
+		struct 
+		{
+			u32 Enabled;
+			u32 Res_X;
+			u32 Res_Y;
+			u32 Refresh_Rate;
+		} Fullscreen;
+		u32 VSync;
+	} Video;
+
 	struct 
 	{
 		u32 MultiSampleCount;
