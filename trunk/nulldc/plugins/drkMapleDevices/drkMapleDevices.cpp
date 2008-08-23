@@ -1500,6 +1500,7 @@ void FASTCALL ControllerDMA_naomi(maple_device_instance* device_instance,u32 Com
 				switch(subcode)
 				{
 				case 0x15:
+				case 0x33:
 					{
 						buffer_out[0]=0xffffffff;
 						buffer_out[1]=0xffffffff;
@@ -1510,7 +1511,7 @@ void FASTCALL ControllerDMA_naomi(maple_device_instance* device_instance,u32 Com
 						if(GetKeyState(VK_F5)&0x8000)		//Test
 							buffer_out[0]&=~(1<<0x1a);
 
-						if(State.Mode==0)	//Get Caps
+						if(State.Mode==0 && subcode!=0x33)	//Get Caps
 						{
 							buffer_out_b[0x11+1]=0x8E;	//Valid data check
 							buffer_out_b[0x11+2]=0x01;
@@ -1601,7 +1602,7 @@ void FASTCALL ControllerDMA_naomi(maple_device_instance* device_instance,u32 Com
 							}
 							buffer_out_len=4*4;
 						}
-						else if(State.Mode==1 || State.Mode==2)	//Get Data
+						else if(State.Mode==1 || State.Mode==2 || subcode==0x33)	//Get Data
 						{
 							unsigned char glbl=0x00;
 							unsigned char p1_1=0x00;
@@ -1747,7 +1748,7 @@ void FASTCALL ControllerDMA_naomi(maple_device_instance* device_instance,u32 Com
 				//case 0x1:
 				//	break;
 				default:
-					printf("Unkown 0x86 : SubCommand 0x%X - State: Cmd 0x%X Mode :  0x%X Node : 0x%X\n",subcode,State.Cmd,State.Mode,State.Node);
+					printf("Unknown 0x86 : SubCommand 0x%X - State: Cmd 0x%X Mode :  0x%X Node : 0x%X\n",subcode,State.Cmd,State.Mode,State.Node);
 					printState(Command,buffer_in,buffer_in_len);
 				}
 
