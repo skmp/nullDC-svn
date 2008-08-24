@@ -10,7 +10,6 @@ WriteSamples2_FP* WriteSamples2;
 */
 cResetEvent speed_limit(true,true);
 
-
 class SoundBuffer
 {
 public:
@@ -54,7 +53,9 @@ u32 wbuffer;
 u32 rbuffer;
 u32 buff_count=3;
 u32 buffersz;
-
+#ifdef LOG_SOUND
+WaveWriter rawout("d:\\aica_out.wav");
+#endif
 void InitAudBuffers(u32 buff_samples)
 {
 	buff_count=settings.BufferCount+2;
@@ -90,6 +91,9 @@ u8* GetReadBuffer()
 
 void WriteSample(s16 r, s16 l)
 {
+	#ifdef LOG_SOUND
+	rawout.Write(l,r);
+	#endif
 	if (WriteBuffer[wbuffer%buff_count]->WriteSample(r,l))
 	{
 		//printf("Writen\n");

@@ -8,6 +8,12 @@
 #define aeg_printf(x)
 #define step_printf(x)
 
+#ifdef CLIP_WARN
+#define clip_verify(x) verify(x)
+#else
+#define clip_verify(x)
+#endif
+
 //Sound generation , mixin , and chanel regs emulation
 
 SampleType mixl;
@@ -235,7 +241,10 @@ enum _EG_state
 struct AicaChannel
 {
 	static AicaChannel Chans[64];
-
+#ifdef LOG_SOUND
+	WaveWriter* chlog;
+	WaveWriter* chraw;
+#endif
 	union
 	{
 		ChannelCommonData* ChanData;
@@ -319,9 +328,21 @@ struct AicaChannel
 		ChanData_raw=(u32*)ChanData;
 		CalcUpdateRate();
 		looped=0;
+#ifdef LOG_SOUND
+		char t[128];
+		sprintf(t,"d:\\aica_c_%d.wav",channel);
+		chlog=new WaveWriter(t);
+		sprintf(t,"d:\\aica_c_%d_raw.wav",channel);
+		chraw=new WaveWriter(t);
+#endif
 	}
-
-
+#ifdef LOG_SOUND
+	~AicaChannel()
+	{
+		delete chlog;
+		delete chraw;
+	}
+#endif
 	void KEY_ON()
 	{
 		verify(ChanData->KYONB);
@@ -487,11 +508,9 @@ struct AicaChannel
 		{
 		case 0:
 			{
-				s16* ptr=(s16*)&aica_ram[addr+(CA<<1)];
+				s16* ptr=(s16*)&aica_ram[(addr&~1)+(CA<<1)];
 				s0=ptr[0];
 				s1=ptr[1];
-				if (s1==-32768 && 0==(s0&0x8000))
-					s1&=0x7FFF;
 			}
 			break;
 
@@ -513,12 +532,15 @@ struct AicaChannel
 			break;
 		}
 		SampleType rv;
+		
+		rv=FPMul(s0,(s32)(1024-scnt.fp),10);
+		rv+=FPMul(s1,(s32)(scnt.fp),10);
 
-		rv=FPMul(s0,(s32)(scnt.fp),10);
-		rv+=FPMul(s1,(s32)(1023-scnt.fp),10);
-
+		#ifdef LOG_SOUND
+		chraw->Write(s0,s1);
+		#endif
 		//make sure its still in range
-		verify(((s16)rv)==rv);
+		clip_verify(((s16)rv)==rv);
 		return rv;
 	}
 
@@ -623,6 +645,12 @@ struct AicaChannel
 		SampleType oPan=FPMul(sample,tl_lut[panatt],15);
 		SampleType oDsp=FPMul(sample,tl_lut[dspatt],15);
 
+		clip_verify(((s16)oFull)==oFull);
+		clip_verify(((s16)oPan)==oPan);
+		clip_verify(sample*oFull>=0);
+		clip_verify(sample*oPan>=0);
+		clip_verify(sample*oDsp>=0);
+
 		static bool channel_mute=false;
 
 		if (!channel_mute)
@@ -640,6 +668,9 @@ struct AicaChannel
 				mixr+=oFull;
 			}
 		}
+		#ifdef LOG_SOUND
+		chlog->Write(oFull,oPan);
+		#endif
 
 		//GOOD ! now we finished w/ sound generation ...
 		//Loop procecing / misc stuff(tm)
