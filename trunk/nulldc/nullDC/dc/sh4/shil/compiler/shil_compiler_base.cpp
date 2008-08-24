@@ -2578,7 +2578,7 @@ void __fastcall shil_compile_floatfpul(shil_opcode* op)
 		assert(false);
 	}
 }
-f32 sse_ftrc_saturate=2147483583;//1.11111111111111111111111 << 31
+f32 sse_ftrc_saturate=0x7FFFFFBF;//1.11111111111111111111111 << 31
 void __fastcall shil_compile_ftrc(shil_opcode* op)
 {
 	assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2|FLAG_REG2)));

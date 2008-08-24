@@ -742,24 +742,25 @@ sh4op(i1111_nnnn_0011_1101)
 	if (fpscr.PR == 0)
 	{
 		u32 n = GetN(op);
-		fpul = (u32)(s32)fr[n];
-
+		fpul = (u32)(s32)min(fr[n],(float)0x7FFFFFBF);
+		/*
 		if (fpul==0x80000000)
 		{
 			if (fr[n]>0)
 				fpul--;
-		}
+		}*/
 	}
 	else
 	{
 		START64();
 		u32 n = (op >> 9) & 0x07;
-		fpul = (u32)(s32)GetDR(n);
+		fpul = (u32)(s32)min(GetDR(n),(double)0x7FFFFFFF);
+		/*
 		if (fpul==0x80000000)
 		{
 			if (GetDR(n)>0)
 				fpul--;
-		}
+		}*/
 		END64();
 	}
 }
