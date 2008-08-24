@@ -70,7 +70,7 @@ void rss(u8* buff,u32 ss,FILE* file)
 }
 void FASTCALL iso_DriveReadSector(u8 * buff,u32 StartSector,u32 SectorCount,u32 secsz)
 {
-	printf("GDR->Read : Sector %d , size %d , mode %d \n",StartSector,SectorCount,secsz);
+	//printf("GDR->Read : Sector %d , size %d , mode %d \n",StartSector,SectorCount,secsz);
 	if (StartSector>150)
 		StartSector-=150;
 	while(SectorCount--)
