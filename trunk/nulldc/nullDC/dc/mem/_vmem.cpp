@@ -395,7 +395,7 @@ void* _nvmem_unused_buffer(u32 start,u32 end)
 
 bool _vmem_reserve()
 {
-	mem_handle=CreateFileMapping(INVALID_HANDLE_VALUE,0,PAGE_READWRITE ,0,RAM_SIZE + VRAM_SIZE +ARAM_SIZE,L"ndc_mem_dataazz");
+	mem_handle=CreateFileMapping(INVALID_HANDLE_VALUE,0,PAGE_READWRITE ,0,RAM_SIZE + VRAM_SIZE +ARAM_SIZE,0);
 
 	void* ptr=0;
 	sh4_reserved_mem=(u8*)VirtualAlloc(0,512*1024*1024,MEM_RESERVE,PAGE_NOACCESS);
