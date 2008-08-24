@@ -2578,6 +2578,7 @@ void __fastcall shil_compile_floatfpul(shil_opcode* op)
 		assert(false);
 	}
 }
+f32 sse_ftrc_saturate=2147483583;//1.11111111111111111111111 << 31
 void __fastcall shil_compile_ftrc(shil_opcode* op)
 {
 	assert(0==(op->flags & (FLAG_IMM1|FLAG_IMM2|FLAG_REG2)));
@@ -2588,17 +2589,11 @@ void __fastcall shil_compile_ftrc(shil_opcode* op)
 		assert(!IsReg64((Sh4RegType)op->reg1));
 
 		//TODO : This is not entietly correct , sh4 saturates too
-		//EAX=(int)fr[n]
-		if (fra->IsRegAllocated(op->reg1))
-		{
-			x86_sse_reg r1=fra->GetRegister(XMM0,op->reg1,RA_DEFAULT);
-			assert(r1!=XMM0);
-			x86e->Emit(op_cvttss2si, EAX,r1);
-		}
-		else
-		{
-			x86e->Emit(op_cvttss2si, EAX,GetRegPtr(op->reg1));
-		}
+		//EAX=(int)saturate(fr[n])
+
+		x86_sse_reg r1=fra->GetRegister(XMM0,op->reg1,RA_FORCE);
+		x86e->Emit(op_minss,r1,&sse_ftrc_saturate);
+		x86e->Emit(op_cvttss2si, EAX,r1);
 		//fpul=EAX
 		SaveReg(reg_fpul,EAX);
 	}

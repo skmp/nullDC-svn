@@ -10,6 +10,7 @@ u32 naomi_updates;
 #include <windows.h>
 
 #define NAOMI_GDROM
+//#define NAOMI_COMM
 
 #ifdef BUILD_NAOMI	
 
@@ -31,6 +32,11 @@ int BControl=0,BCmd=0,BLastCmd=0;
 int GControl=0,GCmd=0,GLastCmd=0;
 int SerStep=0,SerStep2=0;
 
+#ifdef NAOMI_COMM
+	u32 CommOffset;
+	u32* CommSharedMem;
+	HANDLE CommMapFile=INVALID_HANDLE_VALUE;
+#endif
 
 /*
 El numero de serie solo puede contener:
@@ -458,8 +464,18 @@ u32  ReadMem_naomi(u32 Addr, u32 sz)
 	
 		//What should i do to emulate 'nothing' ?
 	case NAOMI_COMM_OFFSET_addr&255:
+		#ifdef NAOMI_COMM
+		printf("naomi COMM offs READ: %X, %d\n", Addr, sz);
+		return CommOffset;
+		#endif
 	case NAOMI_COMM_DATA_addr&255:
-		//printf("naomi COMM: %X, %d\n", Addr, sz);
+		#ifdef NAOMI_COMM
+		printf("naomi COMM data read: %X, %d\n", CommOffset, sz);
+		if (CommSharedMem)
+		{
+			return CommSharedMem[CommOffset&0xF];
+		}
+		#endif
 		return 1;
 
 
@@ -566,8 +582,20 @@ void WriteMem_naomi(u32 Addr, u32 data, u32 sz)
 
 		//What should i do to emulate 'nothing' ?
 	case NAOMI_COMM_OFFSET_addr&255:
+#ifdef NAOMI_COMM
+		printf("naomi COMM ofset Write: %X <= %X, %d\n", Addr, data, sz);
+		CommOffset=data&0xFFFF;
+#endif
+		return;
+
 	case NAOMI_COMM_DATA_addr&255:
-		//printf("naomi COMM: %X <= %X, %d\n", Addr, data, sz);
+		#ifdef NAOMI_COMM
+		printf("naomi COMM data Write: %X <= %X, %d\n", CommOffset, data, sz);
+		if (CommSharedMem)
+		{
+			CommSharedMem[CommOffset&0xF]=data;
+		}
+		#endif
 		return;
 
 		//This should be valid
@@ -803,6 +831,51 @@ void Naomi_DmaEnable(u32 data)
 }
 void naomi_reg_Init()
 {
+	#ifdef NAOMI_COMM
+	CommMapFile = CreateFileMapping(
+		INVALID_HANDLE_VALUE,    // use paging file
+		NULL,                    // default security 
+		PAGE_READWRITE,          // read/write access
+		0,                       // max. object size 
+		0x1000*4,                // buffer size  
+		L"Global\\nullDC_103_naomi_comm");                 // name of mapping object
+
+	if (CommMapFile == NULL || CommMapFile==INVALID_HANDLE_VALUE) 
+	{ 
+		_tprintf(TEXT("Could not create file mapping object (%d).\nTrying to open existing one\n"), 	GetLastError());
+		
+		CommMapFile=OpenFileMapping(
+                   FILE_MAP_ALL_ACCESS,   // read/write access
+                   FALSE,                 // do not inherit the name
+                   L"Global\\nullDC_103_naomi_comm");               // name of mapping object 
+	}
+	
+	if (CommMapFile == NULL || CommMapFile==INVALID_HANDLE_VALUE) 
+	{ 
+		_tprintf(TEXT("Could not open existing file either\n"), 	GetLastError());
+		CommMapFile=INVALID_HANDLE_VALUE;
+	}
+	else
+	{
+		printf("NAOMI: Created \"Global\\nullDC_103_naomi_comm\"\n");
+		CommSharedMem = (u32*) MapViewOfFile(CommMapFile,   // handle to map object
+			FILE_MAP_ALL_ACCESS, // read/write permission
+			0,                   
+			0,                   
+			0x1000*4);           
+
+		if (CommSharedMem == NULL) 
+		{ 
+			_tprintf(TEXT("Could not map view of file (%d).\n"), 
+				GetLastError()); 
+
+			CloseHandle(CommMapFile);
+			CommMapFile=INVALID_HANDLE_VALUE;
+		}
+		else
+			printf("NAOMI: Mapped CommSharedMem\n");
+	}
+	#endif
 	NaomiInit();
 
 	sb_regs[(SB_GDST_addr-SB_BASE)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA;
@@ -813,6 +886,16 @@ void naomi_reg_Init()
 }
 void naomi_reg_Term()
 {
+	#ifdef NAOMI_COMM
+	if (CommSharedMem)
+	{
+		UnmapViewOfFile(CommSharedMem);
+	}
+	if (CommMapFile!=INVALID_HANDLE_VALUE)
+	{
+		CloseHandle(CommMapFile);
+	}
+	#endif
 }
 void naomi_reg_Reset(bool Manual)
 {
