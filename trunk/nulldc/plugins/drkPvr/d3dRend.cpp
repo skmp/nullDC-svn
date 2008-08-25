@@ -1192,7 +1192,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		fseek(fshade,0,SEEK_END);
 		u32 fsize=ftell(fshade);
 		fseek(fshade,0,SEEK_SET);
-		u32 buffsize=fsize+strlen(profile)+strlen(extra)+2+10;
+		u32 buffsize=fsize+strlen(profile)+strlen(extra)+2+1;
 		pfile = (u8*)malloc(buffsize);
 		fread(pfile,1,fsize,fshade);
 		fclose(fshade);
@@ -1202,7 +1202,8 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		strcat((char*)pfile,profile);
 		strcat((char*)pfile,";");
 		strcat((char*)pfile,extra);
-
+		if(strlen((char*)pfile)!=(buffsize-1))
+			die("Error on hashing file ...");
 		memset(hash,0,16);
 		
 		for (u32 i=0;i<buffsize;i++)
