@@ -740,6 +740,15 @@ MENU_HANDLER( Handle_Options_Config)
 {
 	DialogBox(g_hInst,MAKEINTRESOURCE(IDD_CONFIG),(HWND)hWnd,DlgProcModal_config);
 }
+MENU_HANDLER( Handle_Options_AutoHideMenu)
+{
+	if (settings.AutoHideMenu)
+		settings.AutoHideMenu=0;
+	else
+		settings.AutoHideMenu=1;
+
+	SetMenuItemStyle(id,settings.AutoHideMenu?MIS_Checked:0,MIS_Checked);
+}
 MENU_HANDLER( Handle_Options_SelectPlugins)
 {
 	EmuSelectPlugins();
@@ -869,6 +878,8 @@ void CreateBasicMenus()
 
 	//Options Menu
 	u32 menu_setts=AddMenuItem(menu_options,-1,L"nullDC Settings",Handle_Options_Config,0);
+	AddMenuItem(menu_setts,-1,L"Auto Hide Menu",Handle_Options_AutoHideMenu,settings.AutoHideMenu);
+		AddSeperator(menu_setts);
 		AddMenuItem(menu_setts,-1,L"Show",Handle_Options_Config,0);
 		AddSeperator(menu_setts);
 		rec_enb_mid=AddMenuItem(menu_setts,-1,L"Enable Dynarec",Handle_Option_EnableRec,0);
@@ -930,6 +941,24 @@ HMENU GetHMenu()
 }
 
 u32 mouse_hidden=2;
+void SetMouseState(HWND hWnd,bool visible)
+{
+	static bool mouse_visible=true;
+	if (visible==mouse_visible)
+		return;
+	if (visible)
+	{
+		ShowCursor(true);
+		SetMenu(hWnd,GetHMenu());
+	}
+	else
+	{
+		ShowCursor(false);
+		if (settings.AutoHideMenu)
+			SetMenu(hWnd,NULL);
+	}
+	mouse_visible=visible;
+}
 LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	static RECT rc;
@@ -946,14 +975,16 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 			if (GetActiveWindow()==hWnd && WindowFromPoint(cp)==hWnd && ScreenToClient(hWnd,&cp) && cp.x>cl.left && cp.y>cl.top && cp.x<cl.right && cp.y<cl.bottom)
 			{
 				if (mouse_hidden==1)
-					ShowCursor(false);
+				{
+					SetMouseState(hWnd,false);
+				}
 				if (mouse_hidden>0)
 					mouse_hidden--;
 			}
 			else if (mouse_hidden==0)
 			{
-				mouse_hidden=4;
-				ShowCursor(true);
+				mouse_hidden=10;
+				SetMouseState(hWnd,true);
 			}
 		} 
 		break;
@@ -969,10 +1000,12 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 		SetTimer(hWnd,0,500,0);
 		break;
 	case WM_MOUSEMOVE:
-		if (mouse_hidden==0)
+		mouse_hidden++;
+		if (mouse_hidden>=10)
 		{
-			mouse_hidden=4;
-			ShowCursor(true);
+			mouse_hidden=10;
+			
+			SetMouseState(hWnd,true);
 		}
 		break;
 	case WM_COMMAND:

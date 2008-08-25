@@ -3,7 +3,17 @@
 HMODULE hMod;
 wchar emu_name[128];
 gui_emu_info emu;
+Settings_Struct settings;
 
+void SaveSettings()
+{
+	emu.ConfigLoadInt(L"nullDC_GUI",L"AutoHideMenu",settings.AutoHideMenu);
+}
+
+void LoadSettings()
+{
+	settings.AutoHideMenu=emu.ConfigLoadInt(L"nullDC_GUI",L"AutoHideMenu",1);
+}
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
                        LPVOID lpReserved
@@ -29,6 +39,7 @@ s32 EXPORT_CALL Load(gui_emu_info* emui)
 	memcpy(&emu,emui,sizeof(emu));
 	
 	emu.ConfigLoadStr(L"emu",L"FullName",emu_name,L"");
+	LoadSettings();
 	if (!uiInit())
 		return rv_serror;
 

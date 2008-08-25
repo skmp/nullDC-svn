@@ -234,3 +234,13 @@ void SetSettingI(u32 id,u32 v);
 extern HWND g_hWnd;
 extern HINSTANCE g_hInst;
 extern HMODULE hMod;
+
+struct Settings_Struct
+{
+	bool AutoHideMenu;
+};
+
+extern Settings_Struct settings;
+
+void SaveSettings();
+void LoadSettings();
