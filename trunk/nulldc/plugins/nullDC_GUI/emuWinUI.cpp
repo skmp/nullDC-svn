@@ -941,9 +941,9 @@ HMENU GetHMenu()
 }
 
 u32 mouse_hidden=2;
+bool mouse_visible=true;
 void SetMouseState(HWND hWnd,bool visible)
 {
-	static bool mouse_visible=true;
 	if (visible==mouse_visible)
 		return;
 	if (visible)
@@ -965,6 +965,13 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 	//printf("msg %X\n",uMsg);
 	switch(uMsg)
 	{
+	case WM_ERASEBKGND:
+		{
+			if (EmuStarted())
+				return TRUE;
+		}
+		break;
+
 	case WM_TIMER:
 		{
 			POINT cp;
@@ -983,8 +990,8 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 			}
 			else if (mouse_hidden==0)
 			{
-				mouse_hidden=10;
-				SetMouseState(hWnd,true);
+				//mouse_hidden=10;
+				//SetMouseState(hWnd,true);
 			}
 		} 
 		break;

@@ -70,7 +70,7 @@ s32 EXPORT_CALL b_dbgWriteMem(u32 addr,u32 sz,void* dst)
 
 bool EXPORT_CALL b_EmuStarted()	//returns if emulation is started.
 {
-	return sh4_cpu->IsCpuRunning();
+	return sh4_cpu?sh4_cpu->IsCpuRunning():false;
 }
 
 bool EXPORT_CALL b_EmuInit()
