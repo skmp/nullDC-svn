@@ -48,17 +48,40 @@ void FASTCALL WriteMem_A0_006(u32 addr,u32 data,u32 size)
 	}
 }
 //010* , on area0
+/*u8 tram[0x10000];*/
 u32 FASTCALL ReadMem_A0_010(u32 addr,u32 size)
 {
 	if (settings.mode==3)
 		return bba_ReadMem(addr,size);
 	else
+	{
+		/*
+		u32 data=0;
+		printf("Read[%d] from 0x%08X\n",size*8,addr);
+		if (addr==0x01000000)
+			return 0;
+		memcpy(&data,&tram[addr&0xFFFF],size);
+		//if (*(u16*)&tram[addr&0xFFFF]==0x100)
+			*(u16*)&tram[addr&0xFFFF]^=0x100;
+		if (addr==0x01000100)
+			data^=0x100;
+		return data;*/
 		return 0;
+	}
 }
 void FASTCALL WriteMem_A0_010(u32 addr,u32 data,u32 size)
 {
 	if (settings.mode==3)
 		bba_WriteMem(addr,data,size);
+	else
+	{
+		/*
+		printf("Write[%d] to 0x%08X = 0x%08X\n",size*8,addr,data);
+		memcpy(&tram[addr&0xFFFF],&data,size);
+		*/
+		return;
+	}
+		
 }
 //Area 5
 u32 FASTCALL ReadMem_A5(u32 addr,u32 size)
