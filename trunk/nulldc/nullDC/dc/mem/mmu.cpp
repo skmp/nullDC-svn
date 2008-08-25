@@ -48,19 +48,32 @@ const u32 ITLB_LRU_AND[4]=
 u32 ITLB_LRU_USE[64];
 
 //sync mem mapping to mmu , suspend compiled blocks if needed.entry is a UTLB entry # , -1 is for full sync
-void UTLB_Sync(u32 entry)
+bool UTLB_Sync(u32 entry)
 {
-	
+	if (UTLB[entry].Data.V==0)
+		return true;
+
 	if ((UTLB[entry].Address.VPN & (0xFC000000>>10)) == (0xE0000000>>10))
 	{
 		#ifdef NO_MMU
-		u32 vpn_sq=((UTLB[entry].Address.VPN & 0x7FFFF)>>10) &0x3F;//upper bits are allways known [0xE0/E1/E2/E3]
+		u32 vpn_sq=((UTLB[entry].Address.VPN & (0x3FFFFFF>>10) )>>10) &0x3F;//upper bits are allways known [0xE0/E1/E2/E3]
 		sq_remap[vpn_sq]=UTLB[entry].Data.PPN<<10;
 		printf("SQ remap %d : 0x%X to 0x%X\n",entry,UTLB[entry].Address.VPN<<10,UTLB[entry].Data.PPN<<10);
 		#endif
+		return true;
 	}
 	else
-		;//printf("MEM remap %d : 0x%X to 0x%X\n",entry,UTLB[entry].Address.VPN<<10,UTLB[entry].Data.PPN<<10);
+	{
+		#ifdef NO_MMU
+		if ((UTLB[entry].Address.VPN&(0x1FFFFFFF>>10))==(UTLB[entry].Data.PPN&(0x1FFFFFFF>>10)))
+		{
+			printf("Static remap %d : 0x%X to 0x%X\n",entry,UTLB[entry].Address.VPN<<10,UTLB[entry].Data.PPN<<10);
+			return true;
+		}
+		printf("Dynamic remap %d : 0x%X to 0x%X\n",entry,UTLB[entry].Address.VPN<<10,UTLB[entry].Data.PPN<<10);
+		#endif
+		return false;//printf("MEM remap %d : 0x%X to 0x%X\n",entry,UTLB[entry].Address.VPN<<10,UTLB[entry].Data.PPN<<10);
+	}
 }
 //sync mem mapping to mmu , suspend compiled blocks if needed.entry is a ITLB entry # , -1 is for full sync
 void ITLB_Sync(u32 entry)

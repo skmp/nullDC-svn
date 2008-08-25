@@ -103,9 +103,10 @@ sh4op(i0000_0000_0011_1000)
 	UTLB[CCN_MMUCR.URC].Data=CCN_PTEL;
 	UTLB[CCN_MMUCR.URC].Address=CCN_PTEH;
 
-	UTLB_Sync(CCN_MMUCR.URC);
+	bool is_sq_remap=UTLB_Sync(CCN_MMUCR.URC);
 #ifdef NO_MMU
-	iNimp(op, "ldtlb");
+	if (!is_sq_remap)
+		iNimp(op, "ldtlb");
 #endif
 
 } 
@@ -1013,6 +1014,14 @@ sh4op(i0010_nnnn_mmmm_1101)
 sh4op(i1100_1100_iiii_iiii)
 {
 	iNimp(op, "tst.b #<imm>,@(R0,GBR)");
+	u8 temp = (u8)ReadMem8(gbr +r[0]);
+	if (sh4_exept_raised)
+		return;
+	temp &= GetImm8(op);
+	if (temp==0)
+		sr.T=1;
+	else
+		sr.T=0;
 }
 
 
@@ -1020,13 +1029,23 @@ sh4op(i1100_1100_iiii_iiii)
 sh4op(i1100_1101_iiii_iiii)
 {
 	iNimp(op, "and.b #<imm>,@(R0,GBR)");
+	u8 temp = (u8)ReadMem8(gbr +r[0]);
+	if (sh4_exept_raised)
+		return;
+	temp &= GetImm8(op);
+	WriteMem8(gbr +r[0], temp);
 }
 
 
 //xor.b #<imm>,@(R0,GBR)        
 sh4op(i1100_1110_iiii_iiii)
 {
-	iNimp(op, "xor.b #<imm>,@(R0,GBR)");
+	//iNimp(op, "xor.b #<imm>,@(R0,GBR)");
+	u8 temp = (u8)ReadMem8(gbr +r[0]);
+	if (sh4_exept_raised)
+		return;
+	temp ^= GetImm8(op);
+	WriteMem8(gbr +r[0], temp);
 }
 
 
@@ -1035,6 +1054,8 @@ sh4op(i1100_1111_iiii_iiii)
 {
 	//iNimp(op, "or.b #<imm>,@(R0,GBR)");
 	u8 temp = (u8)ReadMem8(gbr +r[0]);
+	if (sh4_exept_raised)
+		return;
 	temp |= GetImm8(op);
 	WriteMem8(gbr +r[0], temp);
 }

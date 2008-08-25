@@ -2588,7 +2588,7 @@ void __fastcall shil_compile_ftrc(shil_opcode* op)
 		assert(Ensure32());
 		assert(!IsReg64((Sh4RegType)op->reg1));
 
-		//TODO : This is not entietly correct , sh4 saturates too
+		//TODO : This is not entietly correct , sh4 saturates too -> its correct now
 		//EAX=(int)saturate(fr[n])
 
 		x86_sse_reg r1=fra->GetRegister(XMM0,op->reg1,RA_FORCE);

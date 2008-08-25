@@ -51,7 +51,7 @@ extern TLB_Entry UTLB[64];
 extern TLB_Entry ITLB[4];
 
 //sync mem mapping to mmu , suspend compiled blocks if needed.entry is a UTLB entry # , -1 is for full sync
-void UTLB_Sync(u32 entry);
+bool UTLB_Sync(u32 entry);
 //sync mem mapping to mmu , suspend compiled blocks if needed.entry is a ITLB entry # , -1 is for full sync
 void ITLB_Sync(u32 entry);
 
