@@ -1138,7 +1138,18 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		"TextureLookup_Palette_Bilinear",
 	};
 
-	void CompilePS(u32 mode,const char* profile)
+	void WirteCacheShader(FILE* f,DWORD* shader,u32 mode,u32 len)
+	{
+		if (!f)
+			return;
+
+		fwrite(&mode,4,1,f);
+		fwrite(&len,4,1,f);
+		if (len!=-1)
+			fwrite(shader,len,1,f);
+	}
+
+	void CompilePS(u32 mode,const char* profile,FILE* f)
 	{
 		verify(mode<(PS_SHADER_COUNT));
 		if (compiled_ps[mode]!=0)
@@ -1155,10 +1166,128 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			printf("%s\n",text);
 		}
 		verifyc(dev->CreatePixelShader((DWORD*)shader->GetBufferPointer(),&compiled_ps[mode]));
+		WirteCacheShader(f,(DWORD*)shader->GetBufferPointer(),mode,shader->GetBufferSize());
 		if (perr)
 			perr->Release();
 		shader->Release();
 		consts->Release();
+	}
+	/*
+		Cache file format :
+		"drkpvr ps cache 0"
+		u8[16] file hash; -> hash(stcat(file,ps_profile,extramodes))
+		u32 mode;
+		u32 size;
+		u8[size] data; 
+
+		if mode is -1 then this is the last item on the file :)
+	*/
+	bool hash_file(const char* shaderfile,const char* profile,const char* extra,u8* hash)
+	{
+		u8* pfile;
+		FILE* fshade=fopen(shaderfile,"rb");
+		if (!fshade)
+			return false;
+		
+		fseek(fshade,0,SEEK_END);
+		u32 fsize=ftell(fshade);
+		fseek(fshade,0,SEEK_SET);
+		u32 buffsize=fsize+strlen(profile)+strlen(extra)+2+10;
+		pfile = (u8*)malloc(buffsize);
+		fread(pfile,1,fsize,fshade);
+		fclose(fshade);
+
+		pfile[fsize]=0;
+		strcat((char*)pfile,";");
+		strcat((char*)pfile,profile);
+		strcat((char*)pfile,";");
+		strcat((char*)pfile,extra);
+
+		memset(hash,0,16);
+		
+		for (u32 i=0;i<buffsize;i++)
+		{
+			hash[i&15]+=pfile[i];
+			hash[i&15]^=(pfile[i]+1);
+			u32 sp=(pfile[i]+hash[~i&15])&15;
+			hash[sp]^=hash[15-sp]*7;		//7 is the most powerful magic number, no ;)
+			hash[15-sp]^=hash[sp]/7;		//i hope it is !
+		}
+		free(pfile);
+		return true;
+	}
+	bool LoadFileCache(char* cache,u8* hash)
+	{
+		FILE* f;
+		char* tag ="drkpvr ps cache 0";
+		char temp[128];
+		memset(compiled_ps,0,sizeof(compiled_ps));
+
+		f=fopen(cache,"rb");
+		if (!f)
+			return false;
+		
+		//check file tag
+		if (fread(temp,strlen(tag),1,f)!=1)
+			goto __error_out;
+		if (memcmp(temp,tag,strlen(tag)))
+			goto __error_out;//GOTO is evil, right ? >:
+
+		//check hash value
+		if (fread(temp,16,1,f)!=1)
+			goto __error_out;
+		if (memcmp(temp,hash,16))
+			goto __error_out;
+
+		int chunk_size;
+		u32 chunk_mode;
+
+		for(;;)
+		{
+			if (fread(&chunk_mode,4,1,f)!=1)
+				goto __error_out;
+			if (fread(&chunk_size,4,1,f)!=1)
+				goto __error_out;
+			if (chunk_size<0)
+				break;
+			u8* databuf=(u8*)malloc(chunk_size);
+			if (fread(databuf,chunk_size,1,f)!=1)
+				goto __error_out;
+			if (FAILED(dev->CreatePixelShader((DWORD*)databuf,&compiled_ps[chunk_mode])))
+				goto __error_out;
+			free(databuf);
+		}
+
+		fclose(f);
+		return true;
+
+__error_out:
+		for (u32 i=0;i<PS_SHADER_COUNT;i++)
+		{
+			if (compiled_ps[i])
+				compiled_ps[i]->Release();
+			compiled_ps[i]=0;
+		}
+		fclose(f);
+		return false;
+	}
+	FILE* CreateCacheShader(const char* name,const u8* hash)
+	{
+		FILE* rv=fopen(name,"wb");
+		if (!rv)
+			return 0;
+		char* tag ="drkpvr ps cache 0";
+		fwrite(tag,strlen(tag),1,rv);
+		fwrite(hash,16,1,rv);
+		return rv;
+	}
+	void FinishCacheShader(FILE *f)
+	{
+		u32 md=0;
+		s32 sz=-1;
+		fwrite(&md,4,1,f);
+		fwrite(&sz,4,1,f);
+		fclose(f);
 	}
 	void PrecompilePS()
 	{
@@ -1170,7 +1299,24 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 
 		const char * profile=D3DXGetPixelShaderProfile(dev);
 
-#define forl(n,s,e) for (u32 n=s;n<=e;n++)
+		u8 file_hash[16];
+		if (hash_file("ps_hlsl.fx",profile,ps_macros[idx_ZBufferMode].Definition,file_hash))
+		{
+			printf("ps_hlsl.fx hash : ");
+			for (int i=0;i<16;i++)
+				printf("%02X",file_hash[i]);
+			printf("\n");
+			if (LoadFileCache("ps_hlsl.fxc",file_hash))
+			{
+				printf("Using cached ps_hlsl.fx\n");
+				return;
+			}
+		}
+		printf("ps_hlsl.fx cache invalid, rebuilding ..\n");
+		
+		FILE*cache = CreateCacheShader("ps_hlsl.fxc",file_hash);
+
+		#define forl(n,s,e) for (u32 n=s;n<=e;n++)
 		forl(Texture,0,1)
 		{
 			ps_macros[idx_pp_Texture].Definition=ps_macro_numers[Texture];
@@ -1211,7 +1357,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 										mode<<=2;
 										mode|=FogCtrl;
 
-										CompilePS(mode,profile);
+										CompilePS(mode,profile,cache);
 									}
 								}
 							}
@@ -1230,12 +1376,13 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 						mode<<=2;
 						mode|=FogCtrl;
 
-						CompilePS(mode,profile);
+						CompilePS(mode,profile,cache);
 					}
 				}
 			}
 		}
-#undef forl
+		#undef forl
+		FinishCacheShader(cache);
 	}
 	void FASTCALL ResrotePS()
 	{
@@ -1327,9 +1474,9 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			float y_min=(val>>12)&31;
 			float y_max=(val>>17)&31;
 			x_min=x_min*32;
-			x_max=x_max*32 +31;
+			x_max=x_max*32 +31.999;	//+31.999 to do [min,max)
 			y_min=y_min*32;
-			y_max=y_max*32 +31;
+			y_max=y_max*32 +31.999;
 			
 			x_min+=current_scalef[0];
 			x_max+=current_scalef[0];
@@ -1340,6 +1487,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			x_max/=current_scalef[2];
 			y_min/=current_scalef[3];
 			y_max/=current_scalef[3];
+
 
 
 			//Ax + By + Cz + Dw
@@ -3254,6 +3402,54 @@ nl:
 
 			cv[1].x=sv->x2;
 		}
+		static void CaclulateSpritePlane(Vertex* base)
+		{
+			const Vertex& A=base[2];
+			const Vertex& B=base[3];
+			const Vertex& C=base[1];
+			      Vertex& P=base[0];
+			//Vector AB = B-A;
+            //Vector AC = C-A;
+            //Vector AP = P-A;
+			float AC_x=C.x-A.x,AC_y=C.y-A.y,AC_z=C.z-A.z,
+				  AB_x=B.x-A.x,AB_y=B.y-A.y,AB_z=B.z-A.z,
+				  AP_x=P.x-A.x,AP_y=P.y-A.y;
+
+			float P_y=P.y,P_x=P.x,P_z=P.z,A_x=A.x,A_y=A.y,A_z=A.z;
+
+			float AB_v=B.v-A.v,AB_u=B.u-A.u,
+				  AC_v=C.v-A.v,AC_u=C.u-A.u;
+
+			float P_v,P_u,A_v=A.v,A_u=A.u;
+
+            float k3 = (AC_x * AB_y - AC_y * AB_x);
+ 
+            if (k3 == 0)
+            {
+                //throw new Exception("WTF?!");
+            }
+ 
+            float k2 = (AP_x * AB_y - AP_y * AB_x) / k3;
+ 
+            float k1 = 0;
+ 
+            if (AB_x == 0)
+            {
+                if (AB_y == 0)
+					;
+                    //throw new Exception("WTF?!");
+ 
+                k1 = (P_y - A_y - k2 * AC_y) / AB_y;
+            }
+            else
+            {
+                k1 = (P_x - A_x - k2 * AC_x) / AB_x;
+            }
+ 
+			P.z = A_z + k1 * AB_z + k2 * AC_z;
+            P.u = A_u + k1 * AB_u + k2 * AC_u;
+			P.v = A_v + k1 * AB_v + k2 * AC_v;
+		}
 		__forceinline
 		static void AppendSpriteVertexB(TA_Sprite1B* sv)
 		{
@@ -3272,9 +3468,9 @@ nl:
 			sprite_uv(2, u0,v0);
 			sprite_uv(3, u1,v1);
 			sprite_uv(1, u2,v2);
-			sprite_uv(0, u0,v2);//or sprite_uv(u2,v0); ?
+			//sprite_uv(0, u0,v2);//or sprite_uv(u2,v0); ?
 
-			
+			CaclulateSpritePlane(cv);
 			if (CurrentPP->count)
 			{
 				Vertex* vert=vert_reappend;

@@ -12,7 +12,7 @@
 #endif
 
 #ifndef FLT_MAX
-#define FLT_MAX 3.40282347e+38f
+#define FLT_MAX 3.40282340e+38f
 #endif
 
 struct vertex_in 
@@ -94,7 +94,7 @@ vertex_out VertexShader_main(in vertex_in vin)
 	vo.col=saturate(vin.col);
 	vo.spc=saturate(vin.spc);
 	
-	vo.uv.z=vtx_w;//vin.pos.z;
+	
 		 
 	float newZ;
 	#if ZBufferMode==0
@@ -110,15 +110,17 @@ vertex_out VertexShader_main(in vertex_in vin)
 	#endif
 
 	//I need to do smth about fixed function for this one
-	if (! (vin.pos.z<FLT_MAX && vin.pos.z>0))
+	if (vtx_w>0)
 	{
-		vo.pos.w=1;							//clips everything realy
-		vo.pos.z=-1;
+		vo.pos.w=vtx_w;
+		vo.pos.z=newZ*vtx_w;
+		vo.uv.z=vtx_w;
 	}
 	else
 	{
-		vo.pos.z=newZ*vtx_w;
-		vo.pos.w=vtx_w;							//clips everything realy
+		vo.pos.w=0.1;							//better clip everything !
+		vo.pos.z=-1000000;
+		vo.uv.z=-1000000;
 	}
 		
 	return vo; 
