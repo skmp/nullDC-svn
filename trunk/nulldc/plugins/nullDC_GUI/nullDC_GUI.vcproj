@@ -181,6 +181,14 @@
 			Name="gui"
 			>
 			<File
+				RelativePath=".\CPicture.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CPicture.h"
+				>
+			</File>
+			<File
 				RelativePath=".\CtrlDisAsmView.cpp"
 				>
 			</File>
@@ -296,6 +304,10 @@
 		</File>
 		<File
 			RelativePath=".\ndc_icon.ico"
+			>
+		</File>
+		<File
+			RelativePath=".\nulldc640_bluebg-opt96.jpeg"
 			>
 		</File>
 	</Files>

@@ -3,7 +3,7 @@
 */
 
 #include "nullDC_GUI.h"
-
+#include "CPicture.h"
 
 #include <math.h>
 
@@ -186,7 +186,13 @@ bool uiInit()
 	ysz_2-=ysz;
 
 	SetWindowPos(g_hWnd,NULL,0,0,xsz_2+640,ysz_2+480,SWP_NOZORDER|SWP_NOMOVE);
-
+	
+	MSG msg;
+	while( PeekMessage( &msg, NULL, 0, 0 ,TRUE) != 0)
+	{
+		TranslateMessage(&msg); 
+		DispatchMessage(&msg); 
+	}
 	
 	return true;
 }
@@ -940,7 +946,7 @@ HMENU GetHMenu()
 	return MainMenu.hmenu;
 }
 
-u32 mouse_hidden=2;
+s32 mouse_hidden=2;
 bool mouse_visible=true;
 void SetMouseState(HWND hWnd,bool visible)
 {
@@ -959,16 +965,89 @@ void SetMouseState(HWND hWnd,bool visible)
 	}
 	mouse_visible=visible;
 }
+
+static CPicture ndclogo;
 LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	static RECT rc;
 	//printf("msg %X\n",uMsg);
+	//OleSavePictureFile
 	switch(uMsg)
 	{
-	case WM_ERASEBKGND:
+	case WM_PAINT:
+		//ndclogo
 		{
 			if (EmuStarted())
-				return TRUE;
+				break;
+			PAINTSTRUCT ps; 
+			HDC hdc; 
+			RECT rc;
+			hdc = BeginPaint(hWnd, &ps); 
+			GetClientRect(hWnd, &rc); 
+			int width=(rc.right-rc.left);
+			int height=(rc.bottom-rc.top);
+			SIZE hm=ndclogo.GetImageSize(hdc);
+			long hmWidth=hm.cx,hmHeight=hm.cy; // HIMETRIC units
+			//ndclogo.GetHIMETRICSize(hmWidth, hmHeight);
+
+			int h=hmHeight*width/(float)hmWidth+0.5f;
+			int w=hmWidth*height/(float)hmHeight+0.5f;
+			
+			if (h>height)
+			{
+				h=height;
+			}
+			else
+			{
+				w=width;
+			}
+			int dx=width-w;
+			int dy=height-h;
+			
+			rc.left=0;
+			rc.right=hmWidth;
+
+			rc.top=0;
+			rc.bottom=hmHeight;
+
+			SetStretchBltMode(hdc,HALFTONE);
+
+			HDC memDC = CreateCompatibleDC ( hdc );
+			HBITMAP memBM = CreateCompatibleBitmap ( hdc, hmWidth, hmHeight );
+			SelectObject ( memDC, memBM );
+			ndclogo.Render(memDC,&rc);
+			StretchBlt(hdc,dx/2,dy/2,w,h,memDC,0,0,hmWidth,hmHeight,SRCCOPY);
+
+			//LEFT
+			StretchBlt(hdc,0,0,dx/2,height,memDC,0,0,1,hmHeight,SRCCOPY);
+
+			//RIGHT
+			StretchBlt(hdc,dx/2+w,0,dx-dx/2,height,memDC,hmWidth-1,0,1,hmHeight,SRCCOPY);
+
+			//TOP
+			StretchBlt(hdc,0,0,width,dy/2,memDC,0,0,hmWidth,1,SRCCOPY);
+
+			//BOTTOM
+			StretchBlt(hdc,0,dy/2+h,width,dy-dy/2,memDC,0,hmHeight-1,hmWidth,1,SRCCOPY);
+
+			DeleteObject(memBM);
+			DeleteDC(memDC);
+
+			/*
+			SetMapMode(hdc, MM_ANISOTROPIC); 
+			SetWindowExtEx(hdc, 100, 100, NULL); 
+			SetViewportExtEx(hdc, rc.right, rc.bottom, NULL); 
+			Polyline(hdc, aptStar, 6); 
+			*/
+			
+			EndPaint(hWnd, &ps); 
+			return 0L; 
+		}
+		break;
+	case WM_ERASEBKGND:
+		{
+			
+			return TRUE;
 		}
 		break;
 
@@ -981,12 +1060,15 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 			GetCursorPos(&cp);
 			if (GetActiveWindow()==hWnd && WindowFromPoint(cp)==hWnd && ScreenToClient(hWnd,&cp) && cp.x>cl.left && cp.y>cl.top && cp.x<cl.right && cp.y<cl.bottom)
 			{
-				if (mouse_hidden==1)
+				if (mouse_hidden>0)
+					mouse_hidden-=9;
+				if (mouse_hidden<=0)
 				{
+					mouse_hidden=0;
 					SetMouseState(hWnd,false);
 				}
-				if (mouse_hidden>0)
-					mouse_hidden--;
+				//printf("TIMER %d\n",mouse_hidden);
+				
 			}
 			else if (mouse_hidden==0)
 			{
@@ -1002,17 +1084,30 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 		}
 		break;
 	case WM_CREATE:
-		InitCommonControls();
-		mouse_hidden=4;
-		SetTimer(hWnd,0,500,0);
+		{
+			InitCommonControls();
+			ndclogo.Load(g_hInst,IDR_NDC_LOGO);
+			mouse_hidden=30;
+			SetTimer(hWnd,0,1000,0);
+		}
 		break;
 	case WM_MOUSEMOVE:
-		mouse_hidden++;
-		if (mouse_hidden>=10)
 		{
-			mouse_hidden=10;
-			
-			SetMouseState(hWnd,true);
+			int xPos = GET_X_LPARAM(lParam); 
+			int yPos = GET_Y_LPARAM(lParam);
+			static int oldX=-65537,oldY=-65537;
+			if (oldX==xPos && oldY==yPos)
+				break;
+			oldX=xPos;
+			oldY=yPos;
+			//printf("Mouse move %d,%d,%d\n",mouse_hidden,oldX,oldY);
+			mouse_hidden++;
+			if (mouse_hidden>=30)
+			{
+				mouse_hidden=30;
+
+				SetMouseState(hWnd,true);
+			}
 		}
 		break;
 	case WM_COMMAND:

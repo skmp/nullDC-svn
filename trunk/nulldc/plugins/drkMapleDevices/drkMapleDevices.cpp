@@ -45,7 +45,7 @@ s32 mo_wheel_delta = 0;
 char testJoy_strName[64] = "Dreamcast Controller\0";
 char testJoy_strName_nul[64] = "Null Dreamcast Controler\0";
 char testJoy_strName_net[64] = "Net Dreamcast Controler\0";
-char testJoy_strName_vmu[64] = "Emulated VMU\0";
+char testJoy_strName_vmu[64] = "VISUAL MEMORY\0";
 char testJoy_strName_kbd[64] = "Emulated Dreamcast Keyboard\0";
 char testJoy_strName_mouse[64] = "Emulated Dreamcast Mouse\0";
 char testJoy_strName_dreameye_1[64] = "Dreamcast Camera Flash  Devic\0";
@@ -2438,8 +2438,15 @@ void FASTCALL VmuDMA(maple_subdevice_instance* device_instance,u32 Command,u32* 
 			//30
 			for (u32 i = 0; i < 30; i++)
 			{
-				w8((u8)testJoy_strName_vmu[i]);
-				//if (!testJoy_strName[i])
+				if (testJoy_strName[i])
+				{
+					w8((u8)testJoy_strName_vmu[i]);
+				}
+				else
+				{
+					w8(' ');
+				}
+				
 				//	break;
 			}
 			//ptr_out += 30;
@@ -2447,7 +2454,14 @@ void FASTCALL VmuDMA(maple_subdevice_instance* device_instance,u32 Command,u32* 
 			//60
 			for (u32 i = 0; i < 60; i++)
 			{
-				w8((u8)testJoy_strBrand_2[i]);
+				if (testJoy_strBrand_2[i])
+				{
+					w8((u8)testJoy_strBrand_2[i]);
+				}
+				else
+				{
+					w8(' ');
+				}
 				//if (!testJoy_strBrand[i])
 				//	break;
 			}

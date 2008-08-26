@@ -22,6 +22,7 @@
 #define IDD_CONFIG                      119
 #define IDI_ICON2                       120
 #define IDD_PROFILER                    121
+#define IDR_NDC_LOGO                    124
 #define IDC_CUSTOM                      1001
 #define IDC_SEARCH                      1003
 #define IDC_FIND                        1004
@@ -160,7 +161,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        122
+#define _APS_NEXT_RESOURCE_VALUE        125
 #define _APS_NEXT_COMMAND_VALUE         40044
 #define _APS_NEXT_CONTROL_VALUE         1120
 #define _APS_NEXT_SYMED_VALUE           101
