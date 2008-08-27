@@ -7,12 +7,13 @@
 //ZBufferMode : 0 -> fp fixup
 //ZBufferMode : 1 -> nothing
 //ZBufferMode : 2 -> rescale
+//FixedFunction : 0 if ps, 1 if fixed function
 #ifndef FLT_MIN
 #define FLT_MIN 1.17549435e-38f
 #endif
 
 #ifndef FLT_MAX
-#define FLT_MAX 3.40282340e+38f
+#define FLT_MAX 3.40282347e+38f
 #endif
 
 struct vertex_in 
@@ -26,9 +27,16 @@ struct vertex_in
 struct vertex_out
 { 
 	float4 pos : POSITION; 
-	float4 col : COLOR0;
-	float4 spc : COLOR1; 
-	float3 uv : TEXCOORD0; 
+	
+	#if FixedFunction == 1
+		float4 col : COLOR0;
+		float4 spc : COLOR1; 
+	#else
+		float4 col : TEXCOORD1;
+		float4 spc : TEXCOORD2; 
+	#endif
+	
+	float4 uv : TEXCOORD0; 
 };
 
 float W_min: register(c0);
@@ -80,48 +88,42 @@ float CompressZ3(float w)
 vertex_out VertexShader_main(in vertex_in vin) 
 {
 	vertex_out vo;
-	float vtx_w=1/vin.pos.z;
-	
 	vo.pos.xy=vin.pos.xy+res_scale.xy;
 	vo.pos.xy/=res_scale.zw;
 	
 	vo.pos.xy+=float2((-1.0/res_x)-1.0,(1.0/res_y)+1.0);
 	
-	vo.pos.xy*=vtx_w;
+	vo.uv.xy=vin.uv*vin.pos.z;
 	
-	vo.uv.xy=vin.uv;
+	#if FixedFunction == 1
+		vo.col=saturate(vin.col);
+		vo.spc=saturate(vin.spc);
+	#else
+		vo.col=saturate(vin.col)*vin.pos.z;
+		vo.spc=saturate(vin.spc)*vin.pos.z;
+	#endif
 	
-	vo.col=saturate(vin.col);
-	vo.spc=saturate(vin.spc);
+	vo.uv.w=vin.pos.z;
 	
-	
+	//I need to do smth about fixed function for this one
+	if (! (vin.pos.z<FLT_MAX && vin.pos.z>0))
+		vo.uv.z=-1;
+	else
+		vo.uv.z=0;
 		 
-	float newZ;
 	#if ZBufferMode==0
-		newZ=CompressZ1(vin.pos.z);
+		vo.pos.z=CompressZ1(vin.pos.z);
 	#elif ZBufferMode==1
-		newZ=0;
+		vo.pos.z=0;
 	#elif ZBufferMode==2
 		//vo.pos.z=1-1/(1+vin.pos.z);
-		newZ=CompressZ2(vin.pos.z);
+		vo.pos.z=CompressZ2(vin.pos.z);
 	#elif ZBufferMode==3
 		//vo.pos.z=1-1/(1+vin.pos.z);
-		newZ=CompressZ3(vin.pos.z);
+		vo.pos.z=CompressZ3(vin.pos.z);
 	#endif
+	
+	vo.pos.w=1;
 
-	//I need to do smth about fixed function for this one
-	if (vtx_w>0)
-	{
-		vo.pos.w=vtx_w;
-		vo.pos.z=newZ*vtx_w;
-		vo.uv.z=vtx_w;
-	}
-	else
-	{
-		vo.pos.w=0.1;							//better clip everything !
-		vo.pos.z=-1000000;
-		vo.uv.z=-1000000;
-	}
-		
 	return vo; 
 }

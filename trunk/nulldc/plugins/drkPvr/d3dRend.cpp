@@ -950,6 +950,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 	ISP_TSP cache_isp;
 	u32 cache_clipmode=0xFFFFFFFF;
 	bool cache_clip_alpha_on_zero=true;
+	u32 cache_stencil_modvol_on=false;
 	void GPstate_cache_reset(PolyParam* gp)
 	{
 		cache_tsp.full = ~gp->tsp.full;
@@ -958,6 +959,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		cache_isp.full = ~gp->isp.full;
 		cache_clipmode=0xFFFFFFFF;
 		cache_clip_alpha_on_zero=true;
+		cache_stencil_modvol_on=0;
 	}
 	//for fixed pipeline
 	__forceinline
@@ -1540,7 +1542,13 @@ __error_out:
 		{
 			SetGPState_ps(gp);
 		}
-		dev->SetRenderState(D3DRS_STENCILREF,gp->pcw.Shadow?0x80:0x00);						//Clear/Set bit 7 (Clear for non 2 volume stuff)
+
+		const u32 stencil=(gp->pcw.Shadow!=0)?0x80:0;
+		if (cache_stencil_modvol_on!=stencil)
+		{
+			cache_stencil_modvol_on=stencil;
+			dev->SetRenderState(D3DRS_STENCILREF,stencil);						//Clear/Set bit 7 (Clear for non 2 volume stuff)
+		}
 		
 
 		if ((gp->tcw.full != cache_tcw.full) || (gp->tsp.full!=cache_tsp.full))
@@ -2022,8 +2030,7 @@ __error_out:
 			dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
 			dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 
-			//dev->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS,
-			//	D3DTTFF_COUNT4 | D3DTTFF_PROJECTED);
+			dev->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS,	D3DTTFF_COUNT4 | D3DTTFF_PROJECTED);
 			
 			dev->SetRenderState(D3DRS_TEXTUREFACTOR, 0xFFFFFFFF);
 
@@ -2093,7 +2100,8 @@ __error_out:
 			verifyc(dev->SetRenderState(D3DRS_STENCILFUNC,D3DCMP_ALWAYS));			//allways pass
 			verifyc(dev->SetRenderState(D3DRS_STENCILPASS,D3DSTENCILOP_REPLACE));	//flip bit 1
 			verifyc(dev->SetRenderState(D3DRS_STENCILZFAIL,D3DSTENCILOP_KEEP));		//else keep it
-			verifyc(dev->SetRenderState(D3DRS_STENCILREF,0x00));						//Clear/Set bit 7 (Clear for non 2 volume stuff)
+			
+			verifyc(dev->SetRenderState(D3DRS_STENCILREF,0x00));					//Clear/Set bit 7 (Clear for non 2 volume stuff)
 			
 
 			//OPAQUE
@@ -2115,6 +2123,9 @@ __error_out:
 			dev->SetRenderState(D3DRS_ALPHAFUNC,D3DCMP_GREATEREQUAL);
 
 			dev->SetRenderState(D3DRS_ALPHAREF,PT_ALPHA_REF &0xFF);
+			
+			verifyc(dev->SetRenderState(D3DRS_STENCILREF,0x00));					//Clear/Set bit 7 (Clear for non 2 volume stuff)
+
 			if (!GetAsyncKeyState(VK_F2))
 			{
 				if (UseFixedFunction)
@@ -2332,6 +2343,7 @@ __error_out:
 		{"res_x",0},
 		{"res_y",0},
 		{"ZBufferMode",0},		//Z mode. 0 -> D24FS8, 1 -> D24S8 + FPemu, 2 -> D24S8 + scaling
+		{"FixedFunction",0},
 		{0,0}	//end of list
 	};
 	
@@ -2472,6 +2484,7 @@ __error_out:
 		vs_macros[0].Definition=temp[0];
 		vs_macros[1].Definition=temp[1];
 		vs_macros[2].Definition=ps_macro_numers[ZBufferMode];
+		vs_macros[3].Definition=ps_macro_numers[UseFixedFunction?1:0];
 
 
 		if (ppar.MultiSampleType!=D3DMULTISAMPLE_NONE)

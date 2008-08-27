@@ -140,10 +140,21 @@ void UpdateRRect()
 			oldmode=-1;
 		}
 		//printf("New rect %d %d\n",sx,sy);
-
 		float nw=((float)sx/(float)sy)*480.0f;
+		float nh=((float)sy/(float)sx)*640.0f;
+		if (nh<480)
+		{
+			nh=480;
+		}
+		else
+		{
+			nw=640.0f;
+		}
+
 		rect[0]=(nw-640)/2;
 		rect[2]=nw;
+		rect[1]=(nh-480)/2;
+		rect[3]=nh;
 	}
 	rend_set_render_rect(rect,oldmode!=settings.Enhancements.AspectRatioMode);
 	oldmode=settings.Enhancements.AspectRatioMode;

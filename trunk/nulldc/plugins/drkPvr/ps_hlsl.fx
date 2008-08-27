@@ -15,16 +15,16 @@
 //TextureLookup -> function to use for texture lookup.One of TextureLookup_Normal,TextureLookup_Palette,TextureLookup_Palette_Bilinear
 struct pixel 
 {
-	float4 col : COLOR0;
+	float4 col : TEXCOORD1;
 	
 	#if pp_Texture==1
 		#if pp_Offset==1
-			float4 offs : COLOR1;
+			float4 offs : TEXCOORD2;
 		#endif
 		//uv is now allways passed
 	#endif
 	
-	float3 uv : TEXCOORD0;
+	float4 uv : TEXCOORD0;
 };
  
 sampler2D samplr : register(s0);
@@ -37,20 +37,20 @@ float4 FOG_COL_VERT:register(c2);
 float4 FOG_COL_RAM :register(c3);
 float4 FOG_DENSITY :register(c4);
 
-float4 TextureLookup_Normal(float2 uv)
+float4 TextureLookup_Normal(float4 uv)
 {
-	return tex2D( samplr, uv);
+	return tex2Dproj( samplr, uv);
 }
 
 //utility function for pal. lookups :)
-float4 PalleteLookup(float2 pos)
+float4 PalleteLookup(float4 pos)
 {
 	//xyzw -> x=index , y=bank
 	float4 texcol=tex2D(tex_pal,pos.rg+current_pal.xy);
 	return texcol;
 }
 
-float4 TextureLookup_Palette(float2 uv)
+float4 TextureLookup_Palette(float4 uv)
 {
 	float4 pal_color=TextureLookup_Normal(uv);
 	
@@ -59,7 +59,7 @@ float4 TextureLookup_Palette(float2 uv)
 
 /*
 	Bilinear filtering
-	Screen space perspective -> Texture space linear (*W) -> not needed anymore
+	Screen space perspective -> Texture space linear (*W)
 	Texture space quad, filtered
 	This also takes dx/dy/mipmaps into account correctly, but drkpvr so far does not generate pal. texture index mipmaps so i commented it out for now
 */
@@ -70,9 +70,9 @@ float4 TextureLookup_Palette_Nproj(float2 uv/*,float2 dx,float2 dy*/)
 	return PalleteLookup(pal_color);
 }
 
-float4 TextureLookup_Palette_Bilinear(float2 uv)
+float4 TextureLookup_Palette_Bilinear(float4 uv)
 {
-	float2 tcpoj=uv.xy;					//Project texture to 2d tc space -> no need, i use h/w perspective correction now
+	float2 tcpoj=uv.xy/uv.w;			//Project texture to 2d tc space
 	/*
 	float2 dx=ddx(tcpoj.xy);			//Get x derivatives for mip mapping
 	float2 dy=ddy(tcpoj.xy);			//Get y derivatives for mip mapping
@@ -198,17 +198,18 @@ struct PSO
 };
 //pvr only supports ARGB8888 colors, but they are pre-clamped on the vertex shader (no need to do it here)
 PSO PixelShader_main(in pixel s )
-{
-	float invW=1/s.uv.z;
-	float4 color=s.col;
-	//clip(s.uv.z); // -> no need
+{ 
+	float4 color=s.col/s.uv.w;
+	clip(s.uv.z);
 	
 	#if pp_UseAlpha==0
 		color.a=1;
 	#endif
 	
-	#if pp_FogCtrl==3	
-		color=float4(FOG_COL_RAM.rgb,fog_mode2(invW));
+	#if pp_FogCtrl==3
+		//color.a=;
+		
+		color=float4(FOG_COL_RAM.rgb,fog_mode2(s.uv.w));
 	#endif
 	
 	#if pp_Texture==1
@@ -246,7 +247,7 @@ PSO PixelShader_main(in pixel s )
 	
 		//if offset is enabled , add it :)
 		#if pp_Offset==1
-			float4 offscol=s.offs;
+			float4 offscol=s.offs/s.uv.w;
 			color.rgb+=offscol.rgb;
 			
 			#if pp_FogCtrl==1
@@ -259,7 +260,7 @@ PSO PixelShader_main(in pixel s )
 	#endif
 	
 	#if pp_FogCtrl==0
-		float fog_blend=fog_mode2(invW);
+		float fog_blend=fog_mode2(s.uv.w);
 		
 		color.rgb=lerp(color.rgb,FOG_COL_RAM.rgb,fog_blend);
 	#endif
@@ -267,21 +268,19 @@ PSO PixelShader_main(in pixel s )
 	PSO rv;
 	rv.col=color;
 	#if ZBufferMode==1
-	rv.z=CompressZ(invW);
+	rv.z=CompressZ(s.uv.w);
 	#endif
 	
 	return rv; 
 }
 
-PSO PixelShader_Z(float3 uv : TEXCOORD0)
+PSO PixelShader_Z(float4 uv : TEXCOORD0)
 {
 	PSO rv;
-	float invW=1/uv.z;
-	
 	rv.col=float4(0,0,0,0.5f);
 	
 	#if ZBufferMode==1
-	rv.z=CompressZ(invW);
+	rv.z=CompressZ(uv.w);
 	#endif
 	
 	return rv;
