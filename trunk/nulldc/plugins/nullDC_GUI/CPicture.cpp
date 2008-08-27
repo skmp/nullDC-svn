@@ -1,5 +1,5 @@
 #include <windows.h>
-#include <atlbase.h>
+#include <ole2.h>
 #include <comutil.h> 
 #include "CPicture.h"
 
@@ -10,7 +10,14 @@
 ////////////////////////////////////////////////////////////////
 // CPicture implementation
 //
-
+CPicture::CPicture()
+{
+	this->m_spIPicture=0;
+}
+CPicture::~CPicture()
+{
+	Free();
+}
 //////////////////
 // Load from resource. Looks for "IMAGE" type.
 //

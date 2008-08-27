@@ -1,13 +1,16 @@
 #pragma once
 #include <windows.h>
-#include <atlbase.h>
+#include <ole2.h>
+#include <olectl.h>
 //////////////////
 // Picture object--encapsulates IPicture
 //
 class CPicture 
 {
-
 public:
+	CPicture();
+	~CPicture();
+
 	// Load frm various sosurces
 	BOOL Load(HINSTANCE hInst, UINT nIDRes);
 	BOOL Load(LPCTSTR pszPathName);
@@ -32,14 +35,15 @@ public:
 
 	void Free() {
 		if (m_spIPicture) {
-			m_spIPicture.Release();
+			m_spIPicture->Release();
 		}
+		m_spIPicture=0;
 	}
 
 protected:
 
 	void SetHIMETRICtoDP(HDC hdc, SIZE* sz) const;
 
-	CComQIPtr<IPicture>m_spIPicture;  // ATL smart pointer to IPicture
+	IPicture* m_spIPicture;  // ATL smart pointer to IPicture
 	HRESULT m_hr;  // last error code
 };
