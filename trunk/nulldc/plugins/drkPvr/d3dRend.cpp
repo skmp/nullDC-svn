@@ -64,6 +64,9 @@ u32 vramlock_ConvOffset32toOffset64(u32 offset32)
 namespace Direct3DRenderer
 {
 #define PS_SHADER_COUNT (384*4)
+	bool RenderWasStarted=false;
+	volatile bool d3d_init_done=false;
+	volatile bool d3d_do_restart=false;
 	IDirect3D9* d3d9;
 	IDirect3DDevice9* dev;
 	IDirect3DVertexBuffer9* vb;
@@ -2358,9 +2361,10 @@ __error_out:
 		}
 		d3d9->Release();
 	}
-	u32 THREADCALL RenderThead(void* param)
+	u32 THREADCALL RenderThead_internal(void* param)
 	{
 		render_restart=false;
+		d3d_do_restart=false;
 		d3d9 = Direct3DCreate9(D3D_SDK_VERSION);
 		char temp[2][30];
 		D3DPRESENT_PARAMETERS ppar;
@@ -2576,6 +2580,7 @@ __error_out:
 		clear_rt=5;
 		rtt_address=-1;
 		rtt_FrameNumber=0;
+		d3d_init_done=true;
 
 		while(1)
 		{
@@ -2595,6 +2600,7 @@ nl:
 			re.Set();
 		}
 
+		d3d_init_done=false;
 		#define safe_release(d) {if (d) {(d->Release()==0);d=0;}}
 		
 		safe_release(vb);
@@ -2642,6 +2648,16 @@ nl:
 		return 0;
 	}
 
+	u32 THREADCALL RenderThead(void* param)
+	{
+		do
+		{
+			RenderThead_internal(param);
+			if (d3d_do_restart)
+				running=true;
+		} while(d3d_do_restart);
+		return 0;
+	}
 	cThread rth(RenderThead,0);
 
 
@@ -2676,6 +2692,19 @@ nl:
 	int old_pal_mode;
 	void StartRender()
 	{
+		SetCurrentPVRRC(PARAM_BASE);
+		VertexCount+= pvrrc.verts.used;
+		render_end_pending_cycles= pvrrc.verts.used*25;
+		if (render_end_pending_cycles<500000)
+			render_end_pending_cycles=500000;
+
+		if (!d3d_init_done)
+		{
+			RenderWasStarted=false;
+			//printf("Render didnt start ..\n");
+			return;
+		}
+
 		if (old_pal_mode!=settings.Emulation.PaletteMode)
 		{
 			//mark pal texures dirty
@@ -2696,12 +2725,6 @@ nl:
 			}
 			old_pal_mode=settings.Emulation.PaletteMode;
 		}
-
-		SetCurrentPVRRC(PARAM_BASE);
-		VertexCount+= pvrrc.verts.used;
-		render_end_pending_cycles= pvrrc.verts.used*25;
-		if (render_end_pending_cycles<500000)
-			render_end_pending_cycles=500000;
 
 		//--BG poly
 		u32 param_base=PARAM_BASE & 0xF00000;
@@ -2769,13 +2792,20 @@ nl:
 		cv[3].y=0;
 		cv[3].z=bg_d.f;
 		
+		RenderWasStarted=true;
 		rs.Set();
 		FrameCount++;
+		
 	}
 
 
 	void EndRender()
 	{
+		if (!RenderWasStarted)
+		{
+			//printf("Render was not started ..\n");
+			return;
+		}
 		re.Wait();
 		/*
 		if (FB_W_SOF1 & 0x1000000)
@@ -2841,23 +2871,18 @@ nl:
 
 		resizerq.needs_resize=false;
 
-		if (do_resize || render_restart)
+		if (fullsrq.goto_fs != (settings.Video.Fullscreen.Enabled!=0) || do_resize || render_restart)
 		{
-			//Kill renderer
-			ThreadEnd();
-			//Start renderer
-			ThreadStart();
-			render_restart=false;
-		}
-
-		if (fullsrq.goto_fs != (settings.Video.Fullscreen.Enabled!=0))
-		{
-			//Kill renderer
-			ThreadEnd();
 			settings.Video.Fullscreen.Enabled=fullsrq.goto_fs?1:0;
 			SaveSettings();
-			//Start renderer
-			ThreadStart();
+
+			//Restart renderer
+			
+			render_restart=false;
+			d3d_do_restart=true;
+			running=false;
+			d3d_init_done=false;
+			rs.Set();
 		}
 	}
 
