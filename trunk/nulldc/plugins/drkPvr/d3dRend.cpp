@@ -953,6 +953,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 	ISP_TSP cache_isp;
 	u32 cache_clipmode=0xFFFFFFFF;
 	bool cache_clip_alpha_on_zero=true;
+	u32 cache_texture_enabled=0;
 	u32 cache_stencil_modvol_on=false;
 	void GPstate_cache_reset(PolyParam* gp)
 	{
@@ -962,6 +963,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		cache_isp.full = ~gp->isp.full;
 		cache_clipmode=0xFFFFFFFF;
 		cache_clip_alpha_on_zero=true;
+		cache_texture_enabled=~gp->pcw.Texture;
 		cache_stencil_modvol_on=0;
 	}
 	//for fixed pipeline
@@ -1554,9 +1556,10 @@ __error_out:
 		}
 		
 
-		if ((gp->tcw.full != cache_tcw.full) || (gp->tsp.full!=cache_tsp.full))
+		if ((gp->tcw.full != cache_tcw.full) || (gp->tsp.full!=cache_tsp.full) || (cache_texture_enabled!= gp->pcw.Texture))
 		{
 			cache_tcw=gp->tcw;
+			cache_texture_enabled = gp->pcw.Texture;
 
 			if ( gp->tsp.FilterMode == 0 || (settings.Emulation.PaletteMode>1 && ( gp->tcw.PAL.PixelFmt==5|| gp->tcw.PAL.PixelFmt==6) ))
 			{

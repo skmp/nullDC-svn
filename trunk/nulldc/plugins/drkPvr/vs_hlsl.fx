@@ -93,6 +93,8 @@ vertex_out VertexShader_main(in vertex_in vin)
 	
 	vo.pos.xy+=float2((-1.0/res_x)-1.0,(1.0/res_y)+1.0);
 	
+	//vin.uv=(floor(vin.uv*texture_size.xy)+float2(0.5f,0.5f))*texture_size.zw;
+	//vin.uv=(vin.uv*(texture_size.xy-float2(1,1))+float2(0.5f,0.5f))*texture_size.zw;
 	vo.uv.xy=vin.uv*vin.pos.z;
 	
 	#if FixedFunction == 1
