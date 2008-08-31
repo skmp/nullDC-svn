@@ -73,31 +73,6 @@ u32 arm_ArmNextPC;
 
 reg_pair arm_Reg[45];
 
-int memoryWait[16] =
-{ 0, 0, 2, 0, 0, 0, 0, 0, 4, 4, 4, 4, 4, 4, 4, 0 };
-int memoryWait32[16] =
-{ 0, 0, 6-1, 0, 0, 0, 0, 0, 8-1, 8-1, 8-1, 8-1, 8-1, 8-1, 8-1, 0 };
-int memoryWaitSeq[16] =
-{ 0, 0, 2, 0, 0, 0, 0, 0, 2, 2, 4, 4, 8, 8, 4, 0 };
-int memoryWaitSeq32[16] =
-{ 2, 0, 3, 0, 0, 2, 2, 0, 4, 4, 8, 8, 16, 16, 8, 0 };
-int memoryWaitFetch[16] =
-{ 3, 0, 3, 0, 0, 1, 1, 0, 4, 4, 4, 4, 4, 4, 4, 0 };
-int memoryWaitFetch32[16] =
-{ 6, 0, 6, 0, 0, 2, 2, 0, 8, 8, 8, 8, 8, 8, 8, 0 };
-
-const int cpuMemoryWait[16] = {
-	0, 0, 2, 0, 0, 0, 0, 0,
-		2, 2, 2, 2, 2, 2, 0, 0
-};
-const int cpuMemoryWait32[16] = {
-	0, 0, 3, 0, 0, 0, 0, 0,
-		3, 3, 3, 3, 3, 3, 0, 0
-};
-
-const bool memory32[16] =
-{ true, false, false, true, true, false, false, true, false, false, false, false, false, false, true, false};
-
 void CPUSwap(u32 *a, u32 *b)
 {
 	u32 c = *b;
