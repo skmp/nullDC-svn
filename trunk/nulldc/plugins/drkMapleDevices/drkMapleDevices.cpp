@@ -45,7 +45,7 @@ s32 mo_wheel_delta = 0;
 char testJoy_strName[64] = "Dreamcast Controller\0";
 char testJoy_strName_nul[64] = "Null Dreamcast Controler\0";
 char testJoy_strName_net[64] = "Net Dreamcast Controler\0";
-char testJoy_strName_vmu[64] = "VISUAL MEMORY\0";
+char testJoy_strName_vmu[64] = "Visual Memory\0";
 char testJoy_strName_kbd[64] = "Emulated Dreamcast Keyboard\0";
 char testJoy_strName_mouse[64] = "Emulated Dreamcast Mouse\0";
 char testJoy_strName_dreameye_1[64] = "Dreamcast Camera Flash  Devic\0";
@@ -78,6 +78,28 @@ char testJoy_strBrand_2[64] = "Produced By or Under License From SEGA ENTERPRISE
 #define key_CONT_LSLIDER  (1 << 20)
 #define key_CONT_RSLIDER  (1 << 21)
 
+enum NAOMI_KEYS
+{
+	NAOMI_SERVICE_KEY_1=1<<0 ,
+	NAOMI_TEST_KEY_1=1<<1 ,
+	NAOMI_SERVICE_KEY_2	=1<<2,
+	NAOMI_TEST_KEY_2=1<<3 ,
+
+	NAOMI_START_KEY =1<<4,
+
+	NAOMI_UP_KEY =1<<5,
+	NAOMI_DOWN_KEY =1<<6,
+	NAOMI_LEFT_KEY =1<<7,
+	NAOMI_RIGHT_KEY =1<<8,
+
+	NAOMI_BTN0_KEY =1<<9,
+	NAOMI_BTN1_KEY =1<<10,
+	NAOMI_BTN2_KEY =1<<11,
+	NAOMI_BTN3_KEY =1<<12,
+	NAOMI_BTN4_KEY =1<<13,
+	NAOMI_BTN5_KEY =1<<14,
+	NAOMI_COIN_KEY =1<<15,
+};
 struct joy_init_resp
 {
 	u32 ratio;
@@ -113,6 +135,32 @@ struct _joypad_settings_entry
 	wchar* name;
 };
 #define D(x) x ,_T( #x)
+#ifdef BUILD_NAOMI
+_joypad_settings_entry joypad_settings_K[] = 
+{
+	{VK_F4,D(NAOMI_SERVICE_KEY_1)},
+	{VK_F5,D(NAOMI_TEST_KEY_1)},
+	{VK_F6,D(NAOMI_SERVICE_KEY_2)},
+	{VK_F7,D(NAOMI_TEST_KEY_2)},
+
+	{'1',D(NAOMI_START_KEY)},
+	{'5',D(NAOMI_COIN_KEY)},
+	
+	{VK_UP,D(NAOMI_UP_KEY)},
+	{VK_DOWN,D(NAOMI_DOWN_KEY)},
+	{VK_LEFT,D(NAOMI_LEFT_KEY)},
+	{VK_RIGHT,D(NAOMI_RIGHT_KEY)},
+
+	{'Z',D(NAOMI_BTN0_KEY)},
+	{'X',D(NAOMI_BTN1_KEY)},
+	{'C',D(NAOMI_BTN2_KEY)},
+	{'A',D(NAOMI_BTN3_KEY)},
+	{'S',D(NAOMI_BTN4_KEY)},
+	{'D',D(NAOMI_BTN5_KEY)},
+
+	{0,0,0},
+};
+#else
 _joypad_settings_entry joypad_settings_K[] = 
 {
 	{'B',D(key_CONT_C)},
@@ -142,6 +190,7 @@ _joypad_settings_entry joypad_settings_K[] =
 	{'S',D(key_CONT_RSLIDER)},
 	{0,0,0},
 };
+#endif
 _joypad_settings_entry joypad_settings[4][32];
 #undef D
 
@@ -351,7 +400,34 @@ u32 current_port=0;
 bool waiting_key=false;
 u32 edited_key=0;
 u32 waiting_key_timer=6*4;
-
+#ifdef BUILD_NAOMI
+u32 kid_to_did[]=
+{
+	IDC_NAOMI_SERVICE_KEY_1,
+	IDC_NAOMI_TEST_KEY_1,
+	IDC_NAOMI_SERVICE_KEY_2,
+	IDC_NAOMI_TEST_KEY_2,
+	IDC_NAOMI_START_KEY,
+	IDC_NAOMI_COIN_KEY,
+	IDC_NAOMI_UP_KEY,
+	IDC_NAOMI_DOWN_KEY,
+	IDC_NAOMI_LEFT_KEY,
+	IDC_NAOMI_RIGHT_KEY,
+	IDC_NAOMI_BTN0_KEY,
+	IDC_NAOMI_BTN1_KEY,
+	IDC_NAOMI_BTN2_KEY,
+	IDC_NAOMI_BTN3_KEY,
+	IDC_NAOMI_BTN4_KEY,
+	IDC_NAOMI_BTN5_KEY,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	//IDC_BUTTON22,
+};
+#else
 u32 kid_to_did[]=
 {
 	IDC_BUTTON1,
@@ -378,6 +454,7 @@ u32 kid_to_did[]=
 	IDC_BUTTON22,
 	//IDC_BUTTON22,
 };
+#endif
 u8 kbs[256];
 const u32 kbratio=20;
 void ENABLESHITFACE(HWND hWnd,u32 state)
@@ -1504,11 +1581,12 @@ void FASTCALL ControllerDMA_naomi(maple_device_instance* device_instance,u32 Com
 					{
 						buffer_out[0]=0xffffffff;
 						buffer_out[1]=0xffffffff;
+						u32 keycode=~kcode[0];
 
-						if(GetKeyState(VK_F4)&0x8000)		//Service
+						if(keycode&NAOMI_SERVICE_KEY_2)		//Service
 							buffer_out[0]&=~(1<<0x1b);
 
-						if(GetKeyState(VK_F5)&0x8000)		//Test
+						if(keycode&NAOMI_TEST_KEY_2)		//Test
 							buffer_out[0]&=~(1<<0x1a);
 
 						if(State.Mode==0 && subcode!=0x33)	//Get Caps
@@ -1611,34 +1689,36 @@ void FASTCALL ControllerDMA_naomi(maple_device_instance* device_instance,u32 Com
 							static unsigned short coin1=0x0000;
 							unsigned char Key[256];
 							GetKeyboardState(Key);
-							if(Key[VK_F2]&0x80)			//Service ?
+							if(keycode&NAOMI_SERVICE_KEY_1)			//Service ?
 								glbl|=0x80;
-							if(Key[VK_F1]&0x80)			//Test
+							if(keycode&NAOMI_TEST_KEY_1)			//Test
 								p1_1|=0x40;
-							if(Key['1']&0x80)			//start ?
+							if(keycode&NAOMI_START_KEY)			//start ?
 								p1_1|=0x80;
-							if(Key[VK_UP]&0x80)			//up
+							if(keycode&NAOMI_UP_KEY)			//up
 								p1_1|=0x20;
-							if(Key[VK_DOWN]&0x80)		//down
+							if(keycode&NAOMI_DOWN_KEY)		//down
 								p1_1|=0x10;
-							if(Key[VK_LEFT]&0x80)		//left
+							if(keycode&NAOMI_LEFT_KEY)		//left
 								p1_1|=0x08;
-							if(Key[VK_RIGHT]&0x80)		//right
+							if(keycode&NAOMI_RIGHT_KEY)		//right
 								p1_1|=0x04;
-							if(Key['A']&0x80)			//btn1
+							if(keycode&NAOMI_BTN0_KEY)			//btn1
 								p1_1|=0x02;
-							if(Key['S']&0x80)			//btn2
+							if(keycode&NAOMI_BTN1_KEY)			//btn2
 								p1_1|=0x01;
-							if(Key['D']&0x80)			//btn3
+							if(keycode&NAOMI_BTN2_KEY)			//btn3
 								p1_2|=0x80;
-							if(Key['Z']&0x80)			//btn4
+							if(keycode&NAOMI_BTN3_KEY)			//btn4
 								p1_2|=0x40;
-							if(Key['X']&0x80)			//btn5
+							if(keycode&NAOMI_BTN4_KEY)			//btn5
 								p1_2|=0x20;
-							if(Key['C']&0x80)			//btn6
+							if(keycode&NAOMI_BTN5_KEY)			//btn6
 								p1_2|=0x10;
-							if(((Key['5']^LastKey['5'])&Key['5'])&0x80)
+							static bool old_coin=false;
+							if((old_coin==false) && (keycode&NAOMI_COIN_KEY))
 								coin1++;
+							old_coin=keycode&NAOMI_COIN_KEY;
 
 							buffer_out_b[0x11+0]=0x00;
 							buffer_out_b[0x11+1]=0x8E;	//Valid data check
@@ -2612,7 +2692,11 @@ void EXPORT_CALL config_keys(u32 id,void* w,void* p)
 {
 	maple_device_instance* mdd=(maple_device_instance*)p;
 	current_port=mdd->port>>6;
+#ifdef BUILD_NAOMI
+	DialogBox(hInstance,MAKEINTRESOURCE(IDD_DIALOG1),(HWND)w,ConfigKeysDlgProc);
+#else
 	DialogBox(hInstance,MAKEINTRESOURCE(IDD_ConfigKeys),(HWND)w,ConfigKeysDlgProc);
+#endif
 }
 s32 FASTCALL CreateMain(maple_device_instance* inst,u32 id,u32 flags,u32 rootmenu)
 {
