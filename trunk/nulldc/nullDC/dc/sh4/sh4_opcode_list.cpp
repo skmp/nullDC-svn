@@ -929,7 +929,7 @@ void DissasembleOpcode(u16 opcode,u32 pc,char* Dissasm)
 	}
 	else
 	{
-		sprintf(Dissasm,"Unkown Opcode 0x%X",opcode);
+		sprintf(Dissasm,"unknown Opcode 0x%X",opcode);
 	}
 }
 

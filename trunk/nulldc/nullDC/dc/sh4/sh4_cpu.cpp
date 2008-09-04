@@ -1182,7 +1182,7 @@ sh4op(i0000_nnnn_0000_0010)//0002
 //Not implt
 sh4op(iNotImplemented)
 {
-	cpu_iNimp(op,"Unkown opcode");
+	cpu_iNimp(op,"unknown opcode");
 #ifndef NO_MMU
 	if (sh4_exept_raised==false)
 	{

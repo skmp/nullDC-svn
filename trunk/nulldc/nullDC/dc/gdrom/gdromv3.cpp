@@ -484,7 +484,7 @@ void gd_process_ata_cmd()
 		break;
 
 	default:
-		die("Unkown ATA command..");
+		die("unknown ATA command..");
 		break;
 	};
 }
@@ -559,7 +559,7 @@ void gd_process_spi_cmd()
 		//mount/map drive ? some kind of reset/unlock ??
 		//seems like a non data command :)
 	case 0x70:
-		printf_spicmd("SPI : unkown ? [0x70]\n");
+		printf_spicmd("SPI : unknown ? [0x70]\n");
 		/*GDStatus.full=0x50; //FIXME
 		RaiseInterrupt(holly_GDROM_CMD);*/
 
@@ -567,8 +567,8 @@ void gd_process_spi_cmd()
 		break;
 	case 0x71:
 		{
-			printf_spicmd("SPI : unkown ? [0x71]\n");
-			printf("SPI : unkown ? [0x71]\n");
+			printf_spicmd("SPI : unknown ? [0x71]\n");
+			printf("SPI : unknown ? [0x71]\n");
 		extern u32 g_aValues0x71_b_sz;
 			
 			/*u32 uCount;

@@ -681,7 +681,7 @@ shilh(mov)
 	}
 	else
 	{
-		//reg1 gets an unkown value
+		//reg1 gets an unknown value
 		ce_WriteBack(op->reg2,il);
 		ce_KillConst(op->reg1);
 	}
@@ -1128,7 +1128,7 @@ bool backscan_const(BasicBlock* bb,u8 reg,u32* rv)
 		}
 		else
 		{
-			//we get writen an unkown value , unable to fix it up :p
+			//we get writen an unknown value , unable to fix it up :p
 			if (op->WritesReg((Sh4RegType)reg))
 				return false;
 		}

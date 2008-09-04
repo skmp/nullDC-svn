@@ -50,7 +50,6 @@ struct nullDC_ExtDevice_plugin:common_info,ext_device_plugin_if,nullDC_plugin
 struct PluginLoadInfo
 {
 	wchar			Name[128];			//plugin name
-	VersionNumber	PluginVersion;		//plugin version
 	PluginType		Type;				//plugin type
 	wchar			dll[512];
 };
@@ -58,7 +57,6 @@ struct MapleDeviceDefinition:maple_device_definition
 {
 	wchar dll[512];		//xxxx.dll:id
 	wchar dll_file[512];	//xxxx.dll
-	VersionNumber	PluginVersion;
 	u32 id;
 };
 

@@ -1069,7 +1069,7 @@ void __fastcall shil_compile_mov(shil_opcode* op)
 			break;
 
 		default:
-			printf("Unkown mov %X\n",flags);
+			printf("unknown mov %X\n",flags);
 			__asm int 3;
 			break;
 		}

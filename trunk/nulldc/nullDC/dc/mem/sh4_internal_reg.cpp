@@ -569,7 +569,7 @@ T __fastcall ReadMem_area7(u32 addr)
 	}
 
 
-	EMUERROR2("Unkown Read from Area7 , addr=%x",addr);
+	EMUERROR2("unknown Read from Area7 , addr=%x",addr);
 	return 0;
 }
 

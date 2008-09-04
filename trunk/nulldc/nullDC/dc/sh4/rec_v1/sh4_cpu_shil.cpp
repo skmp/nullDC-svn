@@ -1057,7 +1057,7 @@ sh4op(i0100_nnnn_0001_1011)
 sh4op(iNotImplemented)
 {
 	shil_interpret(op);
-	//cpu_iNimp(op,"Unkown opcode");
+	//cpu_iNimp(op,"unknown opcode");
 	//em.status = EMU_HALTED;
 	//	StopThread();
 	//recSh4Stop();

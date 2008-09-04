@@ -210,31 +210,33 @@ void DoMapleDma()
 				//(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce);
 				if (subport==5)
 				{
-					MapleDevices[device].dma(
-						&MapleDevices[device],
+					resp=MapleDevices[device].dma(
+						MapleDevices[device].data,
 						command,
 						&p_data[1],
 						inlen,
 						&p_out[1],
-						outlen,
-						resp);
+						outlen);
 				}
 				else
 				{
-					MapleDevices[device].subdevices[subport].dma(
-						&MapleDevices[device].subdevices[subport],
+					resp=MapleDevices[device].subdevices[subport].dma(
+						MapleDevices[device].subdevices[subport].data,
 						command,
 						&p_data[1],
 						inlen,
 						&p_out[1],
-						outlen,
-						resp);
+						outlen);
 				}
 
 
 				if(reci&0x20)
 					reci|=GetConnectedDevices(device);
 
+				verify(resp==(u8)resp);
+				verify(send==(u8)send);
+				verify(reci==(u8)reci);
+				verify((outlen/4)==(u8)(outlen/4));
 				p_out[0]=(resp<<0)|(send<<8)|(reci<<16)|((outlen/4)<<24);
 				outlen+=4;
 			}
@@ -298,7 +300,7 @@ void maple_Term()
 	
 }
 
-#ifdef BUILD_NAOMI
+#ifdef OLD_BUILD_NAOMI
 
 #include <windows.h>
 #include <string.h>

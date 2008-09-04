@@ -14,7 +14,7 @@
 
 
 //target for analyser :
-//stop blocks olny on unkown jumps [jump to reg]
+//stop blocks olny on unknown jumps [jump to reg]
 //handle delayslots
 
 //will alayse code and convert it to shil

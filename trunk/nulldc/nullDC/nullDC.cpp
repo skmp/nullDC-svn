@@ -74,46 +74,31 @@ void EnumPlugins()
 	printf("PowerVR plugins :\n");
 	for (u32 i=0;i<pvr->itemcount;i++)
 	{
-		wprintf(L"*\tFound %s v%d.%d.%d\n" ,(*pvr)[i].Name,
-			(*pvr)[i].PluginVersion.major,
-			(*pvr)[i].PluginVersion.minnor,
-			(*pvr)[i].PluginVersion.build);
+		wprintf(L"*\tFound %s\n" ,(*pvr)[i].Name);
 	}
 
 	printf("\nGDRom plugins :\n");
 	for (u32 i=0;i<gdrom->itemcount;i++)
 	{
-		wprintf(L"*\tFound %s v%d.%d.%d\n" ,(*gdrom)[i].Name,
-			(*gdrom)[i].PluginVersion.major,
-			(*gdrom)[i].PluginVersion.minnor,
-			(*gdrom)[i].PluginVersion.build);
+		wprintf(L"*\tFound %s\n" ,(*gdrom)[i].Name);
 	}
 
 	
 	printf("\nAica plugins :\n");
 	for (u32 i=0;i<aica->itemcount;i++)
 	{
-		wprintf(L"*\tFound %s v%d.%d.%d\n" ,(*aica)[i].Name,
-			(*aica)[i].PluginVersion.major,
-			(*aica)[i].PluginVersion.minnor,
-			(*aica)[i].PluginVersion.build);
+		wprintf(L"*\tFound %s\n" ,(*aica)[i].Name);
 	}
 
 	printf("\nMaple plugins :\n");
 	for (u32 i=0;i<maple->itemcount;i++)
 	{
-		wprintf(L"*\tFound %s v%d.%d.%d\n" ,(*maple)[i].Name,
-			(*maple)[i].PluginVersion.major,
-			(*maple)[i].PluginVersion.minnor,
-			(*maple)[i].PluginVersion.build);
+		wprintf(L"*\tFound %s\n" ,(*maple)[i].Name);
 	}
 	printf("\nExtDevice plugins :\n");
 	for (u32 i=0;i<extdev->itemcount;i++)
 	{
-		wprintf(L"*\tFound %s v%d.%d.%d\n" ,(*extdev)[i].Name,
-			(*extdev)[i].PluginVersion.major,
-			(*extdev)[i].PluginVersion.minnor,
-			(*extdev)[i].PluginVersion.build);
+		wprintf(L"*\tFound %s\n" ,(*extdev)[i].Name);
 	}
 
 	delete pvr;
@@ -195,14 +180,6 @@ int main___(int argc,wchar* argv[])
 		}
 	}
 	
-	/*
-	if (1==0)
-	{
-		msgboxf("Unable to locate dreamcast bios in \"%s\"\n",MBX_ICONERROR,"bios\\dc_boot.bin");
-		rv = -3; 
-		goto cleanup;
-	}
-	*/
 	rv = RunDC(argc,argv);
 	
 cleanup:
@@ -222,7 +199,6 @@ int _tmain(int argc, wchar* argv[])
 	int rv=0;
 	
 	SetConsoleCtrlHandler( (PHANDLER_ROUTINE) CtrlHandler, TRUE ) ;
-	//EnableMenuItem(GetSystemMenu(GetConsoleWindow(), false), SC_CLOSE, MF_GRAYED);
 
 	__try
 	{
@@ -232,8 +208,6 @@ int _tmain(int argc, wchar* argv[])
 	{
 
 	}
-
-	//EnableMenuItem(GetSystemMenu(GetConsoleWindow(), false), SC_CLOSE, MF_ENABLED);
 
 	_vmem_release();
 	return rv;

@@ -333,7 +333,7 @@ u32* Sh4_int_GetRegisterPtr(Sh4RegType reg)
 
 
 		default:
-			EMUERROR2("Unkown register Id %d",reg);
+			EMUERROR2("unknown register Id %d",reg);
 			return 0;
 			break;
 		}

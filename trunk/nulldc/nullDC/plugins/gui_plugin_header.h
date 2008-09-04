@@ -37,7 +37,6 @@ struct PluginInfoList
 {
 	PluginInfoList* next;
 	wchar Name[128];
-	VersionNumber Version;
 	wchar dll[512];
 	u32 Flags;
 };

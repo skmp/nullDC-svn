@@ -123,13 +123,6 @@ s32 ValidatePlugin(plugin_interface* plugin)
 		}
 		break;
 
-	case Plugin_MapleSub:
-		{
-			if (plugin->common.InterfaceVersion!=MAPLE_PLUGIN_I_F_VERSION)
-				return pve_invalid_sif_ver;
-		}
-		break;
-
 	case Plugin_ExtDevice:
 		{
 			if (plugin->common.InterfaceVersion!=EXTDEVICE_PLUGIN_I_F_VERSION)
@@ -172,7 +165,6 @@ bool AddToPluginList(wchar* dll)
 	
 	PluginLoadInfo load_info;
 
-	load_info.PluginVersion.full=info.common.PluginVersion;
 	load_info.Type=(PluginType)info.common.Type;
 
 	//load_info.subdev_info=info.maple.subdev_info;
@@ -186,7 +178,6 @@ bool AddToPluginList(wchar* dll)
 	{
 		MapleDeviceDefinition t;
 		wcscpy(t.dll_file,load_info.dll);
-		t.PluginVersion.full=info.common.PluginVersion;
 		for (int i=0;i<16;i++)
 		{
 			if (info.maple.devices[i].Type==MDT_EndOfList)
@@ -479,7 +470,7 @@ void cm_MampleSubEmpty(u32 root,u32 port,u32 subport)
 		if (MapleDeviceList_cached[i].Type!=MDT_Sub)
 			continue;
 		wchar text[512];
-		swprintf(text,_T("Attach %s %d.%d.%d"),MapleDeviceList_cached[i].Name,MapleDeviceList_cached[i].PluginVersion.major,MapleDeviceList_cached[i].PluginVersion.minnor,MapleDeviceList_cached[i].PluginVersion.build);
+		swprintf(text,_T("Attach %s"),MapleDeviceList_cached[i].Name);
 		//Attach NAME
 		u32 menu=libgui.AddMenuItem(root,-1,text,menu_handle_attach_sub,0);
 		MenuItem mi;
@@ -534,7 +525,7 @@ void cm_MampleMainEmpty(u32 root,u32 port)
 		if (MapleDeviceList_cached[i].Type!=MDT_Main)
 			continue;
 		wchar text[512];
-		swprintf(text,_T("Attach %s %d.%d.%d"),MapleDeviceList_cached[i].Name,MapleDeviceList_cached[i].PluginVersion.major,MapleDeviceList_cached[i].PluginVersion.minnor,MapleDeviceList_cached[i].PluginVersion.build);
+		swprintf(text,_T("Attach %s"),MapleDeviceList_cached[i].Name);
 		//Attach NAME
 		u32 menu=libgui.AddMenuItem(root,-1,text,menu_handle_attach_main,0);
 		MenuItem mi;
@@ -632,7 +623,7 @@ s32 DestroyMapleDevice(u32 pos)
 	MapleDevices_dd[pos][5].mdd=0;
 	nullDC_Maple_plugin* plg =FindMaplePlugin(mdd);
 
-	plg->DestroyMain(&MapleDevices[pos],mdd->id);
+	plg->Destroy(MapleDevices[pos].data,mdd->id);
 	cm_MampleMainEmpty(MenuIDs.Maple_port[pos][5],pos);
 
 	MapleDevices[pos].connected=false;
@@ -689,7 +680,7 @@ s32 DestroyMapleSubDevice(u32 pos,u32 subport)
 	MapleDevices_dd[pos][subport].mdd=0;
 	nullDC_Maple_plugin* plg =FindMaplePlugin(mdd);
 
-	plg->DestroySub(&MapleDevices[pos].subdevices[subport],mdd->id);
+	plg->Destroy(MapleDevices[pos].subdevices[subport].data,mdd->id);
 	cm_MampleSubEmpty(MenuIDs.Maple_port[pos][subport],pos,subport);
 	MapleDevices[pos].subdevices[subport].connected=false;
 	return rv_ok;
@@ -1058,8 +1049,7 @@ s32 plugins_Init_()
 		return rv;
 	libExtDevice.Inited=true;
 
-	maple_init_params mip;
-	mip.RaiseInterrupt=asic_RaiseInterrupt;
+	maple_init_params& mip=*(maple_init_params*)0;
 
 	//Init Created maple devices
 	for ( int i=0;i<4;i++)
@@ -1071,7 +1061,7 @@ s32 plugins_Init_()
 			//Init
 			nullDC_Maple_plugin *nmp=FindMaplePlugin(MapleDevices_dd[i][5].mdd);
 			lcp_name=MapleDevices_dd[i][5].mdd->Name;
-			if (s32 rv=nmp->InitMain(&MapleDevices[i],MapleDevices_dd[i][5].mdd->id,&mip))
+			if (s32 rv=nmp->Init(MapleDevices[i].data,MapleDevices_dd[i][5].mdd->id,&mip))
 				return rv;
 			
 			MapleDevices_dd[i][5].Inited=true;
@@ -1085,7 +1075,7 @@ s32 plugins_Init_()
 					//Init
 					nullDC_Maple_plugin *nmp=FindMaplePlugin(MapleDevices_dd[i][j].mdd);
 					lcp_name=MapleDevices_dd[i][j].mdd->Name;
-					if (s32 rv=nmp->InitSub(&MapleDevices[i].subdevices[j],MapleDevices_dd[i][j].mdd->id,&mip))
+					if (s32 rv=nmp->Init(MapleDevices[i].subdevices[j].data,MapleDevices_dd[i][j].mdd->id,&mip))
 						return rv;
 				}
 			}
@@ -1165,7 +1155,7 @@ void plugins_Term()
 					verify(MapleDevices_dd[i][j].mdd!=0);
 					//term
 					nullDC_Maple_plugin *nmp=FindMaplePlugin(MapleDevices_dd[i][j].mdd);
-					nmp->TermSub(&MapleDevices[i].subdevices[j],MapleDevices_dd[i][j].mdd->id);
+					nmp->Term(MapleDevices[i].subdevices[j].data,MapleDevices_dd[i][j].mdd->id);
 				}
 			}
 
@@ -1174,7 +1164,7 @@ void plugins_Term()
 			verify(MapleDevices_dd[i][5].mdd!=0);
 			//term
 			nullDC_Maple_plugin *nmp=FindMaplePlugin(MapleDevices_dd[i][5].mdd);
-			nmp->TermMain(&MapleDevices[i],MapleDevices_dd[i][5].mdd->id);
+			nmp->Term(MapleDevices[i].data,MapleDevices_dd[i][5].mdd->id);
 		}
 	}
 	

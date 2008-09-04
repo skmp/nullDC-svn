@@ -3,8 +3,8 @@
 
 Shil Compiler v1 (WIP/first beta , first release)
 currently done : 
---Block linking , exept unkown jumps (jump to reg , rte , rts).rts returns are guessed based on previus call (13/5/06) , if guess is right , no need to exit from link  
---Inline mem reads/writes (fully for static ones , or partialy if unkown target) , for 32/16/8b 
+--Block linking , exept unknown jumps (jump to reg , rte , rts).rts returns are guessed based on previus call (13/5/06) , if guess is right , no need to exit from link  
+--Inline mem reads/writes (fully for static ones , or partialy if unknown target) , for 32/16/8b 
 --Linear register allocation on ebx , esi , edi , ebp ; based on usage counts (working finaly[7/5/2006] ) 
 --Specialised code acording to Fpu size and precition mode 
 -- implemented smarter reg alloc , does not write back readed olny regs  (7/5/2006).More improvements on reg alloc (better conditions) [4/6/2006]. 
@@ -13,7 +13,7 @@ currently done :
 
 
 todo: 
---Use a call stack for ret predictions , and a call prediction [per block] for unkown calls 
+--Use a call stack for ret predictions , and a call prediction [per block] for unknown calls 
 --look for new block manager code , possibly based on binary trees
 --Code generaly needs cleanup 
 -- ?

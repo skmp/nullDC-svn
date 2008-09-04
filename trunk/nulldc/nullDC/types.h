@@ -160,7 +160,7 @@ using namespace std;
 #elif DC_PLATFORM==DC_PLATFORM_NAOMI
 	#define VER_EMUNAME		L"nullDC-Naomi"
 #else
-	#error Unkown target platform
+	#error unknown target platform
 #endif
 
 
@@ -193,7 +193,7 @@ enum RegStructFlags
 	//Extended :
 	REG_WRITE_NOCHANGE=64,	//we can read and write to this register , but the write won't change the value readed 
 	REG_CONST=128,			//register contains constant value
-	REG_NOT_IMPL=256		//Register is not implemented/unkown
+	REG_NOT_IMPL=256		//Register is not implemented/unknown
 };
 
 struct RegisterStruct

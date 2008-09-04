@@ -328,7 +328,6 @@ PluginInfoList* EXPORT_CALL b_GetPluginList(u32 Type)
 		rc = new PluginInfoList();
 		
 		wcscpy(rc->Name,(*lst)[i].Name);
-		rc->Version=(*lst)[i].PluginVersion;
 		wcscpy(rc->dll,(*lst)[i].dll);
 
 		if(rt)
@@ -353,7 +352,6 @@ PluginInfoList* EXPORT_CALL b_GetMapleDeviceList(u32 DeviceType)
 		rc = new PluginInfoList();
 		
 		wcscpy(rc->Name,(*lst)[i].Name);
-		rc->Version=(*lst)[i].PluginVersion;
 		wcscpy(rc->dll,(*lst)[i].dll);
 		rc->Flags=(*lst)[i].Flags;
 
