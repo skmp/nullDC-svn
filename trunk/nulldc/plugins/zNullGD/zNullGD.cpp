@@ -528,7 +528,6 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	info->InterfaceVersion=PLUGIN_I_F_VERSION;
 
 	info->common.InterfaceVersion=GDR_PLUGIN_I_F_VERSION;
-	info->common.PluginVersion=DC_MakeVersion(1,0,0,DC_VER_NORMAL);
 	info->common.Type=Plugin_GDRom;
 	char t[128];
 	strcpy(t,"zNullGD, SCSI Passthru GDROM Plugin By _ZeZu_ [" __DATE__ "]");

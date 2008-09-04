@@ -56,8 +56,7 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 
 	info->InterfaceVersion=PLUGIN_I_F_VERSION;
 
-	wcscpy(c.Name,L"Empty Aica Plugin [no sound/reduced compat] (" _T(__DATE__) L")");
-	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD);
+	wcscpy(c.Name,L"Empty Aica Plugin [no sound/reduced compat] [" _T(__DATE__) L"]");
 
 	c.InterfaceVersion=AICA_PLUGIN_I_F_VERSION;
 	c.Type=Plugin_AICA;

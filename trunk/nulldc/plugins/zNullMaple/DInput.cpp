@@ -17,7 +17,7 @@ vector<DI_DevInfo>	diDevInfoList;
 
 __inline static u32 _offcenter(u32 in)
 {
-	printf("_offcenter: %d\n",in);
+	//printf("_offcenter: %d\n",in);
 
 	if((in < 29000) || (in > 35000))
 		return 1;
@@ -185,10 +185,10 @@ bool GetDInput(u32 port, Controller_ReadFormat *crf)
 		if(DI_OK != InputDev[port].diDev->GetDeviceState(sizeof(DIJOYSTATE), &diJoyState)) 
 			return false;
 
-		printf("JS: %d %d %d : %d %d %d :: %X\n",
-			diJoyState.lX, diJoyState.lY, diJoyState.lZ, 
-			diJoyState.lRx, diJoyState.lRy, diJoyState.lRz,
-			((diJoyState.lX>>8)&0x70));
+		//printf("JS: %d %d %d : %d %d %d :: %X\n",
+		//	diJoyState.lX, diJoyState.lY, diJoyState.lZ, 
+		//	diJoyState.lRx, diJoyState.lRy, diJoyState.lRz,
+		//	((diJoyState.lX>>8)&0x70));
 
 		// A,B,X,Y,  U,D,L,R,  Ax1,Ax2, Start, LT,RT
 

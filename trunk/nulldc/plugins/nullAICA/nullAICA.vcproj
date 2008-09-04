@@ -124,11 +124,15 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
+				OmitFramePointers="true"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\emitter\&quot;;&quot;$(SolutionDir)&quot;"
 				PreprocessorDefinitions="X86;WIN32;NDEBUG;_WINDOWS;_USRDLL;NULLAICA_EXPORTS"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
-				EnableEnhancedInstructionSet="0"
+				EnableEnhancedInstructionSet="1"
 				FloatingPointModel="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"

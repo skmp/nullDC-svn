@@ -235,7 +235,6 @@ bool EXPORT_CALL dcGetInterface(plugin_interface* info)
 	c.InterfaceVersion=EXTDEVICE_PLUGIN_I_F_VERSION;
 
 	wcscpy(c.Name,L"nullExtDev (" _T(__DATE__) L")");
-	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD);
 	
 	c.Load=Load;
 	c.Unload=Unload;

@@ -31,7 +31,7 @@ int mds_mode(int mode)
 {
 	if(mode>0xa9)
 		return mode - 0xa9;
-	printf("Unkown track mode %d , guessing audio ....\nPress Any Key To Continue\n",mode);
+	printf("unknown track mode %d , guessing audio ....\nPress Any Key To Continue\n",mode);
 	//getchar();
 	return 0;
 }
@@ -44,7 +44,7 @@ int nrg_mode(int mode)
     if(mode == 0x01) return 2;
 	if(mode == 0x03) return 2;//mode2 form 1
 	if(mode == 0x06) return 2;
-	printf("Unkown track mode %d , guessing audio ....\nPress Any Key To Continue\n",mode);
+	printf("unknown track mode %d , guessing audio ....\nPress Any Key To Continue\n",mode);
 	//getchar();
 	return 0;
 } 

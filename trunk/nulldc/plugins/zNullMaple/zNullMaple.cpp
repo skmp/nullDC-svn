@@ -39,22 +39,18 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 
 
 emu_info ei;
-maple_init_params mip;
 
 void FASTCALL Unload();
 s32  FASTCALL Load(emu_info* emu);
 
-s32  FASTCALL Init(maple_device_instance* inst, u32 id, maple_init_params* params);
-s32  FASTCALL InitSub(maple_subdevice_instance* inst,u32 id,maple_init_params* params);
+
 s32  FASTCALL Create(maple_device_instance* inst,u32 id,u32 flags,u32 rootmenu);
 s32  FASTCALL CreateSub(maple_subdevice_instance* inst,u32 id,u32 flags,u32 rootmenu);
-void FASTCALL Destroy(maple_device_instance* inst,u32 id);
-void FASTCALL DestroySub(maple_subdevice_instance* inst,u32 id);
-void FASTCALL Term(maple_device_instance* inst, u32 id);
-void FASTCALL TermSub(maple_subdevice_instance* inst,u32 id);
+void FASTCALL Destroy(void* inst,u32 id);
+s32  FASTCALL Init(void* inst, u32 id, maple_init_params* params);
+void FASTCALL Term(void* inst, u32 id);
 
-void FASTCALL SubDeviceDMA(maple_subdevice_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce);
-void FASTCALL DeviceDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce);
+u32 FASTCALL DeviceDMA(void* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len);
 
 
 
@@ -71,18 +67,14 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	pci->Load				= Load;
 	pci->Unload				= Unload;
 	pci->Type				= Plugin_Maple;
-	pci->PluginVersion		= DC_MakeVersion(1,0,0,DC_VER_NORMAL);
 	pci->InterfaceVersion	= MAPLE_PLUGIN_I_F_VERSION;
 	swprintf(pci->Name,		L"ZnullMaple v1.0 beta1");
 
-	pm->InitSub				= InitSub;
-	pm->InitMain			= Init;
-	pm->TermMain			= Term;
-	pm->TermSub				= TermSub;	
-	pm->CreateSub			= CreateSub;
-	pm->CreateMain			= Create;
-	pm->DestroyMain			= Destroy;
-	pm->DestroySub			= DestroySub;
+	pm->Init			= Init;
+	pm->Term			= Term;
+	pm->CreateSub		= CreateSub;
+	pm->CreateMain		= Create;
+	pm->Destroy			= Destroy;
 
 	swprintf(pm->devices[0].Name, L"Controller Device");
 	pm->devices[1].Type		= MDT_EndOfList;
@@ -191,14 +183,13 @@ void FASTCALL Unload()
 	TermDInput();
 }
 
-s32  FASTCALL Init(maple_device_instance* inst, u32 id, maple_init_params* params)
+s32  FASTCALL Init(void* inst, u32 id, maple_init_params* params)
 {
-	mip = *(maple_init_params*)params;
 	return rv_ok;
 }
-void FASTCALL Term(maple_device_instance* inst, u32 id)
+void FASTCALL Term(void* inst, u32 id)
 {
-	mip.RaiseInterrupt = NULL;
+
 }
 
 
@@ -382,11 +373,11 @@ s32  FASTCALL Create(maple_device_instance* inst,u32 id,u32 flags,u32 rootmenu)
 	ei.SetMenuItem(mID, &mi, MIM_PUser);
 
 	inst->dma = DeviceDMA;
-	inst->data= 0;
+	inst->data= inst;
 	return rv_ok;
 }
 
-void FASTCALL Destroy(maple_device_instance* inst,u32 id)
+void FASTCALL Destroy(void* inst,u32 id)
 {
 
 }
@@ -394,15 +385,17 @@ void FASTCALL Destroy(maple_device_instance* inst,u32 id)
 
 
 
-void FASTCALL SubDeviceDMA(maple_subdevice_instance* dev_inst, u32 Command, u32* buffer_in,
-						   u32 in_len, u32* buffer_out, u32& out_len, u32& response)
+u32 FASTCALL SubDeviceDMA(maple_subdevice_instance* dev_inst, u32 Command, u32* buffer_in,
+						   u32 in_len, u32* buffer_out, u32& out_len)
 {
 	printf("Unhandled MapleSubDMA to %X: Command: %0Xh\n", dev_inst->port, Command);
+	return 0xFF;
 }
-void FASTCALL DeviceDMA(maple_device_instance* dev_inst, u32 Command, u32* buffer_in,
-						u32 in_len, u32* buffer_out, u32& out_len, u32& response)
+u32 FASTCALL DeviceDMA(void* data, u32 Command, u32* buffer_in,
+						u32 in_len, u32* buffer_out, u32& out_len)
 {
-	curr_port = (dev_inst->port>>6);
+	maple_device_instance* dev_inst=(maple_device_instance*)data;
+	curr_port = dev_inst->port>>6;
 
 	switch(Command)
 	{
@@ -412,8 +405,6 @@ void FASTCALL DeviceDMA(maple_device_instance* dev_inst, u32 Command, u32* buffe
 
 		if(0 != in_len)
 			printf("MAPLE_DEV_REQ, in_len != 0\n");
-
-		response = MAPLE_DEV_STATUS;
 
 		out_len	= 0x1C<<2;	// sizeof(FixedDevStatus)
 
@@ -431,7 +422,7 @@ void FASTCALL DeviceDMA(maple_device_instance* dev_inst, u32 Command, u32* buffe
 		strcpy((char*)fds->ProductName,"Dreamcast Controller         ");
 		strcpy((char*)fds->License,"Produced By or Under License From SEGA ENTERPRISES,LTD.    ");
 
-		return;
+		return MAPLE_DEV_STATUS;
 	}
 
 	case MAPLE_DEV_REQALL:
@@ -448,7 +439,6 @@ void FASTCALL DeviceDMA(maple_device_instance* dev_inst, u32 Command, u32* buffe
 		if(FT_CONTROLLER != buffer_in[0])
 			printf("MAPLE_GET_CONDITION, !AP_DE \n");
 
-		response = MAPLE_DATA_TRANSFER;
 		out_len = 0x03<<2;
 
 		buffer_out[0] = FT_CONTROLLER;
@@ -462,7 +452,7 @@ void FASTCALL DeviceDMA(maple_device_instance* dev_inst, u32 Command, u32* buffe
 		if(!GetDInput(curr_port,crf))
 			printf("Failed To Get DInput State!\n");
 
-		return;
+		return MAPLE_DATA_TRANSFER;
 	}
 
 
@@ -473,20 +463,15 @@ void FASTCALL DeviceDMA(maple_device_instance* dev_inst, u32 Command, u32* buffe
 	case MAPLE_SET_CONDITION:
 	case MAPLE_FT_CONTROL:
 	case MAPLE_AR_CONTROL:
-			break;
+		break;
 	}
 	printf("Unhandled MapleDMA to %X: Command: %0Xh\n", dev_inst->port, Command);
+	return MAPLE_ERR_CMD_UNK;
 }
 
 
 
-
-s32  FASTCALL InitSub(maple_subdevice_instance* inst,u32 id,maple_init_params* params) { return rv_ok; }
 s32  FASTCALL CreateSub(maple_subdevice_instance* inst,u32 id,u32 flags,u32 rootmenu) { return rv_ok; }
-void FASTCALL DestroySub(maple_subdevice_instance* inst,u32 id) {}
-void FASTCALL TermSub(maple_subdevice_instance* inst,u32 id) {}
-
-
 
 
 
