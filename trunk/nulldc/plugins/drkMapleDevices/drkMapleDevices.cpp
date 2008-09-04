@@ -788,7 +788,7 @@ u8 GetBtFromSgn(s8 val);
 #define w16(data) *(u16*)buffer_out_b=(data);buffer_out_b+=2;buffer_out_len+=2
 #define w8(data) *(u8*)buffer_out_b=(data);buffer_out_b+=1;buffer_out_len+=1
 
-void FASTCALL KbdDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+u32 FASTCALL KbdDMA(void* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len)
 {
 	//printf("ControllerDMA Called 0x%X;Command %d\n",device_instance->port,Command);
 //void testJoy_GotData(u32 header1,u32 header2,u32*data,u32 datalen)
@@ -812,8 +812,6 @@ void FASTCALL KbdDMA(maple_device_instance* device_instance,u32 Command,u32* buf
 			//			(((u16)sendadr << 8) & 0xFF00) |
 			//			((((recadr == 0x20) ? 0x20 : 0) << 16) & 0xFF0000) |
 			//			(((112/4) << 24) & 0xFF000000))); ptr_out += 4;
-
-			responce=5;
 
 			//caps
 			//4
@@ -851,7 +849,7 @@ void FASTCALL KbdDMA(maple_device_instance* device_instance,u32 Command,u32* buf
 
 			//2
 			w16(0x01F5); 
-			break;
+			return 5;
 
 		/* controller condition structure 
 		typedef struct {//8 bytes
@@ -867,7 +865,6 @@ void FASTCALL KbdDMA(maple_device_instance* device_instance,u32 Command,u32* buf
 			//			(((u16)sendadr << 8) & 0xFF00) |
 			//			((((recadr == 0x20) ? 0x20 : 1) << 16) & 0xFF0000) |
 			//			(((12 / 4 ) << 24) & 0xFF000000))); ptr_out += 4;
-			responce=0x08;
 			//caps
 			//4
 			//WriteMem32(ptr_out, (1 << 24)); ptr_out += 4;
@@ -883,10 +880,10 @@ void FASTCALL KbdDMA(maple_device_instance* device_instance,u32 Command,u32* buf
 				w8(kb_key[i]);
 			}
 			
-			break;
+			return 8;
 
 		default:
-			printf("UNKOWN MAPLE COMMAND %d\n",Command);
+			printf("unknown MAPLE COMMAND %d\n",Command);
 			break;
 	}
 }
@@ -914,7 +911,7 @@ u16 mo_cvt(s32 delta)
 	(06/01/07)[04:09] <BlueCrab> Standby power: 07D0
 	(06/01/07)[04:10] <BlueCrab> Max power: 0960
 */
-void FASTCALL DreamEye_mainDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+u32 FASTCALL DreamEye_mainDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
 {
 	//printf("ControllerDMA Called 0x%X;Command %d\n",device_instance->port,Command);
 //void testJoy_GotData(u32 header1,u32 header2,u32*data,u32 datalen)
@@ -938,8 +935,6 @@ void FASTCALL DreamEye_mainDMA(maple_device_instance* device_instance,u32 Comman
 			//			(((u16)sendadr << 8) & 0xFF00) |
 			//			((((recadr == 0x20) ? 0x20 : 0) << 16) & 0xFF0000) |
 			//			(((112/4) << 24) & 0xFF000000))); ptr_out += 4;
-
-			responce=5;
 
 			//caps
 			//4
@@ -977,7 +972,7 @@ void FASTCALL DreamEye_mainDMA(maple_device_instance* device_instance,u32 Comman
 
 			//2
 			w16(0x0069); 
-			break;
+			return 5;
 			/* controller condition structure 
 		typedef struct {//8 bytes
 		WORD buttons;			///* buttons bitfield	/2
@@ -996,7 +991,6 @@ void FASTCALL DreamEye_mainDMA(maple_device_instance* device_instance,u32 Comman
 			//			(((u16)sendadr << 8) & 0xFF00) |
 			//			((((recadr == 0x20) ? 0x20 : 1) << 16) & 0xFF0000) |
 			//			(((12 / 4 ) << 24) & 0xFF000000))); ptr_out += 4;
-			responce=0x08;
 			//caps
 			//4
 			//WriteMem32(ptr_out, (1 << 24)); ptr_out += 4;
@@ -1027,11 +1021,10 @@ void FASTCALL DreamEye_mainDMA(maple_device_instance* device_instance,u32 Comman
 			//1
 			//WriteMem8(ptr_out, 10); ptr_out += 1;
 
-			break;
+			return 8;
 		default:
-			printf("DreamEye_mainDMA : UNKOWN MAPLE COMMAND %d \n",Command);
-			responce=7;//just ko
-			break;
+			printf("DreamEye_mainDMA : unknown MAPLE COMMAND %d \n",Command);
+			return 7;
 	}
 }
 
@@ -1049,7 +1042,7 @@ void FASTCALL DreamEye_mainDMA(maple_device_instance* device_instance,u32 Comman
 	(06/01/07)[04:10] <BlueCrab> Max power: 0000
 */
 u32 des_9_count=0;
-void FASTCALL DreamEye_subDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+u32 FASTCALL DreamEye_subDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len)
 {
 	//printf("ControllerDMA Called 0x%X;Command %d\n",device_instance->port,Command);
 //void testJoy_GotData(u32 header1,u32 header2,u32*data,u32 datalen)
@@ -1073,8 +1066,6 @@ void FASTCALL DreamEye_subDMA(maple_device_instance* device_instance,u32 Command
 			//			(((u16)sendadr << 8) & 0xFF00) |
 			//			((((recadr == 0x20) ? 0x20 : 0) << 16) & 0xFF0000) |
 			//			(((112/4) << 24) & 0xFF000000))); ptr_out += 4;
-
-			responce=5;
 
 			//caps
 			//4
@@ -1112,7 +1103,7 @@ void FASTCALL DreamEye_subDMA(maple_device_instance* device_instance,u32 Command
 
 			//2
 			w16(0); 
-			break;
+			return 5;
 
 //(07/01/07)[02:36] <BlueCrab> dreameye: replied with 8, size 5
 //(07/01/07)[02:36] <BlueCrab> 00080000, 000000D0, 1F000480, 1F000481, C0070094,
@@ -1126,7 +1117,6 @@ void FASTCALL DreamEye_subDMA(maple_device_instance* device_instance,u32 Command
 			//			(((u16)sendadr << 8) & 0xFF00) |
 			//			((((recadr == 0x20) ? 0x20 : 1) << 16) & 0xFF0000) |
 			//			(((12 / 4 ) << 24) & 0xFF000000))); ptr_out += 4;
-			responce=0x08;
 			//caps
 			//4
 			w32(0x00080000);
@@ -1146,7 +1136,7 @@ void FASTCALL DreamEye_subDMA(maple_device_instance* device_instance,u32 Command
 			}
 
 			des_9_count++;
-			printf("DreamEye_subDMA[0x%x | %d %x] : UNKOWN MAPLE COMMAND %d \n",device_instance->port,device_instance->port>>6,device_instance->port&63,Command);
+			printf("DreamEye_subDMA[0x%x | %d %x] : unknown MAPLE COMMAND %d \n",device_instance->port,device_instance->port>>6,device_instance->port&63,Command);
 			printf(" buffer in size : %d\n",buffer_in_len);
 			for (u32 i=0;i<buffer_in_len;i+=4)
 			{
@@ -1154,13 +1144,13 @@ void FASTCALL DreamEye_subDMA(maple_device_instance* device_instance,u32 Command
 			}
 			printf("\n");
 			//getchar();
-			break;
+			return 0x08;
 //(07/01/07)[03:04] <BlueCrab> dreameye: replied with 11, size 2
 //(07/01/07)[03:04] <BlueCrab>           responding to port B1
 //(07/01/07)[03:04] <BlueCrab> 00080000, 000002FF, 
 		case 17:
 			{
-				responce=17; //? fuck ?
+				//responce=17; //? fuck ?
 				//caps
 				//4
 				w32(0x00080000);
@@ -1168,7 +1158,7 @@ void FASTCALL DreamEye_subDMA(maple_device_instance* device_instance,u32 Command
 				//w32(0x000002FF);
 				w32(rand());
 			}
-			printf("DreamEye_subDMA[0x%x | %d %x] : UNKOWN MAPLE COMMAND %d \n",device_instance->port,device_instance->port>>6,device_instance->port&63,Command);
+			printf("DreamEye_subDMA[0x%x | %d %x] : unknown MAPLE COMMAND %d \n",device_instance->port,device_instance->port>>6,device_instance->port&63,Command);
 			printf(" buffer in size : %d\n",buffer_in_len);
 			for (u32 i=0;i<buffer_in_len;i+=4)
 			{
@@ -1176,9 +1166,9 @@ void FASTCALL DreamEye_subDMA(maple_device_instance* device_instance,u32 Command
 			}
 			printf("\n");
 			//getchar();
-			break;
+			return 17;
 		default:
-			printf("DreamEye_subDMA[0x%x | %d %x] : UNKOWN MAPLE COMMAND %d \n",device_instance->port,device_instance->port>>6,device_instance->port&63,Command);
+			printf("DreamEye_subDMA[0x%x | %d %x] : unknown MAPLE COMMAND %d \n",device_instance->port,device_instance->port>>6,device_instance->port&63,Command);
 			printf(" buffer in size : %d\n",buffer_in_len);
 			for (u32 i=0;i<buffer_in_len;i+=4)
 			{
@@ -1186,19 +1176,18 @@ void FASTCALL DreamEye_subDMA(maple_device_instance* device_instance,u32 Command
 			}
 			printf("\n");
 			//getchar();
-			responce=7;//just ko
-			break;
+			return 7;//just ko
 	}
 }
 
 
-void FASTCALL MicDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+u32 FASTCALL MicDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len)
 {
 	//printf("ControllerDMA Called 0x%X;Command %d\n",device_instance->port,Command);
 //void testJoy_GotData(u32 header1,u32 header2,u32*data,u32 datalen)
 	u8*buffer_out_b=(u8*)buffer_out;
 
-	printf("MicDMA[0x%x | %d %x] : UNKOWN MAPLE COMMAND %d \n",device_instance->port,device_instance->port>>6,device_instance->port&63,Command);
+	printf("MicDMA[0x%x | %d %x] : unknown MAPLE COMMAND %d \n",device_instance->port,device_instance->port>>6,device_instance->port&63,Command);
 	printf(" buffer in size : %d\n",buffer_in_len);
 
 	for (u32 i=0;i<buffer_in_len;i+=4)
@@ -1225,8 +1214,6 @@ void FASTCALL MicDMA(maple_device_instance* device_instance,u32 Command,u32* buf
 			//			(((u16)sendadr << 8) & 0xFF00) |
 			//			((((recadr == 0x20) ? 0x20 : 0) << 16) & 0xFF0000) |
 			//			(((112/4) << 24) & 0xFF000000))); ptr_out += 4;
-
-			responce=5;
 
 			//caps
 			//4
@@ -1264,23 +1251,21 @@ void FASTCALL MicDMA(maple_device_instance* device_instance,u32 Command,u32* buf
 
 			//2
 			w16(0x012C); 
-			break;
+			return 5;
 		case 9:
-			responce=0x08;
 			//caps
 			//4
 			w32(0x10000000);
 			//getchar();
-			break;
+			return 8;
 
 		default:
-			responce=7;//just ko
-			break;
+			return 7;//just ko
 	}
 }
 
 
-void FASTCALL MouseDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+u32 FASTCALL MouseDMA(void* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len)
 {
 	//printf("ControllerDMA Called 0x%X;Command %d\n",device_instance->port,Command);
 //void testJoy_GotData(u32 header1,u32 header2,u32*data,u32 datalen)
@@ -1305,7 +1290,6 @@ void FASTCALL MouseDMA(maple_device_instance* device_instance,u32 Command,u32* b
 			//			((((recadr == 0x20) ? 0x20 : 0) << 16) & 0xFF0000) |
 			//			(((112/4) << 24) & 0xFF000000))); ptr_out += 4;
 
-			responce=5;
 
 			//caps
 			//4
@@ -1343,7 +1327,7 @@ void FASTCALL MouseDMA(maple_device_instance* device_instance,u32 Command,u32* b
 
 			//2
 			w16(0x0120); 
-			break;
+			return 5;
 
 		/* controller condition structure 
 		typedef struct {//8 bytes
@@ -1365,7 +1349,6 @@ void FASTCALL MouseDMA(maple_device_instance* device_instance,u32 Command,u32* b
 			//			(((u16)sendadr << 8) & 0xFF00) |
 			//			((((recadr == 0x20) ? 0x20 : 1) << 16) & 0xFF0000) |
 			//			(((12 / 4 ) << 24) & 0xFF000000))); ptr_out += 4;
-			responce=0x08;
 			//caps
 			//4
 			//WriteMem32(ptr_out, (1 << 24)); ptr_out += 4;
@@ -1393,10 +1376,10 @@ void FASTCALL MouseDMA(maple_device_instance* device_instance,u32 Command,u32* b
 
 			mo_x_delta=0;
 			mo_y_delta=0;
-			break;
+			return 8;
 
 		default:
-			printf("UNKOWN MAPLE COMMAND %d\n",Command);
+			printf("unknown MAPLE COMMAND %d\n",Command);
 			break;
 	}
 }
@@ -1408,12 +1391,12 @@ struct _NaomiState
 };
 _NaomiState State;
 
-void FASTCALL ControllerDMA(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+u32 FASTCALL ControllerDMA(void* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len)
 {
 	//printf("ControllerDMA Called 0x%X;Command %d\n",device_instance->port,Command);
 //void testJoy_GotData(u32 header1,u32 header2,u32*data,u32 datalen)
 	u8*buffer_out_b=(u8*)buffer_out;
-	u32 port=device_instance->port>>6;
+	u32 port=((maple_device_instance*)device_instance)->port>>6;
 	switch (Command)
 	{
 		/*typedef struct {
@@ -1432,8 +1415,6 @@ void FASTCALL ControllerDMA(maple_device_instance* device_instance,u32 Command,u
 			//			(((u16)sendadr << 8) & 0xFF00) |
 			//			((((recadr == 0x20) ? 0x20 : 0) << 16) & 0xFF0000) |
 			//			(((112/4) << 24) & 0xFF000000))); ptr_out += 4;
-
-			responce=5;
 
 			//caps
 			//4
@@ -1485,7 +1466,7 @@ void FASTCALL ControllerDMA(maple_device_instance* device_instance,u32 Command,u
 
 			//2
 			w16(0x01F4); 
-			break;
+			return 5;
 
 		/* controller condition structure 
 		typedef struct {//8 bytes
@@ -1505,7 +1486,6 @@ void FASTCALL ControllerDMA(maple_device_instance* device_instance,u32 Command,u
 			//			(((u16)sendadr << 8) & 0xFF00) |
 			//			((((recadr == 0x20) ? 0x20 : 1) << 16) & 0xFF0000) |
 			//			(((12 / 4 ) << 24) & 0xFF000000))); ptr_out += 4;
-			responce=0x08;
 			//caps
 			//4
 			//WriteMem32(ptr_out, (1 << 24)); ptr_out += 4;
@@ -1536,11 +1516,11 @@ void FASTCALL ControllerDMA(maple_device_instance* device_instance,u32 Command,u
 			//1
 			//WriteMem8(ptr_out, 10); ptr_out += 1;
 
-			break;
+			return 8;
 
 		default:
-			printf("UNKOWN MAPLE COMMAND %d\n",Command);
-			break;
+			printf("unknown MAPLE COMMAND %d\n",Command);
+			return 7;
 	}
 }
 
@@ -1559,7 +1539,7 @@ void printState(u32 cmd,u32* buffer_in,u32 buffer_in_len)
 			printf("\n");
 	}
 }
-void FASTCALL ControllerDMA_naomi(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+void FASTCALL ControllerDMA_naomi(void* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
 {
 #define ret(x) { responce=(x); return; }
 
@@ -1567,7 +1547,7 @@ void FASTCALL ControllerDMA_naomi(maple_device_instance* device_instance,u32 Com
 	u8*buffer_out_b=(u8*)buffer_out;
 	u8*buffer_in_b=(u8*)buffer_in;
 	buffer_out_len=0;
-	u32 port=device_instance->port>>6;
+	u32 port=((maple_device_instance*)device_instance)->port>>6;
 	switch (Command)
 	{
 		case 0x86:
@@ -1676,7 +1656,7 @@ void FASTCALL ControllerDMA_naomi(maple_device_instance* device_instance,u32 Com
 									break;
 
 								default:
-									printf("Unkown CAP %X\n",State.Cmd);
+									printf("unknown CAP %X\n",State.Cmd);
 							}
 							buffer_out_len=4*4;
 						}
@@ -1968,7 +1948,7 @@ void FASTCALL ControllerDMA_naomi(maple_device_instance* device_instance,u32 Com
 			break;
 
 		default:
-			printf("UNKOWN MAPLE Frame\n");
+			printf("unknown MAPLE Frame\n");
 			printState(Command,buffer_in,buffer_in_len);
 			break;
 	}
@@ -2152,13 +2132,13 @@ u32 sync_net(u32 port)
 	}
 	return sync_counter % send_ratio;
 }
-void FASTCALL ControllerDMA_net(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+u32 FASTCALL ControllerDMA_net(void* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len)
 {
 	//printf("ControllerDMA Called 0x%X;Command %d\n",device_instance->port,Command);
 //void testJoy_GotData(u32 header1,u32 header2,u32*data,u32 datalen)
 	u8*buffer_out_b=(u8*)buffer_out;
 	
-	bool islocal=device_instance->port==local_port;
+	bool islocal=((maple_device_instance*)device_instance)->port==local_port;
 	switch (Command)
 	{
 		/*typedef struct {
@@ -2178,7 +2158,6 @@ void FASTCALL ControllerDMA_net(maple_device_instance* device_instance,u32 Comma
 			//			((((recadr == 0x20) ? 0x20 : 0) << 16) & 0xFF0000) |
 			//			(((112/4) << 24) & 0xFF000000))); ptr_out += 4;
 
-			responce=5;
 
 			//caps
 			//4
@@ -2216,7 +2195,7 @@ void FASTCALL ControllerDMA_net(maple_device_instance* device_instance,u32 Comma
 
 			//2
 			w16(0x01F4); 
-			break;
+			return 5;
 
 		/* controller condition structure 
 		typedef struct {//8 bytes
@@ -2230,7 +2209,7 @@ void FASTCALL ControllerDMA_net(maple_device_instance* device_instance,u32 Comma
 		} cont_cond_t;*/
 		case 9:
 			{
-				u32 aport=GetMaplePort(device_instance->port);
+				u32 aport=GetMaplePort(((maple_device_instance*)device_instance)->port);
 				u32 ssf=sync_net(aport);
 			/*
 				char file[43];
@@ -2244,7 +2223,6 @@ void FASTCALL ControllerDMA_net(maple_device_instance* device_instance,u32 Comma
 			//			(((u16)sendadr << 8) & 0xFF00) |
 			//			((((recadr == 0x20) ? 0x20 : 1) << 16) & 0xFF0000) |
 			//			(((12 / 4 ) << 24) & 0xFF000000))); ptr_out += 4;
-			responce=0x08;
 			//caps
 			//4
 			//WriteMem32(ptr_out, (1 << 24)); ptr_out += 4;
@@ -2279,15 +2257,15 @@ void FASTCALL ControllerDMA_net(maple_device_instance* device_instance,u32 Comma
 			fclose(log);
 			*/
 			}
-			break;
+			return 8;
 
 		default:
-			printf("UNKOWN MAPLE COMMAND %d\n",Command);
+			printf("unknown MAPLE COMMAND %d\n",Command);
 			break;
 	}
 }
 
-void FASTCALL ControllerDMA_nul(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+u32 FASTCALL ControllerDMA_nul(void* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len)
 {
 	//printf("ControllerDMA Called 0x%X;Command %d\n",device_instance->port,Command);
 //void testJoy_GotData(u32 header1,u32 header2,u32*data,u32 datalen)
@@ -2310,9 +2288,7 @@ void FASTCALL ControllerDMA_nul(maple_device_instance* device_instance,u32 Comma
 			//WriteMem32(ptr_out,(u32)(0x05 | //response
 			//			(((u16)sendadr << 8) & 0xFF00) |
 			//			((((recadr == 0x20) ? 0x20 : 0) << 16) & 0xFF0000) |
-			//			(((112/4) << 24) & 0xFF000000))); ptr_out += 4;
-
-			responce=5;
+			//			(((112/4) << 24) & 0xFF000000))); ptr_out += 4
 
 			//caps
 			//4
@@ -2350,7 +2326,7 @@ void FASTCALL ControllerDMA_nul(maple_device_instance* device_instance,u32 Comma
 
 			//2
 			w16(0x01F4); 
-			break;
+			return 5;
 
 		/* controller condition structure 
 		typedef struct {//8 bytes
@@ -2370,7 +2346,6 @@ void FASTCALL ControllerDMA_nul(maple_device_instance* device_instance,u32 Comma
 			//			(((u16)sendadr << 8) & 0xFF00) |
 			//			((((recadr == 0x20) ? 0x20 : 1) << 16) & 0xFF0000) |
 			//			(((12 / 4 ) << 24) & 0xFF000000))); ptr_out += 4;
-			responce=0x08;
 			//caps
 			//4
 			//WriteMem32(ptr_out, (1 << 24)); ptr_out += 4;
@@ -2401,10 +2376,10 @@ void FASTCALL ControllerDMA_nul(maple_device_instance* device_instance,u32 Comma
 			//1
 			//WriteMem8(ptr_out, 10); ptr_out += 1;
 
-			break;
+			return 8;
 
 		default:
-			printf("UNKOWN MAPLE COMMAND %d\n",Command);
+			printf("unknown MAPLE COMMAND %d\n",Command);
 			break;
 	}
 }
@@ -2476,9 +2451,9 @@ INT_PTR CALLBACK VMULCDProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return FALSE;
 }
 
-void FASTCALL VmuDMA(maple_subdevice_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+u32 FASTCALL VmuDMA(void* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len)
 {
-	VMU_info* dev=(VMU_info*)((*device_instance).data);
+	VMU_info* dev=(VMU_info*)(device_instance);
 	u8*buffer_out_b=(u8*)buffer_out;
 	//printf("VmuDMA Called for port 0x%X, Command %d\n",device_instance->port,Command);
 	switch (Command)
@@ -2499,8 +2474,6 @@ void FASTCALL VmuDMA(maple_subdevice_instance* device_instance,u32 Command,u32* 
 			//			(((u16)sendadr << 8) & 0xFF00) |
 			//			((((recadr == 0x20) ? 0x20 : 0) << 16) & 0xFF0000) |
 			//			(((112/4) << 24) & 0xFF000000))); ptr_out += 4;
-
-			responce=5;
 
 			//caps
 			//4
@@ -2552,7 +2525,7 @@ void FASTCALL VmuDMA(maple_subdevice_instance* device_instance,u32 Command,u32* 
 
 			//2
 			w16(0x0082); 
-			break;
+			return 5;
 
 				//in[0] is function used ?
 				//out[0] is function used ?
@@ -2575,11 +2548,10 @@ void FASTCALL VmuDMA(maple_subdevice_instance* device_instance,u32 Command,u32* 
 				vmui->number_info_blocks = 0xd;//0x100;//0xd
 				vmui->reserverd0 = 0x0000;
 				buffer_out_len=4+(sizeof(maple_getvmuinfo_t));
-				responce=8;//data transfer
+				return 8;//data transfer
 			}
 			else
-				responce=-2;//bad function
-			break;
+				return -2;//bad function
 
 		case 11:
 			if(buffer_in[0]&(2<<24))
@@ -2597,7 +2569,7 @@ void FASTCALL VmuDMA(maple_subdevice_instance* device_instance,u32 Command,u32* 
 				}
 				memcpy(&buffer_out[2],(dev->data)+Block*512,512);
 				buffer_out_len=(512+8);
-				responce=8;//data transfer
+				return 8;//data transfer
 			}
 			else if (buffer_in[0]&(4<<24))
 			{
@@ -2605,11 +2577,10 @@ void FASTCALL VmuDMA(maple_subdevice_instance* device_instance,u32 Command,u32* 
 				buffer_out[1] = buffer_in[1];
 				memcpy(&buffer_out[2],(dev->lcd.data),192);
 				buffer_out_len=(192+8);
-				responce=8;//data transfer
+				return 8;//data transfer
 			}
 			else 
-				responce=-2;//bad function
-			break;
+				return -2;//bad function
 		case 12:
 			if(buffer_in[0]&(2<<24))
 			{
@@ -2626,7 +2597,7 @@ void FASTCALL VmuDMA(maple_subdevice_instance* device_instance,u32 Command,u32* 
 				}
 				else
 					printf("Failed to open %s for saving vmu data\n",dev->file);
-				responce=7;//just ko
+				return 7;//just ko
 			}
 			else if (buffer_in[0]&(4<<24))
 			{
@@ -2661,33 +2632,36 @@ void FASTCALL VmuDMA(maple_subdevice_instance* device_instance,u32 Command,u32* 
 					}
 					InvalidateRect(dev->lcd.handle,NULL,FALSE);
 				}
-				responce=7;//just ko
+				return  7;//just ko
 			}
 			else
-				responce=-2;//bad function
+				return  -2;//bad function
 			break;
 
 		case 13:
-			responce=7;//just ko
+			return 7;//just ko
 			break;
 		case 14:
 			if (buffer_in[0]&(8<<24))
 			{
 				//printf("BEEP : %d %d | %d %d\n",((u8*)buffer_in)[4],((u8*)buffer_in)[5],((u8*)buffer_in)[6],((u8*)buffer_in)[7]);
-				responce=7;//just ko
+				return  7;//just ko
 			}
 			else
-				responce=-2;//bad function
+				return -2;//bad function
 			break;
 			
 
 		default:
-			printf("UNKOWN MAPLE COMMAND %d\n",Command);
-			break;
+			printf("unknown MAPLE COMMAND %d\n",Command);
+			return -1;
 	}
 
 }
-
+void EXPORT_CALL vmu_showwindow(u32 id,void* w,void* p)
+{
+	ShowWindow((HWND)p,SHOW_OPENNOACTIVATE);
+}
 void EXPORT_CALL config_keys(u32 id,void* w,void* p)
 {
 	maple_device_instance* mdd=(maple_device_instance*)p;
@@ -2700,6 +2674,7 @@ void EXPORT_CALL config_keys(u32 id,void* w,void* p)
 }
 s32 FASTCALL CreateMain(maple_device_instance* inst,u32 id,u32 flags,u32 rootmenu)
 {
+	inst->data=inst;
 	wchar temp[512];
 	if (id<=1)
 	{
@@ -2716,31 +2691,26 @@ s32 FASTCALL CreateMain(maple_device_instance* inst,u32 id,u32 flags,u32 rootmen
 #else
 		inst->dma=ControllerDMA;
 #endif
-		inst->data=0;
 		swprintf(temp,L"Controller[winhook] : 0x%02X",inst->port);
 	}
 	else if (id==1)
 	{
 		inst->dma=ControllerDMA_net;
-		inst->data=0;
 		swprintf(temp,L"Controller[winhook,net] : 0x%02X",inst->port);
 	}
 	else if (id==3)
 	{
 		inst->dma=KbdDMA;
-		inst->data=0;
 		swprintf(temp,L"Keyboard : 0x%02X",inst->port);
 	}
 	else if (id==4)
 	{
 		inst->dma=ControllerDMA_nul;
-		inst->data=0;
 		swprintf(temp,L"Controller [no input] : 0x%02X",inst->port);
 	}
 	else if (id==5)
 	{
 		inst->dma=MouseDMA;
-		inst->data=0;
 		swprintf(temp,L"Mouse [winhook] : 0x%02X",inst->port);
 	}
 	host.AddMenuItem(rootmenu,-1,temp,0,0);
@@ -2782,28 +2752,6 @@ s32 FASTCALL CreateMain(maple_device_instance* inst,u32 id,u32 flags,u32 rootmen
 }
 
 
-s32 FASTCALL InitMain(maple_device_instance* inst,u32 id,maple_init_params* params)
-{
-	if (id==1)
-	{
-		sync_counter=0;
-		next_sync_counter=1;
-		verify(Init_netplay()==0);
-	}
-	return rv_ok;
-}
-void FASTCALL TermMain(maple_device_instance* inst,u32 id)
-{
-}
-void FASTCALL DestroyMain(maple_device_instance* inst,u32 id)
-{
-	if (inst->data)
-		free( inst->data);
-}
-void EXPORT_CALL vmu_showwindow(u32 id,void* w,void* p)
-{
-	ShowWindow((HWND)p,SHOW_OPENNOACTIVATE);
-}
 s32 FASTCALL CreateSub(maple_subdevice_instance* inst,u32 id,u32 flags,u32 rootmenu)
 {
 	wchar wtemp[512];
@@ -2867,21 +2815,30 @@ s32 FASTCALL CreateSub(maple_subdevice_instance* inst,u32 id,u32 flags,u32 rootm
 	EnableWindow(dev->lcd.handle,TRUE);
 	return rv_ok;
 }
-s32 FASTCALL InitSub(maple_subdevice_instance* inst,u32 id,maple_init_params* params)
+s32 FASTCALL Init(void* data,u32 id,maple_init_params* params)
 {
+	if (id==1)
+	{
+		sync_counter=0;
+		next_sync_counter=1;
+		verify(Init_netplay()==0);
+	}
 	return rv_ok;
 }
-void FASTCALL TermSub(maple_subdevice_instance* inst,u32 id)
+void FASTCALL Term(void* data,u32 id)
 {
 }
-void FASTCALL DestroySub(maple_subdevice_instance* inst,u32 id)
+void FASTCALL Destroy(void* data,u32 id)
 {
-	VMU_info* dev=(VMU_info* )inst->data;
-	if (dev->lcd.handle)
-		DestroyWindow(dev->lcd.handle);
-	if (inst->data)
-		free(inst->data);
+	if (id==2)
+	{
+		VMU_info* dev=(VMU_info* )data;
+		if (dev->lcd.handle)
+			DestroyWindow(dev->lcd.handle);
+		free(data);
+	}	
 }
+
 
 #define MMD(name,flags) \
 	wcscpy(km.devices[mdi].Name,name);	\
@@ -2913,19 +2870,14 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	c.Load=Load;
 	c.Unload=Unload;
 	c.Type=Plugin_Maple;
-	c.PluginVersion=DC_MakeVersion(1,0,0);
 	
-	wcscpy(c.Name,L"nullDC Maple Devices (" _T(__DATE__) L")");
+	wcscpy(c.Name,L"nullDC Maple Devices [" _T(__DATE__) L"]");
 
 	km.CreateMain=CreateMain;
-	km.InitMain=InitMain;
-	km.TermMain=TermMain;
-	km.DestroyMain=DestroyMain;
-
 	km.CreateSub=CreateSub;
-	km.InitSub=InitSub;
-	km.TermSub=TermSub;
-	km.DestroySub=DestroySub;
+	km.Init=Init;
+	km.Term=Term;
+	km.Destroy=Destroy;
 
 #ifdef BUILD_NAOMI
 	u32 mdi=0;
@@ -2950,72 +2902,8 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	//5
 	MMD(L"nullDC Mouse [WinHook] (" _T(__DATE__) L")",MDTF_Hotplug);
 #endif
-	/*
 
-	//6
-	MMD("nullDC DreamEye (" __DATE__ ")",MDTF_Hotplug);
-
-	//7
-	MSD("nullDC Mic (" __DATE__ ")",MDTF_Hotplug);
-	*/
-
-	//list terminator :P
 	MDLE();
-
-	/*
-	info->InterfaceVersion.full=MAPLE_PLUGIN_I_F_VERSION;
-
-	info->Devices[0].CreateInstance=CreateInstance;
-	info->Devices[0].DestroyInstance=DestroyInstance;
-	info->Devices[0].type=0;//Controller
-	info->Devices[0].id=0;
-	strcpy(info->Devices[0].name,"nullDC DC controller [WinHook] (" __DATE__ ")");
- 
-	info->Devices[1].CreateInstance=CreateInstance;
-	info->Devices[1].DestroyInstance=DestroyInstance;
-	info->Devices[1].type=1;//Vmu
-	info->Devices[1].id=1;
-	strcpy(info->Devices[1].name,"nullDC VMU (" __DATE__ ")");
-
-	info->Devices[2].CreateInstance=CreateInstance;
-	info->Devices[2].DestroyInstance=DestroyInstance;
-	info->Devices[2].type=0;//Controller
-	info->Devices[2].id=2;
-	strcpy(info->Devices[2].name,"nullDC DC controller [no input](" __DATE__ ")");
-
-	info->Devices[3].CreateInstance=CreateInstance;
-	info->Devices[3].DestroyInstance=DestroyInstance;
-	info->Devices[3].type=0;//Controller
-	info->Devices[3].id=3;
-	strcpy(info->Devices[3].name,"nullDC DC Keyboard(" __DATE__ ")");
-
-	info->Devices[4].CreateInstance=CreateInstance;
-	info->Devices[4].DestroyInstance=DestroyInstance;
-	info->Devices[4].type=0;//Controller
-	info->Devices[4].id=4;
-	strcpy(info->Devices[4].name,"nullDC DC Mouse(" __DATE__ ")");
-
-	info->Devices[5].CreateInstance=CreateInstance;
-	info->Devices[5].DestroyInstance=DestroyInstance;
-	info->Devices[5].type=0;//main
-	info->Devices[5].id=5;
-	strcpy(info->Devices[5].name,"nullDC DreamEye Main(" __DATE__ ")");
-
-	info->Devices[6].CreateInstance=CreateInstance;
-	info->Devices[6].DestroyInstance=DestroyInstance;
-	info->Devices[6].type=1;//sub
-	info->Devices[6].id=6;
-	strcpy(info->Devices[6].name,"nullDC DreamEye Sub(" __DATE__ ")");
-
-	info->Devices[7].CreateInstance=CreateInstance;
-	info->Devices[7].DestroyInstance=DestroyInstance;
-	info->Devices[7].type=1;//sub
-	info->Devices[7].id=7;
-	strcpy(info->Devices[7].name,"nullDC Dreamcast Mic(" __DATE__ ")");
-
-	info->Devices[8].CreateInstance=0;
-	info->Devices[8].DestroyInstance=0;
-	*/
 }
 void LoadSettings()
 {
