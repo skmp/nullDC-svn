@@ -30,7 +30,7 @@ float GetSeconds();
 #if DO_VERIFY==OP_ON
 #define verify(x) if((x)==false){ static bool d_msg=true; if (d_msg) { d_msg = msgboxf(L"Verify Failed  : " _T(#x) L"\n in %s -> %s : %d \nWant to report this error again ?",MB_ICONERROR|MB_YESNO,_T(__FUNCTION__),_T(__FILE__),__LINE__)==IDYES?true:false;} if (d_msg){ dbgbreak;}}
 #define verifyf(x) if((x)==false){ msgboxf(L"Verify Failed  : " _T(#x) L"\n in %s -> %s : %d \n",MB_ICONERROR,_T(__FUNCTION__),_T(__FILE__),__LINE__); dbgbreak;}
-#define verifyc(x) if(FAILED(x)){ msgboxf(L"Verify Failed  : " _T(#x) L"\n in %s -> %s : %d \n",MB_ICONERROR,_T(__FUNCTION__),_T(__FILE__),__LINE__); dbgbreak;}
+#define verifyc(x) {HRESULT hrr=(x); if(FAILED(hrr)){ msgboxf(L"Verify Failed  : " _T(#x) L"\n in %s -> %s : %d HR=0x%08X\n",MB_ICONERROR,_T(__FUNCTION__),_T(__FILE__),__LINE__,hrr); dbgbreak;} }
 #else
 #define verify(x)
 #define verifyf(x) (x)

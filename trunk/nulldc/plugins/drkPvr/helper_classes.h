@@ -95,7 +95,8 @@ public :
 	void Free()
 	{
 		Clear();
-		free(data);
+		if (data)
+			free(data);
 		data=0;
 	}
 };

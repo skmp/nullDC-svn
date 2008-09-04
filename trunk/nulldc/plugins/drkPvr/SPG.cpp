@@ -124,7 +124,19 @@ void FASTCALL spgUpdatePvr(u32 cycles)
 				double spd_cpu=spd_vbs*Frame_Cycles;
 				spd_cpu/=1000000;	//mrhz kthx
 				double fullvbs=(spd_vbs/spd_cpu)*200;
-				double mv=VertexCount /1000000.0;
+				double mv=VertexCount;
+				char mv_c=' ';
+
+				if (mv>750)
+				{
+					mv/=1000;	//KV
+					mv_c='K';
+				}
+				if (mv>750)
+				{
+					mv/=1000;	//
+					mv_c='M';
+				}
 				VertexCount=0;
 				last_fps=timeGetTime();
 				FrameCount=0;
@@ -146,10 +158,10 @@ void FASTCALL spgUpdatePvr(u32 cycles)
 					mode=L"VGA";
 				}
 
-				swprintf(fpsStr,256,L"%s/%c - %4.2f%% - VPS: %4.2f(%s%s%4.2f) RPS: %4.2f Vert: %4.2fM Sh4: %4.2f mhz", 
+				swprintf(fpsStr,256,L"%s/%c - %4.2f%% - VPS: %4.2f(%s%s%4.2f) RPS: %4.2f Vert: %4.2f%c Sh4: %4.2f mhz", 
 					emu_name,'n',spd_cpu*100/200,spd_vbs,
 					mode,res,fullvbs,
-					spd_fps,mv, spd_cpu);
+					spd_fps,mv,mv_c, spd_cpu);
 
 				rend_set_fps_text(fpsStr);
 			}

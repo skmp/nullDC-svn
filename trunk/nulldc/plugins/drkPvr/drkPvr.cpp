@@ -508,8 +508,7 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	c.Type=Plugin_PowerVR;
 	c.InterfaceVersion=PVR_PLUGIN_I_F_VERSION;
 
-	wcscpy(c.Name,L"nullPVR -- " REND_NAME L" built : " _T(__DATE__));
-	c.PluginVersion=DC_MakeVersion(1,0,0);
+	wcscpy(c.Name,L"nullPVR -- " REND_NAME L" [" _T(__DATE__) L"]");
 
 	c.Load=Load;
 	c.Unload=Unload;

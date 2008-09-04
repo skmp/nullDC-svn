@@ -1,4 +1,7 @@
 ﻿#define _WIN32_WINNT 0x0500
+#if _DEBUG
+#define D3D_DEBUG_INFO
+#endif
 #include <d3dx9.h>
 
 #include "nullRend.h"
@@ -965,6 +968,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		cache_clip_alpha_on_zero=true;
 		cache_texture_enabled=~gp->pcw.Texture;
 		cache_stencil_modvol_on=0;
+		last_ps_mode=-1;
 	}
 	//for fixed pipeline
 	__forceinline
@@ -2065,9 +2069,9 @@ __error_out:
 			if (rtt)
 			{
 				current_scalef[0]=-(FB_X_CLIP.min*scale_x);
-				current_scalef[1]=-(FB_Y_CLIP.min*scale_y);
+				current_scalef[1]=-(FB_Y_CLIP.min/**scale_y*/);
 				current_scalef[2]=(FB_X_CLIP.max+1)*0.5f*scale_x;
-				current_scalef[3]=-((FB_Y_CLIP.max+1)*0.5f)*scale_y;
+				current_scalef[3]=-((FB_Y_CLIP.max+1)*0.5f)/**scale_y*/;
 				dev->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE); 
 			}
 			else
