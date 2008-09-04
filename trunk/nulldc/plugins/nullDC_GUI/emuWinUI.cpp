@@ -1898,11 +1898,7 @@ void AddItemsToCB(PluginInfoList* list,HWND hw,wchar* selected)
 			if (dll==0)
 				dll=list->dll;
 			
-			swprintf(temp,L"%s v%d.%d.%d (%s)",list->Name
-				,list->Version.major
-				,list->Version.minnor
-				,list->Version.build
-				,dll);
+			swprintf(temp,L"%s (%s)",list->Name,dll);
 			
 			size_t dll_len=wcslen(dll);
 			wchar* lp = (wchar *)malloc((dll_len+1)*sizeof(wchar)); 
