@@ -168,11 +168,13 @@ bool uiInit()
 	InitMenu();
 
 	g_hWnd = CreateWindow( L"ndc_main_window", emu_name, WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-		CW_USEDEFAULT, CW_USEDEFAULT, 640,480, NULL, GetHMenu(), g_hInst, NULL );
+		CW_USEDEFAULT, CW_USEDEFAULT, 640,480, NULL, NULL, g_hInst, NULL );
 	if( !IsWindow(g_hWnd) ) {
 		MessageBox( NULL, L"Couldn't Create nullDC Window!",L"ERROR",MB_ICONERROR );
 		return false;
 	}
+	if (!settings.AutoHideMenu)
+		SetMenu(g_hWnd,GetHMenu());
 	RECT rect;
 	RECT rect2;
 	GetClientRect(g_hWnd,&rect);
@@ -186,7 +188,7 @@ bool uiInit()
 	ysz_2-=ysz;
 
 	SetWindowPos(g_hWnd,NULL,0,0,xsz_2+640,ysz_2+480,SWP_NOZORDER|SWP_NOMOVE);
-	
+	SetMenu(g_hWnd,GetHMenu());
 	MSG msg;
 	while( PeekMessage( &msg, NULL, 0, 0 ,TRUE) != 0)
 	{
@@ -753,6 +755,7 @@ MENU_HANDLER( Handle_Options_AutoHideMenu)
 	else
 		settings.AutoHideMenu=1;
 
+	SaveSettings();
 	SetMenuItemStyle(id,settings.AutoHideMenu?MIS_Checked:0,MIS_Checked);
 }
 MENU_HANDLER( Handle_Options_SelectPlugins)

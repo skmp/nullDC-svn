@@ -7,7 +7,7 @@ Settings_Struct settings;
 
 void SaveSettings()
 {
-	emu.ConfigLoadInt(L"nullDC_GUI",L"AutoHideMenu",settings.AutoHideMenu);
+	emu.ConfigSaveInt(L"nullDC_GUI",L"AutoHideMenu",settings.AutoHideMenu);
 }
 
 void LoadSettings()
