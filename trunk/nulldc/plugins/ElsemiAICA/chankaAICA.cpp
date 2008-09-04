@@ -94,8 +94,7 @@ EXPORT void EXPORT_CALL dcGetInterface(plugin_interface* info)
 #define __T(x)      L ## x
 #define _T(x) __T(x)
 
-	wcscpy(c.Name,L"Elsemi's AICA (" _T(__DATE__ ) L")");
-	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD);
+	wcscpy(c.Name,L"Elsemi's AICA [" _T(__DATE__ ) L"]");
 
 	c.InterfaceVersion=AICA_PLUGIN_I_F_VERSION;
 	c.Type=Plugin_AICA;
