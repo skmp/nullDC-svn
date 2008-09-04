@@ -1041,7 +1041,7 @@ void TASendPackedData(DWORD* pBuffer, DWORD uLength)
 static int m_aFrameBufferColBytes[] = {2,2,3,4};
 
 
-#define VRAM_MASK (8*1024*1024-1)
+//#define VRAM_MASK (8*1024*1024-1)
 
 //Convert offset32 to offset64
 u32 vramlock_ConvOffset32toOffset64(u32 offset32)
@@ -1139,7 +1139,7 @@ static void FillBltTexture()
 		  memcpy(pBufferDest,pBank2+offset,4);pBufferDest+=4;
 		  offset+=4;
 	  }*/
-	  for (int i=0;i<uNumBytesPerLine;i+=1)
+	  for (u32 i=0;i<uNumBytesPerLine;i+=1)
 	  {
 		  u32 new_offset= vramlock_ConvOffset32toOffset64(uDispAddr + offset);
 		  char* nof=SH4GetVideoRAMPtr(new_offset);
@@ -1176,7 +1176,7 @@ static void FillBltTexture()
 		  memcpy(pBufferDest,pBank2+offset,4);pBufferDest+=4;
 		  offset+=4;
 		  }*/
-		  for (int i=0;i<uNumBytesPerLine;i+=1)
+		  for (u32 i=0;i<uNumBytesPerLine;i+=1)
 		  {
 			  u32 new_offset= vramlock_ConvOffset32toOffset64(uDispAddr + offset);
 			  char* nof=SH4GetVideoRAMPtr(new_offset);

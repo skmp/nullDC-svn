@@ -83,8 +83,7 @@ EXPORT void EXPORT_CALL dcGetInterface(plugin_interface* info)
 #define c info->common
 #define a info->aica
 
-	wcscpy(c.Name,L"Chankast's AICA (" _T(__DATE__) L")");
-	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD,DC_VER_NORMAL);
+	wcscpy(c.Name,L"Chankast's AICA [" _T(__DATE__) L"]");
 
 	c.InterfaceVersion=AICA_PLUGIN_I_F_VERSION;
 	c.Type=Plugin_AICA;

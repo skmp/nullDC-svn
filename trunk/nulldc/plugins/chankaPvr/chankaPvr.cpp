@@ -316,9 +316,8 @@ void EXPORT_CALL dcGetInterface(plugin_interface* info)
 	c.Type=Plugin_PowerVR;
 	
 	char namet[512];
-	strcpy(namet,"Chankast's video(" __DATE__ ")");
+	strcpy(namet,"Chankast's video [" __DATE__ "]");
 	mbstowcs(c.Name,namet,512);
-	c.PluginVersion=DC_MakeVersion(MAJOR,MINOR,BUILD);
 	
 	c.Load=Load;
 	c.Unload=Unload;
