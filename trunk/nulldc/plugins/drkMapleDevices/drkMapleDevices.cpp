@@ -1539,7 +1539,7 @@ void printState(u32 cmd,u32* buffer_in,u32 buffer_in_len)
 			printf("\n");
 	}
 }
-void FASTCALL ControllerDMA_naomi(void* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce)
+u32 FASTCALL ControllerDMA_naomi(void* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len)
 {
 #define ret(x) { responce=(x); return; }
 
@@ -1758,7 +1758,7 @@ void FASTCALL ControllerDMA_naomi(void* device_instance,u32 Command,u32* buffer_
 						OutLen=sizeof(ID);
 						*/
 					}
-					ret(8);
+					return 8;
 					
 				case 0x17:	//Select Subdevice
 					{
@@ -1767,7 +1767,7 @@ void FASTCALL ControllerDMA_naomi(void* device_instance,u32 Command,u32* buffer_
 						State.Node=buffer_in_b[9];
 						buffer_out_len=0;
 					}
-					ret(7);
+					return (7);
 				
 				case 0x27:	//Transfer request
 					{
@@ -1776,7 +1776,7 @@ void FASTCALL ControllerDMA_naomi(void* device_instance,u32 Command,u32* buffer_
 						State.Node=buffer_in_b[9];
 						buffer_out_len=0;
 					}
-					ret(7);
+					return (7);
 				case 0x21:		//Transfer request with repeat
 					{
 						State.Mode=2;
@@ -1784,7 +1784,7 @@ void FASTCALL ControllerDMA_naomi(void* device_instance,u32 Command,u32* buffer_
 						State.Node=buffer_in_b[9];
 						buffer_out_len=0;
 					}
-					ret(7);
+					return (7);
 					//EEprom access (Writting)
 				case 0x0B:
 					{
@@ -1792,7 +1792,7 @@ void FASTCALL ControllerDMA_naomi(void* device_instance,u32 Command,u32* buffer_
 						int size=buffer_in_b[2];
 		//				memcpy(EEprom+address,buffer_in_b+4,size);
 					}
-					ret(7);
+					return (7);
 				
 					//IF I return all FF, then board runs in low res
 				case 0x31:
@@ -1800,7 +1800,7 @@ void FASTCALL ControllerDMA_naomi(void* device_instance,u32 Command,u32* buffer_
 						buffer_out[0]=0xffffffff;
 						buffer_out[1]=0xffffffff;
 					}
-					ret(8);
+					return (8);
 				
 				//case 0x3:
 				//	break;
@@ -1812,8 +1812,7 @@ void FASTCALL ControllerDMA_naomi(void* device_instance,u32 Command,u32* buffer_
 					printState(Command,buffer_in,buffer_in_len);
 				}
 
-				responce= 8;//MAPLE_RESPONSE_DATATRF
-				return;
+				return 8;//MAPLE_RESPONSE_DATATRF
 			}
 			break;
 		case 0x82:
@@ -1822,7 +1821,7 @@ void FASTCALL ControllerDMA_naomi(void* device_instance,u32 Command,u32* buffer_
 				memset(buffer_out_b,0x20,256);
 				memcpy(buffer_out_b,ID,0x38-4);
 				buffer_out_len=256;
-				ret(0x83);
+				return (0x83);
 			}
 		/*typedef struct {
 			DWORD		func;//4
@@ -1842,7 +1841,6 @@ void FASTCALL ControllerDMA_naomi(void* device_instance,u32 Command,u32* buffer_
 				//			((((recadr == 0x20) ? 0x20 : 0) << 16) & 0xFF0000) |
 				//			(((112/4) << 24) & 0xFF000000))); ptr_out += 4;
 
-				responce=5;
 
 				//caps
 				//4
@@ -1895,7 +1893,7 @@ void FASTCALL ControllerDMA_naomi(void* device_instance,u32 Command,u32* buffer_
 				//2
 				w16(0xF401); 
 			}
-			break;
+			return 5;
 
 		/* controller condition structure 
 		typedef struct {//8 bytes
@@ -1914,7 +1912,6 @@ void FASTCALL ControllerDMA_naomi(void* device_instance,u32 Command,u32* buffer_
 				//			(((u16)sendadr << 8) & 0xFF00) |
 				//			((((recadr == 0x20) ? 0x20 : 1) << 16) & 0xFF0000) |
 				//			(((12 / 4 ) << 24) & 0xFF000000))); ptr_out += 4;
-				responce=0x08;
 				//caps
 				//4
 				//WriteMem32(ptr_out, (1 << 24)); ptr_out += 4;
@@ -1945,7 +1942,7 @@ void FASTCALL ControllerDMA_naomi(void* device_instance,u32 Command,u32* buffer_
 				//1
 				//WriteMem8(ptr_out, 10); ptr_out += 1;
 			}
-			break;
+			return 8;
 
 		default:
 			printf("unknown MAPLE Frame\n");
