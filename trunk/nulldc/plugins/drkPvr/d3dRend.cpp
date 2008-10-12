@@ -1243,7 +1243,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		if (fread(temp,strlen(tag),1,f)!=1)
 			goto __error_out;
 		if (memcmp(temp,tag,strlen(tag)))
-			goto __error_out;//GOTO is evil, right ? >:
+			goto __error_out;//GOTO is evil, right ? >:~
 
 		//check hash value
 		if (fread(temp,16,1,f)!=1)
@@ -2370,6 +2370,9 @@ __error_out:
 	}
 	u32 THREADCALL RenderThead_internal(void* param)
 	{
+		LARGE_INTEGER freq,InitStart,InitEnd;
+		QueryPerformanceFrequency(&freq);
+		QueryPerformanceCounter(&InitStart);
 		render_restart=false;
 		d3d_do_restart=false;
 		d3d9 = Direct3DCreate9(D3D_SDK_VERSION);
@@ -2526,7 +2529,12 @@ __error_out:
 		{
 			verifyc(dev->CreateTexture(16,64,1,D3DUSAGE_DYNAMIC,D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,&pal_texture,0));
 			verifyc(dev->CreateTexture(128,1,1,D3DUSAGE_DYNAMIC,D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,&fog_texture,0));
+			LARGE_INTEGER ps_compile_start,ps_compile_end;
+			QueryPerformanceCounter(&ps_compile_start);
 			PrecompilePS();
+			QueryPerformanceCounter(&ps_compile_end);
+			
+			printf("Compiling and loading shaders took %.2f ms\n",(ps_compile_end.QuadPart-ps_compile_start.QuadPart)/(freq.QuadPart/1000.0));
 
 #if MODVOL
 			ID3DXBuffer* perr;
@@ -2588,6 +2596,10 @@ __error_out:
 		rtt_address=-1;
 		rtt_FrameNumber=0;
 		d3d_init_done=true;
+
+		QueryPerformanceCounter(&InitEnd);
+			
+		printf("Initialising 3D Renderer took %.2f ms\n",(InitEnd.QuadPart-InitStart.QuadPart)/(freq.QuadPart/1000.0));
 
 		while(1)
 		{
@@ -2783,20 +2795,20 @@ nl:
 			vertex_ptr+=strip_vs;
 		}
 		cv[0].x=0;
-		cv[0].y=480;
+		cv[0].y=0;
 		cv[0].z=bg_d.f;
 
-		cv[1].x=0;
+		cv[1].x=640*scale_x;
 		cv[1].y=0;
 		cv[1].z=bg_d.f;
 
-		cv[2].x=640*scale_x;
+		cv[2].x=0;
 		cv[2].y=480;
 		cv[2].z=bg_d.f;
 
 		cv[3]=cv[2];
 		cv[3].x=640*scale_x;
-		cv[3].y=0;
+		cv[3].y=480;
 		cv[3].z=bg_d.f;
 		
 		RenderWasStarted=true;
