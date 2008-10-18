@@ -2,6 +2,7 @@
 #include "dsp.h"
 #include "mem.h"
 #include <math.h>
+#undef FAR
 
 //#define CLIP_WARN
 #define key_printf(x)
@@ -201,24 +202,49 @@ struct ChannelCommonData
 	u32 pad_13:16;
 
 	//+2C	--	FLV0[12:0]
+	u32 FLV0:13;
+	u32 rez_2C_0:3;
+
 	u32 pad_14:16;
 
 	//+30	--	FLV1[12:0]
+	u32 FLV1:13;
+	u32 rez_30_0:3;
+	
 	u32 pad_15:16;
 
 	//+34	--	FLV2[12:0]
+	u32 FLV2:13;
+	u32 rez_34_0:3;
+	
 	u32 pad_16:16;
 
 	//+38	--	FLV3[12:0]
+	u32 FLV3:13;
+	u32 rez_38_0:3;
+	
 	u32 pad_17:16;
 
 	//+3C	--	FLV4[12:0]
+	u32 FLV4:13;
+	u32 rez_3C_0:3;
+	
 	u32 pad_18:16;
 	
 	//+40	--	FAR[4:0]	--	FD1R[4:0]
+	u32 FD1R:5;
+	u32 rez_40_0:3;
+	u32 FAR:5;
+	u32 rez_40_1:3;
+
 	u32 pad_19:16;
 
 	//+44	--	FD2R[4:0]	--	FRR[4:0]
+	u32 FRR:5;
+	u32 rez_44_0:3;
+	u32 FD2R:5;
+	u32 rez_44_1:3;
+
 	u32 pad_20:16;
 };
 
@@ -562,6 +588,27 @@ struct AicaChannel
 			rv=0x3f;
 		return rv;
 	}
+	u32 AEG_EffRateReal(u32 re)
+	{
+		s32 reg=re-(9*2);
+		u32 step=update_rate>>ChanData->KRS;
+		if (ChanData->KRS==0xF)
+			step=1024;
+		//s32 sft=(reg-1)/2;
+		float sft=reg/2;
+		step=(int)(step*powf(2,sft));
+		/*
+		if (sft<0)
+			step>>=(-sft);
+		else
+			step<<=(sft);
+
+		if (reg&1)
+			step=step*23/16;//pow(2,0.5)=1.141*16=22.627
+		*/
+
+		return step<<(AEG_STEP_BITS-14);
+	}
 	void AEG_step()
 	{
 		switch(AEG.state)
@@ -584,7 +631,7 @@ struct AicaChannel
 		case EG_Decay1:
 			{
 				//x2
-				AEG.val+=AEG_DSR_SPS[AEG_EffRate(ChanData->D1R)];
+				AEG.val+=AEG_DSR_SPS[AEG_EffRate(ChanData->D1R)];//AEG_EffRateReal(ChanData->D1R);//AEG_DSR_SPS[AEG_EffRate(ChanData->D1R)];
 				if (((u32)AEG.GetValue()>>5)>=ChanData->DL)
 				{
 					aeg_printf("[%d]AEG_step : Switching to EG_Decay2 @ %x\n",Channel,AEG.GetValue());
@@ -595,7 +642,7 @@ struct AicaChannel
 		case EG_Decay2:
 			{
 				//x3
-				AEG.val+=AEG_DSR_SPS[AEG_EffRate(ChanData->D2R)];
+				AEG.val+=AEG_DSR_SPS[AEG_EffRate(ChanData->D2R)];//AEG_EffRateReal(ChanData->D2R);//AEG_DSR_SPS[AEG_EffRate(ChanData->D2R)];
 				if (AEG.GetValue()>=0x3FF)
 				{
 					AEG.SetValue(0x3FF);
@@ -606,7 +653,7 @@ struct AicaChannel
 			break;
 		case EG_Release: //olny on key_off ?
 			{
-				AEG.val+=AEG_DSR_SPS[AEG_EffRate(ChanData->RR)];
+				AEG.val+=AEG_DSR_SPS[AEG_EffRate(ChanData->RR)];//AEG_EffRateReal(ChanData->RR);//AEG_DSR_SPS[AEG_EffRate(ChanData->RR)];
 				
 				if (AEG.GetValue()>=0x3FF)
 				{
@@ -1064,41 +1111,3 @@ void AICA_Sample()
 
 	WriteSample(mixr,mixl);
 }
-//Decoder : decode a sample, FORWARD direction only, may need substeping
-struct Decoder
-{
-	const int substeps;	//1 if steping is needed
-	const int bps;		//bits per sample
-	//Data is 
-	SampleType Decode(u32 data);
-
-	void OnStart();//Called when the buffer has warped, right before the first Decode is done
-};
-//Channel : handles looping, calls the Decoder where appropriate
-/*
-struct AicaChannelEx
-{
-	fp_22_10 samples_to_decode;
-	_EG AEG;
-	fp_22_10 CA;
-	
-	void Decode()
-	{
-		if (samples_to_decode.ip==0)
-			return;
-		//decode samples
-		samples_to_decode.ip=0;
-	}
-
-	//range : s16 
-	//When AEG state is release & vol =0 then no mem reads are done.WTF happens if adpcm ? counters still count? what about looping?
-	SampleType GetSample()
-	{
-		if (AEG.state == EG_Release && AEG.value.ip=0x3FF)
-		{
-		}
-		
-	}
-
-};
-*/
