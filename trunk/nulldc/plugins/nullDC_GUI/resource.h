@@ -77,6 +77,8 @@
 #define IDC_ADDR                        1057
 #define IDB_GOTO                        1058
 #define IDS_FR0                         1059
+#define IDC_ADDR2                       1059
+#define IDC_MBPADDR                     1059
 #define IDS_FR1                         1060
 #define IDS_FR2                         1061
 #define IDS_FR3                         1062
@@ -106,6 +108,8 @@
 #define IDC_FPSEL2                      1086
 #define IDC_FPSEL3                      1087
 #define IDB_START2                      1088
+#define IDB_REMOVEMBP                   1088
+#define IDB_ADDMBP                      1089
 #define IDC_CHECK3                      1090
 #define IDC_EDIT1                       1091
 #define IDC_MAPLESUB1                   1091

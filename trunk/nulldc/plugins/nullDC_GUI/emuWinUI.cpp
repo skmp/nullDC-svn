@@ -4,7 +4,7 @@
 
 #include "nullDC_GUI.h"
 #include "CPicture.h"
-
+#include "hwbrk.h"
 #include <math.h>
 
 //#include "emuMode.h"
@@ -1462,6 +1462,24 @@ INT_PTR CALLBACK DlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 			MessageBox( hWnd, L"FIND",L"", MB_OK );
 			return true;
 
+		case IDB_ADDMBP:
+			{
+				GetDlgItemText( hWnd, IDC_MBPADDR, szAddr, 32 );
+				u32 addr=htoi(szAddr);
+				//DWORD old;
+				//VirtualProtect((void*)addr,4,PAGE_NOACCESS,&old);
+				HANDLE s=SetHardwareBreakpoint(emu.EmuThread,HWBRK_TYPE_READWRITE,HWBRK_SIZE_4,(void*)addr);
+				printf("MBP @ 0x%08X=%08X\n",addr,s);
+			}
+			break;
+		case IDB_REMOVEMBP:
+			{
+			GetDlgItemText( hWnd, IDC_ADDR, szAddr, 32 );
+			u32 addr=htoi(szAddr);
+			//DWORD old;
+			//VirtualProtect((void*)addr,4,PAGE_READWRITE,&old);
+			}
+			break;
 		/////////////////////////////
 		case IDB_STOP:
 			EmuStop();
