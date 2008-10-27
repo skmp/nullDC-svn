@@ -746,6 +746,8 @@ bool RamLockedWrite(u8* address,u32* sp)
 	{
 		size_t addr_hash = offset/PAGE_SIZE;
 		BlockList* list=&BlockPageLists[addr_hash];
+		if (list->ItemCount==0)
+			return false;
 		PageInfo[addr_hash].invalidates++;
 					
 		//for (size_t i=0;i<list->ItemCount;i++)

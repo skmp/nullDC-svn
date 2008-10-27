@@ -17,7 +17,7 @@ bool dc_inited=false;
 bool dc_reseted=false;
 bool dc_ingore_init=false;
 bool dc_running=false;
-
+void* hEmuThread;
 void _Reset_DC(bool Manual);
 
 enum emu_thread_state_t
@@ -80,15 +80,14 @@ u32 THREADCALL emulation_thead(void* ptar)
 	emu_thread_rv=RV_OK;
 
 	printf("+Emulation thread started \n");
-	HANDLE hThreadreal;
 	DuplicateHandle(GetCurrentProcess(), 
 		GetCurrentThread(), 
 		GetCurrentProcess(),
-		&hThreadreal, 
+		&(HANDLE)hEmuThread, 
 		0,
 		FALSE,
 		DUPLICATE_SAME_ACCESS);
-	init_Profiler(hThreadreal);
+	init_Profiler(hEmuThread);
 
 	while (emu_thread_state!=EMU_QUIT)
 	{
@@ -191,7 +190,7 @@ u32 THREADCALL emulation_thead(void* ptar)
 	}
 	emu_thread_rv=RV_OK;
 	term_Profiler();
-	CloseHandle(hThreadreal);
+	CloseHandle(hEmuThread);
 	printf("-Emulation thread stoped \n");
 
 	return 0;

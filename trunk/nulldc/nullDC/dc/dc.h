@@ -17,3 +17,5 @@ void Stop_DC();
 void LoadBiosFiles();
 bool IsDCInited();
 void SwitchCPU_DC();
+
+extern void* hEmuThread;
