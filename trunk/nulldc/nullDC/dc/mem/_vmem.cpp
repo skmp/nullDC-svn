@@ -34,6 +34,27 @@ void* _vmem_MemInfo[0x10000];
 u8* sh4_reserved_mem;
 u8* sh4_ram_alt;	//alternative ram space map
 
+	/*
+	Idea for mmu : 
+	__asm
+	{
+	
+	mov eax,ecx;
+	mov edx,ecx;
+	shr eax,10;
+	//read mem info
+	add edx,[_vmem_MemInfo+eax*4];
+	[test edx,0x8000001]
+	js call;
+	mov eax,[edx];	//note : upper bits dont matter , so i do 32b read here ;) (to get read of partial register stalls)
+	ret;
+
+direct:
+	shr eax,12;
+	jmp [_vmem_RF8+eax-0x800000*4];
+	}
+	*/
+
 //ReadMem/WriteMem functions
 //ReadMem
 u8 naked fastcall _vmem_ReadMem8(u32 Address)
