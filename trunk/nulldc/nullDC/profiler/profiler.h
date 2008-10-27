@@ -20,7 +20,7 @@ struct prof_info
 	int dyna_tick_count;		//on dynarec mem
 	int main_tick_count;		//on main exe
 	int rest_tick_count;		//dunno where :p
-
+	u64 cd;
 	#define percent(x) (x##_tick_count*100.0)/(total_tick_count)
 	#define effsceas(x)    (cd/(double)x##_tick_count/1000.0/1000.0/20.0) 
 	void ToText(wchar* dest)
@@ -30,7 +30,7 @@ struct prof_info
 			wcscpy(dest,_T("No profile info"));
 			return;
 		}
-		u64 cd=CycleDiff();
+		cd=CycleDiff();
 		dest+=swprintf(dest,_T("gfx %.3f,% 3.1f%% | "),effsceas(gfx),percent(gfx));
 		dest+=swprintf(dest,_T("aica %.3f,% 3.1f%% | "),effsceas(aica),percent(aica));
 		if (percent(gdrom)!=0)

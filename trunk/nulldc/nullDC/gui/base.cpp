@@ -509,6 +509,7 @@ bool OpenAndLoadGUI(wchar* file)
 	gpi.GetPerformanceInfo=b_GetPerformanceInfo;
 
 	gpi.BroardcastEvent=BroadcastEvent;
+	gpi.EmuThread=hEmuThread;
 
 	if (rv_ok != libgui.Load(&gpi))
 		return false;
