@@ -581,6 +581,7 @@ void gd_process_spi_cmd()
 			}
 			else
 			{*/
+		        	gd_reset();
 				gd_spi_pio_end((u8*)&g_aValues0x71_b[0],g_aValues0x71_b_sz);//uCount
 			//}
 			//iAux^=1;
