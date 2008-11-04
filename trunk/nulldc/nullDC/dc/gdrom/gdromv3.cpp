@@ -581,7 +581,7 @@ void gd_process_spi_cmd()
 			}
 			else
 			{*/
-		        	gd_reset();
+				SecNumber.Status=GD_STANDBY; // Why this needs to be here ? fixes utopia.0x71 makes it enter GD_STANDBY? do all non-audio commands do so ?
 				gd_spi_pio_end((u8*)&g_aValues0x71_b[0],g_aValues0x71_b_sz);//uCount
 			//}
 			//iAux^=1;
