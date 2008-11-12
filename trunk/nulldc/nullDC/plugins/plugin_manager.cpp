@@ -447,17 +447,49 @@ void EXPORT_CALL menu_handle_attach_sub(u32 id,void* win,void* p)
 {
 	size_t offs=(u8*)p-(u8*)0;
 	u32 plid=(u32)offs&0xFFFFFF;
-	u32 port=((u32)offs>>24);
+	
+	u32 prt=((u32)offs>>24);
+
+	u32 port=prt&3;
+	u32 subport=prt>>2;
+
+	verify(MapleDevices_dd[port][subport].Created==false);
 
 	CreateMapleSubDevice(port&3,port>>2,MapleDeviceList_cached[plid].dll,true);
+	MapleDevices_dd[port][subport].Created=true;
+
+	if (plugins_inited)
+	{	
+		MapleDeviceDefinition* mdd=MapleDevices_dd[port][subport].mdd;
+
+		FindMaplePlugin(mdd)->Init(MapleDevices[port].subdevices[subport].data,mdd->id,0);
+		MapleDevices_dd[port][subport].Inited=true;
+	}
 }
 void EXPORT_CALL menu_handle_detach_sub(u32 id,void* win,void* p)
 {
 	size_t offs=(u8*)p-(u8*)0;
 
-	u32 port=((u32)offs>>24);
+	u32 prt=((u32)offs>>24);
 
-	DestroyMapleSubDevice(port&3,port>>2);
+	u32 port=prt&3;
+	u32 subport=prt>>2;
+
+	verify(MapleDevices_dd[port][subport].Created==true);
+
+	if (MapleDevices_dd[port][subport].Inited)
+	{
+		MapleDeviceDefinition* mdd=MapleDevices_dd[port][subport].mdd;
+
+		FindMaplePlugin(mdd)->Term(MapleDevices[port].subdevices[subport].data,mdd->id);
+		MapleDevices_dd[port][subport].Inited=false;
+	}
+
+	if (MapleDevices_dd[port][subport].Created)
+	{
+		DestroyMapleSubDevice(port,subport);
+		MapleDevices_dd[port][subport].Created=false;
+	}
 }
 void cm_MampleSubEmpty(u32 root,u32 port,u32 subport)
 {
