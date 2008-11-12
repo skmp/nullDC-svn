@@ -11,6 +11,7 @@ emu_info host;
 #include <windowsx.h>
 #include <winsock2.h>
 #include <windows.h>
+#include <time.h>
 
 #include <ws2tcpip.h>
 #include <windowsx.h>
@@ -2634,13 +2635,40 @@ u32 FASTCALL VmuDMA(void* device_instance,u32 Command,u32* buffer_in,u32 buffer_
 			}
 			else if (buffer_in[0]&MFID_3_Clock)
 			{
-				//buffer_out[0] = MFID_3_Clock;
-				printf("CLOCK READ !\n");
-				return MDRE_UnknownFunction;//bad function
+				if (buffer_in[1]!=0 || buffer_in_len!=8)
+				{
+					printf("VMU: Block read: MFID_3_Clock : invalid params \n");
+					return MDRE_TransminAgain;		//invalid params
+				}
+				else
+				{
+					buffer_out[0] = MFID_3_Clock;
+					buffer_out_len=12;
+					
+					time_t now;
+					time(&now);
+					tm* timenow=localtime(&now);
+					u8* timebuf=(u8*)&buffer_in[1];	//YY M D H M S DotY
+					
+					timebuf[0]=(timenow->tm_year+1900)%256;
+					timebuf[1]=(timenow->tm_year+1900)/256;
+
+					timebuf[2]=timenow->tm_mon+1;
+					timebuf[3]=timenow->tm_mday;
+
+					timebuf[4]=timenow->tm_hour;
+					timebuf[5]=timenow->tm_min;
+					timebuf[6]=timenow->tm_sec;
+					timebuf[7]=0;
+
+					printf("VMU: CLOCK Read-> datetime is %04d/%02d/%02d ~ %02d:%02d:%02d!\n",timebuf[0]+timebuf[1]*256,timebuf[2],timebuf[3],timebuf[4],timebuf[5],timebuf[6]);
+
+					return MDRS_DataTransfer;//transfer reply ...
+				}
 			}
 			else 
 			{
-				printf("VMU: cmd 11 -> Bad function used, returning -2\n");
+				printf("VMU: cmd MDCF_BlockRead -> Bad function used, returning -2\n");
 				return MDRE_UnknownFunction;//bad function
 			}
 			break;
@@ -2705,12 +2733,18 @@ u32 FASTCALL VmuDMA(void* device_instance,u32 Command,u32* buffer_in,u32 buffer_
 			}
 			else if (buffer_in[0]&MFID_3_Clock)
 			{
-				printf("CLOCK WRITE !\n");
-				return  MDRE_UnknownFunction;//bad function
+				if (buffer_in[1]!=0 || buffer_in_len!=16)
+					return MDRE_TransminAgain;	//invalid params ...
+				else
+				{
+					u8* timebuf=(u8*)&buffer_in[2];	//YY M D H M S DotY
+					printf("VMU: CLOCK Write-> datetime is %04d/%02d/%02d ~ %02d:%02d:%02d! Nothing set tho ...\n",timebuf[0]+timebuf[1]*256,timebuf[2],timebuf[3],timebuf[4],timebuf[5],timebuf[6]);
+					return  MDRS_DeviceReply;//ok !
+				}
 			}
 			else
 			{
-				printf("VMU: cmd 12 -> Bad function used, returning MDRE_UnknownFunction\n");
+				printf("VMU: cmd MDCF_BlockWrite -> Bad function used, returning MDRE_UnknownFunction\n");
 				return  MDRE_UnknownFunction;//bad function
 			}
 			break;
