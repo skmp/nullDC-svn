@@ -194,6 +194,55 @@ _joypad_settings_entry joypad_settings_K[] =
 _joypad_settings_entry joypad_settings[4][32];
 #undef D
 
+enum MapleFunctionID
+{
+	MFID_0_Input		= 0x01000000,		//DC Controller, Lightgun buttons, arcade stick .. stuff like that
+	MFID_1_Storage		= 0x02000000,		//VMU , VMS
+	MFID_2_LCD			= 0x04000000,		//VMU
+	MFID_3_Clock		= 0x08000000,		//VMU
+	MFID_4_Mic			= 0x10000000,		//DC Mic (, dreameye too ?)
+	MFID_5_ARGun		= 0x20000000,		//Artificial Retina gun ? seems like this one was never developed or smth -- i only remember of lightguns
+	MFID_6_Keyboard		= 0x40000000,		//DC Keyboard
+	MFID_7_LightGun		= 0x80000000,		//DC Lightgun
+	MFID_8_Vibration	= 0x00010000,		//Puru Puru
+	MFID_9_Mouse		= 0x00020000,		//DC Mouse
+	MFID_10_StorageExt	= 0x00040000,		//Storage ? propably never used
+	MFID_11_Camera		= 0x00080000,		//DreamEye
+};
+enum MapleDeviceCommand
+{
+	MDC_DeviceRequest	=0x01,			//7 words.Note : Initialises device
+	MDC_AllStatusReq	=0x02,			//7 words + device depedant ( seems to be 8 words)
+	MDC_DeviceReset		=0x03,			//0 words
+	MDC_DeviceKill		=0x04,			//0 words
+	MDC_DeviceStatus    =0x05,			//Same as MDC_DeviceRequest ?
+	MDC_DeviceAllStatus =0x06,			//Same as MDC_AllStatusReq ?
+
+	//Varius Functions
+	MDCF_GetCondition=0x09,				//FT
+	MDCF_GetMediaInfo=0x0A,				//FT,PT,3 pad
+	MDCF_BlockRead   =0x0B,				//FT,PT,Phase,Block #
+	MDCF_BlockWrite  =0x0C,				//FT,PT,Phase,Block #,data ...
+	MDCF_GetLastError=0x0D,				//FT,PT,Phase,Block #
+	MDCF_SetCondition=0x0E,				//FT,data ...
+	MDCF_MICControl	 =0x0F,				//FT,MIC data ...
+	MDCF_ARGunControl=0x10,				//FT,AR-Gun data ...
+};
+enum MapleDeviceRV
+{
+	MDRS_DeviseStatus=0x05,			//28 words
+	MDRS_DeviseStatusAll=0x06,		//28 words + device depedant data
+	MDRS_DeviceReply=0x07,			//0 words
+	MDRS_DataTransfer=0x08,			//FT,depends on the command
+
+	MDRE_UnknownFunction=0xFE,		//0 words
+	MDRE_UnknownCmd=0xFD,			//0 words
+	MDRE_TransminAgain=0xFC,		//0 words
+	MDRE_FileError=0xFB,			//1 word, bitfield
+	MDRE_LCDError=0xFA,				//1 word, bitfield
+	MDRE_ARGunError=0xF9,			//1 word, bitfield
+};
+
 void LoadSettings();
 void SaveSettings();
 u8 kb_shift          ; //shift keys pressed (bitmask)	//1
@@ -1788,6 +1837,7 @@ u32 FASTCALL ControllerDMA_naomi(void* device_instance,u32 Command,u32* buffer_i
 					//EEprom access (Writting)
 				case 0x0B:
 					{
+						printf("EEprom write ?\n");
 						int address=buffer_in_b[1];
 						int size=buffer_in_b[2];
 		//				memcpy(EEprom+address,buffer_in_b+4,size);
@@ -2465,7 +2515,8 @@ u32 FASTCALL VmuDMA(void* device_instance,u32 Command,u32* buffer_in,u32 buffer_
 			WORD		standby_power;//2
 			WORD		max_power;//2
 		} maple_devinfo_t;*/
-		case 1:
+		case MDC_DeviceRequest:
+		{
 			//header
 			//WriteMem32(ptr_out,(u32)(0x05 | //response
 			//			(((u16)sendadr << 8) & 0xFF00) |
@@ -2474,13 +2525,13 @@ u32 FASTCALL VmuDMA(void* device_instance,u32 Command,u32* buffer_in,u32 buffer_
 
 			//caps
 			//4
-			w32(14 << 24);
+			w32(MFID_1_Storage | MFID_2_LCD | MFID_3_Clock);
 
 			//struct data
 			//3*4
-			w32( 0x403f7e7e); 
-			w32( 0x00100500);
-			w32( 0x00410f00);
+			w32( 0x403f7e7e);	//for clock
+			w32( 0x00100500);	//for LCD
+			w32( 0x00410f00);	//for storage
 			//1	area code
 			w8(0xFF);
 			//1	direction
@@ -2522,14 +2573,16 @@ u32 FASTCALL VmuDMA(void* device_instance,u32 Command,u32* buffer_in,u32 buffer_
 
 			//2
 			w16(0x0082); 
-			return 5;
+			return MDRS_DeviseStatus;
+		}
 
 				//in[0] is function used ?
 				//out[0] is function used ?
-		case 10:
-			if (buffer_in[0]& (2<<24))
+		case MDCF_GetMediaInfo:
+		{
+			if (buffer_in[0]& MFID_1_Storage)
 			{
-				buffer_out[0] = (2<<24);//is that ok ?
+				buffer_out[0] = MFID_1_Storage;//is that ok ?
 				maple_getvmuinfo_t* vmui = (maple_getvmuinfo_t*)(&buffer_out[1]);
 				//ZeroMemory(pMediaInfo,sizeof(TMAPLE_MEDIAINFO));
 				memset(vmui,0,sizeof(maple_getvmuinfo_t));
@@ -2545,17 +2598,20 @@ u32 FASTCALL VmuDMA(void* device_instance,u32 Command,u32* buffer_in,u32 buffer_
 				vmui->number_info_blocks = 0xd;//0x100;//0xd
 				vmui->reserverd0 = 0x0000;
 				buffer_out_len=4+(sizeof(maple_getvmuinfo_t));
-				return 8;//data transfer
+				return MDRS_DataTransfer;//data transfer
 			}
 			else
-				return -2;//bad function
+			{
+				printf("VMU: MDCF_GetMediaInfo -> Bad function used, returning -2\n");
+				return MDRE_UnknownFunction;//bad function
+			}
 
-		case 11:
-			if(buffer_in[0]&(2<<24))
+		case MDCF_BlockRead:
+			if(buffer_in[0]&MFID_1_Storage)
 			{
 				//VMU_info* dev=(VMU_info*)((*device_instance).data);
 
-				buffer_out[0] = (2<<24);
+				buffer_out[0] = MFID_1_Storage;
 				u32 Block = (SWAP32(buffer_in[1]))&0xffff;
 				buffer_out[1] = buffer_in[1];
 				if (Block>255)
@@ -2566,20 +2622,33 @@ u32 FASTCALL VmuDMA(void* device_instance,u32 Command,u32* buffer_in,u32 buffer_
 				}
 				memcpy(&buffer_out[2],(dev->data)+Block*512,512);
 				buffer_out_len=(512+8);
-				return 8;//data transfer
+				return MDRS_DataTransfer;//data transfer
 			}
-			else if (buffer_in[0]&(4<<24))
+			else if (buffer_in[0]&MFID_2_LCD)
 			{
-				buffer_out[0] = (4<<24);
+				buffer_out[0] = MFID_2_LCD;
 				buffer_out[1] = buffer_in[1];
 				memcpy(&buffer_out[2],(dev->lcd.data),192);
 				buffer_out_len=(192+8);
-				return 8;//data transfer
+				return MDRS_DataTransfer;//data transfer
+			}
+			else if (buffer_in[0]&MFID_3_Clock)
+			{
+				//buffer_out[0] = MFID_3_Clock;
+				printf("CLOCK READ !\n");
+				return MDRE_UnknownFunction;//bad function
 			}
 			else 
-				return -2;//bad function
-		case 12:
-			if(buffer_in[0]&(2<<24))
+			{
+				printf("VMU: cmd 11 -> Bad function used, returning -2\n");
+				return MDRE_UnknownFunction;//bad function
+			}
+			break;
+		}
+
+		case MDCF_BlockWrite:
+		{
+			if(buffer_in[0]&MFID_1_Storage)
 			{
 				u32 Block = (SWAP32(buffer_in[1]))&0xffff;
 				u32 Phase = ((SWAP32(buffer_in[1]))>>16)&0xff; 
@@ -2593,17 +2662,20 @@ u32 FASTCALL VmuDMA(void* device_instance,u32 Command,u32* buffer_in,u32 buffer_
 					fclose(f);
 				}
 				else
+				{
 					printf("Failed to open %s for saving vmu data\n",dev->file);
-				return 7;//just ko
+					//return MDRE_FileError; -> this also has to return an error bitfield, will do so later on ...
+				}
+				return MDRS_DeviceReply;//just ko
 			}
-			else if (buffer_in[0]&(4<<24))
+			else if (buffer_in[0]&MFID_2_LCD)
 			{
 				memcpy(dev->lcd.data,&buffer_in[2],192);
 				//Update lcd window
 				if (!dev->lcd.visible)
 				{
-					ShowWindow(dev->lcd.handle,SHOW_OPENNOACTIVATE);
 					dev->lcd.visible=true;
+					ShowWindow(dev->lcd.handle,SHOW_OPENNOACTIVATE);
 				}
 				//if(LCDBitmap)
 				{
@@ -2629,29 +2701,48 @@ u32 FASTCALL VmuDMA(void* device_instance,u32 Command,u32* buffer_in,u32 buffer_
 					}
 					InvalidateRect(dev->lcd.handle,NULL,FALSE);
 				}
-				return  7;//just ko
+				return  MDRS_DeviceReply;//just ko
+			}
+			else if (buffer_in[0]&MFID_3_Clock)
+			{
+				printf("CLOCK WRITE !\n");
+				return  MDRE_UnknownFunction;//bad function
 			}
 			else
-				return  -2;//bad function
+			{
+				printf("VMU: cmd 12 -> Bad function used, returning MDRE_UnknownFunction\n");
+				return  MDRE_UnknownFunction;//bad function
+			}
+			break;
+		}
+
+		case MDCF_GetLastError:
+			return MDRS_DeviceReply;//just ko
 			break;
 
-		case 13:
-			return 7;//just ko
-			break;
-		case 14:
-			if (buffer_in[0]&(8<<24))
+		case MDCF_SetCondition:
+		{
+			if (buffer_in[0]&MFID_3_Clock)
 			{
-				//printf("BEEP : %d %d | %d %d\n",((u8*)buffer_in)[4],((u8*)buffer_in)[5],((u8*)buffer_in)[6],((u8*)buffer_in)[7]);
-				return  7;//just ko
+				if (buffer_in[1])
+				{
+					u8* beepbuf=(u8*)&buffer_in[1];
+					printf("BEEP : %d %d | %d %d\n",beepbuf[0],beepbuf[1],beepbuf[2],beepbuf[3]);
+				}
+				return  MDRS_DeviceReply;//just ko
 			}
 			else
-				return -2;//bad function
+			{
+				printf("VMU: cmd MDCF_SetCondition -> Bad function used, returning MDRE_UnknownFunction\n");
+				return MDRE_UnknownFunction;//bad function
+			}
 			break;
+		}
 			
 
 		default:
 			printf("unknown MAPLE COMMAND %d\n",Command);
-			return -1;
+			return MDRE_UnknownCmd;
 	}
 
 }
