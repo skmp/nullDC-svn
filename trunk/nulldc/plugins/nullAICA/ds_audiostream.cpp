@@ -23,7 +23,7 @@ u32 sound_buffer_count;
 bool StreamV2=false;
 void UpdateBuff(u8* pos)
 {
-	bool hasbuf=asRingStretchRead(pos);
+	bool hasbuf=asRingRead(pos);
 	if (settings.GlobalMute)
 	{
 		memset(pos,0,wait_buffer_size);

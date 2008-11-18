@@ -21,6 +21,10 @@ volatile u32 ReadPtr;	//next sample to read
 u32 BufferByteSz;
 u32 BufferSampleCount;
 
+u32 gen_samples=0;
+LARGE_INTEGER time_now,time_last;
+LARGE_INTEGER time_diff;
+
 #ifdef LOG_SOUND
 WaveWriter rawout("d:\\aica_out.wav");
 #endif
@@ -86,6 +90,96 @@ bool asRingRead(u8* dst,u32 sz)
 		return false;
 	}
 }
+
+bool asRingStretchPitchChange(u8* dst,u32 outcount,u32 usedcount)
+{
+	bool rv=asRingRead((u8*)TempBuffer,usedcount);
+	verify(rv==true);//can't be false ...
+	u32 steps=usedcount*outcount*2;
+
+	//this does change pitch, but for a few samples it won't matter much ...
+	for (u32 cs=outcount-1;cs<steps;cs+=usedcount*2)
+	{
+		u32 srcidx=cs/(outcount*2) ;
+		verify(srcidx<usedcount);
+
+		*(SoundSample*)dst=TempBuffer[srcidx];
+		dst+=sizeof(SoundSample);
+	}
+	return true;
+}
+/*
+void DWTInv(SampleType* pout,SampleType* pin,u32 samples)
+{
+}
+void DWTFwd(SampleType* pout,SampleType* pin,u32 samples)
+{
+    //This function assumes input.length=2^n, n>1
+    //int[] output = new int[input.length];
+ 
+    for (int length = samples >> 1,u32 odd=samples&1; ; length >>= 1) 
+	{
+        //length=2^n, WITH DECREASING n
+        for (int i = 0; i < length; i++) 
+		{
+            int sum = input[i*2]+input[i*2+1];
+            int difference = input[i*2]-input[i*2+1];
+            output[i] = sum;
+            output[length+i] = difference;
+        }
+		if (odd)
+			output[length+length]=output[length+length-1];
+        if (length == 1) 
+            return;
+		odd=length&1;
+ 
+        //Swap arrays to do next iteration
+        System.arraycopy(output, 0, input, 0, length<<1);
+    }
+}
+*/
+
+//0 returns 0, 2^31 returns 0 (overflow), works for all else values
+//can be implemented like
+//mov eax,ecx; or pop eax;
+//bsr ecx,eax;
+//bsf edx,eax;
+//jz _nothing_set;
+//cmp edx,ecx	//zero (no carry) if equal, negative (since edx<=ecx) otherwise
+//adc ecx,0;	//add the carry bit;
+//
+//mov eax,1;	//generate the next number 1<<cl
+//shl eax,cl;	
+//_nothing_set:	//eax = 0 (input value) or 1<<cl
+//ret
+// ;)
+u32 next_pow2(u32 s)
+{
+	unsigned long idxR,idxF;
+	_BitScanReverse(&idxR,s);
+	if (0==_BitScanReverse(&idxF,s))
+		return s;	//its 0 anyway ...
+	else
+	{
+		//idxR==idxF -> single bit set, power of 2
+		//idxR>idxF -> more bits set, round up by next idxR
+		idxR+=((s32)idxF-(s32)idxR)>=0?0:1;
+	}
+	return 1<<idxR;
+}
+/*
+SoundSample DWTTemp[4096];
+bool asRingStretchDWT(u8* dst,u32 outcount,u32 usedcount)
+{
+	u32 strech_count=next_pow2(usedcount);
+	asRingStretchPitchChange((u8*)DWTTemp,strech_count,usedcount);
+	//do DWT
+	//shift the frequencys
+	//do iDWT
+
+	return true;
+}
+*/
 bool asRingStretchRead(u8* dst,u32 sz)
 {
 	if (sz==1)
@@ -95,34 +189,20 @@ bool asRingStretchRead(u8* dst,u32 sz)
 		sz=BufferSampleCount;
 
 	u32 used=asRingUsedCount();
+	//used=min(used,sz*3/6);
 	if (used==0)
 		return false;
 
-	if (settings.LimitFPS)
+	if (settings.LimitFPS && used>=sz)
 	{
-		if (used>=sz)
-			return asRingRead(dst,sz);
-		else
-		{
-			bool rv=asRingRead((u8*)TempBuffer,used);
-			verify(rv==true);//can't be false ...
-			u32 steps=used*sz*2;
-			
-			//this does change pitch, but for a few samples it won't matter much ...
-			for (u32 cs=sz-1;cs<steps;cs+=used*2)
-			{
-				u32 srcidx=cs/(sz*2) ;
-				verify(srcidx<used);
-
-				*(SoundSample*)dst=TempBuffer[srcidx];
-				dst+=sizeof(SoundSample);
-			}
-			return true;
-		}
-	}
 		return asRingRead(dst,sz);
-
+	}
+	else
+	{
+		return asRingStretchPitchChange(dst,sz,used);
+	}
 }
+
 void WriteSample(s16 r, s16 l)
 {
 	#ifdef LOG_SOUND
@@ -138,6 +218,19 @@ void WriteSample(s16 r, s16 l)
 		}
 		else
 			return;
+	}
+
+	gen_samples++;
+	//while limit on, 128 samples done, there is a buffer ready to be service AND speed is too fast then wait ;p
+	while (settings.LimitFPS==1 && gen_samples>128 && asRingUsedCount()>BufferSampleCount && QueryPerformanceCounter(&time_now) && (time_now.QuadPart-time_last.QuadPart)<=time_diff.QuadPart )
+	{
+		__noop;
+	}
+
+	if (settings.LimitFPS==1 && gen_samples>128)
+	{
+		gen_samples=0;
+		QueryPerformanceCounter(&time_last);
 	}
 
 	const u32 ptr=(WritePtr+1)%RingBufferSampleCount;
@@ -160,6 +253,10 @@ void WriteSamples2(s16* rl , u32 sample_count)
 
 void InitAudio()
 {
+	QueryPerformanceFrequency(&time_diff);
+	time_diff.QuadPart*=128;
+	time_diff.QuadPart/=44100;
+
 	InitAudBuffers(settings.BufferSize);
 	if (settings.SoundRenderer)
 	{

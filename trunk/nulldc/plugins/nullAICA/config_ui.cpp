@@ -1,9 +1,10 @@
 #include "config_ui.h"
 void UpdateMenuSelections();
-u32 config_scmi=0,config_stami=0;
+u32 config_scmi=0,config_stami=0,config_stami2=0;
 void Cofnig_UpdateMenuSelections()
 {
-	eminf.SetMenuItemStyle(config_stami,settings.LimitFPS?MIS_Checked:0,MIS_Checked);
+	eminf.SetMenuItemStyle(config_stami,settings.LimitFPS==1?MIS_Checked:0,MIS_Checked);
+	eminf.SetMenuItemStyle(config_stami2,settings.LimitFPS==2?MIS_Checked:0,MIS_Checked);
 }
 INT_PTR CALLBACK ConfigDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {

@@ -36,12 +36,24 @@ void EXPORT_CALL handle_Config(u32 id,void* w,void* p)
 }
 void EXPORT_CALL handle_SA(u32 id,void* w,void* p)
 {
-	if (settings.LimitFPS)
+	if (settings.LimitFPS==1)
 		settings.LimitFPS=0;
 	else
 		settings.LimitFPS=1;
 
-	eminf.SetMenuItemStyle(id,settings.LimitFPS?MIS_Checked:0,MIS_Checked);
+	eminf.SetMenuItemStyle(config_stami,settings.LimitFPS==1?MIS_Checked:0,MIS_Checked);
+	eminf.SetMenuItemStyle(config_stami2,settings.LimitFPS==2?MIS_Checked:0,MIS_Checked);
+	SaveSettings();
+}
+void EXPORT_CALL handle_SA2(u32 id,void* w,void* p)
+{
+	if (settings.LimitFPS==2)
+		settings.LimitFPS=0;
+	else
+		settings.LimitFPS=2;
+
+	eminf.SetMenuItemStyle(config_stami,settings.LimitFPS==1?MIS_Checked:0,MIS_Checked);
+	eminf.SetMenuItemStyle(config_stami2,settings.LimitFPS==2?MIS_Checked:0,MIS_Checked);
 	SaveSettings();
 }
 void EXPORT_CALL handle_DSP(u32 id,void* w,void* p)
@@ -82,7 +94,8 @@ s32 FASTCALL OnLoad(emu_info* em)
 	LoadSettings();
 
 	config_scmi=eminf.AddMenuItem(em->RootMenu,-1,L"Config",handle_Config,0);
-	config_stami=eminf.AddMenuItem(em->RootMenu,-1,L"Sync Audio",handle_SA,settings.LimitFPS);
+	config_stami=eminf.AddMenuItem(em->RootMenu,-1,L"Limit Speed && Sync audio",handle_SA,settings.LimitFPS==1);
+	config_stami2=eminf.AddMenuItem(em->RootMenu,-1,L"Sync Audio",handle_SA2,settings.LimitFPS==2);
 	eminf.AddMenuItem(em->RootMenu,-1,L"DSP Emulation",handle_DSP,settings.DSPEnabled);
 	eminf.AddMenuItem(em->RootMenu,-1,L"Mute CDDA",handle_MCDDA,settings.CDDAMute);
 	eminf.AddMenuItem(em->RootMenu,-1,L"Mute Sound",handle_GS,settings.GlobalMute);
