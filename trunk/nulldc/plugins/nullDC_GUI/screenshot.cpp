@@ -42,9 +42,23 @@ bool Screenshot(LPCTSTR FileName, HWND hwnd)
 		RECT windowRect;
 		if (!GetWindowRect(hwnd, &windowRect))
 					ERROR_BREAK(0);
-		
+
+		if (GetWindowLong(hwnd,GWL_STYLE)&WS_MAXIMIZE && GetWindowLong(hwnd,GWL_STYLE)&WS_BORDER)
+		{
+			int ax=GetSystemMetrics(SM_CXSIZEFRAME);
+			int ay=GetSystemMetrics(SM_CYSIZEFRAME);
+			windowRect.top+=ay;
+			windowRect.bottom-=ay;
+			windowRect.left+=ax;
+			windowRect.right-=ax;
+			printf("Maximised window fixup %d %d\n",ax,ay);
+		}
+
 		int Width = windowRect.right- windowRect.left;
 		int Height = windowRect.bottom-windowRect.top;
+		
+		if (Width<=0 || Height<=0)
+			return false;
 
 		SurfDC=GetDC(GetDesktopWindow());
 		// Create a GDI-compatible device context for the surface:
