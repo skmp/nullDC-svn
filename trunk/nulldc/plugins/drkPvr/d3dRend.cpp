@@ -127,14 +127,6 @@ namespace Direct3DRenderer
 		{ {D3DTEXF_POINT,1},{D3DTEXF_POINT,1} },//Dynamic,Point
 		{ {D3DTEXF_POINT,1},{D3DTEXF_POINT,2} },//Dynamic,Full
 	};*/
-	void SetFpsText(wchar* text)
-	{
-		wcscpy(fps_text,text);
-		if (!IsFullscreen)
-		{
-			SetWindowText((HWND)emu.GetRenderTarget(), fps_text);
-		}
-	}
 	void HandleEvent(u32 evid,void* p)
 	{
 		if (evid == NDE_GUI_RESIZED )
@@ -581,6 +573,7 @@ namespace Direct3DRenderer
 	};
 
 	TexCacheList<TextureCacheData> TexCache;
+	TexCacheList<TextureCacheData> TexCache_Discard;
 
 	TextureCacheData* __fastcall GenText(TSP tsp,TCW tcw,TextureCacheData* tf)
 	{
@@ -3744,6 +3737,15 @@ nl:
 					//	,window_rect.bottom-window_rect.top);
 				}
 			}
+		}
+	}
+
+	void SetFpsText(wchar* text)
+	{
+		wsprintf(fps_text,L"%s : %d Textures",text,TexCache.textures);
+		if (!IsFullscreen)
+		{
+			SetWindowText((HWND)emu.GetRenderTarget(), fps_text);
 		}
 	}
 

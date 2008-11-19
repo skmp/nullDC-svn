@@ -80,9 +80,9 @@ public:
 
 	TexCacheEntry* Add(TexEntryType* text )
 	{
-		if (plast==0)
+		if (pfirst==0)
 		{
-			if (pfirst!=0)
+			if (plast!=0)
 			{
 				printf("Texture Cache Error , pfirst!=0 && plast==0\n");
 			}
@@ -90,12 +90,12 @@ public:
 		}
 		else
 		{
-			plast=new TexCacheEntry(plast,0,text);
-			plast->prev->next=plast;
+			pfirst=new TexCacheEntry(0,pfirst,text);
+			pfirst->next->prev=pfirst;
 		}
 
 		textures++;
-		return plast;
+		return pfirst;
 	}
 	void Remove(TexCacheEntry* texture)
 	{
