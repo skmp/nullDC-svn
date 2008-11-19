@@ -34,6 +34,8 @@ int EXPORT_CALL guiMsgBox(wchar* text,int type)
 {
 	return MessageBox(NULL,text,emu_name,type|MB_TASKMODAL);
 }
+void gdipInit();
+void gdipTerm();
 s32 EXPORT_CALL Load(gui_emu_info* emui)
 {
 	memcpy(&emu,emui,sizeof(emu));
@@ -42,7 +44,7 @@ s32 EXPORT_CALL Load(gui_emu_info* emui)
 	LoadSettings();
 	if (!uiInit())
 		return rv_serror;
-
+	gdipInit();
 	return rv_ok;
 }
 void EXPORT_CALL GetMenuIDs(MenuIDList* mid)
@@ -61,6 +63,7 @@ void EXPORT_CALL GetMenuIDs(MenuIDList* mid)
 void EXPORT_CALL Unload()
 {
 	uiTerm();
+	gdipTerm();
 }
 void EXPORT_CALL Mainloop()
 {

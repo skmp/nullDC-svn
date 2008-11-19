@@ -1,12 +1,88 @@
 #include <windows.h>
 #include <ole2.h>
 #include <comutil.h> 
+#include <Gdiplus.h>
+#include <Gdiplusflat.h>
 #include "CPicture.h"
 
 
 #define HIMETRIC_INCH   2540    // HIMETRIC units per inch
 
+using namespace Gdiplus;
 
+struct GdiPlus_T
+{
+	HMODULE gdip;
+    ULONG_PTR Token;
+	
+	typedef GpStatus WINGDIPAPI
+	GdipSaveImageToFileFP(GpImage *image, GDIPCONST WCHAR* filename,
+                    GDIPCONST CLSID* clsidEncoder, 
+                    GDIPCONST EncoderParameters* encoderParams);
+	typedef GpStatus WINGDIPAPI GdipCreateBitmapFromHBITMAPFP(HBITMAP hbm, HPALETTE hpal, GpBitmap** bitmap);
+
+	typedef GpStatus WINGDIPAPI
+GdipGetImageEncodersSizeFP(UINT *numEncoders, UINT *size);
+
+typedef GpStatus WINGDIPAPI
+GdipGetImageEncodersFP(UINT numEncoders,
+                     UINT size,
+                     ImageCodecInfo *encoders);
+typedef void WINGDIPAPI
+GdipFreeFP(void* ptr);
+
+ typedef Status WINAPI GdiplusStartupFP(
+    OUT ULONG_PTR *token,
+    const GdiplusStartupInput *input,
+    OUT GdiplusStartupOutput *output);
+
+typedef VOID WINAPI GdiplusShutdownFP(ULONG_PTR token);
+
+	bool Loaded() { return gdip!=0; }
+	GdipSaveImageToFileFP* GdipSaveImageToFile;
+	GdipCreateBitmapFromHBITMAPFP* GdipCreateBitmapFromHBITMAP;
+	GdipGetImageEncodersSizeFP* GdipGetImageEncodersSize;
+	GdipGetImageEncodersFP* GdipGetImageEncoders;
+	GdipFreeFP* GdipFree;
+
+	GdiplusStartupFP* GdiplusStartup;
+	GdiplusShutdownFP* GdiplusShutdown;
+
+	void GdiPlus_Init()
+	{
+		gdip=LoadLibrary(L"gdiplus.dll");
+		
+		if (Loaded())
+		{
+			GdipSaveImageToFile=(GdipSaveImageToFileFP*)GetProcAddress(gdip,"GdipSaveImageToFile");
+			GdipCreateBitmapFromHBITMAP=(GdipCreateBitmapFromHBITMAPFP*)GetProcAddress(gdip,"GdipCreateBitmapFromHBITMAP");
+			GdipGetImageEncodersSize=(GdipGetImageEncodersSizeFP*)GetProcAddress(gdip,"GdipGetImageEncodersSize");
+			GdipGetImageEncoders=(GdipGetImageEncodersFP*)GetProcAddress(gdip,"GdipGetImageEncoders");
+			GdipFree=(GdipFreeFP*)GetProcAddress(gdip,"GdipFree");
+			GdiplusStartup=(GdiplusStartupFP*)GetProcAddress(gdip,"GdiplusStartup");
+			GdiplusShutdown=(GdiplusShutdownFP*)GetProcAddress(gdip,"GdiplusShutdown");
+
+			//DONE WITH DLL LOADING !
+			//Init gdi plus now ..
+			GdiplusStartupInput StartupInput;//leave it to defaults :)
+			if (GdiplusStartup(&Token,&StartupInput,0)!=Ok)
+			{
+				FreeLibrary(gdip);
+				gdip=0;
+			}
+		}
+	}
+	void GdiPlus_Term()
+	{
+		if (Loaded())
+		{
+			GdiplusShutdown(Token);
+		}
+	}
+} gdiPlus;
+
+void gdipInit() { gdiPlus.GdiPlus_Init(); }
+void gdipTerm() { gdiPlus.GdiPlus_Term(); }
 ////////////////////////////////////////////////////////////////
 // CPicture implementation
 //
@@ -133,18 +209,74 @@ BOOL CPicture::Select(HDC hDC, HDC* newhDC,OLE_HANDLE *hBmp)
 {
 	return SUCCEEDED(m_spIPicture->SelectPicture(hDC,newhDC,hBmp));
 }
+int GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
+{
+   UINT  num = 0;          // number of image encoders
+   UINT  size = 0;         // size of the image encoder array in bytes
+
+   ImageCodecInfo* pImageCodecInfo = NULL;
+
+   gdiPlus.GdipGetImageEncodersSize(&num, &size);
+   if(size == 0)
+      return -1;  // Failure
+
+   pImageCodecInfo = (ImageCodecInfo*)(malloc(size));
+   if(pImageCodecInfo == NULL)
+      return -1;  // Failure
+
+   gdiPlus.GdipGetImageEncoders(num, size, pImageCodecInfo);
+
+   for(UINT j = 0; j < num; ++j)
+   {
+      if( wcscmp(pImageCodecInfo[j].MimeType, format) == 0 )
+      {
+         *pClsid = pImageCodecInfo[j].Clsid;
+         free(pImageCodecInfo);
+         return j;  // Success
+      }    
+   }
+
+   free(pImageCodecInfo);
+   return -1;  // Failure
+}
 BOOL CPicture::Save(const wchar_t* to)
 {
-	IPictureDisp*pDisp;
-	if (SUCCEEDED(m_spIPicture->QueryInterface(IID_IPictureDisp,(PVOID*) &pDisp)))
+	if (gdiPlus.Loaded())
 	{
-		BSTR str=SysAllocString(to);
-		OleSavePictureFile(pDisp, str);
-		SysFreeString(str);
-		pDisp->Release();
-		return true;
+		OLE_HANDLE handle=(OLE_HANDLE)bmph;
+		bool rv=false;
+		if (bmph!=0  /*SUCCEEDED(m_spIPicture->get_Handle(&handle))*/) //get_Handle returns allways 1 as handle :|
+		{
+			GpBitmap* bmp;
+			if (gdiPlus.GdipCreateBitmapFromHBITMAP((HBITMAP)handle,0,&bmp)==Ok)
+			{
+				//(GpImage *image, GDIPCONST WCHAR* filename,
+				//      GDIPCONST CLSID* clsidEncoder, 
+				//    GDIPCONST EncoderParameters* encoderParams);
+
+				CLSID pngClsid;
+				GetEncoderClsid(L"image/png", &pngClsid);
+				if (gdiPlus.GdipSaveImageToFile(bmp,to,&pngClsid,0)==Ok)
+					rv=true;
+				gdiPlus.GdipFree(bmp);
+			}
+			//DeleteObject((HGDIOBJ)handle);
+		}
+		return rv;
 	}
-	return false;
+	else
+	{
+		IPictureDisp*pDisp;
+		if (SUCCEEDED(m_spIPicture->QueryInterface(IID_IPictureDisp,(PVOID*) &pDisp)))
+		{
+			BSTR str=SysAllocString(to);
+			OleSavePictureFile(pDisp, str);
+			SysFreeString(str);
+			pDisp->Release();
+			return true;
+		}
+		return false;
+	}
 }
 BOOL CPicture::Load(HBITMAP hBmp,HPALETTE hPal,bool own)
 {
@@ -157,6 +289,7 @@ BOOL CPicture::Load(HBITMAP hBmp,HPALETTE hPal,bool own)
 	pic.bmp.hbitmap=hBmp;
 	pic.bmp.hpal=hPal;
 	HRESULT hr = OleCreatePictureIndirect(&pic,IID_IDispatch,own,(void**)&m_spIPicture);
+	bmph=hBmp;
 
     return hr == S_OK;
 }
@@ -171,6 +304,8 @@ BOOL CPicture::Load(IStream* pstm)
     HRESULT hr = OleLoadPicture(pstm, 0, FALSE,
                                 IID_IPicture, (void**)&m_spIPicture);
 
+	bmph=0;
+	m_spIPicture->get_Handle((OLE_HANDLE*)&bmph);
     return hr == S_OK;
 }
 

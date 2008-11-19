@@ -45,5 +45,6 @@ protected:
 	void SetHIMETRICtoDP(HDC hdc, SIZE* sz) const;
 
 	IPicture* m_spIPicture;  // ATL smart pointer to IPicture
+	HBITMAP bmph;
 	HRESULT m_hr;  // last error code
 };
