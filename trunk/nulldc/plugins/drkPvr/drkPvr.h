@@ -103,6 +103,7 @@ struct _settings_type
 		u32 AlphaSortMode;
 		u32 ModVolMode;
 		u32 ZBufferMode;
+		u32 TexCacheMode;
 	} Emulation;
 	struct
 	{

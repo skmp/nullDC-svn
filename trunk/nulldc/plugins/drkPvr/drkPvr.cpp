@@ -120,6 +120,7 @@ OptionGroop menu_sortmode;
 OptionGroop menu_modvolmode;
 OptionGroop menu_palmode;
 OptionGroop menu_zbuffer;
+OptionGroop menu_TCM;
 OptionGroop menu_widemode;
 int oldmode=-1;
 int osx=-1,osy=-1;
@@ -195,6 +196,11 @@ void handler_PalMode(int  mode)
 void handler_ModVolMode(int  mode)
 {
 	settings.Emulation.ModVolMode=mode;
+	SaveSettings();
+}
+void handler_TexCacheMode(int  mode)
+{
+	settings.Emulation.TexCacheMode=mode;
 	SaveSettings();
 }
 extern volatile bool render_restart;
@@ -396,6 +402,15 @@ s32 FASTCALL Load(emu_info* emu_inf)
 	menu_zbuffer.Add(ZBM,L"D24S8 Mode 2(Lower Precition)",3);
 	menu_zbuffer.SetValue(settings.Emulation.ZBufferMode);
 	
+	u32 TCM=emu.AddMenuItem(emu.RootMenu,-1,L"Texture Cache Mode: %s",0,0);
+
+	menu_TCM.format=L"Texture Cache Mode: %s";
+	menu_TCM.callback=handler_TexCacheMode;
+
+	menu_TCM.Add(TCM,L"Delete old",0);
+	menu_TCM.Add(TCM,L"Delete invalidated",1);
+
+	menu_TCM.SetValue(settings.Emulation.TexCacheMode);
 
 	emu.AddMenuItem(emu.RootMenu,-1,L"Show Fps",handler_ShowFps,settings.OSD.ShowFPS);
 
@@ -637,6 +652,7 @@ void LoadSettings()
 	settings.Emulation.PaletteMode				=	cfgGetInt(L"Emulation.PaletteMode",1);
 	settings.Emulation.ModVolMode				= 	cfgGetInt(L"Emulation.ModVolMode",1);
 	settings.Emulation.ZBufferMode				= 	cfgGetInt(L"Emulation.ZBufferMode",3);
+	settings.Emulation.TexCacheMode				= 	cfgGetInt(L"Emulation.TexCacheMode",0);
 
 	settings.OSD.ShowFPS						=	cfgGetInt(L"OSD.ShowFPS",0);
 	settings.OSD.ShowStats						=	cfgGetInt(L"OSD.ShowStats",0);
@@ -662,6 +678,7 @@ void SaveSettings()
 	cfgSetInt(L"Emulation.PaletteMode",settings.Emulation.PaletteMode);
 	cfgSetInt(L"Emulation.ModVolMode",settings.Emulation.ModVolMode);
 	cfgSetInt(L"Emulation.ZBufferMode",settings.Emulation.ZBufferMode);
+	cfgSetInt(L"Emulation.TexCacheMode",settings.Emulation.TexCacheMode);
 
 	cfgSetInt(L"OSD.ShowFPS",settings.OSD.ShowFPS);
 	cfgSetInt(L"OSD.ShowStats",settings.OSD.ShowStats);

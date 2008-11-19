@@ -2860,13 +2860,17 @@ nl:
 		TexCacheList<TextureCacheData>::TexCacheEntry* ptext= TexCache.plast;
 		while(ptext && ((FrameNumber-ptext->data.LastUsed)>60))
 		{
-			ptext->data.Destroy();
-			ptext->data.Texture->Release();
 			TexCacheList<TextureCacheData>::TexCacheEntry* pprev;
 			pprev=ptext->prev;
-			TexCache.Remove(ptext);
-			//free it !
-			delete ptext;
+
+			if (settings.Emulation.TexCacheMode==0 || ptext->data.dirty==true)
+			{
+				ptext->data.Destroy();
+				ptext->data.Texture->Release();
+				TexCache.Remove(ptext);
+				//free it !
+				delete ptext;
+			}
 			ptext=pprev;
 		}
 
