@@ -31,12 +31,12 @@ struct vertex_out
 	#if FixedFunction == 1
 		float4 col : COLOR0;
 		float4 spc : COLOR1; 
+		float4 uv : TEXCOORD0; 
 	#else
+		float4 uv : TEXCOORD0; 
 		float4 col : TEXCOORD1;
 		float4 spc : TEXCOORD2; 
 	#endif
-	
-	float4 uv : TEXCOORD0; 
 };
 
 float W_min: register(c0);
