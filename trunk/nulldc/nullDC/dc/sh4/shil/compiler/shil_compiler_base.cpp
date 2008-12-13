@@ -2588,12 +2588,25 @@ void __fastcall shil_compile_ftrc(shil_opcode* op)
 		assert(Ensure32());
 		assert(!IsReg64((Sh4RegType)op->reg1));
 
-		//TODO : This is not entietly correct , sh4 saturates too -> its correct now
+		//TODO : This is not entietly correct , sh4 saturates too -> its correct now._CHEAP_FTRC_FIX can be defined for a cheaper, but not 100% accurate version
 		//EAX=(int)saturate(fr[n])
 
 		x86_sse_reg r1=fra->GetRegister(XMM0,op->reg1,RA_FORCE);
+
+#ifdef _CHEAP_FTRC_FIX 
 		x86e->Emit(op_minss,r1,&sse_ftrc_saturate);
+#endif
 		x86e->Emit(op_cvttss2si, EAX,r1);
+
+#ifndef _CHEAP_FTRC_FIX 
+		x86_gpr_reg r2=ECX;
+		fra->LoadRegisterGPR(r2,op->reg1);
+		assert(r2!=EAX);
+		x86e->Emit(op_shr32,r2,31);			//sign -> LSB
+		x86e->Emit(op_add32,r2,0x7FFFFFFF);	//0x7FFFFFFF for +, 0x80000000 for -
+		x86e->Emit(op_cmp32,EAX,0x80000000);//is result indefinitive ?
+		x86e->Emit(op_cmove32,EAX,r2);		//if yes, saturate		
+#endif
 		//fpul=EAX
 		SaveReg(reg_fpul,EAX);
 	}
@@ -2645,12 +2658,9 @@ void __fastcall shil_compile_fsca(shil_opcode* op)
 		verify(!ira->IsRegAllocated(reg_fpul));
 		x86e->Emit(op_movzx16to32,EAX,GetRegPtr(reg_fpul));			//we do the 'and' here :p
 		x86e->Emit(op_movss,r1,x86_mrm::create(EAX,sib_scale_4,&sin_table[0])); //r1=sin
-		x86e->Emit(op_add32,EAX,0x4000);							//cos(x) = sin (pi/2 + x) , we add 1/4 of 2pi (2^16/4)
 		
-		x86e->Emit(op_movzx16to32,EAX,EAX);		//movzx is smaller .. is it faster/slower tho ??
-		//x86e->Emit(op_and32,EAX,0xFFFF); 
-
-		x86e->Emit(op_movss,r2,x86_mrm::create(EAX,sib_scale_4,&sin_table[0])); //r2=cos
+		//cos(x) = sin (pi/2 + x) , we add 1/4 of 2pi (2^16/4)
+		x86e->Emit(op_movss,r2,x86_mrm::create(EAX,sib_scale_4,&sin_table[0x4000])); //r2=cos, table has 0x4000 more for warping :)
 
 		fra->SaveRegister(op->reg1,r1);
 		fra->SaveRegister(op->reg1 + 1,r2);

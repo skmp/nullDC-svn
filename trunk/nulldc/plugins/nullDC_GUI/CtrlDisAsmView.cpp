@@ -47,7 +47,7 @@ BOOL CopyTextToClipboard(HWND hwnd, TCHAR *text)
 {
 	OpenClipboard(hwnd);
 	EmptyClipboard();
-	HANDLE hglbCopy = GlobalAlloc(GMEM_MOVEABLE, (wcslen(text) + 1) * sizeof(char)); 
+	HANDLE hglbCopy = GlobalAlloc(GMEM_MOVEABLE, (wcslen(text) + 1) * sizeof(wchar)); 
 	if (hglbCopy == NULL) 
 	{ 
 		CloseClipboard(); 
@@ -56,11 +56,11 @@ BOOL CopyTextToClipboard(HWND hwnd, TCHAR *text)
 
 	// Lock the handle and copy the text to the buffer. 
 
-	char *lptstrCopy = (char *)GlobalLock(hglbCopy); 
-	wcstombs(lptstrCopy,text,wcslen(text));
-	lptstrCopy[wcslen(text)] =  0;    // null character 
+	wchar *lptstrCopy = (wchar *)GlobalLock(hglbCopy); 
+	wcscpy(lptstrCopy,text);
+	//lptstrCopy[wcslen(text)] =  0;    // null character 
 	GlobalUnlock(hglbCopy); 
-	SetClipboardData(CF_TEXT,hglbCopy);
+	SetClipboardData(CF_UNICODETEXT,hglbCopy);
 	CloseClipboard();
 	return TRUE;
 }

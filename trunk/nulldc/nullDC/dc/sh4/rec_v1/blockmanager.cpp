@@ -316,6 +316,8 @@ void FreeBlocks(BlockList* blocks)
 
 //this should not be called from a running block , or it will crash
 //Fully resets block hash/list , clears all entrys and free's any prevusly allocated blocks
+extern LARGE_INTEGER total_compile;
+extern u32 CompiledSRCsz;
 void ResetBlocks(bool free_too=true)
 {
 	//this should clear all lists
@@ -353,6 +355,8 @@ void ResetBlocks(bool free_too=true)
 	
 	bm_locked_block_count=0;
 	bm_manual_block_count=0;
+	total_compile.QuadPart=0;
+	CompiledSRCsz=0;
 }
 u32 manbs,lockbs;
 
@@ -366,6 +370,11 @@ void bm_GetStats(bm_stats* stats)
 		sz+=MemChunks[i].index;
 	}
 	stats->cache_size=sz;
+	stats->block_size=CompiledSRCsz;
+	LARGE_INTEGER Freq;
+	QueryPerformanceFrequency(&Freq);
+	stats->CompileTimeMilisecs=total_compile.QuadPart*1000/(Freq.QuadPart/1000);
+
 	stats->manual_blocks=bm_manual_block_count;
 	stats->manual_block_calls_delta=manbs;manbs=0;
 	stats->locked_blocks=bm_locked_block_count;

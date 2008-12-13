@@ -409,9 +409,11 @@ void EXPORT_CALL b_GetPerformanceInfo(nullDCPerfomanceInfo* dst)
 	}
 	
 	dst->Dynarec.CodeGen.CodeSize=bms.cache_size;
+	dst->Dynarec.CodeGen.SrcCodeSize=bms.block_size;
 	dst->Dynarec.CodeGen.LockedBlocks=bms.locked_blocks;
 	dst->Dynarec.CodeGen.ManualBlocks=bms.manual_blocks;
 	dst->Dynarec.CodeGen.TotalBlocks=bms.block_count;
+	dst->Dynarec.CodeGen.TotalCompileTime=bms.CompileTimeMilisecs;
 
 	#ifdef _BM_CACHE_STATS
 		dst->Dynarec.Runtime.Lookups.Valid=1;

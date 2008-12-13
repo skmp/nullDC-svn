@@ -48,24 +48,34 @@ void* Dynarec_Mainloop_do_update;
 void DynaPrintLinkStart();
 void DynaPrintLinkEnd();
 void DumpBlockMappings();
-
+LARGE_INTEGER total_compile;
+u32 CompiledSRCsz=0;
 CompiledBlockInfo*  __fastcall CompileCode(u32 pc)
 {
-	nb_count++;
+	LARGE_INTEGER comp_time_start,comp_time_end;
 	CompiledBlockInfo* cblock;
-	BasicBlock* block=new BasicBlock();
-	//scan code
-	ScanCode(pc,block);
-	//Fill block lock type info
-	block->CalculateLockFlags();
-	//analyse code [generate il/block type]
-	AnalyseCode(block);
-	//optimise
-	shil_optimise_pass_ce_driver(block);
-	//Compile code
-	bool reset_blocks=!block->Compile();
-	RegisterBlock(cblock=&block->cBB->cbi);
-	delete block;
+	bool reset_blocks;
+
+	QueryPerformanceCounter(&comp_time_start);
+	{
+		nb_count++;
+		BasicBlock* block=new BasicBlock();
+		//scan code
+		ScanCode(pc,block);
+		//Fill block lock type info
+		block->CalculateLockFlags();
+		CompiledSRCsz+=block->Size();
+		//analyse code [generate il/block type]
+		AnalyseCode(block);
+		//optimise
+		shil_optimise_pass_ce_driver(block);
+		//Compile code
+		reset_blocks=!block->Compile();
+		RegisterBlock(cblock=&block->cBB->cbi);
+		delete block;
+	}
+	QueryPerformanceCounter(&comp_time_end);
+	total_compile.QuadPart+=comp_time_end.QuadPart-comp_time_start.QuadPart;
 	//compile code
 	//return pointer
 	if (reset_blocks)

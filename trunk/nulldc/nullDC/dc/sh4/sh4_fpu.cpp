@@ -476,9 +476,6 @@ sh4op(i1111_nnnn_0101_1101)
 //FSCA FPUL, DRn//F0FD//1111_nnn0_1111_1101
 sh4op(i1111_nnn0_1111_1101)
 {
-//#define MY_PI2 6.283185307179586f
-//#define MY_ANG_RAD(k)  ((k) * MY_PI2 / 65536.0f)
-	 
 	int n=GetN(op) & 0xE;
 	 
 	
@@ -486,16 +483,16 @@ sh4op(i1111_nnn0_1111_1101)
 	if (fpscr.PR==0)
 	{
 		//float real_pi=(((float)(s32)fpul)/65536)*(2*pi);
-		u32 pi_index=fpul&0xFFFF;
+		u32 pi_index=(u16)fpul;
 		
 		fr[n | 0] = sin_table[pi_index];//sinf(real_pi);
-		fr[n | 1] = sin_table[(16384 + pi_index) & 0xFFFF];//cosf(real_pi);
+		fr[n | 1] = sin_table[0x4000 + pi_index];//cosf(real_pi);	// -> no need for warparound, sin_table has 0x4000 more entries
 
 		CHECK_FPU_32(fr[n]);
 		CHECK_FPU_32(fr[n+1]);
 	}
 	else
-	iNimp("FSCA : Double precision mode");
+		iNimp("FSCA : Double precision mode");
 }
 
 //FSRRA //1111_nnnn_0111_1101

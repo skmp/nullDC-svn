@@ -61,10 +61,12 @@ struct nullDCPerfomanceInfo
 	{
 		struct
 		{
+			u32 SrcCodeSize;
 			u32 CodeSize;
 			u32 LockedBlocks;
 			u32 ManualBlocks;
 			u32 TotalBlocks;
+			u64 TotalCompileTime;
 		} CodeGen;
 		struct
 		{

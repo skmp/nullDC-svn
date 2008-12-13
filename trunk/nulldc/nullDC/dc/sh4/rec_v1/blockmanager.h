@@ -57,8 +57,10 @@ void dyna_profiler_tick(void* addr);
 struct bm_stats
 {
 	u32 block_count;
+	u32 block_size;
 	u32 cache_size;
-	
+	u64 CompileTimeMilisecs;
+
 	u32 locked_blocks;
 	u32 locked_block_calls_delta;
 
@@ -67,8 +69,6 @@ struct bm_stats
 
 	u32 full_lookups;
 	u32 fast_lookups;
-
-	
 };
 
 void bm_GetStats(bm_stats* stats);

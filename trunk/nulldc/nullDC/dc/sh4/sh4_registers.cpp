@@ -18,7 +18,7 @@ fpscr_type fpscr;
 
 
 
-__declspec(align(64)) f32 sin_table[0x10000];
+__declspec(align(64)) f32 sin_table[0x10000+0x4000];	//+0x4000 to avoid having to warp around twice on cos
 
 u32*  xf_hex=(u32*)xf,*fr_hex=(u32*)fr;
 
@@ -204,6 +204,10 @@ void GenerateSinCos()
 			sin_table[i]=0;
 		else
 			sin_table[i]=-sin_table[i-0x8000];
+	}
+	for (int i=0x10000;i<0x14000;i++)
+	{
+		sin_table[i]=sin_table[(u16)i];//warp around for the last 0x4000 entries
 	}
 }
 #ifdef DEBUG

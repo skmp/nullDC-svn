@@ -242,7 +242,7 @@ u32 fastcall mmu_full_SQ(u32 va,u32& rv)
 	return MMU_ERROR_NONE;
 }
 
-
+/*
 //MMU TLB cache.Internal cache build by the emulator on top of the tlb
 //Gets automaticaly sync'd to tlb by the emulator
 union mmu_cache_entry
@@ -361,6 +361,7 @@ u32 fastcall mmu_fast_translation(u32 va,u32& rv)
 	}
 
 }
+*/
 template<u32 translation_type>
 u32 fastcall mmu_data_translation(u32 va,u32& rv)
 {
@@ -519,7 +520,26 @@ void MMU_Reset(bool Manual)
 void MMU_Term()
 {
 }
+/*
+struct mmu_cache_entry
+{
+	u32 flags;
+	u32 addr;
+};
+#define mmu_cache_size 4096
+#define mmu_cache_mask (mmu_cache_size-1)
+#define mmu_cache_shift (10)
 
+mmu_cache_entry mmu_cache[mmu_cache_size];
+u32 cpu_mode;//asid | Kernel
+
+u8 mmu_fastRead8(u32 adr)
+{
+	const u32 cache_entry=mmu_cache_mask&(addr>>mmu_cache_shift);
+	if (0==((mmu_cache[cache_entry].flags^cpu_mode)&test_flags))
+		return _vmem_ReadMem8(adr+mmu_cache[cache_entry].addr);
+
+}*/
 
 u8 __fastcall mmu_ReadMem8(u32 adr)
 {

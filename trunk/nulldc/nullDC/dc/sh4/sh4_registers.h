@@ -2,7 +2,7 @@
 #include "types.h"
 #include "sh4_if.h"
 
-__declspec(align(32)) extern f32 sin_table[0x10000];
+__declspec(align(32)) extern f32 sin_table[0x10000+0x4000];
 struct Sh4RegContext
 {
 	u32 r[16];

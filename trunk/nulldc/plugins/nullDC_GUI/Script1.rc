@@ -32,7 +32,7 @@ EXSTYLE WS_EX_OVERLAPPEDWINDOW | WS_EX_APPWINDOW
 CAPTION "nullDC profiler"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    CTEXT           "Profiler info : TBP : enabled ; nullProf : missing",IDC_STATIC,7,7,256,12
+    CTEXT           "Profiler info :)",IDC_STATIC,7,7,256,12
     EDITTEXT        IDC_PROFTEXT,7,24,256,161,ES_MULTILINE | ES_READONLY | NOT WS_BORDER
     PUSHBUTTON      "To Clipboard ;)",IDC_COPY,211,187,52,12
 END

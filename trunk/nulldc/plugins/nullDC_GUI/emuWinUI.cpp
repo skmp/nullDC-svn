@@ -1753,12 +1753,12 @@ INT_PTR CALLBACK ProfilerProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 #define strcatf text+=swprintf
 			if (ndcpi.TBP.Valid)
 			{
-				strcatf(text,L"\r\nTBP : Enabled\r\n");
+				strcatf(text,L"\r\nTBP: Enabled, look at the console for the profiler output ..\r\n");
 				//the console has more usefull info ;p
 			}
 			else
 			{
-				strcatf(text,L"\r\nTBP : Disabled\r\n");
+				strcatf(text,L"\r\nTBP: Disabled\r\n");
 			}
 
 			if (ndcpi.Dynarec.Runtime.Lookups.Valid)
@@ -1784,8 +1784,11 @@ INT_PTR CALLBACK ProfilerProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 				strcatf(text,L"\r\nRuntime dynarec execution profiling disabled\r\n");
 			}
 			strcatf(text,L"\r\nDynarec Translation Cache stats:\r\n");
+			strcatf(text,L"%.2f MB src size, %.2f ratio\r\n",ndcpi.Dynarec.CodeGen.SrcCodeSize/1024.0f/1024.0f,ndcpi.Dynarec.CodeGen.CodeSize/(float)ndcpi.Dynarec.CodeGen.SrcCodeSize);
 			strcatf(text,L"%.2f MB size, %d blocks, %.1f B avg size\r\n",ndcpi.Dynarec.CodeGen.CodeSize/1024.0f/1024.0f,ndcpi.Dynarec.CodeGen.TotalBlocks,
 														ndcpi.Dynarec.CodeGen.CodeSize/(float)ndcpi.Dynarec.CodeGen.TotalBlocks);
+			strcatf(text,L"%.3f ms compile time, %.3f ìs/block, %.3f MB/s\r\n",(float)ndcpi.Dynarec.CodeGen.TotalCompileTime/1000.f,ndcpi.Dynarec.CodeGen.TotalCompileTime/(float)ndcpi.Dynarec.CodeGen.TotalBlocks,
+																				ndcpi.Dynarec.CodeGen.SrcCodeSize/(float)ndcpi.Dynarec.CodeGen.TotalCompileTime);
 			
 			strcatf(text,L"%d Manual blocks , %d locked blocks , ratio %.2f%%\r\n",ndcpi.Dynarec.CodeGen.ManualBlocks,ndcpi.Dynarec.CodeGen.LockedBlocks,
 				ndcpi.Dynarec.CodeGen.ManualBlocks/(float)ndcpi.Dynarec.CodeGen.TotalBlocks*100);
@@ -1824,8 +1827,8 @@ INT_PTR CALLBACK ProfilerProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 		{
 		case IDC_COPY:
 			{
-				wchar text_[2048];
-				GetDlgItemText(hWnd,IDC_PROFTEXT,text_,2048);
+				wchar text_[2048*8];
+				GetDlgItemText(hWnd,IDC_PROFTEXT,text_,sizeof(text_)/sizeof(text_[0]));
 				CopyTextToClipboard(hWnd,text_);
 			}
 			return true;
