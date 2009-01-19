@@ -2885,6 +2885,8 @@ s32 FASTCALL CreateSub(maple_subdevice_instance* inst,u32 id,u32 flags,u32 rootm
 	sprintf(((VMU_info*)inst->data)->file,"vmu_data_port%02X.bin",inst->port);
 	((VMU_info*)inst->data)->lcd.handle=0;
 	FILE* f=fopen(((VMU_info*)inst->data)->file,"rb");
+	if (!f)
+		f=fopen("data\\vmu_default.bin","rb");
 	if (f)
 	{
 		fread(((VMU_info*)inst->data)->data,1,128*1024,f);
