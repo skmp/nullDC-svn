@@ -2,7 +2,7 @@
 #include "mds_reader.h"
 
 #include <stddef.h>
-#include <devioctl.h>
+//#include <devioctl.h>
 #include <ntddscsi.h>
 #include "SCSIDEFS.H"
 
