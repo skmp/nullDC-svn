@@ -160,6 +160,8 @@ void dsp_init()
 	dsp.RBL=0x2000-1;
 	dsp.RBP=0;
 	dsp.regs.MDEC_CT=1;
+	DWORD old;
+	VirtualProtect(dsp.DynCode,sizeof(dsp.DynCode),PAGE_EXECUTE_READWRITE,&old);
 }
 void dsp_recompile();
 void DecodeInst(u32 *IPtr,_INST *i)
@@ -261,14 +263,14 @@ void dsp_rec_DRAM_CI(x86_block& x86e,_INST& prev_op,u32 step,x86_gpr_reg MEM_RD_
 		if (prev_op.MRD)
 		{
 			//Do the read [MEM_ADDRS] -> MEM_RD_DATA_NV
-			x86e.Emit(op_movsx16to32,MEM_RD_DATA_NV,x86_mrm::create(EAX));
+			x86e.Emit(op_movsx16to32,MEM_RD_DATA_NV,x86_mrm(EAX));
 		}
 		//prev. opcode did a mem write request ?
 		if (prev_op.MWT)
 		{
 			//Do the write [MEM_ADDRS] <-MEM_WT_DATA
 			x86e.Emit(op_mov32,EDX,&dsp.regs.MEM_WT_DATA);
-			x86e.Emit(op_mov16,x86_mrm::create(EAX),EDX);
+			x86e.Emit(op_mov16,x86_mrm(EAX),EDX);
 		}
 	}
 }
@@ -314,7 +316,7 @@ void dsp_rec_MEM_AGU(x86_block& x86e,_INST& op,u32 step)
 
 		//Calculate the value !
 		//EAX*2 b/c it points to sample (16:1 of the address)
-		x86e.Emit(op_lea32,EDX,x86_mrm::create(EAX,sib_scale_2,x86_ptr::create(dsp.RBP)));
+		x86e.Emit(op_lea32,EDX,x86_mrm(EAX,sib_scale_2,x86_ptr::create(dsp.RBP)));
 
 		//Save the result to MEM_ADDR
 		x86e.Emit(op_mov32,&dsp.regs.MEM_ADDR,EDX);
@@ -405,12 +407,12 @@ void dsp_rec_MEM_RD_DATA_WRITE(x86_block& x86e,_INST& op,u32 step,x86_gpr_reg ME
 	wtn(MEM_RD_DATA);
 }
 
-x86_mrm dsp_reg_GenerateTempsAddrs(x86_block& x86e,u32 TEMPS_NUM,x86_gpr_reg TEMPSaddrsreg)
+x86_mrm_t dsp_reg_GenerateTempsAddrs(x86_block& x86e,u32 TEMPS_NUM,x86_gpr_reg TEMPSaddrsreg)
 {
 	x86e.Emit(op_mov32,TEMPSaddrsreg,&dsp.regs.MDEC_CT);
 	x86e.Emit(op_add32,TEMPSaddrsreg,TEMPS_NUM);
 	x86e.Emit(op_and32,TEMPSaddrsreg,127);
-	return x86_mrm::create(ECX,sib_scale_4,dsp.TEMP);
+	return x86_mrm(ECX,sib_scale_4,dsp.TEMP);
 }
 //Reads : INPUTS,TEMP,FRC_REG,COEF,Y_REG
 //Writes : MAD_OUT_NV (Wire)
@@ -499,7 +501,7 @@ void dsp_rec_MAD(x86_block& x86e,_INST& op,u32 step,x86_gpr_reg INPUTS,x86_gpr_r
 			//B=TEMP[??]
 			//TEMPS is allready sign extended, so no need for it
 			//Just converting 24 -> 26 bits using lea
-			x86e.Emit(op_lea32,EDX,x86_mrm::create(TEMPS_reg,sib_scale_4,0));
+			x86e.Emit(op_lea32,EDX,x86_mrm(TEMPS_reg,sib_scale_4,0));
 		}
 		//Gating is aplied here normaly (ZERO).
 		//NEGB then inverts the value  (NOT) (or 0 , if gated) and the adder adds +1 if NEGB is set.
