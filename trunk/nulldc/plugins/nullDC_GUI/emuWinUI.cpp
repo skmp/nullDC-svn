@@ -1766,8 +1766,17 @@ INT_PTR CALLBACK ProfilerProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 				strcatf(text,L"\r\nRuntime dynarec lookup profiling enabled\r\n");
 				strcatf(text,L"%d full lookups , %d fast lookups , ratio %.2f%%\r\n",ndcpi.Dynarec.Runtime.Lookups.FullLookupDelta,ndcpi.Dynarec.Runtime.Lookups.FastLookupDelta
 														,ndcpi.Dynarec.Runtime.Lookups.FullLookupDelta/(float)ndcpi.Dynarec.Runtime.Lookups.LookupDelta*100);
-				strcatf(text,L"%d blocks staticaly linked , ratio %.2f%%\r\n",ndcpi.Dynarec.Runtime.Execution.TotalBlocks-ndcpi.Dynarec.Runtime.Lookups.LookupDelta,
-					(ndcpi.Dynarec.Runtime.Execution.TotalBlocks-ndcpi.Dynarec.Runtime.Lookups.LookupDelta)/(float)ndcpi.Dynarec.Runtime.Execution.TotalBlocks*100);
+				strcatf(text,L"%d blocks TOTAL , (100%%)\r\n",ndcpi.Dynarec.Runtime.Execution.TotalBlocks);
+				strcatf(text,L" |- %d blocks staticaly linked , ratio %.2f%%\r\n",ndcpi.Dynarec.Runtime.Execution.TotalBlocks-ndcpi.Dynarec.Runtime.Lookups.LookupDelta-ndcpi.Dynarec.Runtime.RetCache.Count,
+					(ndcpi.Dynarec.Runtime.Execution.TotalBlocks-ndcpi.Dynarec.Runtime.Lookups.LookupDelta-ndcpi.Dynarec.Runtime.RetCache.Count)/(float)ndcpi.Dynarec.Runtime.Execution.TotalBlocks*100);
+				strcatf(text,L" |- %d blocks ret cache , ratio %.2f%%\r\n",ndcpi.Dynarec.Runtime.RetCache.Count,
+					(ndcpi.Dynarec.Runtime.RetCache.Count)/(float)ndcpi.Dynarec.Runtime.Execution.TotalBlocks*100);
+				strcatf(text,L" |- %d blocks from BM (total), ratio %.2f%%\r\n",ndcpi.Dynarec.Runtime.Lookups.LookupDelta,
+					(ndcpi.Dynarec.Runtime.Lookups.LookupDelta)/(float)ndcpi.Dynarec.Runtime.Execution.TotalBlocks*100);
+				strcatf(text,L" |  |- %d blocks from BM cache, ratio %.2f%%\r\n",ndcpi.Dynarec.Runtime.Lookups.FastLookupDelta,
+					(ndcpi.Dynarec.Runtime.Lookups.FastLookupDelta)/(float)ndcpi.Dynarec.Runtime.Execution.TotalBlocks*100);
+				strcatf(text,L" |  |- %d blocks from BM slow, ratio %.2f%%\r\n",ndcpi.Dynarec.Runtime.Lookups.FullLookupDelta,
+					(ndcpi.Dynarec.Runtime.Lookups.FullLookupDelta)/(float)ndcpi.Dynarec.Runtime.Execution.TotalBlocks*100);
 			}
 			else
 			{
@@ -1901,7 +1910,7 @@ void SetSelected(HWND hw,wchar* selected)
 	for (int i=0;i<item_count;i++)
 	{
 		wchar * it=(wchar*)ComboBox_GetItemData(hw,i);
-		if (wcscmp(it,selected)==0)
+		if (wcsicmp(it,selected)==0)
 		{
 			ComboBox_SetCurSel(hw,i);
 			return;
@@ -2093,13 +2102,13 @@ INT_PTR CALLBACK PluginDlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		AddItemsToCB(extdev,GetDlgItem(hWnd,IDC_C_EXTDEV),temp);
 		GetCurrent(GetDlgItem(hWnd,IDC_C_EXTDEV),SelectedPlugin_ExtDev);
 
-		AddMapleItemsToCB(MapleMain,GetDlgItem(hWnd,IDC_MAPLEMAIN),L"NONE");
+		AddMapleItemsToCB(MapleMain,GetDlgItem(hWnd,IDC_MAPLEMAIN),L"NULL");
 
-		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB0),L"NONE");
-		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB1),L"NONE");
-		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB2),L"NONE");
-		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB3),L"NONE");
-		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB4),L"NONE");
+		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB0),L"NULL");
+		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB1),L"NULL");
+		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB2),L"NULL");
+		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB3),L"NULL");
+		AddMapleItemsToCB(MapleSub,GetDlgItem(hWnd,IDC_MAPLESUB4),L"NULL");
 
 		emu.FreePluginList(pvr);
 		emu.FreePluginList(gdrom);
