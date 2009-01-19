@@ -5,7 +5,7 @@
 class SBL_BasicBlock;
 
 #include "dc/sh4/shil/shil_ce.h"
-void fastcall AnalyseCodeSuperBlock(u32 pc);
+CompiledBlockInfo* fastcall AnalyseCodeSuperBlock(u32 pc);
 
 class SBL_BasicBlock:public BasicBlock
 {

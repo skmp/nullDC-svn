@@ -348,7 +348,7 @@ bool cfgOpen()
 			wchar* str1=wcsstr(tl,L"=");
 			if (!str1)
 			{
-				printf("Malformed entry on cfg,  ingoring @ %d(%s)\n",cline,tl);
+				wprintf(L"Malformed entry on cfg,  ignoring @ %d(%s)\n",cline,tl);
 				continue;
 			}
 			*str1=0;
@@ -364,7 +364,7 @@ bool cfgOpen()
 			}
 			else
 			{
-				printf("Malformed entry on cfg,  ingoring @ %d(%s)\n",cline,tl);
+				wprintf(L"Malformed entry on cfg,  ignoring @ %d(%s)\n",cline,tl);
 			}
 		}
 	}

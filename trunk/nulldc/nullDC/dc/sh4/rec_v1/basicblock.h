@@ -122,3 +122,5 @@ void ret_cache_reset();
 #define RET_CACHE_ITEM_SIZE 8
 
 #define RET_CACHE_SZ (RET_CACHE_COUNT*RET_CACHE_ITEM_SIZE)
+
+CompiledBlockInfo*  __fastcall CompileBasicBlock(u32 pc);

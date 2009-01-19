@@ -715,7 +715,7 @@ void emit_vmem_read(x86_reg reg_addr,u8 reg_out,u32 sz)
 	x86e->Emit(op_shr32,EAX,16);
 	//read mem info
 	//mov eax,[_vmem_MemInfo+eax*4];
-	x86e->Emit(op_mov32,EAX,x86_mrm::create(EAX,sib_scale_4,_vmem_MemInfo));
+	x86e->Emit(op_mov32,EAX,x86_mrm(EAX,sib_scale_4,_vmem_MemInfo));
 
 	//test eax,0xFFFF0000;
 	x86e->Emit(op_test32,EAX,0xFFFF0000);
@@ -725,7 +725,7 @@ void emit_vmem_read(x86_reg reg_addr,u8 reg_out,u32 sz)
 	if (reg_addr!=ECX)
 		x86e->Emit(op_mov32,ECX,reg_addr);
 	//Get function pointer and call it
-	x86e->Emit(op_call32,x86_mrm::create(EAX,p_RF_table));
+	x86e->Emit(op_call32,x86_mrm(EAX,p_RF_table));
 
 	//save reg
 	if (!sse)
@@ -760,15 +760,15 @@ void emit_vmem_read(x86_reg reg_addr,u8 reg_out,u32 sz)
 		x86_reg writereg= LoadReg_nodata(EAX,reg_out);
 		if (sz==1)
 		{
-			x86e->Emit(op_movsx8to32, writereg,x86_mrm::create(EAX,EDX));
+			x86e->Emit(op_movsx8to32, writereg,x86_mrm(EAX,EDX));
 		}
 		else if (sz==2)
 		{
-			x86e->Emit(op_movsx16to32, writereg,x86_mrm::create(EAX,EDX));
+			x86e->Emit(op_movsx16to32, writereg,x86_mrm(EAX,EDX));
 		}
 		else
 		{
-			x86e->Emit(op_mov32, writereg,x86_mrm::create(EAX,EDX));
+			x86e->Emit(op_mov32, writereg,x86_mrm(EAX,EDX));
 		}
 		SaveReg(reg_out,writereg);
 	}
@@ -776,7 +776,7 @@ void emit_vmem_read(x86_reg reg_addr,u8 reg_out,u32 sz)
 	{
 		x86_reg writereg= fra->GetRegister(XMM0,reg_out,RA_NODATA);
 		
-		x86e->Emit(op_movss, writereg,x86_mrm::create(EAX,EDX));
+		x86e->Emit(op_movss, writereg,x86_mrm(EAX,EDX));
 		
 		fra->SaveRegister(reg_out,writereg);
 	}
@@ -822,7 +822,7 @@ void emit_vmem_write(x86_reg reg_addr,u8 reg_data,u32 sz)
 	x86e->Emit(op_shr32,EAX,16);
 	//read mem info
 	//mov eax,[_vmem_MemInfo+eax*4];
-	x86e->Emit(op_mov32,EAX,x86_mrm::create(EAX,sib_scale_4,_vmem_MemInfo));
+	x86e->Emit(op_mov32,EAX,x86_mrm(EAX,sib_scale_4,_vmem_MemInfo));
 
 	//test eax,0xFFFF0000;
 	x86e->Emit(op_test32,EAX,0xFFFF0000);
@@ -843,7 +843,7 @@ void emit_vmem_write(x86_reg reg_addr,u8 reg_data,u32 sz)
 	}
 
 	//Get function pointer and call it
-	x86e->Emit(op_call32,x86_mrm::create(EAX,p_WF_table));
+	x86e->Emit(op_call32,x86_mrm(EAX,p_WF_table));
 
 	x86e->Emit(op_jmp,end);
 //direct:
@@ -855,24 +855,24 @@ void emit_vmem_write(x86_reg reg_addr,u8 reg_data,u32 sz)
 		if (sz==1)
 		{
 			x86_reg readreg= LoadReg_force(ECX,reg_data);
-			x86e->Emit(op_mov8, x86_mrm::create(EAX,EDX),readreg);
+			x86e->Emit(op_mov8, x86_mrm(EAX,EDX),readreg);
 		}
 		else if (sz==2)
 		{
 			x86_reg readreg= LoadReg(ECX,reg_data);
-			x86e->Emit(op_mov16, x86_mrm::create(EAX,EDX),readreg);
+			x86e->Emit(op_mov16, x86_mrm(EAX,EDX),readreg);
 		}
 		else
 		{
 			x86_reg readreg= LoadReg(ECX,reg_data);
-			x86e->Emit(op_mov32, x86_mrm::create(EAX,EDX),readreg);
+			x86e->Emit(op_mov32, x86_mrm(EAX,EDX),readreg);
 		}
 	}
 	else
 	{
 		x86_reg readreg= fra->GetRegister(XMM0,reg_data,RA_DEFAULT);
 		
-		x86e->Emit(op_movss, x86_mrm::create(EAX,EDX),readreg);
+		x86e->Emit(op_movss, x86_mrm(EAX,EDX),readreg);
 	}
 	x86e->MarkLabel(end);
 }
@@ -1275,7 +1275,7 @@ void readwrteparams1(u8 reg1,u32 imm,x86_reg* fast_nimm)
 		x86_reg reg=LoadReg(ECX,reg1);
 		assert(reg!=ECX);
 		*fast_nimm=reg;
-		x86e->Emit(op_lea32 ,ECX, x86_mrm::create(reg,x86_ptr::create(imm)));
+		x86e->Emit(op_lea32 ,ECX, x86_mrm(reg,x86_ptr::create(imm)));
 	}
 	else
 	{
@@ -1297,7 +1297,7 @@ void readwrteparams2(u8 reg1,u8 reg2)
 			//lea ecx,[reg1+reg2]
 			x86_reg r2=LoadReg(ECX,reg2);
 			assert(r2!=ECX);
-			x86e->Emit(op_lea32,ECX,x86_mrm::create(r1,r2));
+			x86e->Emit(op_lea32,ECX,x86_mrm(r1,r2));
 		}
 		else
 		{
@@ -1334,13 +1334,13 @@ void readwrteparams3(u8 reg1,u8 reg2,u32 imm)
 			//lea ecx,[reg1+reg2]
 			x86_reg r2=LoadReg(ECX,reg2);
 			assert(r2!=ECX);
-			x86e->Emit(op_lea32,ECX,x86_mrm::create(r1,r2,sib_scale_1,x86_ptr::create(imm)));
+			x86e->Emit(op_lea32,ECX,x86_mrm(r1,r2,sib_scale_1,x86_ptr::create(imm)));
 		}
 		else
 		{
 			//lea ecx,[reg1+imm]
 			//add ecx,[reg2]
-			x86e->Emit(op_lea32,ECX,x86_mrm::create(r1,x86_ptr::create(imm)));
+			x86e->Emit(op_lea32,ECX,x86_mrm(r1,x86_ptr::create(imm)));
 			x86e->Emit(op_add32,ECX,GetRegPtr(reg2));
 		}
 	}
@@ -1548,7 +1548,7 @@ void __fastcall shil_compile_readm(shil_opcode* op)
 	/*
 	x86e->Emit(op_mov32,EAX,ECX);
 	x86e->Emit(op_shr32,EAX,29);
-	x86e->Emit(op_call32,x86_mrm::create(NO_REG,EAX,sib_scale_4,&mio_pvt[0][size][0][0]));
+	x86e->Emit(op_call32,x86_mrm(NO_REG,EAX,sib_scale_4,&mio_pvt[0][size][0][0]));
 
 	if (size==FLAG_64)
 	{
@@ -1590,7 +1590,7 @@ void __fastcall shil_compile_readm(shil_opcode* op)
 			destreg=LoadReg_nodata(EAX,op->reg1);
 		}
 	}
-	x86e->Emit(rm_table[size],destreg,x86_mrm::create(ECX,sh4_reserved_mem));
+	x86e->Emit(rm_table[size],destreg,x86_mrm(ECX,sh4_reserved_mem));
 	roml_patch t;
 	
 	if (size==FLAG_64)
@@ -1696,7 +1696,7 @@ void __fastcall shil_compile_writem(shil_opcode* op)
 	/*
 	x86e->Emit(op_mov32,EAX,ECX);
 	x86e->Emit(op_shr32,EAX,29);
-	x86e->Emit(op_call32,x86_mrm::create(NO_REG,EAX,sib_scale_4,&mio_pvt[1][size][0][0]));
+	x86e->Emit(op_call32,x86_mrm(NO_REG,EAX,sib_scale_4,&mio_pvt[1][size][0][0]));
 	*/
 	old_offset=x86e->x86_indx-old_offset;
 	
@@ -1706,10 +1706,10 @@ void __fastcall shil_compile_writem(shil_opcode* op)
 	roml(reg_addr,p4_handler,&old_offset,fast_reg,fast_reg_offset);
 	//mov [ecx],src
 	if (was_float)
-		x86e->Emit(op_movss,x86_mrm::create(ECX,sh4_reserved_mem),rsrc);
+		x86e->Emit(op_movss,x86_mrm(ECX,sh4_reserved_mem),rsrc);
 	else
 	{
-		x86e->Emit(wm_table[size],x86_mrm::create(ECX,sh4_reserved_mem),rsrc);
+		x86e->Emit(wm_table[size],x86_mrm(ECX,sh4_reserved_mem),rsrc);
 	}
 	//if  (is_float)
 	//x86e->Emit(op_jmp,p4_handler);
@@ -1761,12 +1761,12 @@ void apply_roml_patches()
 			x86e->Emit(op_and32,ECX,0x3C);
 			if (FLAG_32==roml_patch_list[i].asz)
 			{
-				x86e->Emit(op_mov32,x86_mrm::create(ECX,sq_both),roml_patch_list[i].reg_data);
+				x86e->Emit(op_mov32,x86_mrm(ECX,sq_both),roml_patch_list[i].reg_data);
 			}
 			else
 			{
 				//x86e->Emit(op_int3);
-				x86e->Emit(op_movlps,x86_mrm::create(ECX,sq_both),XMM0);//allready readed on xmm0
+				x86e->Emit(op_movlps,x86_mrm(ECX,sq_both),XMM0);//allready readed on xmm0
 			}
 			x86e->Emit(op_jmp,roml_patch_list[i].exit_point);
 			x86e->MarkLabel(normal_write);
@@ -2657,10 +2657,10 @@ void __fastcall shil_compile_fsca(shil_opcode* op)
 
 		verify(!ira->IsRegAllocated(reg_fpul));
 		x86e->Emit(op_movzx16to32,EAX,GetRegPtr(reg_fpul));			//we do the 'and' here :p
-		x86e->Emit(op_movss,r1,x86_mrm::create(EAX,sib_scale_4,&sin_table[0])); //r1=sin
+		x86e->Emit(op_movss,r1,x86_mrm(EAX,sib_scale_4,&sin_table[0])); //r1=sin
 		
 		//cos(x) = sin (pi/2 + x) , we add 1/4 of 2pi (2^16/4)
-		x86e->Emit(op_movss,r2,x86_mrm::create(EAX,sib_scale_4,&sin_table[0x4000])); //r2=cos, table has 0x4000 more for warping :)
+		x86e->Emit(op_movss,r2,x86_mrm(EAX,sib_scale_4,&sin_table[0x4000])); //r2=cos, table has 0x4000 more for warping :)
 
 		fra->SaveRegister(op->reg1,r1);
 		fra->SaveRegister(op->reg1 + 1,r2);

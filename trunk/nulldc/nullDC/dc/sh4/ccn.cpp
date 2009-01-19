@@ -6,7 +6,7 @@
 #include "dc/mem/sh4_internal_reg.h"
 #include "dc/mem/mmu.h"
 #include "ccn.h"
-
+#include "dc/sh4/rec_v1/blockmanager.h"
 
 //Types
 CCN_PTEH_type CCN_PTEH;
@@ -53,6 +53,30 @@ void CCN_MMUCR_write(u32 value)
 		}
 	}
 	CCN_MMUCR=temp;
+}
+u32 ici_count=0;
+void CCN_CCR_write(u32 value)
+{
+	CCN_CCR_type temp;
+	temp.reg_data=value;
+
+	if (temp.ICI==1)
+	{
+		//invalidate i-cache
+		temp.ICI=0;
+		ici_count++;
+
+		bm_stats stats;
+		bm_GetStats(&stats);
+		if ((stats.manual_blocks*100/(stats.locked_blocks+1)>25))
+		{
+			printf("i-cache invalidation requested! (%d total)\n",ici_count);
+
+			printf("Reseting Dynarec Cache on ICI due to manual block count\n");
+			SuspendAllBlocks();
+		}
+	}
+	CCN_CCR=temp;
 }
 //Init/Res/Term
 void ccn_Init()
@@ -107,10 +131,10 @@ void ccn_Init()
 	CCN[(CCN_BASRB_addr&0xFF)>>2].data8=&CCN_BASRB;
 
 	//CCN CCR 0xFF00001C 0x1F00001C 32 0x00000000 0x00000000 Held Held Iclk
-	CCN[(CCN_CCR_addr&0xFF)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA | REG_WRITE_DATA;
+	CCN[(CCN_CCR_addr&0xFF)>>2].flags=REG_32BIT_READWRITE | REG_READ_DATA;
 	CCN[(CCN_CCR_addr&0xFF)>>2].NextCange=0;
 	CCN[(CCN_CCR_addr&0xFF)>>2].readFunction=0;
-	CCN[(CCN_CCR_addr&0xFF)>>2].writeFunction=0;
+	CCN[(CCN_CCR_addr&0xFF)>>2].writeFunction=CCN_CCR_write;
 	CCN[(CCN_CCR_addr&0xFF)>>2].data32=&CCN_CCR.reg_data;
 
 	//CCN TRA 0xFF000020 0x1F000020 32 Undefined Undefined Held Held Iclk

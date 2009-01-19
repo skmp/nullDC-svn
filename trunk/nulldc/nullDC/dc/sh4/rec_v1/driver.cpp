@@ -53,32 +53,22 @@ u32 CompiledSRCsz=0;
 CompiledBlockInfo*  __fastcall CompileCode(u32 pc)
 {
 	LARGE_INTEGER comp_time_start,comp_time_end;
-	CompiledBlockInfo* cblock;
+	CompiledBlockInfo* cblock=0;
 	bool reset_blocks;
 
 	QueryPerformanceCounter(&comp_time_start);
 	{
 		nb_count++;
-		BasicBlock* block=new BasicBlock();
-		//scan code
-		ScanCode(pc,block);
-		//Fill block lock type info
-		block->CalculateLockFlags();
-		CompiledSRCsz+=block->Size();
-		//analyse code [generate il/block type]
-		AnalyseCode(block);
-		//optimise
-		shil_optimise_pass_ce_driver(block);
-		//Compile code
-		reset_blocks=!block->Compile();
-		RegisterBlock(cblock=&block->cBB->cbi);
-		delete block;
+		//cblock=AnalyseCodeSuperBlock(pc);
+		if (cblock==0)
+			cblock=CompileBasicBlock(pc);
+		RegisterBlock(cblock);
 	}
 	QueryPerformanceCounter(&comp_time_end);
 	total_compile.QuadPart+=comp_time_end.QuadPart-comp_time_start.QuadPart;
 	//compile code
 	//return pointer
-	if (reset_blocks)
+	if (!cblock)
 	{
 		_SuspendAllBlocks();
 		printf("Compile failed -- retrying\n");

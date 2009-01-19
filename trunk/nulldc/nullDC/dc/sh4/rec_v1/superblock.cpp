@@ -56,7 +56,7 @@ SBL_BasicBlock* SBL_AnalyseOrFindBB(u32 pc)
 	block->TT_done=block->TF_done=false;
 	block->in_info.Init();
 
-	shil_optimise_pass_ce_driver(block);
+	shil_optimise_pass_ce_driver((BasicBlock*)block);
 	
 	return block;
 }
@@ -113,8 +113,7 @@ void SBL_analyse_min_path(SBL_BasicBlock* block)
 			block->TT_block_ptr=SBL_AnalyseOrFindBB(block->TT_next_addr);
 		}
 	}
-	else if (block->flags.ExitType==BLOCK_EXITTYPE_FIXED ||
-			 block->flags.ExitType==BLOCK_EXITTYPE_FIXED_CALL)
+	else if (block->flags.ExitType==BLOCK_EXITTYPE_FIXED)
 	{
 		if (block->TF_done==false)
 		{
@@ -146,12 +145,14 @@ void PrintTree(SBL_BasicBlock* block, u32 lvl)
 		PrintTree(block->TT_block_ptr,lvl+1);
 	}
 }
-void fastcall AnalyseCodeSuperBlock(u32 pc)
+CompiledBlockInfo* fastcall AnalyseCodeSuperBlock(u32 pc)
 {
 	//blocks[0] is allways entry point ;)
 	blocks.clear();
 	SBL_AnalyseOrFindBB(pc);
-	
+	if (blocks.size()==0)
+		return 0;
+
 	for (u32 i=0;i<sh4_reg_count;i++)
 		blocks[0]->in_info.reginfo[i].can_be_const=false;
 
@@ -179,7 +180,7 @@ void fastcall AnalyseCodeSuperBlock(u32 pc)
 	}
 
 	//Superblock level constant elimination :)
-	
+/*	
 	for (u32 k=0;k<5;k++)
 	{
 		//set the input info for each block
@@ -202,22 +203,56 @@ void fastcall AnalyseCodeSuperBlock(u32 pc)
 		}
 		//loop a few times :p
 	}
-
+*/
 	
 	u32 toc=0;
 	u32 tec=0;
 	u32 tsc=0;
 
 	//PrintTree(blocks[0],0);
-
+	bool failed=false;
 	for (u32 i=0;i<blocks.size();i++)
 	{
 		toc+=blocks[i]->OpcodeCount();
 		tsc+=blocks[i]->ilst.op_count;
 		tec+=blocks[i]->cycles;
-		delete blocks[i];
+		if (!blocks[i]->Compile())
+		{
+			failed=true;
+			break;
+		}
+		//delete blocks[i];
 	}
-	printf("SBL size : %d ,%d[%d] ops , %d[%d] shil ops\n",blocks.size(),toc,tec,tsc,pre_tsc);
+
+	CompiledBlockInfo* rv = &blocks[0]->cBB->cbi;
+
+	if (!failed)
+	{
+		for (u32 i=0;i<blocks.size();i++)
+		{
+			if (blocks[i]->TF_block_ptr!=0)
+			{
+				blocks[i]->cBB->ebi.TF_block=&blocks[i]->TF_block_ptr->cBB->cbi;
+				blocks[i]->cBB->ebi.pTF_next_addr=blocks[i]->cBB->ebi.TF_block->Code;
+			}
+			if (blocks[i]->TT_block_ptr!=0)
+			{
+				blocks[i]->cBB->ebi.TT_block=&blocks[i]->TT_block_ptr->cBB->cbi;
+				blocks[i]->cBB->ebi.pTT_next_addr=blocks[i]->cBB->ebi.TT_block->Code;
+			}
+			void RewriteBasicBlockCond(CompiledBasicBlock* cBB);
+			if (blocks[i]->cBB->ebi.Rewrite.Type)
+				RewriteBasicBlockCond(blocks[i]->cBB);
+			//delete blocks[i];
+		}
+	}
+	else
+	{
+		rv=0;
+	}
+	for (u32 i=0;i<blocks.size();i++)
+		delete blocks[i];
+	//printf("SBL size @0x%08X : %d ,%d[%d] ops , %d[%d] shil ops\n",pc,blocks.size(),toc,tec,tsc,pre_tsc);
 	
 	//block->flags.DisableHS=true;
 	//Compile code
@@ -226,6 +261,7 @@ void fastcall AnalyseCodeSuperBlock(u32 pc)
 	//delete block;
 	//compile code
 	//return pointer
+	return rv;
 }
 
 //A tree , made by many BasicBlocks

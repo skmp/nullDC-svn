@@ -9,6 +9,9 @@
 #include "dc/sh4/sh4_interpreter.h"
 #include "nullprof.h"
 #include "dc/sh4/rec_v1/blockmanager.h"
+#include "recompiler.h"
+#include "analyser.h"
+#include "dc/sh4/shil/shil_ce.h"
 
 int compiled_basicblock_count=0;
 
@@ -455,21 +458,21 @@ void FASTCALL RewriteBasicBlockGuess_FLUT(CompiledBasicBlock* cBB)
 	x86e->Emit(op_and32,EDX,(LOOKUP_HASH_MASK<<2));
 
 	//mov edx,[BlockLookupGuess + edx]
-	x86e->Emit(op_mov32,EDX,x86_mrm::create(EDX,BlockLookupGuess));
+	x86e->Emit(op_mov32,EDX,x86_mrm(EDX,BlockLookupGuess));
 
 	//cmp [edx],ecx;
-	x86e->Emit(op_cmp32,x86_mrm::create(EDX),ECX);
+	x86e->Emit(op_cmp32,x86_mrm(EDX),ECX);
 	//jne full_lookup;
 	x86e->Emit(op_jne,x86_ptr_imm(Dynarec_Mainloop_no_update_fast));
 
 	//inc dword ptr[edx+16];
-	x86e->Emit(op_inc32,x86_mrm::create(EDX,x86_ptr::create(16)));
+	x86e->Emit(op_inc32,x86_mrm(EDX,x86_ptr::create(16)));
 	#ifdef _BM_CACHE_STATS
 		//inc fast_lookups;
 		x86e->Emit(op_inc32,x86_ptr(&fast_lookups));
 	#endif
 	//jmp dword ptr[edx+8];
-	x86e->Emit(op_jmp32,x86_mrm::create(EDX,x86_ptr::create(8)));
+	x86e->Emit(op_jmp32,x86_mrm(EDX,x86_ptr::create(8)));
 */
 	x86e->Generate();
 	delete x86e;
@@ -558,9 +561,9 @@ void ret_cache_push(CompiledBasicBlock* cBB,x86_block* x86e)
 	x86e->Emit(op_and32,ESP,RET_CACHE_PTR_MASK_AND);
 
 	//Adress
-	x86e->Emit(op_mov32,x86_mrm::create(ESP,x86_ptr::create(RET_CACHE_STACK_OFFSET_A)),cBB->ebi.TT_next_addr);
+	x86e->Emit(op_mov32,x86_mrm(ESP,x86_ptr::create(RET_CACHE_STACK_OFFSET_A)),cBB->ebi.TT_next_addr);
 	//Block
-	x86e->Emit(op_mov32,x86_mrm::create(ESP,x86_ptr::create(RET_CACHE_STACK_OFFSET_B)),(u32)(cBB));
+	x86e->Emit(op_mov32,x86_mrm(ESP,x86_ptr::create(RET_CACHE_STACK_OFFSET_B)),(u32)(cBB));
 }
 bool BasicBlock::Compile()
 {
@@ -797,7 +800,7 @@ compile_normaly:
 			//x86e->Emit(op_int3);
 			
 			//x86e->Emit(op_mov32 ,EAX,GetRegPtr(reg_pc));
-			x86e->Emit(op_cmp32 ,EAX,x86_mrm::create(ESP,x86_ptr::create(RET_CACHE_STACK_OFFSET_A)));
+			x86e->Emit(op_cmp32 ,EAX,x86_mrm(ESP,x86_ptr::create(RET_CACHE_STACK_OFFSET_A)));
 			//je ok
 #ifndef RET_CACHE_PROF
 			x86e->Emit(op_jne ,x86_ptr_imm(Dynarec_Mainloop_no_update));
@@ -808,7 +811,7 @@ compile_normaly:
 			
 			//x86e->Emit(op_int3);
 			//Get the block ptr
-			x86e->Emit(op_mov32 ,ECX,x86_mrm::create(ESP,x86_ptr::create(RET_CACHE_STACK_OFFSET_B)));
+			x86e->Emit(op_mov32 ,ECX,x86_mrm(ESP,x86_ptr::create(RET_CACHE_STACK_OFFSET_B)));
 			x86e->Emit(op_sub32 ,ESP,8);//decrease the ptr ;)
 			x86e->Emit(op_and32,ESP,RET_CACHE_PTR_MASK_AND);
 			x86e->Emit(op_or32,ESP,RET_CACHE_PTR_MASK_OR);
@@ -817,7 +820,7 @@ compile_normaly:
 #endif
 			
 			//mov eax,[pcall_ret_address+codeoffset]
-			x86e->Emit(op_jmp32,x86_mrm::create(ECX,x86_ptr::create(offsetof(CompiledBasicBlock,ebi.pTT_next_addr))));
+			x86e->Emit(op_jmp32,x86_mrm(ECX,x86_ptr::create(offsetof(CompiledBasicBlock,ebi.pTT_next_addr))));
 		}
 		break;
 	case BLOCK_EXITTYPE_COND:			//linkable
@@ -902,7 +905,7 @@ compile_normaly:
 
 			//call_ret_address=0xFFFFFFFF;
 			//x86e->Emit(op_mov32 ,EBX,&call_ret_cache_ptr);
-			//x86e->Emit(op_mov32,x86_mrm::create(EBX),0xFFFFFFFF);
+			//x86e->Emit(op_mov32,x86_mrm(EBX),0xFFFFFFFF);
 
 			//pcall_ret_address=0;
 			//Good , now return to caller :)
@@ -962,4 +965,31 @@ void BasicBlock::CalculateLockFlags()
 	}
 	//check the last one , it is possible to skip it on the above loop :)
 	flags.ProtectionType |= GetPageInfo(end).flags.ManualCheck;
+}
+extern u32 CompiledSRCsz;
+
+CompiledBlockInfo*  __fastcall CompileBasicBlock(u32 pc)
+{
+
+	CompiledBlockInfo* rv;
+	BasicBlock* block=new BasicBlock();
+
+	//scan code
+	ScanCode(pc,block);
+	//Fill block lock type info
+	block->CalculateLockFlags();
+	CompiledSRCsz+=block->Size();
+	//analyse code [generate il/block type]
+	AnalyseCode(block);
+	//optimise
+	shil_optimise_pass_ce_driver(block);
+	//Compile code
+	if (block->Compile())
+		rv=&block->cBB->cbi;
+	else
+		rv=0;
+
+	delete block;
+	
+	return rv;
 }

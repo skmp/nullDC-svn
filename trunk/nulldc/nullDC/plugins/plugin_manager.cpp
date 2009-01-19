@@ -48,6 +48,43 @@ List<PluginLoadInfo>			PluginList_cached;
 List<MapleDeviceDefinition>		MapleDeviceList_cached;
 List<cDllHandler*>				LoadedTempDlls;
 
+const wchar* pluginDefaults[]=
+{
+	L"nullPvr_Win32.dll",
+	L"nullGDR_Win32.dll",
+	L"nullAica_Win32.dll",
+	L"nullExtDev_Win32.dll",
+
+
+	L"drkMapleDevices_Win32.dll:2",
+	L"NULL",
+	L"NULL",
+	L"NULL",
+	L"NULL",
+	L"drkMapleDevices_Win32.dll:0",
+
+	L"NULL",
+	L"NULL",
+	L"NULL",
+	L"NULL",
+	L"NULL",
+	L"NULL",
+
+	L"NULL",
+	L"NULL",
+	L"NULL",
+	L"NULL",
+	L"NULL",
+	L"NULL",
+
+	L"NULL",
+	L"NULL",
+	L"NULL",
+	L"NULL",
+	L"NULL",
+	L"NULL",
+};
+
 //Plugin Enumeration/Validation
 enum PluginValidationErrors
 {
@@ -407,7 +444,7 @@ void maple_cfg_plug(int i,int j,wchar * out)
 {
 	wchar temp[512];
 	maple_cfg_name(i,j,temp);
-	cfgLoadStr(_T("nullDC_plugins"),temp,out,_T("NULL"));
+	cfgLoadStr(_T("nullDC_plugins"),temp,out,pluginDefaults[NDCS_PLUGIN_MAPLE_0_0-NDCS_PLUGIN_PVR + i*6+j]);
 }
 u8 GetMaplePort(u32 port,u32 device)
 {
@@ -771,6 +808,7 @@ void unload_plugin(T* plug,u32 rootmenu)
 	if (s32 rv=load_plugin(dllf,to,menu)) \
 		return rv; \
 }
+
 //Internal function for load/unload w/ error checking :)
 s32 plugins_Load_()
 {
@@ -797,10 +835,10 @@ s32 plugins_Load_()
 	eminf.DebugMenu=MenuIDs.Debug;
 	eminf.BroardcastEvent=BroadcastEvent;
 
-	load_plugin_(_T("Current_PVR"),&libPvr,MenuIDs.PowerVR,_T("nullPvr_Win32.dll"));
-	load_plugin_(_T("Current_GDR"),&libGDR,MenuIDs.GDRom,_T("nullGDR_Win32.dll"));
-	load_plugin_(_T("Current_AICA"),&libAICA,MenuIDs.Aica,_T("nullAica_Win32.dll"));
- 	load_plugin_(_T("Current_ExtDevice"),&libExtDevice,MenuIDs.ExtDev,_T("nullExtDev_Win32.dll"));
+	load_plugin_(_T("Current_PVR"),&libPvr,MenuIDs.PowerVR,pluginDefaults[NDCS_PLUGIN_PVR-NDCS_PLUGIN_PVR]);
+	load_plugin_(_T("Current_GDR"),&libGDR,MenuIDs.GDRom,pluginDefaults[NDCS_PLUGIN_GDR-NDCS_PLUGIN_PVR]);
+	load_plugin_(_T("Current_AICA"),&libAICA,MenuIDs.Aica,pluginDefaults[NDCS_PLUGIN_AICA-NDCS_PLUGIN_PVR]);
+ 	load_plugin_(_T("Current_ExtDevice"),&libExtDevice,MenuIDs.ExtDev,pluginDefaults[NDCS_PLUGIN_EXTDEV-NDCS_PLUGIN_PVR]);
 
 	List<PluginLoadInfo>* mpl= GetPluginList(Plugin_Maple);
 
@@ -830,7 +868,7 @@ s32 plugins_Load_()
 	{
 		maple_cfg_plug(port,5,plug_name);
 		lcp_name=plug_name;
-		if (wcscmp(plug_name,_T("NULL"))!=0)
+		if (wcscmp(plug_name,L"NULL")!=0)
 		{
 			if (!MapleDevices_dd[port][5].Created)
 			{
@@ -853,7 +891,7 @@ s32 plugins_Load_()
 
 				maple_cfg_plug(port,subport,plug_name);
 				lcp_name=plug_name;
-				if (wcscmp(plug_name,_T("NULL"))!=0)
+				if (wcscmp(plug_name,L"NULL")!=0)
 				{
 					if (!MapleDevices_dd[port][subport].Created)
 					{

@@ -2,7 +2,7 @@
 #include "plugin_header.h"
 
 #define maple_sett(x,y) NDCS_PLUGIN_MAPLE_##x##_##y
-#define maple_groop(x) maple_sett(x,0), maple_sett(x,1), maple_sett(x,2), maple_sett(x,3), maple_sett(x,4), maple_sett(x,5)
+#define maple_group(x) maple_sett(x,0), maple_sett(x,1), maple_sett(x,2), maple_sett(x,3), maple_sett(x,4), maple_sett(x,5)
 
 
 enum nullDCSettings
@@ -22,16 +22,16 @@ enum nullDCSettings
 	NDCS_PLUGIN_EXTDEV,
 
 
-	maple_groop(0),
-	maple_groop(1),
-	maple_groop(2),
-	maple_groop(3),
+	maple_group(0),
+	maple_group(1),
+	maple_group(2),
+	maple_group(3),
 
 	NDCS_COUNT,
 };
 
 #undef maple_sett
-#undef maple_groop
+#undef maple_group
 
 struct PluginInfoList
 {

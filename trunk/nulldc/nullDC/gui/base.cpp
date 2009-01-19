@@ -218,6 +218,8 @@ void SwitchCpu()
 	if (bStart)
 		Start_DC();
 }
+extern const wchar* pluginDefaults[];
+
 s32 EXPORT_CALL GetEmuSetting(u32 sid,void* value)
 {
 	wchar* sptr=(wchar*)value;
@@ -237,7 +239,7 @@ s32 EXPORT_CALL GetEmuSetting(u32 sid,void* value)
 	default:
 		if (sid<NDCS_COUNT)
 		{
-			cfgLoadStr(_T("nullDC_plugins"),ndc_snames[sid-NDCS_PLUGIN_PVR],sptr,0);
+			cfgLoadStr(_T("nullDC_plugins"),ndc_snames[sid-NDCS_PLUGIN_PVR],sptr,pluginDefaults[sid-NDCS_PLUGIN_PVR]);
 			return rv_ok;
 		}
 		else
