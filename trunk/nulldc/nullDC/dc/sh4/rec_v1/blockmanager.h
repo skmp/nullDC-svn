@@ -50,8 +50,6 @@ extern u32 DynarecCacheSize;
 void* dyna_malloc(u32 size);
 void* dyna_realloc(void*ptr,u32 oldsize,u32 newsize);
 void* dyna_finalize(void* ptr,u32 oldsize,u32 newsize);
-void dyna_link(CompiledBlockInfo* block);
-void dyna_free(CompiledBlockInfo* block);
 void dyna_profiler_tick(void* addr);
 
 struct bm_stats

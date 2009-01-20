@@ -240,9 +240,9 @@ CompiledBlockInfo* fastcall AnalyseCodeSuperBlock(u32 pc)
 				blocks[i]->cBB->ebi.TT_block=&blocks[i]->TT_block_ptr->cBB->cbi;
 				blocks[i]->cBB->ebi.pTT_next_addr=blocks[i]->cBB->ebi.TT_block->Code;
 			}
-			void RewriteBasicBlockCond(CompiledBasicBlock* cBB);
+			void FASTCALL RewriteBasicBlock(CompiledBasicBlock* cBB);
 			if (blocks[i]->cBB->ebi.Rewrite.Type)
-				RewriteBasicBlockCond(blocks[i]->cBB);
+				RewriteBasicBlock(blocks[i]->cBB);
 			//delete blocks[i];
 		}
 	}

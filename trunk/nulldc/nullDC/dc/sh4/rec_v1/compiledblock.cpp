@@ -59,10 +59,8 @@ void CompiledBlockInfo::Suspend()
 	Discarded=true;
 }
 
-void dyna_free(CompiledBlockInfo* block);
 void CompiledBlockInfo::Free()
 {
-		dyna_free(this);
 		Code=0;	
 
 		block_vtable[block_type.type].Free(this);

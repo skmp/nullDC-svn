@@ -71,7 +71,7 @@ void __fastcall basic_block_BlockWasSuspended(CompiledBlockInfo* p_this,Compiled
 		}
 	}
 }
-void FASTCALL RewriteBasicBlockGuess_NULL(CompiledBasicBlock* cBB);
+void FASTCALL RewriteBasicBlock(CompiledBasicBlock* cBB);
 void __fastcall basic_block_ClearBlock(CompiledBlockInfo* p_this,CompiledBlockInfo* block)
 {
 	bbthis;
@@ -83,10 +83,10 @@ void __fastcall basic_block_ClearBlock(CompiledBlockInfo* p_this,CompiledBlockIn
 			p_this->block_type.exit_type==BLOCK_EXITTYPE_DYNAMIC_CALL)
 		{
 			pthis->TF_next_addr=0xFFFFFFFF;
-			RewriteBasicBlockGuess_NULL((CompiledBasicBlock*)p_this);
+			pthis->Rewrite.RCFlags=0;
 		}
 		if (pthis->Rewrite.Type)
-			RewriteBasicBlockCond((CompiledBasicBlock*)p_this);
+			RewriteBasicBlock((CompiledBasicBlock*)p_this);
 	}
 
 	if (pthis->TT_block==block)
@@ -94,7 +94,7 @@ void __fastcall basic_block_ClearBlock(CompiledBlockInfo* p_this,CompiledBlockIn
 		pthis->TT_block=0;
 		pthis->pTT_next_addr=bb_link_compile_inject_TT_stub;
 		if (pthis->Rewrite.Type)
-			RewriteBasicBlockCond((CompiledBasicBlock*)p_this);
+			RewriteBasicBlock((CompiledBasicBlock*)p_this);
 	}
 }
 void __fastcall basic_block_Suspend(CompiledBlockInfo* p_this)
@@ -118,6 +118,7 @@ void __fastcall basic_block_Suspend(CompiledBlockInfo* p_this)
 void __fastcall basic_block_Free(CompiledBlockInfo* p_this)
 {
 	bbthis;
+	((x86_block_externs*)p_this->x86_code_fixups)->Free();
 }
 
 //Basic Block
@@ -172,6 +173,7 @@ void BasicBlock::SetCompiledBlockInfo(CompiledBasicBlock* cBl)
 
 void RewriteBasicBlockFixed(CompiledBasicBlock* cBB)
 {
+	verify(cBB->ebi.Rewrite.Type==2);
 	u8 flags=0;
 	if  (cBB->ebi.TF_block)
 		flags=1;
@@ -203,6 +205,7 @@ void RewriteBasicBlockFixed(CompiledBasicBlock* cBB)
 }
 void RewriteBasicBlockCond(CompiledBasicBlock* cBB)
 {
+	verify(cBB->ebi.Rewrite.Type==1);
 	if (cBB->ebi.Rewrite.Type==2)
 	{
 		RewriteBasicBlockFixed(cBB);
@@ -271,7 +274,7 @@ void* __fastcall bb_link_compile_inject_TF(CompiledBlockInfo* ptr)
 		ptr->GetBB()->TF_block=target;
 		ptr->GetBB()->pTF_next_addr=target->Code;
 		if (ptr->GetBB()->Rewrite.Type)
-			RewriteBasicBlockCond((CompiledBasicBlock*)ptr);
+			RewriteBasicBlock((CompiledBasicBlock*)ptr);
 	}
 	return target->Code;
 }
@@ -288,7 +291,7 @@ void* __fastcall bb_link_compile_inject_TT(CompiledBlockInfo* ptr)
 		ptr->GetBB()->TT_block=target;
 		ptr->GetBB()->pTT_next_addr=target->Code;
 		if (ptr->GetBB()->Rewrite.Type)
-			RewriteBasicBlockCond((CompiledBasicBlock*)ptr);
+			RewriteBasicBlock((CompiledBasicBlock*)ptr);
 	}
 	return target->Code;
 } 
@@ -430,9 +433,11 @@ full_lookup:
 }*/
 void FASTCALL RewriteBasicBlockGuess_FLUT(CompiledBasicBlock* cBB)
 {
+	verify(cBB->ebi.Rewrite.Type==3);
 	//indirect call , rewrite & link , second time(does fast look up)
 	x86_block* x86e = new x86_block();
 
+	cBB->ebi.Rewrite.RCFlags=2;
 	x86e->Init(dyna_realloc,dyna_finalize);
 	x86e->do_realloc=false;
 	x86e->x86_buff=(u8*)cBB->cbi.Code + cBB->ebi.Rewrite.Offset;
@@ -495,6 +500,7 @@ void naked RewriteBasicBlockGuess_FLUT_stub(CompiledBasicBlock* ptr)
 }
 void* FASTCALL RewriteBasicBlockGuess_TTG(CompiledBasicBlock* cBB)
 {
+	verify(cBB->ebi.Rewrite.Type==3);
 	//indirect call , rewrite & link , first time (hardlinks to target)
 	CompiledBlockInfo*	new_block=FindOrRecompileBlock(pc);
 
@@ -502,6 +508,7 @@ void* FASTCALL RewriteBasicBlockGuess_TTG(CompiledBasicBlock* cBB)
 	{
 		return new_block->Code;
 	}
+	cBB->ebi.Rewrite.RCFlags=1;
 	//Add reference so we can undo the chain later
 	new_block->AddRef(&cBB->cbi);
 	cBB->ebi.TF_block=new_block;
@@ -536,6 +543,8 @@ void naked RewriteBasicBlockGuess_TTG_stub(CompiledBasicBlock* ptr)
 //default behavior , calls _TTG rewrite
 void FASTCALL RewriteBasicBlockGuess_NULL(CompiledBasicBlock* cBB)
 {
+	verify(cBB->ebi.Rewrite.Type==3);
+	cBB->ebi.Rewrite.RCFlags=0;
 	x86_block* x86e = new x86_block();
 
 	x86e->Init(dyna_realloc,dyna_finalize);
@@ -546,6 +555,22 @@ void FASTCALL RewriteBasicBlockGuess_NULL(CompiledBasicBlock* cBB)
 	x86e->Emit(op_jmp,x86_ptr_imm(RewriteBasicBlockGuess_TTG_stub));
 	x86e->Generate();
 	delete x86e;
+}
+void FASTCALL RewriteBasicBlock(CompiledBasicBlock* cBB)
+{
+	if (cBB->ebi.Rewrite.Type==1)
+		RewriteBasicBlockCond(cBB);
+	else if (cBB->ebi.Rewrite.Type==2)
+		RewriteBasicBlockFixed(cBB);
+	else if (cBB->ebi.Rewrite.Type==3)
+	{
+		if (cBB->ebi.Rewrite.RCFlags==0)
+			RewriteBasicBlockGuess_NULL(cBB);
+		else if (cBB->ebi.Rewrite.RCFlags==1)
+			RewriteBasicBlockGuess_TTG(cBB);
+		else if (cBB->ebi.Rewrite.RCFlags==2)
+			RewriteBasicBlockGuess_FLUT(cBB);
+	}
 }
 #ifdef RET_CACHE_PROF
 void naked ret_cache_misscall()
@@ -782,6 +807,8 @@ compile_normaly:
 		}
 	case BLOCK_EXITTYPE_DYNAMIC:		//not guess 
 		{
+			cBB->ebi.Rewrite.Type=3;
+			cBB->ebi.Rewrite.RCFlags=0;
 			cBB->ebi.Rewrite.Offset=x86e->x86_indx;
 			x86e->Emit(op_mov32,ECX,(u32)cBB);
 			x86e->Emit(op_jmp,x86_ptr_imm(RewriteBasicBlockGuess_TTG_stub));
@@ -931,15 +958,15 @@ compile_normaly:
 	
 	cBB->cbi.Code=(BasicBlockEP*)codeptr;
 	cBB->cbi.size=x86e->x86_indx;
-	if (codeptr!=0)
-		dyna_link(&cBB->cbi);
 
 	//make it call the stubs , unless otherwise needed
 	cBB->ebi.pTF_next_addr=bb_link_compile_inject_TF_stub;
 	cBB->ebi.pTT_next_addr=bb_link_compile_inject_TT_stub;
 	
 	compiled_basicblock_count++;
-		
+
+	cBB->cbi.x86_code_fixups=x86e->GetExterns();
+
 	delete fra;
 	delete ira;
 	x86e->Free();
@@ -949,7 +976,8 @@ compile_normaly:
 		return false; // didnt manage to generate code
 	//rewrite needs valid codeptr
 	if (cBB->ebi.Rewrite.Type)
-		RewriteBasicBlockCond(cBB);
+		RewriteBasicBlock(cBB);
+
 	return true;
 }
 

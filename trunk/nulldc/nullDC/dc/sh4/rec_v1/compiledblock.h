@@ -51,6 +51,8 @@ public :
 	//For TBP :)
 	u32 tbp_ticks;
 
+	void* x86_code_fixups;
+
 	//Called to Free :p yeshrly
 	void Free();
 	//Called when this block is suspended
