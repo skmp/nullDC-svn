@@ -311,7 +311,7 @@ void RelocateBlocks()
 	for(size_t i=0;i<all_block_list.ItemCount;i++)
 	{
 		u8* src=((u8*)all_block_list[i]->Code)-DynarecCache+temp;
-		//if (dst_start==(u8*)all_block_list[i]->Code)
+		if (dst_start!=(u8*)all_block_list[i]->Code)
 		{
 			memcpy(dst_start,src,all_block_list[i]->size);
 			all_block_list[i]->Code=(BasicBlockEP*)dst_start;
