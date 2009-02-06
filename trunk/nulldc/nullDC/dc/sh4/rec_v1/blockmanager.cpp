@@ -387,7 +387,7 @@ void bm_GetStats(bm_stats* stats)
 {
 	stats->block_count=all_block_list.ItemCount;
 
-	stats->cache_size=DynarecCacheSize;
+	stats->cache_size=DynarecCacheUsed;
 	stats->block_size=CompiledSRCsz;
 	LARGE_INTEGER Freq;
 	QueryPerformanceFrequency(&Freq);
