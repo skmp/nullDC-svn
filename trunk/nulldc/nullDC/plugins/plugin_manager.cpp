@@ -548,7 +548,7 @@ void cm_MampleSubEmpty(u32 root,u32 port,u32 subport)
 		u32 menu=libgui.AddMenuItem(root,-1,text,menu_handle_attach_sub,0);
 		MenuItem mi;
 		u8* t=0;
-		t+=MapleDeviceList_cached[i].id;
+		t+=i;
 		t+=(port<<24)|(subport<<26);
 		mi.PUser=t;
 		libgui.SetMenuItem(menu,&mi,MIM_PUser);
@@ -574,7 +574,21 @@ void EXPORT_CALL menu_handle_attach_main(u32 id,void* win,void* p)
 	u32 plid=(u32)offs&0xFFFFFF;
 	u32 port=((u32)offs>>24);
 
-	CreateMapleDevice(port,MapleDeviceList_cached[plid].dll,true);
+	verify(MapleDevices_dd[port][5].Created==false);
+
+	int rv = CreateMapleDevice(port,MapleDeviceList_cached[plid].dll,true);
+	if (rv<0)
+		return;
+
+	MapleDevices_dd[port][5].Created=true;
+
+	if (plugins_inited)
+	{	
+		MapleDeviceDefinition* mdd=MapleDevices_dd[port][5].mdd;
+
+		FindMaplePlugin(mdd)->Init(MapleDevices[port].data,mdd->id,0);
+		MapleDevices_dd[port][5].Inited=true;
+	}
 }
 void EXPORT_CALL menu_handle_detach_main(u32 id,void* win,void* p)
 {
@@ -582,7 +596,21 @@ void EXPORT_CALL menu_handle_detach_main(u32 id,void* win,void* p)
 
 	u32 port=((u32)offs>>24);
 
-	DestroyMapleDevice(port);
+	verify(MapleDevices_dd[port][5].Created==true);
+
+	if (MapleDevices_dd[port][5].Inited)
+	{
+		MapleDeviceDefinition* mdd=MapleDevices_dd[port][5].mdd;
+
+		FindMaplePlugin(mdd)->Term(MapleDevices[port].data,mdd->id);
+		MapleDevices_dd[port][5].Inited=false;
+	}
+
+	if (MapleDevices_dd[port][5].Created)
+	{
+		DestroyMapleDevice(port);
+		MapleDevices_dd[port][5].Created=false;
+	}
 }
 void cm_MampleMainEmpty(u32 root,u32 port)
 {
@@ -603,7 +631,7 @@ void cm_MampleMainEmpty(u32 root,u32 port)
 		u32 menu=libgui.AddMenuItem(root,-1,text,menu_handle_attach_main,0);
 		MenuItem mi;
 		u8* t=0;
-		t+=MapleDeviceList_cached[i].id;
+		t+=i;
 		t+=(port<<24);
 		mi.PUser=t;
 		libgui.SetMenuItem(menu,&mi,MIM_PUser);
@@ -612,27 +640,31 @@ void cm_MampleMainEmpty(u32 root,u32 port)
 void cm_MampleMainUsed(u32 root,u32 port,u32 flags)
 {
 	libgui.DeleteAllMenuItemChilds(root);
-	//add the 
-	//Subdevice X ->[default empty]
-	for (u32 i=0;i<5;i++)
+	
+	if (flags&0x1f)
 	{
-		if (flags & (1<<i))
+		//add the 
+		//Subdevice X ->[default empty]
+		for (u32 i=0;i<5;i++)
 		{
-			wchar temp[512];
-			swprintf(temp,_T("Subdevice %d"),i+1);
-			u32 sdr=libgui.AddMenuItem(root,-1,temp,0,0);
-			MenuIDs.Maple_port[port][i]=sdr;
-			cm_MampleSubEmpty(sdr,port,i);
+			if (flags & (1<<i))
+			{
+				wchar temp[512];
+				swprintf(temp,_T("Subdevice %d"),i+1);
+				u32 sdr=libgui.AddMenuItem(root,-1,temp,0,0);
+				MenuIDs.Maple_port[port][i]=sdr;
+				cm_MampleSubEmpty(sdr,port,i);
+			}
+			else
+			{
+				MenuIDs.Maple_port[port][i]=0;
+			}
 		}
-		else
-		{
-			MenuIDs.Maple_port[port][i]=0;
-		}
+
+
+		//-
+		libgui.AddMenuItem(root,-1,0,0,0);
 	}
-	
-	
-	//-
-	libgui.AddMenuItem(root,-1,0,0,0);
 	//Unplug
 	u32 menu=libgui.AddMenuItem(root,-1,_T("Unplug"),menu_handle_detach_main,0);
 	MenuItem mi;
