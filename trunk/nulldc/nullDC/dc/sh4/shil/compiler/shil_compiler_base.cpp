@@ -2087,8 +2087,27 @@ void __fastcall shil_compile_mul(shil_opcode* op)
 		SaveReg((u8)reg_mach,EDX);
 	}
 }
+void FASTCALL sh4_div0u();
+void FASTCALL sh4_div0s(u32 rn,u32 rm);
+u32 FASTCALL sh4_rotcl(u32 rn);
+u32 FASTCALL sh4_div1(u32 rn,u32 rm);
+template<bool sgn>
+u64 FASTCALL shil_helper_slowdiv32(u32 r3,u32 r2, u32 r1)
+{
 
+	if (sgn)
+		sh4_div0s(r2,r3);
+	else
+		sh4_div0u();
 
+	for (int i=0;i<32;i++)
+	{
+		r1=sh4_rotcl(r1);
+		r2=sh4_div1(r2,r3);
+	}
+
+	return ((u64)r3<<32)|r1;//EAX=r1, EDX=r3 
+}
 void __fastcall shil_compile_div32(shil_opcode* op)
 {
 	assert(0==(op->flags & (FLAG_IMM2)));
@@ -2097,33 +2116,70 @@ void __fastcall shil_compile_div32(shil_opcode* op)
 	u8 rQuotient=op->reg1;
 	u8 rDivisor=op->reg2;
 	u8 rDividend=(u8)op->imm1;
+	//Q=Dend/Dsor
 
+	//make sure that the sign extention is correct
 	x86_gpr_reg Quotient=LoadReg_force(EAX,rQuotient);
-	x86_gpr_reg Dividend=LoadReg_force(EDX,rDividend);
+	
+	 if (op->flags & FLAG_SX)
+		x86e->Emit(op_cdq);
+	else
+		x86e->Emit(op_xor32,EDX,EDX);
 
-	if (ira->IsRegAllocated(rDivisor))
+	x86_gpr_reg Dividend=LoadReg_force(ECX,rDividend);
+	
+	x86e->Emit(op_cmp32,EDX,ECX);
+	
+	x86_gpr_reg Divisor=LoadReg(EDX,rDivisor);
+	
+	x86_Label* slowdiv=x86e->CreateLabel(false,8);
+	x86_Label* fastdiv=x86e->CreateLabel(false,8);
+	x86_Label* exit =x86e->CreateLabel(false,8);
+
+	//CDQ(rQuotient)!=rDividend  || rDividend!=0 ? (on input this should happen)
+	x86e->Emit(op_jne,slowdiv);
+	
+	//make sure its not divide by 0
+	x86e->Emit(op_test32,Divisor,Divisor);
+	//EDX==0 ?
+	x86e->Emit(op_jz,slowdiv);
+	
+	//all was ok, do normal divition !
+	x86e->Emit(op_jmp,fastdiv);
+	
+	//something went wrong
+	//slowdiv:
+	x86e->MarkLabel(slowdiv);
+	//push the 3rd param
+	x86e->Emit(op_push32,EAX);
+	//call the slow div (full sh4 impl)
+	x86e->Emit(op_call,x86_ptr_imm( (op->flags & FLAG_SX) ? shil_helper_slowdiv32<true> : shil_helper_slowdiv32<false>));
+	//goto enddiv;
+	x86e->Emit(op_jmp,exit);
+
+	//fast divition
+	//fastdiv:
+	x86e->MarkLabel(fastdiv);
+	if (Divisor==EDX)	//we can't have it there ..
 	{
-		x86_gpr_reg Divisor=LoadReg(EAX,rDivisor);
-		if (op->flags & FLAG_SX)
-		{
-			x86e->Emit(op_idiv32,Divisor);
-		}
-		else
-		{
-			x86e->Emit(op_div32,Divisor);
-		}
+		x86e->Emit(op_xchg32,ECX,EDX);
+		Divisor=ECX;
+		Dividend=EDX;
 	}
 	else
 	{
-		if (op->flags & FLAG_SX)
-		{
-			x86e->Emit(op_idiv32,x86_ptr(GetRegPtr(rDivisor)));
-		}
-		else
-		{
-			x86e->Emit(op_div32,x86_ptr(GetRegPtr(rDivisor)));
-		}
+		Dividend=EDX;//its the same value if its here ...
 	}
+
+	if (op->flags & FLAG_SX)
+	{
+		x86e->Emit(op_idiv32,Divisor);
+	}
+	else
+	{
+		x86e->Emit(op_div32,Divisor);
+	}
+
 
 	if (op->flags & FLAG_SX)
 	{
@@ -2135,18 +2191,13 @@ void __fastcall shil_compile_div32(shil_opcode* op)
 	}
 
 	//set T
+	//Set byte if below (CF=1)
 	x86e->Emit(op_setb,x86_ptr(GetRegPtr(reg_sr_T)));
 
 
-
-	SaveReg(rQuotient,Quotient);
-
 	//WARNING--JUMP--
 
-	x86_Label* exit =x86e->CreateLabel(false,8);
-	x86_Label* no_fixup =x86e->CreateLabel(false,8);
-
-	x86e->Emit(op_jb ,no_fixup);
+	x86e->Emit(op_jb ,exit);
 
 	if (ira->IsRegAllocated(rDivisor))
 	{	//safe to do here b/c rDivisor was loaded to reg above (if reg cached)
@@ -2158,22 +2209,12 @@ void __fastcall shil_compile_div32(shil_opcode* op)
 		x86e->Emit(op_sub32 ,EDX,GetRegPtr(rDivisor));
 	}
 
-	SaveReg(rDividend,Dividend);
-
-	//WARNING--JUMP--
-
-	x86e->Emit(op_jmp ,exit);
-
-	x86e->MarkLabel(no_fixup);
-
-	SaveReg(rDividend,Dividend);
-
 	//WARNING--JUMP--
 
 	x86e->MarkLabel(exit);
 
-	ira->MarkDirty(rDividend);
-	ira->MarkDirty(rQuotient);
+	SaveReg(rDividend,Dividend);
+	SaveReg(rQuotient,Quotient);
 }
 
 

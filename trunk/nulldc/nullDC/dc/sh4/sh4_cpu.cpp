@@ -495,88 +495,79 @@ sh4op(i0000_nnnn_mmmm_0111)
 	macl = (u32)((((s32)r[n]) * ((s32)r[m])));
 }
 //************************ Div ! ************************ 
-//div0u                         
-sh4op(i0000_0000_0001_1001)
-{//ToDo : Check This [26/4/05]
-	//iNimp("div0u");
+void FASTCALL sh4_div0u()
+{
 	sr.Q = 0;
 	sr.M = 0;
 	sr.T = 0;
 }
+//div0u                         
+sh4op(i0000_0000_0001_1001)
+{
+	sh4_div0u();
+}
+void FASTCALL sh4_div0s(u32 rn,u32 rm)
+{
+	sr.Q=rn>>31;
+	sr.M=rm>>31;
+	sr.T=sr.M^sr.Q;
+}
 //div0s <REG_M>,<REG_N>         
 sh4op(i0010_nnnn_mmmm_0111)
-{//ToDo : Check This [26/4/05]
-	//iNimp("div0s <REG_M>,<REG_N>");
+{
 	u32 n = GetN(op);
 	u32 m = GetM(op);
 
-	//new implementation
-	sr.Q=r[n]>>31;
-	sr.M=r[m]>>31;
-	sr.T=sr.M^sr.Q;
-	return;
-	/*
-	if ((r[n] & 0x80000000)!=0)
-	sr.Q = 1;
-	else
-	sr.Q = 0;
-	
-	if ((r[m] & 0x80000000)!=0)
-		sr.M = 1;
-	else
-		sr.M = 0;
-	
-	if (sr.Q == sr.M)
-		sr.T = 0;
-	else
-		sr.T = 1;
-		*/
+	sh4_div0s(r[n],r[m]);
 }
 
-//div1 <REG_M>,<REG_N>          
-sh4op(i0011_nnnn_mmmm_0100)
-{//ToDo : Check This [26/4/05]
-	u32 n=GetN(op);
-	u32 m=GetM(op);
-
+u32 FASTCALL sh4_div1(u32 rn,u32 rm)
+{
 	unsigned long tmp0, tmp2;
 	unsigned char old_q, tmp1;
 
 	old_q = sr.Q;
-	sr.Q = (u8)((0x80000000 & r[n]) !=0);
+	sr.Q = (u8)((0x80000000 & rn) !=0);
 
-	r[n] <<= 1;
-	r[n] |= (unsigned long)sr.T;
+	rn <<= 1;
+	rn |= sr.T;
 
-	tmp0 = r[n];	// this need only be done once here ..
-	tmp2 = r[m];
+	tmp0 = rn;	// this need only be done once here ..
+	tmp2 = rm;
 
 	if( 0 == old_q )
-	{	if( 0 == sr.M )
-	{
-		r[n] -= tmp2;
-		tmp1	= (r[n]>tmp0);
-		sr.Q	= (sr.Q==0) ? tmp1 : (u8)(tmp1==0) ;
-	}	else	{
-		r[n] += tmp2;
-		tmp1	=(r[n]<tmp0);
-		sr.Q	= (sr.Q==0) ? (u8)(tmp1==0) : tmp1 ;
-	}
-	}	else
-	{	if( 0 == sr.M )
-	{
-		r[n] += tmp2;
-		tmp1	=(r[n]<tmp0);
-		sr.Q	= (sr.Q==0) ? tmp1 : (u8)(tmp1==0) ;
-	}	else	{
-		r[n] -= tmp2;
-		tmp1	=(r[n]>tmp0);
-		sr.Q	= (sr.Q==0) ? (u8)(tmp1==0) : tmp1 ;
-	}
+	{	
+		if( 0 == sr.M )
+		{
+			rn -= tmp2;
+			tmp1	= (rn>tmp0);
+			sr.Q	= (sr.Q==0) ? tmp1 : (u8)(tmp1==0) ;
+		}
+		else
+		{
+			rn += tmp2;
+			tmp1	=(rn<tmp0);
+			sr.Q	= (sr.Q==0) ? (u8)(tmp1==0) : tmp1 ;
+		}
+	}	
+	else
+	{	
+		if( 0 == sr.M )
+		{
+			rn += tmp2;
+			tmp1	=(rn<tmp0);
+			sr.Q	= (sr.Q==0) ? tmp1 : (u8)(tmp1==0) ;
+		}	
+		else
+		{
+			rn -= tmp2;
+			tmp1	=(rn>tmp0);
+			sr.Q	= (sr.Q==0) ? (u8)(tmp1==0) : tmp1 ;
+		}
 	}
 	sr.T = (sr.Q==sr.M);
 
-
+	return rn;
 	/*
 	u32 op1=r[m];
 	u32 op2=(u32)(s32)r[n];
@@ -584,19 +575,33 @@ sh4op(i0011_nnnn_mmmm_0100)
 	sr.Q=(r[n]>>31)&1;
 	op2=(op2<<1)| (sr.T);
 
+	u32 of=0;
 	if (oldq==sr.M)
 	{
 		op2=op2-op1;
+		if (underflow)
+			of=1;
 	}
 	else	
 	{
 		op2=op2+op1;
+		if (overflow)
+			of=1;
 	}
 
-	sr.Q=(sr.Q^sr.M)^((op2>>31)&1);
-	sr.T=1-(sr.Q ^ sr.M);
+	sr.Q=(sr.Q^sr.M)^of;
+	sr.T=1^(sr.Q ^ sr.M);
 	r[n]=(u32)op2;*/
 	//printf("Q %d , S %d , T %d , r[n] %d, r[m] %d\n",sr.Q,sr.S,sr.T,r[n],r[m]);
+}
+//div1 <REG_M>,<REG_N>          
+sh4op(i0011_nnnn_mmmm_0100)
+{//ToDo : Check This [26/4/05]
+
+	u32 n=GetN(op);	//dividend 'sign'
+	u32 m=GetM(op);	//divisor
+
+	r[n]=sh4_div1(r[n],r[m]);
 }
 
 //************************ Simple maths ************************ 
@@ -847,26 +852,24 @@ sh4op(i0100_nnnn_mmmm_1101)
 }
 
 
+u32 FASTCALL sh4_rotcl(u32 rn)
+{
+	u32 t = sr.T;
 
+	sr.T = rn >> 31;
+
+	rn <<= 1;
+	rn|=t;
+
+	return rn;
+}
 //rotcl <REG_N>                 
 sh4op(i0100_nnnn_0010_0100)
 {//ToDo : Check This [26/4/05]
 	//iNimp("rotcl <REG_N>");
 	u32 n = GetN(op);
-	u32 t;
-	//return;
-	t = sr.T;
-
-	sr.T = r[n] >> 31;
-
-	r[n] <<= 1;
-
-	/*
-	if (t==1)
-	r[n] |= 0x1;
-	else
-	r[n] &= 0xFFFFFFFE;*/
-	r[n]|=t;
+	
+	r[n]=sh4_rotcl(r[n]);
 }
 
 
