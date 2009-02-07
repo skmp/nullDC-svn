@@ -490,9 +490,13 @@ void EXPORT_CALL menu_handle_attach_sub(u32 id,void* win,void* p)
 	u32 port=prt&3;
 	u32 subport=prt>>2;
 
-	verify(MapleDevices_dd[port][subport].Created==false);
+	verify(MapleDevices_dd[port][subport].Created==false && MapleDevices[port].subdevices[subport].connected==false);
 
-	CreateMapleSubDevice(port&3,port>>2,MapleDeviceList_cached[plid].dll,true);
+	int rv=CreateMapleSubDevice(port,subport,MapleDeviceList_cached[plid].dll,true);
+	
+	if (rv<0)
+		return;
+
 	MapleDevices_dd[port][subport].Created=true;
 
 	if (plugins_inited)
@@ -686,6 +690,10 @@ s32 DestroyMapleDevice(u32 pos)
 	if (!MapleDevices[pos].connected)
 		return pmde_device_state;
 
+	if (!MapleDevices_dd[pos][5].Created)
+		return pmde_device_state;
+	
+
 	//MapleDevices_dd[pos][5].Inited
 
 	MapleDeviceDefinition* mdd=MapleDevices_dd[pos][5].mdd;
@@ -745,6 +753,9 @@ s32 DestroyMapleSubDevice(u32 pos,u32 subport)
 	if (!MapleDevices[pos].subdevices[subport].connected)
 		return pmde_device_state;
 
+	if (!MapleDevices_dd[pos][subport].Created)
+		return pmde_device_state;
+	
 	MapleDeviceDefinition* mdd=MapleDevices_dd[pos][subport].mdd;
 	MapleDevices_dd[pos][subport].mdd=0;
 	nullDC_Maple_plugin* plg =FindMaplePlugin(mdd);
@@ -862,6 +873,15 @@ s32 plugins_Load_()
 	delete mpl;
 
 	//Create Maple Devices
+
+	for (int port=0;port<4;port++)
+	{
+		MapleDevices[port].port=GetMaplePort(port,5);
+		for (int sub=0;sub<5;sub++)
+		{
+			MapleDevices[port].subdevices[sub].port=GetMaplePort(port,sub);
+		}
+	}
 
 	wchar plug_name[512];
 	for (int port=0;port<4;port++)

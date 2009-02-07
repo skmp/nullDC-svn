@@ -14,7 +14,7 @@
 
 eMDevInf MapleDevices_dd[4][6];
 maple_device_instance MapleDevices[4];
-
+//#define debug_maple 1
 /*
 	Maple ;)
 	Maple IO is done on fames on both ways, in a very strict way
@@ -48,22 +48,6 @@ maple_device_instance MapleDevices[4];
 	Each dll can contain 1 maple device , and 1 maple subdevice (since they are considered diferent plugin types)
 	Maple plugins should olny care about "user data" on maple frames , all else is handled by maple rooting code
 */
-
-/*
-typedef void MapleGotData(u32 header1,u32 header2,u32*data,u32 datalen);
-
-struct MaplePluginInfo
-{
-	u32 InterfaceVersion;
-
-	//UpdateCBFP* UpdateMaple;
-	bool Connected;//:)
-	MapleGotData* GotDataCB;
-	InitFP* Init;
-	TermFP* Term;
-};*/
-
-//MaplePluginInfo MaplePlugin[4][6];
 
 void DoMapleDma();
 
@@ -233,6 +217,10 @@ void DoMapleDma()
 				if(reci&0x20)
 					reci|=GetConnectedDevices(device);
 
+				#if debug_maple
+					printf("Maple :port%d_%d : 0x%02X -> done 0x%02X \n",device,subport,command,resp);
+				#endif
+
 				verify(resp==(u8)resp);
 				verify(send==(u8)send);
 				verify(reci==(u8)reci);
@@ -242,6 +230,10 @@ void DoMapleDma()
 			}
 			else
 			{
+				#if debug_maple
+					printf("Maple :port%d_%d : 0x%02X -> missing\n",device,subport,command);
+				#endif
+
 				outlen=4;
 				p_out[0]=0xFFFFFFFF;
 			}

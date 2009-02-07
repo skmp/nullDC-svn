@@ -302,6 +302,9 @@ int BlockRelocateSort(const void* p1,const void* p2)
 void FASTCALL RewriteBasicBlock(CompiledBasicBlock* cBB);
 void RelocateBlocks()
 {
+	if (all_block_list.ItemCount==0)
+		return;
+
 	u8* temp=(u8*)malloc(DynarecCacheUsed);
 	memcpy(temp,DynarecCache,DynarecCacheUsed);
 
