@@ -80,12 +80,12 @@ namespace Direct3DRenderer
 	IDirect3DPixelShader9* ZPixelShader=0;
 	
 	IDirect3DTexture9* pal_texture=0;
-	IDirect3DTexture9* fb_texture888=0,*fb_texture565=0,*fb_texture1555=0;
+	IDirect3DTexture9* fb_texture8888=0,* fb_texture565=0,*fb_texture1555=0;
 	IDirect3DTexture9* fog_texture=0;
 	IDirect3DTexture9* rtt_texture=0;
 	u32 rtt_address=0;
 	u32 rtt_FrameNumber=0xFFFFFFFF;
-	IDirect3DSurface9* bb_surf=0,* rtt_surf=0,* fb_surface888=0,* fb_surface565=0,* fb_surface1555=0;
+	IDirect3DSurface9* bb_surf=0,* rtt_surf=0,* fb_surface8888=0,* fb_surface565=0,* fb_surface1555=0;
 	D3DSURFACE_DESC bb_surf_desc;
 	ID3DXFont* font;
 	ID3DXConstantTable* shader_consts;
@@ -758,11 +758,11 @@ namespace Direct3DRenderer
 					break;
 				case fbde_C888:
 					bpp=4;
-					surf=fb_surface888;
+					surf=fb_surface8888;
 					break;
 				case fbde_888:
 					bpp=3;
-					surf=fb_surface888;
+					surf=fb_surface8888;
 					break;
 				}
 
@@ -808,21 +808,41 @@ namespace Direct3DRenderer
 				u32* write=(u32*)lr.pBits;
 				u32* line=(u32*)lr.pBits;
 
-				
-
 				if (pixel_double)
 					rs.right/=2;
 				if (line_double)
 					rs.bottom/=2;
 
-				for (u32 y=0;y<rs.bottom;y+=1)
+				for (u32 y=0;y<(u32)rs.bottom;y+=1)
 				{
 					if (!interlc || out_field==(y&1))
 					{
-						for (u32 x=0;x<DWordsPerLine;x+=1)
+						if (bpp==3)
 						{
-							*write++=*read;
-							read+=2;//skip the 'other' bank
+							u8* br=(u8*)read;
+							u8* bw=(u8*)write;
+							for (u32 x=0;x<DWordsPerLine*4;x+=1)
+							{
+								*bw++=*br++;
+								if (((u32)br&3)==0)
+									br+=4;
+								*bw++=*br++;
+								if (((u32)br&3)==0)
+									br+=4;
+								*bw++=*br++;
+								if (((u32)br&3)==0)
+									br+=4;
+
+								*bw++=0;	//skip A
+							}
+						}
+						else
+						{
+							for (u32 x=0;x<DWordsPerLine;x+=1)
+							{
+								*write++=*read;
+								read+=2;//skip the 'other' bank
+							}
 						}
 						read_line+=(DWordsPerLine-1)*2;//*2 to skip the 'other' bank.-1 so that it points to the last pixel of the last line
 						read_line+=fb_skip*2;//*2 to skip the 'other' bank
@@ -2710,8 +2730,8 @@ __error_out:
 		
 		shader->Release();shader=0;
 
-		verifyc(dev->CreateTexture(640,480,1,D3DUSAGE_DYNAMIC,D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,&fb_texture888,0));
-		verifyc(fb_texture888->GetSurfaceLevel(0,&fb_surface888));
+		verifyc(dev->CreateTexture(640,480,1,D3DUSAGE_DYNAMIC,D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,&fb_texture8888,0));
+		verifyc(fb_texture8888->GetSurfaceLevel(0,&fb_surface8888));
 
 		verifyc(dev->CreateTexture(640,480,1,D3DUSAGE_DYNAMIC,D3DFMT_R5G6B5,D3DPOOL_DEFAULT,&fb_texture565,0));
 		verifyc(fb_texture565->GetSurfaceLevel(0,&fb_surface565));
@@ -2830,10 +2850,12 @@ nl:
 		
 		safe_release(bb_surf);
 		safe_release(rtt_surf);
-		safe_release(fb_surface888);
+		safe_release(fb_surface8888);
+		safe_release(fb_surface1555);
 		safe_release(fb_surface565);
 
-		safe_release(fb_texture888);
+		safe_release(fb_texture8888);
+		safe_release(fb_texture1555);
 		safe_release(fb_texture565);
 		safe_release(pal_texture);
 		safe_release(fog_texture);
