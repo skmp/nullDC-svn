@@ -1,4 +1,5 @@
-﻿#define _WIN32_WINNT 0x0500
+﻿#include "drkpvr.h"
+#define _WIN32_WINNT 0x0500
 #if _DEBUG
 #define D3D_DEBUG_INFO
 #endif
@@ -79,11 +80,12 @@ namespace Direct3DRenderer
 	IDirect3DPixelShader9* ZPixelShader=0;
 	
 	IDirect3DTexture9* pal_texture=0;
+	IDirect3DTexture9* fb_texture888=0,*fb_texture565=0;
 	IDirect3DTexture9* fog_texture=0;
 	IDirect3DTexture9* rtt_texture=0;
 	u32 rtt_address=0;
 	u32 rtt_FrameNumber=0xFFFFFFFF;
-	IDirect3DSurface9* bb_surf=0,* rtt_surf=0;
+	IDirect3DSurface9* bb_surf=0,* rtt_surf=0,* fb_surface888=0,* fb_surface565=0;
 	D3DSURFACE_DESC bb_surf_desc;
 	ID3DXFont* font;
 	ID3DXConstantTable* shader_consts;
@@ -101,6 +103,7 @@ namespace Direct3DRenderer
 	//CRITICAL_SECTION tex_cache_cs;
 	
 	u32 FrameNumber=0;
+	u32 fb_FrameNumber=0;
 	bool IsFullscreen=false;
 	wchar fps_text[512];
 	float res_scale[4]={0,0,320,-240};
@@ -553,10 +556,10 @@ namespace Direct3DRenderer
 			//PrintTextureName();
 			if (!lock_block)
 				lock_list.push_back(this);
-			
+			/*
 			char file[512];
 
-			/*sprintf(file,"g:\\textures\\0x%08x_%08x_%s_%d_VQ%d_TW%d_MM%d_.png",tcw.full,tsp.full,texFormatName[tcw.NO_PAL.PixelFmt],Lookups
+			sprintf(file,"g:\\textures\\0x%08x_%08x_%s_%d_VQ%d_TW%d_MM%d_.png",tcw.full,tsp.full,texFormatName[tcw.NO_PAL.PixelFmt],Lookups
 			,tcw.NO_PAL.VQ_Comp,tcw.NO_PAL.ScanOrder,tcw.NO_PAL.MipMapped);
 			D3DXSaveTextureToFileA( file,D3DXIFF_PNG,Texture,0);*/
 		}
@@ -661,12 +664,166 @@ namespace Direct3DRenderer
 	}
 	extern cThread rth;
 
+	u32 vri(u32 addr);
 	//use that someday
 	void VBlank()
 	{
 		FrameNumber++;
-		//we need to actualy draw the image here :)
-		//dev->
+
+		u32 field=0;//default from field 1
+		u32 interlc=SPG_CONTROL.interlace;
+		switch (VO_CONTROL.field_mode)
+		{
+			//From SPG
+		case 0:
+			field=SPG_STATUS.fieldnum;
+			break;
+
+			//From ~SPG
+		case 1:
+			field=1^SPG_STATUS.fieldnum;
+			break;
+
+			//From field 1
+		case 2:
+			field=0;
+			break;
+
+			//From field 2
+		case 3:
+			field=1;
+			break;
+
+			//From field 1 when HSYNC && VSYNC match
+		case 4:
+			field=0;	//uh. ...
+			break;
+
+			//From field 2 when HSYNC && VSYNC match
+		case 5:
+			field=1;	//uh. ...
+			break;
+
+			//From field 1 when HSYNC -> 1 in VSYNC
+		case 6:
+			field=0;	//uh. ...
+			break;
+
+			//From field 2 when HSYNC -> 1 in VSYNC
+		case 7:
+			field=1;	//uh. ...
+			break;
+
+			//Inverted when VSYNC -> 1
+		case 8:
+			//what ?
+			break;
+
+		default:
+			break;
+		}
+
+		u32 src;
+		//select input ..
+		if (field)
+			src=FB_R_SOF2;
+		else
+			src=FB_R_SOF1;
+
+		u32 addr1=vramlock_ConvOffset32toOffset64(src);
+		u32* ptest=(u32*)&params.vram[addr1];
+		if ( *ptest!=0xDEADC0DE && d3d_init_done )
+		{
+			//printf("FRAME BUFFAR");
+
+
+
+			D3DLOCKED_RECT lr;
+
+			if (FB_R_CTRL.fb_enable && !VO_CONTROL.blank_video)
+			{
+				u32 DWordsPerLine;
+				IDirect3DSurface9* surf;
+				switch(FB_R_CTRL.fb_depth)
+				{
+				case fbde_0555:
+				case fbde_565:
+					DWordsPerLine=640*2/4;
+					surf=fb_surface565;
+					break;
+				case fbde_C888:
+					DWordsPerLine=640*4/4;
+					surf=fb_surface888;
+					break;
+				case fbde_888:
+					DWordsPerLine=640*3/8;
+					surf=fb_surface888;
+					break;
+				}
+
+				verifyc(surf->LockRect(&lr,0,0));
+
+				
+				u32 out_field=SPG_STATUS.fieldnum;
+
+				u32 fb_skip=FB_R_SIZE.fb_modulus;
+
+				//neat trick to detect single framebuffer interlacing
+				if (interlc==1)
+				{
+					int diff=FB_R_SOF2-FB_R_SOF1;
+					if (diff<0)
+						diff=-diff;
+					if ((diff/4)==(fb_skip-1))
+					{
+						src=FB_R_SOF1;
+						fb_skip=1;
+						interlc=0;
+					}
+				}
+
+				u32* read=(u32*)&params.vram[vramlock_ConvOffset32toOffset64(src)];
+				u32* read_line=read;
+
+				u32* write=(u32*)lr.pBits;
+				u32* line=(u32*)lr.pBits;
+
+				//if interlaced && field is 1, adjust it so that the first line readed is the first line on the image
+				if (interlc && out_field==1)
+				{
+					//read-=DWordsPerLine*2;//*2 to skip the 'other' bank
+				}
+				
+
+				for (u32 y=0;y<480;y+=1)
+				{
+					if (!interlc || out_field==(y&1))
+					{
+						for (u32 x=0;x<DWordsPerLine;x+=1)
+						{
+							*write++=*read;
+							read+=2;//skip the 'other' bank
+						}
+						read_line+=(DWordsPerLine-1)*2;//*2 to skip the 'other' bank.-1 so that it points to the last pixel of the last line
+						read_line+=fb_skip*2;//*2 to skip the 'other' bank
+						read=read_line;
+					}
+					
+					line+=lr.Pitch/4;
+					write=line;
+				}
+
+				verifyc(surf->UnlockRect());
+
+				verifyc(dev->StretchRect(surf,0,bb_surf,0,D3DTEXF_LINEAR));
+			}
+			else
+			{
+				verifyc(dev->ColorFill(bb_surf,0,D3DCOLOR_ARGB(255,VO_BORDER_COL.Red,VO_BORDER_COL.Green,VO_BORDER_COL.Blue)));
+			}
+
+			verifyc(dev->Present(0,0,0,0));
+		}
 	}
 
 	//Vertex storage types
@@ -804,7 +961,7 @@ namespace Direct3DRenderer
 		}
 	};
 	
-	u32 vri(u32 addr);
+	
 	bool UsingAutoSort()
 	{
 		if (((FPU_PARAM_CFG>>21)&1) == 0)
@@ -830,7 +987,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 		u32 csegc=0;
 		u32 cseg=-1;
 		Vertex* bptr=0;
-		for (int i=0;i<pvrrc.global_param_tr.used;i++)
+		for (u32 i=0;i<pvrrc.global_param_tr.used;i++)
 		{
 			u32 s=pvrrc.global_param_tr.data[i].first;
 			u32 c=pvrrc.global_param_tr.data[i].count;
@@ -838,7 +995,7 @@ bool operator<(const PolyParam &left, const PolyParam &right)
 			
 			//float zmax=-66666666666,zmin=66666666666;
 			float zv=0;
-			for (int j=s;j<(s+c);j++)
+			for (u32 j=s;j<(s+c);j++)
 			{
 				while (j>=csegc)
 				{
@@ -1474,14 +1631,14 @@ __error_out:
 			else*/
 				dev->SetRenderState(D3DRS_CLIPPLANEENABLE,15);
 
-			float x_min=val&63;
-			float x_max=(val>>6)&63;
-			float y_min=(val>>12)&31;
-			float y_max=(val>>17)&31;
+			float x_min=(float)(val&63);
+			float x_max=(float)((val>>6)&63);
+			float y_min=(float)((val>>12)&31);
+			float y_max=(float)((val>>17)&31);
 			x_min=x_min*32;
-			x_max=x_max*32 +31.999;	//+31.999 to do [min,max)
+			x_max=x_max*32 +31.999f;	//+31.999 to do [min,max)
 			y_min=y_min*32;
-			y_max=y_max*32 +31.999;
+			y_max=y_max*32 +31.999f;
 			
 			x_min+=current_scalef[0];
 			x_max+=current_scalef[0];
@@ -1524,6 +1681,17 @@ __error_out:
 		}
 		
 	}
+	const float TextureSizes[8][2]=
+	{
+		8.f,1/8.f,
+		16.f,1/16.f,
+		32.f,1/32.f,
+		64.f,1/64.f,
+		128.f,1/128.f,
+		256.f,1/256.f,
+		512.f,1/512.f,
+		1024.f,1/1024.f,
+	};
 	//
 	template <u32 Type,bool FFunction,bool df,bool SortingEnabled>
 	__forceinline
@@ -1596,10 +1764,10 @@ __error_out:
 				IDirect3DTexture9* tex=GetTexture(gp->tsp,gp->tcw);
 				dev->SetTexture(0,tex);
 				float tsz[4];
-				tsz[0]=8<<gp->tsp.TexU;
-				tsz[2]=1/tsz[0];
-				tsz[1]=8<<gp->tsp.TexV;
-				tsz[3]=1/tsz[1];
+				tsz[0]=TextureSizes[gp->tsp.TexU][0];
+				tsz[2]=TextureSizes[gp->tsp.TexU][1];
+				tsz[1]=TextureSizes[gp->tsp.TexV][0];
+				tsz[3]=TextureSizes[gp->tsp.TexV][1];
 
 				dev->SetPixelShaderConstantF(1,tsz,1);
 				dev->SetVertexShaderConstantF(3,tsz,1);
@@ -1700,7 +1868,7 @@ __error_out:
 		u32 cseg=-1;
 		Vertex* bptr=0;
 	//	f32 t1=0;
-		for (int i=0;i<pvrrc.global_param_tr.used;i++)
+		for (u32 i=0;i<pvrrc.global_param_tr.used;i++)
 		{
 			PolyParam* gp=&gpl.data[i];
 			if (gp->count<3)
@@ -1710,7 +1878,7 @@ __error_out:
 
 		
 			//float *p1=&t1,*p2=&t1;
-			for (int j=s;j<(s+c);j++)
+			for (u32 j=s;j<(s+c);j++)
 			{
 				while (j>=csegc)
 				{
@@ -1935,6 +2103,10 @@ __error_out:
 			rtt_address=FB_W_SOF1&VRAM_MASK;
 			verifyc(dev->SetRenderTarget(0,rtt_surf));
 		}
+		else
+		{
+			fb_FrameNumber=FrameNumber;
+		}
 
 		// Clear the backbuffer to a blue color
 		//All of the screen is allways filled w/ smth , no need to clear the color buffer
@@ -2045,7 +2217,7 @@ __error_out:
 			//adjust em here for FB/AA/Stuff :)
 			float scale_x=fb_scale[0];
 			float scale_y=fb_scale[1];
-			if ((VO_CONTROL>>8)&1)
+			if (VO_CONTROL.pixel_double)
 				scale_x*=0.5;
 			else
 				scale_x*=1;
@@ -2061,10 +2233,10 @@ __error_out:
 			*/
 			if (rtt)
 			{
-				current_scalef[0]=-(FB_X_CLIP.min*scale_x);
-				current_scalef[1]=-(FB_Y_CLIP.min/**scale_y*/);
-				current_scalef[2]=(FB_X_CLIP.max+1)*0.5f*scale_x;
-				current_scalef[3]=-((FB_Y_CLIP.max+1)*0.5f)/**scale_y*/;
+				current_scalef[0]=-(float)(FB_X_CLIP.min*scale_x);
+				current_scalef[1]=-(float)(FB_Y_CLIP.min/**scale_y*/);
+				current_scalef[2]=(float)(FB_X_CLIP.max+1)*0.5f*scale_x;
+				current_scalef[3]=-(float)((FB_Y_CLIP.max+1)*0.5f)/**scale_y*/;
 				dev->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE); 
 			}
 			else
@@ -2083,11 +2255,11 @@ __error_out:
 				else
 				{
 					RECT srect;
-					srect.top=0.5f+(current_scalef[1]/(-current_scalef[3]*2)*bb_surf_desc.Height+FB_Y_CLIP.min*bb_surf_desc.Height/(-current_scalef[3]*2));
-					srect.bottom=0.5f+(current_scalef[1]/(-current_scalef[3]*2)*bb_surf_desc.Height+((FB_Y_CLIP.max+1)*bb_surf_desc.Height/(-current_scalef[3]*2)));
+					srect.top=(int)(0.5f+(current_scalef[1]/(-current_scalef[3]*2)*bb_surf_desc.Height+FB_Y_CLIP.min*bb_surf_desc.Height/(-current_scalef[3]*2)));
+					srect.bottom=(int)(0.5f+(current_scalef[1]/(-current_scalef[3]*2)*bb_surf_desc.Height+((FB_Y_CLIP.max+1)*bb_surf_desc.Height/(-current_scalef[3]*2))));
 
-					srect.left=0.5f+(current_scalef[0]/(current_scalef[2]*x_scale_coef_aa)*bb_surf_desc.Width+FB_X_CLIP.min*bb_surf_desc.Width/(current_scalef[2]*x_scale_coef_aa));
-					srect.right=0.5f+(current_scalef[0]/(current_scalef[2]*x_scale_coef_aa)*bb_surf_desc.Width+((FB_X_CLIP.max+1)*bb_surf_desc.Width/(current_scalef[2]*x_scale_coef_aa)));
+					srect.left=(int)(0.5f+(current_scalef[0]/(current_scalef[2]*x_scale_coef_aa)*bb_surf_desc.Width+FB_X_CLIP.min*bb_surf_desc.Width/(current_scalef[2]*x_scale_coef_aa)));
+					srect.right=(int)(0.5f+(current_scalef[0]/(current_scalef[2]*x_scale_coef_aa)*bb_surf_desc.Width+((FB_X_CLIP.max+1)*bb_surf_desc.Width/(current_scalef[2]*x_scale_coef_aa))));
 
 					dev->SetScissorRect(&srect);
 					dev->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE); 
@@ -2518,6 +2690,12 @@ __error_out:
 		
 		shader->Release();shader=0;
 
+		verifyc(dev->CreateTexture(640,480,1,D3DUSAGE_DYNAMIC,D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,&fb_texture888,0));
+		verifyc(fb_texture888->GetSurfaceLevel(0,&fb_surface888));
+
+		verifyc(dev->CreateTexture(640,480,1,D3DUSAGE_DYNAMIC,D3DFMT_R5G6B5,D3DPOOL_DEFAULT,&fb_texture565,0));
+		verifyc(fb_texture888->GetSurfaceLevel(0,&fb_surface565));
+
 		if (!UseFixedFunction)
 		{
 			verifyc(dev->CreateTexture(16,64,1,D3DUSAGE_DYNAMIC,D3DFMT_A8R8G8B8,D3DPOOL_DEFAULT,&pal_texture,0));
@@ -2629,7 +2807,11 @@ nl:
 		
 		safe_release(bb_surf);
 		safe_release(rtt_surf);
+		safe_release(fb_surface888);
+		safe_release(fb_surface565);
 
+		safe_release(fb_texture888);
+		safe_release(fb_texture565);
 		safe_release(pal_texture);
 		safe_release(fog_texture);
 		safe_release(rtt_texture);
@@ -2749,7 +2931,7 @@ nl:
 		PolyParam* bgpp=&pvrrc.global_param_op.data[0];
 		Vertex* cv=BGPoly;
 
-		bool PSVM=FPU_SHAD_SCALE&0x100; //double parameters for volumes
+		bool PSVM=(FPU_SHAD_SCALE&0x100)!=0; //double parameters for volumes
 
 		//Get the strip base
 		u32 strip_base=param_base + bg_t.tag_address*4;
@@ -2781,7 +2963,7 @@ nl:
 		bgpp->pcw.Offset=bgpp->isp.Offset;
 		bgpp->pcw.Texture=bgpp->isp.Texture;
 
-		float scale_x= (SCALER_CTL.hscale) ? 2:1;	//if AA hack the hacked pos value hacks
+		float scale_x= (SCALER_CTL.hscale) ? 2.f:1.f;	//if AA hack the hacked pos value hacks
 		for (int i=0;i<3;i++)
 		{
 			decode_pvr_vertex(strip_base,vertex_ptr,&cv[i]);
@@ -2810,7 +2992,10 @@ nl:
 		
 	}
 
-
+	void Write32BitVram(u32 adr,u32 data)
+	{
+		*(u32*)&params.vram[vramlock_ConvOffset32toOffset64(adr)]=data;
+	}
 	void EndRender()
 	{
 		if (!RenderWasStarted)
@@ -2819,6 +3004,22 @@ nl:
 			return;
 		}
 		re.Wait();
+		if (!(FB_W_SOF1 & 0x1000000))
+		{
+			Write32BitVram(FB_W_SOF1,0xDEADC0DE);
+			Write32BitVram(FB_W_SOF1+0x280,0xDEADC0DE);
+			Write32BitVram(FB_W_SOF1+0x500,0xDEADC0DE);
+			Write32BitVram(FB_W_SOF1+0x780,0xDEADC0DE);
+			Write32BitVram(FB_W_SOF1+0xA00,0xDEADC0DE);
+			Write32BitVram(FB_W_SOF1+0x1400,0xDEADC0DE);
+			
+			Write32BitVram(FB_W_SOF2,0xDEADC0DE);
+			Write32BitVram(FB_W_SOF2+0x280,0xDEADC0DE);
+			Write32BitVram(FB_W_SOF2+0x500,0xDEADC0DE);
+			Write32BitVram(FB_W_SOF2+0x780,0xDEADC0DE);
+			Write32BitVram(FB_W_SOF2+0xA00,0xDEADC0DE);
+			Write32BitVram(FB_W_SOF2+0x1400,0xDEADC0DE);
+		}
 		/*
 		if (FB_W_SOF1 & 0x1000000)
 		{
@@ -3476,7 +3677,7 @@ nl:
 			float AB_v=B.v-A.v,AB_u=B.u-A.u,
 				  AC_v=C.v-A.v,AC_u=C.u-A.u;
 
-			float P_v,P_u,A_v=A.v,A_u=A.u;
+			float /*P_v,P_u,*/A_v=A.v,A_u=A.u;
 
             float k3 = (AC_x * AB_y - AC_y * AB_x);
  
@@ -3491,9 +3692,9 @@ nl:
  
             if (AB_x == 0)
             {
-                if (AB_y == 0)
-					;
-                    //throw new Exception("WTF?!");
+                //if (AB_y == 0)
+				//	;
+                //    //throw new Exception("WTF?!");
  
                 k1 = (P_y - A_y - k2 * AC_y) / AB_y;
             }
@@ -3688,7 +3889,7 @@ nl:
 		tarc.Init();
 		//pvrrc needs no init , it is ALLWAYS copied from a valid tarc :)
 
-		fullsrq.goto_fs=settings.Video.Fullscreen.Enabled;
+		fullsrq.goto_fs=settings.Video.Fullscreen.Enabled!=0;
 
 		return TileAccel.Init();
 	}

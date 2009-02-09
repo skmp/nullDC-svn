@@ -88,14 +88,44 @@ union FB_R_CTRL_type
 	{
 		u32 fb_enable:1;			//0
 		u32 fb_line_double:1;		//1
-		u32 fb_depth:2;			//3-2
+		u32 fb_depth:2;				//3-2
 		u32 fb_concat:3;			//6-4
 		u32 R:1;					//7
 		u32 fb_chroma_threshold:8;	//15-8
-		u32 fb_stripsize:6;		//21-16
+		u32 fb_stripsize:6;			//21-16
 		u32 fb_strip_buf_en:1;		//22
-		u32 vclk_div:1;	//		23
-		u32 Reserved:8;	//		bit 31-24
+		u32 vclk_div:1;				//23
+		u32 Reserved:8;				//31-24
+	};
+	u32 full;
+};
+enum fb_depth_enum
+{
+	fbde_0555	=0,		//0555, lower 3 bits on fb_concat
+	fbde_565	=1,		//565, lower 3 bits on fb_concat, [1:0] for G
+	fbde_888	=2,		//888, packed
+	fbde_C888	=3,		//C888, first byte used for chroma
+};
+union FB_R_SIZE_type
+{
+	struct
+	{
+		u32 fb_x_size:10;			//0
+		u32 fb_y_size:10;			//10
+		u32 fb_modulus:10;			//20
+		u32 fb_res:12;				//30
+	};
+	u32 full;
+};
+union VO_BORDER_COL_type
+{
+	struct
+	{
+		u32 Blue:8;		//0
+		u32 Green:8;	//8
+		u32 Red:8;		//16
+		u32 Chroma:1;	//24
+		u32 res:7;		//25
 	};
 	u32 full;
 };
@@ -243,7 +273,43 @@ union FB_Y_CLIP_type
 	u32 full;
 };
 
+union VO_CONTROL_type
+{
+	struct
+	{
+		u32 hsync_pol:1;		//0
+		u32 vsync_pol:1;		//1
+		u32 blank_pol:1;		//2
+		u32 blank_video:1;		//3
+		u32 field_mode:4;		//4
+		u32 pixel_double:1;		//8
+		u32 res_1:7;			//9
+		u32 pclk_delay:6;		//16
+		u32 res_2:10;			//22
+	};
+	u32 full;
+};
 
+union VO_STARTX_type
+{
+	struct
+	{
+		u32 HStart:10;	//0
+		u32 res_1:22;	//10
+	};
+	u32 full;
+};
+union VO_STARTY_type
+{
+	struct
+	{
+		u32 VStart_field1:10;	//0
+		u32 res_1:6;			//10
+		u32 VStart_field2:10;	//16
+		u32 res_2:6;			//26
+	};
+	u32 full;
+};
 //	TA REGS
 #define TA_OL_BASE_addr		0x00000124	//	RW	Object list write start address	
 #define TA_ISP_BASE_addr		0x00000128	//	RW	ISP/TSP Parameter write start address	
@@ -288,14 +354,14 @@ union FB_Y_CLIP_type
 #define REGION_BASE			PvrReg(REGION_BASE_addr,u32)	//	RW	Base address for Region Array	
 #define SPAN_SORT_CFG		PvrReg(SPAN_SORT_CFG_addr,u32)	//	RW	Span Sorter control	
 
-#define VO_BORDER_COL		PvrReg(VO_BORDER_COL_addr,u32)	//	RW	Border area color	
+#define VO_BORDER_COL		PvrReg(VO_BORDER_COL_addr,VO_BORDER_COL_type)	//	RW	Border area color	
 #define FB_R_CTRL			PvrReg(FB_R_CTRL_addr,FB_R_CTRL_type)	//	RW	Frame buffer read control	
 #define FB_W_CTRL			PvrReg(FB_W_CTRL_addr,u32)	//	RW	Frame buffer write control	
 #define FB_W_LINESTRIDE		PvrReg(FB_W_LINESTRIDE_addr,u32)	//	RW	Frame buffer line stride	
 #define FB_R_SOF1			PvrReg(FB_R_SOF1_addr,u32)	//	RW	Read start address for field - 1/strip - 1	
 #define FB_R_SOF2			PvrReg(FB_R_SOF2_addr,u32)	//	RW	Read start address for field - 2/strip - 2	
 
-#define FB_R_SIZE			PvrReg(FB_R_SIZE_addr,u32)	//	RW	Frame buffer XY size	
+#define FB_R_SIZE			PvrReg(FB_R_SIZE_addr,FB_R_SIZE_type)	//	RW	Frame buffer XY size	
 #define FB_W_SOF1			PvrReg(FB_W_SOF1_addr,u32)	//	RW	Write start address for field - 1/strip - 1	
 #define FB_W_SOF2			PvrReg(FB_W_SOF2_addr,u32)	//	RW	Write start address for field - 2/strip - 2	
 #define FB_X_CLIP			PvrReg(FB_X_CLIP_addr,FB_X_CLIP_type)	//	RW	Pixel clip X coordinate	
@@ -330,9 +396,9 @@ union FB_Y_CLIP_type
 #define SPG_VBLANK			PvrReg(SPG_VBLANK_addr,SPG_VBLANK_type)	//	RW	V-blank control	
 #define SPG_WIDTH			PvrReg(SPG_WIDTH_addr,SPG_WIDTH_type)	//	RW	Sync width control	
 #define TEXT_CONTROL		PvrReg(TEXT_CONTROL_addr,u32)	//	RW	Texturing control	
-#define VO_CONTROL			PvrReg(VO_CONTROL_addr,u32)	//	RW	Video output control	
-#define VO_STARTX			PvrReg(VO_STARTX_addr,u32)	//	RW	Video output start X position	
-#define VO_STARTY			PvrReg(VO_STARTY_addr,u32)	//	RW	Video output start Y position	
+#define VO_CONTROL			PvrReg(VO_CONTROL_addr,VO_CONTROL_type)	//	RW	Video output control	
+#define VO_STARTX			PvrReg(VO_STARTX_addr,VO_STARTX_type)	//	RW	Video output start X position	
+#define VO_STARTY			PvrReg(VO_STARTY_addr,VO_STARTY_type)	//	RW	Video output start Y position	
 #define SCALER_CTL			PvrReg(SCALER_CTL_addr,SCALER_CTL_type)	//	RW	X & Y scaler control	
 #define PAL_RAM_CTRL		PvrReg(PAL_RAM_CTRL_addr,u32)	//	RW	Palette RAM control	
 #define SPG_STATUS			PvrReg(SPG_STATUS_addr,SPG_STATUS_type)	//	R	Sync pulse generator status	

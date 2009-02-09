@@ -40,13 +40,13 @@ void CalculateSync()
 	u32 sync_cycles=(SPG_LOAD.hcount+1)*(SPG_LOAD.vcount+1);
 	pvr_numscanlines=SPG_LOAD.vcount+1;
 	
-	Line_Cycles=(u64)DCclock*(u64)(SPG_LOAD.hcount+1)/(u64)pixel_clock;
+	Line_Cycles=(u32)((u64)DCclock*(u64)(SPG_LOAD.hcount+1)/(u64)pixel_clock);
 
 	if (SPG_CONTROL.interlace)
 	{
 		//this is a temp hack
 		Line_Cycles/=2;
-		u32 interl_mode=(VO_CONTROL>>4)&0xF;
+		u32 interl_mode=VO_CONTROL.field_mode;
 		
 		//if (interl_mode==2)//3 will be funny =P
 		//	scale_y=0.5f;//single interlace
