@@ -742,46 +742,63 @@ namespace Direct3DRenderer
 
 			if (FB_R_CTRL.fb_enable && !VO_CONTROL.blank_video)
 			{
+				RECT rs={0,0,640,480};
 				u32 DWordsPerLine;
 				IDirect3DSurface9* surf;
+				u32 bpp;
 				switch(FB_R_CTRL.fb_depth)
 				{
 				case fbde_0555:
-					DWordsPerLine=640*2/4;
+					bpp=2;
 					surf=fb_surface1555;
 					break;
 				case fbde_565:
-					DWordsPerLine=640*2/4;
+					bpp=2;
 					surf=fb_surface565;
 					break;
 				case fbde_C888:
-					DWordsPerLine=640*4/4;
+					bpp=4;
 					surf=fb_surface888;
 					break;
 				case fbde_888:
-					DWordsPerLine=640*3/8;
+					bpp=3;
 					surf=fb_surface888;
 					break;
 				}
 
+				DWordsPerLine=640*bpp/4;
 				verifyc(surf->LockRect(&lr,0,0));
 
 				
 				u32 out_field=SPG_STATUS.fieldnum;
 
 				u32 fb_skip=FB_R_SIZE.fb_modulus;
+				u32 line_double=FB_R_CTRL.fb_line_double;
+				u32 pixel_double=VO_CONTROL.pixel_double;
 
+				if (pixel_double)
+					DWordsPerLine/=2;
 				//neat trick to detect single framebuffer interlacing
 				if (interlc==1)
 				{
 					int diff=FB_R_SOF2-FB_R_SOF1;
 					if (diff<0)
 						diff=-diff;
+					if (line_double)
+						diff/=2;
 					if ((diff/4)==(fb_skip-1))
 					{
 						src=FB_R_SOF1;
 						fb_skip=1;
 						interlc=0;
+					}
+				}
+				else
+				{
+					//half lines needed on non-interlaced mode on non VGA streams
+					if (SPG_CONTROL.NTSC || SPG_CONTROL.PAL)
+					{
+						rs.bottom/=2;
 					}
 				}
 
@@ -791,14 +808,14 @@ namespace Direct3DRenderer
 				u32* write=(u32*)lr.pBits;
 				u32* line=(u32*)lr.pBits;
 
-				//if interlaced && field is 1, adjust it so that the first line readed is the first line on the image
-				if (interlc && out_field==1)
-				{
-					//read-=DWordsPerLine*2;//*2 to skip the 'other' bank
-				}
 				
 
-				for (u32 y=0;y<480;y+=1)
+				if (pixel_double)
+					rs.right/=2;
+				if (line_double)
+					rs.bottom/=2;
+
+				for (u32 y=0;y<rs.bottom;y+=1)
 				{
 					if (!interlc || out_field==(y&1))
 					{
@@ -818,7 +835,7 @@ namespace Direct3DRenderer
 
 				verifyc(surf->UnlockRect());
 
-				verifyc(dev->StretchRect(surf,0,bb_surf,0,D3DTEXF_LINEAR));
+				verifyc(dev->StretchRect(surf,&rs,bb_surf,0,D3DTEXF_LINEAR));
 			}
 			else
 			{
