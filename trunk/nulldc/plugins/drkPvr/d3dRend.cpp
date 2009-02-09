@@ -80,12 +80,12 @@ namespace Direct3DRenderer
 	IDirect3DPixelShader9* ZPixelShader=0;
 	
 	IDirect3DTexture9* pal_texture=0;
-	IDirect3DTexture9* fb_texture888=0,*fb_texture565=0;
+	IDirect3DTexture9* fb_texture888=0,*fb_texture565=0,*fb_texture1555=0;
 	IDirect3DTexture9* fog_texture=0;
 	IDirect3DTexture9* rtt_texture=0;
 	u32 rtt_address=0;
 	u32 rtt_FrameNumber=0xFFFFFFFF;
-	IDirect3DSurface9* bb_surf=0,* rtt_surf=0,* fb_surface888=0,* fb_surface565=0;
+	IDirect3DSurface9* bb_surf=0,* rtt_surf=0,* fb_surface888=0,* fb_surface565=0,* fb_surface1555=0;
 	D3DSURFACE_DESC bb_surf_desc;
 	ID3DXFont* font;
 	ID3DXConstantTable* shader_consts;
@@ -747,6 +747,9 @@ namespace Direct3DRenderer
 				switch(FB_R_CTRL.fb_depth)
 				{
 				case fbde_0555:
+					DWordsPerLine=640*2/4;
+					surf=fb_surface1555;
+					break;
 				case fbde_565:
 					DWordsPerLine=640*2/4;
 					surf=fb_surface565;
@@ -2694,7 +2697,10 @@ __error_out:
 		verifyc(fb_texture888->GetSurfaceLevel(0,&fb_surface888));
 
 		verifyc(dev->CreateTexture(640,480,1,D3DUSAGE_DYNAMIC,D3DFMT_R5G6B5,D3DPOOL_DEFAULT,&fb_texture565,0));
-		verifyc(fb_texture888->GetSurfaceLevel(0,&fb_surface565));
+		verifyc(fb_texture565->GetSurfaceLevel(0,&fb_surface565));
+
+		verifyc(dev->CreateTexture(640,480,1,D3DUSAGE_DYNAMIC,D3DFMT_A1R5G5B5,D3DPOOL_DEFAULT,&fb_texture1555,0));
+		verifyc(fb_texture1555->GetSurfaceLevel(0,&fb_surface1555));
 
 		if (!UseFixedFunction)
 		{
