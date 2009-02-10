@@ -290,3 +290,9 @@ float4 PixelShader_ShadeCol() :COLOR0
 {
 	return  float4(0,0,0,0.5f);
 }
+
+float4 PixelShader_Framebuffer(float4 uv : TEXCOORD0) :COLOR0
+{
+	//samplr
+	return tex2D(samplr,uv);
+}

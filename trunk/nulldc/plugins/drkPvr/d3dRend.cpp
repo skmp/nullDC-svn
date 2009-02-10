@@ -668,6 +668,16 @@ namespace Direct3DRenderer
 
 	u32 vri(u32 addr);
 	//use that someday
+	/*
+	Vertex FullScreenQuad[4] = 
+	{
+		{0,0,0.5 ,0,0,0,0 ,0,0,0,0 },
+		{0,0,0.5 ,0,0,0,0 ,0,0,0,0 },
+		{0,0,0.5 ,0,0,0,0 ,0,0,0,0 },
+		{0,0,0.5 ,0,0,0,0 ,0,0,0,0 },
+	};
+	*/
+
 	void VBlank()
 	{
 		FrameNumber++;
@@ -746,7 +756,7 @@ namespace Direct3DRenderer
 				if (FB_R_CTRL.fb_enable && !VO_CONTROL.blank_video)
 				{
 					RECT rs={0,0,640,480};
-					u32 DWordsPerLine;
+					
 					IDirect3DSurface9* surf;
 					u32 bpp;
 					switch(FB_R_CTRL.fb_depth)
@@ -769,7 +779,8 @@ namespace Direct3DRenderer
 						break;
 					}
 
-					DWordsPerLine=640*bpp/4;
+					u32 PixelsPerLine=640;
+
 					verifyc(surf->LockRect(&lr,0,0));
 
 					
@@ -780,7 +791,7 @@ namespace Direct3DRenderer
 					u32 pixel_double=VO_CONTROL.pixel_double;
 
 					if (pixel_double)
-						DWordsPerLine/=2;
+						PixelsPerLine/=2;
 					//neat trick to detect single framebuffer interlacing
 					if (interlc==1)
 					{
@@ -816,6 +827,8 @@ namespace Direct3DRenderer
 					if (line_double)
 						rs.bottom/=2;
 
+					u32 DWordsPerLine=PixelsPerLine*bpp/4;
+
 					for (u32 y=0;y<(u32)rs.bottom;y+=1)
 					{
 						if (!interlc || out_field==(y&1))
@@ -824,7 +837,7 @@ namespace Direct3DRenderer
 							{
 								u8* br=(u8*)read;
 								u8* bw=(u8*)write;
-								for (u32 x=0;x<DWordsPerLine*4;x+=1)
+								for (u32 x=0;x<DWordsPerLine*3;x+=1)
 								{
 									*bw++=*br++;
 									if (((u32)br&3)==0)
