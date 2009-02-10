@@ -91,6 +91,8 @@ namespace Direct3DRenderer
 	ID3DXConstantTable* shader_consts;
 	RECT window_rect;
 
+	CRITICAL_SECTION d3d_lock;
+
 	struct VertexDecoder;
 	FifoSplitter<VertexDecoder> TileAccel;
 
@@ -732,12 +734,10 @@ namespace Direct3DRenderer
 
 		u32 addr1=vramlock_ConvOffset32toOffset64(src);
 		u32* ptest=(u32*)&params.vram[addr1];
+		
+		EnterCriticalSection(&d3d_lock);
 		if ( *ptest!=0xDEADC0DE && d3d_init_done )
 		{
-			//printf("FRAME BUFFAR");
-
-
-
 			D3DLOCKED_RECT lr;
 
 			if (FB_R_CTRL.fb_enable && !VO_CONTROL.blank_video)
@@ -864,6 +864,7 @@ namespace Direct3DRenderer
 
 			verifyc(dev->Present(0,0,0,0));
 		}
+		LeaveCriticalSection(&d3d_lock);
 	}
 
 	//Vertex storage types
@@ -2818,6 +2819,7 @@ __error_out:
 		while(1)
 		{
 			rs.Wait();
+			EnterCriticalSection(&d3d_lock);
 			if (!running)
 				break;
 			HRESULT hr;
@@ -2831,9 +2833,13 @@ __error_out:
 			DoRender();
 nl:
 			re.Set();
+			LeaveCriticalSection(&d3d_lock);
 		}
 
+		//*NOTE* we still have the critical section in here ..
 		d3d_init_done=false;
+		LeaveCriticalSection(&d3d_lock);
+
 		#define safe_release(d) {if (d) {(d->Release()==0);d=0;}}
 		
 		safe_release(vb);
@@ -3920,7 +3926,7 @@ nl:
 
 	bool InitRenderer()
 	{
-		//InitializeCriticalSectionAndSpinCount(&tex_cache_cs,8000);
+		InitializeCriticalSection(&d3d_lock);
 		for (u32 i=0;i<256;i++)
 		{
 			unkpack_bgp_to_float[i]=i/255.0f;
@@ -3941,7 +3947,7 @@ nl:
 
 	void TermRenderer()
 	{
-		//DeleteCriticalSection(&tex_cache_cs); 
+		DeleteCriticalSection(&d3d_lock); 
 		for (u32 i=0;i<rcnt.size();i++)
 		{
 			rcnt[i].Free();
