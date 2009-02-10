@@ -837,7 +837,7 @@ namespace Direct3DRenderer
 							{
 								u8* br=(u8*)read;
 								u8* bw=(u8*)write;
-								for (u32 x=0;x<DWordsPerLine*3;x+=1)
+								for (u32 x=0;x<PixelsPerLine;x+=1)
 								{
 									*bw++=*br++;
 									if (((u32)br&3)==0)
