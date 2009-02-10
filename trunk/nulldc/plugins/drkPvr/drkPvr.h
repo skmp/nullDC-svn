@@ -113,6 +113,12 @@ struct _settings_type
 		u32 ShowStats;
 	} OSD;
 };
-
+enum ModVolMode
+{
+	MVM_NormalAndClip,
+	MVM_Normal,
+	MVM_Off,
+	MVM_Volume,
+};
 extern _settings_type settings;
 void UpdateRRect();

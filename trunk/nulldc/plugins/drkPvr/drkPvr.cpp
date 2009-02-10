@@ -386,9 +386,10 @@ s32 FASTCALL Load(emu_info* emu_inf)
 	menu_modvolmode.format=L"Modifier Volumes: %s";
 	menu_modvolmode.callback=handler_ModVolMode;
 
-	menu_modvolmode.Add(MVM,L"Off",0);
-	menu_modvolmode.Add(MVM,L"Normal",1);
-	menu_modvolmode.Add(MVM,L"Volumes",2);
+	menu_modvolmode.Add(MVM,L"Normal And Clip (Slow)",MVM_NormalAndClip);
+	menu_modvolmode.Add(MVM,L"Normal (for slow cards)",MVM_Normal);
+	menu_modvolmode.Add(MVM,L"Off  (no shadows, fast)",MVM_Off);
+	menu_modvolmode.Add(MVM,L"Volumes (for debuging)",MVM_Volume);
 	menu_modvolmode.SetValue(settings.Emulation.ModVolMode);
 
 	u32 ZBM=emu.AddMenuItem(emu.RootMenu,-1,L"Z Buffer Mode: %s",0,0);
@@ -650,7 +651,7 @@ void LoadSettings()
 {
 	settings.Emulation.AlphaSortMode			=	cfgGetInt(L"Emulation.AlphaSortMode",1);
 	settings.Emulation.PaletteMode				=	cfgGetInt(L"Emulation.PaletteMode",1);
-	settings.Emulation.ModVolMode				= 	cfgGetInt(L"Emulation.ModVolMode",1);
+	settings.Emulation.ModVolMode				= 	cfgGetInt(L"Emulation.ModVolMode",MVM_NormalAndClip);
 	settings.Emulation.ZBufferMode				= 	cfgGetInt(L"Emulation.ZBufferMode",3);
 	settings.Emulation.TexCacheMode				= 	cfgGetInt(L"Emulation.TexCacheMode",0);
 

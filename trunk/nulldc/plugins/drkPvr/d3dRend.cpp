@@ -671,7 +671,7 @@ namespace Direct3DRenderer
 	void VBlank()
 	{
 		FrameNumber++;
-
+		
 		u32 field=0;//default from field 1
 		u32 interlc=SPG_CONTROL.interlace;
 		switch (VO_CONTROL.field_mode)
@@ -735,136 +735,141 @@ namespace Direct3DRenderer
 		u32 addr1=vramlock_ConvOffset32toOffset64(src);
 		u32* ptest=(u32*)&params.vram[addr1];
 		
-		EnterCriticalSection(&d3d_lock);
-		if ( *ptest!=0xDEADC0DE && d3d_init_done )
+		
+		if ( *ptest!=0xDEADC0DE)
 		{
-			D3DLOCKED_RECT lr;
-
-			if (FB_R_CTRL.fb_enable && !VO_CONTROL.blank_video)
+			EnterCriticalSection(&d3d_lock);
+			if (d3d_init_done)
 			{
-				RECT rs={0,0,640,480};
-				u32 DWordsPerLine;
-				IDirect3DSurface9* surf;
-				u32 bpp;
-				switch(FB_R_CTRL.fb_depth)
+				D3DLOCKED_RECT lr;
+
+				if (FB_R_CTRL.fb_enable && !VO_CONTROL.blank_video)
 				{
-				case fbde_0555:
-					bpp=2;
-					surf=fb_surface1555;
-					break;
-				case fbde_565:
-					bpp=2;
-					surf=fb_surface565;
-					break;
-				case fbde_C888:
-					bpp=4;
-					surf=fb_surface8888;
-					break;
-				case fbde_888:
-					bpp=3;
-					surf=fb_surface8888;
-					break;
-				}
-
-				DWordsPerLine=640*bpp/4;
-				verifyc(surf->LockRect(&lr,0,0));
-
-				
-				u32 out_field=SPG_STATUS.fieldnum;
-
-				u32 fb_skip=FB_R_SIZE.fb_modulus;
-				u32 line_double=FB_R_CTRL.fb_line_double;
-				u32 pixel_double=VO_CONTROL.pixel_double;
-
-				if (pixel_double)
-					DWordsPerLine/=2;
-				//neat trick to detect single framebuffer interlacing
-				if (interlc==1)
-				{
-					int diff=FB_R_SOF2-FB_R_SOF1;
-					if (diff<0)
-						diff=-diff;
-					if (line_double)
-						diff/=2;
-					if ((diff/4)==(fb_skip-1))
+					RECT rs={0,0,640,480};
+					u32 DWordsPerLine;
+					IDirect3DSurface9* surf;
+					u32 bpp;
+					switch(FB_R_CTRL.fb_depth)
 					{
-						src=FB_R_SOF1;
-						fb_skip=1;
-						interlc=0;
+					case fbde_0555:
+						bpp=2;
+						surf=fb_surface1555;
+						break;
+					case fbde_565:
+						bpp=2;
+						surf=fb_surface565;
+						break;
+					case fbde_C888:
+						bpp=4;
+						surf=fb_surface8888;
+						break;
+					case fbde_888:
+						bpp=3;
+						surf=fb_surface8888;
+						break;
 					}
+
+					DWordsPerLine=640*bpp/4;
+					verifyc(surf->LockRect(&lr,0,0));
+
+					
+					u32 out_field=SPG_STATUS.fieldnum;
+
+					u32 fb_skip=FB_R_SIZE.fb_modulus;
+					u32 line_double=FB_R_CTRL.fb_line_double;
+					u32 pixel_double=VO_CONTROL.pixel_double;
+
+					if (pixel_double)
+						DWordsPerLine/=2;
+					//neat trick to detect single framebuffer interlacing
+					if (interlc==1)
+					{
+						int diff=FB_R_SOF2-FB_R_SOF1;
+						if (diff<0)
+							diff=-diff;
+						if (line_double)
+							diff/=2;
+						if ((diff/4)==(fb_skip-1))
+						{
+							src=FB_R_SOF1;
+							fb_skip=1;
+							interlc=0;
+						}
+					}
+					else
+					{
+						//half lines needed on non-interlaced mode on non VGA streams
+						if (SPG_CONTROL.NTSC || SPG_CONTROL.PAL)
+						{
+							rs.bottom/=2;
+						}
+					}
+
+					u32* read=(u32*)&params.vram[vramlock_ConvOffset32toOffset64(src)];
+					u32* read_line=read;
+
+					u32* write=(u32*)lr.pBits;
+					u32* line=(u32*)lr.pBits;
+
+					if (pixel_double)
+						rs.right/=2;
+					if (line_double)
+						rs.bottom/=2;
+
+					for (u32 y=0;y<(u32)rs.bottom;y+=1)
+					{
+						if (!interlc || out_field==(y&1))
+						{
+							if (bpp==3)
+							{
+								u8* br=(u8*)read;
+								u8* bw=(u8*)write;
+								for (u32 x=0;x<DWordsPerLine*4;x+=1)
+								{
+									*bw++=*br++;
+									if (((u32)br&3)==0)
+										br+=4;
+									*bw++=*br++;
+									if (((u32)br&3)==0)
+										br+=4;
+									*bw++=*br++;
+									if (((u32)br&3)==0)
+										br+=4;
+
+									*bw++=0;	//skip A
+								}
+							}
+							else
+							{
+								for (u32 x=0;x<DWordsPerLine;x+=1)
+								{
+									*write++=*read;
+									read+=2;//skip the 'other' bank
+								}
+							}
+							read_line+=(DWordsPerLine-1)*2;//*2 to skip the 'other' bank.-1 so that it points to the last pixel of the last line
+							read_line+=fb_skip*2;//*2 to skip the 'other' bank
+							read=read_line;
+						}
+						
+						line+=lr.Pitch/4;
+						write=line;
+					}
+
+					verifyc(surf->UnlockRect());
+
+					verifyc(dev->StretchRect(surf,&rs,bb_surf,0,D3DTEXF_LINEAR));
+						
 				}
 				else
 				{
-					//half lines needed on non-interlaced mode on non VGA streams
-					if (SPG_CONTROL.NTSC || SPG_CONTROL.PAL)
-					{
-						rs.bottom/=2;
-					}
+					verifyc(dev->ColorFill(bb_surf,0,D3DCOLOR_ARGB(255,VO_BORDER_COL.Red,VO_BORDER_COL.Green,VO_BORDER_COL.Blue)));
 				}
 
-				u32* read=(u32*)&params.vram[vramlock_ConvOffset32toOffset64(src)];
-				u32* read_line=read;
-
-				u32* write=(u32*)lr.pBits;
-				u32* line=(u32*)lr.pBits;
-
-				if (pixel_double)
-					rs.right/=2;
-				if (line_double)
-					rs.bottom/=2;
-
-				for (u32 y=0;y<(u32)rs.bottom;y+=1)
-				{
-					if (!interlc || out_field==(y&1))
-					{
-						if (bpp==3)
-						{
-							u8* br=(u8*)read;
-							u8* bw=(u8*)write;
-							for (u32 x=0;x<DWordsPerLine*4;x+=1)
-							{
-								*bw++=*br++;
-								if (((u32)br&3)==0)
-									br+=4;
-								*bw++=*br++;
-								if (((u32)br&3)==0)
-									br+=4;
-								*bw++=*br++;
-								if (((u32)br&3)==0)
-									br+=4;
-
-								*bw++=0;	//skip A
-							}
-						}
-						else
-						{
-							for (u32 x=0;x<DWordsPerLine;x+=1)
-							{
-								*write++=*read;
-								read+=2;//skip the 'other' bank
-							}
-						}
-						read_line+=(DWordsPerLine-1)*2;//*2 to skip the 'other' bank.-1 so that it points to the last pixel of the last line
-						read_line+=fb_skip*2;//*2 to skip the 'other' bank
-						read=read_line;
-					}
-					
-					line+=lr.Pitch/4;
-					write=line;
-				}
-
-				verifyc(surf->UnlockRect());
-
-				verifyc(dev->StretchRect(surf,&rs,bb_surf,0,D3DTEXF_LINEAR));
+				verifyc(dev->Present(0,0,0,0));
 			}
-			else
-			{
-				verifyc(dev->ColorFill(bb_surf,0,D3DCOLOR_ARGB(255,VO_BORDER_COL.Red,VO_BORDER_COL.Green,VO_BORDER_COL.Blue)));
-			}
-
-			verifyc(dev->Present(0,0,0,0));
+			LeaveCriticalSection(&d3d_lock);
 		}
-		LeaveCriticalSection(&d3d_lock);
 	}
 
 	//Vertex storage types
@@ -1755,7 +1760,7 @@ __error_out:
 		}
 
 		const u32 stencil=(gp->pcw.Shadow!=0)?0x80:0;
-		if (cache_stencil_modvol_on!=stencil)
+		if (cache_stencil_modvol_on!=stencil && settings.Emulation.ModVolMode==MVM_NormalAndClip)
 		{
 			cache_stencil_modvol_on=stencil;
 			dev->SetRenderState(D3DRS_STENCILREF,stencil);						//Clear/Set bit 7 (Clear for non 2 volume stuff)
@@ -2311,13 +2316,20 @@ __error_out:
 
 
 			//stencil modes
-			verifyc(dev->SetRenderState(D3DRS_STENCILENABLE,TRUE));
-			verifyc(dev->SetRenderState(D3DRS_STENCILWRITEMASK,0xFF));				//write bit 7.I set em all here as a speed optimisation to minimise RMW operations
-			verifyc(dev->SetRenderState(D3DRS_STENCILFUNC,D3DCMP_ALWAYS));			//allways pass
-			verifyc(dev->SetRenderState(D3DRS_STENCILPASS,D3DSTENCILOP_REPLACE));	//flip bit 1
-			verifyc(dev->SetRenderState(D3DRS_STENCILZFAIL,D3DSTENCILOP_KEEP));		//else keep it
-			
-			verifyc(dev->SetRenderState(D3DRS_STENCILREF,0x00));					//Clear/Set bit 7 (Clear for non 2 volume stuff)
+			if (settings.Emulation.ModVolMode==MVM_NormalAndClip)
+			{
+				verifyc(dev->SetRenderState(D3DRS_STENCILENABLE,TRUE));
+				verifyc(dev->SetRenderState(D3DRS_STENCILWRITEMASK,0xFF));				//write bit 7.I set em all here as a speed optimisation to minimise RMW operations
+				verifyc(dev->SetRenderState(D3DRS_STENCILFUNC,D3DCMP_ALWAYS));			//allways pass
+				verifyc(dev->SetRenderState(D3DRS_STENCILPASS,D3DSTENCILOP_REPLACE));	//flip bit 1
+				verifyc(dev->SetRenderState(D3DRS_STENCILZFAIL,D3DSTENCILOP_KEEP));		//else keep it
+				
+				verifyc(dev->SetRenderState(D3DRS_STENCILREF,0x00));					//Clear/Set bit 7 (Clear for non 2 volume stuff)
+			}
+			else
+			{
+				verifyc(dev->SetRenderState(D3DRS_STENCILENABLE,FALSE));
+			}
 			
 
 			//OPAQUE
@@ -2356,9 +2368,9 @@ __error_out:
 
 			
 			//OP mod vols
-			if (settings.Emulation.ModVolMode!=0 && pvrrc.modtrig.used>0)
+			if (settings.Emulation.ModVolMode!=MVM_Off && pvrrc.modtrig.used>0)
 			{
-				if(ZBufferCF & D3DCLEAR_STENCIL && settings.Emulation.ModVolMode==1)
+				if(ZBufferCF & D3DCLEAR_STENCIL && (settings.Emulation.ModVolMode==MVM_Normal || settings.Emulation.ModVolMode==MVM_NormalAndClip ))
 				{
 					/*
 					mode :
@@ -2451,8 +2463,16 @@ __error_out:
 
 					dev->SetRenderState(D3DRS_COLORWRITEENABLE,0xF);
 					verifyc(dev->SetRenderState(D3DRS_STENCILFUNC,D3DCMP_EQUAL));	//only the odd ones are 'in'
-					verifyc(dev->SetRenderState(D3DRS_STENCILREF,0x81));	//allways (stencil volume mask && 'in')
-					verifyc(dev->SetRenderState(D3DRS_STENCILMASK,0x81));	//allways (as above)
+					
+					u32 RefValue=0x01;	//'in'
+
+					if (settings.Emulation.ModVolMode==MVM_NormalAndClip)
+					{
+						RefValue|=0x80;	//stencil volume mask
+					}
+
+					verifyc(dev->SetRenderState(D3DRS_STENCILREF,RefValue));	//allways (stencil volume mask && 'in')
+					verifyc(dev->SetRenderState(D3DRS_STENCILMASK,RefValue));	//allways (as above)
 
 					verifyc(dev->SetRenderState(D3DRS_STENCILWRITEMASK,0));	//dont write to stencil
 
@@ -2465,7 +2485,7 @@ __error_out:
 
 					verifyc(dev->SetRenderState(D3DRS_STENCILENABLE,FALSE));	//turn stencil off ;)
 				}
-				else if (settings.Emulation.ModVolMode==2)
+				else if (settings.Emulation.ModVolMode==MVM_Volume)
 				{
 					verifyc(dev->SetPixelShader(ZPixelShader));
 					dev->SetRenderState(D3DRS_ALPHABLENDENABLE,TRUE);
@@ -2497,6 +2517,8 @@ __error_out:
 			dev->SetRenderState(D3DRS_ALPHAFUNC,D3DCMP_GREATER);
 			dev->SetRenderState(D3DRS_ALPHAREF,0);
 			
+			//Disable stencil (we don't support it on transcl. stuff anyway)
+			verifyc(dev->SetRenderState(D3DRS_STENCILENABLE,FALSE));
 			if (!GetAsyncKeyState(VK_F3))
 			{
 				if (dosort && settings.Emulation.AlphaSortMode==1)
