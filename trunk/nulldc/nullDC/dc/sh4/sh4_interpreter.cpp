@@ -103,8 +103,8 @@ void sh4_int_restore_reg_cnt()
 		}
 
 	}
-	if (exept_was_dslot)
-		pc-=2;
+	//if (exept_was_dslot)
+	//	pc-=2;
 	exept_was_dslot=false;
 	//raise exeption
 	RaiseExeption(sh4_ex_ExeptionCode,sh4_ex_VectorAddress);

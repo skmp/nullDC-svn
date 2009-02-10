@@ -476,6 +476,8 @@ sh4op(i0000_nnnn_mmmm_1111)
 	r[m] += 4;
 	ReadMemS32(rn,r[n]);
 	r[n] += 4;
+	
+	verify(sh4_exept_raised==false);
 
 	mul = (s64)rm * (s64)rn;
 	
