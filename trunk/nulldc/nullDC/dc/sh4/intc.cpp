@@ -12,6 +12,7 @@
 #include "dc/asic/asic.h"
 #include "dc/maple/maple_if.h"
 
+#define printf_except(x)
 /*
 	Now .. here is some text to keep you busy :D
 
@@ -279,7 +280,11 @@ virtual_interrupt:
 
 void RaiseExeption(u32 code,u32 vector)
 {
-	verify(sr.BL == 0);
+	if (sr.BL!=0)
+	{
+		printf("RaiseExeption: sr.BL==1, pc=%08X\n",pc);
+		verify(sr.BL == 0);
+	}
 		
 	spc = pc;
 	ssr = sr.GetFull();
@@ -290,6 +295,7 @@ void RaiseExeption(u32 code,u32 vector)
 	sr.BL = 1;
 	pc = vbr + vector;
 	UpdateSR();
+	printf_except("RaiseExeption: pc errh %08X\n",pc);
 }
 
 void SetInterruptPend(InterruptID intr)

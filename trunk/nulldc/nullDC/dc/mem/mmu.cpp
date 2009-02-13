@@ -8,6 +8,8 @@
 
 #include "_vmem.h"
 
+#define printf_mmu(x) 
+
 //SQ fast remap , mailny hackish , assumes 1 mb pages
 //max 64 mb can be remapped on SQ
 u32 sq_remap[64];
@@ -50,6 +52,7 @@ u32 ITLB_LRU_USE[64];
 //sync mem mapping to mmu , suspend compiled blocks if needed.entry is a UTLB entry # , -1 is for full sync
 bool UTLB_Sync(u32 entry)
 {
+	printf_mmu("UTLB MEM remap %d : 0x%X to 0x%X : %d\n",entry,UTLB[entry].Address.VPN<<10,UTLB[entry].Data.PPN<<10,UTLB[entry].Data.V);
 	if (UTLB[entry].Data.V==0)
 		return true;
 
@@ -78,13 +81,13 @@ bool UTLB_Sync(u32 entry)
 //sync mem mapping to mmu , suspend compiled blocks if needed.entry is a ITLB entry # , -1 is for full sync
 void ITLB_Sync(u32 entry)
 {
-	//printf("ITLB MEM remap %d : 0x%X to 0x%X\n",entry,ITLB[entry].Address.VPN<<10,ITLB[entry].Data.PPN<<10);
+	printf_mmu("ITLB MEM remap %d : 0x%X to 0x%X : %d\n",entry,ITLB[entry].Address.VPN<<10,ITLB[entry].Data.PPN<<10,ITLB[entry].Data.V);
 }
 
 u32 mmu_error_TT;
 void fastcall mmu_raise_exeption(u32 mmu_error,u32 address,u32 am)
 {
-	//printf("pc = 0x%X : ",pc);
+	printf_mmu("mmu_raise_exeption -> pc = 0x%X : ",pc);
 	CCN_TEA=address;
 	CCN_PTEH.VPN=address>>10;
 
@@ -101,7 +104,7 @@ void fastcall mmu_raise_exeption(u32 mmu_error,u32 address,u32 am)
 
 	//TLB miss
 	case MMU_ERROR_TLB_MISS :
-		//printf("MMU_ERROR_UTLB_MISS 0x%X, handled\n",address);
+		printf_mmu("MMU_ERROR_UTLB_MISS 0x%X, handled\n",address);
 		if (am==MMU_TT_DWRITE)			//WTLBMISS - Write Data TLB Miss Exception
 			sh4_cpu->RaiseExeption(0x60,0x400);
 		else if (am==MMU_TT_DREAD)		//RTLBMISS - Read Data TLB Miss Exception
@@ -119,7 +122,7 @@ void fastcall mmu_raise_exeption(u32 mmu_error,u32 address,u32 am)
 
 	//Mem is read/write protected (depends on translation type)
 	case MMU_ERROR_PROTECTED :
-		//printf("MMU_ERROR_PROTECTED 0x%X, handled\n",address);
+		printf_mmu("MMU_ERROR_PROTECTED 0x%X, handled\n",address);
 		if (am==MMU_TT_DWRITE)			//WRITEPROT - Write Data TLB Protection Violation Exception
 			sh4_cpu->RaiseExeption(0xC0,0x100);
 		else if (am==MMU_TT_DREAD)		//READPROT - Data TLB Protection Violation Exception
@@ -129,10 +132,7 @@ void fastcall mmu_raise_exeption(u32 mmu_error,u32 address,u32 am)
 
 	//Mem is write protected , firstwrite
 	case MMU_ERROR_FIRSTWRITE :
-		/*
-		printf("MMU_ERROR_FIRSTWRITE\n");
-		getc(stdin);
-		*/
+		printf_mmu("MMU_ERROR_FIRSTWRITE\n");
 		verify(am==MMU_TT_DWRITE);
 		//FIRSTWRITE - Initial Page Write Exception
 		sh4_cpu->RaiseExeption(0x80,0x100);
@@ -142,7 +142,7 @@ void fastcall mmu_raise_exeption(u32 mmu_error,u32 address,u32 am)
 
 	//data read/write missasligned
 	case MMU_ERROR_BADADDR :
-		//printf("MMU_ERROR_BADADDR 0x%X, handled\n",address);
+		printf_mmu("MMU_ERROR_BADADDR 0x%X, handled\n",address);
 		if (am==MMU_TT_DWRITE)			//WADDERR - Write Data Address Error
 			sh4_cpu->RaiseExeption(0x100,0x100);
 		else if (am==MMU_TT_DREAD)		//RADDERR - Read Data Address Error
@@ -154,7 +154,7 @@ void fastcall mmu_raise_exeption(u32 mmu_error,u32 address,u32 am)
 
 	//Can't Execute
 	case MMU_ERROR_EXECPROT :
-		//printf("MMU_ERROR_EXECPROT 0x%X, handled\n",address);
+		printf_mmu("MMU_ERROR_EXECPROT 0x%X, handled\n",address);
 		//EXECPROT - Instruction TLB Protection Violation Exception
 		sh4_cpu->RaiseExeption(0xA0,0x100);
 		return;

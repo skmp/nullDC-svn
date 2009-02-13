@@ -520,8 +520,12 @@ void gd_process_spi_cmd()
 #define readcmd packet_cmd.GDReadBlock
 
 			if( readcmd.head ||readcmd.subh || readcmd.other || (!readcmd.data) )	// assert
-				printf("GDROM: *FIXME* ADD MORE CD READ SETTINGS\n");
+				printf("GDROM: *FIXME* ADD MORE CD READ SETTINGS %d %d %d %d 0x%01X\n",readcmd.head,readcmd.subh,readcmd.other,readcmd.data,readcmd.expdtype);
 			u32 sector_type=2048;
+
+			if (readcmd.head ==1 && readcmd.subh==1 && readcmd.data==1)
+				sector_type=2352;
+			
 
 			u32 start_sector = GetFAD(&readcmd.b[2],readcmd.prmtype);
 
@@ -610,7 +614,7 @@ void gd_process_spi_cmd()
 	case SPI_REQ_STAT:
 		{
 			printf_spicmd("SPI_REQ_STAT\n");
-			printf("GDROM: Unhandled Sega SPI frame: SPI_REQ_STAT\n");
+			//printf("GDROM: Unhandled Sega SPI frame: SPI_REQ_STAT\n");
 			u8 stat[10];
 
 			//0	0	0	0	0	STATUS
@@ -1017,7 +1021,7 @@ void WriteMem_gdrom(u32 Addr, u32 data, u32 sz)
 //is this needed ?
 void UpdateGDRom()
 {
-	if(!(SB_GDST&1) || !(SB_GDEN &1))
+	if(!(SB_GDST&1) || !(SB_GDEN &1) || (read_buff.cache_size==0 && read_params.remaining_sectors==0))
 		return;
 
 	//SB_GDST=0;
@@ -1027,16 +1031,25 @@ void UpdateGDRom()
 
 	u32	src		= SB_GDSTARD,
 		len		= SB_GDLEN-SB_GDLEND ;
+	
+	if(SB_GDLEN & 0x1F) 
+	{
+		printf("\n!\tGDROM: SB_GDLEN has invalid size (%X) !\n", len);
+		return;
+	}
+
+	//if we don't have any more sectors to read
+	if (read_params.remaining_sectors==0)
+	{
+		//make sure we don't underrun the cache :)
+		len=min(len,read_buff.cache_size);
+	}
 
 	len=min(len,(u32)32);
 	// do we need to do this for gdrom dma ?
 	if(0x8201 != (dmaor &DMAOR_MASK)) {
 		printf("\n!\tGDROM: DMAOR has invalid settings (%X) !\n", dmaor);
 		//return;
-	}
-	if(len & 0x1F) {
-		printf("\n!\tGDROM: SB_GDLEN has invalid size (%X) !\n", len);
-		return;
 	}
 
 	if(0 == len) 
@@ -1048,7 +1061,7 @@ void UpdateGDRom()
 	{
 		while(len)
 		{
-			u32 buff_size =read_buff.cache_size - read_buff.cache_index;
+			u32 buff_size =read_buff.cache_size;
 			if (buff_size==0)
 			{
 				verify(read_params.remaining_sectors>0);
@@ -1063,6 +1076,7 @@ void UpdateGDRom()
 			}
 			WriteMemBlock_nommu_ptr(src,(u32*)&read_buff.cache[read_buff.cache_index], buff_size);
 			read_buff.cache_index+=buff_size;
+			read_buff.cache_size-=buff_size;
 			src+=buff_size;
 			len-=buff_size;
 		}
@@ -1086,11 +1100,10 @@ void UpdateGDRom()
 	//Readed ALL sectors
 	if (read_params.remaining_sectors==0)
 	{
-		u32 buff_size =read_buff.cache_size - read_buff.cache_index;
 		//And all buffer :p
-		if (buff_size==0)
+		if (read_buff.cache_size==0)
 		{
-			verify(!SB_GDST&1)		
+			//verify(!SB_GDST&1)	-> dc can do multi read dma
 			gd_set_state(gds_procpacketdone);
 		}
 	}

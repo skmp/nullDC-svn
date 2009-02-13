@@ -103,20 +103,25 @@ void PatchRegion_6(u8* sector,int size)
 }
 bool ConvertSector(u8* in_buff , u8* out_buff , int from , int to,int sector)
 {
-	//if no convertion
-	if (to==from)
-	{
-		memcpy(out_buff,in_buff,to);
-		return true;
-	}
 	//get subchannel data, if any
 	if (from==2448)
 	{
 		memcpy(q_subchannel,in_buff+2352,96);
 		from-=96;
 	}
+	//if no convertion
+	if (to==from)
+	{
+		memcpy(out_buff,in_buff,to);
+		return true;
+	}
 	switch (to)
 	{
+	case 2336:
+		verify(from>=2336);
+		verify((from==2352));
+		memcpy(out_buff,&in_buff[0x10],2336);
+		break;
 	case 2048:
 		{
 			verify(from>=2048);
