@@ -533,12 +533,13 @@ bool ExecuteDelayslot_RTE()
 	pc+=2;
 	u32 op=IReadMem16(pc);
 	sr.SetFull(ssr);
+	bool rv=UpdateSR();
 	verify(sh4_exept_raised==false);
 	if (op!=0)
 	ExecuteOpcode(op);
 	verify(sh4_exept_raised==false);
 
-	return true;
+	return rv;
 }
 
 #include "ccn.h"
