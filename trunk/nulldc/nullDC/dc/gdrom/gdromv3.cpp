@@ -519,12 +519,15 @@ void gd_process_spi_cmd()
 		{
 #define readcmd packet_cmd.GDReadBlock
 
-			if( readcmd.head ||readcmd.subh || readcmd.other || (!readcmd.data) )	// assert
-				printf("GDROM: *FIXME* ADD MORE CD READ SETTINGS %d %d %d %d 0x%01X\n",readcmd.head,readcmd.subh,readcmd.other,readcmd.data,readcmd.expdtype);
+			
+			
 			u32 sector_type=2048;
+			if (readcmd.head ==1 && readcmd.subh==1 && readcmd.data==1 && readcmd.expdtype==3)
+				sector_type=2340;
+			else if( readcmd.head ||readcmd.subh || readcmd.other || (!readcmd.data) )	// assert
+				printf("GDROM: *FIXME* ADD MORE CD READ SETTINGS %d %d %d %d 0x%01X\n",readcmd.head,readcmd.subh,readcmd.other,readcmd.data,readcmd.expdtype);
 
-			if (readcmd.head ==1 && readcmd.subh==1 && readcmd.data==1)
-				sector_type=2352;
+			
 			
 
 			u32 start_sector = GetFAD(&readcmd.b[2],readcmd.prmtype);
@@ -1133,7 +1136,7 @@ void GDROM_DmaEnable(u32 data)
 	SB_GDEN=data&1;
 	if (SB_GDEN==0 && SB_GDST==1)
 	{
-		printf("GD-DMA aborted\n");
+		printf_spi("GD-DMA aborted\n");
 		SB_GDST=0;
 	}
 }
