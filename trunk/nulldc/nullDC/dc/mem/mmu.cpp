@@ -164,7 +164,26 @@ void fastcall mmu_raise_exeption(u32 mmu_error,u32 address,u32 am)
 	__asm int 3;
 }
 
+bool mmu_match(u32 va,CCN_PTEH_type Address,CCN_PTEL_type Data)
+{
+	if (Data.V==0)
+		return false;
 
+	u32 sz=Data.SZ1*2+Data.SZ0;
+	u32 mask=mmu_mask[sz];
+
+	if ( (((Address.VPN<<10)&mask)==(va&mask)) )
+	{
+		bool asid_match = (Data.SH==0) && ( (sr.MD==0) || (CCN_MMUCR.SV == 0) );
+
+		if ( ( asid_match==false ) || (Address.ASID==CCN_PTEH.ASID) )
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
 //Do a full lookup on the UTLB entry's
 u32 fastcall mmu_full_lookup(u32 va,u32& idx,u32& rv)
 {
@@ -179,23 +198,15 @@ u32 fastcall mmu_full_lookup(u32 va,u32& idx,u32& rv)
 
 	for (u32 i=0;i<64;i++)
 	{
-		if (UTLB[i].Data.V==0)
-			continue;
-		u32 sz=UTLB[i].Data.SZ1*2+UTLB[i].Data.SZ0;
-		u32 mask=mmu_mask[sz];
-
-		if ( (((UTLB[i].Address.VPN<<10)&mask)==(va&mask)) )
+		//verify(sz!=0);
+		if (mmu_match(va,UTLB[i].Address,UTLB[i].Data))
 		{
-			bool asid_match = (UTLB[i].Data.SH==0) && ( (sr.MD==0) || (CCN_MMUCR.SV == 0) );
-
-			if ( ( asid_match==false ) || (UTLB[i].Address.ASID==CCN_PTEH.ASID) )
-			{
-				//verify(sz!=0);
-				entry=i;
-				nom++;
-				//VPN->PPN | low bits
-				rv=((UTLB[i].Data.PPN<<10)&mask) | (va&(~mask));
-			}
+			entry=i;
+			nom++;
+			u32 sz=UTLB[i].Data.SZ1*2+UTLB[i].Data.SZ0;
+			u32 mask=mmu_mask[sz];
+			//VPN->PPN | low bits
+			rv=((UTLB[i].Data.PPN<<10)&mask) | (va&(~mask));
 		}
 	}
 
@@ -241,127 +252,6 @@ u32 fastcall mmu_full_SQ(u32 va,u32& rv)
 	
 	return MMU_ERROR_NONE;
 }
-
-/*
-//MMU TLB cache.Internal cache build by the emulator on top of the tlb
-//Gets automaticaly sync'd to tlb by the emulator
-union mmu_cache_entry
-{
-	struct
-	{
-		u32 asid:8;			//asid id for the page
-		u32 user:1;			//set to 1 if user mode cannot access
-		u32 write:1;		//set to 1 if page cannot be writen
-		u32 PPN:19;			//Physical page number :}
-		u32 nil0:1;			//set to 1 if kernel cannot read
-		u32 nil1:1;			//set to 1 if kernel cannot write
-		u32 asid_on:1;		//set to 1 if asid matching is enabled for that entry
-	};
-	u32 full;
-};
-
-#define MMU_ICC_UA (1<<8)	//User access
-#define MMU_ICC_WA (1<<9)	//Write access
-#define MMU_ICC_AE (1<<31)
-
-mmu_cache_entry mmu_cache[4*1024*1024];
-
-//Data is assumed to be aligned !
-template<bool read,bool priv,bool sqmd,bool match_asids>
-u32 fastcall mmu_fast_translation_fill(u32 va,u32& rv)
-{
-	if ((priv==0) && (va&0x80000000)!=0)
-	{
-		//if SQ disabled , or if if SQ on but out of SQ mem then BAD ADDR ;)
-		if ( ((va&0xFC000000)!=0xE0000000) ||  (sqmd==1) )
-			return MMU_ERROR_BADADDR;
-	}
-
-	if (fast_reg_lut[va>>29]!=0)
-	{
-		rv=va;
-		return MMU_ERROR_NONE;
-	}
-
-	u32 entry;
-	u32 lookup=mmu_full_lookup(va,entry,rv);
-	
-	if (lookup!=MMU_ERROR_NONE)
-		return lookup;
-
-	u32 md=UTLB[entry].Data.PR>>1;
-	
-	//0X  & User mode-> protection violation
-	//Priv mode protection
-	if ((md==0) && sr.MD==0)
-	{
-		return MMU_ERROR_PROTECTED;
-	}
-
-	//X0 -> read olny
-	//X1 -> read/write , can be FW
-
-	//Write Protection (Lock or FW)
-	if (translation_type==MMU_TT_DWRITE)
-	{
-		if ((UTLB[entry].Data.PR&1)==0)
-			return MMU_ERROR_PROTECTED;
-		else if (UTLB[entry].Data.D==0)
-			return MMU_ERROR_FIRSTWRITE;
-	}
-	return MMU_ERROR_NONE;
-}
-template<bool read,bool priv,bool sqmd,bool AT,bool match_asids>
-u32 fastcall mmu_fast_translation(u32 va,u32& rv)
-{
-	if (!AT)
-	{
-		rv=va;
-		return MMU_ERROR_NONE;
-	}
-	else
-	{
-		u32 page=va>>10;
-		u32 offs=va&0x3FF;
-		mmu_cache_entry dst=mmu_cache[page];
-
-		u32 access_mask=0;
-
-		if (!read)
-			access_mask|=MMU_ICC_WA;
-		if (!priv)
-			access_mask|=MMU_ICC_UA;
-
-		if (!(dst.full&access_mask))
-		{
-			if (match_asids && !priv)
-			{
-				if (dst.asid==CCN_PTEH.ASID)
-				{
-					rv=(dst & 0x1FFFFC00)|offs;
-					return MMU_ERROR_NONE;
-				}
-				else
-				{
-					return mmu_fast_translation_fill<read,priv,sqmd,match_asids>(va,rv);
-				}
-			}
-			else
-			{
-				rv=(dst & 0x1FFFFC00)|offs;
-				return MMU_ERROR_NONE;
-			}
-		}
-		else
-		{
-			//uhoh
-			//need to perform full lookup :p
-			return mmu_fast_translation_fill<read,priv,sqmd,match_asids>(va,rv);
-		}
-	}
-
-}
-*/
 template<u32 translation_type>
 u32 fastcall mmu_data_translation(u32 va,u32& rv)
 {

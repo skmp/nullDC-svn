@@ -123,6 +123,12 @@ bool ConvertSector(u8* in_buff , u8* out_buff , int from , int to,int sector)
 			memcpy(out_buff,&in_buff[12],2340);
 		}
 		break;
+	case 2328:
+		{
+			verify((from==2352));
+			memcpy(out_buff,&in_buff[24],2328);
+		}
+		break;
 	case 2336:
 		verify(from>=2336);
 		verify((from==2352));

@@ -234,13 +234,7 @@ T __fastcall ReadMem_P4(u32 addr)
 	return 0;
 
 }
-const u32 mmu_mask_2[4]= 
-{
-	((0xFFFFFFFF)>>10)<<0,	//1 kb page
-	((0xFFFFFFFF)>>12)<<2,	//4 kb page
-	((0xFFFFFFFF)>>16)<<6,	//64 kb page
-	((0xFFFFFFFF)>>20)<<10	//1 MB page
-};
+bool mmu_match(u32 va,CCN_PTEH_type Address,CCN_PTEL_type Data);
 //Write P4
 template <u32 sz,class T>
 void __fastcall WriteMem_P4(u32 addr,T data)
@@ -275,7 +269,7 @@ void __fastcall WriteMem_P4(u32 addr,T data)
 		//printf("Unhandled p4 Write [Instruction TLB address array] 0x%x = %x\n",addr,data);
 		{
 			u32 entry=(addr>>8)&3;
-			ITLB[entry].Address.reg_data=data & 0xFFFFFEFF;
+			ITLB[entry].Address.reg_data=data & 0xFFFFFCFF;
 			ITLB[entry].Data.V=(data>>8) & 1;
 			ITLB_Sync(entry);
 			return;
@@ -283,8 +277,13 @@ void __fastcall WriteMem_P4(u32 addr,T data)
 		break;
 
 	case 0xF3:
-		//printf("Unhandled p4 Write [Instruction TLB data arrays 1 and 2] 0x%x = %x\n",addr,data);
+		if (addr&0x800000)
 		{
+			printf("Unhandled p4 Write [Instruction TLB data array 2] 0x%x = %x\n",addr,data);
+		}
+		else
+		{
+			//printf("Unhandled p4 Write [Instruction TLB data array 1] 0x%x = %x\n",addr,data);
 			u32 entry=(addr>>8)&3;
 			ITLB[entry].Data.reg_data=data;
 			ITLB_Sync(entry);
@@ -309,6 +308,7 @@ void __fastcall WriteMem_P4(u32 addr,T data)
 		break;
 
 	case 0xF6:
+		if (addr&0x800000)
 		{
 			if (addr&0x80)
 			{
@@ -316,29 +316,25 @@ void __fastcall WriteMem_P4(u32 addr,T data)
 				CCN_PTEH_type t;
 				t.reg_data=data;
 
-				//That is not 100% correct :/
+				u32 va=t.VPN<<10;
+
 				for (int i=0;i<64;i++)
 				{
-					u32 sz=UTLB[i].Data.SZ1*2+UTLB[i].Data.SZ0;
-					u32 mask=mmu_mask_2[sz];
-					u32 vpn=t.VPN&mask;
-
-					if (( (UTLB[i].Address.VPN&mask) ==vpn) && (UTLB[i].Address.ASID == CCN_PTEH.ASID))
+					if (mmu_match(va,UTLB[i].Address,UTLB[i].Data))
 					{
 						UTLB[i].Data.V=((u32)data>>8)&1;
 						UTLB[i].Data.D=((u32)data>>9)&1;
+						UTLB_Sync(i);
 					}
 				}
 
 				for (int i=0;i<4;i++)
 				{
-					u32 sz=ITLB[i].Data.SZ1*2+ITLB[i].Data.SZ0;
-					u32 mask=mmu_mask_2[sz];
-					u32 vpn=t.VPN&mask;
-					if (( (ITLB[i].Address.VPN&mask)==vpn) && (ITLB[i].Address.ASID == CCN_PTEH.ASID))
+					if (mmu_match(va,ITLB[i].Address,ITLB[i].Data))
 					{
 						ITLB[i].Data.V=((u32)data>>8)&1;
 						ITLB[i].Data.D=((u32)data>>9)&1;
+						ITLB_Sync(i);
 					}
 				}
 			}
@@ -351,12 +347,22 @@ void __fastcall WriteMem_P4(u32 addr,T data)
 				UTLB_Sync(entry);
 			}
 			return;
+			
+		}
+		else
+		{
+			printf("Unhandled p4 Write [Unified TLB address array , Unmapped] 0x%x = %x\n",addr,data);
 		}
 		break;
 
 	case 0xF7:
+		if (addr&0x800000)
 		{
-			//printf("Unhandled p4 Write [Unified TLB data arrays 1 and 2] 0x%x = %x\n",addr,data);
+			printf("Unhandled p4 Write [Unified TLB data array 2] 0x%x = %x\n",addr,data);
+		}
+		else
+		{
+			//printf("Unhandled p4 Write [Unified TLB data array 1] 0x%x = %x\n",addr,data);
 			u32 entry=(addr>>8)&63;
 			UTLB[entry].Data.reg_data=data;
 			UTLB_Sync(entry);
@@ -569,7 +575,7 @@ T __fastcall ReadMem_area7(u32 addr)
 	}
 
 
-	EMUERROR2("unknown Read from Area7 , addr=%x",addr);
+	//EMUERROR2("unknown Read from Area7 , addr=%x",addr);
 	return 0;
 }
 
@@ -729,7 +735,7 @@ void __fastcall WriteMem_area7(u32 addr,T data)
 		break;
 	}
 
-	EMUERROR3("Write to Area7 not implemented , addr=%x,data=%x",addr,data);
+	//EMUERROR3("Write to Area7 not implemented , addr=%x,data=%x",addr,data);
 }
 
 

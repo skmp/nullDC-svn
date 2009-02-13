@@ -2601,9 +2601,27 @@ u32 FASTCALL VmuDMA(void* device_instance,u32 Command,u32* buffer_in,u32 buffer_
 				buffer_out_len=4+(sizeof(maple_getvmuinfo_t));
 				return MDRS_DataTransfer;//data transfer
 			}
+			else if (buffer_in[0]&MFID_2_LCD)
+			{
+				if (buffer_in[1]!=0)
+				{
+					printf("VMU: MDCF_GetMediaInfo -> bad input |%08X|, returning MDRE_UnknownCmd\n",buffer_in[0]);
+					return MDRE_UnknownCmd;
+				}
+				else
+				{
+					w32(MFID_2_LCD);
+
+					w8(47);				//X dots -1
+					w8(31);				//Y dots -1
+					w8(((1)<<4) | (0));		//1 Color, 0 contrast levels
+					w8(0);					//Padding
+					return MDRS_DataTransfer;
+				}
+			}
 			else
 			{
-				printf("VMU: MDCF_GetMediaInfo -> Bad function used, returning -2\n");
+				printf("VMU: MDCF_GetMediaInfo -> Bad function used |%08X|, returning -2\n",buffer_in[0]);
 				return MDRE_UnknownFunction;//bad function
 			}
 
