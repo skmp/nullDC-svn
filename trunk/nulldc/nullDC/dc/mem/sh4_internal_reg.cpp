@@ -308,7 +308,6 @@ void __fastcall WriteMem_P4(u32 addr,T data)
 		break;
 
 	case 0xF6:
-		if (addr&0x800000)
 		{
 			if (addr&0x80)
 			{
@@ -347,11 +346,6 @@ void __fastcall WriteMem_P4(u32 addr,T data)
 				UTLB_Sync(entry);
 			}
 			return;
-			
-		}
-		else
-		{
-			printf("Unhandled p4 Write [Unified TLB address array , Unmapped] 0x%x = %x\n",addr,data);
 		}
 		break;
 
