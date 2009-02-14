@@ -627,7 +627,7 @@ bool __fastcall mmu_TranslateSQW(u32& adr)
 	}
 	else
 	{	//remap table
-		adr=sq_remap[(adr>>20)&0x3F] | (adr & 0xFFFFF);
+		adr=sq_remap[(adr>>20)&0x3F] | (adr & 0xFFFE0);
 	}
 #endif
 	return true;
