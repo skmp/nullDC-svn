@@ -137,26 +137,23 @@ sh4op(i0000_nnnn_1011_0011)
 } 
 
 //pref @<REG_N>                 
-void __fastcall do_pref(u32 Dest)
+void __fastcall do_pref(u32 addr)
 {
-	//TODO : Check for enabled store queues
-	u32* sq;
-	u32 Address;
-	sq = (u32*)&sq_both[Dest& 0x20];
+	u32* sq = (u32*)&sq_both[addr& 0x20];
 
-	if (!mmu_TranslateSQW(Address))
+	if (!mmu_TranslateSQW(addr))
 	{
-		//printf("Write Exeption From SQ WRITE \n");
+		//printf("Read Exeption From SQ WRITE \n");
 		return;
 	}
 
-	if (((Address >> 26) & 0x7) == 4)//Area 4 !11!!
+	if (((addr >> 26) & 0x7) == 4)//Area 4 !11!!
 	{
-		TAWriteSQ(Address,sq);
+		TAWriteSQ(addr,sq);
 	}
 	else
 	{
-		WriteMemBlock_nommu_ptr(Address,sq,8*4);
+		WriteMemBlock_nommu_ptr(addr,sq,8*4);
 	}
 }
 sh4op(i0000_nnnn_1000_0011)
