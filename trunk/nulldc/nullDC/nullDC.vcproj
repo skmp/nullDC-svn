@@ -835,6 +835,10 @@
 					RelativePath=".\dc\mem\sh4_mem.h"
 					>
 				</File>
+				<File
+					RelativePath=".\dc\mem\wince_syscalls.h"
+					>
+				</File>
 				<Filter
 					Name="helper"
 					>

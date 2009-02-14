@@ -522,7 +522,7 @@ void gd_process_spi_cmd()
 			
 			
 			u32 sector_type=2048;
-			if (readcmd.head ==1 && readcmd.subh==1 && readcmd.data==1 && readcmd.expdtype==3)
+			if (readcmd.head ==1 && readcmd.subh==1 && readcmd.data==1 && readcmd.expdtype==3 && readcmd.other==0)
 				sector_type=2340;
 			else if( readcmd.head ||readcmd.subh || readcmd.other || (!readcmd.data) )	// assert
 				printf("GDROM: *FIXME* ADD MORE CD READ SETTINGS %d %d %d %d 0x%01X\n",readcmd.head,readcmd.subh,readcmd.other,readcmd.data,readcmd.expdtype);

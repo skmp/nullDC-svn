@@ -4,11 +4,12 @@
 #include "dc/sh4/intc.h"
 #include "dc/sh4/sh4_registers.h"
 #include "plugins/plugin_manager.h"
-
+#include "wince_syscalls.h"
 
 #include "_vmem.h"
 
-#define printf_mmu(x) 
+#define printf_mmu
+#define printf_win32 printf
 
 //SQ fast remap , mailny hackish , assumes 1 mb pages
 //max 64 mb can be remapped on SQ
@@ -127,6 +128,10 @@ void fastcall mmu_raise_exeption(u32 mmu_error,u32 address,u32 am)
 			sh4_cpu->RaiseExeption(0xC0,0x100);
 		else if (am==MMU_TT_DREAD)		//READPROT - Data TLB Protection Violation Exception
 			sh4_cpu->RaiseExeption(0xA0,0x100);
+		else
+		{
+			verify(false);
+		}
 		return;
 		break;
 
@@ -142,19 +147,29 @@ void fastcall mmu_raise_exeption(u32 mmu_error,u32 address,u32 am)
 
 	//data read/write missasligned
 	case MMU_ERROR_BADADDR :
-		printf_mmu("MMU_ERROR_BADADDR 0x%X, handled\n",address);
 		if (am==MMU_TT_DWRITE)			//WADDERR - Write Data Address Error
 			sh4_cpu->RaiseExeption(0x100,0x100);
 		else if (am==MMU_TT_DREAD)		//RADDERR - Read Data Address Error
 			sh4_cpu->RaiseExeption(0xE0,0x100);
 		else							//IADDERR - Instruction Address Error
+		{
+			const char* apiname=GetApiName(address);
+
+			if (apiname)
+				printf_win32("MMU_ERROR_BADADDR(i) 0x%X, -> %s\n",address,apiname);
+			else
+				printf_win32("MMU_ERROR_BADADDR(i) 0x%X\n",address);
 			sh4_cpu->RaiseExeption(0xE0,0x100);
+			return;
+		}
+		printf_mmu("MMU_ERROR_BADADDR(d) 0x%X, handled\n",address);
 		return;
 		break;
 
 	//Can't Execute
 	case MMU_ERROR_EXECPROT :
-		printf_mmu("MMU_ERROR_EXECPROT 0x%X, handled\n",address);
+		printf_mmu("MMU_ERROR_EXECPROT 0x%X\n",address);
+
 		//EXECPROT - Instruction TLB Protection Violation Exception
 		sh4_cpu->RaiseExeption(0xA0,0x100);
 		return;
@@ -227,39 +242,79 @@ u32 fastcall mmu_full_lookup(u32 va,u32& idx,u32& rv)
 	return MMU_ERROR_NONE;
 }
 
+//Simple QACR translation for mmu (when AT is off)
+u32 fastcall mmu_QACR_SQ(u32 va)
+{
+	u32 QACR;
+	if ((va& 0x20)==0)
+		QACR = CCN_QACR0.Area;
+	else
+		QACR = CCN_QACR1.Area;
 
+	return (va & 0x03FFFFE0) | (QACR << 26);//ie:(QACR&0x1c>>2)<<26
+}
+template<u32 translation_type>
 u32 fastcall mmu_full_SQ(u32 va,u32& rv)
 {
-	u32 entry;
-	u32 lookup = mmu_full_lookup(va,entry,rv);
 
-	if (lookup!=MMU_ERROR_NONE)
-		return lookup;
-
-	u32 md=UTLB[entry].Data.PR>>1;
-	
-	//Priv mode protection
-	if ((md==0) && sr.MD==0)
+	if ((va&3) || (CCN_MMUCR.SQMD==1 && sr.MD==0))
 	{
-		return MMU_ERROR_PROTECTED;
+		//here, or after ?
+		return MMU_ERROR_BADADDR;
 	}
 
-	//Write Protection (Lock or FW)
-	if ((UTLB[entry].Data.PR&1)==0)
-		return MMU_ERROR_PROTECTED;
-	else if (UTLB[entry].Data.D==0)
-		return MMU_ERROR_FIRSTWRITE;
-	
+	if (CCN_MMUCR.AT)
+	{
+		//Address=Dest&0xFFFFFFE0;
+
+		u32 entry;
+		u32 lookup = mmu_full_lookup(va,entry,rv);
+
+		rv&=~31;//lower 5 bits are forced to 0
+
+		if (lookup!=MMU_ERROR_NONE)
+			return lookup;
+
+		u32 md=UTLB[entry].Data.PR>>1;
+
+		//Priv mode protection
+		if ((md==0) && sr.MD==0)
+		{
+			return MMU_ERROR_PROTECTED;
+		}
+
+		//Write Protection (Lock or FW)
+		if (translation_type==MMU_TT_DWRITE)
+		{
+			if ((UTLB[entry].Data.PR&1)==0)
+				return MMU_ERROR_PROTECTED;
+			else if (UTLB[entry].Data.D==0)
+				return MMU_ERROR_FIRSTWRITE;
+		}
+	}
+	else
+	{
+		rv = mmu_QACR_SQ(va);
+	}
 	return MMU_ERROR_NONE;
 }
 template<u32 translation_type>
 u32 fastcall mmu_data_translation(u32 va,u32& rv)
 {
+	//*opt notice* this could be only checked for writes, as reads are invalid
+	if ((va&0xFC000000)==0xE0000000)
+	{
+		u32 lookup=mmu_full_SQ<translation_type>(va,rv);
+		if (lookup!=MMU_ERROR_NONE)
+			return lookup;
+		rv=va;	//SQ writes are not translated, only write backs are.
+		return MMU_ERROR_NONE;
+	}
+
 	if ((sr.MD==0) && (va&0x80000000)!=0)
 	{
-		//if SQ disabled , or if if SQ on but out of SQ mem then BAD ADDR ;)
-		if ( ((va&0xFC000000)!=0xE0000000) ||  (CCN_MMUCR.SQMD==1) )
-			return MMU_ERROR_BADADDR;
+		//if on kernel, and not SQ addr -> error
+		return MMU_ERROR_BADADDR;
 	}
 
 	if ((CCN_MMUCR.AT==0) || (fast_reg_lut[va>>29]!=0))
@@ -269,6 +324,7 @@ u32 fastcall mmu_data_translation(u32 va,u32& rv)
 	}
 	if ( CCN_CCR.ORA && ((va&0xFC000000)==0x7C000000))
 	{
+		verify(false);
 		return va;
 	}
 	u32 entry;
@@ -305,7 +361,7 @@ u32 fastcall mmu_instruction_translation(u32 va,u32& rv)
 	if ((sr.MD==0) && (va&0x80000000)!=0)
 	{
 		//if SQ disabled , or if if SQ on but out of SQ mem then BAD ADDR ;)
-		if (CCN_MMUCR.SQMD==0 || (va&0xFC000000)!=0xE0000000)
+		if (va>=0xE0000000)
 			return MMU_ERROR_BADADDR;
 	}
 
@@ -384,6 +440,8 @@ retry_ITLB_Match:
 }
 void MMU_Init()
 {
+	init_hid_table();
+
 	memset(ITLB_LRU_USE,0xFF,sizeof(ITLB_LRU_USE));
 	for (u32 e=0;e<4;e++)
 	{
@@ -410,26 +468,6 @@ void MMU_Reset(bool Manual)
 void MMU_Term()
 {
 }
-/*
-struct mmu_cache_entry
-{
-	u32 flags;
-	u32 addr;
-};
-#define mmu_cache_size 4096
-#define mmu_cache_mask (mmu_cache_size-1)
-#define mmu_cache_shift (10)
-
-mmu_cache_entry mmu_cache[mmu_cache_size];
-u32 cpu_mode;//asid | Kernel
-
-u8 mmu_fastRead8(u32 adr)
-{
-	const u32 cache_entry=mmu_cache_mask&(addr>>mmu_cache_shift);
-	if (0==((mmu_cache[cache_entry].flags^cpu_mode)&test_flags))
-		return _vmem_ReadMem8(adr+mmu_cache[cache_entry].addr);
-
-}*/
 
 u8 __fastcall mmu_ReadMem8(u32 adr)
 {
@@ -569,19 +607,28 @@ void __fastcall mmu_WriteMem64(u32 adr,u32* data)
 bool __fastcall mmu_TranslateSQW(u32& adr)
 {
 #ifndef NO_MMU
+
 	u32 addr;
-	u32 tv=mmu_full_SQ(adr,addr);
+	u32 tv=mmu_full_SQ<MMU_TT_DREAD>(adr,addr);
 	if (tv!=0)
 	{
-		mmu_raise_exeption(tv,adr,MMU_TT_DWRITE);
-		return true;
+		mmu_raise_exeption(tv,adr,MMU_TT_DREAD);
+		return false;
 	}
 
 	adr=addr;
 #else
 	//This will olny work for 1 mb pages .. hopefully nothing else is used
-	//*FIXME* to work for all page sizes !!
-	adr=sq_remap[(adr>>20)&0x3F] | (adr & 0xFFFFF);
+	//*FIXME* to work for all page sizes ?
+
+	if (CCN_MMUCR.AT==0)
+	{	//simple translation
+		adr=mmu_QACR_SQ(adr);
+	}
+	else
+	{	//remap table
+		adr=sq_remap[(adr>>20)&0x3F] | (adr & 0xFFFFF);
+	}
 #endif
-	return false;
+	return true;
 }

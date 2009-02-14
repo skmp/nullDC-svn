@@ -144,25 +144,12 @@ void __fastcall do_pref(u32 Dest)
 	u32 Address;
 	sq = (u32*)&sq_both[Dest& 0x20];
 
-	if (CCN_MMUCR.AT)
+	if (!mmu_TranslateSQW(Address))
 	{
-		Address=Dest&0xFFFFFFE0;
-		if (mmu_TranslateSQW(Address))
-		{
-			//printf("Write Exeption From SQ WRITE \n");
-			return;
-		}
+		//printf("Write Exeption From SQ WRITE \n");
+		return;
 	}
-	else
-	{
-		u32 QACR;
-		if ((Dest& 0x20)==0)
-			QACR = CCN_QACR0.Area;
-		else
-			QACR = CCN_QACR1.Area;
 
-		Address = (Dest & 0x03FFFFE0) | (QACR << 26);//ie:(QACR&0x1c>>2)<<26
-	}
 	if (((Address >> 26) & 0x7) == 4)//Area 4 !11!!
 	{
 		TAWriteSQ(Address,sq);
