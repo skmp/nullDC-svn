@@ -191,6 +191,9 @@ void DoMapleDma()
 
 			if (MapleDevices[device].connected && (subport==5 || MapleDevices[device].subdevices[subport].connected))
 			{
+				if(reci&0x20)							//do this here, so that the device can unplug itself after the dma
+					reci|=GetConnectedDevices(device);
+
 				//(maple_device_instance* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len,u32& responce);
 				if (subport==5)
 				{
@@ -212,10 +215,6 @@ void DoMapleDma()
 						&p_out[1],
 						outlen);
 				}
-
-
-				if(reci&0x20)
-					reci|=GetConnectedDevices(device);
 
 				#if debug_maple
 					printf("Maple :port%d_%d : 0x%02X -> done 0x%02X \n",device,subport,command,resp);
