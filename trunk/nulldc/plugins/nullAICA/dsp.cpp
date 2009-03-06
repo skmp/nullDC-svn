@@ -57,7 +57,7 @@ naked u16 packasm(s32 val)
 
 		poz:
 		bsr eax,ecx;
-		jnz _zero;
+		jz _zero;
 
 		//24 -> 11
 		//13 -> 0
