@@ -379,7 +379,7 @@ u32 GetFAD(u8* data,bool msf)
 	if( msf )	
 	{
 		printf("GDROM: MSF FORMAT\n");
-		return ((data[0]*60*75) + (data[1]*75) | (data[2]));
+		return ((data[0]*60*75) + (data[1]*75) + (data[2]));
 	}
 	else
 	{
