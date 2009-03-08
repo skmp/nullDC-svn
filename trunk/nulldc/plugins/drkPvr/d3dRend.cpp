@@ -2611,6 +2611,8 @@ __error_out:
 	}
 	u32 THREADCALL RenderThead_internal(void* param)
 	{
+		SetThreadPriority(GetCurrentThread(),THREAD_PRIORITY_HIGHEST);
+
 		LARGE_INTEGER freq,InitStart,InitEnd;
 		QueryPerformanceFrequency(&freq);
 		QueryPerformanceCounter(&InitStart);
@@ -2850,7 +2852,7 @@ __error_out:
 		QueryPerformanceCounter(&InitEnd);
 			
 		printf("Initialising 3D Renderer took %.2f ms\n",(InitEnd.QuadPart-InitStart.QuadPart)/(freq.QuadPart/1000.0));
-
+		SetThreadPriority(GetCurrentThread(),THREAD_PRIORITY_NORMAL);
 		while(1)
 		{
 			rs.Wait();
@@ -2870,6 +2872,7 @@ nl:
 			re.Set();
 			LeaveCriticalSection(&d3d_lock);
 		}
+		SetThreadPriority(GetCurrentThread(),THREAD_PRIORITY_HIGHEST);
 
 		//*NOTE* we still have the critical section in here ..
 		d3d_init_done=false;
