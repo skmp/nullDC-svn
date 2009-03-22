@@ -1589,6 +1589,8 @@ void printState(u32 cmd,u32* buffer_in,u32 buffer_in_len)
 			printf("\n");
 	}
 }
+
+char EEPROM[0x100];
 u32 FASTCALL ControllerDMA_naomi(void* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len)
 {
 #define ret(x) { responce=(x); return; }
@@ -1835,16 +1837,25 @@ u32 FASTCALL ControllerDMA_naomi(void* device_instance,u32 Command,u32* buffer_i
 						buffer_out_len=0;
 					}
 					return (7);
-					//EEprom access (Writting)
-				case 0x0B:
+
+				case 0x0B:	//EEPROM write
 					{
-						printf("EEprom write ?\n");
 						int address=buffer_in_b[1];
 						int size=buffer_in_b[2];
-		//				memcpy(EEprom+address,buffer_in_b+4,size);
+						printf("EEprom write %08X %08X\n",address,size);
+						printState(Command,buffer_in,buffer_in_len);
+						memcpy(EEPROM+address,buffer_in_b+4,size);
 					}
 					return (7);
-				
+				case 0x3:	//EEPROM read
+					{
+						printf("EEprom READ ?\n");
+						int address=buffer_in_b[1];
+						printState(Command,buffer_in,buffer_in_len);
+						memcpy(buffer_out,EEPROM+address,0x80);
+						buffer_out_len=0x10;
+					}
+					return 8;
 					//IF I return all FF, then board runs in low res
 				case 0x31:
 					{
