@@ -9,7 +9,7 @@ u32 naomi_updates;
 //For file memory mapping :p
 #include <windows.h>
 
-#define NAOMI_GDROM
+#define BUILD_NAOMI
 //#define NAOMI_COMM
 
 #ifdef BUILD_NAOMI	
@@ -492,6 +492,11 @@ u32  ReadMem_naomi(u32 Addr, u32 sz)
 	case 0x04C:
 		printf("naomi GD? READ: %X, %d\n", Addr, sz);
 		return reg_dimm_4c;
+
+	case 0x18:
+		printf("naomi reg 0x18 : returning random data\n");
+		return 0x4000^rand();
+		break;
 
 	default: break;
 	}
