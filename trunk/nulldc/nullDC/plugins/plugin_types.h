@@ -35,11 +35,8 @@ struct VersionNumber
 #define DC_PLATFORM_AURORA		6   /* Needs to be done, Uses newer 300 mhz sh4 + 150 mhz pvr mbx SoC */
  
 
-#define DC_PLATFORM DC_PLATFORM_NORMAL
+#define DC_PLATFORM DC_PLATFORM_NAOMI
 
-
-//Flash size is fixed at 128k atm
-#define FLASH_SIZE (128*1024)
 
 #if (DC_PLATFORM==DC_PLATFORM_NORMAL)
 
@@ -50,6 +47,7 @@ struct VersionNumber
 	#define VRAM_SIZE (8*1024*1024)
 	#define ARAM_SIZE (2*1024*1024)
 	#define BIOS_SIZE (2*1024*1024)
+	#define FLASH_SIZE (128*1024)
 
 #elif  (DC_PLATFORM==DC_PLATFORM_DEV_UNIT)
 	
@@ -60,6 +58,7 @@ struct VersionNumber
 	#define VRAM_SIZE (8*1024*1024)
 	#define ARAM_SIZE (2*1024*1024)
 	#define BIOS_SIZE (2*1024*1024)
+	#define FLASH_SIZE (128*1024)
 
 #elif  (DC_PLATFORM==DC_PLATFORM_NAOMI)
 	
@@ -71,6 +70,9 @@ struct VersionNumber
 	#define VRAM_SIZE (16*1024*1024)
 	#define ARAM_SIZE (8*1024*1024)
 	#define BIOS_SIZE (2*1024*1024)
+	//Does it even have flash ?
+	#define FLASH_SIZE (128*1024)
+
 #elif  (DC_PLATFORM==DC_PLATFORM_NAOMI2)
 	
 	#define BUILD_NAOMI 1
@@ -81,6 +83,8 @@ struct VersionNumber
 	#define VRAM_SIZE (16*1024*1024)
 	#define ARAM_SIZE (8*1024*1024)
 	#define BIOS_SIZE (2*1024*1024)
+	//Does it even have flash ?
+	#define FLASH_SIZE (128*1024)
 #elif  (DC_PLATFORM==DC_PLATFORM_ATOMISWAVE)
 	
 	#define BUILD_ATOMISWAVE 1
@@ -90,6 +94,8 @@ struct VersionNumber
 	#define VRAM_SIZE (16*1024*1024)
 	#define ARAM_SIZE (8*1024*1024)
 	#define BIOS_SIZE (2*1024*1024)
+	//this is wrong, its 64kb :p
+	#define FLASH_SIZE (128*1024)
 #else
 	#error invalid build config
 #endif

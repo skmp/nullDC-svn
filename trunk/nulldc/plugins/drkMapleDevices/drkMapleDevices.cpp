@@ -1591,6 +1591,7 @@ void printState(u32 cmd,u32* buffer_in,u32 buffer_in_len)
 }
 
 char EEPROM[0x100];
+bool EEPROM_loaded=false;
 u32 FASTCALL ControllerDMA_naomi(void* device_instance,u32 Command,u32* buffer_in,u32 buffer_in_len,u32* buffer_out,u32& buffer_out_len)
 {
 #define ret(x) { responce=(x); return; }
@@ -1842,18 +1843,42 @@ u32 FASTCALL ControllerDMA_naomi(void* device_instance,u32 Command,u32* buffer_i
 					{
 						int address=buffer_in_b[1];
 						int size=buffer_in_b[2];
-						printf("EEprom write %08X %08X\n",address,size);
-						printState(Command,buffer_in,buffer_in_len);
+						//printf("EEprom write %08X %08X\n",address,size);
+						//printState(Command,buffer_in,buffer_in_len);
 						memcpy(EEPROM+address,buffer_in_b+4,size);
+
+						wchar eeprom_file[512];
+						host.ConfigLoadStr(L"emu",L"gamefile",eeprom_file,L"");
+						wcscat(eeprom_file,L".eeprom");
+						FILE* f=_wfopen(eeprom_file,L"wb");
+						if (f)
+						{
+							fwrite(EEPROM,1,0x80,f);
+							fclose(f);
+						}
 					}
 					return (7);
 				case 0x3:	//EEPROM read
 					{
-						printf("EEprom READ ?\n");
+						if (!EEPROM_loaded)
+						{
+							EEPROM_loaded=true;
+							wchar eeprom_file[512];
+							host.ConfigLoadStr(L"emu",L"gamefile",eeprom_file,L"");
+							wcscat(eeprom_file,L".eeprom");
+							FILE* f=_wfopen(eeprom_file,L"rb");
+							if (f)
+							{
+								fread(EEPROM,1,0x80,f);
+								fclose(f);
+								wprintf(L"LOADED EEPROM from %s",eeprom_file);
+							}
+						}
+						//printf("EEprom READ ?\n");
 						int address=buffer_in_b[1];
-						printState(Command,buffer_in,buffer_in_len);
+						//printState(Command,buffer_in,buffer_in_len);
 						memcpy(buffer_out,EEPROM+address,0x80);
-						buffer_out_len=0x10;
+						buffer_out_len=0x80;
 					}
 					return 8;
 					//IF I return all FF, then board runs in low res

@@ -213,7 +213,8 @@ struct ConfigFile
 
 		for (int i=stuff.size()-1;i>=0;i--)
 		{
-			stuff[i]->SaveFile(file);
+			if (stuff[i]->name!=L"emu")
+				stuff[i]->SaveFile(file);
 		}
 	}
 };

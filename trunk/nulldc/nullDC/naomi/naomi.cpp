@@ -4,6 +4,7 @@
 #include "../dc/asic/asic.h"
 #include "naomi.h"
 #include "naomi_regs.h"
+#include "config/config.h"
 
 u32 naomi_updates;
 //For file memory mapping :p
@@ -638,7 +639,7 @@ OPENFILENAME ofn;
 bool naomi_LoadRom(wchar* file)
 {
 	
-	printf("\nnullDC-Naomi rom loader v1.1 [yes, no more cache files ! >:D]\n");
+	printf("\nnullDC-Naomi rom loader v1.2\n");
 
 	size_t folder_pos=wcslen(file)-1;
 	while(folder_pos>1 && file[folder_pos]!='\\')
@@ -796,7 +797,17 @@ bool NaomiSelectFile(void* handle)
 	if(GetOpenFileName(&ofn)<=0)
 		return true;
 
-	naomi_LoadRom(SelectedFile);
+	if (!naomi_LoadRom(SelectedFile))
+	{
+		cfgSaveStr(L"emu",L"gamefile",L"naomi_bios");
+	}
+	else
+	{
+		cfgSaveStr(L"emu",L"gamefile",SelectedFile);
+	}
+
+
+	wprintf(L"EEPROM file : %s.eeprom\n",SelectedFile);
 
 	return true;
 }
