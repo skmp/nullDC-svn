@@ -35,7 +35,7 @@ struct VersionNumber
 #define DC_PLATFORM_AURORA		6   /* Needs to be done, Uses newer 300 mhz sh4 + 150 mhz pvr mbx SoC */
  
 
-#define DC_PLATFORM DC_PLATFORM_NAOMI
+#define DC_PLATFORM DC_PLATFORM_NORMAL
 
 
 #if (DC_PLATFORM==DC_PLATFORM_NORMAL)
