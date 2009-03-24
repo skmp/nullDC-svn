@@ -55,8 +55,7 @@ void CalculateSync()
 	}
 	else
 	{
-		if ((SPG_CONTROL.NTSC == 0 && SPG_CONTROL.PAL ==0) ||
-			(SPG_CONTROL.NTSC == 1 && SPG_CONTROL.PAL ==1))
+		if (FB_R_CTRL.vclk_div)
 		{
 			scale_y=1.0f;//non interlaced vga mode has full resolution :)
 		}

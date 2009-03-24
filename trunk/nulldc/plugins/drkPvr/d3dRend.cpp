@@ -810,7 +810,7 @@ namespace Direct3DRenderer
 					else
 					{
 						//half lines needed on non-interlaced mode on non VGA streams
-						if (SPG_CONTROL.NTSC || SPG_CONTROL.PAL)
+						if (!FB_R_CTRL.vclk_div)
 						{
 							rs.bottom/=2;
 						}
