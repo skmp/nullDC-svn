@@ -132,38 +132,19 @@ int main___(int argc,wchar* argv[])
 		return -1;
 	}
 	int rv= 0;
-#ifdef BUILD_DREAMCAST
-	wchar* temp_path=GetEmuPath(_T("data\\dc_boot.bin"));
-#endif
 
-#ifdef BUILD_NAOMI
-	wchar* temp_path=GetEmuPath(_T("data\\naomi_boot.bin"));
-#endif
+	wchar* temp_path=GetEmuPath(_T("data\\"));
 
-	FILE* fr=_wfopen(temp_path,L"r");
-	if (!fr)
+	bool lrf=LoadRomFiles(temp_path);
+
+	free(temp_path);
+
+	if (!lrf)
 	{
-		msgboxf(_T("Unable to find bios -- exiting\n%s"),MBX_ICONERROR,temp_path);
 		rv=-3;
 		goto cleanup;
 	}
-	free(temp_path);
 
-#ifdef BUILD_DREAMCAST
-	temp_path=GetEmuPath(_T("data\\dc_flash.bin"));
-	
-	fr=_wfopen (temp_path,L"r");
-	if (!fr)
-	{
-		msgboxf(_T("Unable to find flash -- exiting\n%s"),MBX_ICONERROR,temp_path);
-		rv=-6;
-		goto cleanup;
-	}
-
-	free(temp_path);
-#endif
-
-	fclose(fr);
 	wchar * currpath=GetEmuPath(L"");
 	SetCurrentDirectory(currpath);
 	free(currpath);

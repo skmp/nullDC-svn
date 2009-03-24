@@ -164,7 +164,7 @@ public :
 			}
 		}
 		Test();
-		verify(false);
+		die("Invalid path");
 	}
 	CompiledBlockInfo* Find(u32 address,u32 cpu_mode)
 	{

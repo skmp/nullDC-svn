@@ -10,7 +10,6 @@ u32 naomi_updates;
 //For file memory mapping :p
 #include <windows.h>
 
-#define BUILD_NAOMI
 //#define NAOMI_COMM
 
 #ifdef BUILD_NAOMI	

@@ -8,6 +8,317 @@
 
 #include "plugins/plugin_manager.h"
 
+struct MemChip
+{
+	u8* data;
+	u32 size;
+	u32 mask;
+
+	MemChip(u32 size)
+	{
+		this->data=new u8[size];
+		this->size=size;
+		this->mask=size-1;//must be power of 2
+	}
+	~MemChip() { delete[] data; }
+
+	u32 Read(u32 addr,u32 sz) 
+	{ 
+		addr&=mask;
+		switch (sz)
+		{
+		case 1:
+			return data[addr];
+		case 2:
+			return *(u16*)&data[addr];
+		case 4:
+			return *(u32*)&data[addr];
+		}
+
+		die("invalid access size");
+		return 0;
+	}
+
+	bool Load(wchar* file)
+	{
+		FILE* f=_wfopen(file,L"rb");
+		if (f)
+		{
+			bool rv=fread(data,1,size,f)==size;
+			fclose(f);
+			return rv;
+		}
+		return false;
+	}
+
+	void Save(wchar* file)
+	{
+		FILE* f=_wfopen(file,L"wb");
+		if (f)
+		{
+			fwrite(data,1,size,f);
+			fclose(f);
+		}
+	}
+
+	bool Load(wchar* root,wchar* prefix,const wchar* names_ro,const wchar* title)
+	{
+		wchar base[512];
+		wchar temp[512];
+		wchar names[512];
+		wcscpy(names,names_ro);
+		swprintf(base,512,L"%s",root);
+
+		wchar* curr=names;
+		wchar* next;
+		do
+		{
+			next=wcsstr(curr,L";");
+			if(next) *next=0;
+			if (curr[0]=='%')
+			{
+				swprintf(temp,512,L"%s%s%s",base,prefix,curr+1);
+			}
+			else
+			{
+				swprintf(temp,512,L"%s%s",base,curr);
+			}
+			
+			curr=next+1;
+
+			if (Load(temp))
+			{
+				wprintf(L"Loaded %s as %s\n\n",temp,title);
+				return true;
+			}
+		} while(next);
+
+
+		return false;
+	}
+	void Save(wchar* root,wchar* prefix,const wchar* name_ro,const wchar* title)
+	{
+		wchar path[512];
+		wchar name[512];
+
+		swprintf(path,512,L"%s%s%s",root,prefix,name_ro);
+		Save(path);
+
+		wprintf(L"Saved %s as %s\n\n",path,title);
+	}
+};
+struct RomChip : MemChip
+{
+	RomChip(u32 sz) : MemChip(sz) {}
+	void Reset()
+	{
+		//nothing, its permanent read only ;p
+	}
+	void Write(u32 addr,u32 data,u32 sz)
+	{
+		die("Write to RomChip is not possible, addr=%x,data=%x,size=%d");
+	}
+};
+struct SRamChip : MemChip
+{
+	SRamChip(u32 sz) : MemChip(sz) {}
+
+	void Reset()
+	{
+		//nothing, its battery backed up storage
+	}
+	void Write(u32 addr,u32 val,u32 sz)
+	{
+		addr&=mask;
+		switch (sz)
+		{
+		case 1:
+			data[addr]=val;
+			return;
+		case 2:
+			*(u16*)&data[addr]=val;
+			return;
+		case 4:
+			*(u32*)&data[addr]=val;
+			return;
+		}
+
+		die("invalid access size");
+	}
+};
+struct DCFlashChip : MemChip	//i think its micronix :p
+{
+	DCFlashChip(u32 sz): MemChip(sz) { }
+
+	enum FlashState
+	{
+		FS_CMD_AA,		//Waiting AA
+		FS_CMD_55,		//Waiting 55
+		FS_CMD,			//Waiting command
+
+		FS_Erase_AA,
+		FS_Erase_55,
+		FS_Erase,
+
+		FS_Write,
+		
+
+	};
+
+	FlashState state;
+	void Reset()
+	{
+		//reset the flash chip state
+		state=FS_CMD_AA;
+	}
+	
+	void Write(u32 addr,u32 val,u32 sz)
+	{
+		if (sz!=1) die("invalid access size");
+
+		addr&=mask;
+		
+		switch(state)
+		{
+		case FS_Erase_AA:
+		case FS_CMD_AA:
+			{
+				verify(addr==0x5555 && val==0xAA);
+				state=(FlashState)(state+1);
+			}
+			break;
+
+		case FS_Erase_55:
+		case FS_CMD_55:
+			{
+				verify((addr==0xAAAA || addr==0x2AAA) && val==0x55);
+				state=(FlashState)(state+1);
+			}
+			break;
+
+		case FS_CMD:
+			{
+				switch(val)
+				{
+				case 0xA0:
+					state=FS_Write;
+					break;
+				case 0x80:
+					state=FS_Erase_AA;
+					break;
+				default:
+					printf("Flash write %06X %08X %d\n",addr,val,sz);
+					state=FS_CMD_AA;
+					die("lolwhut");
+				}
+			}
+			break;
+
+		case FS_Erase:
+			{
+				switch(val)
+				{
+				case 0x30:
+					printf("Erase Sector %08X! (%08X)\n",addr,addr&(~0x3FFF));
+					memset(&data[addr&(~0x3FFF)],0xFF,0x4000);
+					break;
+				default:
+					printf("Flash write %06X %08X %d\n",addr,val,sz);
+					die("erase .. what ?");
+				}
+				state=FS_CMD_AA;
+			}
+			break;
+
+		case FS_Write:
+			{
+				//printf("flash write\n");
+				data[addr]&=val;
+				state=FS_CMD_AA;
+			}
+			break;
+		}
+	}	
+};
+
+RomChip sys_rom(BIOS_SIZE);
+
+#ifdef FLASH_SIZE
+DCFlashChip sys_nvmem(FLASH_SIZE);
+#endif
+
+#ifdef BBSRAM_SIZE
+SRamChip sys_nvmem(BBSRAM_SIZE);
+#endif
+
+bool LoadRomFiles(wchar* root)
+{
+	char* bios_path[512];
+	
+	if (!sys_rom.Load(root,ROM_PREFIX,L"%boot.bin;%boot.bin.bin;%bios.bin;%bios.bin.bin" ROM_NAMES,L"bootrom"))
+	{
+		msgboxf(_T("Unable to find bios in \n%s\nExiting .."),MBX_ICONERROR,root);
+		return false;
+	}
+	if (!sys_nvmem.Load(root,ROM_PREFIX,L"%nvmem.bin;%flash_wb.bin;%flash.bin;%flash.bin.bin",L"nvram"))
+	{
+		msgboxf(_T("Unable to find flash/nvmem in \n%s\nExiting .."),MBX_ICONERROR,root);
+		return false;
+	}
+	
+	return true;
+}
+
+void SaveRomFiles(wchar* root)
+{
+	sys_nvmem.Save(root,ROM_PREFIX,L"nvmem.bin",L"nvmem");
+}
+
+
+//u32 ReadBios(u32 addr,u32 sz);
+//u32 ReadFlash(u32 addr,u32 sz);
+//void WriteBios(u32 addr,u32 data,u32 sz);
+//void WriteFlash(u32 addr,u32 data,u32 sz);
+
+#if (DC_PLATFORM == DC_PLATFORM_NORMAL) || (DC_PLATFORM == DC_PLATFORM_DEV_UNIT) || (DC_PLATFORM == DC_PLATFORM_NAOMI) || (DC_PLATFORM == DC_PLATFORM_NAOMI2)
+
+u32 ReadBios(u32 addr,u32 sz) { return sys_rom.Read(addr,sz); }
+void WriteBios(u32 addr,u32 data,u32 sz) { EMUERROR4("Write to  [Boot ROM] is not possible, addr=%x,data=%x,size=%d",addr,data,sz); }
+
+u32 ReadFlash(u32 addr,u32 sz) { return sys_nvmem.Read(addr,sz); }
+void WriteFlash(u32 addr,u32 data,u32 sz) { sys_nvmem.Write(addr,data,sz); }
+
+#elif (DC_PLATFORM == DC_PLATFORM_ATOMISWAVE)
+	u32 ReadFlash(u32 addr,u32 sz) { EMUERROR4("Read from [Flash ROM] is not possible, addr=%x,size=%d",addr,sz); }
+	void WriteFlash(u32 addr,u32 data,u32 sz) { EMUERROR4("Write to  [Flash ROM] is not possible, addr=%x,data=%x,size=%d",addr,data,sz); }
+
+	u32 ReadBios(u32 addr,u32 sz) 
+	{ 
+		if (!(addr&0x10000))	//uper 64 kb are flashrom
+		{
+			return sys_rom.Read(addr,sz);
+		}
+		else
+		{
+			return sys_nvmem.Read(addr,sz);
+		}
+	}
+	void WriteBios(u32 addr,u32 data,u32 sz) 
+	{ 
+		if (!(addr&0x10000))	//uper 64 kb are flashrom
+		{
+			EMUERROR4("Write to  [Boot ROM] is not possible, addr=%x,data=%x,size=%d",addr,data,sz); 
+		}
+		else
+		{
+			sys_nvmem.Write(addr,data,sz);
+		}
+	}
+
+#else
+#error unknown flash
+#endif
+
 #pragma warning( disable : 4127 /*4244*/)
 //Area 0 mem map
 //0x00000000- 0x001FFFFF	:MPX	System/Boot ROM
@@ -41,57 +352,18 @@ T __fastcall ReadMem_area0(u32 addr)
 	//map 0x0000 to 0x001F
 	if ((base_start<=0x001F))//	:MPX	System/Boot ROM
 	{
-		switch (sz)
-		{
-		case 1:
-			return (T)bios_b[addr];
-		case 2:
-			return (T)*(u16*)&bios_b[addr];
-		case 4:
-			return (T)*(u32*)&bios_b[addr];
-		}
-		//ReadMemArrRet(bios_b,addr,sz);
-		EMUERROR3("Read from [MPX	System/Boot ROM], addr=%x , sz=%d",addr,sz);
+		return ReadBios(addr,sz);
 	}
 	//map 0x0020 to 0x0021
 	else if ((base_start>= 0x0020) && (base_end<= 0x0021))		//	:Flash Memory
 	{
-		//ReadMemFromPtrRet(flashrom,adr-0x00200000,sz);
-		addr-=0x00200000;
-		//ReadMemArrRet(flash_b,addr-0x00200000,sz);
-		switch (sz)
-		{
-		case 1:
-			return (T)flash_b[addr];
-		case 2:
-			return (T)*(u16*)&flash_b[addr];
-		case 4:
-			return (T)*(u32*)&flash_b[addr];
-		}
-		EMUERROR3("Read from [Flash Memory], addr=%x , sz=%d",addr,sz);
+		return ReadFlash(addr&0x1FFFF,sz);
 	}
 	//map 0x005F to 0x005F
 	else if ((base_start >=0x005F) && (base_end <=0x005F) /*&& (addr>= 0x00400000)*/ && (addr<= 0x005F67FF))		//	:Unassigned
 	{
 		EMUERROR2("Read from area0_32 not implemented [Unassigned], addr=%x",addr);
 	}
-	/*
-	else if ((base_start >=0x005F) && (base_end <=0x005F) && (addr>= 0x005F6800) && (addr<= 0x005F69FF))		//	:System Control Reg.
-	{
-		return (T)sb_ReadMem(addr,sz);
-	}
-	else if ((base_start >=0x005F) && (base_end <=0x005F) && (addr>= 0x005F6C00) && (addr<= 0x005F6CFF)) //	:Maple i/f Control Reg.
-	{
-		return (T)sb_ReadMem(addr,sz);
-	}
-	else if ((base_start >=0x005F) && (base_end <=0x005F) && (addr>= 0x005F7400) && (addr<=0x005F74FF)) //	:G1 i/f Control Reg.
-	{
-		return (T)sb_ReadMem(addr,sz);
-	}
-	else if ((base_start >=0x005F) && (base_end <=0x005F) && (addr>= 0x005F7800) && (addr<=0x005F78FF)) //	:G2 i/f Control Reg.
-	{
-		return (T)sb_ReadMem(addr,sz);
-	}*/
 	else if ((base_start >=0x005F) && (base_end <=0x005F) && (addr>= 0x005F7000) && (addr<= 0x005F70FF)) //	:GD-ROM
 	{
 		//EMUERROR3("Read from area0_32 not implemented [GD-ROM], addr=%x,size=%d",addr,sz);
@@ -165,42 +437,21 @@ void  __fastcall WriteMem_area0(u32 addr,T data)
 	//map 0x0000 to 0x001F
 	if ((base_start >=0x0000) && (base_end <=0x001F) /*&& (addr<=0x001FFFFF)*/)//	:MPX	System/Boot ROM
 	{
-		//WriteMemFromPtrRet(bootfile,adr,sz);
-		EMUERROR4("Write to  [MPX	System/Boot ROM] is not possible, addr=%x,data=%x,size=%d",addr,data,sz);
+		//EMUERROR4("Write to  [MPX	System/Boot ROM] is not possible, addr=%x,data=%x,size=%d",addr,data,sz);
+		WriteBios(addr,data,sz);		
 	}
 	//map 0x0020 to 0x0021
 	else if ((base_start >=0x0020) && (base_end <=0x0021) /*&& (addr>= 0x00200000) && (addr<= 0x0021FFFF)*/)		//	:Flash Memory
 	{
-		WriteMemArrRet(flash_b,addr-0x00200000,data,sz);
-		EMUERROR4("Write to [Flash Memory] , sz?!, addr=%x,data=%x,size=%d",addr,data,sz);
+		//EMUERROR4("Write to [Flash Memory] , sz?!, addr=%x,data=%x,size=%d",addr,data,sz);
+		WriteFlash(addr,data,sz);
 	}
 	//map 0x0040 to 0x005F -> actualy , i'l olny map 0x005F to 0x005F , b/c the rest of it is unpammed (left to defalt handler)
 	//map 0x005F to 0x005F
 	else if ((base_start >=0x005F) && (base_end <=0x005F) /*&& (addr>= 0x00400000) */&& (addr<= 0x005F67FF))		//	:Unassigned
 	{
 		EMUERROR4("Write to area0_32 not implemented [Unassigned], addr=%x,data=%x,size=%d",addr,data,sz);
-	}/*
-	else if ((base_start >=0x005F) && (base_end <=0x005F) && (addr>= 0x005F6800) && (addr<= 0x005F69FF))		//	:System Control Reg.
-	{
-		//EMUERROR4("Write to area0_32 not implemented [System Control Reg], addr=%x,data=%x,size=%d",addr,data,sz);
-		sb_WriteMem(addr,data,sz);
-		return;
 	}
-	else if ((base_start >=0x005F) && (base_end <=0x005F) && (addr>= 0x005F6C00) && (addr<= 0x005F6CFF)) //	:Maple i/f Control Reg.
-	{
-		//EMUERROR4("Write to area0_32 not implemented [Maple i/f Control Reg], addr=%x,data=%x,size=%d",addr,data,sz);
-		sb_WriteMem(addr,data,sz);
-	}
-	else if ((base_start >=0x005F) && (base_end <=0x005F) && (addr>= 0x005F7400) && (addr<=0x005F74FF)) //	:G1 i/f Control Reg.
-	{
-		//EMUERROR4("Write to area0_32 not implemented [G1 i/f Control Reg], addr=%x,data=%x,size=%d",addr,data,sz);
-		sb_WriteMem(addr,data,sz);
-	}
-	else if ((base_start >=0x005F) && (base_end <=0x005F) && (addr>= 0x005F7800) && (addr<=0x005F78FF)) //	:G2 i/f Control Reg.
-	{
-		//EMUERROR4("Write to area0_32 not implemented [G2 i/f Control Reg], addr=%x,data=%x,size=%d",addr,data,sz);
-		sb_WriteMem(addr,data,sz);
-	}*/
 	else if ((base_start >=0x005F) && (base_end <=0x005F) && (addr>= 0x005F7000) && (addr<= 0x005F70FF)) //	:GD-ROM
 	{
 		//EMUERROR4("Write to area0_32 not implemented [GD-ROM], addr=%x,data=%x,size=%d",addr,data,sz);

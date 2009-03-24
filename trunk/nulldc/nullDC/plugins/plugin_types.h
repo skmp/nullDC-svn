@@ -49,6 +49,9 @@ struct VersionNumber
 	#define BIOS_SIZE (2*1024*1024)
 	#define FLASH_SIZE (128*1024)
 
+	#define ROM_PREFIX L"dc_"
+	#define ROM_NAMES
+
 #elif  (DC_PLATFORM==DC_PLATFORM_DEV_UNIT)
 	
 	#define BUILD_DEV_UNIT 1
@@ -60,6 +63,9 @@ struct VersionNumber
 	#define BIOS_SIZE (2*1024*1024)
 	#define FLASH_SIZE (128*1024)
 
+	#define ROM_PREFIX L"hkt_"
+	#define ROM_NAMES
+
 #elif  (DC_PLATFORM==DC_PLATFORM_NAOMI)
 	
 	#define BUILD_NAOMI 1
@@ -70,8 +76,10 @@ struct VersionNumber
 	#define VRAM_SIZE (16*1024*1024)
 	#define ARAM_SIZE (8*1024*1024)
 	#define BIOS_SIZE (2*1024*1024)
-	//Does it even have flash ?
-	#define FLASH_SIZE (128*1024)
+	#define BBSRAM_SIZE (8*1024)
+
+	#define ROM_PREFIX L"naomi_"
+	#define ROM_NAMES L";epr-21577.bin;epr-21578.bin"
 
 #elif  (DC_PLATFORM==DC_PLATFORM_NAOMI2)
 	
@@ -82,20 +90,25 @@ struct VersionNumber
 	#define RAM_SIZE (32*1024*1024)
 	#define VRAM_SIZE (16*1024*1024)
 	#define ARAM_SIZE (8*1024*1024)
-	#define BIOS_SIZE (2*1024*1024)
-	//Does it even have flash ?
-	#define FLASH_SIZE (128*1024)
+	#define BIOS_SIZE (2*1024*1024)	
+	#define BBSRAM_SIZE (8*1024)
+
+	#define ROM_PREFIX L"n2_"
+	#define ROM_NAMES
+
 #elif  (DC_PLATFORM==DC_PLATFORM_ATOMISWAVE)
 	
 	#define BUILD_ATOMISWAVE 1
 
-	//Atomiswave : 16(?) mb ram, 16 mb vram, 8 mb aram, 128kb? bios, ? flash
+	//Atomiswave : 16(?) mb ram, 16 mb vram, 8 mb aram, 64kb bios, 64k flash
 	#define RAM_SIZE (16*1024*1024)
 	#define VRAM_SIZE (16*1024*1024)
 	#define ARAM_SIZE (8*1024*1024)
-	#define BIOS_SIZE (2*1024*1024)
-	//this is wrong, its 64kb :p
-	#define FLASH_SIZE (128*1024)
+	#define BIOS_SIZE (64*1024)
+	#define FLASH_SIZE (64*1024)
+
+	#define ROM_PREFIX L"aw_"
+	#define ROM_NAMES L";bios.ic23_l"
 #else
 	#error invalid build config
 #endif
@@ -104,8 +117,14 @@ struct VersionNumber
 #define VRAM_MASK	(VRAM_SIZE-1)
 #define ARAM_MASK	(ARAM_SIZE-1)
 #define BIOS_MASK	(BIOS_SIZE-1)
-#define FLASH_MASK	(FLASH_SIZE-1)
 
+#ifdef FLASH_SIZE
+#define FLASH_MASK	(FLASH_SIZE-1)
+#endif
+
+#ifdef BBSRAM_SIZE
+#define BBSRAM_SIZE	(BBSRAM_SIZE-1)
+#endif
 
 #define DC_MakeVersion(major,minor,build) (((DC_PLATFORM)<<24)|((build)<<16)|((minor)<<8)|(major))
 

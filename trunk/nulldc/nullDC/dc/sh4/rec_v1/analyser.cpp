@@ -146,7 +146,7 @@ void AnalyseCode(BasicBlock* to)
 
 	u32 block_ops=0;
 	u32 endpc;
-	while (true)
+	for(;;)
 	{
 		u32 opcode=IReadMem16(pc);
 		block_ops++;

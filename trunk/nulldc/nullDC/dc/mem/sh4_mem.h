@@ -4,12 +4,6 @@
 //main system mem
 extern VArray2 mem_b;
 
-//bios rom
-extern Array<u8> bios_b;
-
-//flash rom
-extern Array<u8> flash_b;
-
 #define MEMCALL __fastcall
 
 #include "_vmem.h"
@@ -106,3 +100,7 @@ u32 __fastcall GetRamPageFromAddress(u32 RamAddress);
 				{*(u16*)&arr[addr]=(u16)data;return;}		\
 			else if (sz==4)							\
 			{*(u32*)&arr[addr]=data;return;}}	
+
+
+bool LoadRomFiles(wchar* root);
+void SaveRomFiles(wchar* root);

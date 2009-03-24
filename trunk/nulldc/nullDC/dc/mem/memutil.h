@@ -14,9 +14,7 @@
 void SetPatches(u32 Value,u32 Mask);
 
 u32 LoadFileToSh4Mem(u32 offset,wchar*file);
-bool LoadFileToSh4Bootrom(wchar *szFile);
 u32 LoadBinfileToSh4Mem(u32 offset,wchar*file);
-bool LoadFileToSh4Flashrom(wchar *szFile);
-bool SaveSh4FlashromToFile(wchar *szFile);
+
 
 void LoadSyscallHooks();

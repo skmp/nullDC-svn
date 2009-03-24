@@ -17,14 +17,6 @@
 //main system mem
 VArray2 mem_b;
 
-//bios rom
-Array<u8> bios_b;
-
-//flash rom
-Array<u8> flash_b;
-
-
-
 u8 MEMCALL ReadMem8_i(u32 addr);
 u16 MEMCALL ReadMem16_i(u32 addr);
 u32 MEMCALL ReadMem32_i(u32 addr);
@@ -200,8 +192,6 @@ void mem_Init()
 {
 	//Allocate mem for memory/bios/flash
 	//mem_b.Init(&sh4_reserved_mem[0x0C000000],RAM_SIZE);
-	bios_b.Resize(BIOS_SIZE,false);
-	flash_b.Resize(FLASH_SIZE,false);
 
 	sh4_area0_Init();
 	sh4_internal_reg_Init();
@@ -216,10 +206,22 @@ void mem_Reset(bool Manual)
 	{
 		//fill mem w/ 0's
 		mem_b.Zero();
-		bios_b.Zero();
-		flash_b.Zero();
 
-		LoadBiosFiles();
+		wchar* temp_path=GetEmuPath(L"data\\");
+		u32 pl=(u32)wcslen(temp_path);
+
+		#ifdef BUILD_DREAMCAST
+			wcscat(temp_path,L"syscalls.bin");
+			LoadFileToSh4Mem(0x00000, temp_path);
+			temp_path[pl]=0;
+
+			wcscat(temp_path,L"IP.bin");
+			LoadFileToSh4Mem(0x08000, temp_path);
+			temp_path[pl]=0;
+		#endif
+
+		free(temp_path);
+
 		LoadSyscallHooks();
 	}
 
@@ -235,19 +237,12 @@ void mem_Term()
 	sh4_internal_reg_Term();
 	sh4_area0_Term();
 
-#ifdef BUILD_DREAMCAST
-	//write back flash ?
+	//write back flash/sram
 	wchar* temp_path=GetEmuPath(L"data\\");
-	wcscat(temp_path,L"dc_flash_wb.bin");
-	SaveSh4FlashromToFile(temp_path);
+	SaveRomFiles(temp_path);
 	free(temp_path);
-#endif
 	
-
-	//Free allocated mem for memory/bios/flash
-	flash_b.Free();
-	bios_b.Free();
-	//mem_b.Term();
+	//mem_b.Term(); // handled by vmem
 
 	//vmem
 	_vmem_term();
@@ -355,13 +350,6 @@ u8* GetMemPtr(u32 Addr,u32 size)
 		return &mem_b[Addr & RAM_MASK];
 		
 		case 0:
-			Addr &= 0x01FFFFFF;//to get rid of non needed bits
-			if ((Addr<=0x001FFFFF))//	:MPX	System/Boot ROM
-				return &bios_b[Addr];
-			
-			printf("Area 0 GetMemPtr : out of bios area , addr=0x%X",Addr);
-			return 0;
-
 		case 1:
 		case 2:
 		case 4:
@@ -370,7 +358,7 @@ u8* GetMemPtr(u32 Addr,u32 size)
 		case 7:
 		default:
 			printf("Get MemPtr not suported area ; addr=0x%X",Addr);
-			return &bios_b[0];
+			return 0;
 	}
 }
 

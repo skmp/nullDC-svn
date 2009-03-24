@@ -79,7 +79,6 @@ u32 THREADCALL emulation_thead(void* ptar)
 	emu_thread_state=EMU_IDLE;
 	emu_thread_rv=RV_OK;
 
-	printf("+Emulation thread started \n");
 	DuplicateHandle(GetCurrentProcess(), 
 		GetCurrentThread(), 
 		GetCurrentProcess(),
@@ -191,7 +190,6 @@ u32 THREADCALL emulation_thead(void* ptar)
 	emu_thread_rv=RV_OK;
 	term_Profiler();
 	CloseHandle(hEmuThread);
-	printf("-Emulation thread stoped \n");
 
 	return 0;
 }
@@ -294,8 +292,8 @@ void Term_DC()
 		dc_inited=false;
 	}
 }
-
-void LoadBiosFiles()
+/*
+void LoadBiosFilesz()
 {
 	wchar* temp_path=GetEmuPath(L"data\\");
 	u32 pl=(u32)wcslen(temp_path);
@@ -309,29 +307,13 @@ void LoadBiosFiles()
 	wcscat(temp_path,L"hkt_boot.bin");
 #endif
 
-	if (!LoadFileToSh4Bootrom(temp_path))
-	{
-
-	}
 
 #ifdef BUILD_DREAMCAST
-	temp_path[pl]=0;
-	//try to load saved flash
-	wcscat(temp_path,L"dc_flash_wb.bin");
-	if (!LoadFileToSh4Flashrom(temp_path))
-	{
-		//not found , load default :)
-		temp_path[pl]=0;
-		wcscat(temp_path,L"dc_flash.bin");
-		LoadFileToSh4Flashrom(temp_path);
-	}
 	
-
-	temp_path[pl]=0;
 	wcscat(temp_path,L"syscalls.bin");
 	LoadFileToSh4Mem(0x00000, temp_path);
-
 	temp_path[pl]=0;
+
 	wcscat(temp_path,L"IP.bin");
 	LoadFileToSh4Mem(0x08000, temp_path);
 	temp_path[pl]=0;
@@ -352,6 +334,7 @@ void SaveFlash()
 //	u32 pl=(u32)strlen(temp_path);
 	//SaveSh4FlashromToFile(
 }
+*/
 void Start_DC()
 {
 	if (!sh4_cpu->IsCpuRunning())
@@ -366,7 +349,6 @@ void Start_DC()
 			Reset_DC(false);//hard reset kthx
 
 		verify(emu_rtc(EMU_CPU_START)==RV_OK);
-		//sh4_cpu->Run();
 	}
 }
 void Stop_DC()
