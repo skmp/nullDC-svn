@@ -51,6 +51,7 @@ struct VersionNumber
 
 	#define ROM_PREFIX L"dc_"
 	#define ROM_NAMES
+	#define NVR_OPTIONAL 0
 
 #elif  (DC_PLATFORM==DC_PLATFORM_DEV_UNIT)
 	
@@ -65,6 +66,7 @@ struct VersionNumber
 
 	#define ROM_PREFIX L"hkt_"
 	#define ROM_NAMES
+	#define NVR_OPTIONAL 0
 
 #elif  (DC_PLATFORM==DC_PLATFORM_NAOMI)
 	
@@ -79,7 +81,8 @@ struct VersionNumber
 	#define BBSRAM_SIZE (8*1024)
 
 	#define ROM_PREFIX L"naomi_"
-	#define ROM_NAMES L";epr-21577.bin;epr-21578.bin"
+	#define ROM_NAMES L";epr-21576d.bin"
+	#define NVR_OPTIONAL 1
 
 #elif  (DC_PLATFORM==DC_PLATFORM_NAOMI2)
 	
@@ -95,6 +98,7 @@ struct VersionNumber
 
 	#define ROM_PREFIX L"n2_"
 	#define ROM_NAMES
+	#define NVR_OPTIONAL 1
 
 #elif  (DC_PLATFORM==DC_PLATFORM_ATOMISWAVE)
 	
@@ -109,6 +113,8 @@ struct VersionNumber
 
 	#define ROM_PREFIX L"aw_"
 	#define ROM_NAMES L";bios.ic23_l"
+	#define NVR_OPTIONAL 1
+
 #else
 	#error invalid build config
 #endif
@@ -123,7 +129,7 @@ struct VersionNumber
 #endif
 
 #ifdef BBSRAM_SIZE
-#define BBSRAM_SIZE	(BBSRAM_SIZE-1)
+#define BBSRAM_MASK	(BBSRAM_SIZE-1)
 #endif
 
 #define DC_MakeVersion(major,minor,build) (((DC_PLATFORM)<<24)|((build)<<16)|((minor)<<8)|(major))

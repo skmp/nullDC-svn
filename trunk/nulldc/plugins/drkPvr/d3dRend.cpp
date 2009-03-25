@@ -51,7 +51,8 @@ u32 vramlock_ConvOffset32toOffset64(u32 offset32)
 		//so bank is Address<<3
 		//bits <4 are <<1 to create space for bank num
 		//bank 0 is mapped at 400000 (32b offset) and after
-		u32 bank=((offset32>>22)&0x1)<<2;//bank will be used as uper offset too
+		const u32 bank_bit=VRAM_MASK-(VRAM_MASK/2);
+		u32 bank=(offset32&bank_bit)/bank_bit*4;//bank will be used as uper offset too
 		u32 lv=offset32&0x3; //these will survive
 		offset32<<=1;
 		//       |inbank offset    |       bank id        | lower 2 bits (not changed)

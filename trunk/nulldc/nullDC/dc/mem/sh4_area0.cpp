@@ -99,7 +99,6 @@ struct MemChip
 	void Save(wchar* root,wchar* prefix,const wchar* name_ro,const wchar* title)
 	{
 		wchar path[512];
-		wchar name[512];
 
 		swprintf(path,512,L"%s%s%s",root,prefix,name_ro);
 		Save(path);
@@ -133,10 +132,10 @@ struct SRamChip : MemChip
 		switch (sz)
 		{
 		case 1:
-			data[addr]=val;
+			data[addr]=(u8)val;
 			return;
 		case 2:
-			*(u16*)&data[addr]=val;
+			*(u16*)&data[addr]=(u16)val;
 			return;
 		case 4:
 			*(u32*)&data[addr]=val;
@@ -262,8 +261,15 @@ bool LoadRomFiles(wchar* root)
 	}
 	if (!sys_nvmem.Load(root,ROM_PREFIX,L"%nvmem.bin;%flash_wb.bin;%flash.bin;%flash.bin.bin",L"nvram"))
 	{
-		msgboxf(_T("Unable to find flash/nvmem in \n%s\nExiting .."),MBX_ICONERROR,root);
-		return false;
+		if (NVR_OPTIONAL)
+		{
+			printf("flash/nvmem is missing, will create new file ..");
+		}
+		else
+		{
+			msgboxf(_T("Unable to find flash/nvmem in \n%s\nExiting .."),MBX_ICONERROR,root);
+			return false;
+		}
 	}
 	
 	return true;
