@@ -52,11 +52,15 @@ u32 vramlock_ConvOffset32toOffset64(u32 offset32)
 		//bits <4 are <<1 to create space for bank num
 		//bank 0 is mapped at 400000 (32b offset) and after
 		const u32 bank_bit=VRAM_MASK-(VRAM_MASK/2);
+		const u32 static_bits=(VRAM_MASK-(bank_bit*2)+1)|3;
+		const u32 moved_bits=VRAM_MASK-static_bits-bank_bit;
+
 		u32 bank=(offset32&bank_bit)/bank_bit*4;//bank will be used as uper offset too
-		u32 lv=offset32&0x3; //these will survive
+		u32 lv=offset32&static_bits; //these will survive
+		offset32&=moved_bits;
 		offset32<<=1;
 		//       |inbank offset    |       bank id        | lower 2 bits (not changed)
-		u32 rv=  (offset32&(VRAM_MASK-7))|bank                  | lv;
+		u32 rv=  offset32 + bank                  + lv;
  
 		return rv;
 }
@@ -2183,9 +2187,6 @@ __error_out:
 				clear_rt--;
 		}
 
-		
-
-
 		pvrrc.verts.Finalise();
 		u32 sz=pvrrc.verts.used*sizeof(Vertex);
 
@@ -3024,7 +3025,10 @@ nl:
 		bool PSVM=(FPU_SHAD_SCALE&0x100)!=0; //double parameters for volumes
 
 		//Get the strip base
-		u32 strip_base=param_base + bg_t.tag_address*4;
+		u32 strip_base=(param_base + bg_t.tag_address*4)&0x7FFFFF;	//this is *not* VRAM_MASK on purpose.It fixes naomi bios and quite a few naomi games
+																	//i have *no* idea why that happens, they manage to set the render target over there as well
+																	//and that area is *not* writen by the games (they instead write the params on 000000 instead of 800000)
+																	//could be a h/w bug ? param_base is 400000 and tag is 100000*4
 		//Calculate the vertex size
 		u32 strip_vs=3 + bg_t.skip;
 		u32 strip_vert_num=bg_t.tag_offset;
@@ -3046,7 +3050,8 @@ nl:
 		bgpp->tileclip=0;//disabled ! HA ~
 
 		bgpp->isp.DepthMode=7;// -> this makes things AWFULLY slow .. sometimes
-
+		bgpp->isp.CullMode=0;// -> so that its not culled, or somehow else hiden !
+		bgpp->tsp.FogCtrl=2;
 		//Set some pcw bits .. i should realy get rid of pcw ..
 		bgpp->pcw.UV_16bit=bgpp->isp.UV_16b;
 		bgpp->pcw.Gouraud=bgpp->isp.Gouraud;
