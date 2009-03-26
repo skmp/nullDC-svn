@@ -588,8 +588,20 @@ void gd_process_spi_cmd()
 			}
 			else
 			{*/
-				SecNumber.Status=GD_STANDBY; // Why this needs to be here ? fixes utopia.0x71 makes it enter GD_STANDBY? do all non-audio commands do so ?
 				gd_spi_pio_end((u8*)&g_aValues0x71_b[0],g_aValues0x71_b_sz);//uCount
+
+// Command 71 triggers the GD-ROM authentication check.
+// If the GD-ROM authentication check fails then the drive state changes to stanby.
+// If the GD-ROM authentication check succeeds then the drive state changes to pause.
+// So after we send the data we just check if the disc is a GD-ROM or another disc type and set the right state.
+// Only "problem" now is that we send the "right" data during the authentication check even if the disc is noa a GD-ROM.
+// Now all discs boot fine so do not touch. K?
+
+			if (libGDR.GetDiscType()==GdRom)
+				SecNumber.Status=GD_PAUSE;
+			else
+				SecNumber.Status=GD_STANDBY;
+
 			//}
 			//iAux^=1;
 		}
