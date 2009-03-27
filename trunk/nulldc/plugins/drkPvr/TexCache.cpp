@@ -11,7 +11,7 @@ u32 fastcall twiddle_razi(u32 x,u32 y,u32 bcx,u32 bcy)
 	//u32 rv2=twiddle_optimiz3d(raw_addr,U);
 	u32 rv=0;//raw_addr & 3;//low 2 bits are directly passed  -> needs some misc stuff to work.However
 			 //Pvr internaly maps the 64b banks "as if" they were twidled :p
-	return detwiddle[0][bcx][x]+detwiddle[1][bcy][y];
+	return detwiddle[0][bcy][x]+detwiddle[1][bcx][y];
 }
 u32 fastcall twiddle_razi_(u32 x,u32 y,u32 x_sz,u32 y_sz)
 {
