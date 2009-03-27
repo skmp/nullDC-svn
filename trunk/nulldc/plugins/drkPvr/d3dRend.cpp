@@ -52,7 +52,7 @@ u32 vramlock_ConvOffset32toOffset64(u32 offset32)
 		//bits <4 are <<1 to create space for bank num
 		//bank 0 is mapped at 400000 (32b offset) and after
 		const u32 bank_bit=VRAM_MASK-(VRAM_MASK/2);
-		const u32 static_bits=(VRAM_MASK-(bank_bit*2)+1)|3;
+		const u32 static_bits=(VRAM_MASK-(bank_bit*2-1))|3;
 		const u32 moved_bits=VRAM_MASK-static_bits-bank_bit;
 
 		u32 bank=(offset32&bank_bit)/bank_bit*4;//bank will be used as uper offset too
@@ -758,7 +758,7 @@ namespace Direct3DRenderer
 			{
 				D3DLOCKED_RECT lr;
 
-				if (FB_R_CTRL.fb_enable && !VO_CONTROL.blank_video)
+				if ((FB_R_CTRL.fb_enable && !VO_CONTROL.blank_video) || DC_PLATFORM==DC_PLATFORM_ATOMISWAVE)
 				{
 					RECT rs={0,0,640,480};
 					

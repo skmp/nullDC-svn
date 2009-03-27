@@ -441,7 +441,9 @@ s32 FASTCALL InitPvr(pvr_init_params* param)
 {
 	memcpy(&params,param,sizeof(params));
 
-	
+	extern void BuildTwiddleTables();
+	BuildTwiddleTables();
+
 	if ((!Regs_Init()))
 	{
 		//failed
