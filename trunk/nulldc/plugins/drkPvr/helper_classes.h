@@ -54,6 +54,10 @@ public :
 			resize(pre_alloc);
 	}
 
+	__forceinline T* LastPtr()
+	{
+		return &data[used-1];
+	}
 	__forceinline T* Append()
 	{
 		if (used==size)

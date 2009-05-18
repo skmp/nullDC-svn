@@ -1,12 +1,14 @@
 #include "nullRend.h"
 
 #if REND_API == REND_SW
-
+volatile bool render_restart;
 #include <windows.h>
 #include <sdl.h>
-#include <SDL/SDL_syswm.h>
+#include <SDL_syswm.h>
 #include <gl\gl.h>
 #include "regs.h"
+#include <mmintrin.h>
+#include <xmmintrin.h>
 
 using namespace TASplitter;
 #pragma comment(lib, "sdl.lib") 
@@ -14,7 +16,7 @@ using namespace TASplitter;
 //SW rendering .. yay (?)
 namespace SWRenderer
 {
-	char fps_text[512];
+	wchar fps_text[512];
 	SDL_Surface *screen;
 	HWND SdlWnd;
 	struct VertexDecoder;
@@ -24,6 +26,7 @@ namespace SWRenderer
 	{
 		f32 x,y;
 		f32 z;
+		u32 EOS;
 	};
 	List<Vertex> vertlist;
 
@@ -96,22 +99,25 @@ namespace SWRenderer
 		return rv;
 	}
 	//use that someday
+
+	__declspec(align(32)) u32 tempCol[640*480];
 	void VBlank()
 	{
 		//present the vram to FB
 		SDL_Event ev;
 		while(SDL_PollEvent(&ev))
 			__noop;
-return;
+//return;
 		//SetWindowPos(SdlWnd,0,0,640,480,0,SWP_NOZORDER);	 
 		//FB_R_CTRL & 0x1000000
 		u32* fba=(u32*)&params.vram[vramlock_ConvOffset32toOffset64(FB_R_SOF1 & VRAM_MASK)];
 
 		u32 mode=FB_R_CTRL.fb_depth;
 		u32 sz=(640+640*(mode>>1))*2;
-		verifyf(SDL_LockSurface(screen)==0)
+		verifyf(SDL_LockSurface(screen)==0);
 		//memset(screen->pixels,rand(),640*480*4);
-		___hahaha__[mode]((u32*)screen->pixels,fba,screen->pitch,sz);
+		//___hahaha__[mode]((u32*)screen->pixels,fba,screen->pitch,sz);
+		memcpy(screen->pixels,tempCol,sizeof(tempCol));
 
 		SDL_UnlockSurface(screen);
 		SDL_UpdateRect(screen,0,0,0,0);
@@ -225,6 +231,188 @@ return;
 		ScanTrigA(a,b,c);
 		ScanTrigB(a,b,c);
 	}
+#define iround(x) (int)(x)
+	int mmin(int a,int b,int c,int d)
+	{
+		int rv=min(a,b);
+		rv=min(c,rv);
+		return max(d,rv);
+	}
+	int mmax(int a,int b,int c,int d)
+	{
+		int rv=max(a,b);
+		rv=max(c,rv);
+		return min(d,rv);
+	}
+
+	__forceinline void EvalHalfSpace(bool& all, bool& any,int DX,int DY,int sv,int lv,int y0,int x0)
+	{
+		//bool a00 = C1 + DX12 * y0 - DY12 * x0 > 0;
+		//bool a10 = C1 + DX12 * y0 - DY12 * x0 > qDY12;
+		//bool a01 = C1 + DX12 * y0 - DY12 * x0 > -qDX12;
+		//bool a11 = C1 + DX12 * y0 - DY12 * x0 > (qDY12-qDX12);
+
+		//C1 + DX12 * y0 - DY12 * x0 > 0
+		// + DX12 * y0 - DY12 * x0 > 0 - C1
+		int pd=DX * y0 - DY * x0;
+
+		bool a = pd > sv;	//needed for ANY
+		bool b = pd > lv;	//needed for ANY and all
+		
+		all&=a&b;
+		any|=a|b;
+	}
+
+	__forceinline void PlaneMinMax(int& MIN,int& MAX,int DX,int DY,int C,int q)
+	{
+		int q_fp=(q - 1)<<4;
+		int v1=-C;
+		int v2=q_fp*DY-C;
+		int v3=-q_fp*DX-C;
+		int v4=q_fp*(DY-DX)-C;
+
+		MIN=min(v1,min(v2,min(v3,v4)));
+		MAX=max(v1,max(v2,max(v3,v4)));
+	}
+	void Rendtriangle(const Vertex &v1, const Vertex &v2, const Vertex &v3,u32* colorBuffer)
+	{
+		const int stride=640*4;
+
+		// 28.4 fixed-point coordinates
+		const int Y1 = iround(16.0f * v1.y);
+		const int Y2 = iround(16.0f * v2.y);
+		const int Y3 = iround(16.0f * v3.y);
+
+		const int X1 = iround(16.0f * v1.x);
+		const int X2 = iround(16.0f * v2.x);
+		const int X3 = iround(16.0f * v3.x);
+
+		// Deltas
+		const int DX12 = X1 - X2;
+		const int DX23 = X2 - X3;
+		const int DX31 = X3 - X1;
+
+		const int DY12 = Y1 - Y2;
+		const int DY23 = Y2 - Y3;
+		const int DY31 = Y3 - Y1;
+
+		// Fixed-point deltas
+		const int FDX12 = DX12 << 4;
+		const int FDX23 = DX23 << 4;
+		const int FDX31 = DX31 << 4;
+
+		const int FDY12 = DY12 << 4;
+		const int FDY23 = DY23 << 4;
+		const int FDY31 = DY31 << 4;
+
+		// Bounding rectangle
+		int minx = (mmin(X1, X2, X3,0) + 0xF) >> 4;
+		int maxx = (mmax(X1, X2, X3,640<<4) + 0xF) >> 4;
+		int miny = (mmin(Y1, Y2, Y3,0) + 0xF) >> 4;
+		int maxy = (mmax(Y1, Y2, Y3,480<<4) + 0xF) >> 4;
+
+		// Block size, standard 8x8 (must be power of two)
+		const int q = 4;
+
+		// Start in corner of 8x8 block
+		minx &= ~(q - 1);
+		miny &= ~(q - 1);
+
+		(char*&)colorBuffer += miny * stride;
+
+		// Half-edge constants
+		int C1 = DY12 * X1 - DX12 * Y1;
+		int C2 = DY23 * X2 - DX23 * Y2;
+		int C3 = DY31 * X3 - DX31 * Y3;
+
+		// Correct for fill convention
+		if(DY12 < 0 || (DY12 == 0 && DX12 > 0)) C1++;
+		if(DY23 < 0 || (DY23 == 0 && DX23 > 0)) C2++;
+		if(DY31 < 0 || (DY31 == 0 && DX31 > 0)) C3++;
+
+		int MAX_12,MAX_23,MAX_31,MIN_12,MIN_23,MIN_31;
+
+		PlaneMinMax(MIN_12,MAX_12,DX12,DY12,C1,q);
+		PlaneMinMax(MIN_23,MAX_23,DX23,DY23,C2,q);
+		PlaneMinMax(MIN_31,MAX_31,DX31,DY31,C3,q);
+
+		const __m128 Green=_mm_set_ps(0.32,0.32,0.32,0.32);
+
+		// Loop through blocks
+		for(int y = miny; y < maxy; y += q)
+		{
+			for(int x = minx; x < maxx; x += q)
+			{
+				// Corners of block
+				int x0 = x << 4;
+				int x1 = (x + q - 1) << 4;
+				int y0 = y << 4;
+				int y1 = (y + q - 1) << 4;
+
+				bool all=true,any=false;
+
+				// Evaluate half-space functions
+				EvalHalfSpace(all,any,DX12,DY12,MIN_12,MAX_12,y0,x0);
+				EvalHalfSpace(all,any,DX23,DY23,MIN_23,MAX_23,y0,x0);
+				EvalHalfSpace(all,any,DX31,DY31,MIN_31,MAX_31,y0,x0);
+
+				// Skip block when outside an edge
+				if(!any) 
+					continue;
+
+				unsigned int *buffer = colorBuffer;
+
+				// Accept whole block when totally covered
+				if(all)
+				{
+					for(int iy = 0; iy < q; iy++)
+					{
+						for(int ix = x; ix < x + q; ix+=(sizeof(Green)/4))
+						{
+							*(__m128*)&buffer[ix]=Green;
+							 //= 0x00007F00; // Green
+						}
+
+						(char*&)buffer += stride;
+					}
+				}
+				else // Partially covered block
+				{
+					int CY1 = C1 + DX12 * y0 - DY12 * x0;
+					int CY2 = C2 + DX23 * y0 - DY23 * x0;
+					int CY3 = C3 + DX31 * y0 - DY31 * x0;
+
+					for(int iy = y; iy < y + q; iy++)
+					{
+						int CX1 = CY1;
+						int CX2 = CY2;
+						int CX3 = CY3;
+
+						for(int ix = x; ix < x + q; ix++)
+						{
+							if(CX1 > 0 && CX2 > 0 && CX3 > 0)
+							{
+								buffer[ix] = 0x0000007F; // Blue
+							}
+
+							CX1 -= FDY12;
+							CX2 -= FDY23;
+							CX3 -= FDY31;
+						}
+
+						CY1 += FDX12;
+						CY2 += FDX23;
+						CY3 += FDX31;
+
+						(char*&)buffer += stride;
+					}
+				}
+			}
+
+			(char*&)colorBuffer += q * stride;
+		}
+	}
+
 	void StartRender()
 	{
 		
@@ -235,12 +423,15 @@ return;
 
 		//Render frame
 		u16* fba=(u16*)&params.vram[vramlock_ConvOffset32toOffset64(FB_R_SOF1 & VRAM_MASK)];
-
+		memset(tempCol,0,sizeof(tempCol));
 		if (vertlist.used<3)
 			return;
 		for (u32 i=0;i<vertlist.used-2;i++)
 		{
-			ScanTrig(&vertlist.data[i]);
+			//ScanTrig(&vertlist.data[i]);
+			Rendtriangle(vertlist.data[i],vertlist.data[i+1],vertlist.data[i+2],(u32*)tempCol);
+			if (vertlist.data[i+2].EOS)
+				i+=2;
 		}
 
 		for (u32 y=0;y<480;y++)
@@ -326,16 +517,30 @@ return;
 		__forceinline
 		static void StartPolyStrip()
 		{
-			
+
 		}
 		__forceinline
 		static void EndPolyStrip()
 		{
-			
+			vertlist.LastPtr()->EOS=1;
+		}
+		__forceinline
+			static void StartModVol(TA_ModVolParam* param)
+		{
+
+		}
+		__forceinline
+			static void SetTileClip(u32 xmin,u32 ymin,u32 xmax,u32 ymax)
+		{
+		}
+		__forceinline
+			static void TileClipMode(u32 mode)
+		{
+
 		}
 
 		//Poly Vertex handlers
-#define vert_cvt_base VertexCount++; Vertex* cv=vertlist.Append();cv->x=vtx->xyz[0];cv->y=vtx->xyz[1];cv->z=vtx->xyz[2];
+#define vert_cvt_base VertexCount++; Vertex* cv=vertlist.Append();cv->x=vtx->xyz[0];cv->y=vtx->xyz[1];cv->z=vtx->xyz[2];cv->EOS=0;
 
 
 		//(Non-Textured, Packed Color)
@@ -557,8 +762,8 @@ return;
 	{
 		
 		char tmp[512];
-		sprintf(tmp, "SDL_WINDOWID=%u", (unsigned long)emu.WindowHandle);
-		_putenv(tmp);
+		//sprintf(tmp, "SDL_WINDOWID=%u", (unsigned long)emu.GetRenderTarget());
+		//_putenv(tmp);
 		
 		 if ( SDL_Init(SDL_INIT_NOPARACHUTE|SDL_INIT_VIDEO) < 0 )
 		 {
@@ -581,7 +786,7 @@ return;
 		 SetWindowPos(SdlWnd,0,0,0,640,480,SWP_NOZORDER | SWP_HIDEWINDOW);
 		 SetWindowLong(SdlWnd, GWL_STYLE, WS_POPUP);
 		// SetWindowLongPtr(SdlWnd, GWL_WNDPROC, GetWindowLongPtr((HWND)emu.WindowHandle,GWL_WNDPROC));
-		 SetParent(SdlWnd,(HWND)emu.WindowHandle);
+		 SetParent(SdlWnd,(HWND)emu.GetRenderTarget());
 		 SetWindowPos(SdlWnd,0,0,0,640,480,SWP_NOZORDER | SWP_SHOWWINDOW);	 
 		 EnableWindow(SdlWnd,FALSE);
 	}
@@ -590,12 +795,12 @@ return;
 		SDL_Quit();
 	}
 	//Misc setup
-	void SetFpsText(char* text)
+	void SetFpsText(wchar* text)
 	{
-		strcpy(fps_text,text);
+		wcscpy(fps_text,text);
 		//if (!IsFullscreen)
 		{
-			SetWindowText((HWND)emu.WindowHandle, fps_text);
+			SetWindowText((HWND)emu.GetRenderTarget(), fps_text);
 		}
 	}
 	bool InitRenderer()

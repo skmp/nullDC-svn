@@ -20,7 +20,7 @@ namespace SWRenderer
 	void ListInit();
 	void SoftReset();
 
-	void SetFpsText(char* text);
+	void SetFpsText(wchar* text);
 
 	void VramLockedWrite(vram_block* bl);
 };
@@ -40,7 +40,11 @@ namespace SWRenderer
 
 #define rend_text_invl SWRenderer::VramLockedWrite
 #define rend_set_fps_text SWRenderer::SetFpsText
-#define rend_set_render_rect(rect) 
+#define rend_set_render_rect(rect)
+#define rend_set_fb_scale(rect) 
+#define rend_list_modes(rect) 
+#define rend_handle_event(rect) 
+
 #endif
 #if REND_API == REND_NONE
 namespace NORenderer
