@@ -284,16 +284,16 @@ namespace SWRenderer
 	}
 
 	//return true if any is positive
-	__forceinline bool EvalHalfSpaceFAny(int cp12,int cp23,int cp31,int sv12,int sv23,int sv31,int lv12,int lv23,int lv31)
+	__forceinline bool EvalHalfSpaceFAny(int cp12,int cp23,int cp31)
 	{
-		int svt=cp12-sv12; //needed for ANY
-			svt|=cp23-sv23;
-			svt|=cp31-sv31;
+		int svt=cp12; //needed for ANY
+			svt|=cp23;
+			svt|=cp31;
 
 		return svt>0;
 	}
 
-	__forceinline bool EvalHalfSpaceFAll(int cp12,int cp23,int cp31,int sv12,int sv23,int sv31,int lv12,int lv23,int lv31)
+	__forceinline bool EvalHalfSpaceFAll(int cp12,int cp23,int cp31,int lv12,int lv23,int lv31)
 	{
 		int lvt=cp12-lv12;
 			lvt|=cp23-lv23;
@@ -396,14 +396,27 @@ namespace SWRenderer
 		const int FDqY23 = FDY23 * q;
 		const int FDqY31 = FDY31 * q;
 
-		int hs12 = DX12 * (miny<<4) - DY12 * (minx<<4) + FDqY12;
-		int hs23 = DX23 * (miny<<4) - DY23 * (minx<<4) + FDqY23;
-		int hs31 = DX31 * (miny<<4) - DY31 * (minx<<4) + FDqY31;
+		const int FDX12mq = FDX12+FDY12*q;
+		const int FDX23mq = FDX23+FDY23*q;
+		const int FDX31mq = FDX31+FDY31*q;
+
+		int hs12 = DX12 * (miny<<4) - DY12 * (minx<<4) + FDqY12 - MIN_12;
+		int hs23 = DX23 * (miny<<4) - DY23 * (minx<<4) + FDqY23 - MIN_23;
+		int hs31 = DX31 * (miny<<4) - DY31 * (minx<<4) + FDqY31 - MIN_31;
+
+		MAX_12-=MIN_12;
+		MAX_23-=MIN_23;
+		MAX_31-=MIN_31;
 		
+		int C1_pm = C1 + MIN_12;
+		int C2_pm = C2 + MIN_23;
+		int C3_pm = C3 + MIN_31;
+
+
 		u8* cb_y=(u8*)colorBuffer;
 		cb_y+=miny*stride + minx*(q*4);
 
-		
+		u32 flag=0;
 		// Loop through blocks
 		for(int y = spany; y > 0; y-=q)
 		{
@@ -418,16 +431,19 @@ namespace SWRenderer
 				Xhs31-=FDqY31;
 
 				// Corners of block
-				bool any=EvalHalfSpaceFAny(Xhs12,Xhs23,Xhs31,MIN_12,MIN_23,MIN_31,MAX_12,MAX_23,MAX_31);
+				bool any=EvalHalfSpaceFAny(Xhs12,Xhs23,Xhs31);
 
 				// Skip block when outside an edge
 				if(!any)
 				{
 					cb_x+=q*q*sizeof(Col);
+					if (flag)
+						goto next_y;
 					continue;
 				}
+				flag=1;
 				
-				bool all=EvalHalfSpaceFAll(Xhs12,Xhs23,Xhs31,MIN_12,MIN_23,MIN_31,MAX_12,MAX_23,MAX_31);
+				bool all=EvalHalfSpaceFAll(Xhs12,Xhs23,Xhs31,MAX_12,MAX_23,MAX_31);
 				
 				// Accept whole block when totally covered
 				if(all)
@@ -443,35 +459,33 @@ namespace SWRenderer
 				}
 				else // Partially covered block
 				{
-					int CY1 = C1 + Xhs12;
-					int CY2 = C2 + Xhs23;
-					int CY3 = C3 + Xhs31;
+					int CY1 = C1_pm + Xhs12;
+					int CY2 = C2_pm + Xhs23;
+					int CY3 = C3_pm + Xhs31;
 
 					for(int iy = q; iy > 0; iy--)
 					{
-						int CX1 = CY1;
-						int CX2 = CY2;
-						int CX3 = CY3;
-
 						for(int ix = q; ix >0 ; ix--)
 						{
-							if((CX1  | CX2 | CX3) > 0)
+							if((CY1  | CY2 | CY3) > 0)
 							{
 								*(u32*)cb_x = Col; // Blue
 							}
 
-							CX1 -= FDY12;
-							CX2 -= FDY23;
-							CX3 -= FDY31;
+							CY1 -= FDY12;
+							CY2 -= FDY23;
+							CY3 -= FDY31;
 							cb_x+=sizeof(Col);
 						}
 
-						CY1 += FDX12;
-						CY2 += FDX23;
-						CY3 += FDX31;
+						CY1 += FDX12mq;
+						CY2 += FDX23mq;
+						CY3 += FDX31mq;
 					}
 				}
 			}
+next_y:
+			flag=0;
 			hs12+=FDqX12;
 			hs23+=FDqX23;
 			hs31+=FDqX31;
