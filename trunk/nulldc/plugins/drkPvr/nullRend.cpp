@@ -27,6 +27,7 @@ namespace SWRenderer
 		f32 x,y;
 		f32 z;
 		u32 EOS;
+		u32 Col;
 	};
 	List<Vertex> vertlist;
 
@@ -231,7 +232,11 @@ namespace SWRenderer
 		ScanTrigA(a,b,c);
 		ScanTrigB(a,b,c);
 	}
-#define iround(x) (int)(x)
+//#define iround(x) (int)(x)
+	__forceinline int iround(float x)
+	{
+		return _mm_cvtt_ss2si(_mm_load_ss(&x));
+	}
 	int mmin(int a,int b,int c,int d)
 	{
 		int rv=min(a,b);
@@ -287,14 +292,23 @@ namespace SWRenderer
 		const int X2 = iround(16.0f * v2.x);
 		const int X3 = iround(16.0f * v3.x);
 
-		// Deltas
-		const int DX12 = X1 - X2;
-		const int DX23 = X2 - X3;
-		const int DX31 = X3 - X1;
+		int sgn=1;
 
-		const int DY12 = Y1 - Y2;
-		const int DY23 = Y2 - Y3;
-		const int DY31 = Y3 - Y1;
+		// Deltas
+		{
+			//area: (X1-X3)*(Y2-Y3)-(Y1-Y3)*(X2-X3)
+
+			if (((X1-X3)*(Y2-Y3)-(Y1-Y3)*(X2-X3))>0)
+				sgn=-1;
+		}
+
+		const int DX12 = sgn*(X1 - X2);
+		const int DX23 = sgn*(X2 - X3);
+		const int DX31 = sgn*(X3 - X1);
+
+		const int DY12 = sgn*(Y1 - Y2);
+		const int DY23 = sgn*(Y2 - Y3);
+		const int DY31 = sgn*(Y3 - Y1);
 
 		// Fixed-point deltas
 		const int FDX12 = DX12 << 4;
@@ -335,8 +349,9 @@ namespace SWRenderer
 		PlaneMinMax(MIN_12,MAX_12,DX12,DY12,C1,q);
 		PlaneMinMax(MIN_23,MAX_23,DX23,DY23,C2,q);
 		PlaneMinMax(MIN_31,MAX_31,DX31,DY31,C3,q);
-
-		const __m128 Green=_mm_set_ps(0.32,0.32,0.32,0.32);
+		//u8 cz=255*v1.z;
+		u32 Col=v1.Col; // cz | cz*256 | cz*256*256 | cz*256*256*256; // to see Z values :)
+		const __m128 Green=_mm_set_ps(*(float*)&Col,*(float*)&Col,*(float*)&Col,*(float*)&Col);
 
 		// Loop through blocks
 		for(int y = miny; y < maxy; y += q)
@@ -390,9 +405,9 @@ namespace SWRenderer
 
 						for(int ix = x; ix < x + q; ix++)
 						{
-							if(CX1 > 0 && CX2 > 0 && CX3 > 0)
+							if((CX1  | CX2 | CX3) > 0)
 							{
-								buffer[ix] = 0x0000007F; // Blue
+								buffer[ix] = Col; // Blue
 							}
 
 							CX1 -= FDY12;
@@ -548,6 +563,7 @@ namespace SWRenderer
 		static void AppendPolyVertex0(TA_Vertex0* vtx)
 		{
 			vert_cvt_base;
+			cv->Col=vtx->BaseCol;
 		}
 
 		//(Non-Textured, Floating Color)
@@ -555,6 +571,7 @@ namespace SWRenderer
 		static void AppendPolyVertex1(TA_Vertex1* vtx)
 		{
 			vert_cvt_base;
+			cv->Col=0xFFFFFFFF;
 		}
 
 		//(Non-Textured, Intensity)
@@ -562,6 +579,7 @@ namespace SWRenderer
 		static void AppendPolyVertex2(TA_Vertex2* vtx)
 		{
 			vert_cvt_base;
+			cv->Col=0xFFFFFFFF;
 		}
 
 		//(Textured, Packed Color)
@@ -569,6 +587,7 @@ namespace SWRenderer
 		static void AppendPolyVertex3(TA_Vertex3* vtx)
 		{
 			vert_cvt_base;
+			cv->Col=vtx->BaseCol;
 		}
 
 		//(Textured, Packed Color, 16bit UV)
@@ -576,6 +595,7 @@ namespace SWRenderer
 		static void AppendPolyVertex4(TA_Vertex4* vtx)
 		{
 			vert_cvt_base;
+			cv->Col=vtx->BaseCol;
 		}
 
 		//(Textured, Floating Color)
@@ -583,6 +603,7 @@ namespace SWRenderer
 		static void AppendPolyVertex5A(TA_Vertex5A* vtx)
 		{
 			vert_cvt_base;
+			cv->Col=0xFFFFFFFF;
 		}
 		__forceinline
 		static void AppendPolyVertex5B(TA_Vertex5B* vtx)
@@ -595,6 +616,7 @@ namespace SWRenderer
 		static void AppendPolyVertex6A(TA_Vertex6A* vtx)
 		{
 			vert_cvt_base;
+			cv->Col=0xFFFFFFFF;
 		}
 		__forceinline
 		static void AppendPolyVertex6B(TA_Vertex6B* vtx)
@@ -607,6 +629,7 @@ namespace SWRenderer
 		static void AppendPolyVertex7(TA_Vertex7* vtx)
 		{
 			vert_cvt_base;
+			cv->Col=0xFFFFFFFF;
 		}
 
 		//(Textured, Intensity, 16bit UV)
@@ -614,6 +637,7 @@ namespace SWRenderer
 		static void AppendPolyVertex8(TA_Vertex8* vtx)
 		{
 			vert_cvt_base;
+			cv->Col=0xFFFFFFFF;
 		}
 
 		//(Non-Textured, Packed Color, with Two Volumes)
@@ -621,6 +645,7 @@ namespace SWRenderer
 		static void AppendPolyVertex9(TA_Vertex9* vtx)
 		{
 			vert_cvt_base;
+			cv->Col=vtx->BaseCol0;
 		}
 
 		//(Non-Textured, Intensity,	with Two Volumes)
@@ -628,6 +653,7 @@ namespace SWRenderer
 		static void AppendPolyVertex10(TA_Vertex10* vtx)
 		{
 			vert_cvt_base;
+			cv->Col=0xFFFFFFFF;
 		}
 
 		//(Textured, Packed Color,	with Two Volumes)	
@@ -635,6 +661,7 @@ namespace SWRenderer
 		static void AppendPolyVertex11A(TA_Vertex11A* vtx)
 		{
 			vert_cvt_base;
+			cv->Col=vtx->BaseCol0;
 		}
 		__forceinline
 		static void AppendPolyVertex11B(TA_Vertex11B* vtx)
@@ -647,6 +674,7 @@ namespace SWRenderer
 		static void AppendPolyVertex12A(TA_Vertex12A* vtx)
 		{
 			vert_cvt_base;
+			cv->Col=vtx->BaseCol0;
 		}
 		__forceinline
 		static void AppendPolyVertex12B(TA_Vertex12B* vtx)
@@ -658,7 +686,8 @@ namespace SWRenderer
 		__forceinline
 		static void AppendPolyVertex13A(TA_Vertex13A* vtx)
 		{
-			vert_cvt_base;		
+			vert_cvt_base;	
+			cv->Col=0xFFFFFFFF;
 		}
 		__forceinline
 		static void AppendPolyVertex13B(TA_Vertex13B* vtx)
@@ -671,6 +700,7 @@ namespace SWRenderer
 		static void AppendPolyVertex14A(TA_Vertex14A* vtx)
 		{
 			vert_cvt_base;
+			cv->Col=0xFFFFFFFF;
 		}
 		__forceinline
 		static void AppendPolyVertex14B(TA_Vertex14B* vtx)
