@@ -263,6 +263,8 @@ namespace SWRenderer
 		return min(d,rv);
 	}
 
+	//i think this gives false positives ...
+	//yup, if ANY of the 3 tests fail the ANY tests fails.
 	__forceinline void EvalHalfSpace(bool& all, bool& any,int cp,int sv,int lv)
 	{
 		//bool a00 = C1 + DX12 * y0 - DY12 * x0 > 0;
@@ -275,10 +277,29 @@ namespace SWRenderer
 		//int pd=DX * y0 - DY * x0;
 
 		bool a = cp > sv;	//needed for ANY
-		bool b = cp > lv;	//needed for ANY and all
-		
+		bool b = cp > lv;	//needed for ALL
+
+		any&=a;
 		all&=b;
-		any|=a|b;
+	}
+
+	//return true if any is positive
+	__forceinline bool EvalHalfSpaceFAny(int cp12,int cp23,int cp31,int sv12,int sv23,int sv31,int lv12,int lv23,int lv31)
+	{
+		int svt=cp12-sv12; //needed for ANY
+			svt|=cp23-sv23;
+			svt|=cp31-sv31;
+
+		return svt>0;
+	}
+
+	__forceinline bool EvalHalfSpaceFAll(int cp12,int cp23,int cp31,int sv12,int sv23,int sv31,int lv12,int lv23,int lv31)
+	{
+		int lvt=cp12-lv12;
+			lvt|=cp23-lv23;
+			lvt|=cp31-lv31;	//needed for all
+		
+		return lvt>0;
 	}
 
 	__forceinline void PlaneMinMax(int& MIN,int& MAX,int DX,int DY,int C,int q)
@@ -397,12 +418,7 @@ namespace SWRenderer
 				Xhs31-=FDqY31;
 
 				// Corners of block
-				bool all=true,any=false;
-
-				// Evaluate half-space functions
-				EvalHalfSpace(all,any,Xhs12,MIN_12,MAX_12);
-				EvalHalfSpace(all,any,Xhs23,MIN_23,MAX_23);
-				EvalHalfSpace(all,any,Xhs31,MIN_31,MAX_31);
+				bool any=EvalHalfSpaceFAny(Xhs12,Xhs23,Xhs31,MIN_12,MIN_23,MIN_31,MAX_12,MAX_23,MAX_31);
 
 				// Skip block when outside an edge
 				if(!any)
@@ -410,7 +426,9 @@ namespace SWRenderer
 					cb_x+=q*q*sizeof(Col);
 					continue;
 				}
-				//cb_x=(u8*)&colorBuffer[y*640+x*q];
+				
+				bool all=EvalHalfSpaceFAll(Xhs12,Xhs23,Xhs31,MIN_12,MIN_23,MIN_31,MAX_12,MAX_23,MAX_31);
+				
 				// Accept whole block when totally covered
 				if(all)
 				{
