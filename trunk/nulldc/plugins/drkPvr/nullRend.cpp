@@ -118,7 +118,20 @@ namespace SWRenderer
 		verifyf(SDL_LockSurface(screen)==0);
 		//memset(screen->pixels,rand(),640*480*4);
 		//___hahaha__[mode]((u32*)screen->pixels,fba,screen->pitch,sz);
-		memcpy(screen->pixels,tempCol,sizeof(tempCol));
+		//memcpy(screen->pixels,tempCol,sizeof(tempCol));
+		__m128* pdst=(__m128*)screen->pixels;
+		__m128* psrc=(__m128*)tempCol;
+		const int stride=640/4;
+		for (int y=0;y<480;y+=4)
+		{
+			for (int x=0;x<640;x+=4)
+			{
+				pdst[(y+0)*stride+x/4]=*psrc++;
+				pdst[(y+1)*stride+x/4]=*psrc++;
+				pdst[(y+2)*stride+x/4]=*psrc++;
+				pdst[(y+3)*stride+x/4]=*psrc++;
+			}
+		}
 
 		SDL_UnlockSurface(screen);
 		SDL_UpdateRect(screen,0,0,0,0);
@@ -250,7 +263,7 @@ namespace SWRenderer
 		return min(d,rv);
 	}
 
-	__forceinline void EvalHalfSpace(bool& all, bool& any,int DX,int DY,int sv,int lv,int y0,int x0)
+	__forceinline void EvalHalfSpace(bool& all, bool& any,int cp,int sv,int lv)
 	{
 		//bool a00 = C1 + DX12 * y0 - DY12 * x0 > 0;
 		//bool a10 = C1 + DX12 * y0 - DY12 * x0 > qDY12;
@@ -259,12 +272,12 @@ namespace SWRenderer
 
 		//C1 + DX12 * y0 - DY12 * x0 > 0
 		// + DX12 * y0 - DY12 * x0 > 0 - C1
-		int pd=DX * y0 - DY * x0;
+		//int pd=DX * y0 - DY * x0;
 
-		bool a = pd > sv;	//needed for ANY
-		bool b = pd > lv;	//needed for ANY and all
+		bool a = cp > sv;	//needed for ANY
+		bool b = cp > lv;	//needed for ANY and all
 		
-		all&=a&b;
+		all&=b;
 		any|=a|b;
 	}
 
@@ -319,20 +332,19 @@ namespace SWRenderer
 		const int FDY23 = DY23 << 4;
 		const int FDY31 = DY31 << 4;
 
-		// Bounding rectangle
-		int minx = (mmin(X1, X2, X3,0) + 0xF) >> 4;
-		int maxx = (mmax(X1, X2, X3,640<<4) + 0xF) >> 4;
-		int miny = (mmin(Y1, Y2, Y3,0) + 0xF) >> 4;
-		int maxy = (mmax(Y1, Y2, Y3,480<<4) + 0xF) >> 4;
-
-		// Block size, standard 8x8 (must be power of two)
+		// Block size, standard 4x4 (must be power of two)
 		const int q = 4;
 
-		// Start in corner of 8x8 block
+		// Bounding rectangle
+		int minx = (mmin(X1, X2, X3,0) + 0xF) >> 4;
+		int miny = (mmin(Y1, Y2, Y3,0) + 0xF) >> 4;
+		
+		// Start in corner of block
 		minx &= ~(q - 1);
 		miny &= ~(q - 1);
 
-		(char*&)colorBuffer += miny * stride;
+		int spanx = ((mmax(X1, X2, X3,640<<4) + 0xF) >> 4)-minx;
+		int spany = ((mmax(Y1, Y2, Y3,480<<4) + 0xF) >> 4)-miny;
 
 		// Half-edge constants
 		int C1 = DY12 * X1 - DX12 * Y1;
@@ -352,79 +364,100 @@ namespace SWRenderer
 		//u8 cz=255*v1.z;
 		u32 Col=v1.Col; // cz | cz*256 | cz*256*256 | cz*256*256*256; // to see Z values :)
 		const __m128 Green=_mm_set_ps(*(float*)&Col,*(float*)&Col,*(float*)&Col,*(float*)&Col);
+		//const __m128 Green=_mm_set_ps(0.32f,0.32f,0.32f,0.32f);
 
+
+		const int FDqX12 = FDX12 * q;
+		const int FDqX23 = FDX23 * q;
+		const int FDqX31 = FDX31 * q;
+
+		const int FDqY12 = FDY12 * q;
+		const int FDqY23 = FDY23 * q;
+		const int FDqY31 = FDY31 * q;
+
+		int hs12 = DX12 * (miny<<4) - DY12 * (minx<<4) + FDqY12;
+		int hs23 = DX23 * (miny<<4) - DY23 * (minx<<4) + FDqY23;
+		int hs31 = DX31 * (miny<<4) - DY31 * (minx<<4) + FDqY31;
+		
+		u8* cb_y=(u8*)colorBuffer;
+		cb_y+=miny*stride + minx*(q*4);
+
+		
 		// Loop through blocks
-		for(int y = miny; y < maxy; y += q)
+		for(int y = spany; y > 0; y-=q)
 		{
-			for(int x = minx; x < maxx; x += q)
+			int Xhs12=hs12;
+			int Xhs23=hs23;
+			int Xhs31=hs31;
+			u8* cb_x=cb_y;
+			for(int x = spanx; x > 0; x-=q)
 			{
-				// Corners of block
-				int x0 = x << 4;
-				int x1 = (x + q - 1) << 4;
-				int y0 = y << 4;
-				int y1 = (y + q - 1) << 4;
+				Xhs12-=FDqY12;
+				Xhs23-=FDqY23;
+				Xhs31-=FDqY31;
 
+				// Corners of block
 				bool all=true,any=false;
 
 				// Evaluate half-space functions
-				EvalHalfSpace(all,any,DX12,DY12,MIN_12,MAX_12,y0,x0);
-				EvalHalfSpace(all,any,DX23,DY23,MIN_23,MAX_23,y0,x0);
-				EvalHalfSpace(all,any,DX31,DY31,MIN_31,MAX_31,y0,x0);
+				EvalHalfSpace(all,any,Xhs12,MIN_12,MAX_12);
+				EvalHalfSpace(all,any,Xhs23,MIN_23,MAX_23);
+				EvalHalfSpace(all,any,Xhs31,MIN_31,MAX_31);
 
 				// Skip block when outside an edge
-				if(!any) 
+				if(!any)
+				{
+					cb_x+=q*q*sizeof(Col);
 					continue;
-
-				unsigned int *buffer = colorBuffer;
-
+				}
+				//cb_x=(u8*)&colorBuffer[y*640+x*q];
 				// Accept whole block when totally covered
 				if(all)
 				{
-					for(int iy = 0; iy < q; iy++)
+					for(int iy = q; iy > 0; iy--)
 					{
-						for(int ix = x; ix < x + q; ix+=(sizeof(Green)/4))
+						for(int ix = q; ix > 0 ; ix-=(sizeof(Green)/4))
 						{
-							*(__m128*)&buffer[ix]=Green;
-							 //= 0x00007F00; // Green
+							*(__m128*)cb_x=Green;
+							 cb_x+=sizeof(Green);
 						}
-
-						(char*&)buffer += stride;
 					}
 				}
 				else // Partially covered block
 				{
-					int CY1 = C1 + DX12 * y0 - DY12 * x0;
-					int CY2 = C2 + DX23 * y0 - DY23 * x0;
-					int CY3 = C3 + DX31 * y0 - DY31 * x0;
+					int CY1 = C1 + Xhs12;
+					int CY2 = C2 + Xhs23;
+					int CY3 = C3 + Xhs31;
 
-					for(int iy = y; iy < y + q; iy++)
+					for(int iy = q; iy > 0; iy--)
 					{
 						int CX1 = CY1;
 						int CX2 = CY2;
 						int CX3 = CY3;
 
-						for(int ix = x; ix < x + q; ix++)
+						for(int ix = q; ix >0 ; ix--)
 						{
 							if((CX1  | CX2 | CX3) > 0)
 							{
-								buffer[ix] = Col; // Blue
+								*(u32*)cb_x = Col; // Blue
 							}
 
 							CX1 -= FDY12;
 							CX2 -= FDY23;
 							CX3 -= FDY31;
+							cb_x+=sizeof(Col);
 						}
 
 						CY1 += FDX12;
 						CY2 += FDX23;
 						CY3 += FDX31;
-
-						(char*&)buffer += stride;
 					}
 				}
 			}
-
-			(char*&)colorBuffer += q * stride;
+			hs12+=FDqX12;
+			hs23+=FDqX23;
+			hs31+=FDqX31;
+			cb_y+=stride*q;
 		}
 	}
 
@@ -447,26 +480,6 @@ namespace SWRenderer
 			Rendtriangle(vertlist.data[i],vertlist.data[i+1],vertlist.data[i+2],(u32*)tempCol);
 			if (vertlist.data[i+2].EOS)
 				i+=2;
-		}
-
-		for (u32 y=0;y<480;y++)
-		{/*
-			u16* pline=&fba[640*y];
-			for (u32 i=0;i<spans[y].used;i++)
-			{
-				Span* s=&spans[y].data[i];
-				u32 sx=s->start.x;
-				u32 ex=s->end.x;
-				sx=max(min(sx,640),0);
-				ex=max(min(ex,640),0);
-				u16* pstart=&pline[sx];
-
-				for (int cp=sx;cp<=ex;cp++)
-				{
-					pstart[cp]=0xFFFF;
-				}
-			}*/
-			spans[y].Clear();
 		}
 	}
 	void EndRender()
