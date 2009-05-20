@@ -444,7 +444,7 @@ next_y:
 
 	//Vertex Decoding-Converting
 	struct VertexDecoder
-	{`
+	{
 		//list handling
 		__forceinline
 		static void StartList(u32 ListType)
