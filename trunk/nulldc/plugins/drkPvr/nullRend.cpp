@@ -302,20 +302,45 @@ namespace SWRenderer
 		return lvt>0;
 	}
 
-	__forceinline void PlaneMinMax(int& MIN,int& MAX,int DX,int DY,int C,int q)
+	__forceinline void PlaneMinMax(int& MIN,int& MAX,int DX,int DY,int q)
 	{
 		int q_fp=(q - 1)<<4;
-		int v1=-C;
-		int v2=q_fp*DY-C;
-		int v3=-q_fp*DX-C;
-		int v4=q_fp*(DY-DX)-C;
+		int v1=0;
+		int v2=q_fp*DY;
+		int v3=-q_fp*DX;
+		int v4=q_fp*(DY-DX);
 
 		MIN=min(v1,min(v2,min(v3,v4)));
 		MAX=max(v1,max(v2,max(v3,v4)));
 	}
+
+	struct PlaneStepper
+	{
+		int stepx,stepy;
+		PlaneStepper(const Vertex &v1, const Vertex &v2, const Vertex &v3,int sgn,int minx,int miny,int q)
+		{
+			float A = ((v3.z - v1.z) * (v2.y - v1.y) - (v2.z - v1.z) * (v3.y - v1.y));
+			float B = ((v3.x - v1.x) * (v2.z - v1.z) - (v2.x - v1.x) * (v3.z - v1.z));
+			float C = ((v2.x - v1.x) * (v3.y - v1.y) - (v3.x - v1.x) * (v2.y - v1.y));
+			
+			int dzdx=iround(-16.0f*A / C)*sgn;
+			int dzdy=iround(-16.0f*B / C)*sgn;
+			
+			stepx=dzdx;
+			stepy=dzdy-stepx*q;
+
+			//z = z1 + dzdx * (minx - v1.x) + dzdy * (minx - v1.y);
+			
+		}
+		
+	};
+	u32 nok;
 	void Rendtriangle(const Vertex &v1, const Vertex &v2, const Vertex &v3,u32* colorBuffer)
 	{
 		const int stride=640*4;
+
+		//Plane equation
+		
 
 		// 28.4 fixed-point coordinates
 		const int Y1 = iround(16.0f * v1.y);
@@ -379,9 +404,9 @@ namespace SWRenderer
 
 		int MAX_12,MAX_23,MAX_31,MIN_12,MIN_23,MIN_31;
 
-		PlaneMinMax(MIN_12,MAX_12,DX12,DY12,C1,q);
-		PlaneMinMax(MIN_23,MAX_23,DX23,DY23,C2,q);
-		PlaneMinMax(MIN_31,MAX_31,DX31,DY31,C3,q);
+		PlaneMinMax(MIN_12,MAX_12,DX12,DY12,q);
+		PlaneMinMax(MIN_23,MAX_23,DX23,DY23,q);
+		PlaneMinMax(MIN_31,MAX_31,DX31,DY31,q);
 		//u8 cz=255*v1.z;
 		u32 Col=v1.Col; // cz | cz*256 | cz*256*256 | cz*256*256*256; // to see Z values :)
 		const __m128 Green=_mm_set_ps(*(float*)&Col,*(float*)&Col,*(float*)&Col,*(float*)&Col);
@@ -400,23 +425,22 @@ namespace SWRenderer
 		const int FDX23mq = FDX23+FDY23*q;
 		const int FDX31mq = FDX31+FDY31*q;
 
-		int hs12 = DX12 * (miny<<4) - DY12 * (minx<<4) + FDqY12 - MIN_12;
-		int hs23 = DX23 * (miny<<4) - DY23 * (minx<<4) + FDqY23 - MIN_23;
-		int hs31 = DX31 * (miny<<4) - DY31 * (minx<<4) + FDqY31 - MIN_31;
+		int hs12 = C1 + DX12 * (miny<<4) - DY12 * (minx<<4) + FDqY12 - MIN_12;
+		int hs23 = C2 + DX23 * (miny<<4) - DY23 * (minx<<4) + FDqY23 - MIN_23;
+		int hs31 = C3 + DX31 * (miny<<4) - DY31 * (minx<<4) + FDqY31 - MIN_31;
 
 		MAX_12-=MIN_12;
 		MAX_23-=MIN_23;
 		MAX_31-=MIN_31;
 		
-		int C1_pm = C1 + MIN_12;
-		int C2_pm = C2 + MIN_23;
-		int C3_pm = C3 + MIN_31;
+		int C1_pm = MIN_12;
+		int C2_pm = MIN_23;
+		int C3_pm = MIN_31;
 
 
 		u8* cb_y=(u8*)colorBuffer;
 		cb_y+=miny*stride + minx*(q*4);
 
-		u32 flag=0;
 		// Loop through blocks
 		for(int y = spany; y > 0; y-=q)
 		{
@@ -437,11 +461,8 @@ namespace SWRenderer
 				if(!any)
 				{
 					cb_x+=q*q*sizeof(Col);
-					if (flag)
-						goto next_y;
 					continue;
 				}
-				flag=1;
 				
 				bool all=EvalHalfSpaceFAll(Xhs12,Xhs23,Xhs31,MAX_12,MAX_23,MAX_31);
 				
@@ -452,7 +473,7 @@ namespace SWRenderer
 					{
 						for(int ix = q; ix > 0 ; ix-=(sizeof(Green)/4))
 						{
-							*(__m128*)cb_x=Green;
+							 *(__m128*)cb_x=Green;
 							 cb_x+=sizeof(Green);
 						}
 					}
@@ -462,7 +483,7 @@ namespace SWRenderer
 					int CY1 = C1_pm + Xhs12;
 					int CY2 = C2_pm + Xhs23;
 					int CY3 = C3_pm + Xhs31;
-
+bool ok=false;
 					for(int iy = q; iy > 0; iy--)
 					{
 						for(int ix = q; ix >0 ; ix--)
@@ -470,6 +491,7 @@ namespace SWRenderer
 							if((CY1  | CY2 | CY3) > 0)
 							{
 								*(u32*)cb_x = Col; // Blue
+								ok=true;
 							}
 
 							CY1 -= FDY12;
@@ -482,10 +504,13 @@ namespace SWRenderer
 						CY2 += FDX23mq;
 						CY3 += FDX31mq;
 					}
+					if (!ok)
+					{
+						nok++;
+					}
 				}
 			}
 next_y:
-			flag=0;
 			hs12+=FDqX12;
 			hs23+=FDqX23;
 			hs31+=FDqX31;
@@ -513,6 +538,8 @@ next_y:
 			if (vertlist.data[i+2].EOS)
 				i+=2;
 		}
+		printf("NOK:%d\n",nok);
+		nok=0;
 	}
 	void EndRender()
 	{
