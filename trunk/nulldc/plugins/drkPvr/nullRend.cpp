@@ -9,6 +9,7 @@ volatile bool render_restart;
 #include "regs.h"
 #include <mmintrin.h>
 #include <xmmintrin.h>
+#include <emmintrin.h>
 
 using namespace TASplitter;
 #pragma comment(lib, "sdl.lib") 
@@ -207,29 +208,58 @@ namespace SWRenderer
 
 	struct PlaneStepper
 	{
-		int stepx,stepy;
+		__m128 nddx,nddy;
+		__m128 c;
+
 		PlaneStepper(const Vertex &v1, const Vertex &v2, const Vertex &v3,int sgn,int minx,int miny,int q)
 		{
 			float A = ((v3.z - v1.z) * (v2.y - v1.y) - (v2.z - v1.z) * (v3.y - v1.y));
 			float B = ((v3.x - v1.x) * (v2.z - v1.z) - (v2.x - v1.x) * (v3.z - v1.z));
 			float C = ((v2.x - v1.x) * (v3.y - v1.y) - (v3.x - v1.x) * (v2.y - v1.y));
-			
-			int dzdx=iround(-16.0f*A / C)*sgn;
-			int dzdy=iround(-16.0f*B / C)*sgn;
-			
-			stepx=dzdx;
-			stepy=dzdy-stepx*q;
+			float sg=(float)sgn;
+			float nddx_s=sg*A / C;
+			float nddy_s=sg*B / C;
+			nddx = _mm_load1_ps(&nddx_s);
+			nddy = _mm_load1_ps(&nddy_s);
+
+			float c_s=(v1.z - nddx_s *minx - nddy_s*minx);
+			c = _mm_load1_ps(&c_s);
 
 			//z = z1 + dzdx * (minx - v1.x) + dzdy * (minx - v1.y);
+			//z = (z1 + dzdx *minx dzdy*minx) -dzdx*v1.x - dzdy * v1.y;
 			
+		}
+		__m128 Ip(__m128 x,__m128 y) const
+		{
+			__m128 p1=_mm_mul_ps(x,nddx);
+			__m128 p2=_mm_mul_ps(y,nddy);
+
+			__m128 s1=_mm_add_ps(p1,p2);
+			return _mm_add_ps(s1,c);
 		}
 		
 	};
+
+	__m128i _mm_load_scaled(int v,int s)
+	{
+		return _mm_setr_epi32(v,v+s,v+s+s,v+s+s+s);
+	}
+	__m128i _mm_broadcast(int v)
+	{
+		__m128i rv=_mm_cvtsi32_si128(v);
+		return _mm_shuffle_epi32(rv,0);
+	}
+
+	__m128i PixelFlush(__m128 x,__m128 y,const PlaneStepper& Z)
+	{
+		__m128 invW=Z.Ip(x,y);
+		__m128 W=_mm_rcp_ps(invW);
+		return _mm_xor_si128(_mm_cvtps_epi32(_mm_mul_ps(x,W)),_mm_cvtps_epi32(_mm_mul_ps(y,W)));
+	}
 	//u32 nok,fok;
 	void Rendtriangle(const Vertex &v1, const Vertex &v2, const Vertex &v3,u32* colorBuffer)
 	{
 		const int stride=640*4;
-
 		//Plane equation
 		
 
@@ -316,9 +346,9 @@ namespace SWRenderer
 		const int FDX23mq = FDX23+FDY23*q;
 		const int FDX31mq = FDX31+FDY31*q;
 
-		int hs12 = C1 + DX12 * (miny<<4) - DY12 * (minx<<4) + FDqY12 - MIN_12;
-		int hs23 = C2 + DX23 * (miny<<4) - DY23 * (minx<<4) + FDqY23 - MIN_23;
-		int hs31 = C3 + DX31 * (miny<<4) - DY31 * (minx<<4) + FDqY31 - MIN_31;
+		int hs12 = C1 + FDX12 * miny - FDY12 * minx + FDqY12 - MIN_12;
+		int hs23 = C2 + FDX23 * miny - FDY23 * minx + FDqY23 - MIN_23;
+		int hs31 = C3 + FDX31 * miny - FDY31 * minx+ FDqY31 - MIN_31;
 
 		MAX_12-=MIN_12;
 		MAX_23-=MIN_23;
@@ -331,6 +361,11 @@ namespace SWRenderer
 
 		u8* cb_y=(u8*)colorBuffer;
 		cb_y+=miny*stride + minx*(q*4);
+		
+		PlaneStepper __declspec(align(16)) Z(v1,v2,v3,sgn,minx,miny,q);
+		__m128 y_ps=_mm_cvtepi32_ps(_mm_broadcast(miny));
+		__m128 minx_ps=_mm_cvtepi32_ps(_mm_load_scaled(minx-1,1));
+		static __declspec(align(16)) float ones_ps[4]={1,1,1,1};
 
 		// Loop through blocks
 		for(int y = spany; y > 0; y-=q)
@@ -339,11 +374,13 @@ namespace SWRenderer
 			int Xhs23=hs23;
 			int Xhs31=hs31;
 			u8* cb_x=cb_y;
+			__m128 x_ps=minx_ps;
 			for(int x = spanx; x > 0; x-=q)
 			{
 				Xhs12-=FDqY12;
 				Xhs23-=FDqY23;
 				Xhs31-=FDqY31;
+				x_ps=_mm_add_ps(x_ps,*(__m128*)ones_ps);
 
 				// Corners of block
 				bool any=EvalHalfSpaceFAny(Xhs12,Xhs23,Xhs31);
@@ -360,13 +397,12 @@ namespace SWRenderer
 				// Accept whole block when totally covered
 				if(all)
 				{
+					__m128 yl_ps=y_ps;
 					for(int iy = q; iy > 0; iy--)
 					{
-						for(int ix = q; ix > 0 ; ix-=(sizeof(Green)/4))
-						{
-							 *(__m128*)cb_x=Green;
-							 cb_x+=sizeof(Green);
-						}
+						*(__m128i*)cb_x=PixelFlush(x_ps,yl_ps,Z);
+						yl_ps=_mm_add_ps(yl_ps,*(__m128*)ones_ps);
+						cb_x+=sizeof(Green);
 					}
 				}
 				else // Partially covered block
@@ -374,26 +410,40 @@ namespace SWRenderer
 					int CY1 = C1_pm + Xhs12;
 					int CY2 = C2_pm + Xhs23;
 					int CY3 = C3_pm + Xhs31;
+
+					__m128i pfdx12=_mm_broadcast(FDX12);
+					__m128i pfdx23=_mm_broadcast(FDX23);
+					__m128i pfdx31=_mm_broadcast(FDX31);
+
+					__m128i pcy1=_mm_load_scaled(CY1,-FDY12);
+					__m128i pcy2=_mm_load_scaled(CY2,-FDY23);
+					__m128i pcy3=_mm_load_scaled(CY3,-FDY31);
+
+					__m128i pzero=_mm_setzero_si128();
+
 //bool ok=false;
+					__m128 yl_ps=y_ps;
+
 					for(int iy = q; iy > 0; iy--)
 					{
-						for(int ix = q; ix >0 ; ix--)
+						__m128i a=_mm_cmpgt_epi32(_mm_or_si128(_mm_or_si128(pcy1,pcy2),pcy3),pzero);
+						int msk=_mm_movemask_ps(*(__m128*)&a);
+						if (msk!=0)
 						{
-							if((CY1  | CY2 | CY3) > 0)
-							{
-								*(u32*)cb_x = Col; // Blue
-								//ok=true;
-							}
-
-							CY1 -= FDY12;
-							CY2 -= FDY23;
-							CY3 -= FDY31;
-							cb_x+=sizeof(Col);
+							__m128i newv=_mm_and_si128(a,*(__m128i*)&PixelFlush(x_ps,yl_ps,Z));
+							__m128i oldv=_mm_andnot_si128(a,*(__m128i*)cb_x);
+							yl_ps=_mm_add_ps(yl_ps,*(__m128*)ones_ps);
+							*(__m128i*)cb_x=_mm_or_si128(oldv,newv);
 						}
 
-						CY1 += FDX12mq;
-						CY2 += FDX23mq;
-						CY3 += FDX31mq;
+						cb_x+=sizeof(__m128);
+
+						//CY1 += FDX12mq;
+						//CY2 += FDX23mq;
+						//CY3 += FDX31mq;
+						pcy1=_mm_add_epi32(pcy1,pfdx12);
+						pcy2=_mm_add_epi32(pcy2,pfdx23);
+						pcy3=_mm_add_epi32(pcy3,pfdx31);
 					}
 					/*
 					if (!ok)
@@ -411,6 +461,7 @@ next_y:
 			hs23+=FDqX23;
 			hs31+=FDqX31;
 			cb_y+=stride*q;
+			y_ps=_mm_add_ps(y_ps,*(__m128*)ones_ps);
 		}
 	}
 
