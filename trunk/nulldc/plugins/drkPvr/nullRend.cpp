@@ -137,115 +137,6 @@ namespace SWRenderer
 		SDL_UpdateRect(screen,0,0,0,0);
 	}
 
-	struct Span
-	{
-		struct
-		{
-			f32 x;
-			f32 z;
-		} start;
-		struct
-		{
-			f32 x;
-			f32 z;
-		} end;
-	};
-	List<Span> spans[480];
-
-	template<typename T>
-	void swap(T& t1,T& t2)
-	{
-		T t3=t1;
-		t1=t2;
-		t2=t3;
-	}
-
-	void ScanTrigA(Vertex* a,Vertex* b,Vertex* c)
-	{
-		int end=min(b->y,479);
-		int start=max(a->y,0);
-		
-		if (b->x<c->x)
-			swap(b,c);
-		//draw ab-ac
-		float s_x_diff=(a->x-b->x)/(b->y-a->y);
-		float e_x_diff=(a->x-c->x)/(c->y-a->y);;
-		float s_x,e_y;
-		s_x=e_y=a->x;
-
-		for (int y=start;y<end;y++)
-		{
-			Span* spn=spans[y].Append();
-			spn->start.x=max(s_x,0);
-			spn->start.z=0;
-
-			spn->end.x=min(e_y,639);
-			spn->end.z=0;
-
-			s_x+=s_x_diff;
-			e_y+=e_x_diff;
-		}
-	}
-	void ScanTrigB(Vertex* a,Vertex* b,Vertex* c)
-	{
-	}
-	void ScanTrig(Vertex* verts)
-	{
-		Vertex* a,*b,*c;
-		if (verts[0].y>verts[1].y)		//1,0
-		{
-			if (verts[1].y>verts[2].y)  //2,1,0
-			{
-				a=&verts[2];
-				b=&verts[1];
-				c=&verts[0];
-			}
-			else		//1,2,0 or 1,0,2
-			{
-				if (verts[0].y>verts[2].y)	//1,2,0
-				{
-					a=&verts[1];
-					b=&verts[2];
-					c=&verts[0];
-				}
-				else					//1,0,2
-				{
-					a=&verts[1];
-					b=&verts[0];
-					c=&verts[2];
-				}
-			}
-		}
-		else
-		{
-			//0,1
-			if (verts[0].y>verts[2].y)	//2,0,1
-			{
-				a=&verts[2];
-				b=&verts[0];
-				c=&verts[1];
-			}
-			else	//0,2,1 or 0,1,2
-			{
-				if (verts[1].y>verts[2].y)	//0,2,1
-				{
-					a=&verts[0];
-					b=&verts[2];
-					c=&verts[1];
-				}
-				else					//0,1,2
-				{
-					a=&verts[0];
-					b=&verts[1];
-					c=&verts[2];
-				}
-			}
-		}
-
-		ScanTrigA(a,b,c);
-		ScanTrigB(a,b,c);
-	}
-//#define iround(x) (int)(x)
 	__forceinline int iround(float x)
 	{
 		return _mm_cvtt_ss2si(_mm_load_ss(&x));
@@ -334,7 +225,7 @@ namespace SWRenderer
 		}
 		
 	};
-	u32 nok;
+	//u32 nok,fok;
 	void Rendtriangle(const Vertex &v1, const Vertex &v2, const Vertex &v3,u32* colorBuffer)
 	{
 		const int stride=640*4;
@@ -483,7 +374,7 @@ namespace SWRenderer
 					int CY1 = C1_pm + Xhs12;
 					int CY2 = C2_pm + Xhs23;
 					int CY3 = C3_pm + Xhs31;
-bool ok=false;
+//bool ok=false;
 					for(int iy = q; iy > 0; iy--)
 					{
 						for(int ix = q; ix >0 ; ix--)
@@ -491,7 +382,7 @@ bool ok=false;
 							if((CY1  | CY2 | CY3) > 0)
 							{
 								*(u32*)cb_x = Col; // Blue
-								ok=true;
+								//ok=true;
 							}
 
 							CY1 -= FDY12;
@@ -504,10 +395,15 @@ bool ok=false;
 						CY2 += FDX23mq;
 						CY3 += FDX31mq;
 					}
+					/*
 					if (!ok)
 					{
 						nok++;
 					}
+					else
+					{
+						fok++;
+					}*/
 				}
 			}
 next_y:
@@ -538,8 +434,8 @@ next_y:
 			if (vertlist.data[i+2].EOS)
 				i+=2;
 		}
-		printf("NOK:%d\n",nok);
-		nok=0;
+		//printf("NOK:%d FOK:%d\n",nok,fok);
+		//fok=nok=0;
 	}
 	void EndRender()
 	{
@@ -548,7 +444,7 @@ next_y:
 
 	//Vertex Decoding-Converting
 	struct VertexDecoder
-	{
+	{`
 		//list handling
 		__forceinline
 		static void StartList(u32 ListType)
