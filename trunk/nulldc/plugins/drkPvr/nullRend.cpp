@@ -278,8 +278,10 @@ namespace SWRenderer
 		if (useoldmsk)
 			ZMask=_mm_and_ps(oldmask,ZMask);
 		u32 msk=_mm_movemask_ps(ZMask);//0xF
-		__m128 W=_mm_rcp_ps(invW);
 		
+		if (msk==0)
+			return;
+
 		__m128i rv=ip.col;//_mm_xor_si128(_mm_cvtps_epi32(_mm_mul_ps(x,Z.c)),_mm_cvtps_epi32(y));
 
 		if (msk!=0xF)
