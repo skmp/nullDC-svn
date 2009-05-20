@@ -268,6 +268,16 @@ namespace SWRenderer
 
 	IPs __declspec(align(16)) ip;
 
+	/*
+	__m128i TransposeAndCompat(__m128 a,__m128 b,__m128 c,__m128 d)
+	{
+		_MM_TRANSPOSE4_PS(a,b,c,d);
+		
+		__m128i ab=_mm_packs_epi32(_mm_cvttps_epi32(a),_mm_cvttps_epi32(b));
+		__m128i cd=_mm_packs_epi32(_mm_cvttps_epi32(c),_mm_cvttps_epi32(d));
+		return _mm_packus_epi16(ab,cd);
+	}
+	*/
 	template<bool useoldmsk>
 	void PixelFlush(__m128 x,__m128 y,u8* cb,__m128 oldmask)
 	{
@@ -281,6 +291,14 @@ namespace SWRenderer
 		
 		if (msk==0)
 			return;
+
+		/*
+		__m128 r=ip.R.Ip(x,y);
+		__m128 b=ip.G.Ip(x,y);
+		__m128 b=ip.B.Ip(x,y);
+		__m128 a=ip.A.Ip(x,y);
+		colorz=TransposeAndCompat(r,g,b,a);
+		*/
 
 		__m128i rv=ip.col;//_mm_xor_si128(_mm_cvtps_epi32(_mm_mul_ps(x,Z.c)),_mm_cvtps_epi32(y));
 
