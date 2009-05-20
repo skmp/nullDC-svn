@@ -75,6 +75,15 @@ namespace SWRenderer
 			in+=instride*2/4;
 		}
 	}
+	__m128i _mm_load_scaled(int v,int s)
+	{
+		return _mm_setr_epi32(v,v+s,v+s+s,v+s+s+s);
+	}
+	__m128i _mm_broadcast(int v)
+	{
+		__m128i rv=_mm_cvtsi32_si128(v);
+		return _mm_shuffle_epi32(rv,0);
+	}
 	typedef void ConvertBufferFP(u32* out,u32* in,u32 outstride,u32 instride);
 
 	ConvertBufferFP* ___hahaha__[4]=
@@ -102,7 +111,7 @@ namespace SWRenderer
 	}
 	//use that someday
 
-	__declspec(align(32)) u32 tempCol[640*480];
+	__declspec(align(32)) u32 tempCol[640*480*2];
 	void VBlank()
 	{
 		//present the vram to FB
@@ -208,31 +217,31 @@ namespace SWRenderer
 
 	struct PlaneStepper
 	{
-		__m128 nddx,nddy;
+		__m128 ddx,ddy;
 		__m128 c;
 
-		PlaneStepper(const Vertex &v1, const Vertex &v2, const Vertex &v3,int sgn,int minx,int miny,int q)
+		void Setup(const Vertex &v1, const Vertex &v2, const Vertex &v3,int minx,int miny,int q)
 		{
-			float A = ((v3.z - v1.z) * (v2.y - v1.y) - (v2.z - v1.z) * (v3.y - v1.y));
-			float B = ((v3.x - v1.x) * (v2.z - v1.z) - (v2.x - v1.x) * (v3.z - v1.z));
+			float v1_z=v1.z,v2_z=v2.z,v3_z=v3.z;
+			float A = ((v3_z - v1_z) * (v2.y - v1.y) - (v2_z - v1_z) * (v3.y - v1.y));
+			float B = ((v3.x - v1.x) * (v2_z - v1_z) - (v2.x - v1.x) * (v3_z - v1_z));
 			float C = ((v2.x - v1.x) * (v3.y - v1.y) - (v3.x - v1.x) * (v2.y - v1.y));
-			float sg=(float)sgn;
-			float nddx_s=sg*A / C;
-			float nddy_s=sg*B / C;
-			nddx = _mm_load1_ps(&nddx_s);
-			nddy = _mm_load1_ps(&nddy_s);
+			float ddx_s=-A / C;
+			float ddy_s=-B / C;
+			ddx = _mm_load1_ps(&ddx_s);
+			ddy = _mm_load1_ps(&ddy_s);
 
-			float c_s=(v1.z - nddx_s *minx - nddy_s*minx);
+			float c_s=(v1_z - ddx_s *v1.x - ddy_s*v1.y);
 			c = _mm_load1_ps(&c_s);
 
 			//z = z1 + dzdx * (minx - v1.x) + dzdy * (minx - v1.y);
-			//z = (z1 + dzdx *minx dzdy*minx) -dzdx*v1.x - dzdy * v1.y;
+			//z = (z1 - dzdx * v1.x - v1.y*dzdy) +  dzdx*inx + dzdy *iny;
 			
 		}
 		__m128 Ip(__m128 x,__m128 y) const
 		{
-			__m128 p1=_mm_mul_ps(x,nddx);
-			__m128 p2=_mm_mul_ps(y,nddy);
+			__m128 p1=_mm_mul_ps(x,ddx);
+			__m128 p2=_mm_mul_ps(y,ddy);
 
 			__m128 s1=_mm_add_ps(p1,p2);
 			return _mm_add_ps(s1,c);
@@ -240,21 +249,50 @@ namespace SWRenderer
 		
 	};
 
-	__m128i _mm_load_scaled(int v,int s)
+	struct IPs
 	{
-		return _mm_setr_epi32(v,v+s,v+s+s,v+s+s+s);
-	}
-	__m128i _mm_broadcast(int v)
-	{
-		__m128i rv=_mm_cvtsi32_si128(v);
-		return _mm_shuffle_epi32(rv,0);
-	}
+		PlaneStepper Z;
+		__m128i col;
 
-	__m128i PixelFlush(__m128 x,__m128 y,const PlaneStepper& Z)
+		void Setup(const Vertex &v1, const Vertex &v2, const Vertex &v3,int minx,int miny,int q)
+		{
+			Z.Setup(v1,v2,v3,minx,miny,q);
+			//u8 cz=255*v1.z;
+			u32 Col=v1.Col; // cz | cz*256 | cz*256*256 | cz*256*256*256; // to see Z values :)
+			col=_mm_broadcast(Col);
+			//const __m128 Green=_mm_set_ps(0.32f,0.32f,0.32f,0.32f);
+
+		}
+	};
+	
+
+	IPs __declspec(align(16)) ip;
+
+	template<bool useoldmsk>
+	void PixelFlush(__m128 x,__m128 y,u8* cb,__m128 oldmask)
 	{
-		__m128 invW=Z.Ip(x,y);
+		__m128 invW=ip.Z.Ip(x,y);
+		__m128* zb=(__m128*)&cb[640*480*4];
+
+		__m128 ZMask=_mm_cmpgt_ps(invW,*zb);
+		if (useoldmsk)
+			ZMask=_mm_and_ps(oldmask,ZMask);
+		u32 msk=_mm_movemask_ps(ZMask);//0xF
 		__m128 W=_mm_rcp_ps(invW);
-		return _mm_xor_si128(_mm_cvtps_epi32(_mm_mul_ps(x,W)),_mm_cvtps_epi32(_mm_mul_ps(y,W)));
+		
+		__m128i rv=ip.col;//_mm_xor_si128(_mm_cvtps_epi32(_mm_mul_ps(x,Z.c)),_mm_cvtps_epi32(y));
+
+		if (msk!=0xF)
+		{
+			rv = _mm_and_si128(rv,*(__m128i*)&ZMask);
+			rv = _mm_or_si128(_mm_andnot_si128(*(__m128i*)&ZMask,*(__m128i*)cb),rv);
+			
+			invW = _mm_and_ps(invW,ZMask);
+			invW = _mm_or_ps(_mm_andnot_ps(ZMask,*zb),invW);
+
+		}
+		*zb=invW;
+		*(__m128i*)cb=rv;
 	}
 	//u32 nok,fok;
 	void Rendtriangle(const Vertex &v1, const Vertex &v2, const Vertex &v3,u32* colorBuffer)
@@ -328,11 +366,6 @@ namespace SWRenderer
 		PlaneMinMax(MIN_12,MAX_12,DX12,DY12,q);
 		PlaneMinMax(MIN_23,MAX_23,DX23,DY23,q);
 		PlaneMinMax(MIN_31,MAX_31,DX31,DY31,q);
-		//u8 cz=255*v1.z;
-		u32 Col=v1.Col; // cz | cz*256 | cz*256*256 | cz*256*256*256; // to see Z values :)
-		const __m128 Green=_mm_set_ps(*(float*)&Col,*(float*)&Col,*(float*)&Col,*(float*)&Col);
-		//const __m128 Green=_mm_set_ps(0.32f,0.32f,0.32f,0.32f);
-
 
 		const int FDqX12 = FDX12 * q;
 		const int FDqX23 = FDX23 * q;
@@ -362,10 +395,11 @@ namespace SWRenderer
 		u8* cb_y=(u8*)colorBuffer;
 		cb_y+=miny*stride + minx*(q*4);
 		
-		PlaneStepper __declspec(align(16)) Z(v1,v2,v3,sgn,minx,miny,q);
+		ip.Setup(v1,v2,v3,minx,miny,q);
 		__m128 y_ps=_mm_cvtepi32_ps(_mm_broadcast(miny));
-		__m128 minx_ps=_mm_cvtepi32_ps(_mm_load_scaled(minx-1,1));
+		__m128 minx_ps=_mm_cvtepi32_ps(_mm_load_scaled(minx-q,1));
 		static __declspec(align(16)) float ones_ps[4]={1,1,1,1};
+		static __declspec(align(16)) float q_ps[4]={q,q,q,q};
 
 		// Loop through blocks
 		for(int y = spany; y > 0; y-=q)
@@ -380,7 +414,7 @@ namespace SWRenderer
 				Xhs12-=FDqY12;
 				Xhs23-=FDqY23;
 				Xhs31-=FDqY31;
-				x_ps=_mm_add_ps(x_ps,*(__m128*)ones_ps);
+				x_ps=_mm_add_ps(x_ps,*(__m128*)q_ps);
 
 				// Corners of block
 				bool any=EvalHalfSpaceFAny(Xhs12,Xhs23,Xhs31);
@@ -388,7 +422,7 @@ namespace SWRenderer
 				// Skip block when outside an edge
 				if(!any)
 				{
-					cb_x+=q*q*sizeof(Col);
+					cb_x+=q*q*4;
 					continue;
 				}
 				
@@ -400,9 +434,9 @@ namespace SWRenderer
 					__m128 yl_ps=y_ps;
 					for(int iy = q; iy > 0; iy--)
 					{
-						*(__m128i*)cb_x=PixelFlush(x_ps,yl_ps,Z);
+						PixelFlush<false>(x_ps,yl_ps,cb_x,x_ps);
 						yl_ps=_mm_add_ps(yl_ps,*(__m128*)ones_ps);
-						cb_x+=sizeof(Green);
+						cb_x+=sizeof(__m128);
 					}
 				}
 				else // Partially covered block
@@ -430,10 +464,8 @@ namespace SWRenderer
 						int msk=_mm_movemask_ps(*(__m128*)&a);
 						if (msk!=0)
 						{
-							__m128i newv=_mm_and_si128(a,*(__m128i*)&PixelFlush(x_ps,yl_ps,Z));
-							__m128i oldv=_mm_andnot_si128(a,*(__m128i*)cb_x);
+							PixelFlush<true>(x_ps,yl_ps,cb_x,*(__m128*)&a);
 							yl_ps=_mm_add_ps(yl_ps,*(__m128*)ones_ps);
-							*(__m128i*)cb_x=_mm_or_si128(oldv,newv);
 						}
 
 						cb_x+=sizeof(__m128);
@@ -461,7 +493,7 @@ next_y:
 			hs23+=FDqX23;
 			hs31+=FDqX31;
 			cb_y+=stride*q;
-			y_ps=_mm_add_ps(y_ps,*(__m128*)ones_ps);
+			y_ps=_mm_add_ps(y_ps,*(__m128*)q_ps);
 		}
 	}
 
