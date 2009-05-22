@@ -29,6 +29,7 @@ namespace SWRenderer
 		f32 z;
 		u32 EOS;
 		u32 Col;
+		float u,v;
 	};
 	List<Vertex> vertlist;
 
@@ -83,6 +84,16 @@ namespace SWRenderer
 	{
 		__m128i rv=_mm_cvtsi32_si128(v);
 		return _mm_shuffle_epi32(rv,0);
+	}
+	__m128 _mm_load_ps_r(float a,float b,float c,float d)
+	{
+		static __declspec(align(128)) float v[4];
+		v[0]=a;
+		v[1]=b;
+		v[2]=c;
+		v[3]=d;
+
+		return _mm_load_ps(v);
 	}
 	typedef void ConvertBufferFP(u32* out,u32* in,u32 outstride,u32 instride);
 
@@ -220,25 +231,53 @@ namespace SWRenderer
 		__m128 ddx,ddy;
 		__m128 c;
 
-		void Setup(const Vertex &v1, const Vertex &v2, const Vertex &v3,int minx,int miny,int q,float v1_z,float v2_z,float v3_z)
+		void Setup(const Vertex &v1, const Vertex &v2, const Vertex &v3,int minx,int miny,int q
+			,float v1_a,float v2_a,float v3_a
+			,float v1_b,float v2_b,float v3_b
+			,float v1_c,float v2_c,float v3_c
+			,float v1_d,float v2_d,float v3_d)
 		{
 //			float v1_z=v1.z,v2_z=v2.z,v3_z=v3.z;
-			float A = ((v3_z - v1_z) * (v2.y - v1.y) - (v2_z - v1_z) * (v3.y - v1.y));
-			float B = ((v3.x - v1.x) * (v2_z - v1_z) - (v2.x - v1.x) * (v3_z - v1_z));
-			float C = ((v2.x - v1.x) * (v3.y - v1.y) - (v3.x - v1.x) * (v2.y - v1.y));
-			float ddx_s=-A / C;
-			float ddy_s=-B / C;
-			ddx = _mm_load1_ps(&ddx_s);
-			ddy = _mm_load1_ps(&ddy_s);
+			float Aa = ((v3_a - v1_a) * (v2.y - v1.y) - (v2_a - v1_a) * (v3.y - v1.y));
+			float Ba = ((v3.x - v1.x) * (v2_a - v1_a) - (v2.x - v1.x) * (v3_a - v1_a));
+			
+			float Ab = ((v3_b - v1_b) * (v2.y - v1.y) - (v2_b - v1_b) * (v3.y - v1.y));
+			float Bb = ((v3.x - v1.x) * (v2_b - v1_b) - (v2.x - v1.x) * (v3_b - v1_b));
+			
+			float Ac = ((v3_c - v1_c) * (v2.y - v1.y) - (v2_c - v1_c) * (v3.y - v1.y));
+			float Bc = ((v3.x - v1.x) * (v2_c - v1_c) - (v2.x - v1.x) * (v3_c - v1_c));
+			
+			float Ad = ((v3_d - v1_d) * (v2.y - v1.y) - (v2_d - v1_d) * (v3.y - v1.y));
+			float Bd = ((v3.x - v1.x) * (v2_d - v1_d) - (v2.x - v1.x) * (v3_d - v1_d));
 
-			float c_s=(v1_z - ddx_s *v1.x - ddy_s*v1.y);
-			c = _mm_load1_ps(&c_s);
+			float C = ((v2.x - v1.x) * (v3.y - v1.y) - (v3.x - v1.x) * (v2.y - v1.y));
+			float ddx_s_a=-Aa / C;
+			float ddy_s_a=-Ba / C;
+			
+			float ddx_s_b=-Ab / C;
+			float ddy_s_b=-Bb / C;
+			
+			float ddx_s_c=-Ac / C;
+			float ddy_s_c=-Bc / C;
+			
+			float ddx_s_d=-Ad / C;
+			float ddy_s_d=-Bd / C;
+
+			ddx = _mm_load_ps_r(ddx_s_a,ddx_s_b,ddx_s_c,ddx_s_d);
+			ddy = _mm_load_ps_r(ddy_s_a,ddy_s_b,ddy_s_c,ddy_s_d);
+
+			float c_s_a=(v1_a - ddx_s_a *v1.x - ddy_s_a*v1.y);
+			float c_s_b=(v1_b - ddx_s_b *v1.x - ddy_s_b*v1.y);
+			float c_s_c=(v1_c - ddx_s_c *v1.x - ddy_s_c*v1.y);
+			float c_s_d=(v1_d - ddx_s_d *v1.x - ddy_s_d*v1.y);
+
+			c = _mm_load_ps_r(c_s_a,c_s_b,c_s_c,c_s_d);
 
 			//z = z1 + dzdx * (minx - v1.x) + dzdy * (minx - v1.y);
-			//z = (z1 - dzdx * v1.x - v1.y*dzdy) +  dzdx*inx + dzdy *iny;
-			
+			//z = (z1 - dzdx * v1.x - v1.y*dzdy) +  dzdx*inx + dzdy *iny;	
 		}
-		__m128 Ip(__m128 x,__m128 y) const
+
+		__forceinline __m128 Ip(__m128 x,__m128 y) const
 		{
 			__m128 p1=_mm_mul_ps(x,ddx);
 			__m128 p2=_mm_mul_ps(y,ddy);
@@ -246,47 +285,56 @@ namespace SWRenderer
 			__m128 s1=_mm_add_ps(p1,p2);
 			return _mm_add_ps(s1,c);
 		}
-		
+
+		__forceinline __m128 InStep(__m128 bas) const
+		{
+			return _mm_add_ps(bas,ddy);
+		}
 	};
 
 	struct IPs
 	{
-		PlaneStepper Z;
-		PlaneStepper r;
-		PlaneStepper g;
-		PlaneStepper b;
-		PlaneStepper a;
-
-		PlaneStepper u;
-		PlaneStepper v;
+		PlaneStepper ZUV;
+		PlaneStepper Col;
 
 		void Setup(const Vertex &v1, const Vertex &v2, const Vertex &v3,int minx,int miny,int q)
 		{
-			Z.Setup(v1,v2,v3,minx,miny,q,v1.z,v2.z,v3.z);
-			//u8 cz=255*v1.z;
-			r.Setup(v1,v2,v3,minx,miny,q,(u8)(v1.Col>>0),(u8)(v2.Col>>0),(u8)(v3.Col>>0));
-			g.Setup(v1,v2,v3,minx,miny,q,(u8)(v1.Col>>8),(u8)(v2.Col>>8),(u8)(v3.Col>>8));
-			b.Setup(v1,v2,v3,minx,miny,q,(u8)(v1.Col>>16),(u8)(v2.Col>>16),(u8)(v3.Col>>16));
-			a.Setup(v1,v2,v3,minx,miny,q,(u8)(v1.Col>>24),(u8)(v2.Col>>24),(u8)(v3.Col>>24));
+			ZUV.Setup(v1,v2,v3,minx,miny,q,
+				v1.z,v2.z,v3.z,
+				v1.u,v2.u,v3.u,
+				v1.v,v2.v,v3.v,
+				0,-1,1);
 
-			u.Setup(v1,v2,v3,minx,miny,q,(u8)(v1.Col>>16),(u8)(v2.Col>>16),(u8)(v3.Col>>16));
-			v.Setup(v1,v2,v3,minx,miny,q,(u8)(v1.Col>>24),(u8)(v2.Col>>24),(u8)(v3.Col>>24));
-			//u32 Col=v1.Col; // cz | cz*256 | cz*256*256 | cz*256*256*256; // to see Z values :)
-			//col=_mm_broadcast(Col);
-			//const __m128 Green=_mm_set_ps(0.32f,0.32f,0.32f,0.32f);
-
+			Col.Setup(v1,v2,v3,minx,miny,q,
+				(u8)(v1.Col>> 0),(u8)(v2.Col>> 0),(u8)(v3.Col>> 0),
+				(u8)(v1.Col>> 8),(u8)(v2.Col>> 8),(u8)(v3.Col>> 8),
+				(u8)(v1.Col>>16),(u8)(v2.Col>>16),(u8)(v3.Col>>16),
+				(u8)(v1.Col>>24),(u8)(v2.Col>>24),(u8)(v3.Col>>24)
+				);
 		}
 	};
 	
 
-	IPs __declspec(align(16)) ip;
+	IPs __declspec(align(64)) ip;
 
 
 	
 	template<bool useoldmsk>
-	void PixelFlush(__m128 x,__m128 y,u8* cb,__m128 oldmask)
+	__forceinline void PixelFlush(__m128 x,__m128 y,u8* cb,__m128 oldmask)
 	{
-		__m128 invW=ip.Z.Ip(x,y);
+		y=_mm_shuffle_ps(y,y,0);
+		__m128 invW=ip.ZUV.Ip(x,y);
+		__m128 u=ip.ZUV.InStep(invW);
+		__m128 v=ip.ZUV.InStep(u);
+		__m128 ws=ip.ZUV.InStep(v);
+		
+		_MM_TRANSPOSE4_PS(invW,u,v,ws);
+		
+		//invW : {z1,z2,z3,z4}
+		//u    : {u1,u2,u3,u4}
+		//v    : {v1,v2,v3,v4}
+		//wx   : {?,?,?,?}
+
 		__m128* zb=(__m128*)&cb[640*480*4];
 
 		__m128 ZMask=_mm_cmpgt_ps(invW,*zb);
@@ -300,20 +348,16 @@ namespace SWRenderer
 		__m128i rv;
 
 		{	
-			__m128 a=ip.r.Ip(x,y);
-			__m128 b=ip.g.Ip(x,y);
-			__m128 c=ip.b.Ip(x,y);
-			__m128 d=ip.a.Ip(x,y);
+			__m128 a=ip.Col.Ip(x,y);
+			__m128 b=ip.Col.InStep(a);
+			__m128 c=ip.Col.InStep(b);
+			__m128 d=ip.Col.InStep(c);
 
-			_MM_TRANSPOSE4_PS(a,b,c,d);
-
-			__m128i ui=_mm_cvttps_epi32(ip.u.Ip(x,y));
-			__m128i vi=_mm_cvttps_epi32(ip.v.Ip(x,y));
-			//__m128i zero=_mm_setzero_ps();
+			__m128i ui=_mm_cvttps_epi32(u);
+			__m128i vi=_mm_cvttps_epi32(v);
 			
 			//(int)v<<x+(int)u
 			__m128i textadr=_mm_add_epi32(_mm_slli_epi32(vi,8),ui);//texture addresses ! 4x of em !
-			//
 
 			//we need : 
 
