@@ -288,7 +288,7 @@ namespace SWRenderer
 
 		__forceinline __m128 InStep(__m128 bas) const
 		{
-			return _mm_add_ps(bas,ddy);
+			return _mm_add_ps(bas,ddx);
 		}
 	};
 
@@ -322,7 +322,7 @@ namespace SWRenderer
 	template<bool useoldmsk>
 	__forceinline void PixelFlush(__m128 x,__m128 y,u8* cb,__m128 oldmask)
 	{
-		y=_mm_shuffle_ps(y,y,0);
+		x=_mm_shuffle_ps(x,x,0);
 		__m128 invW=ip.ZUV.Ip(x,y);
 		__m128 u=ip.ZUV.InStep(invW);
 		__m128 v=ip.ZUV.InStep(u);
@@ -553,9 +553,9 @@ namespace SWRenderer
 						if (msk!=0)
 						{
 							PixelFlush<true>(x_ps,yl_ps,cb_x,*(__m128*)&a);
-							yl_ps=_mm_add_ps(yl_ps,*(__m128*)ones_ps);
 						}
-
+						
+						yl_ps=_mm_add_ps(yl_ps,*(__m128*)ones_ps);
 						cb_x+=sizeof(__m128);
 
 						//CY1 += FDX12mq;
