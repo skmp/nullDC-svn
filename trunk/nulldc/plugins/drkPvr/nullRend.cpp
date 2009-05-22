@@ -136,12 +136,10 @@ namespace SWRenderer
 		{
 			for (int x=0;x<640;x+=4)
 			{
-				__m128 a=*psrc++,b=*psrc++,c=*psrc++,d=*psrc++;
-				_MM_TRANSPOSE4_PS(a,b,c,d);
-				pdst[(y+0)*stride+x/4]=a;
-				pdst[(y+1)*stride+x/4]=b;
-				pdst[(y+2)*stride+x/4]=c;
-				pdst[(y+3)*stride+x/4]=d;
+				pdst[(y+0)*stride+x/4]=*psrc++;
+				pdst[(y+1)*stride+x/4]=*psrc++;
+				pdst[(y+2)*stride+x/4]=*psrc++;
+				pdst[(y+3)*stride+x/4]=*psrc++;
 			}
 		}
 
@@ -222,9 +220,9 @@ namespace SWRenderer
 		__m128 ddx,ddy;
 		__m128 c;
 
-		void Setup(const Vertex &v1, const Vertex &v2, const Vertex &v3,int minx,int miny,int q)
+		void Setup(const Vertex &v1, const Vertex &v2, const Vertex &v3,int minx,int miny,int q,float v1_z,float v2_z,float v3_z)
 		{
-			float v1_z=v1.z,v2_z=v2.z,v3_z=v3.z;
+//			float v1_z=v1.z,v2_z=v2.z,v3_z=v3.z;
 			float A = ((v3_z - v1_z) * (v2.y - v1.y) - (v2_z - v1_z) * (v3.y - v1.y));
 			float B = ((v3.x - v1.x) * (v2_z - v1_z) - (v2.x - v1.x) * (v3_z - v1_z));
 			float C = ((v2.x - v1.x) * (v3.y - v1.y) - (v3.x - v1.x) * (v2.y - v1.y));
@@ -254,14 +252,27 @@ namespace SWRenderer
 	struct IPs
 	{
 		PlaneStepper Z;
-		__m128i col;
+		PlaneStepper r;
+		PlaneStepper g;
+		PlaneStepper b;
+		PlaneStepper a;
+
+		PlaneStepper u;
+		PlaneStepper v;
 
 		void Setup(const Vertex &v1, const Vertex &v2, const Vertex &v3,int minx,int miny,int q)
 		{
-			Z.Setup(v1,v2,v3,minx,miny,q);
+			Z.Setup(v1,v2,v3,minx,miny,q,v1.z,v2.z,v3.z);
 			//u8 cz=255*v1.z;
-			u32 Col=v1.Col; // cz | cz*256 | cz*256*256 | cz*256*256*256; // to see Z values :)
-			col=_mm_broadcast(Col);
+			r.Setup(v1,v2,v3,minx,miny,q,(u8)(v1.Col>>0),(u8)(v2.Col>>0),(u8)(v3.Col>>0));
+			g.Setup(v1,v2,v3,minx,miny,q,(u8)(v1.Col>>8),(u8)(v2.Col>>8),(u8)(v3.Col>>8));
+			b.Setup(v1,v2,v3,minx,miny,q,(u8)(v1.Col>>16),(u8)(v2.Col>>16),(u8)(v3.Col>>16));
+			a.Setup(v1,v2,v3,minx,miny,q,(u8)(v1.Col>>24),(u8)(v2.Col>>24),(u8)(v3.Col>>24));
+
+			u.Setup(v1,v2,v3,minx,miny,q,(u8)(v1.Col>>16),(u8)(v2.Col>>16),(u8)(v3.Col>>16));
+			v.Setup(v1,v2,v3,minx,miny,q,(u8)(v1.Col>>24),(u8)(v2.Col>>24),(u8)(v3.Col>>24));
+			//u32 Col=v1.Col; // cz | cz*256 | cz*256*256 | cz*256*256*256; // to see Z values :)
+			//col=_mm_broadcast(Col);
 			//const __m128 Green=_mm_set_ps(0.32f,0.32f,0.32f,0.32f);
 
 		}
@@ -270,16 +281,8 @@ namespace SWRenderer
 
 	IPs __declspec(align(16)) ip;
 
-	/*
-	__m128i TransposeAndCompat(__m128 a,__m128 b,__m128 c,__m128 d)
-	{
-		_MM_TRANSPOSE4_PS(a,b,c,d);
-		
-		__m128i ab=_mm_packs_epi32(_mm_cvttps_epi32(a),_mm_cvttps_epi32(b));
-		__m128i cd=_mm_packs_epi32(_mm_cvttps_epi32(c),_mm_cvttps_epi32(d));
-		return _mm_packus_epi16(ab,cd);
-	}
-	*/
+
+	
 	template<bool useoldmsk>
 	void PixelFlush(__m128 x,__m128 y,u8* cb,__m128 oldmask)
 	{
@@ -294,15 +297,34 @@ namespace SWRenderer
 		if (msk==0)
 			return;
 
-		/*
-		__m128 r=ip.R.Ip(x,y);
-		__m128 b=ip.G.Ip(x,y);
-		__m128 b=ip.B.Ip(x,y);
-		__m128 a=ip.A.Ip(x,y);
-		colorz=TransposeAndCompat(r,g,b,a);
-		*/
+		__m128i rv;
 
-		__m128i rv=ip.col;//_mm_xor_si128(_mm_cvtps_epi32(_mm_mul_ps(x,Z.c)),_mm_cvtps_epi32(y));
+		{	
+			__m128 a=ip.r.Ip(x,y);
+			__m128 b=ip.g.Ip(x,y);
+			__m128 c=ip.b.Ip(x,y);
+			__m128 d=ip.a.Ip(x,y);
+
+			_MM_TRANSPOSE4_PS(a,b,c,d);
+
+			__m128i ui=_mm_cvttps_epi32(ip.u.Ip(x,y));
+			__m128i vi=_mm_cvttps_epi32(ip.v.Ip(x,y));
+			//__m128i zero=_mm_setzero_ps();
+			
+			//(int)v<<x+(int)u
+			__m128i textadr=_mm_add_epi32(_mm_slli_epi32(vi,8),ui);//texture addresses ! 4x of em !
+			//
+
+			//we need : 
+
+			__m128i ab=_mm_packs_epi32(_mm_cvttps_epi32(a),_mm_cvttps_epi32(b));
+			__m128i cd=_mm_packs_epi32(_mm_cvttps_epi32(c),_mm_cvttps_epi32(d));
+
+			rv = _mm_packus_epi16(ab,cd);
+			rv = _mm_xor_si128(rv,textadr);
+		}
+
+		//__m128i rv=ip.col;//_mm_xor_si128(_mm_cvtps_epi32(_mm_mul_ps(x,Z.c)),_mm_cvtps_epi32(y));
 
 		if (msk!=0xF)
 		{
@@ -418,8 +440,8 @@ namespace SWRenderer
 		cb_y+=miny*stride + minx*(q*4);
 		
 		ip.Setup(v1,v2,v3,minx,miny,q);
-		__m128 y_ps=_mm_cvtepi32_ps(_mm_load_scaled(miny,1));
-		__m128 minx_ps=_mm_cvtepi32_ps(_mm_broadcast(minx));
+		__m128 y_ps=_mm_cvtepi32_ps(_mm_broadcast(miny));
+		__m128 minx_ps=_mm_cvtepi32_ps(_mm_load_scaled(minx-q,1));
 		static __declspec(align(16)) float ones_ps[4]={1,1,1,1};
 		static __declspec(align(16)) float q_ps[4]={q,q,q,q};
 
@@ -436,6 +458,7 @@ namespace SWRenderer
 				Xhs12-=FDqY12;
 				Xhs23-=FDqY23;
 				Xhs31-=FDqY31;
+				x_ps=_mm_add_ps(x_ps,*(__m128*)q_ps);
 
 				// Corners of block
 				bool any=EvalHalfSpaceFAny(Xhs12,Xhs23,Xhs31);
@@ -444,7 +467,6 @@ namespace SWRenderer
 				if(!any)
 				{
 					cb_x+=q*q*4;
-					x_ps=_mm_add_ps(x_ps,*(__m128*)q_ps);
 					continue;
 				}
 				
@@ -453,10 +475,11 @@ namespace SWRenderer
 				// Accept whole block when totally covered
 				if(all)
 				{
+					__m128 yl_ps=y_ps;
 					for(int iy = q; iy > 0; iy--)
 					{
-						PixelFlush<false>(x_ps,y_ps,cb_x,x_ps);
-						x_ps=_mm_add_ps(x_ps,*(__m128*)ones_ps);
+						PixelFlush<false>(x_ps,yl_ps,cb_x,x_ps);
+						yl_ps=_mm_add_ps(yl_ps,*(__m128*)ones_ps);
 						cb_x+=sizeof(__m128);
 					}
 				}
@@ -466,17 +489,18 @@ namespace SWRenderer
 					int CY2 = C2_pm + Xhs23;
 					int CY3 = C3_pm + Xhs31;
 
-					__m128i pfdy12=_mm_broadcast(FDY12);
-					__m128i pfdy23=_mm_broadcast(FDY23);
-					__m128i pfdy31=_mm_broadcast(FDY31);
+					__m128i pfdx12=_mm_broadcast(FDX12);
+					__m128i pfdx23=_mm_broadcast(FDX23);
+					__m128i pfdx31=_mm_broadcast(FDX31);
 
-					__m128i pcy1=_mm_load_scaled(CY1,FDX12);
-					__m128i pcy2=_mm_load_scaled(CY2,FDX23);
-					__m128i pcy3=_mm_load_scaled(CY3,FDX31);
+					__m128i pcy1=_mm_load_scaled(CY1,-FDY12);
+					__m128i pcy2=_mm_load_scaled(CY2,-FDY23);
+					__m128i pcy3=_mm_load_scaled(CY3,-FDY31);
 
 					__m128i pzero=_mm_setzero_si128();
 
 //bool ok=false;
+					__m128 yl_ps=y_ps;
 
 					for(int iy = q; iy > 0; iy--)
 					{
@@ -484,18 +508,18 @@ namespace SWRenderer
 						int msk=_mm_movemask_ps(*(__m128*)&a);
 						if (msk!=0)
 						{
-							PixelFlush<true>(x_ps,y_ps,cb_x,*(__m128*)&a);
+							PixelFlush<true>(x_ps,yl_ps,cb_x,*(__m128*)&a);
+							yl_ps=_mm_add_ps(yl_ps,*(__m128*)ones_ps);
 						}
 
-						x_ps=_mm_add_ps(x_ps,*(__m128*)ones_ps);
 						cb_x+=sizeof(__m128);
 
 						//CY1 += FDX12mq;
 						//CY2 += FDX23mq;
 						//CY3 += FDX31mq;
-						pcy1=_mm_sub_epi32(pcy1,pfdy12);
-						pcy2=_mm_sub_epi32(pcy2,pfdy23);
-						pcy3=_mm_sub_epi32(pcy3,pfdy31);
+						pcy1=_mm_add_epi32(pcy1,pfdx12);
+						pcy2=_mm_add_epi32(pcy2,pfdx23);
+						pcy3=_mm_add_epi32(pcy3,pfdx31);
 					}
 					/*
 					if (!ok)
