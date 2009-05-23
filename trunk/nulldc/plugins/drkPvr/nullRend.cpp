@@ -28,7 +28,7 @@ namespace SWRenderer
 		f32 x,y;
 		f32 z;
 		u32 EOS;
-		u32 Col;
+		f32 a,r,g,b;
 		float u,v;
 	};
 	List<Vertex> vertlist;
@@ -306,11 +306,11 @@ namespace SWRenderer
 				0,-1,1);
 
 			Col.Setup(v1,v2,v3,minx,miny,q,
-				(u8)(v1.Col>> 0),(u8)(v2.Col>> 0),(u8)(v3.Col>> 0),
-				(u8)(v1.Col>> 8),(u8)(v2.Col>> 8),(u8)(v3.Col>> 8),
-				(u8)(v1.Col>>16),(u8)(v2.Col>>16),(u8)(v3.Col>>16),
-				(u8)(v1.Col>>24),(u8)(v2.Col>>24),(u8)(v3.Col>>24)
-				);
+					  v1.r,v2.r,v3.r,
+					  v1.g,v2.g,v3.g,
+					  v1.b,v2.b,v3.b,
+					  v1.a,v2.a,v3.a
+					 );
 		}
 	};
 	
@@ -365,7 +365,7 @@ namespace SWRenderer
 			__m128i cd=_mm_packs_epi32(_mm_cvttps_epi32(c),_mm_cvttps_epi32(d));
 
 			rv = _mm_packus_epi16(ab,cd);
-			rv = _mm_xor_si128(rv,textadr);
+			//rv = _mm_xor_si128(rv,textadr);
 		}
 
 		//__m128i rv=ip.col;//_mm_xor_si128(_mm_cvtps_epi32(_mm_mul_ps(x,Z.c)),_mm_cvtps_epi32(y));
@@ -613,6 +613,22 @@ next_y:
 	}
 
 
+	f32 f16(u16 v)
+	{
+		u32 z=v<<16;
+		return *(f32*)&z;
+	}
+	f32 fsat(f32 v)
+	{
+		if (v<0)
+			return 0;
+		else if (v>255)
+			return 255;
+		else return v;
+	}
+	__declspec(align(16)) static f32 FaceBaseColor[4];
+	__declspec(align(16)) static f32 FaceOffsColor[4];
+
 	//Vertex Decoding-Converting
 	struct VertexDecoder
 	{
@@ -630,6 +646,14 @@ next_y:
 
 		//Polys
 #define glob_param_bdc
+#define poly_float_color_(to,a,r,g,b) \
+	to[0] = a*255;	\
+	to[1] = r*255;	\
+	to[2] = g*255;	\
+	to[3] = b*255;
+
+	#define poly_float_color(to,src) \
+	poly_float_color_(to,pp->src##A,pp->src##R,pp->src##G,pp->src##B)
 
 		__forceinline
 		static void fastcall AppendPolyParam0(TA_PolyParam0* pp)
@@ -640,6 +664,7 @@ next_y:
 		static void fastcall AppendPolyParam1(TA_PolyParam1* pp)
 		{
 			glob_param_bdc;
+			poly_float_color(FaceBaseColor,FaceColor);
 		}
 		__forceinline
 		static void fastcall AppendPolyParam2A(TA_PolyParam2A* pp)
@@ -649,7 +674,8 @@ next_y:
 		__forceinline
 		static void fastcall AppendPolyParam2B(TA_PolyParam2B* pp)
 		{
-			
+			poly_float_color(FaceBaseColor,FaceColor);
+			poly_float_color(FaceOffsColor,FaceOffset);
 		}
 		__forceinline
 		static void fastcall AppendPolyParam3(TA_PolyParam3* pp)
@@ -695,14 +721,51 @@ next_y:
 
 		//Poly Vertex handlers
 #define vert_cvt_base VertexCount++; Vertex* cv=vertlist.Append();cv->x=vtx->xyz[0];cv->y=vtx->xyz[1];cv->z=vtx->xyz[2];cv->EOS=0;
+#define vert_res_base Vertex* cv=vertlist.LastPtr();
+
+		//uv 16/32
+#define vert_uv_32(u_name,v_name) \
+		cv->u	=	(vtx->u_name);\
+		cv->v	=	(vtx->v_name);
+
+#define vert_uv_16(u_name,v_name) \
+		cv->u	=	f16(vtx->u_name);\
+		cv->v	=	f16(vtx->v_name);
 
 
+#define vert_packed_color(Col)	\
+		{	\
+				cv->r=(u8)(vtx->Col>> 0);	\
+				cv->g=(u8)(vtx->Col>> 8);	\
+				cv->b=(u8)(vtx->Col>>16);	\
+				cv->a=(u8)(vtx->Col>>24);	\
+		}
+
+#define vert_float_color(src) \
+	{	\
+				cv->a=fsat(vtx->src##A*255);	\
+				cv->r=fsat(vtx->src##R*255);	\
+				cv->g=fsat(vtx->src##G*255);	\
+				cv->b=fsat(vtx->src##B*255);	\
+	}
+
+	//Intesity handling
+
+	//Precaclulated intesinty (saves 8 bytes / vertex)
+	#define vert_face_base_color(baseint) \
+		cv->a=fsat(FaceBaseColor[0]);cv->r=fsat(FaceBaseColor[1]*vtx->baseint);fsat(cv->g=FaceBaseColor[2]*vtx->baseint);fsat(cv->b=FaceBaseColor[3]*vtx->baseint);
+
+	#define vert_face_offs_color(offsint) 
+		//cv->a=fsat(FaceOffsColor[0]);cv->r=fsat(FaceOffsColor[1]*vtx->offsint);cv->g=fsat(FaceOffsColor[2]*vtx->offsint);cv->b=fsat(FaceOffsColor[3]*vtx->offsint);
+
+		
 		//(Non-Textured, Packed Color)
 		__forceinline
 		static void AppendPolyVertex0(TA_Vertex0* vtx)
 		{
 			vert_cvt_base;
-			cv->Col=vtx->BaseCol;
+
+			vert_packed_color(BaseCol);
 		}
 
 		//(Non-Textured, Floating Color)
@@ -710,7 +773,8 @@ next_y:
 		static void AppendPolyVertex1(TA_Vertex1* vtx)
 		{
 			vert_cvt_base;
-			cv->Col=0xFFFFFFFF;
+
+			vert_float_color(Base);
 		}
 
 		//(Non-Textured, Intensity)
@@ -718,7 +782,8 @@ next_y:
 		static void AppendPolyVertex2(TA_Vertex2* vtx)
 		{
 			vert_cvt_base;
-			cv->Col=0xFFFFFFFF;
+			
+			vert_face_base_color(BaseInt);
 		}
 
 		//(Textured, Packed Color)
@@ -726,7 +791,11 @@ next_y:
 		static void AppendPolyVertex3(TA_Vertex3* vtx)
 		{
 			vert_cvt_base;
-			cv->Col=vtx->BaseCol;
+			
+			vert_packed_color(BaseCol);
+			vert_packed_color(OffsCol);
+
+			vert_uv_32(u,v);
 		}
 
 		//(Textured, Packed Color, 16bit UV)
@@ -734,7 +803,11 @@ next_y:
 		static void AppendPolyVertex4(TA_Vertex4* vtx)
 		{
 			vert_cvt_base;
-			cv->Col=vtx->BaseCol;
+
+			vert_packed_color(BaseCol);
+			vert_packed_color(OffsCol);
+
+			vert_uv_16(u,v);
 		}
 
 		//(Textured, Floating Color)
@@ -742,12 +815,18 @@ next_y:
 		static void AppendPolyVertex5A(TA_Vertex5A* vtx)
 		{
 			vert_cvt_base;
-			cv->Col=0xFFFFFFFF;
+
+			//Colors are on B
+
+			vert_uv_32(u,v);
 		}
 		__forceinline
 		static void AppendPolyVertex5B(TA_Vertex5B* vtx)
 		{
+			vert_res_base;
 
+			vert_float_color(Base);
+			vert_float_color(Offs);
 		}
 
 		//(Textured, Floating Color, 16bit UV)
@@ -755,12 +834,18 @@ next_y:
 		static void AppendPolyVertex6A(TA_Vertex6A* vtx)
 		{
 			vert_cvt_base;
-			cv->Col=0xFFFFFFFF;
+
+			//Colors are on B
+
+			vert_uv_16(u,v);
 		}
 		__forceinline
 		static void AppendPolyVertex6B(TA_Vertex6B* vtx)
 		{
+			vert_res_base;
 
+			vert_float_color(Base);
+			vert_float_color(Offs);
 		}
 
 		//(Textured, Intensity)
@@ -768,7 +853,11 @@ next_y:
 		static void AppendPolyVertex7(TA_Vertex7* vtx)
 		{
 			vert_cvt_base;
-			cv->Col=0xFFFFFFFF;
+
+			vert_face_base_color(BaseInt);
+			vert_face_offs_color(OffsInt);
+
+			vert_uv_32(u,v);
 		}
 
 		//(Textured, Intensity, 16bit UV)
@@ -776,7 +865,12 @@ next_y:
 		static void AppendPolyVertex8(TA_Vertex8* vtx)
 		{
 			vert_cvt_base;
-			cv->Col=0xFFFFFFFF;
+
+			vert_face_base_color(BaseInt);
+			vert_face_offs_color(OffsInt);
+
+			vert_uv_16(u,v);
+			
 		}
 
 		//(Non-Textured, Packed Color, with Two Volumes)
@@ -784,7 +878,8 @@ next_y:
 		static void AppendPolyVertex9(TA_Vertex9* vtx)
 		{
 			vert_cvt_base;
-			cv->Col=vtx->BaseCol0;
+
+			vert_packed_color(BaseCol0);
 		}
 
 		//(Non-Textured, Intensity,	with Two Volumes)
@@ -792,7 +887,8 @@ next_y:
 		static void AppendPolyVertex10(TA_Vertex10* vtx)
 		{
 			vert_cvt_base;
-			cv->Col=0xFFFFFFFF;
+			
+			vert_face_base_color(BaseInt0);
 		}
 
 		//(Textured, Packed Color,	with Two Volumes)	
@@ -800,12 +896,18 @@ next_y:
 		static void AppendPolyVertex11A(TA_Vertex11A* vtx)
 		{
 			vert_cvt_base;
-			cv->Col=vtx->BaseCol0;
+
+			vert_packed_color(BaseCol0);
+			vert_packed_color(OffsCol0);
+
+
+			vert_uv_32(u0,v0);
 		}
 		__forceinline
 		static void AppendPolyVertex11B(TA_Vertex11B* vtx)
 		{
-			
+			vert_res_base;
+
 		}
 
 		//(Textured, Packed Color, 16bit UV, with Two Volumes)
@@ -813,11 +915,16 @@ next_y:
 		static void AppendPolyVertex12A(TA_Vertex12A* vtx)
 		{
 			vert_cvt_base;
-			cv->Col=vtx->BaseCol0;
+
+			vert_packed_color(BaseCol0);
+			vert_packed_color(OffsCol0);
+
+			vert_uv_16(u0,v0);
 		}
 		__forceinline
 		static void AppendPolyVertex12B(TA_Vertex12B* vtx)
 		{
+			vert_res_base;
 
 		}
 
@@ -825,12 +932,17 @@ next_y:
 		__forceinline
 		static void AppendPolyVertex13A(TA_Vertex13A* vtx)
 		{
-			vert_cvt_base;	
-			cv->Col=0xFFFFFFFF;
+			vert_cvt_base;
+
+			vert_face_base_color(BaseInt0);
+			vert_face_offs_color(OffsInt0);
+
+			vert_uv_32(u0,v0);
 		}
 		__forceinline
 		static void AppendPolyVertex13B(TA_Vertex13B* vtx)
 		{
+			vert_res_base;
 
 		}
 
@@ -839,34 +951,26 @@ next_y:
 		static void AppendPolyVertex14A(TA_Vertex14A* vtx)
 		{
 			vert_cvt_base;
-			cv->Col=0xFFFFFFFF;
+
+			vert_face_base_color(BaseInt0);
+			vert_face_offs_color(OffsInt0);
+
+			vert_uv_16(u0,v0);
 		}
 		__forceinline
 		static void AppendPolyVertex14B(TA_Vertex14B* vtx)
 		{
+			vert_res_base;
 
 		}
 
-		//Sprites
 		__forceinline
 		static void AppendSpriteParam(TA_SpriteParam* spr)
 		{
 
 		}
-
 		//Sprite Vertex Handlers
-		/*
-		__forceinline
-		static void AppendSpriteVertex0A(TA_Sprite0A* sv)
-		{
-
-		}
-		__forceinline
-		static void AppendSpriteVertex0B(TA_Sprite0B* sv)
-		{
-
-		}
-		*/
+		
 		__forceinline
 		static void AppendSpriteVertexA(TA_Sprite1A* sv)
 		{
