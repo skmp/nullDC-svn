@@ -9,7 +9,7 @@
 #include "dc/maple/maple_if.h"
 #include "dc/aica/aica_if.h"
 
-#ifdef BUILD_NAOMI
+#if defined(BUILD_NAOMI	) || defined(BUILD_ATOMISWAVE)
 #include "../../naomi/naomi.h"
 #endif
 

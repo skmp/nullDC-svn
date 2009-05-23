@@ -292,49 +292,7 @@ void Term_DC()
 		dc_inited=false;
 	}
 }
-/*
-void LoadBiosFilesz()
-{
-	wchar* temp_path=GetEmuPath(L"data\\");
-	u32 pl=(u32)wcslen(temp_path);
 
-
-#ifdef BUILD_DREAMCAST
-	wcscat(temp_path,L"dc_boot.bin");
-#elif	BUILD_NAOMI
-	wcscat(temp_path,L"naomi_boot.bin");
-#else	//BUILD_DEV_UNIT
-	wcscat(temp_path,L"hkt_boot.bin");
-#endif
-
-
-#ifdef BUILD_DREAMCAST
-	
-	wcscat(temp_path,L"syscalls.bin");
-	LoadFileToSh4Mem(0x00000, temp_path);
-	temp_path[pl]=0;
-
-	wcscat(temp_path,L"IP.bin");
-	LoadFileToSh4Mem(0x08000, temp_path);
-	temp_path[pl]=0;
-
-#else
-
-	// Add Xicor Flash when dumped and others ... 
-
-#endif
-
-	free(temp_path);
-}
-
-void SaveFlash()
-{
-	wchar* temp_path=GetEmuPath(L"data\\");
-	printf("ERROR : FLASH NOT SAVED\n");
-//	u32 pl=(u32)strlen(temp_path);
-	//SaveSh4FlashromToFile(
-}
-*/
 void Start_DC()
 {
 	if (!sh4_cpu->IsCpuRunning())

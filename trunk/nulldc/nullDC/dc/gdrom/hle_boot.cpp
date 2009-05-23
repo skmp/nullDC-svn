@@ -9,7 +9,7 @@ using namespace std;
 #include "dc/mem/sh4_mem.h"
 #include "dc/sh4/rec_v1/blockmanager.h"
 
-#ifndef BUILD_NAOMI
+#ifdef BUILD_DREAMCAST
 //HLE boot code ;)
 
 u8 pvd_temp[2048];

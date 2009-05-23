@@ -62,7 +62,7 @@ u32 mask_write=0;
 
 void write_BSC_PCTRA(u32 data)
 {
-	#ifdef BUILD_NAOMI
+	#if defined(BUILD_NAOMI	) || defined(BUILD_ATOMISWAVE)
 		NaomiBoardIDWriteControl((u16)data);
 	#else
 	//printf("C:BSC_PCTRA = %08X\n",data);
@@ -109,13 +109,13 @@ void write_BSC_PDTRA(u32 data)
 	vreg_2&=~mask_write;
 	vreg_2|=BSC_PDTRA.full&mask_write;
 
-	#ifdef BUILD_NAOMI
+	#if defined(BUILD_NAOMI	) || defined(BUILD_ATOMISWAVE)
 		NaomiBoardIDWrite((u16)data);
 	#endif
 }
 u32 read_BSC_PDTRA()
 {
-	#ifdef BUILD_NAOMI
+	#if defined(BUILD_NAOMI	) || defined(BUILD_ATOMISWAVE)
 
 		return NaomiBoardIDRead();
 
@@ -293,7 +293,7 @@ void bsc_Init()
 	BSC[(BSC_GPIOIC_addr&0xFF)>>2].readFunction=0;
 	BSC[(BSC_GPIOIC_addr&0xFF)>>2].writeFunction=0;
 	BSC[(BSC_GPIOIC_addr&0xFF)>>2].data16=&BSC_GPIOIC.full;
-#ifdef BUILD_NAOMI
+#if defined(BUILD_NAOMI	) || defined(BUILD_ATOMISWAVE)
 	BSC_RFCR.full = 17;
 	BSC[(BSC_RFCR_addr&0xFF)>>2].flags=REG_16BIT_READWRITE | REG_READ_DATA ;//| REG_WRITE_DATA;
 #endif
@@ -304,7 +304,7 @@ void bsc_Init()
 
 void bsc_Reset(bool Manual)
 {
-#ifndef BUILD_NAOMI
+#if defined(BUILD_NAOMI	) || defined(BUILD_ATOMISWAVE)
 	BSC_RFCR.full = 17;
 #endif
 	/*

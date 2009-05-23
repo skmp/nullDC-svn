@@ -1502,7 +1502,7 @@ void roml(x86_reg reg,x86_Label* lbl,u32* offset_Edit,x86_reg fast_reg,u32 fast_
 	//jae full_lookup
 	x86e->Emit(op_jae,lbl);
 	//and ecx,mask2
-	x86e->Emit(op_and32,ECX,~0xE0000000);
+	x86e->Emit(op_and32,ECX,0x1FFFFFFF);
 }
 const x86_opcode_class rm_table[4]={op_movsx8to32,op_movsx16to32,op_mov32,op_movlps};
 void __fastcall shil_compile_readm(shil_opcode* op)
@@ -1516,28 +1516,6 @@ void __fastcall shil_compile_readm(shil_opcode* op)
 		//[imm1] form
 		assert(op->flags & FLAG_IMM1);
 		emit_vmem_op_compat_const(x86e,0,size,op->imm1,op->reg1);
-		/*
-		if (!IsInFReg(op->reg1))
-		{
-			emit_vmem_op_compat_const(x86e,0,size,op->imm1,op->reg1);
-			/*
-			if (size==FLAG_64)
-			{
-				emit_vmem_op_compat_const(x86e,0,size,op->imm1,op->reg1);
-			}
-			else
-			{
-				x86_gpr_reg rall=LoadReg_nodata(EDX,op->reg1);
-				emit_vmem_op_compat_const(x86e,op->imm1,rall,false,m_unpack_sz[size],0);
-				SaveReg(op->reg1,rall);
-			}*//*
-		}
-		else
-		{
-			x86_sse_reg rall=fra->GetRegister(XMM0,op->reg1,RA_NODATA);
-			emit_vmem_op_compat_const(x86e,op->imm1,rall,true,m_unpack_sz[size],0);
-			fra->SaveRegister(op->reg1,rall);
-		}*/
 		return;
 	}
 

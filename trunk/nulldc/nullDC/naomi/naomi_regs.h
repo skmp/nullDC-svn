@@ -3,7 +3,7 @@
 */
 
 #pragma once
-#ifdef BUILD_NAOMI
+#if defined(BUILD_NAOMI	) || defined(BUILD_ATOMISWAVE)
 
 
 

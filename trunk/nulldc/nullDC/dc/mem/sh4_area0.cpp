@@ -295,7 +295,7 @@ u32 ReadFlash(u32 addr,u32 sz) { return sys_nvmem.Read(addr,sz); }
 void WriteFlash(u32 addr,u32 data,u32 sz) { sys_nvmem.Write(addr,data,sz); }
 
 #elif (DC_PLATFORM == DC_PLATFORM_ATOMISWAVE)
-	u32 ReadFlash(u32 addr,u32 sz) { EMUERROR4("Read from [Flash ROM] is not possible, addr=%x,size=%d",addr,sz); }
+	u32 ReadFlash(u32 addr,u32 sz) { EMUERROR3("Read from [Flash ROM] is not possible, addr=%x,size=%d",addr,sz); return 0; }
 	void WriteFlash(u32 addr,u32 data,u32 sz) { EMUERROR4("Write to  [Flash ROM] is not possible, addr=%x,data=%x,size=%d",addr,data,sz); }
 
 	u32 ReadBios(u32 addr,u32 sz) 
@@ -373,10 +373,10 @@ T __fastcall ReadMem_area0(u32 addr)
 	else if ((base_start >=0x005F) && (base_end <=0x005F) && (addr>= 0x005F7000) && (addr<= 0x005F70FF)) //	:GD-ROM
 	{
 		//EMUERROR3("Read from area0_32 not implemented [GD-ROM], addr=%x,size=%d",addr,sz);
-#ifndef BUILD_NAOMI
-		return (T)ReadMem_gdrom(addr,sz);
-#else
+#if defined(BUILD_NAOMI	) || defined(BUILD_ATOMISWAVE)
 		return (T)ReadMem_naomi(addr,sz);
+#else
+		return (T)ReadMem_gdrom(addr,sz);
 #endif
 	}
 	else if ((base_start >=0x005F) && (base_end <=0x005F) && (addr>= 0x005F6800) && (addr<=0x005F7CFF)) //	/*:PVR i/f Control Reg.*/ -> ALL SB registers now
@@ -461,10 +461,10 @@ void  __fastcall WriteMem_area0(u32 addr,T data)
 	else if ((base_start >=0x005F) && (base_end <=0x005F) && (addr>= 0x005F7000) && (addr<= 0x005F70FF)) //	:GD-ROM
 	{
 		//EMUERROR4("Write to area0_32 not implemented [GD-ROM], addr=%x,data=%x,size=%d",addr,data,sz);
-#ifndef BUILD_NAOMI
-		WriteMem_gdrom(addr,data,sz);
-#else
+#if defined(BUILD_NAOMI	) || defined(BUILD_ATOMISWAVE)
 		WriteMem_naomi(addr,data,sz);
+#else
+		WriteMem_gdrom(addr,data,sz);
 #endif
 	}
 	else if ((base_start >=0x005F) && (base_end <=0x005F) && (addr>= 0x005F6800) && (addr<=0x005F7CFF)) //	/*:PVR i/f Control Reg.*/ -> ALL SB registers

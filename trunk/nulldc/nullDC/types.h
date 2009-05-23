@@ -159,6 +159,8 @@ using namespace std;
 	#define VER_EMUNAME		L"nullDC-DevKit-SET5.21"
 #elif DC_PLATFORM==DC_PLATFORM_NAOMI
 	#define VER_EMUNAME		L"nullDC-Naomi"
+#elif DC_PLATFORM==DC_PLATFORM_ATOMISWAVE
+	#define VER_EMUNAME		L"nullDC-AtomisWave"
 #else
 	#error unknown target platform
 #endif
