@@ -755,8 +755,8 @@ next_y:
 	#define vert_face_base_color(baseint) \
 		cv->a=fsat(FaceBaseColor[0]);cv->r=fsat(FaceBaseColor[1]*vtx->baseint);fsat(cv->g=FaceBaseColor[2]*vtx->baseint);fsat(cv->b=FaceBaseColor[3]*vtx->baseint);
 
-	#define vert_face_offs_color(offsint) 
-		//cv->a=fsat(FaceOffsColor[0]);cv->r=fsat(FaceOffsColor[1]*vtx->offsint);cv->g=fsat(FaceOffsColor[2]*vtx->offsint);cv->b=fsat(FaceOffsColor[3]*vtx->offsint);
+	#define vert_face_offs_color(offsint) \
+		cv->a=fsat(FaceOffsColor[0]);cv->r=fsat(FaceOffsColor[1]*vtx->offsint);cv->g=fsat(FaceOffsColor[2]*vtx->offsint);cv->b=fsat(FaceOffsColor[3]*vtx->offsint);
 
 		
 		//(Non-Textured, Packed Color)
@@ -793,7 +793,7 @@ next_y:
 			vert_cvt_base;
 			
 			vert_packed_color(BaseCol);
-			vert_packed_color(OffsCol);
+			//vert_packed_color(OffsCol);
 
 			vert_uv_32(u,v);
 		}
@@ -805,7 +805,7 @@ next_y:
 			vert_cvt_base;
 
 			vert_packed_color(BaseCol);
-			vert_packed_color(OffsCol);
+			//vert_packed_color(OffsCol);
 
 			vert_uv_16(u,v);
 		}
@@ -845,7 +845,7 @@ next_y:
 			vert_res_base;
 
 			vert_float_color(Base);
-			vert_float_color(Offs);
+			//vert_float_color(Offs);
 		}
 
 		//(Textured, Intensity)
@@ -855,7 +855,7 @@ next_y:
 			vert_cvt_base;
 
 			vert_face_base_color(BaseInt);
-			vert_face_offs_color(OffsInt);
+			//vert_face_offs_color(OffsInt);
 
 			vert_uv_32(u,v);
 		}
@@ -867,7 +867,7 @@ next_y:
 			vert_cvt_base;
 
 			vert_face_base_color(BaseInt);
-			vert_face_offs_color(OffsInt);
+			//vert_face_offs_color(OffsInt);
 
 			vert_uv_16(u,v);
 			
@@ -898,7 +898,7 @@ next_y:
 			vert_cvt_base;
 
 			vert_packed_color(BaseCol0);
-			vert_packed_color(OffsCol0);
+			//vert_packed_color(OffsCol0);
 
 
 			vert_uv_32(u0,v0);
@@ -917,7 +917,7 @@ next_y:
 			vert_cvt_base;
 
 			vert_packed_color(BaseCol0);
-			vert_packed_color(OffsCol0);
+			//vert_packed_color(OffsCol0);
 
 			vert_uv_16(u0,v0);
 		}
@@ -935,7 +935,7 @@ next_y:
 			vert_cvt_base;
 
 			vert_face_base_color(BaseInt0);
-			vert_face_offs_color(OffsInt0);
+			//vert_face_offs_color(OffsInt0);
 
 			vert_uv_32(u0,v0);
 		}
@@ -953,7 +953,7 @@ next_y:
 			vert_cvt_base;
 
 			vert_face_base_color(BaseInt0);
-			vert_face_offs_color(OffsInt0);
+			//vert_face_offs_color(OffsInt0);
 
 			vert_uv_16(u0,v0);
 		}
