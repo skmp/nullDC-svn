@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="windows-1253"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="9.00"
 	Name="nullAICA"
 	ProjectGUID="{9C6F5978-A6CE-4A09-A3EA-5FE45CC12232}"
 	RootNamespace="nullAICA"
 	Keyword="Win32Proj"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -72,6 +73,8 @@
 				ModuleDefinitionFile="exports.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -91,9 +94,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -159,6 +159,8 @@
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -180,9 +182,6 @@
 				Name="VCAppVerifierTool"
 			/>
 			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
@@ -190,7 +189,6 @@
 	<References>
 		<ProjectReference
 			ReferencedProjectIdentifier="{B0B56062-39D6-4BEA-B0C9-A06AC2A65555}"
-			RelativePathToProject="..\emitter\emitter\emitter.vcproj"
 		/>
 	</References>
 	<Files>

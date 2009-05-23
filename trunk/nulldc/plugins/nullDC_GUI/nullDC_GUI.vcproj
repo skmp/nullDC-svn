@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="windows-1253"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="9.00"
 	Name="nullDC_GUI"
 	ProjectGUID="{BA607CBC-BBF5-441B-9778-B86FD2D710EB}"
 	RootNamespace="nullDC_GUI"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -61,6 +62,8 @@
 				OutputFile="$(SolutionDir)\WorkDir\$(ProjectName)_$(PlatformName).dll"
 				ModuleDefinitionFile="export.def"
 				GenerateDebugInformation="true"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -79,9 +82,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -131,6 +131,8 @@
 				OutputFile="$(SolutionDir)\WorkDir\$(ProjectName)_$(PlatformName).dll"
 				ModuleDefinitionFile="export.def"
 				GenerateDebugInformation="true"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -149,9 +151,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"

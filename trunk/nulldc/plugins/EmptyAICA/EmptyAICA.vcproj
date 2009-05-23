@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="windows-1253"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="9.00"
 	Name="EmptyAICA"
 	ProjectGUID="{8004518C-2321-4CFC-BA6C-873736195691}"
 	RootNamespace="EmptyAICA"
 	Keyword="Win32Proj"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -69,6 +70,8 @@
 				ModuleDefinitionFile="exports.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -88,9 +91,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -152,6 +152,8 @@
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -173,9 +175,6 @@
 				Name="VCAppVerifierTool"
 			/>
 			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
@@ -189,15 +188,15 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\exports.def"
-				>
-			</File>
-			<File
 				RelativePath=".\EmptyAICA.cpp"
 				>
 			</File>
 			<File
 				RelativePath=".\EmptyAICA.h"
+				>
+			</File>
+			<File
+				RelativePath=".\exports.def"
 				>
 			</File>
 		</Filter>
